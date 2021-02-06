@@ -34,7 +34,7 @@ begin
   },
   { 
     refine λ A B ca cb db da, ⟨db.1.bind (λ b, (da b).1), plift.up (λ a, _)⟩,
-    rw [mem_support_Bind_iff, pmf.bind_apply, 
+    rw [mem_support_bind_iff, pmf.bind_apply, 
       tsum_ne_zero_iff _ (pmf.bind.summable db.1 (λ b, (da b).1) a)],
     split; rintro ⟨b, hb⟩;  
       cases (da b).2 with hda; specialize hda a; 
@@ -46,7 +46,7 @@ begin
   },
   { 
     refine λ n, ⟨⟨λ v, ((2 : nnreal) ^ n)⁻¹, sum_bitvec_eq_one⟩, plift.up (λ v, _)⟩,
-    simp only [support_Rnd, finset.mem_univ, iff_true, ne.def],
+    simp only [support_rnd, finset.mem_univ, iff_true, ne.def],
     refine λ hn, two_ne_zero (pow_eq_zero (inv_eq_zero.mp hn) : (2 : nnreal) = 0),
   },
   {
@@ -65,17 +65,17 @@ theorem eval_distribution_ne_zero_iff (ca : Comp A) (hca : ca.support.nonempty) 
   (eval_distribution ca hca a) ≠ 0 ↔ a ∈ ca.support :=
 plift.rec (λ h, h a) (eval_distribution' ca hca).snd
 
-@[simp] lemma eval_distribution_Ret [decidable_eq A] (a : A) (h : (Ret a).support.nonempty) :
-  eval_distribution (Ret a) h = pmf.pure a := rfl
+@[simp] lemma eval_distribution_ret [decidable_eq A] (a : A) (h : (ret a).support.nonempty) :
+  eval_distribution (ret a) h = pmf.pure a := rfl
 
-@[simp] lemma eval_distribution_Bind (cb : Comp B) (ca : B → Comp A) 
-  (h : (Bind cb ca).support.nonempty) 
+@[simp] lemma eval_distribution_bind (cb : Comp B) (ca : B → Comp A) 
+  (h : (bind cb ca).support.nonempty) 
   (hb : cb.support.nonempty) (ha : ∀ b, (ca b).support.nonempty):
-  eval_distribution (Bind cb ca) h = (eval_distribution cb hb).bind 
+  eval_distribution (bind cb ca) h = (eval_distribution cb hb).bind 
     (λ b, (eval_distribution (ca b) (ha b))) := rfl
 
-@[simp] lemma eval_distribution_Rnd {n : ℕ} (h : (Rnd n).support.nonempty) :
-  eval_distribution (Rnd n) h = ⟨λ v, ((2 : nnreal) ^ n)⁻¹, sum_bitvec_eq_one⟩ := rfl
+@[simp] lemma eval_distribution_rnd {n : ℕ} (h : (rnd n).support.nonempty) :
+  eval_distribution (rnd n) h = ⟨λ v, ((2 : nnreal) ^ n)⁻¹, sum_bitvec_eq_one⟩ := rfl
 
 end eval_distribution
 
