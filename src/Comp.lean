@@ -1,4 +1,7 @@
 import data.bitvec.basic
+import tactic.induction
+import tactic.local_cache
+import to_mathlib
 
 /-- Computational monad to extend the base language of Lean for cryptography purposes.
   `rnd n` represents a computation of purely random bits, 
@@ -55,16 +58,20 @@ ca.rec (λ _ _ a, {a})
 @[simp] lemma mem_support_bind_iff (cb : Comp B) (ca : B → Comp A) (a : A) :
   a ∈ (Comp.bind cb ca).support ↔ ∃ (b : B), b ∈ cb.support ∧ a ∈ (ca b).support := by simp
 
+lemma support_bind_nonempty_iff (cb : Comp B) (ca : B → Comp A) :
+  (bind cb ca).support.nonempty ↔ ∃ b, b ∈ cb.support ∧ (ca b).support.nonempty :=
+by rw [support_bind, finset.bUnion_nonempty_iff]
+
 @[simp] lemma support_rnd {n : ℕ} : (rnd n).support = finset.univ := rfl
 
-lemma mem_support_rnd {n : ℕ} (b : bitvec n) : 
+@[simp] lemma mem_support_rnd {n : ℕ} (b : bitvec n) : 
   b ∈ (rnd n).support := by simp
 
 @[simp] lemma support_repeat (ca : Comp A) (p : A → Prop) [decidable_pred p] :
   (repeat p ca).support = ca.support.filter p := rfl
 
 @[simp] lemma mem_support_repeat (ca : Comp A) (p : A → Prop) [decidable_pred p] (a : A) :
-  a ∈ (repeat p ca).support ↔ a ∈ ca.support ∧ p a = tt := by simp
+  a ∈ (repeat p ca).support ↔ a ∈ ca.support ∧ p a := by simp
 
 end support
 
@@ -89,6 +96,30 @@ inductive well_formed_Comp : ∀ {A : Type}, Comp A → Prop
     well_formed_Comp (repeat p ca)
 
 open well_formed_Comp
+
+@[simp] lemma well_formed_Comp_ret [decidable_eq A] (a : A) : well_formed_Comp (ret a) :=
+well_formed_ret a
+
+@[simp] lemma well_formed_Comp_bind_iff (cb : Comp B) (ca : B → Comp A) :
+  well_formed_Comp (cb.bind ca) ↔ 
+    well_formed_Comp cb ∧ ∀ b ∈ cb.support, well_formed_Comp (ca b) :=
+begin
+  refine ⟨λ w, _, λ h, well_formed_bind cb ca h.1 h.2⟩,
+  cases w,
+  split; assumption,
+end
+
+@[simp] lemma well_formed_Comp_rnd (n : ℕ) : well_formed_Comp (rnd n) :=
+well_formed_rnd
+
+@[simp] lemma well_formed_Comp_repeat_iff (p : A → Prop) [hp : decidable_pred p] (ca : Comp A) :
+  well_formed_Comp (@repeat A p hp ca) ↔ well_formed_Comp ca ∧ (repeat p ca).support.nonempty :=
+begin
+  refine ⟨λ w, _, λ h, well_formed_repeat p ca h.1 h.2⟩,
+  tactic.unfreeze_local_instances,
+  cases w,
+  refine ⟨w_hca, w_hpca⟩,
+end
 
 theorem support_nonempty_of_well_formed_Comp (ca : Comp A)
   (hca : well_formed_Comp ca) : ca.support.nonempty :=
