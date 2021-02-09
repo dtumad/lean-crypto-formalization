@@ -39,7 +39,7 @@ Comp.decidable_eq_of_Comp $ bind cb ca
 
 section support
 
-/-- The support of `Comp A` is a list of elements of `A` with non-zero probability of being computed -/
+/-- The support of `Comp A` is the elements of `A` with non-zero probability of being computed -/
 def support (ca : Comp A) : finset A :=
 ca.rec (λ _ _ a, {a}) 
   (λ A B cb ca hcb hca, @finset.bUnion B A (decidable_eq_of_Comp' cb ca) hcb hca)
@@ -57,10 +57,6 @@ ca.rec (λ _ _ a, {a})
 
 @[simp] lemma mem_support_bind_iff (cb : Comp B) (ca : B → Comp A) (a : A) :
   a ∈ (Comp.bind cb ca).support ↔ ∃ (b : B), b ∈ cb.support ∧ a ∈ (ca b).support := by simp
-
-lemma support_bind_nonempty_iff (cb : Comp B) (ca : B → Comp A) :
-  (bind cb ca).support.nonempty ↔ ∃ b, b ∈ cb.support ∧ (ca b).support.nonempty :=
-by rw [support_bind, finset.bUnion_nonempty_iff]
 
 @[simp] lemma support_rnd {n : ℕ} : (rnd n).support = finset.univ := rfl
 
@@ -118,7 +114,7 @@ begin
   refine ⟨λ w, _, λ h, well_formed_repeat p ca h.1 h.2⟩,
   tactic.unfreeze_local_instances,
   cases w,
-  refine ⟨w_hca, w_hpca⟩,
+  split; assumption,
 end
 
 theorem support_nonempty_of_well_formed_Comp (ca : Comp A)
@@ -153,9 +149,19 @@ inductive Oracle_Comp : Type → Type → Type → Sort*
   where the value in `C` is the result of the computation if oracles behave like the input -/
 def oracle_comp_base_exists (oc : Oracle_Comp A B C) : (A → B) → C :=
 @Oracle_Comp.rec_on (λ A B C _, (A → B) → C) A B C oc
-  (λ _ _ a q, q a) (λ _ _ _ cc _, cc.comp_base_exists)
-  (λ _ _ _ _ _ _ hoc hod q, hod (hoc q) q)
-  (λ A B C A' B' S _ _ _ oc ob s hoc hob q, ⟨hoc (λ a, (hob s a q).1), s⟩) 
+  (λ A B a q, q a) (λ A B C cc hcc, cc.comp_base_exists)
+  (λ A B C D oc od hoc hod q, hod (hoc q) q)
+  (λ A B C A' B' S hA hB hS oc ob s hoc hob q, ⟨hoc (λ a, (hob s a q).1), s⟩)
+
+def decidable_eq_of_oracle_comp (oc : Oracle_Comp A B C) : 
+  (A → B) → (A → decidable_eq B) → decidable_eq C :=
+@Oracle_Comp.rec_on (λ A B C _, (A → B) → (A → decidable_eq B) → decidable_eq C) 
+  A B C oc (λ A B a t h, h a) 
+  (λ A B C cc tcc hcc, decidable_eq_of_Comp cc) 
+  (λ A B C D oc od hoc hod t h, hod (oracle_comp_base_exists oc t) t h)
+  (λ A B C A' B' S hA hB hS oc ob s hoc hob t h, @prod.decidable_eq C S 
+    (hoc (λ a, (oracle_comp_base_exists (ob s a) t).1) 
+      (λ a, @decidable_eq_of_prod_left B S (hob s a t h) s)) hS)
 
 end Oracle_Comp
 

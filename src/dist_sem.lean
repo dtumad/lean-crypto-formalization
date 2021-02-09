@@ -12,6 +12,7 @@ namespace Comp
 
 section eval_distribution
 
+/-- Used to bootstrap `eval_distribution` and `eval_distribution_ne_zero_iff` -/
 private noncomputable def eval_distribution' (ca : Comp A) : 
   well_formed_Comp ca → Σ (da : pmf A), plift (∀ (a : A), (da a ≠ 0 ↔ a ∈ ca.support)) :=
 begin
@@ -45,7 +46,6 @@ begin
         ← (plift.down (da h.1).2 _), set.mem_inter_iff, pmf.mem_support_iff, set.mem_def])⟩ }
 end
 
-
 /-- The denotational semantics of a `Comp A` is the distribution of resulting values.
   This distribution is given in the form of a `pmf` on the type `A` of the computation.
   Defined for any computation with nonempty support, but only meaningful if `ca` is well formed -/
@@ -54,11 +54,12 @@ noncomputable def eval_distribution (ca : Comp A) (hca : well_formed_Comp ca) : 
 
 theorem eval_distribution_ne_zero_iff (ca : Comp A) (hca : well_formed_Comp ca) (a : A) :
   (eval_distribution ca hca a) ≠ 0 ↔ a ∈ ca.support :=
-plift.rec (λ h, h a) (eval_distribution' ca hca).snd
+(plift.down (eval_distribution' ca hca).snd) a
 
 lemma eval_distribution_support_eq_support (ca : Comp A) (hca : well_formed_Comp ca) :
   (eval_distribution ca hca).support = ca.support :=
 set.ext (λ a, eval_distribution_ne_zero_iff ca hca a)
+
 
 @[simp] lemma eval_distribution_ret [decidable_eq A] (a : A) (h : well_formed_Comp (ret a)) :
   eval_distribution (ret a) h = pmf.pure a := rfl
@@ -68,8 +69,8 @@ lemma eval_distribution_bind' (cb : Comp B) (ca : B → Comp A)
   (h : well_formed_Comp (bind cb ca)) 
   (hb : well_formed_Comp cb) (ha : ∀ b ∈ cb.support, well_formed_Comp (ca b)) :
   eval_distribution (bind cb ca) h = (eval_distribution cb hb).bind'
-    (λ b hb, (eval_distribution (ca b) (ha b 
-      (by rwa eval_distribution_support_eq_support at hb)))) := rfl
+    (λ b hb, (eval_distribution (ca b) 
+      (ha b (by rwa eval_distribution_support_eq_support at hb)))) := rfl
 
 /-- If we generalize `ha` over all `b` we can further reduce the `bind'` above to `bind`-/
 lemma eval_distribution_bind (cb : Comp B) (ca : B → Comp A)
@@ -79,7 +80,7 @@ lemma eval_distribution_bind (cb : Comp B) (ca : B → Comp A)
     (λ b, eval_distribution (ca b) (ha b)) :=
 trans (by reflexivity) (pmf.bind'_eq_bind (eval_distribution cb hb) _)
 
-@[simp] lemma eval_distribution_rnd {n : ℕ} {h : well_formed_Comp (rnd n)} :
+@[simp] lemma eval_distribution_rnd {n : ℕ} (h : well_formed_Comp (rnd n)) :
   eval_distribution (rnd n) h = ⟨λ v, ((2 : nnreal) ^ n)⁻¹, sum_bitvec_eq_one⟩ := rfl
 
 end eval_distribution

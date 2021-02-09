@@ -8,7 +8,7 @@ open_locale big_operators nnreal
 
 variables {A B : Type*}
 
-lemma finset.bUnion_nonempty_iff [decidable_eq B] (s : finset A) (t : A → finset B) :
+@[simp] lemma finset.bUnion_nonempty_iff [decidable_eq B] (s : finset A) (t : A → finset B) :
   (finset.bUnion s t).nonempty ↔ ∃ a, a ∈ s ∧ (t a).nonempty :=
 ⟨λ h, let ⟨b, hb⟩ := h in let ⟨a, ha, hab⟩ := finset.mem_bUnion.mp hb in ⟨a, ha, b, hab⟩, 
   λ h, let ⟨a, ha, ⟨b, hb⟩⟩ := h in ⟨b, finset.mem_bUnion.mpr ⟨a, ha, hb⟩⟩⟩
@@ -23,11 +23,14 @@ begin
     exact mul_le_mul_of_nonneg_left ((f a h).coe_le_one _) (p a).2 }
 end
 
+@[simp] lemma pmf.support_pure (a : A) : (pmf.pure a).support = {a} :=
+le_antisymm (λ a ha, by simpa using ha) (λ a ha, by simpa using ha)
+
 noncomputable def pmf.bind' (p : pmf A) (f : ∀ a ∈ p.support, pmf B) : pmf B :=
 ⟨λ b, ∑' a, p a * dite (p a = 0) (λ _, 0) (λ h, f a h b), 
 begin
   apply ennreal.has_sum_coe.1,
-  simp only [ennreal.coe_tsum (bind'.summable p f _)],
+  simp only [ennreal.coe_tsum (pmf.bind'.summable p f _)],
   rw [ennreal.summable.has_sum_iff, ennreal.tsum_comm],
   simp only [ennreal.coe_mul, ennreal.coe_one, ennreal.tsum_mul_left],
   have : ∑' (a : A), (p a : ennreal) = 1 := by simp [← ennreal.coe_tsum p.summable_coe],
@@ -52,22 +55,6 @@ begin
   { exact rfl },
 end
 
--- example (p : pmf ℕ) : decidable_pred p.support :=
--- begin
---   intro n,
---   show decidable (n ∈ p.support),
--- end
-
--- def bind' (p : pmf A) [hp : decidable_pred p.support] (f : Π (a : A) (ha : a ∈ p.support), pmf B) : pmf B :=
--- begin
---   refine ⟨λ b, ∑' (a : A), _, sorry⟩,
---   cases (em (a ∈ p.support)),
---   {
-
---   }
--- end
-
-
 lemma sum_bitvec_eq_one {n : ℕ} : has_sum (λ (v : bitvec n), ((2 : nnreal) ^ n)⁻¹) 1 :=
 begin
   convert has_sum_fintype (λ (v : bitvec n), ((2 : nnreal) ^ n)⁻¹),
@@ -80,3 +67,8 @@ end
 lemma tsum_ne_zero_iff {α : Type*} (f : α → ℝ≥0) (hf : summable f) :
   tsum f ≠ 0 ↔ ∃ (a : α), f a ≠ 0 :=
 by rwa [ne.def, tsum_eq_zero_iff hf, not_forall]
+
+def decidable_eq_of_prod_left {A B : Type*} [h : decidable_eq (A × B)] (b : B) : 
+  decidable_eq A :=
+λ a a', decidable.rec (λ h, is_false (λ h', h (prod.mk.inj_iff.mpr ⟨h', rfl⟩))) 
+  (λ h, is_true (prod.mk.inj_iff.mp h).1) (h ⟨a, b⟩ ⟨a', b⟩)
