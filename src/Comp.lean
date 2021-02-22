@@ -3,6 +3,8 @@ import tactic.induction
 import tactic.local_cache
 import to_mathlib
 
+universes u v
+
 /-- Computational monad to extend the base language of Lean for cryptography purposes.
   `rnd n` represents a computation of purely random bits, 
   and `repeat` can repeat a random computation until some predicate holds -/
