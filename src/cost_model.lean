@@ -1,12 +1,20 @@
 import comp
 import to_mathlib
 
-def function_cost_model := ∀ {A B : Type*}, (A → B) → ℕ → Prop
-def comp_cost_model := ∀ {A : Type*}, Comp A → ℕ → Prop
-def oracle_comp_cost_model := ∀ {A B C : Type*}, Comp.Oracle_Comp A B C → (ℕ → ℕ) → Prop
+universes u v w
+
+def function_cost_model := ∀ {A : Type u} {B : Type v}, (A → B) → ℕ → Prop
+def comp_cost_model := ∀ {A : Type}, Comp A → ℕ → Prop
+def oracle_comp_cost_model := ∀ {A B C : Type}, Comp.Oracle_Comp A B C → (ℕ → ℕ) → Prop
 
 /-- Defines an extensible axiomatic cost model for Lean functions -/
-constant has_cost : function_cost_model
+constant has_cost : function_cost_model.{u v}
+
+class has_cost_model :=
+(has_cost : function_cost_model.{1 1})
+(has_cost_of_le {A : Type 1} {B : Type 1} {f : A → B} {n m : ℕ} (hnm : n ≤ m) :
+  has_cost f n → has_cost f m)
+(has_cost_ret {A : Type} [decidable_eq A] : has_cost (Comp.ret : A → Comp A) 0)
 
 namespace has_cost
 
