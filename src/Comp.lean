@@ -8,7 +8,7 @@ universes u v
 /-- Computational monad to extend the base language of Lean for cryptography purposes.
   `rnd n` represents a computation of purely random bits, 
   and `repeat` can repeat a random computation until some predicate holds -/
-inductive Comp : Type → Sort*
+inductive Comp : Type 0 → Type 1
 | ret {A : Type} [hA : decidable_eq A] : Π (a : A), Comp A
 | bind {A B : Type} : Π (cb : Comp B) (ca : B → Comp A), Comp A
 | rnd : ∀ (n : ℕ), Comp (bitvec n)
