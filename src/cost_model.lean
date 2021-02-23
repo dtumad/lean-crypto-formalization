@@ -1,22 +1,16 @@
 import comp
 import to_mathlib
 
-universes u v
-
 def function_cost_model := ∀ {A B : Type*}, (A → B) → ℕ → Prop
 def comp_cost_model := ∀ {A : Type*}, Comp A → ℕ → Prop
+def oracle_comp_cost_model := ∀ {A B C : Type*}, Comp.Oracle_Comp A B C → (ℕ → ℕ) → Prop
 
--- Defines an extensible axiomatic cost model for Lean functions
+/-- Defines an extensible axiomatic cost model for Lean functions -/
 constant has_cost : function_cost_model
 
 namespace has_cost
 
-axiom has_cost_const' {A B : Type*} (b : B) :
-  has_cost (λ _, b : A → B) 0
-
-axiom has_cost_id' {A : Type*} : 
-  has_cost (id : A → A) 0
-
+/-- Axioms for deriving costs of functions from related functions -/
 axiom has_cost_of_le {A B : Type*} {f : A → B} {n m : ℕ} (hnm : n ≤ m) :
   has_cost f n → has_cost f m
 
@@ -31,6 +25,13 @@ axiom has_cost_curry {A B C : Type*} {f : A → B → C} {n : ℕ} :
 
 axiom has_cost_curry' {A B C : Type*} {f : A → B → C} {n : ℕ} {a : A} :
     has_cost (function.uncurry f) n → has_cost (f a) n
+
+/-- Costs of basic commonly used functions -/
+axiom has_cost_const' {A B : Type*} (b : B) :
+  has_cost (λ _, b : A → B) 0
+
+axiom has_cost_id' {A : Type*} : 
+  has_cost (id : A → A) 0
 
 axiom has_cost_fst' {A B : Type*} :
     has_cost (prod.fst : A × B → A) 0
