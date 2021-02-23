@@ -3,6 +3,8 @@ import to_mathlib
 
 universes u v w
 
+-- TODO: look more closely at explicit vs. implicit parameters
+
 /-- Represents a cost assignment model to Lean functions -/
 def function_cost_model := ∀ {A : Type u} {B : Type v}, (A → B) → ℕ → Prop
 def comp_cost_model := ∀ {A : Type}, Comp A → ℕ → Prop
@@ -91,6 +93,13 @@ inductive comp_cost (fm : function_cost_model.{0 1}) : comp_cost_model
 | cost_le {A : Type} {ca : Comp A} {n m : ℕ} (hnm : n ≤ m) :
     comp_cost ca n → comp_cost ca m
 
+variables {fm : function_cost_model.{0 1}}
+
+@[simp] lemma comp_cost_ret {A : Type} [decidable_eq A] {a : A} {n : ℕ} :
+  comp_cost @fm (ret a) n :=
+comp_cost.cost_le (zero_le n) comp_cost.cost_ret 
+
+
 open Comp.Oracle_Comp
 
 inductive oracle_cost (fm : function_cost_model.{0 1}) (cm : comp_cost_model) : oracle_comp_cost_model
@@ -107,6 +116,5 @@ inductive oracle_cost (fm : function_cost_model.{0 1}) (cm : comp_cost_model) : 
       → oracle_cost (oc_run oc ob s) (λ n, f (n + m + (g n)))
 | cost_le {A B C : Type} {oc : Oracle_Comp A B C} {n m : ℕ} (hnm : n ≤ m) :
     oracle_cost oc n → oracle_cost oc m
-
 
 end comp_cost

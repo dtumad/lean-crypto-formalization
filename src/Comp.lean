@@ -141,7 +141,8 @@ section Oracle_Comp
 
 /-- `Oracle_Comp A B C` is the type of a computation of a value of type `C`,
   with access to an oracle taking values in `A` to values in `B`.
-  `oc_run` represents computing `oc` with `ob` as a proxy for the oracle -/
+  `oc_run` represents computing `oc` with `ob` as a proxy for the oracle
+  TODO: the final return type can't be inferred in general without type hints -/
 inductive Oracle_Comp : Type → Type → Type → Type 1
 | oc_query {A B : Type} : Π (a : A), Oracle_Comp A B B
 | oc_ret {A B C : Type} : Π (c : Comp C), Oracle_Comp A B C
