@@ -140,8 +140,9 @@ end well_formed_Comp
 section Oracle_Comp
 
 /-- `Oracle_Comp A B C` is the type of a computation of a value of type `C`,
-  with access to an oracle taking values in `A` to values in `B` -/
-inductive Oracle_Comp : Type → Type → Type → Sort*
+  with access to an oracle taking values in `A` to values in `B`.
+  `oc_run` represents computing `oc` with `ob` as a proxy for the oracle -/
+inductive Oracle_Comp : Type → Type → Type → Type 1
 | oc_query {A B : Type} : Π (a : A), Oracle_Comp A B B
 | oc_ret {A B C : Type} : Π (c : Comp C), Oracle_Comp A B C
 | oc_bind {A B C D : Type} : Π (oc : Oracle_Comp A B C) (od : C → Oracle_Comp A B D),
