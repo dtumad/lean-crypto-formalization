@@ -6,13 +6,14 @@ import to_mathlib
 
 universes u v
 
+
 /-- Computational monad to extend the base language of Lean for cryptography purposes.
   `rnd n` represents a computation of purely random bits, 
   and `repeat` can repeat a random computation until some predicate holds -/
-inductive Comp : Type → Type 1
+inductive Comp : Π (A : Type), Type 1
 | ret {A : Type} [hA : decidable_eq A] : Π (a : A), Comp A
 | bind {A B : Type} : Π (cb : Comp B) (ca : B → Comp A), Comp A
-| rnd : ∀ (n : ℕ), Comp (bitvec n)
+| rnd : Π (n : ℕ), Comp (bitvec n)
 | repeat {A : Type} : Π (p : A → Prop) [decidable_pred p] (ca : Comp A) , Comp A
 
 namespace Comp
@@ -25,16 +26,16 @@ variables {A B C : Type}
   in particular this is the result if all `rnd` calls return strings of `1` bits. -/
 def comp_base_exists (ca : Comp A) : A :=
 @Comp.rec_on (λ A _, A) A ca
-  (λ _ _ a, a) (λ _ _ _ _ b fa, fa b)
-  (λ n, vector.repeat tt n) (λ _ _ _ _ a, a)
+  (λ A hA a, a) (λ A B cb ca b fa, fa b)
+  (λ n, vector.repeat tt n) (λ A p hp ca a, a)
 
 /-- Because only `ret` and `rnd` terminate computation, and `ret` requires `decidable_eq A`,
   every computation must return a type with decidable equality.
   This needs to be definitional to make `support` fully computable -/
 def decidable_eq_of_Comp (ca : Comp A) : decidable_eq A :=
 @Comp.rec_on (λ A _, decidable_eq A) A ca
-  (λ _ h _, h) (λ A B cb ca hcb hca, hca cb.comp_base_exists)
-  (λ _, (by apply_instance)) (λ _ _ _ _ h, h)
+  (λ A hA a, hA) (λ A B cb ca hcb hca, hca cb.comp_base_exists)
+  (λ n, (by apply_instance)) (λ A p hp ca h, h)
 
 /-- alias because this situation is very common due to use of `bUnion` in support -/
 def decidable_eq_of_Comp' (cb : Comp B) (ca : B → Comp A) : decidable_eq A :=
@@ -47,7 +48,7 @@ section support
 def support (ca : Comp A) : finset A :=
 ca.rec (λ _ _ a, {a}) 
   (λ A B cb ca hcb hca, @finset.bUnion B A (decidable_eq_of_Comp' cb ca) hcb hca)
-  (λ _, finset.univ) (λ _ p hp _, @finset.filter _ p hp)
+  (λ n, finset.univ) (λ A p hp ca, @finset.filter _ p hp)
 
 @[simp] lemma support_ret [decidable_eq A] (a : A) :
   (ret a).support = {a} := rfl

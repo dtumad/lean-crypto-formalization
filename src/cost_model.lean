@@ -10,11 +10,10 @@ def oracle_comp_cost_model := ∀ {A B C : Type}, Comp.Oracle_Comp A B C → (�
 /-- Defines an extensible axiomatic cost model for Lean functions -/
 constant has_cost : function_cost_model.{u v}
 
-class has_cost_model :=
-(has_cost : function_cost_model.{1 1})
-(has_cost_of_le {A : Type 1} {B : Type 1} {f : A → B} {n m : ℕ} (hnm : n ≤ m) :
-  has_cost f n → has_cost f m)
-(has_cost_ret {A : Type} [decidable_eq A] : has_cost (Comp.ret : A → Comp A) 0)
+class classical_cost_model (cm : function_cost_model.{0 1}) :=
+(has_cost_of_le {A : Type 0} {B : Type 1} {f : A → B} {n m : ℕ} (hnm : n ≤ m) :
+  cm f n → cm f m)
+(has_cost_ret {A : Type} [decidable_eq A] : cm (Comp.ret : A → Comp A) 0)
 
 namespace has_cost
 
@@ -50,7 +49,6 @@ axiom has_cost_snd' {A B : Type*} :
 axiom has_cost_ret {A : Type*} [decidable_eq A] :
   has_cost (Comp.ret : A → Comp A) 0
 
-
 variables {A B C : Type*}
 
 @[simp] lemma has_cost_id {n : ℕ} : has_cost (id : A → A) n :=
@@ -81,3 +79,5 @@ inductive comp_cost (fm : function_cost_model) : comp_cost_model
     comp_cost (Comp.ret a) 0
 | cost_bind {A B : Type} {ca : Comp A} {cb : A → Comp B} {n1 n2 n3 : ℕ} :
     comp_cost ca n1 → fm cb n2 → (∀ a, comp_cost (cb a) n3) → comp_cost (Comp.bind ca cb) (n1 + n2 + n3)
+
+#check comp_cost has_cost
