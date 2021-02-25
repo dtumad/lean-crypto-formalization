@@ -1,4 +1,5 @@
 import comp
+import asymptotics
 import to_mathlib
 
 universes u v w
@@ -104,6 +105,9 @@ comp_cost.cost_rnd
 
 lemma comp_cost_rnd_le {n m : ℕ} (hnm : n ≤ m) : comp_cost @fm (rnd n) m :=
 comp_cost.cost_le hnm comp_cost.cost_rnd
+
+def poly_time_Comp {A : Type} (c : ℕ → Comp A) :=
+  ∃ (f : ℕ → ℕ), poly_growth f ∧ (∀ n, comp_cost @has_cost (c n) (f n))
 
 
 open Comp.Oracle_Comp
