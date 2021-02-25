@@ -65,13 +65,13 @@ has_cost_of_le (zero_le n) (has_cost_fst')
 @[simp] lemma has_cost_snd {n : ℕ} : has_cost (prod.snd : A × B → B) n :=
 has_cost_of_le (zero_le n) (has_cost_snd')
 
-lemma has_cost_comp' {f : A → B} {g : B → C} {n m : ℕ} : 
+lemma has_cost_comp {f : A → B} {g : B → C} {n m : ℕ} : 
   has_cost f n → has_cost g m → has_cost (g ∘ f) (n + m) :=
 λ hf hg, by simpa using has_cost_compose hf (has_cost_const' _) (λ a, hg)
 
-lemma has_cost_comp {f : A → B} {g : B → C} {n m p : ℕ} (h : n + m ≤ p) :
+lemma has_cost_comp_le {f : A → B} {g : B → C} {n m p : ℕ} (h : n + m ≤ p) :
   has_cost f n → has_cost g m → has_cost (g ∘ f) p :=
-λ hf hg, has_cost_of_le h (has_cost_comp' hf hg)
+λ hf hg, has_cost_of_le h (has_cost_comp hf hg)
 
 lemma has_cost_curry {A B C : Type} {f : (A × B) → C} {n : ℕ} :
   has_cost f n → has_cost (function.curry f) n :=
@@ -97,7 +97,13 @@ variables {fm : function_cost_model.{0 1}}
 
 @[simp] lemma comp_cost_ret {A : Type} [decidable_eq A] {a : A} {n : ℕ} :
   comp_cost @fm (ret a) n :=
-comp_cost.cost_le (zero_le n) comp_cost.cost_ret 
+comp_cost.cost_le (zero_le n) comp_cost.cost_ret
+
+@[simp] lemma comp_cost_rnd {n : ℕ} : comp_cost @fm (rnd n) n :=
+comp_cost.cost_rnd
+
+lemma comp_cost_rnd_le {n m : ℕ} (hnm : n ≤ m) : comp_cost @fm (rnd n) m :=
+comp_cost.cost_le hnm comp_cost.cost_rnd
 
 
 open Comp.Oracle_Comp
