@@ -1,6 +1,7 @@
 import analysis.asymptotics.asymptotics
 import data.polynomial
 
+section nat_asymptotics
 open asymptotics
 
 instance nat.norm : has_norm ℕ :=
@@ -39,7 +40,6 @@ begin
   refine trans hM (mul_le_mul le_rfl hM' zero_le' zero_le'),
 end
 
--- Two ways
 lemma polynomial_is_O_pow_degree (p : polynomial ℕ) :
   is_O (λ x, polynomial.eval x p) (λ x, x ^ p.nat_degree) filter.at_top :=
 begin
@@ -62,3 +62,5 @@ theorem poly_growth_iff (f : ℕ → ℕ) :
   poly_growth f ↔ ∃ (m : ℕ), is_O f (λ n, n ^ m) filter.at_top :=
 ⟨λ h, let ⟨p, hp⟩ := h in ⟨p.nat_degree, nat_is_O_trans hp (polynomial_is_O_pow_degree p)⟩,
   λ h, let ⟨m, hm⟩ := h in ⟨polynomial.X ^ m, by simpa⟩⟩
+
+end nat_asymptotics

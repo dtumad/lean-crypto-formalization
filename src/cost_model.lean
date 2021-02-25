@@ -1,5 +1,5 @@
 import comp
-import asymptotics
+import nat_asymptotics
 import to_mathlib
 
 universes u v w
@@ -73,6 +73,10 @@ lemma has_cost_comp {f : A → B} {g : B → C} {n m : ℕ} :
 lemma has_cost_comp_le {f : A → B} {g : B → C} {n m p : ℕ} (h : n + m ≤ p) :
   has_cost f n → has_cost g m → has_cost (g ∘ f) p :=
 λ hf hg, has_cost_of_le h (has_cost_comp hf hg)
+
+lemma has_cost_uncurry_le {f : A → B → C} {n1 n2 n3 : ℕ} (h : n1 + n2 ≤ n3) :
+  has_cost f n1 → (∀ n, has_cost (f n) n2) → has_cost (function.uncurry f) n3 :=
+λ hf hg, has_cost_of_le h (has_cost_uncurry hf hg)
 
 lemma has_cost_curry {A B C : Type} {f : (A × B) → C} {n : ℕ} :
   has_cost f n → has_cost (function.curry f) n :=
