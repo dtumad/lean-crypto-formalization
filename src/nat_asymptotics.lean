@@ -1,8 +1,13 @@
 import analysis.asymptotics.asymptotics
 import data.polynomial
+import data.real.nnreal
+
+open_locale nnreal
 
 section nat_asymptotics
 open asymptotics
+
+section norm_instances
 
 instance nat.norm : has_norm ℕ :=
 { norm := λ n, ↑n }
@@ -11,6 +16,16 @@ instance nat.norm : has_norm ℕ :=
 
 @[simp] lemma norm_nat_le_iff {n m : ℕ} : 
   ∥n∥ ≤ ∥m∥ ↔ n ≤ m := by simp
+
+instance nnreal.norm : has_norm ℝ≥0 :=
+{ norm := λ n, ↑n }
+
+@[simp] lemma norm_nnreal_def {r : ℝ≥0} : ∥r∥ = ↑r := rfl
+
+@[simp] lemma norm_nnreal_le_iff {r p : ℝ≥0} :
+  ∥r∥ ≤ ∥p∥ ↔ r ≤ p := by simp
+
+end norm_instances
 
 theorem nat_is_O_iff {f g : ℕ → ℕ} :
   is_O f g filter.at_top ↔ ∃ M x₀, ∀ x, x₀ ≤ x → f x ≤ M * (g x) :=
@@ -26,10 +41,36 @@ begin
   refine nat.cast_le.mp this,    
 end
 
+theorem nnreal_is_O_iff {f g : ℕ → ℝ≥0} :
+  is_O f g filter.at_top ↔ ∃ M x₀, ∀ x, x₀ ≤ x → f x ≤ M * (g x) :=
+begin
+  simp only [is_O_iff, filter.eventually_at_top, norm_nat_def],
+  refine ⟨_, λ h, let ⟨c, C, h⟩ := h in ⟨c, C, λ n hn, by simpa using h n hn⟩⟩,
+  rintro ⟨c, x₀, h⟩,
+  obtain ⟨c', hc'⟩ := exists_nat_ge c,
+  refine ⟨c', x₀, λ n hn, nnreal.coe_le_coe.mp _⟩,
+  rw [nnreal.coe_mul, nnreal.coe_nat_cast],
+  refine trans (h n hn) (mul_le_mul hc' le_rfl nnreal.zero_le_coe (nat.cast_nonneg c')),
+end
+
 theorem nat_is_O_trans {f g h : ℕ → ℕ} (hfg : is_O f g filter.at_top)
   (hgh : is_O g h filter.at_top) : is_O f h filter.at_top :=
 begin
   rw nat_is_O_iff at hfg hgh ⊢,
+  obtain ⟨M, x₀, hM⟩ := hfg,
+  obtain ⟨M', x₀', hM'⟩ := hgh,
+  refine ⟨M * M', max x₀ x₀', λ x hx, _⟩,
+  rw max_le_iff at hx,
+  specialize hM x hx.1,
+  specialize hM' x hx.2,
+  rw mul_assoc,
+  refine trans hM (mul_le_mul le_rfl hM' zero_le' zero_le'),
+end
+
+theorem nnreal_is_O_trans {f g h : ℕ → ℝ≥0} (hfg : is_O f g filter.at_top)
+  (hgh : is_O g h filter.at_top) : is_O f h filter.at_top :=
+begin
+  rw nnreal_is_O_iff at hfg hgh ⊢,
   obtain ⟨M, x₀, hM⟩ := hfg,
   obtain ⟨M', x₀', hM'⟩ := hgh,
   refine ⟨M * M', max x₀ x₀', λ x hx, _⟩,
@@ -54,13 +95,21 @@ begin
     (polynomial.le_nat_degree_of_mem_supp x hx)) zero_le' zero_le'),
 end
 
+variables {α β : Type*}
+
 /-- Predicate for functions that have polynomial growth -/
-def poly_growth {α : Type*} [semiring α] [has_norm α] [preorder α] (f : α → α) := 
+def poly_growth [semiring α] [preorder α] [has_norm α] [has_norm β] (f : α → β) := 
 ∃ (p : polynomial α), is_O f (λ n, polynomial.eval n p) filter.at_top
 
 theorem poly_growth_iff (f : ℕ → ℕ) :
   poly_growth f ↔ ∃ (m : ℕ), is_O f (λ n, n ^ m) filter.at_top :=
 ⟨λ h, let ⟨p, hp⟩ := h in ⟨p.nat_degree, nat_is_O_trans hp (polynomial_is_O_pow_degree p)⟩,
   λ h, let ⟨m, hm⟩ := h in ⟨polynomial.X ^ m, by simpa⟩⟩
+
+theorem poly_growth_iff' (f : ℕ → ℝ≥0) :
+  poly_growth f ↔ ∃ (m : ℕ), is_O f (λ n, n ^ m) filter.at_top :=
+begin
+  sorry,
+end 
 
 end nat_asymptotics

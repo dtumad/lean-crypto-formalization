@@ -1,15 +1,18 @@
 import comp
 import nat_asymptotics
 import to_mathlib
+import data.real.nnreal
+
+open_locale nnreal
 
 universes u v w
 
 -- TODO: look more closely at explicit vs. implicit parameters
 
 /-- Represents a cost assignment model to Lean functions -/
-def function_cost_model := ∀ {A : Type u} {B : Type v}, (A → B) → ℕ → Prop
-def comp_cost_model := ∀ {A : Type}, Comp A → ℕ → Prop
-def oracle_comp_cost_model := ∀ {A B C : Type}, Comp.Oracle_Comp A B C → (ℕ → ℕ) → Prop
+def function_cost_model := ∀ {A : Type u} {B : Type v}, (A → B) → ℝ≥0 → Prop
+def comp_cost_model := ∀ {A : Type}, Comp A → ℝ≥0 → Prop
+def oracle_comp_cost_model := ∀ {A B C : Type}, Comp.Oracle_Comp A B C → (ℝ≥0 → ℝ≥0) → Prop
 
 /-- Defines an extensible axiomatic cost model for Lean functions.
   This constant exists over arbitrary universes `u` and `v` until use,
@@ -21,20 +24,20 @@ namespace has_cost
 variables {A : Type u} {B : Type v} {C : Type w}
 
 /-- Axioms for deriving costs of functions from related functions -/
-axiom has_cost_of_le {f : A → B} {n m : ℕ} (hnm : n ≤ m) :
+axiom has_cost_of_le {f : A → B} {n m : ℝ≥0} (hnm : n ≤ m) :
   has_cost f n → has_cost f m
 
-axiom has_cost_compose {f : A → B} {g : A → B → C} {n1 n2 n3 : ℕ} :
+axiom has_cost_compose {f : A → B} {g : A → B → C} {n1 n2 n3 : ℝ≥0} :
     has_cost f n1 → has_cost g n2 → (∀ a, has_cost (g a) n3) 
       → has_cost (λ a, g a (f a)) (n1 + n2 + n3)
 
-axiom has_cost_uncurry {f : A → B → C} {n1 n2 : ℕ} :
+axiom has_cost_uncurry {f : A → B → C} {n1 n2 : ℝ≥0} :
     has_cost f n1 → (∀ a, has_cost (f a) n2) → has_cost (function.uncurry f) (n1 + n2)
 
-axiom has_cost_of_uncurry {f : A → B → C} {n : ℕ} :
+axiom has_cost_of_uncurry {f : A → B → C} {n : ℝ≥0} :
     has_cost (function.uncurry f) n → has_cost f n
 
-axiom has_cost_of_uncurry' {f : A → B → C} {n : ℕ} {a : A} :
+axiom has_cost_of_uncurry' {f : A → B → C} {n : ℝ≥0} {a : A} :
     has_cost (function.uncurry f) n → has_cost (f a) n
 
 /-- Costs of basic commonly used functions -/
@@ -54,31 +57,31 @@ axiom has_cost_ret {A : Type} [decidable_eq A] :
   has_cost (Comp.ret : A → Comp A) 0
 
 /-- Additional properties derived from the basic axioms -/
-@[simp] lemma has_cost_id {n : ℕ} : has_cost (id : A → A) n :=
+@[simp] lemma has_cost_id {n : ℝ≥0} : has_cost (id : A → A) n :=
 has_cost_of_le (zero_le n) has_cost_id'
 
-@[simp] lemma has_cost_const {b : B} {n : ℕ} : has_cost (λ _, b : A → B) n :=
+@[simp] lemma has_cost_const {b : B} {n : ℝ≥0} : has_cost (λ _, b : A → B) n :=
 has_cost_of_le (zero_le n) (has_cost_const' _)
 
-@[simp] lemma has_cost_fst {n : ℕ} : has_cost (prod.fst : A × B → A) n :=
+@[simp] lemma has_cost_fst {n : ℝ≥0} : has_cost (prod.fst : A × B → A) n :=
 has_cost_of_le (zero_le n) (has_cost_fst')
 
-@[simp] lemma has_cost_snd {n : ℕ} : has_cost (prod.snd : A × B → B) n :=
+@[simp] lemma has_cost_snd {n : ℝ≥0} : has_cost (prod.snd : A × B → B) n :=
 has_cost_of_le (zero_le n) (has_cost_snd')
 
-lemma has_cost_comp {f : A → B} {g : B → C} {n m : ℕ} : 
+lemma has_cost_comp {f : A → B} {g : B → C} {n m : ℝ≥0} : 
   has_cost f n → has_cost g m → has_cost (g ∘ f) (n + m) :=
 λ hf hg, by simpa using has_cost_compose hf (has_cost_const' _) (λ a, hg)
 
-lemma has_cost_comp_le {f : A → B} {g : B → C} {n m p : ℕ} (h : n + m ≤ p) :
+lemma has_cost_comp_le {f : A → B} {g : B → C} {n m p : ℝ≥0} (h : n + m ≤ p) :
   has_cost f n → has_cost g m → has_cost (g ∘ f) p :=
 λ hf hg, has_cost_of_le h (has_cost_comp hf hg)
 
-lemma has_cost_uncurry_le {f : A → B → C} {n1 n2 n3 : ℕ} (h : n1 + n2 ≤ n3) :
+lemma has_cost_uncurry_le {f : A → B → C} {n1 n2 n3 : ℝ≥0} (h : n1 + n2 ≤ n3) :
   has_cost f n1 → (∀ n, has_cost (f n) n2) → has_cost (function.uncurry f) n3 :=
 λ hf hg, has_cost_of_le h (has_cost_uncurry hf hg)
 
-lemma has_cost_curry {A B C : Type} {f : (A × B) → C} {n : ℕ} :
+lemma has_cost_curry {A B C : Type} {f : (A × B) → C} {n : ℝ≥0} :
   has_cost f n → has_cost (function.curry f) n :=
 λ hf, has_cost_of_uncurry (by simpa using hf)
 
@@ -111,7 +114,7 @@ lemma comp_cost_rnd_le {n m : ℕ} (hnm : n ≤ m) : comp_cost @fm (rnd n) m :=
 comp_cost.cost_le hnm comp_cost.cost_rnd
 
 def poly_time_Comp {A : Type} (c : ℕ → Comp A) :=
-  ∃ (f : ℕ → ℕ), poly_growth f ∧ (∀ n, comp_cost @has_cost (c n) (f n))
+  ∃ (f : ℕ → ℝ≥0), poly_growth f ∧ (∀ n, comp_cost @has_cost (c n) (f n))
 
 
 open Comp.Oracle_Comp
