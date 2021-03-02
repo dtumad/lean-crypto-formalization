@@ -128,7 +128,7 @@ inductive oracle_cost (fm : function_cost_model.{0 1}) (cm : comp_cost_model) : 
     oracle_cost oc n1 → fm od n2 → (∀ c, oracle_cost (od c) n3) 
       → oracle_cost (oc_bind oc od) (n1 + n2 + n3)
 | cost_run {A B C A' B' S : Type} [decidable_eq A] [decidable_eq B] [decidable_eq S]
-    {oc : Oracle_Comp A B C} {ob : S → A → Oracle_Comp A' B' (B × S)} {s : S} {n m : ℕ} {f g : ℕ → ℕ} :
+    {oc : Oracle_Comp A B C} {ob : S → A → Oracle_Comp A' B' (B × S)} {s : S} {n m : ℕ} {f g : ℝ≥0 → ℝ≥0} :
     oracle_cost oc f → fm ob n → (∀ s, fm (ob s) m) → (∀ s a, oracle_cost (ob s a) g) 
       → oracle_cost (oc_run oc ob s) (λ n, f (n + m + (g n)))
 | cost_le {A B C : Type} {oc : Oracle_Comp A B C} {n m : ℕ} (hnm : n ≤ m) :
