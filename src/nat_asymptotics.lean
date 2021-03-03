@@ -1,6 +1,7 @@
 import analysis.asymptotics.asymptotics
 import data.polynomial
 import data.real.nnreal
+import analysis.special_functions.polynomials
 
 universes u v
 
@@ -116,9 +117,40 @@ end is_O_at_top
 
 -- end
 
+lemma is_O_add {f f' g : ℚ → ℚ} (hf : is_O f g filter.at_top)
+  (hf' : is_O f' g filter.at_top) : (is_O (f + f') g filter.at_top) :=
+begin
+  rw is_O_at_top_iff at hf hf' ⊢,
+  obtain ⟨M, x₀, hf⟩ := hf,
+  obtain ⟨M', x₀', hf'⟩ := hf',
+  refine ⟨M + M', max x₀ x₀', λ x hx, _⟩,
+  rw max_le_iff at hx,
+  rw [pi.add_apply, add_mul],
+  refine trans (norm_add_le (f x) (f' x)) _,
+  refine add_le_add (hf x hx.1) (hf' x hx.2),
+end
+
+/-- Bootstrapping lemma for `is_O_const_add_iff` -/
+private lemma is_O_const_add_iff' {f g : ℚ → ℚ} {c : ℚ} (hc : c ≥ 0) :
+  is_O f g filter.at_top → is_O (λ x, f x + c) g filter.at_top :=
+begin
+  refine λ h, is_O_add h _,
+  rw is_O_at_top_iff,
+  sorry,
+  
+  
+  
+end
+
 lemma is_O_const_add_iff {f : ℚ → ℚ} {g : ℚ → ℚ} {c : ℚ} : 
   is_O (λ x, f x + c) g filter.at_top ↔ is_O f g filter.at_top :=
 begin
+  simp [is_O_at_top_iff],
+  refine ⟨λ h, _, λ h, _⟩,
+  {
+    obtain ⟨M, x₀, h⟩ := h,
+    sorry,
+  },
   sorry,
 end
 
@@ -126,6 +158,46 @@ end
   is_O (λ x, f x * x) (λ x, g x * x) filter.at_top ↔ is_O f g filter.at_top :=
 begin
   sorry,
+end
+
+lemma helper {a b : ℚ} {c : ℝ} (h : ∥a - b∥ ≤ c) : ∥a∥ ≤ ∥b∥ + c :=
+calc ∥a∥ = ∥a - b + b∥ : by rw sub_add_cancel a b
+    ... ≤ ∥a - b∥ + ∥b∥ : norm_add_le (a - b) b
+    ... ≤ c + ∥b∥ : add_le_add h le_rfl
+    ... ≤ ∥b∥ + c : by rw (add_comm c ∥b∥)
+
+theorem is_O_of_div_tends_to_finite {f g : ℚ → ℚ} (c : ℚ)
+  (h : filter.tendsto (f / g) filter.at_top (nhds c)) :
+  is_O f g filter.at_top :=
+begin
+  rw is_O_at_top_iff,
+  use (∥c∥ + 1),
+  rw filter.tendsto_iff_eventually at h,
+  have h' := @h (λ (x : ℚ), ∥x∥ ≤ ∥c∥ + 1) begin
+    rw filter.eventually_iff_exists_mem,
+    refine ⟨metric.ball c 1, metric.ball_mem_nhds c zero_lt_one, λ y hy, _⟩,
+    rw [metric.mem_ball, normed_field.dist_eq] at hy,
+    exact helper (le_of_lt hy),
+  end,
+  rw filter.eventually_at_top at h',
+  obtain ⟨x₀, h⟩ := h',
+  refine ⟨x₀, λ x hx, _⟩,
+  specialize h x hx,
+  simp at h,
+  rw div_le_iff sorry at h,
+  exact h,
+end
+
+/-- lim ≠ ∞ → is_O should be the method of proof -/
+lemma test (p : polynomial ℚ) (q : polynomial ℚ) (h : p.degree ≤ q.degree) :
+  is_O (λ x, polynomial.eval x p) (λ x, polynomial.eval x q) filter.at_top :=
+begin
+  rw le_iff_lt_or_eq at h,
+  cases h,
+  { have := polynomial.div_tendsto_zero_of_degree_lt p q h,
+    refine is_O_of_div_tends_to_finite 0 this },
+  { have := polynomial.div_tendsto_leading_coeff_div_of_degree_eq p q h,
+    refine is_O_of_div_tends_to_finite _ this }
 end
 
 lemma rat_polynomial_is_O_pow_degree (p : polynomial ℚ) :
