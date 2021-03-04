@@ -1,5 +1,5 @@
 import comp
-import nat_asymptotics
+import polynomial_asymptotics
 import to_mathlib
 import data.real.nnreal
 
@@ -114,7 +114,7 @@ lemma comp_cost_rnd_le {n m : ℕ} (hnm : n ≤ m) : comp_cost @fm (rnd n) m :=
 comp_cost.cost_le hnm comp_cost.cost_rnd
 
 def poly_time_Comp {A : Type} (c : ℕ → Comp A) :=
-  ∃ (f : ℕ → ℝ≥0), poly_growth f ∧ (∀ n, comp_cost @has_cost (c n) (f n))
+  ∃ (f : ℚ → ℚ), poly_growth f ∧ (∀ n, comp_cost @has_cost (c n) ⟨∥f n∥, norm_nonneg _⟩)
 
 
 open Comp.Oracle_Comp
