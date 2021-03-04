@@ -107,15 +107,14 @@ variables {fm : function_cost_model.{0 1}}
   comp_cost @fm (ret a) n :=
 comp_cost.cost_le (zero_le n) comp_cost.cost_ret
 
-@[simp] lemma comp_cost_rnd {n : ℕ} : comp_cost @fm (rnd n) n :=
+@[simp] lemma comp_cost_rnd (n : ℕ) : comp_cost @fm (rnd n) n :=
 comp_cost.cost_rnd
 
 lemma comp_cost_rnd_le {n m : ℕ} (hnm : n ≤ m) : comp_cost @fm (rnd n) m :=
 comp_cost.cost_le hnm comp_cost.cost_rnd
 
-def poly_time_Comp {A : Type} (c : ℕ → Comp A) :=
+def poly_time_Comp {A : ℕ → Type} (c : Π (n : ℕ), Comp (A n)) :=
   ∃ (f : ℚ → ℚ), poly_growth f ∧ (∀ n, comp_cost @has_cost (c n) ⟨∥f n∥, norm_nonneg _⟩)
-
 
 open Comp.Oracle_Comp
 

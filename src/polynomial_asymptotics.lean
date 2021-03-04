@@ -10,7 +10,7 @@ open_locale nnreal
 open asymptotics
 
 section to_mathlib
--- General facts that should probably be ported to mathlib
+-- General facts that should probably be ported to mathlib eventually
 
 lemma is_O_at_top_iff {α β γ : Type*} [nonempty α]
   [semilattice_sup α] [semilattice_sup β] [semilattice_sup γ]
@@ -28,8 +28,7 @@ calc ∥a∥ = ∥a - b + b∥ : by rw sub_add_cancel a b
 
 theorem is_O_at_top_of_div_tends_to_finite 
   {𝕜 α : Type*} [linear_order α] [nonempty α] [normed_linear_ordered_field 𝕜]
-  {f g : α → 𝕜} 
-  (hgf : ∀ᶠ x in filter.at_top, g x = 0 → f x = 0)
+  {f g : α → 𝕜} (hgf : ∀ᶠ x in filter.at_top, g x = 0 → f x = 0)
   (c : 𝕜) (h : filter.tendsto (f / g) filter.at_top (nhds c)) :
   is_O f g filter.at_top :=
 begin
@@ -63,7 +62,6 @@ lemma polynomial_exists_max_root {α : Type*} [integral_domain α]
   (p : polynomial α) (hp : p ≠ 0) :
   ∃ x₀, ∀ x, p.is_root x → x ≤ x₀ :=
 begin
-  let rootsl : list α := multiset.to_list p.roots,
   by_cases h : list.maximum (multiset.to_list p.roots) = none,
   { rw list.maximum_eq_none at h,
     refine ⟨0, λ a _, _⟩,
@@ -84,17 +82,15 @@ begin
   obtain ⟨x₀, hx₀⟩ := polynomial_exists_max_root p hp,
   rw filter.eventually_at_top,
   refine ⟨x₀ + 1, λ x hx h, _⟩,
-  specialize hx₀ x h,
-  refine absurd hx₀ _,
+  refine absurd (hx₀ x h) _,
   rw not_le,
   refine lt_of_lt_of_le _ hx,
   rw lt_add_iff_pos_right,
   refine zero_lt_one,  
 end
 
-lemma eventually_imp_help {α : Type*} {p q : α → Prop} {l : filter α}
-  (hpq : ∀ x, p x → q x) (h : ∀ᶠ x in l, p x) : 
-  ∀ᶠ x in l, q x :=
+lemma eventually_of_imp {α : Type*} {p q : α → Prop} {l : filter α}
+  (hpq : ∀ x, p x → q x) (h : ∀ᶠ x in l, p x) : ∀ᶠ x in l, q x :=
 filter.mem_sets_of_superset h hpq
 
 theorem polynomial.is_O_of_degree_le 
@@ -112,19 +108,15 @@ begin
       refine eq_bot_iff.mpr (trans h (eq_bot_iff.mp _)),
       rwa polynomial.degree_eq_bot,
     end,
-    rw le_iff_lt_or_eq at h,
-    cases h,
+    cases le_iff_lt_or_eq.mp h with h h,
     { have := polynomial.div_tendsto_zero_of_degree_lt p q h,
       refine is_O_at_top_of_div_tends_to_finite _ 0 this,
-      refine eventually_imp_help _ (q.eventually_no_roots hq),
-      refine λ x hx hx', absurd hx' hx,
-      },
+      refine eventually_of_imp _ (q.eventually_no_roots hq),
+      refine λ x hx hx', absurd hx' hx },
     { have := polynomial.div_tendsto_leading_coeff_div_of_degree_eq p q h,
       refine is_O_at_top_of_div_tends_to_finite _ _ this,
-      refine eventually_imp_help _ (q.eventually_no_roots hq),
-      refine λ x hx hx', absurd hx' hx,
-      },
-  }
+      refine eventually_of_imp _ (q.eventually_no_roots hq),
+      refine λ x hx hx', absurd hx' hx } }
 end
 
 end to_mathlib
@@ -146,6 +138,9 @@ poly_growth_const 1
 
 @[simp] lemma poly_growth_zero : poly_growth (0 : β → β) :=
 poly_growth_const 0
+
+@[simp] lemma poly_growth_id : poly_growth (id : β → β) :=
+⟨X, is_O_of_le filter.at_top (λ x, by simp)⟩
 
 variables {𝕜 : Type u} [normed_linear_ordered_field 𝕜] [order_topology 𝕜]
 
