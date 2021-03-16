@@ -35,7 +35,7 @@ begin
   rw is_O_at_top_iff,
   use (∥c∥ + 1),
   rw filter.tendsto_iff_eventually at h,
-  have h' := @h (λ (x : 𝕜), ∥x∥ ≤ ∥c∥ + 1) begin
+  let h' := @h (λ (x : 𝕜), ∥x∥ ≤ ∥c∥ + 1) begin
     rw filter.eventually_iff_exists_mem,
     refine ⟨metric.ball c 1, metric.ball_mem_nhds c zero_lt_one, λ y hy, _⟩,
     exact norm_le_norm_add_const_of_dist_le (le_of_lt hy),

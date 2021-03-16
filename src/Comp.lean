@@ -13,7 +13,7 @@ universes u v
 inductive Comp : Π (A : Type), Type 1
 | ret {A : Type} [hA : decidable_eq A] : Π (a : A), Comp A
 | bind {A B : Type} : Π (cb : Comp B) (ca : B → Comp A), Comp A
-| rnd : Π (n : ℕ), Comp (bitvec n)
+| rnd : Π (n : ℕ), Comp (bitvec n) -- TODO: allow any fintype here
 | repeat {A : Type} : Π (p : A → Prop) [decidable_pred p] (ca : Comp A) , Comp A
 
 namespace Comp
