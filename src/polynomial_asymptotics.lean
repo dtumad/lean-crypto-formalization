@@ -82,32 +82,25 @@ begin
   obtain ⟨x₀, hx₀⟩ := polynomial_exists_max_root p hp,
   rw filter.eventually_at_top,
   refine ⟨x₀ + 1, λ x hx h, _⟩,
-  refine absurd (hx₀ x h) _,
-  rw not_le,
-  refine lt_of_lt_of_le _ hx,
-  rw lt_add_iff_pos_right,
-  refine zero_lt_one,  
+  refine absurd (hx₀ x h) (not_le.mpr (lt_of_lt_of_le (lt_add_one x₀) hx)),
 end
 
 lemma eventually_of_imp {α : Type*} {p q : α → Prop} {l : filter α}
   (hpq : ∀ x, p x → q x) (h : ∀ᶠ x in l, p x) : ∀ᶠ x in l, q x :=
 filter.mem_sets_of_superset h hpq
 
-theorem polynomial.is_O_of_degree_le 
-  {𝕜 : Type*} [normed_linear_ordered_field 𝕜]
-  [order_topology 𝕜]
-  (p : polynomial 𝕜) (q : polynomial 𝕜)
-  (h : p.degree ≤ q.degree) :
+lemma polynomial.ne_zero_of_degree_ge_degree {R : Type*} [semiring R]
+  {p q : polynomial R} (hpq : p.degree ≤ q.degree) (hp : p ≠ 0) : q ≠ 0 :=
+polynomial.ne_zero_of_degree_gt (lt_of_lt_of_le (bot_lt_iff_ne_bot.mpr
+  (by rwa [ne.def, polynomial.degree_eq_bot])) hpq : q.degree > ⊥)
+
+theorem polynomial.is_O_of_degree_le {𝕜 : Type*} [normed_linear_ordered_field 𝕜] [order_topology 𝕜]
+  (p : polynomial 𝕜) (q : polynomial 𝕜) (h : p.degree ≤ q.degree) :
   is_O (λ x, polynomial.eval x p) (λ x, polynomial.eval x q) filter.at_top :=
 begin
   by_cases hp : p = 0,
   { simpa [hp] using is_O_zero (λ x, polynomial.eval x q) filter.at_top },
-  { have hq : q ≠ 0 := begin
-      refine λ hq, hp _,
-      rw ← polynomial.degree_eq_bot at hp ⊢,
-      refine eq_bot_iff.mpr (trans h (eq_bot_iff.mp _)),
-      rwa polynomial.degree_eq_bot,
-    end,
+  { have hq : q ≠ 0 := polynomial.ne_zero_of_degree_ge_degree h hp,
     cases le_iff_lt_or_eq.mp h with h h,
     { have := polynomial.div_tendsto_zero_of_degree_lt p q h,
       refine is_O_at_top_of_div_tends_to_finite _ 0 this,
