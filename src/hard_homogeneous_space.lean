@@ -6,45 +6,59 @@ universes u v
 
 section transitive_action
 
+-- TODO: add more theory and move this to mathlib
 class transitive_action (G X : Type u) [monoid G] extends mul_action G X :=
-(trans : ∀ (x y : X), ∃ (g : G), g • x = y)
+(transitive : ∀ (x y : X), ∃ (g : G), g • x = y)
 
 end transitive_action
 
+section homogeneous_space
+
+class homogenous_space (G X : Type u) [fintype G] [fintype X]
+  extends comm_group G, transitive_action G X :=
+(size_eq : fintype.card G = fintype.card X)
+
+variables {G X : Type u} [fintype G] [fintype X]
+
+instance homogenous_space.inhabited [homogenous_space G X] : inhabited G := ⟨1⟩
+
+@[simp] lemma different_action [homogenous_space G X] (g1 g2 : G) (x : X) :
+  g1 • x = g2 • x ↔ g1 = g2 :=
+begin
+  refine ⟨sorry, λ h, congr_arg _ h⟩,
+end
+
+@[simp] lemma no_fixed_points [homogenous_space G X] (g : G) (x : X) :
+  g • x = x ↔ g = 1 :=
+⟨λ h, (different_action g 1 x).mp (trans h (one_smul G x).symm), λ hg, hg.symm ▸ (one_smul G x)⟩
+
+end homogeneous_space
+
 section hard_homogeneous_space
 
--- class hard_homogeneous_space (G X : Type)
---   extends comm_group G, fintype G, transitive_action G X :=
--- (gmul_Comp : G → G → Comp G)
--- (gmul_Comp_semantics : ∀ x y, (gmul_Comp x y).support = {x * y})
--- (gmul_Comp_efficient : ∀ x y, comp_cost @has_cost (gmul_Comp x y) 0)
+class hard_homogeneous_space (G X : ℕ → Type) [∀ n, fintype (G n)] [∀ n, fintype (X n)]
+  [∀ n, homogenous_space (G n) (X n)] [∀ n, decidable_eq (G n)] :=
+(mul_efficient : poly_time_cost (λ n, (λ x, x.1 * x.2 : G n × G n → G n)))
+(inv_efficient : poly_time_cost (λ n, (λ x, x⁻¹ : G n → G n)))
+(smul_efficient : poly_time_cost (λ n, (λ x, x.1 • x.2 : G n × X n → X n)))
+(G_eq_efficient : poly_time_cost (λ n, (λ x, x.1 = x.2 : G n × G n → Prop)))
+(X_eq_efficient : poly_time_cost (λ n, (λ x, x.1 = x.2 : X n × X n → Prop)))
+(G_rnd_efficient : poly_time_Comp (λ n, Comp.rnd (G n)))
+(vectorization : ∀ (f : Π n, X n × X n → G n) (hf : ∀ n x, (f n x) • x.1 = x.2), ¬ poly_time_cost f)
 
--- class hard_homogeneous_space (G X : ℕ → Type) 
---   [∀ {n}, comm_group (G n)] [∀ {n}, transitive_action (G n) (X n)] :=
--- (gmul_Comp : ∀ n, G n → G n → Comp (G n))
--- (gmul_Comp_semantics : ∀ n x y, (gmul_Comp n x y).support = {x * y})
--- (gmul_Comp_efficient : poly_growth gmul_Comp)
--- (smul_Comp : ∀ n, G n → X n → Comp (X n))
--- (smul_Comp_semantics : ∀ n g x, (smul_Comp n g x).support = {g • x})
+variables (G X : ℕ → Type) [∀ n, fintype (G n)] [∀ n, fintype (X n)]
+variables [∀ n, homogenous_space (G n) (X n)] [∀ n, decidable_eq (G n)]
 
-def poly_time_has_cost {A B : ℕ → Type} (c : ∀ (n : ℕ), ((A n) → (B n))) :=
-  ∃ (f : ℕ → ℕ), poly_growth f ∧ (∀ n, has_cost (c n) (f n))
+lemma mul_right_efficient [H : hard_homogeneous_space G X] (g : Π n, G n) :
+  poly_time_cost (λ n, λ (x : G n), (g n) * x) :=
+let ⟨f, hf, hf'⟩ := H.mul_efficient in
+  ⟨f, hf, λ n, has_cost.has_cost_of_uncurry' (g n) (hf' n)⟩
 
-class hard_homogenous_space (G X : ℕ → Type)
-  [hG : ∀ n, comm_group (G n)] [∀ {n}, transitive_action (G n) (X n)] :=
-(G_mul_inefficient : ¬ poly_time_has_cost (λ n, (function.uncurry (hG n).mul : G n × G n → G n)))
-
-
-example (G X : ℕ → Type) [∀ n, comm_group (G n)] [∀ {n}, transitive_action (G n) (X n)]
-  [H : hard_homogenous_space G X] : false :=
+lemma mul_left_efficient [H : hard_homogeneous_space G X] (g : Π n, G n) :
+  poly_time_cost (λ n, λ (x : G n), x * (g n)) :=
 begin
-  apply H.G_mul_inefficient,
-  refine ⟨id, sorry, _⟩,
-  {
-    simp,
-    intro n,
-    
-  }
+  have := mul_right_efficient G X g,
+  refine poly_time_cost_ext this (λ n x, mul_comm (g n) x),
 end
 
 end hard_homogeneous_space
