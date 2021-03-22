@@ -17,7 +17,7 @@ private noncomputable def eval_distribution' (ca : Comp A) :
   well_formed_Comp ca → Σ (da : pmf A), plift (∀ (a : A), (da a ≠ 0 ↔ a ∈ ca.support)) :=
 begin
   refine ca.rec_on _ _ _ _,
-  { refine λ _ _ a _, ⟨pmf.pure a, plift.up (by simp)⟩ },
+  { exact λ _ _ a _, ⟨pmf.pure a, plift.up (by simp)⟩ },
   { refine λ A B ca cb db da h, _,
     rw well_formed_Comp_bind_iff at h,
     refine ⟨(db h.1).1.bind' (λ b hb, (da b (h.2 b ((plift.down (db h.1).2 b).mp hb))).1), 
@@ -32,9 +32,8 @@ begin
       simp only [not_or_distrib, ne.def, mul_eq_zero, dif_neg this],
       have := hb.1,
       rwa [← plift.down (db h.1).2, ← plift.down (da b (h.2 b this)).2] at hb } },
-  { refine λ n _, ⟨⟨λ v, ((2 : nnreal) ^ n)⁻¹, sum_bitvec_eq_one⟩, plift.up (λ v, _)⟩,
-    simp only [support_rnd, finset.mem_univ, iff_true, ne.def],
-    refine λ hn, two_ne_zero (pow_eq_zero (inv_eq_zero.mp hn) : (2 : nnreal) = 0) },
+  { introsI A _ _ _ _,
+    refine ⟨pmf.const A, plift.up (λ a, by simpa using card_ne_zero_of_inhabited)⟩ },
   { introsI A p hp ca da h,
     rw well_formed_Comp_repeat_iff at h,
     have : ∃ a (ha : p a), (da h.1).1 a ≠ 0,
@@ -60,9 +59,9 @@ lemma eval_distribution_support_eq_support (ca : Comp A) (hca : well_formed_Comp
   (eval_distribution ca hca).support = ca.support :=
 set.ext (λ a, eval_distribution_ne_zero_iff ca hca a)
 
-
 @[simp] lemma eval_distribution_ret [decidable_eq A] (a : A) (h : well_formed_Comp (ret a)) :
-  eval_distribution (ret a) h = pmf.pure a := rfl
+  eval_distribution (ret a) h = pmf.pure a := 
+rfl
 
 /-- If `ca b` is not well formed for all `b ∉ ca.support`, then we can only use `bind'`-/
 lemma eval_distribution_bind' (cb : Comp B) (ca : B → Comp A) 
@@ -80,8 +79,9 @@ lemma eval_distribution_bind (cb : Comp B) (ca : B → Comp A)
     (λ b, eval_distribution (ca b) (ha b)) :=
 trans (by reflexivity) (pmf.bind'_eq_bind (eval_distribution cb hb) _)
 
-@[simp] lemma eval_distribution_rnd {n : ℕ} (h : well_formed_Comp (rnd n)) :
-  eval_distribution (rnd n) h = ⟨λ v, ((2 : nnreal) ^ n)⁻¹, sum_bitvec_eq_one⟩ := rfl
+@[simp] lemma eval_distribution_rnd {A : Type} [inhabited A] [fintype A] [decidable_eq A] 
+  (h : well_formed_Comp (rnd A)) : eval_distribution (rnd A) h = pmf.const A := 
+rfl
 
 end eval_distribution
 

@@ -13,7 +13,7 @@ universes u v
 inductive Comp : Π (A : Type), Type 1
 | ret {A : Type} [hA : decidable_eq A] : Π (a : A), Comp A
 | bind {A B : Type} : Π (cb : Comp B) (ca : B → Comp A), Comp A
-| rnd : Π (n : ℕ), Comp (bitvec n) -- TODO: allow any fintype here
+| rnd (A : Type) [inhabited A] [fintype A] [decidable_eq A] : Comp A -- TODO: allow any fintype here
 | repeat {A : Type} : Π (p : A → Prop) [decidable_pred p] (ca : Comp A) , Comp A
 
 namespace Comp
@@ -27,7 +27,7 @@ variables {A B C : Type}
 def comp_base_exists (ca : Comp A) : A :=
 @Comp.rec_on (λ A _, A) A ca
   (λ A hA a, a) (λ A B cb ca b fa, fa b)
-  (λ n, vector.repeat tt n) (λ A p hp ca a, a)
+  (λ A hA fA dA, @arbitrary A hA) (λ A p hp ca a, a)
 
 /-- Because only `ret` and `rnd` terminate computation, and `ret` requires `decidable_eq A`,
   every computation must return a type with decidable equality.
@@ -35,7 +35,7 @@ def comp_base_exists (ca : Comp A) : A :=
 def decidable_eq_of_Comp (ca : Comp A) : decidable_eq A :=
 @Comp.rec_on (λ A _, decidable_eq A) A ca
   (λ A hA a, hA) (λ A B cb ca hcb hca, hca cb.comp_base_exists)
-  (λ n, (by apply_instance)) (λ A p hp ca h, h)
+  (λ A hA fA dA, dA) (λ A p hp ca h, h)
 
 /-- alias because this situation is very common due to use of `bUnion` in support -/
 def decidable_eq_of_Comp' (cb : Comp B) (ca : B → Comp A) : decidable_eq A :=
@@ -48,7 +48,7 @@ section support
 def support (ca : Comp A) : finset A :=
 ca.rec (λ _ _ a, {a}) 
   (λ A B cb ca hcb hca, @finset.bUnion B A (decidable_eq_of_Comp' cb ca) hcb hca)
-  (λ n, finset.univ) (λ A p hp ca, @finset.filter _ p hp)
+  (λ A hA fA dA, @finset.univ A fA) (λ A p hp ca, @finset.filter _ p hp)
 
 @[simp] lemma support_ret [decidable_eq A] (a : A) :
   (ret a).support = {a} := rfl
@@ -63,10 +63,11 @@ ca.rec (λ _ _ a, {a})
 @[simp] lemma mem_support_bind_iff (cb : Comp B) (ca : B → Comp A) (a : A) :
   a ∈ (Comp.bind cb ca).support ↔ ∃ (b : B), b ∈ cb.support ∧ a ∈ (ca b).support := by simp
 
-@[simp] lemma support_rnd {n : ℕ} : (rnd n).support = finset.univ := rfl
+@[simp] lemma support_rnd [inhabited A] [fintype A] [decidable_eq A] : 
+  (rnd A).support = finset.univ := rfl
 
-@[simp] lemma mem_support_rnd {n : ℕ} (b : bitvec n) : 
-  b ∈ (rnd n).support := by simp
+@[simp] lemma mem_support_rnd [inhabited A] [fintype A] [decidable_eq A] (a : A) : 
+  a ∈ (rnd A).support := by simp
 
 @[simp] lemma support_repeat (ca : Comp A) (p : A → Prop) [decidable_pred p] :
   (repeat p ca).support = ca.support.filter p := rfl
@@ -90,15 +91,16 @@ inductive well_formed_Comp : ∀ {A : Type}, Comp A → Prop
     (hcb : well_formed_Comp cb) 
     (hca : ∀ b ∈ cb.support, well_formed_Comp (ca b)) :
     well_formed_Comp (bind cb ca)
-| well_formed_rnd {n : ℕ} :
-    well_formed_Comp (rnd n)
-| well_formed_repeat {A : Type} (p : A → Prop) [decidable_pred p] (ca : Comp A) 
+| well_formed_rnd {A : Type} [inhabited A] [fintype A] [decidable_eq A] :
+    well_formed_Comp (rnd A)
+| well_formed_repeat {A : Type} (p : A → Prop) [decidable_pred p] (ca : Comp A)
     (hca : well_formed_Comp ca) (hpca : (repeat p ca).support.nonempty) :
     well_formed_Comp (repeat p ca)
 
 open well_formed_Comp
 
-@[simp] lemma well_formed_Comp_ret [decidable_eq A] (a : A) : well_formed_Comp (ret a) :=
+@[simp] lemma well_formed_Comp_ret [decidable_eq A] (a : A) : 
+  well_formed_Comp (ret a) :=
 well_formed_ret a
 
 @[simp] lemma well_formed_Comp_bind_iff (cb : Comp B) (ca : B → Comp A) :
@@ -110,7 +112,8 @@ begin
   split; assumption,
 end
 
-@[simp] lemma well_formed_Comp_rnd (n : ℕ) : well_formed_Comp (rnd n) :=
+@[simp] lemma well_formed_Comp_rnd [inhabited A] [fintype A] [decidable_eq A] : 
+  well_formed_Comp (rnd A) :=
 well_formed_rnd
 
 @[simp] lemma well_formed_Comp_repeat_iff (p : A → Prop) [hp : decidable_pred p] (ca : Comp A) :
@@ -125,12 +128,12 @@ end
 theorem support_nonempty_of_well_formed_Comp (ca : Comp A)
   (hca : well_formed_Comp ca) : ca.support.nonempty :=
 begin
-  induction hca with _ _ _ _ _ cb ca _ _ hcb_ih hca_ih n _ _ _ _ _ ha _,
+  induction hca with _ _ _ _ _ cb ca _ _ hcb_ih hca_ih A hA fA dA _ _ _ _ _ ha _,
   { simp },
   { obtain ⟨b, hb⟩ := hcb_ih,
     obtain ⟨a, ha⟩ := hca_ih b hb,
     exact ⟨a, (mem_support_bind_iff cb ca a).2 ⟨b, hb, ha⟩⟩ },
-  { exact ⟨(rnd n).comp_base_exists, mem_support_rnd _⟩ },
+  { exact ⟨@arbitrary A hA, @mem_support_rnd A hA fA dA _⟩ },
   { exact ha },
 end
 
@@ -168,7 +171,7 @@ def decidable_eq_of_oracle_comp (oc : Oracle_Comp A B C) :
   (λ A B C D oc od hoc hod t h, hod (oracle_comp_base_exists oc t) t h)
   (λ A B C A' B' S hA hB hS oc ob s hoc hob t h, @prod.decidable_eq C S 
     (hoc (λ a, (oracle_comp_base_exists (ob s a) t).1) 
-      (λ a, @decidable_eq_of_prod_left B S (hob s a t h) s)) hS)
+      (λ a, @decidable_eq_of_prod_left B S ⟨s⟩ (hob s a t h))) hS)
 
 end Oracle_Comp
 
