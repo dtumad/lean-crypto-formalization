@@ -27,12 +27,13 @@ calc ∥a∥ = ∥a - b + b∥ : by rw sub_add_cancel a b
     ... ≤ ∥b∥ + c : by rw (add_comm c ∥b∥)
 
 theorem is_O_at_top_of_div_tends_to_finite 
-  {𝕜 α : Type*} [linear_order α] [nonempty α] [normed_linear_ordered_field 𝕜]
+  {𝕜 α : Type*} [linear_order α] [nonempty α] [normed_field 𝕜]
   {f g : α → 𝕜} (hgf : ∀ᶠ x in filter.at_top, g x = 0 → f x = 0)
   (c : 𝕜) (h : filter.tendsto (f / g) filter.at_top (nhds c)) :
   is_O f g filter.at_top :=
 begin
-  rw is_O_at_top_iff,
+    simp only [is_O_iff, filter.eventually_at_top],
+  
   use (∥c∥ + 1),
   rw filter.tendsto_iff_eventually at h,
   let h' := @h (λ (x : 𝕜), ∥x∥ ≤ ∥c∥ + 1) begin
@@ -44,6 +45,7 @@ begin
   obtain ⟨x₀, h⟩ := hgf,
   obtain ⟨x₀', h'⟩ := h',
   refine ⟨max x₀ x₀', λ x hx, _⟩,
+  rw ge_iff_le at hx,
   rw max_le_iff at hx,
   specialize h x hx.1,
   specialize h' x hx.2,
