@@ -101,6 +101,10 @@ lemma has_cost_ext {f g : A → B} {n : ℚ} (hf : has_cost f n)
   has_cost (prod.snd : A × B → B) n ↔ n ≥ 0 :=
 ⟨ge_zero_of_has_cost, λ h, has_cost_of_le h has_cost_snd⟩
 
+@[simp] lemma has_cost_ret_iff {A : Type} [decidable_eq A] {n : ℚ} :
+  has_cost (Comp.ret : A → Comp A) n ↔ n ≥ 0 :=
+⟨ge_zero_of_has_cost, λ h, has_cost_of_le h has_cost_ret⟩
+
 lemma has_cost_comp {f : A → B} {g : B → C} {n m : ℚ} : 
   has_cost f n → has_cost g m → has_cost (g ∘ f) (n + m) :=
 λ hf hg, by simpa using has_cost_compose hf (has_cost_const _) (λ _, hg)
@@ -145,29 +149,32 @@ comp_cost.cost_rnd_bitvec
 lemma comp_cost_rnd_le {n m : ℕ} (hnm : n ≤ m) : comp_cost @fm (rnd (bitvec n)) m :=
 comp_cost.cost_le hnm comp_cost.cost_rnd_bitvec
 
-open Comp.Oracle_Comp
+-- open Comp.Oracle_Comp
 
-inductive oracle_cost (fm : function_cost_model.{0 1}) (cm : comp_cost_model) : oracle_comp_cost_model
-| cost_query {A B : Type} {a : A} :
-    oracle_cost (oc_query a : Oracle_Comp A B B) id
-| cost_ret {A B C : Type} {c : Comp C} {n : ℕ} :
-    cm c n → oracle_cost (oc_ret c : Oracle_Comp A B C) n
-| cost_bind {A B C D : Type} {oc : Oracle_Comp A B C} {od : C → Oracle_Comp A B D} {n1 n2 n3 : ℕ} :
-    oracle_cost oc n1 → fm od n2 → (∀ c, oracle_cost (od c) n3) 
-      → oracle_cost (oc_bind oc od) (n1 + n2 + n3)
-| cost_run {A B C A' B' S : Type} [decidable_eq A] [decidable_eq B] [decidable_eq S]
-    {oc : Oracle_Comp A B C} {ob : S → A → Oracle_Comp A' B' (B × S)} {s : S} {n m : ℕ} {f g : ℚ → ℚ} :
-    oracle_cost oc f → fm ob n → (∀ s, fm (ob s) m) → (∀ s a, oracle_cost (ob s a) g) 
-      → oracle_cost (oc_run oc ob s) (λ n, f (n + m + (g n)))
-| cost_le {A B C : Type} {oc : Oracle_Comp A B C} {n m : ℕ} (hnm : n ≤ m) :
-    oracle_cost oc n → oracle_cost oc m
+-- inductive oracle_cost (fm : function_cost_model.{0 1}) (cm : comp_cost_model) : oracle_comp_cost_model
+-- | cost_query {A B : Type} {a : A} :
+--     oracle_cost (oc_query a : Oracle_Comp A B B) id
+-- | cost_ret {A B C : Type} {c : Comp C} {n : ℕ} :
+--     cm c n → oracle_cost (oc_ret c : Oracle_Comp A B C) n
+-- | cost_bind {A B C D : Type} {oc : Oracle_Comp A B C} {od : C → Oracle_Comp A B D} {n1 n2 n3 : ℕ} :
+--     oracle_cost oc n1 → fm od n2 → (∀ c, oracle_cost (od c) n3) 
+--       → oracle_cost (oc_bind oc od) (n1 + n2 + n3)
+-- | cost_run {A B C A' B' S : Type} [decidable_eq A] [decidable_eq B] [decidable_eq S]
+--     {oc : Oracle_Comp A B C} {ob : S → A → Oracle_Comp A' B' (B × S)} {s : S} {n m : ℕ} {f g : ℚ → ℚ} :
+--     oracle_cost oc f → fm ob n → (∀ s, fm (ob s) m) → (∀ s a, oracle_cost (ob s a) g) 
+--       → oracle_cost (oc_run oc ob s) (λ n, f (n + m + (g n)))
+-- | cost_le {A B C : Type} {oc : Oracle_Comp A B C} {n m : ℕ} (hnm : n ≤ m) :
+--     oracle_cost oc n → oracle_cost oc m
 
 end comp_cost
 
 section poly_time_Comp
 
-def poly_time_cost {A B : ℕ → Type} (c : Π n, A n → B n) :=
+def poly_time_cost {A B : ℕ → Type u} (c : Π n, A n → B n) :=
   ∃ (f : ℚ → ℚ), poly_growth f ∧ (∀ n, has_cost (c n) (f n))
+
+def log_poly_time_cost {A B : ℕ → Type} (c : Π n, A n → B n) :=
+  ∃ (f : ℝ → ℝ), log_poly_growth f ∧ (∀ n, has_cost (c n) (f n))
 
 theorem poly_time_cost_ext {A B : ℕ → Type} {c c' : Π n, A n → B n}
   (hc : poly_time_cost c) (h : ∀ n a, c n a = c' n a) :

@@ -2,6 +2,7 @@ import analysis.asymptotics.asymptotics
 import data.polynomial
 import data.real.nnreal
 import analysis.special_functions.polynomials
+import analysis.special_functions.exp_log
 
 universes u v
 
@@ -120,37 +121,45 @@ section poly_growth
 open polynomial
 
 /-- Predicate for functions that have polynomial growth -/
-def poly_growth {β : Type u} [semiring β] [preorder β] [has_norm β] (f : β → β) :=
-∃ (p : polynomial β), is_O f (λ a, eval a p) filter.at_top
+def poly_growth {R : Type u} [normed_ring R] [preorder R] (f : R → R) :=
+∃ (p : polynomial R), is_O f (λ a, eval a p) filter.at_top
 
-variables {β : Type u} [semiring β] [preorder β] [has_norm β]
+variables {R : Type u} [normed_ring R] [preorder R]
 
-@[simp] lemma poly_growth_const (b : β) : poly_growth (λ _, b) :=
+@[simp] lemma poly_growth_const (b : R) : poly_growth (λ _, b) :=
 ⟨C b, is_O_of_le filter.at_top (λ x, by simp)⟩
 
-@[simp] lemma poly_growth_one : poly_growth (1 : β → β) :=
+@[simp] lemma poly_growth_one : poly_growth (1 : R → R) :=
 poly_growth_const 1
 
-@[simp] lemma poly_growth_zero : poly_growth (0 : β → β) :=
+@[simp] lemma poly_growth_zero : poly_growth (0 : R → R) :=
 poly_growth_const 0
 
-@[simp] lemma poly_growth_id : poly_growth (id : β → β) :=
+@[simp] lemma poly_growth_id : poly_growth (id : R → R) :=
 ⟨X, is_O_of_le filter.at_top (λ x, by simp)⟩
 
 variables {𝕜 : Type u} [normed_linear_ordered_field 𝕜] [order_topology 𝕜]
 
+lemma poly_growth_mul {f g : 𝕜 → 𝕜} (hf : poly_growth f)
+  (hg : poly_growth g) : poly_growth (f * g) :=
+let ⟨p, hp⟩ := hf, ⟨q, hq⟩ := hg in 
+  ⟨p * q, by simpa using is_O.mul hp hq⟩
+
+lemma poly_growth_pow {f : 𝕜 → 𝕜} (hf : poly_growth f) (n : ℕ) :
+  poly_growth (f ^ n) :=
+nat.rec_on n ((pow_zero f) ▸ poly_growth_one)
+  (λ n hn, (pow_succ f n) ▸ poly_growth_mul hf hn)
+
 lemma poly_growth_iff_is_O_monomial (f : 𝕜 → 𝕜) :
   poly_growth f ↔ ∃ (n : ℕ), is_O f (λ b, b ^ n) filter.at_top :=
 ⟨λ h, let ⟨p, hp⟩ := h in ⟨p.nat_degree, is_O.trans hp (is_O.trans
-  (is_O_of_degree_le p (X ^ p.nat_degree) (by simp)) 
-  (is_O_of_le filter.at_top (λ x, by simp)))⟩, λ h, let ⟨n, hn⟩ := h in 
-  ⟨X ^ n, is_O.trans hn (is_O_of_le filter.at_top (λ x, by simp))⟩⟩
+  (is_O_of_degree_le p (X ^ p.nat_degree) (by simp)) (by simp [is_O_refl]))⟩, 
+λ h, let ⟨n, hn⟩ := h in ⟨X ^ n, is_O.trans hn (is_O_of_le filter.at_top (λ x, by simp))⟩⟩
 
 lemma poly_growth_add {f g : 𝕜 → 𝕜} (hf : poly_growth f)
   (hg : poly_growth g) : poly_growth (f + g) :=
+let ⟨p, hp⟩ := hf, ⟨q, hq⟩ := hg in
 begin
-  obtain ⟨p, hp⟩ := hf,
-  obtain ⟨q, hq⟩ := hg,
   by_cases hpq : p = 0 ∨ q = 0,
   { cases hpq with hp0 hq0,
     { simp only [hp0, eval_zero] at hp,
@@ -162,17 +171,40 @@ begin
       (is_O.trans hq (is_O_of_degree_le q (p * q) (mul_comm q p ▸ (degree_le_mul_left _ hpq.1))))⟩ }
 end
 
-lemma poly_growth_mul {f g : 𝕜 → 𝕜} (hf : poly_growth f)
-  (hg : poly_growth g) : poly_growth (f * g) :=
-let ⟨p, hp⟩ := hf in let ⟨q, hq⟩ := hg in 
-  ⟨p * q, by simpa using is_O.mul hp hq⟩
+end poly_growth
 
-lemma poly_growth_pow {f : 𝕜 → 𝕜} (hf : poly_growth f) (n : ℕ) :
-  poly_growth (f ^ n) :=
+section log_poly_growth
+open polynomial
+open real
+
+def log_poly_growth (f : ℝ → ℝ) := 
+∃ (k : ℕ), is_O f (λ a, (log a) ^ k) filter.at_top
+
+lemma log_poly_growth_iff (f : ℝ → ℝ) :
+  log_poly_growth f ↔ ∃ (k : ℕ), is_O f (λ a, (log a) ^ k) filter.at_top :=
+iff.rfl
+
+lemma log_poly_growth_iff_is_O_log_pow (f : ℝ → ℝ) :
+  log_poly_growth f ↔ ∃ (p : polynomial ℝ), is_O f (λ a, eval (log a) p) filter.at_top :=
 begin
-  induction n with n hn,
-  { refine (pow_zero f) ▸ poly_growth_one },
-  { refine (pow_succ f n) ▸ poly_growth_mul hf hn }
+  refine ⟨λ h, let ⟨k, hk⟩ := h in ⟨X ^ k, by simpa only [eval_X, eval_pow]⟩, _⟩,
+  rintro ⟨p, hp⟩,
+  refine ⟨p.nat_degree, is_O.trans hp _⟩,
+  suffices : is_O ((λ a, eval a p) ∘ log) ((λ a, eval a (X ^ p.nat_degree)) ∘ log) filter.at_top,
+  by simpa using this,
+  exact is_O.comp_tendsto (polynomial.is_O_of_degree_le _ _ (by simp)) tendsto_log_at_top,
 end
 
-end poly_growth
+@[simp] lemma log_poly_growth_const (b : ℝ) : log_poly_growth (λ _, b) :=
+⟨0, by simpa using is_O_const_const b (zero_ne_one.symm : (1 : ℝ) ≠ 0) filter.at_top⟩
+
+@[simp] lemma log_poly_growth_one : log_poly_growth 1 :=
+log_poly_growth_const 1
+
+@[simp] lemma log_poly_growth_zero : log_poly_growth 0 :=
+log_poly_growth_const 0
+
+@[simp] lemma log_poly_growth_log : log_poly_growth real.log :=
+⟨1, by simp [is_O_refl]⟩
+
+end log_poly_growth
