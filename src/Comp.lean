@@ -16,7 +16,6 @@ inductive Comp : Π (A : Type), Type 1
 | rnd (A : Type) [inhabited A] [fintype A] [decidable_eq A] : Comp A -- TODO: allow any fintype here
 | repeat {A : Type} : Π (p : A → Prop) [decidable_pred p] (ca : Comp A) , Comp A
 
-#check option
 namespace Comp
 open Comp
 
