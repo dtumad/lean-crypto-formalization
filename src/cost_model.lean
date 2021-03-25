@@ -42,7 +42,7 @@ constant has_cost : function_cost_model.{u v}
 
 namespace has_cost
 
-variables {A : Type u} {B : Type v} {C : Type w}
+variables {A : Type u} {B : Type v} {C : Type w} {D : Type*}
 
 /-- Axioms for deriving costs of functions from related functions -/
 axiom ge_zero_of_has_cost {f : A → B} {n : ℝ} (h : has_cost f n) : n ≥ 0
@@ -62,6 +62,9 @@ axiom has_cost_of_uncurry {f : A → B → C} {n : ℝ} :
 
 axiom has_cost_of_uncurry' {f : A → B → C} {n : ℝ} (a : A) :
     has_cost (function.uncurry f) n → has_cost (f a) n
+
+axiom has_cost_pair {f : A → B} {g : C → D} {n m : ℝ} :
+    has_cost f n → has_cost g m → has_cost (λ (x : A × C), (f x.fst, g x.snd)) (n + m)
 
 /-- Costs of basic commonly used functions -/
 axiom has_cost_const (b : B) :
@@ -120,6 +123,10 @@ lemma has_cost_uncurry_le {f : A → B → C} {n1 n2 n3 : ℝ} (h : n1 + n2 ≤ 
 lemma has_cost_curry {A B C : Type} {f : (A × B) → C} {n : ℝ} :
   has_cost f n → has_cost (function.curry f) n :=
 λ hf, has_cost_of_uncurry (by simpa using hf)
+
+lemma has_cost_pair_le {f : A → B} {g : C → D} {n m p : ℝ} (h : n + m ≤ p) :
+    has_cost f n → has_cost g m → has_cost (λ (x : A × C), (f x.fst, g x.snd)) (p) :=
+λ hf hg, has_cost_of_le h (has_cost_pair hf hg)
 
 end has_cost
 
@@ -223,3 +230,15 @@ lemma log_poly_time_cost_ext {A B : ℕ → Type} {c c' : Π n, A n → B n}
 (funext (λ n, funext (λ a, h n a)) : c = c') ▸ hc
 
 end complexity_class
+
+section poly_time_reduction
+
+def poly_time_reducible {A B C D : ℕ → Type} (p : ∀ {n}, A n → B n → Prop) (q : ∀ {n}, C n → D n → Prop) :=
+(∃ (f : Π n, A n → B n), poly_time_cost f ∧ ∀ n a, p a (f n a)) → 
+  (∃ (g : Π n, C n → D n), poly_time_cost g ∧ ∀ n c, q c (g n c))
+
+def log_poly_time_reducible {A B C D : ℕ → Type} (p : ∀ n, A n → B n → Prop) (q : ∀ n, C n → D n → Prop) :=
+(∃ (f : Π {n}, A n → B n), log_poly_time_cost @f ∧ ∀ n a, p n a (f a)) → 
+  (∃ (g : Π {n}, C n → D n), log_poly_time_cost @g ∧ ∀ n c, q n c (g c))
+
+end poly_time_reduction

@@ -217,6 +217,13 @@ lemma log_poly_growth_pow {f : ℝ → ℝ} (hf : log_poly_growth f) (n : ℕ) :
 nat.rec_on n ((pow_zero f) ▸ log_poly_growth_one)
   (λ n hn, (pow_succ f n) ▸ log_poly_growth_mul hf hn)
 
+lemma log_poly_growth_add {f g : ℝ → ℝ} (hf : log_poly_growth f)
+  (hg : log_poly_growth g) : log_poly_growth (f + g) :=
+let ⟨a, ha⟩ := hf, ⟨b, hb⟩ := hg in 
+begin
+  sorry,
+end
+
 -- theorem poly_growth_of_log_poly_growth {f : ℝ → ℝ} (hf : log_poly_growth f) :
 --   poly_growth f :=
 -- begin

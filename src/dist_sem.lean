@@ -1,4 +1,4 @@
-import Comp
+import comp
 import measure_theory.probability_mass_function
 import data.real.nnreal
 
@@ -84,5 +84,9 @@ trans (by reflexivity) (pmf.bind'_eq_bind (eval_distribution cb hb) _)
 rfl
 
 end eval_distribution
+
+/-- Probability of the output of a `Comp A` being a member of a given set -/
+noncomputable def Pr {A : Type} (ca : Comp A) (h : Comp.well_formed_Comp ca) (p : set A) :=
+ca.support.sum (ca.eval_distribution h)
 
 end Comp
