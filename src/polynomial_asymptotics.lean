@@ -207,6 +207,16 @@ log_poly_growth_const 0
 @[simp] lemma log_poly_growth_log : log_poly_growth real.log :=
 ⟨1, by simp [is_O_refl]⟩
 
+lemma log_poly_growth_mul {f g : ℝ → ℝ} (hf : log_poly_growth f)
+  (hg : log_poly_growth g) : log_poly_growth (f * g) :=
+let ⟨a, ha⟩ := hf, ⟨b, hb⟩ := hg in 
+  ⟨a + b, by simpa [pow_add] using is_O.mul ha hb⟩
+
+lemma log_poly_growth_pow {f : ℝ → ℝ} (hf : log_poly_growth f) (n : ℕ) :
+  log_poly_growth (f ^ n) :=
+nat.rec_on n ((pow_zero f) ▸ log_poly_growth_one)
+  (λ n hn, (pow_succ f n) ▸ log_poly_growth_mul hf hn)
+
 -- theorem poly_growth_of_log_poly_growth {f : ℝ → ℝ} (hf : log_poly_growth f) :
 --   poly_growth f :=
 -- begin
