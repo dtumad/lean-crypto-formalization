@@ -207,4 +207,20 @@ log_poly_growth_const 0
 @[simp] lemma log_poly_growth_log : log_poly_growth real.log :=
 ⟨1, by simp [is_O_refl]⟩
 
+theorem poly_growth_of_log_poly_growth {f : ℝ → ℝ} (hf : log_poly_growth f) :
+  poly_growth f :=
+begin
+  obtain ⟨k, hk⟩ := hf,
+  refine ⟨X ^ k, is_O.trans hk _⟩,
+  simp only [eval_X, eval_pow],
+  rw is_O_iff,
+  refine ⟨1, _⟩,
+  rw filter.eventually_at_top,
+  refine ⟨1, λ x hx, _⟩,
+  simp [real.norm_eq_abs],
+  by_cases hk : k = 0,
+  { simp [hk] },
+  { sorry } 
+end
+
 end log_poly_growth
