@@ -1,4 +1,4 @@
-import comp
+import foundations.Comp
 import measure_theory.probability_mass_function
 import data.real.nnreal
 

@@ -1,6 +1,7 @@
-import comp
+import foundations.Comp
 import polynomial_asymptotics
 import to_mathlib
+
 import data.real.nnreal
 import analysis.special_functions.exp_log
 
