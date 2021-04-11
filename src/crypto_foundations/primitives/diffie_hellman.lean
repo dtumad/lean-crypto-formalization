@@ -1,5 +1,5 @@
-import cost_model
-import dist_sem
+import computational_complexity.cost_model
+import crypto_foundations.dist_sem
 
 open_locale big_operators
 

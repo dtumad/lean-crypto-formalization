@@ -1,5 +1,5 @@
-import foundations.Comp
-import polynomial_asymptotics
+import crypto_foundations.comp
+import computational_complexity.polynomial_asymptotics
 import to_mathlib
 
 import data.real.nnreal
@@ -8,7 +8,7 @@ import analysis.special_functions.exp_log
 /-!
 # Cost Model for shallow embedding
 
-This file defines a cost model for lean functions, and for instances of `Comp`.
+This file defines a cost model for lean functions, and for instances of `comp`.
 Costs are specified by an axiomatically defined proposition `has_cost f n`.
 Particular proofs may need to assume additional hypotheses about `has_cost`,
   but properties of most basic functions are defined are defined here.
@@ -33,8 +33,8 @@ universes u v w
 
 /-- Represents a cost assignment model to Lean functions -/
 def function_cost_model := ∀ {A : Type u} {B : Type v}, (A → B) → ℝ → Prop
-def comp_cost_model := ∀ {A : Type}, Comp A → ℝ → Prop
-def oracle_comp_cost_model := ∀ {A B C : Type}, Comp.Oracle_Comp A B C → (ℝ → ℝ) → Prop
+def comp_cost_model := ∀ {A : Type}, comp A → ℝ → Prop
+def oracle_comp_cost_model := ∀ {A B C : Type}, comp.oracle_comp A B C → (ℝ → ℝ) → Prop
 
 /-- Defines an extensible axiomatic cost model for Lean functions.
   This constant exists over arbitrary universes `u` and `v` until use,
@@ -81,7 +81,7 @@ axiom has_cost_snd :
     has_cost (prod.snd : A × B → B) 0
 
 axiom has_cost_ret {A : Type} [decidable_eq A] :
-  has_cost (Comp.ret : A → Comp A) 0
+  has_cost (comp.ret : A → comp A) 0
 
 /-- Additional properties derived from the basic axioms -/
 
@@ -106,7 +106,7 @@ lemma has_cost_ext {f g : A → B} {n : ℝ} (hf : has_cost f n)
 ⟨ge_zero_of_has_cost, λ h, has_cost_of_le h has_cost_snd⟩
 
 @[simp] lemma has_cost_ret_iff {A : Type} [decidable_eq A] {n : ℝ} :
-  has_cost (Comp.ret : A → Comp A) n ↔ n ≥ 0 :=
+  has_cost (comp.ret : A → comp A) n ↔ n ≥ 0 :=
 ⟨ge_zero_of_has_cost, λ h, has_cost_of_le h has_cost_ret⟩
 
 lemma has_cost_comp {f : A → B} {g : B → C} {n m : ℝ} : 
@@ -132,20 +132,20 @@ lemma has_cost_pair_le {f : A → B} {g : C → D} {n m p : ℝ} (h : n + m ≤ 
 end has_cost
 
 section comp_cost
-open Comp
+open comp
 
-/-- Cost of a computation `Comp A`, relative to a given `function_cost_model` -/
+/-- Cost of a computation `comp A`, relative to a given `function_cost_model` -/
 inductive comp_cost : comp_cost_model
 | cost_ret {A : Type} [decidable_eq A] {a : A} :
     comp_cost (ret a) 0
-| cost_bind {A B : Type} {ca : Comp A} {cb : A → Comp B} {n1 n2 n3 : ℕ} :
+| cost_bind {A B : Type} {ca : comp A} {cb : A → comp B} {n1 n2 n3 : ℕ} :
     comp_cost ca n1 → has_cost cb n2 → (∀ a, comp_cost (cb a) n3) → comp_cost (bind ca cb) (n1 + n2 + n3)
 | cost_rnd_bitvec {n : ℕ} :
     comp_cost (rnd (bitvec n)) ↑n
-| cost_le {A : Type} {ca : Comp A} {n m : ℝ} (hnm : n ≤ m) :
+| cost_le {A : Type} {ca : comp A} {n m : ℝ} (hnm : n ≤ m) :
     comp_cost ca n → comp_cost ca m
 
-theorem ge_zero_of_comp_cost {A : Type} {ca : Comp A} {n : ℝ} (h : comp_cost ca n) :
+theorem ge_zero_of_comp_cost {A : Type} {ca : comp A} {n : ℝ} (h : comp_cost ca n) :
   n ≥ 0 :=
 begin
   refine h.rec_on _ _ _ _,
@@ -167,21 +167,21 @@ comp_cost.cost_rnd_bitvec
 lemma comp_cost_rnd_le {n m : ℕ} (hnm : n ≤ m) : comp_cost (rnd (bitvec n)) m :=
 comp_cost.cost_le (nat.cast_le.mpr hnm) comp_cost.cost_rnd_bitvec
 
--- open Comp.Oracle_Comp
+-- open comp.oracle_comp
 
 -- inductive oracle_cost (fm : function_cost_model.{0 1}) (cm : comp_cost_model) : oracle_comp_cost_model
 -- | cost_query {A B : Type} {a : A} :
---     oracle_cost (oc_query a : Oracle_Comp A B B) id
--- | cost_ret {A B C : Type} {c : Comp C} {n : ℕ} :
---     cm c n → oracle_cost (oc_ret c : Oracle_Comp A B C) n
--- | cost_bind {A B C D : Type} {oc : Oracle_Comp A B C} {od : C → Oracle_Comp A B D} {n1 n2 n3 : ℕ} :
+--     oracle_cost (oc_query a : oracle_comp A B B) id
+-- | cost_ret {A B C : Type} {c : comp C} {n : ℕ} :
+--     cm c n → oracle_cost (oc_ret c : oracle_comp A B C) n
+-- | cost_bind {A B C D : Type} {oc : oracle_comp A B C} {od : C → oracle_comp A B D} {n1 n2 n3 : ℕ} :
 --     oracle_cost oc n1 → fm od n2 → (∀ c, oracle_cost (od c) n3) 
 --       → oracle_cost (oc_bind oc od) (n1 + n2 + n3)
 -- | cost_run {A B C A' B' S : Type} [decidable_eq A] [decidable_eq B] [decidable_eq S]
---     {oc : Oracle_Comp A B C} {ob : S → A → Oracle_Comp A' B' (B × S)} {s : S} {n m : ℕ} {f g : ℚ → ℚ} :
+--     {oc : oracle_comp A B C} {ob : S → A → oracle_comp A' B' (B × S)} {s : S} {n m : ℕ} {f g : ℚ → ℚ} :
 --     oracle_cost oc f → fm ob n → (∀ s, fm (ob s) m) → (∀ s a, oracle_cost (ob s a) g) 
 --       → oracle_cost (oc_run oc ob s) (λ n, f (n + m + (g n)))
--- | cost_le {A B C : Type} {oc : Oracle_Comp A B C} {n m : ℕ} (hnm : n ≤ m) :
+-- | cost_le {A B C : Type} {oc : oracle_comp A B C} {n m : ℕ} (hnm : n ≤ m) :
 --     oracle_cost oc n → oracle_cost oc m
 
 end comp_cost
@@ -206,18 +206,18 @@ complexity_class (λ n, A n → B n) log_poly_growth (λ n, has_cost) c
   log_poly_time_cost c ↔ ∃ (f : ℝ → ℝ), log_poly_growth f ∧ (∀ n, has_cost (c n) (f n)) :=
 iff.rfl
 
-def poly_time_Comp {A : ℕ → Type} (c : Π n, Comp (A n)) :=
-complexity_class (λ n, Comp (A n)) poly_growth (λ n, comp_cost) c
+def poly_time_comp {A : ℕ → Type} (c : Π n, comp (A n)) :=
+complexity_class (λ n, comp (A n)) poly_growth (λ n, comp_cost) c
 
-@[simp] lemma poly_time_Comp_iff {A : ℕ → Type} (c : Π n, Comp (A n)) :
-  poly_time_Comp c ↔ ∃ (f : ℝ → ℝ), poly_growth f ∧ (∀ n, comp_cost (c n) (f n)) :=
+@[simp] lemma poly_time_comp_iff {A : ℕ → Type} (c : Π n, comp (A n)) :
+  poly_time_comp c ↔ ∃ (f : ℝ → ℝ), poly_growth f ∧ (∀ n, comp_cost (c n) (f n)) :=
 iff.rfl
 
-def log_poly_time_Comp {A : ℕ → Type} (c : Π n, Comp (A n)) :=
-complexity_class (λ n, Comp (A n)) log_poly_growth (λ n, comp_cost) c
+def log_poly_time_comp {A : ℕ → Type} (c : Π n, comp (A n)) :=
+complexity_class (λ n, comp (A n)) log_poly_growth (λ n, comp_cost) c
 
-@[simp] lemma log_poly_time_Comp_iff {A : ℕ → Type} (c : Π n, Comp (A n)) :
-  log_poly_time_Comp c ↔ ∃ (f : ℝ → ℝ), log_poly_growth f ∧ (∀ n, comp_cost (c n) (f n)) :=
+@[simp] lemma log_poly_time_comp_iff {A : ℕ → Type} (c : Π n, comp (A n)) :
+  log_poly_time_comp c ↔ ∃ (f : ℝ → ℝ), log_poly_growth f ∧ (∀ n, comp_cost (c n) (f n)) :=
 iff.rfl
 
 lemma poly_time_cost_ext {A B : ℕ → Type} {c c' : Π n, A n → B n}

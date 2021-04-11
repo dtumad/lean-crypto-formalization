@@ -1,5 +1,5 @@
-import comp
-import cost_model
+import crypto_foundations.comp
+import computational_complexity.cost_model
 import group_theory.group_action
 
 universes u v
@@ -43,7 +43,7 @@ class hard_homogeneous_space (G X : ℕ → Type) [∀ n, fintype (G n)] [∀ n,
 (smul_efficient : log_poly_time_cost (λ n, (λ x, x.1 • x.2 : G n × X n → X n)))
 (G_eq_efficient : log_poly_time_cost (λ n, (λ x, x.1 = x.2 : G n × G n → Prop)))
 (X_eq_efficient : log_poly_time_cost (λ n, (λ x, x.1 = x.2 : X n × X n → Prop)))
-(G_rnd_efficient : log_poly_time_Comp (λ n, Comp.rnd (G n)))
+(G_rnd_efficient : log_poly_time_comp (λ n, comp.rnd (G n)))
 (vectorization : ∀ (f : Π n, X n × X n → G n) (hf : ∀ n x, (f n x) • x.1 = x.2), ¬ poly_time_cost f)
 
 variables (G X : ℕ → Type) [∀ n, fintype (G n)] [∀ n, fintype (X n)]

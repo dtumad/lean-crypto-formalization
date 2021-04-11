@@ -224,20 +224,36 @@ begin
   sorry,
 end
 
--- theorem poly_growth_of_log_poly_growth {f : ℝ → ℝ} (hf : log_poly_growth f) :
---   poly_growth f :=
--- begin
---   obtain ⟨k, hk⟩ := hf,
---   refine ⟨X ^ k, is_O.trans hk _⟩,
---   simp only [eval_X, eval_pow],
---   rw is_O_iff,
---   refine ⟨1, _⟩,
---   rw filter.eventually_at_top,
---   refine ⟨1, λ x hx, _⟩,
---   simp [real.norm_eq_abs],
---   by_cases hk : k = 0,
---   { simp [hk] },
---   { sorry } 
--- end
+lemma log_le_of_nonneg {x : ℝ} (hx : x ≥ 0) : log x ≤ x :=
+begin
+  cases lt_or_eq_of_le hx with hx' hx',
+  { calc log x ≤ log (exp x) : (log_le_log hx' (exp_pos x)).mpr 
+        (trans (by linarith) (add_one_le_exp_of_nonneg hx))
+      ... = x : by simp },
+  { simp [← hx'] }
+end
+
+lemma neg_log_le_of_nonneg {x : ℝ} (hx : x ≥ 1) : - log x ≤ x :=
+calc - log x ≤ 0 : neg_nonpos.mpr $ log_nonneg hx
+        ... ≤ 1 : zero_le_one
+        ... ≤ x : hx
+
+theorem poly_growth_of_log_poly_growth {f : ℝ → ℝ} (hf : log_poly_growth f) :
+  poly_growth f :=
+begin
+  obtain ⟨k, hk⟩ := hf,
+  refine ⟨X ^ k, is_O.trans hk _⟩,
+  simp only [eval_X, eval_pow],
+  rw is_O_iff,
+  refine ⟨1, _⟩,
+  rw filter.eventually_at_top,
+  refine ⟨1, λ x hx, _⟩,
+  simp [real.norm_eq_abs],
+  by_cases hk : k = 0,
+  { simp [hk] },
+  { refine pow_le_pow_of_le_left (abs_nonneg (log x)) (abs_le_abs _ _) k,
+    { refine log_le_of_nonneg (by linarith) },
+    { refine neg_log_le_of_nonneg (by linarith) } } 
+end
 
 end log_poly_growth
