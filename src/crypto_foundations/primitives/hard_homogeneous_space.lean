@@ -56,9 +56,6 @@ let ⟨f, hf, hf'⟩ := H.mul_efficient in
 
 lemma mul_left_efficient [H : hard_homogeneous_space G X] (g : Π n, G n) :
   log_poly_time_cost (λ n, λ (x : G n), x * (g n)) :=
-begin
-  have := mul_right_efficient G X g,
-  refine log_poly_time_cost_ext this (λ n x, mul_comm (g n) x),
-end
+log_poly_time_cost_ext (mul_right_efficient G X g) (λ n x, mul_comm (g n) x)
 
 end hard_homogeneous_space

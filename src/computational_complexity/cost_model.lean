@@ -167,22 +167,22 @@ comp_cost.cost_rnd_bitvec
 lemma comp_cost_rnd_le {n m : ℕ} (hnm : n ≤ m) : comp_cost (rnd (bitvec n)) m :=
 comp_cost.cost_le (nat.cast_le.mpr hnm) comp_cost.cost_rnd_bitvec
 
--- open comp.oracle_comp
+open comp.oracle_comp
 
--- inductive oracle_cost (fm : function_cost_model.{0 1}) (cm : comp_cost_model) : oracle_comp_cost_model
--- | cost_query {A B : Type} {a : A} :
---     oracle_cost (oc_query a : oracle_comp A B B) id
--- | cost_ret {A B C : Type} {c : comp C} {n : ℕ} :
---     cm c n → oracle_cost (oc_ret c : oracle_comp A B C) n
--- | cost_bind {A B C D : Type} {oc : oracle_comp A B C} {od : C → oracle_comp A B D} {n1 n2 n3 : ℕ} :
---     oracle_cost oc n1 → fm od n2 → (∀ c, oracle_cost (od c) n3) 
---       → oracle_cost (oc_bind oc od) (n1 + n2 + n3)
--- | cost_run {A B C A' B' S : Type} [decidable_eq A] [decidable_eq B] [decidable_eq S]
---     {oc : oracle_comp A B C} {ob : S → A → oracle_comp A' B' (B × S)} {s : S} {n m : ℕ} {f g : ℚ → ℚ} :
---     oracle_cost oc f → fm ob n → (∀ s, fm (ob s) m) → (∀ s a, oracle_cost (ob s a) g) 
---       → oracle_cost (oc_run oc ob s) (λ n, f (n + m + (g n)))
--- | cost_le {A B C : Type} {oc : oracle_comp A B C} {n m : ℕ} (hnm : n ≤ m) :
---     oracle_cost oc n → oracle_cost oc m
+inductive oracle_cost (fm : function_cost_model.{0 1}) (cm : comp_cost_model) : oracle_comp_cost_model
+| cost_query {A B : Type} {a : A} :
+    oracle_cost (oc_query a : oracle_comp A B B) id
+| cost_ret {A B C : Type} {c : comp C} {n : ℕ} :
+    cm c n → oracle_cost (oc_ret c : oracle_comp A B C) n
+| cost_bind {A B C D : Type} {oc : oracle_comp A B C} {od : C → oracle_comp A B D} {n1 n2 n3 : ℕ} :
+    oracle_cost oc n1 → fm od n2 → (∀ c, oracle_cost (od c) n3) 
+      → oracle_cost (oc_bind oc od) (n1 + n2 + n3)
+| cost_run {A B C A' B' S : Type} [decidable_eq A] [decidable_eq B] [decidable_eq S]
+    {oc : oracle_comp A B C} {ob : S → A → oracle_comp A' B' (B × S)} {s : S} {n m : ℕ} {f g : ℝ → ℝ} :
+    oracle_cost oc f → fm ob n → (∀ s, fm (ob s) m) → (∀ s a, oracle_cost (ob s a) g) 
+      → oracle_cost (oc_run oc ob s) (λ n, f (n + m + (g n)))
+| cost_le {A B C : Type} {oc : oracle_comp A B C} {n m : ℕ} (hnm : n ≤ m) :
+    oracle_cost oc n → oracle_cost oc m
 
 end comp_cost
 
