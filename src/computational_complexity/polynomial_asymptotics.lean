@@ -107,13 +107,23 @@ begin
     cases le_iff_lt_or_eq.mp h with h h,
     { have := polynomial.div_tendsto_zero_of_degree_lt p q h,
       refine is_O_at_top_of_div_tends_to_finite _ 0 this,
-      refine eventually_of_imp _ (q.eventually_no_roots hq),
+      refine filter.eventually_of_mem (q.eventually_no_roots hq) _,
       refine λ x hx hx', absurd hx' hx },
     { have := polynomial.div_tendsto_leading_coeff_div_of_degree_eq p q h,
       refine is_O_at_top_of_div_tends_to_finite _ _ this,
-      refine eventually_of_imp _ (q.eventually_no_roots hq),
+      refine filter.eventually_of_mem (q.eventually_no_roots hq) _,
       refine λ x hx hx', absurd hx' hx } }
 end
+
+lemma is_O_of_pow_le {α 𝕜 : Type*} [normed_linear_ordered_field 𝕜] {l : filter α}
+  {f : α → 𝕜} (hf : ∀ᶠ x in l, ∥f x∥ ≥ 1) {n m : ℕ} (hnm : n ≤ m) :
+  is_O (λ x, (f x) ^ n) (λ x, (f x) ^ m) l :=
+begin
+  rw is_O_iff,
+  refine ⟨1, filter.eventually_of_mem hf (λ x hx, _)⟩,
+  simp only [one_mul, normed_field.norm_pow],
+  refine pow_le_pow hx hnm,
+end 
 
 end to_mathlib
 
@@ -217,12 +227,17 @@ lemma log_poly_growth_pow {f : ℝ → ℝ} (hf : log_poly_growth f) (n : ℕ) :
 nat.rec_on n ((pow_zero f) ▸ log_poly_growth_one)
   (λ n hn, (pow_succ f n) ▸ log_poly_growth_mul hf hn)
 
-lemma log_poly_growth_add {f g : ℝ → ℝ} (hf : log_poly_growth f)
+lemma log_ge_of_ge_exp {x y : ℝ} (h : x ≥ exp y) : log x ≥ y :=
+calc y = log (exp y) : (log_exp y).symm
+      ... ≤ log x : (log_le_log (exp_pos y) (lt_of_lt_of_le (exp_pos y) h)).mpr h
+
+theorem log_poly_growth_add {f g : ℝ → ℝ} (hf : log_poly_growth f)
   (hg : log_poly_growth g) : log_poly_growth (f + g) :=
 let ⟨a, ha⟩ := hf, ⟨b, hb⟩ := hg in 
-begin
-  sorry,
-end
+have hx : ∀ᶠ (x : ℝ) in filter.at_top, ∥log x∥ ≥ 1 := 
+  filter.eventually_at_top.mpr ⟨exp 1, λ x hx, le_abs.mpr (or.inl (log_ge_of_ge_exp hx))⟩,
+⟨max a b, is_O.add (is_O.trans ha (is_O_of_pow_le hx (le_max_left a b)))
+  (is_O.trans hb (is_O_of_pow_le hx (le_max_right a b)))⟩
 
 lemma log_le_of_nonneg {x : ℝ} (hx : x ≥ 0) : log x ≤ x :=
 begin
