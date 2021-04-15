@@ -22,10 +22,10 @@ begin
   { exact λ _ _ a _, ⟨pmf.pure a, plift.up (by simp)⟩ },
   { refine λ A B ca cb db da h, _,
     rw well_formed_comp_bind_iff at h,
-    refine ⟨(db h.1).1.bind' (λ b hb, (da b (h.2 b ((plift.down (db h.1).2 b).mp hb))).1), 
+    refine ⟨(db h.1).1.bind_on_support (λ b hb, (da b (h.2 b ((plift.down (db h.1).2 b).mp hb))).1), 
       plift.up (λ a, _)⟩,
-    rw [mem_support_bind_iff, pmf.bind'_apply,
-      tsum_ne_zero_iff _ (pmf.bind'.summable (db _).1 _ _)],
+    rw [mem_support_bind_iff, pmf.bind_on_support_apply,
+      tsum_ne_zero_iff (pmf.bind_on_support.summable (db _).1 _ _)],
     split; rintro ⟨b, hb⟩; refine ⟨b, _⟩,
     { simp only [not_or_distrib, ne.def, mul_eq_zero] at hb,
       simp only [dif_neg hb.left] at hb,
@@ -69,7 +69,7 @@ rfl
 lemma eval_distribution_bind' (cb : comp B) (ca : B → comp A) 
   (h : well_formed_comp (bind cb ca)) 
   (hb : well_formed_comp cb) (ha : ∀ b ∈ cb.support, well_formed_comp (ca b)) :
-  eval_distribution (bind cb ca) h = (eval_distribution cb hb).bind'
+  eval_distribution (bind cb ca) h = (eval_distribution cb hb).bind_on_support
     (λ b hb, (eval_distribution (ca b) 
       (ha b (by rwa eval_distribution_support_eq_support at hb)))) := rfl
 
@@ -79,7 +79,7 @@ lemma eval_distribution_bind (cb : comp B) (ca : B → comp A)
   (hb: well_formed_comp cb) (ha : ∀ b, well_formed_comp (ca b)) : 
   eval_distribution (bind cb ca) h = (eval_distribution cb hb).bind
     (λ b, eval_distribution (ca b) (ha b)) :=
-trans (by reflexivity) (pmf.bind'_eq_bind (eval_distribution cb hb) _)
+trans (by reflexivity) (pmf.bind_on_support_eq_bind (eval_distribution cb hb) _)
 
 @[simp] lemma eval_distribution_rnd {A : Type} [inhabited A] [fintype A] [decidable_eq A] 
   (h : well_formed_comp (rnd A)) : eval_distribution (rnd A) h = pmf.const A := 
@@ -88,6 +88,6 @@ rfl
 end eval_distribution
 
 /-- Probability of a `comp bool` returning true -/
-def Pr (ca : comp bool) (h : well_formed_comp ca) : ℝ≥0 := ca.eval_distribution h bool.tt
+def comp.Pr (ca : comp bool) (h : well_formed_comp ca) : ℝ≥0 := ca.eval_distribution h bool.tt
 
 end comp

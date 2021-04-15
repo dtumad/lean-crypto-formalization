@@ -1,8 +1,8 @@
 [package]
 name = "crypto-formalization"
 version = "0.1"
-lean_version = "leanprover-community/lean:3.26.0"
+lean_version = "leanprover-community/lean:3.28.0"
 path = "src"
 
 [dependencies]
-mathlib = {git = "https://github.com/leanprover-community/mathlib", rev = "d62d793797e65a37ee2eac6e9fceb93047d2e2b4"}
+mathlib = {git = "https://github.com/leanprover-community/mathlib", rev = "4b835cc1bcdee18dc983a9499073b1b7e37410a1"}
