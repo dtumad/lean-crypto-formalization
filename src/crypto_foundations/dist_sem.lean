@@ -88,6 +88,7 @@ rfl
 end eval_distribution
 
 /-- Probability of a `comp bool` returning true -/
-def comp.Pr (ca : comp bool) (h : well_formed_comp ca) : ℝ≥0 := ca.eval_distribution h bool.tt
+def Pr (ca : comp bool) (h : well_formed_comp ca) : ℝ≥0 := 
+ca.eval_distribution h bool.tt
 
 end comp

@@ -199,7 +199,7 @@ complexity_class (λ n, A n → B n) poly_growth (λ n, has_cost) c
   poly_time_cost c ↔ ∃ (f : ℝ → ℝ), poly_growth f ∧ (∀ n, has_cost (c n) (f n)) :=
 iff.rfl
 
-def log_poly_time_cost {A B : ℕ → Type} (c : Π n, A n → B n) :=
+def log_poly_time_cost {A B : ℕ → Type*} (c : Π n, A n → B n) :=
 complexity_class (λ n, A n → B n) log_poly_growth (λ n, has_cost) c
 
 @[simp] lemma log_poly_time_cost_iff {A B : ℕ → Type*} (c : Π n, A n → B n) :

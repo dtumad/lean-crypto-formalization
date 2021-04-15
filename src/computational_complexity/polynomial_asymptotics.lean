@@ -34,6 +34,10 @@ end to_mathlib
 section poly_growth
 open polynomial
 
+/-- TODO: Define this better -/
+def negligable {α R : Type u} [normed_ring R] [preorder α] (f : α → R) :=
+filter.tendsto f filter.at_top (nhds 0)
+
 /-- Predicate for functions that have polynomial growth -/
 def poly_growth {R : Type u} [normed_ring R] [preorder R] (f : R → R) :=
 ∃ (p : polynomial R), is_O f (λ a, eval a p) filter.at_top
