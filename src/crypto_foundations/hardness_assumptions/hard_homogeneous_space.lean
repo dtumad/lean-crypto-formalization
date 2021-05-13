@@ -43,10 +43,8 @@ exists_unique_of_exists_of_unique (transitive_action.exists_smul_eq x y)
 def vectorization [homogeneous_space G X] (x y : X) : G :=
 fintype.choose _ (transitive_action_unique x y)
 
-local notation `δ` := vectorization
-
 lemma vectorization_smul_eq [homogeneous_space G X] (x y : X) :
-  (δ x y : G) • x = y :=
+  (vectorization x y : G) • x = y :=
 fintype.choose_spec (λ g, g • x = y) _
 
 end homogeneous_space
@@ -125,10 +123,10 @@ let ⟨f, hf, hf'⟩ := H.mul_efficient in
 lemma mul_left_efficient [algorithmic_homogeneous_space G X] (g : Π n, G n) :
   log_poly_time_cost (λ n, λ (x : G n), x * (g n)) :=
 log_poly_time_cost_ext (mul_right_efficient G X g) (λ n x, mul_comm (g n) x)
-
+ 
 class hard_homogeneous_space (G X : ℕ → Type) [∀ n, fintype (G n)] [∀ n, fintype (X n)]
-  [∀ n, inhabited (X n)]
-  [∀ n, decidable_eq (G n)] [∀ n, decidable_eq (X n)] [∀ n, homogeneous_space (G n) (X n)]
+  [∀ n, inhabited (X n)] [∀ n, decidable_eq (G n)] [∀ n, decidable_eq (X n)] 
+  [∀ n, homogeneous_space (G n) (X n)]
   extends algorithmic_homogeneous_space G X :=
 (vectorization_hard : ∀ (f : Π n, X n × X n → comp (G n))
   (hf : ∀ n x y, (f n (x, y)).well_formed_comp) (h : poly_time_cost f),
