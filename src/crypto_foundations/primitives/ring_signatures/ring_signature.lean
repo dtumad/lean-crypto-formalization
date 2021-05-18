@@ -1,8 +1,15 @@
 import crypto_foundations.dist_sem
 import data.list.basic
 
+/-!
+# Ring Signatures
+
+This file defines ring signatures and ring signature schemes, and their cryptographic properties.
+-/
+
 section ring_signature
 
+/-- Definition of a -/
 structure ring_signature (M S PK SK : Type) :=
 -- Generate a pair of a public key and a secret key
 (generate_keys : comp (PK × SK))

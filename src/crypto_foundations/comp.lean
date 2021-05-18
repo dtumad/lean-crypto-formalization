@@ -1,7 +1,17 @@
 import data.bitvec.basic
 import to_mathlib
 
-universes u v
+/-!
+# Model of Nondeterministic Computation
+
+This file defines related notions of `comp A` and `oracle_comp B C A`,
+which represent nondeterministic computations of elements of type `A`.
+`oracle_comp B C A` further extends this to be a computation with an oracle from `B` to `C`.
+
+The support of a computation is further defined to be the possible outputs of the computation.
+For the actual probability distributions of the computation, see `eval_distribution` in `dist_sem.lean`.
+Well formed computations are defined so that they will have a nonempty support
+-/
 
 /-- computational monad to extend the base language of Lean for cryptography purposes.
   `rnd n` represents a computation of purely random bits, 
@@ -76,7 +86,8 @@ section well_formed_comp
 /-- A computation is well formed if both of the following conditions hold:
   1 - All sub-computations are well-formed (Trivial for `ret` and `rnd`)
   2 - The computation has non-empty support (Trivial for all but `repeat`)
-  Such a computation is gaurunteed to have a non-empty support -/
+  Such a computation is gaurunteed to have a non-empty support 
+  TODO: Try to make this a typeclass that can be infered automatically -/
 inductive well_formed_comp : ∀ {A : Type}, comp A → Prop
 | well_formed_ret {A : Type} [hA : decidable_eq A] (a : A) :
     well_formed_comp (@ret A hA a)

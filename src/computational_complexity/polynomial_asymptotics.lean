@@ -3,17 +3,20 @@ import analysis.special_functions.polynomials
 import analysis.special_functions.exp_log
 import to_mathlib
 
-open asymptotics
+/-!
+# Polynomial Growth
 
-section to_mathlib
+This file defines polynomial growth of functions via `poly_growth_in_parameter`.
+This definition is given in terms of a parameter function `k : α → R`,
+ which can specialize to e.g. `id` or `log` to represent polynomial and polylogarithmic growth resp.
 
-open real
-
-end to_mathlib
+The main defintion is given in terms of powers, see `poly_growth_in_parameter_iff` for an equivalent
+ formulation in terms of `polynomial`.
+-/
 
 section poly_growth_in_parameter
 
-open polynomial
+open polynomial asymptotics
 
 /-- A function `f` has polynomial growth in the parameter `k` if `f(x) = O(k(x)^n)` for some `n : ℕ`
   This is equivalent to `f(x) = O(p ∘ k)` for some polynomial `p`, see `poly_growth_in_parameter_iff` -/

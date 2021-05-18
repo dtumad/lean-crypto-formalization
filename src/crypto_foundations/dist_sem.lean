@@ -1,16 +1,24 @@
 import crypto_foundations.comp
 import measure_theory.probability_mass_function
-import data.real.nnreal
 
-import algebra.big_operators.basic
+/-!
+# Distributional Semantics of comp Evaluation
+
+This file defines the probability distribution of evaluation a `comp A`.
+The distribution is given by a probability mass function `pmf A` on the underlying type.
+This requires providing a proof of well formedness to ensure the distribution sums to `1`.
+
+From this we can define `comp.Pr_prop p`, where `p : A → Prop`,
+to be the probability that `p` holds on the result of the nondeterministic computation.
+-/
 
 open_locale big_operators nnreal
 
 noncomputable theory
 
-variables {A B : Type}
-
 namespace comp
+
+variables {A B : Type}
 
 section eval_distribution
 
@@ -57,6 +65,10 @@ theorem eval_distribution_ne_zero_iff (ca : comp A) (hca : well_formed_comp ca) 
   (eval_distribution ca hca a) ≠ 0 ↔ a ∈ ca.support :=
 (plift.down (eval_distribution' ca hca).snd) a
 
+lemma eval_distribution_eq_zero_of_not_mem_support (ca : comp A) (hca : well_formed_comp ca) :
+  ∀ a ∉ ca.support, ca.eval_distribution hca a = 0 :=
+λ a ha, not_not.1 $ (mt (eval_distribution_ne_zero_iff ca hca a).1) ha
+
 lemma eval_distribution_support_eq_support (ca : comp A) (hca : well_formed_comp ca) :
   (eval_distribution ca hca).support = ca.support :=
 set.ext (λ a, eval_distribution_ne_zero_iff ca hca a)
@@ -65,7 +77,8 @@ set.ext (λ a, eval_distribution_ne_zero_iff ca hca a)
   eval_distribution (ret a) h = pmf.pure a := 
 rfl
 
-/-- If `ca b` is not well formed for all `b ∉ ca.support`, then we can only use `bind'`-/
+/-- If `ca b` is not well formed for all `b ∉ ca.support`, then we can reduce to `bind'`-/
+@[simp]
 lemma eval_distribution_bind' (cb : comp B) (ca : B → comp A) 
   (h : well_formed_comp (bind cb ca)) 
   (hb : well_formed_comp cb) (ha : ∀ b ∈ cb.support, well_formed_comp (ca b)) :
@@ -74,6 +87,7 @@ lemma eval_distribution_bind' (cb : comp B) (ca : B → comp A)
       (ha b (by rwa eval_distribution_support_eq_support at hb)))) := rfl
 
 /-- If we generalize `ha` over all `b` we can further reduce the `bind'` above to `bind`-/
+@[simp]
 lemma eval_distribution_bind (cb : comp B) (ca : B → comp A)
   (h : well_formed_comp (bind cb ca))
   (hb: well_formed_comp cb) (ha : ∀ b, well_formed_comp (ca b)) : 
@@ -87,8 +101,47 @@ rfl
 
 end eval_distribution
 
+section probabilities
+
+/-- Probability of a property holding after evaluating the computation -/
+def Pr_prop {A : Type} (ca : comp A) (hca : well_formed_comp ca)
+  (p : A → Prop) [decidable_pred p] : ℝ≥0 :=
+∑' (a : A), if p a then ca.eval_distribution hca a else 0
+
+variables (ca : comp A) (hca : well_formed_comp ca)
+
+lemma Pr_prop_le_one (p : A → Prop) [decidable_pred p] : 
+  ca.Pr_prop hca p ≤ 1 :=
+have ∀ a, ite (p a) (ca.eval_distribution hca a) 0 ≤ ca.eval_distribution hca a,
+from λ a, ite_le (p a) le_rfl zero_le',
+(ca.eval_distribution hca).tsum_coe ▸ (tsum_le_tsum this 
+    (nnreal.summable_of_le this (ca.eval_distribution hca).summable_coe) ((ca.eval_distribution hca).summable_coe))
+
+theorem Pr_prop_of_unique [decidable_eq A] (p : A → Prop) [decidable_pred p]
+  (a : A) (ha : p a) (hp : ∀ a', p a' → a' = a) : 
+  ca.Pr_prop hca p = ca.eval_distribution hca a :=
+begin
+  have := tsum_ite_eq a (ca.eval_distribution hca a),
+  refine trans (tsum_congr (λ a', _)) this,
+  split_ifs with hpa' h,
+  { rw h },
+  { exact absurd (hp a' hpa') h },
+  { exact absurd (h.symm ▸ ha : p a') hpa' },
+  { refl }
+end
+
+lemma Pr_prop_eq [decidable_eq A] (a : A) :
+  ca.Pr_prop hca (λ x, x = a) = ca.eval_distribution hca a :=
+Pr_prop_of_unique ca hca (λ x, x = a) a rfl (λ _, id)
+
 /-- Probability of a `comp bool` returning true -/
 def Pr (ca : comp bool) (h : well_formed_comp ca) : ℝ≥0 := 
-ca.eval_distribution h bool.tt
+ca.Pr_prop h (λ x, x = tt)
+
+lemma Pr_eq_eval_distribution_tt (ca : comp bool) (hca : well_formed_comp ca) :
+  ca.Pr hca = ca.eval_distribution hca tt :=
+Pr_prop_eq ca hca tt
+
+end probabilities
 
 end comp

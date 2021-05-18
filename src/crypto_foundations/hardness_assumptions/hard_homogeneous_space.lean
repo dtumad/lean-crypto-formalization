@@ -1,6 +1,17 @@
 import crypto_foundations.dist_sem
-import computational_complexity.cost_model
+import computational_complexity.complexity_class
+import computational_complexity.negligable
 import group_theory.group_action
+
+/-!
+# Hard Homogeneous Spaces
+
+This file builds up the definition of a hard homogeneous space in several steps.
+
+`homogenous_space` is a transitive group action of `G` on a set `X` of equal size.
+`algorithmic_homogenous_space` further assumes the group action and group operations are efficiently computable.
+`hard_homogenous_space` further assumes vectorization and parallelization are hard.
+-/
 
 universes u v
 
@@ -14,6 +25,7 @@ end transitive_action
 
 section homogeneous_space
 
+/-- A `homogenous_space G X` extends a transitive action with a proof that `G` and `X` have the same size -/
 class homogeneous_space (G X : Type u) [fintype G] [fintype X] [decidable_eq X]
   extends comm_group G, transitive_action G X :=
 (size_eq : fintype.card G = fintype.card X)
@@ -40,8 +52,10 @@ exists_unique_of_exists_of_unique (transitive_action.exists_smul_eq x y)
   g • x = x ↔ g = 1 :=
 ⟨λ h, (different_action g 1 x).mp (trans h (one_smul G x).symm), λ hg, hg.symm ▸ (one_smul G x)⟩
 
+/-- The vectorization of `x` and `y` is the unique element of `g` sending `x` to `y` under the action.
+In the case where the homogenous space is the Diffie-Hellman action this is the discrete log -/
 def vectorization [homogeneous_space G X] (x y : X) : G :=
-fintype.choose _ (transitive_action_unique x y)
+fintype.choose (λ g, g • x = y) (transitive_action_unique x y)
 
 lemma vectorization_smul_eq [homogeneous_space G X] (x y : X) :
   (vectorization x y : G) • x = y :=
@@ -56,11 +70,11 @@ variables {G X : Type} [fintype G] [fintype X] [inhabited X]
 
 local notation `δ` := vectorization
 
-/-- Analogue of Discrete-logarithm asumption -/
-def vectorization_experiment (f : X × X → comp G) : comp bool :=
+/-- Analogue of Discrete-logarithm asumption game -/
+def vectorization_experiment (adversary : X × X → comp G) : comp bool :=
 (comp.bind (comp.rnd X) (λ x1, 
   comp.bind (comp.rnd X) (λ x2,
-  comp.bind (f (x1, x2)) (λ g,
+  comp.bind (adversary (x1, x2)) (λ g,
   comp.ret (g = vectorization x1 x2)))))
 
 @[simp] lemma well_formed_comp_vectorization_experiment {f : X × X → comp G} : 
@@ -68,19 +82,19 @@ def vectorization_experiment (f : X × X → comp G) : comp bool :=
     ∀ x y, (f (x, y)).well_formed_comp :=
 by simp [vectorization_experiment]
 
-noncomputable def vectorization_advantage (f : X × X → comp G) 
-  (hf : ∀ x y, (f (x, y)).well_formed_comp) : ℝ :=
-(comp.Pr (vectorization_experiment f) (by simpa))
+/-- Cectorization advantage of an adversary in the vectorization experiment. -/
+noncomputable def vectorization_advantage (adversary : X × X → comp G) 
+  (hf : ∀ x y, (adversary (x, y)).well_formed_comp) : ℝ :=
+(comp.Pr (vectorization_experiment adversary) (by simpa))
 - (comp.Pr (vectorization_experiment (λ (_ : X × X), comp.rnd G)) (by simp))
 
-/-- Analogue of the Diffie-Helman assumption-/
+/-- Analogue of the Diffie-Helman assumption game -/
 def parallelization_experiment (G : Type) [fintype G] [decidable_eq G]
-  [homogeneous_space G X]
-  (f : X × X × X → comp X) : comp bool :=
+  [homogeneous_space G X] (adversary : X × X × X → comp X) : comp bool :=
 (comp.bind (comp.rnd X) (λ x1,
   comp.bind (comp.rnd X) (λ x2,
   comp.bind (comp.rnd X) (λ x3,
-  comp.bind (f (x1, x2, x3) : comp X) (λ x4,
+  comp.bind (adversary (x1, x2, x3) : comp X) (λ x4,
   comp.ret ((δ x2 x1 : G) = (δ x4 x3 : G)))))))
 
 @[simp] lemma well_formed_comp_parallelization_experiment {f : X × X × X → comp X} : 
@@ -88,11 +102,12 @@ def parallelization_experiment (G : Type) [fintype G] [decidable_eq G]
     ∀ x y z, (f (x, y, z)).well_formed_comp :=
 by simp [parallelization_experiment]
 
+/-- Parallelization advantage of an adversary in parallelization experiment -/
 noncomputable def parallelization_advantage 
   (G : Type) [fintype G] [decidable_eq G]
-  [homogeneous_space G X](f : X × X × X → comp X) 
-  (hf : ∀ x y z, (f (x, y, z)).well_formed_comp) : ℝ :=
-(comp.Pr (parallelization_experiment G f) (by simpa))
+  [homogeneous_space G X](adversary : X × X × X → comp X) 
+  (hf : ∀ x y z, (adversary (x, y, z)).well_formed_comp) : ℝ :=
+(comp.Pr (parallelization_experiment G adversary) (by simpa))
 - (comp.Pr (parallelization_experiment G (λ (_ : X × X × X), comp.rnd X)) (by simp))
 
 end computational_advantages

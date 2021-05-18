@@ -6,6 +6,10 @@ import analysis.special_functions.polynomials
 
 -- Collection of random statements that maybe should eventually move to mathlib
 
+lemma ite_le {A : Type*} [has_le A] {a b c : A} (p : Prop) [decidable p]
+  (hab : b ≤ a) (hac : c ≤ a) : ite p b c ≤ a :=
+by split_ifs; assumption
+
 section asymptotics
 
 open asymptotics

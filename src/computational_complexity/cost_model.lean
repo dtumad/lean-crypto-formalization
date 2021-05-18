@@ -13,7 +13,7 @@ Costs are specified by an axiomatically defined proposition `has_cost f n`.
 Particular proofs may need to assume additional hypotheses about `has_cost`,
   but properties of most basic functions are defined are defined here.
 
-Since functions equiality in Lean is extensional, 
+Since function equiality in Lean is extensional, 
   `has_cost f n → has_cost g n` whenever `f` and `g` are pointwise equal (see `has_cost_ext`).
 Therefore `has_cost f n` should be thought of as saying that *some* procedure
   implementing the abstract function `f` has cost `n`,
@@ -185,61 +185,3 @@ inductive oracle_cost (fm : function_cost_model.{0 1}) (cm : comp_cost_model) : 
     oracle_cost oc n → oracle_cost oc m
 
 end comp_cost
-
-section complexity_class
-
-def complexity_class (C : ℕ → Type*) (growth_pred : (ℝ → ℝ) → Prop) 
-  (cost_pred : ∀ n, C n → ℝ → Prop) (c : Π n, C n) :=
-∃ (f : ℝ → ℝ), growth_pred f ∧ (∀ n, cost_pred n (c n) (f n))
-
-def poly_time_cost {A B : ℕ → Type*} (c : Π n, A n → B n) :=
-complexity_class (λ n, A n → B n) poly_growth (λ n, has_cost) c
-
-@[simp] lemma poly_time_cost_iff {A B : ℕ → Type*} (c : Π n, A n → B n) :
-  poly_time_cost c ↔ ∃ (f : ℝ → ℝ), poly_growth f ∧ (∀ n, has_cost (c n) (f n)) :=
-iff.rfl
-
-def log_poly_time_cost {A B : ℕ → Type*} (c : Π n, A n → B n) :=
-complexity_class (λ n, A n → B n) log_poly_growth (λ n, has_cost) c
-
-@[simp] lemma log_poly_time_cost_iff {A B : ℕ → Type*} (c : Π n, A n → B n) :
-  log_poly_time_cost c ↔ ∃ (f : ℝ → ℝ), log_poly_growth f ∧ (∀ n, has_cost (c n) (f n)) :=
-iff.rfl
-
-def poly_time_comp {A : ℕ → Type} (c : Π n, comp (A n)) :=
-complexity_class (λ n, comp (A n)) poly_growth (λ n, comp_cost) c
-
-@[simp] lemma poly_time_comp_iff {A : ℕ → Type} (c : Π n, comp (A n)) :
-  poly_time_comp c ↔ ∃ (f : ℝ → ℝ), poly_growth f ∧ (∀ n, comp_cost (c n) (f n)) :=
-iff.rfl
-
-def log_poly_time_comp {A : ℕ → Type} (c : Π n, comp (A n)) :=
-complexity_class (λ n, comp (A n)) log_poly_growth (λ n, comp_cost) c
-
-@[simp] lemma log_poly_time_comp_iff {A : ℕ → Type} (c : Π n, comp (A n)) :
-  log_poly_time_comp c ↔ ∃ (f : ℝ → ℝ), log_poly_growth f ∧ (∀ n, comp_cost (c n) (f n)) :=
-iff.rfl
-
-lemma poly_time_cost_ext {A B : ℕ → Type} {c c' : Π n, A n → B n}
-  (hc : poly_time_cost c) (h : ∀ n a, c n a = c' n a) :
-  poly_time_cost c' :=
-(funext (λ n, funext (λ a, h n a)) : c = c') ▸ hc
-
-lemma log_poly_time_cost_ext {A B : ℕ → Type} {c c' : Π n, A n → B n}
-  (hc : log_poly_time_cost c) (h : ∀ n a, c n a = c' n a) :
-  log_poly_time_cost c' :=
-(funext (λ n, funext (λ a, h n a)) : c = c') ▸ hc
-
-end complexity_class
-
-section poly_time_reduction
-
-def poly_time_reducible {A B C D : ℕ → Type} (p : ∀ {n}, A n → B n → Prop) (q : ∀ {n}, C n → D n → Prop) :=
-(∃ (f : Π n, A n → B n), poly_time_cost f ∧ ∀ n a, p a (f n a)) → 
-  (∃ (g : Π n, C n → D n), poly_time_cost g ∧ ∀ n c, q c (g n c))
-
-def log_poly_time_reducible {A B C D : ℕ → Type} (p : ∀ n, A n → B n → Prop) (q : ∀ n, C n → D n → Prop) :=
-(∃ (f : Π {n}, A n → B n), log_poly_time_cost @f ∧ ∀ n a, p n a (f a)) → 
-  (∃ (g : Π {n}, C n → D n), log_poly_time_cost @g ∧ ∀ n c, q n c (g c))
-
-end poly_time_reduction
