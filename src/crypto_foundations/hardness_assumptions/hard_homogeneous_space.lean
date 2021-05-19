@@ -77,16 +77,15 @@ def vectorization_experiment (adversary : X × X → comp G) : comp bool :=
   comp.bind (adversary (x1, x2)) (λ g,
   comp.ret (g = vectorization x1 x2)))))
 
-@[simp] lemma well_formed_comp_vectorization_experiment {f : X × X → comp G} : 
-  (vectorization_experiment f).well_formed_comp ↔ 
-    ∀ x y, (f (x, y)).well_formed_comp :=
-by simp [vectorization_experiment]
+instance well_formed_comp_vectorization_experiment {f : X × X → comp G} 
+  [∀ x y, (f (x, y)).is_well_formed] : (vectorization_experiment f).is_well_formed :=
+by simpa [vectorization_experiment]
 
 /-- Cectorization advantage of an adversary in the vectorization experiment. -/
 noncomputable def vectorization_advantage (adversary : X × X → comp G) 
-  (hf : ∀ x y, (adversary (x, y)).well_formed_comp) : ℝ :=
-(comp.Pr (vectorization_experiment adversary) (by simpa))
-- (comp.Pr (vectorization_experiment (λ (_ : X × X), comp.rnd G)) (by simp))
+  [∀ x y, (adversary (x, y)).is_well_formed] : ℝ :=
+(comp.Pr (vectorization_experiment adversary))
+- (comp.Pr (vectorization_experiment (λ (_ : X × X), comp.rnd G)))
 
 /-- Analogue of the Diffie-Helman assumption game -/
 def parallelization_experiment (G : Type) [fintype G] [decidable_eq G]
@@ -97,18 +96,17 @@ def parallelization_experiment (G : Type) [fintype G] [decidable_eq G]
   comp.bind (adversary (x1, x2, x3) : comp X) (λ x4,
   comp.ret ((δ x2 x1 : G) = (δ x4 x3 : G)))))))
 
-@[simp] lemma well_formed_comp_parallelization_experiment {f : X × X × X → comp X} : 
-  (parallelization_experiment G f).well_formed_comp ↔ 
-    ∀ x y z, (f (x, y, z)).well_formed_comp :=
-by simp [parallelization_experiment]
+instance well_formed_comp_parallelization_experiment {f : X × X × X → comp X} 
+  [∀ x y z, (f (x, y, z)).is_well_formed] : 
+  (parallelization_experiment G f).is_well_formed :=
+by simpa [parallelization_experiment]
 
 /-- Parallelization advantage of an adversary in parallelization experiment -/
-noncomputable def parallelization_advantage 
-  (G : Type) [fintype G] [decidable_eq G]
-  [homogeneous_space G X](adversary : X × X × X → comp X) 
-  (hf : ∀ x y z, (adversary (x, y, z)).well_formed_comp) : ℝ :=
-(comp.Pr (parallelization_experiment G adversary) (by simpa))
-- (comp.Pr (parallelization_experiment G (λ (_ : X × X × X), comp.rnd X)) (by simp))
+noncomputable def parallelization_advantage (G : Type) [fintype G] [decidable_eq G]
+  [homogeneous_space G X] (adversary : X × X × X → comp X) 
+  [∀ x y z, (adversary (x, y, z)).is_well_formed] : ℝ :=
+(comp.Pr (parallelization_experiment G adversary))
+- (comp.Pr (parallelization_experiment G (λ (_ : X × X × X), comp.rnd X)))
 
 end computational_advantages
 
@@ -144,10 +142,10 @@ class hard_homogeneous_space (G X : ℕ → Type) [∀ n, fintype (G n)] [∀ n,
   [∀ n, homogeneous_space (G n) (X n)]
   extends algorithmic_homogeneous_space G X :=
 (vectorization_hard : ∀ (f : Π n, X n × X n → comp (G n))
-  (hf : ∀ n x y, (f n (x, y)).well_formed_comp) (h : poly_time_cost f),
-  negligable (λ n, vectorization_advantage (f n) (hf n)))
+  [∀ n x y, (f n (x, y)).is_well_formed] (h : poly_time_cost f),
+  negligable (λ n, vectorization_advantage (f n)))
 (parallelization_hard : ∀ (f : Π n, X n × X n × X n → comp (X n))
-  (hf : ∀ n x y z, (f n (x, y, z)).well_formed_comp) (h : poly_time_cost f),
-  negligable (λ n, parallelization_advantage (G n) (f n) (hf n)))
+  [∀ n x y z, (f n (x, y, z)).is_well_formed] (h : poly_time_cost f),
+  negligable (λ n, parallelization_advantage (G n) (f n)))
 
 end hard_homogeneous_space

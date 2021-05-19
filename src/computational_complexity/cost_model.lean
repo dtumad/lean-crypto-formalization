@@ -1,4 +1,5 @@
 import crypto_foundations.comp
+import crypto_foundations.oracle_comp
 import computational_complexity.polynomial_asymptotics
 import to_mathlib
 
@@ -34,7 +35,7 @@ universes u v w
 /-- Represents a cost assignment model to Lean functions -/
 def function_cost_model := ∀ {A : Type u} {B : Type v}, (A → B) → ℝ → Prop
 def comp_cost_model := ∀ {A : Type}, comp A → ℝ → Prop
-def oracle_comp_cost_model := ∀ {A B C : Type}, comp.oracle_comp A B C → (ℝ → ℝ) → Prop
+def oracle_comp_cost_model := ∀ {A B C : Type}, oracle_comp A B C → (ℝ → ℝ) → Prop
 
 /-- Defines an extensible axiomatic cost model for Lean functions.
   This constant exists over arbitrary universes `u` and `v` until use,
@@ -167,7 +168,7 @@ comp_cost.cost_rnd_bitvec
 lemma comp_cost_rnd_le {n m : ℕ} (hnm : n ≤ m) : comp_cost (rnd (bitvec n)) m :=
 comp_cost.cost_le (nat.cast_le.mpr hnm) comp_cost.cost_rnd_bitvec
 
-open comp.oracle_comp
+open oracle_comp
 
 inductive oracle_cost (fm : function_cost_model.{0 1}) (cm : comp_cost_model) : oracle_comp_cost_model
 | cost_query {A B : Type} {a : A} :
