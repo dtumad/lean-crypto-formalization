@@ -152,7 +152,7 @@ end
 --   refine ⟨_, _⟩,
 -- end
 
-theorem support_nonempty_of_well_formed_comp (ca : comp A)
+theorem support_nonempty_of_well_formed (ca : comp A)
   [hca : ca.is_well_formed] : ca.support.nonempty :=
 begin
   tactic.unfreeze_local_instances,
@@ -165,21 +165,7 @@ begin
   { exact ha },
 end
 
-example {A : Type} [fintype A] [inhabited A] [decidable_eq A]
-  [has_add A] : 
-  (bind (rnd A) (λ a, bind (rnd A) (λ a', ret (a + a'))))
-  .is_well_formed :=
-by apply_instance
-
 end is_well_formed
-
-section well_formed
-
--- class well_formed {A : Type} (ca : comp A) :=
--- (wf : ca.is_well_formed)
-
-
-end well_formed
 
 end comp
 

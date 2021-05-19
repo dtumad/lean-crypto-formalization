@@ -35,10 +35,10 @@ comp.bind (rs.generate_keys) (λ k,
 comp.bind (rs.sign (k.2, m, k.1, r)) (λ s,
 comp.ret (rs.verify (m, r, s))))
 
-instance well_formed_comp_completeness_expiriement {rs : ring_signature M S PK SK}
+instance ompleteness_expiriement.is_well_formed {rs : ring_signature M S PK SK}
   {m : M} {r : list PK} : (completeness_experiment rs m r).is_well_formed :=
 begin
-  rw completeness_experiment,
+  unfold completeness_experiment,
   apply_instance,
 end
 

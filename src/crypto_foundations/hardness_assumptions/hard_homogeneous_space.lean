@@ -77,7 +77,7 @@ def vectorization_experiment (adversary : X × X → comp G) : comp bool :=
   comp.bind (adversary (x1, x2)) (λ g,
   comp.ret (g = vectorization x1 x2)))))
 
-instance well_formed_comp_vectorization_experiment {f : X × X → comp G} 
+instance vectorization_experiment.is_well_formed {f : X × X → comp G} 
   [∀ x y, (f (x, y)).is_well_formed] : (vectorization_experiment f).is_well_formed :=
 by simpa [vectorization_experiment]
 
@@ -96,7 +96,7 @@ def parallelization_experiment (G : Type) [fintype G] [decidable_eq G]
   comp.bind (adversary (x1, x2, x3) : comp X) (λ x4,
   comp.ret ((δ x2 x1 : G) = (δ x4 x3 : G)))))))
 
-instance well_formed_comp_parallelization_experiment {f : X × X × X → comp X} 
+instance parallelization_experiment.is_well_formed {f : X × X × X → comp X} 
   [∀ x y z, (f (x, y, z)).is_well_formed] : 
   (parallelization_experiment G f).is_well_formed :=
 by simpa [parallelization_experiment]

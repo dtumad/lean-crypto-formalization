@@ -8,7 +8,7 @@ variables (G : Type) [group G]
 -- def diffie_hellman_candidate := G × G × G → comp G
 
 -- def diffie_hellman_experiment (f : diffie_hellman_candidate G) 
---   (hf : ∀ x, comp.well_formed_comp (f x)) : comp bool :=
+--   [∀ x, comp.is_well_formed (f x))] : comp bool :=
 -- comp.bind
 
 -- def diffie_hellman_advantage (f : diffie_hellman_candidate G) :=
