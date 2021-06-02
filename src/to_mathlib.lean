@@ -91,3 +91,8 @@ calc y = real.log (real.exp y) : (real.log_exp y).symm
 
 
 end log_exp
+
+-- lemma fpow_pos_of_pos {n : ℝ} (hn : 0 < n) (c : ℤ) : 0 < n ^ c :=
+-- begin
+  
+-- end
