@@ -12,51 +12,6 @@ For convenience, the definition is given in terms of `is_O`,
 
 open asymptotics
 
-section to_mathlib
-
-lemma fpow_is_O_fpow_of_le {a b : ℤ} (h : a ≤ b) :
-  (is_O (λ (n : ℕ), (n : ℝ) ^ a) (λ n, (n : ℝ) ^ b) filter.at_top) :=
-begin
-  refine is_O.of_bound 1 _,
-  rw filter.eventually_at_top,
-  use 2,
-  intros x hx,
-  simp,
-  refine (fpow_le_iff_le _).2 h,
-  rw ← nat.cast_one,
-  exact nat.cast_lt.2 hx,
-end
-
-lemma inv_is_O_inv_iff {l : filter ℕ} (f g : ℕ → ℝ)
-  (hf : ∀ᶠ x in l, ∥f x∥ ≠ 0) (hg : ∀ᶠ x in l, ∥g x∥ ≠ 0) :
-  is_O (λ n, (f n)⁻¹) (λ n, (g n)⁻¹) l ↔ is_O g f l :=
-begin
-  let hfg := filter.eventually.and hf hg,
-  have hfg : ∀ᶠ x in l, 0 < ∥f x∥ ∧ 0 < ∥g x∥ := begin
-    refine filter.mem_sets_of_superset hfg (λ x hx, by simpa using hx),
-  end,
-  simp only [is_O_iff],
-  refine exists_congr (λ c, ⟨λ hc, _, λ hc, _⟩),
-  {
-
-    refine filter.mem_sets_of_superset (hc.and hfg) _,
-    intros x hx,
-    obtain ⟨hx, hx0⟩ := hx,
-    simp_rw [ normed_field.norm_inv, inv_eq_one_div, ← mul_div_assoc,
-      mul_one, div_le_iff hx0.1, div_mul_eq_mul_div] at hx,
-    refine (one_le_div hx0.2).1 hx,
-  },
-  {
-    refine filter.mem_sets_of_superset (hc.and hfg) _,
-    intros x hx,
-    simp_rw [set.mem_set_of_eq, normed_field.norm_inv, inv_eq_one_div, ← mul_div_assoc,
-      mul_one, div_le_iff hx.2.1, div_mul_eq_mul_div],
-    refine (one_le_div hx.2.2).2 hx.1,
-  },
-end
-
-end to_mathlib
-
 def negligable (f : ℕ → ℝ) :=
 ∀ (c : ℤ), is_O f (λ n, (n : ℝ) ^ c) filter.at_top
 
@@ -75,11 +30,7 @@ lemma add_negligable {f g : ℕ → ℝ} (hf : negligable f) (hg : negligable g)
 
 lemma negligable_of_eventually_le {f g : ℕ → ℝ} (hg : negligable g)
   (h : ∀ᶠ n in filter.at_top, ∥f n∥ ≤ ∥g n∥) : negligable f :=
-hg.negligable_of_is_O begin
-  rw is_O_iff,
-  use 1,
-  simpa using h,
-end
+hg.negligable_of_is_O $ is_O_iff.2 ⟨1, by simpa using h⟩
 
 lemma negligable_of_is_O_pow_neg {f : ℕ → ℝ} (C : ℤ)
   (hf : ∀ (c : ℤ) (hc : c < C), is_O f (λ n, (n : ℝ) ^ c) filter.at_top) :
@@ -88,9 +39,8 @@ begin
   intro c,
   by_cases hc : c < C,
   { exact hf c hc },
-  { rw not_lt at hc,
-    refine (hf (C - 1) (by linarith)).trans 
-      (fpow_is_O_fpow_of_le (le_trans (by linarith) hc)) }
+  { exact (hf (C - 1) (by linarith)).trans 
+      (fpow_is_O_fpow_of_le (le_trans (by linarith) (not_lt.1 hc))) }
 end
 
 lemma negligable_final_iff_const (f : ℕ → ℝ) (C : ℤ) :
@@ -119,43 +69,15 @@ begin
     specialize hN n (hn.1),
     simp [real.norm_eq_abs] at hN ⊢,
     refine le_trans hN _,
-    simp,
-    have hn0 : (↑n : ℝ) ≠ 0 := λ h, hM0 begin
-      simp at h,
-      refine le_antisymm (h ▸ hn.2) zero_le',
-    end,
-    have hn0' : 0 < (↑n : ℝ) := begin
-      refine lt_of_le_of_ne _ hn0.symm,
-      refine nat.cast_nonneg n,
-    end,
-    have : abs ((↑n : ℝ) ^ (c - 1)) = (↑n)⁻¹ * (↑n ^ c),
-    {
-      refine trans (abs_of_nonneg _) _,
-      {
-        refine fpow_nonneg (le_of_lt hn0') (c - 1),
-      },
-      {
-        rw [fpow_sub_one hn0, mul_comm],
-      }
-    },
+    have hn0 : (↑n : ℝ) ≠ 0 := λ h, hM0 (le_antisymm ((nat.cast_eq_zero.1 h) ▸ hn.2) zero_le'),
+    have hn0' : 0 < (↑n : ℝ) := lt_of_le_of_ne (nat.cast_nonneg n) hn0.symm,
+    have : abs ((↑n : ℝ) ^ (c - 1)) = (↑n)⁻¹ * (↑n ^ c) :=
+      trans (abs_of_nonneg (fpow_nonneg (le_of_lt hn0') (c - 1))) (by field_simp [fpow_sub_one hn0]),
     rw [this, ← mul_assoc],
-    have hnc : 0 < (↑n : ℝ) ^ c := fpow_pos_of_pos hn0' c,
-    refine (mul_le_iff_le_one_left hnc).2 _,
-    calc k * (↑n)⁻¹ ≤ k * k⁻¹ : begin
-      refine mul_le_mul le_rfl _ _ (le_of_lt hk0),
-      {
-        refine (inv_le_inv hn0' hk0).mpr _,
-        refine le_trans hM _,
-        simp only [nat.cast_le],
-        exact hn.2,
-      },
-      {
-        refine inv_nonneg.2 (nat.cast_nonneg n),
-      }
-    end
-      ... = 1 : mul_inv_cancel begin
-        refine (ne_of_lt hk0).symm
-      end,
+    refine (mul_le_iff_le_one_left (fpow_pos_of_pos hn0' c)).2 _,
+    calc k * (↑n)⁻¹ ≤ k * k⁻¹ : mul_le_mul le_rfl ((inv_le_inv hn0' hk0).mpr 
+          (le_trans hM (nat.cast_le.2 hn.2))) (inv_nonneg.2 (nat.cast_nonneg n)) (le_of_lt hk0)
+      ... = 1 : mul_inv_cancel (ne_of_lt hk0).symm,
   },
   {
     refine negligable_of_is_O_pow_neg C _,
@@ -275,50 +197,6 @@ begin
   { simp_rw [← hc, pow_succ, mul_assoc, x_mul_negligable_iff] }
 end
 
-lemma poly_help {p : polynomial ℝ} (hp : 1 ≤ p.degree) (c : ℝ) :
-  ∀ᶠ x in filter.at_top, c ≤ ∥p.eval x∥ :=
-begin
-  have := polynomial.abs_tendsto_at_top p hp,
-  rw filter.tendsto_at_top at this,
-  specialize this c,
-  exact this,
-end
-
-lemma comap_thing : (filter.at_top : filter ℕ) = filter.comap (λ n, ↑n : ℕ → ℝ) filter.at_top :=
-begin
-  ext t,
-  split,
-  {
-    intro h,
-    rw filter.mem_comap_sets,
-    rw filter.mem_at_top_sets at h,
-    obtain ⟨a, ha⟩ := h,
-    refine ⟨set.Ici ↑a, _, _⟩,
-    {
-      simp,
-      refine ⟨↑a, λ b, id⟩,
-    },
-    {
-      intros x hx,
-      rw [set.mem_preimage, set.mem_Ici, nat.cast_le] at hx,
-      refine ha x hx,
-    }
-  },
-  {
-    intro h,
-    rw filter.mem_comap_sets at h,
-    obtain ⟨s, hs, h⟩ := h,
-    rw filter.mem_at_top_sets at hs ⊢,
-    obtain ⟨a, ha⟩ := hs,
-    obtain ⟨b, hb⟩ := exists_nat_ge a,
-    refine ⟨b, λ x hx, h _⟩,
-    rw set.mem_preimage,
-    refine ha x (hb.trans _),
-    rw nat.cast_le,
-    exact hx,
-  }
-end
-
 theorem mul_polynomial_negligable_iff (f : ℕ → ℝ) (p : polynomial ℝ) (hp0 : p ≠ 0) :
   negligable (λ n, (p.eval n) * f n) ↔ negligable f :=
 begin
@@ -378,12 +256,12 @@ begin
   }
 end
 
-theorem two_pow_negligable : negligable (λ n, 1 / 2 ^ n) :=
-begin
-  refine (negligable_final_iff_const _ 0).2 _,
-  intros c hc,
-  simp,
-  sorry,
-end
+-- theorem two_pow_negligable : negligable (λ n, 1 / 2 ^ n) :=
+-- begin
+--   refine (negligable_final_iff_const _ 0).2 _,
+--   intros c hc,
+--   simp,
+--   sorry,
+-- end
 
 end negligable

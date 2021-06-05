@@ -3,6 +3,8 @@ import measure_theory.probability_mass_function
 import analysis.special_functions.exp_log
 import analysis.asymptotics.asymptotics
 import analysis.special_functions.polynomials
+import 
+
 
 -- Collection of random statements that maybe should eventually move to mathlib
 
@@ -23,6 +25,47 @@ begin
   simp only [one_mul, normed_field.norm_pow],
   refine pow_le_pow hx hnm,
 end 
+
+lemma fpow_is_O_fpow_of_le {a b : ℤ} (h : a ≤ b) :
+  (is_O (λ (n : ℕ), (n : ℝ) ^ a) (λ n, (n : ℝ) ^ b) filter.at_top) :=
+begin
+  refine is_O.of_bound 1 _,
+  rw filter.eventually_at_top,
+  use 2,
+  intros x hx,
+  simp,
+  refine (fpow_le_iff_le _).2 h,
+  rw ← nat.cast_one,
+  exact nat.cast_lt.2 hx,
+end
+
+lemma inv_is_O_inv_iff {l : filter ℕ} (f g : ℕ → ℝ)
+  (hf : ∀ᶠ x in l, ∥f x∥ ≠ 0) (hg : ∀ᶠ x in l, ∥g x∥ ≠ 0) :
+  is_O (λ n, (f n)⁻¹) (λ n, (g n)⁻¹) l ↔ is_O g f l :=
+begin
+  let hfg := filter.eventually.and hf hg,
+  have hfg : ∀ᶠ x in l, 0 < ∥f x∥ ∧ 0 < ∥g x∥ := begin
+    refine filter.mem_sets_of_superset hfg (λ x hx, by simpa using hx),
+  end,
+  simp only [is_O_iff],
+  refine exists_congr (λ c, ⟨λ hc, _, λ hc, _⟩),
+  {
+
+    refine filter.mem_sets_of_superset (hc.and hfg) _,
+    intros x hx,
+    obtain ⟨hx, hx0⟩ := hx,
+    simp_rw [ normed_field.norm_inv, inv_eq_one_div, ← mul_div_assoc,
+      mul_one, div_le_iff hx0.1, div_mul_eq_mul_div] at hx,
+    refine (one_le_div hx0.2).1 hx,
+  },
+  {
+    refine filter.mem_sets_of_superset (hc.and hfg) _,
+    intros x hx,
+    simp_rw [set.mem_set_of_eq, normed_field.norm_inv, inv_eq_one_div, ← mul_div_assoc,
+      mul_one, div_le_iff hx.2.1, div_mul_eq_mul_div],
+    refine (one_le_div hx.2.2).2 hx.1,
+  },
+end
 
 end asymptotics
 
@@ -92,7 +135,46 @@ calc y = real.log (real.exp y) : (real.log_exp y).symm
 
 end log_exp
 
--- lemma fpow_pos_of_pos {n : ℝ} (hn : 0 < n) (c : ℤ) : 0 < n ^ c :=
--- begin
-  
--- end
+lemma poly_help {p : polynomial ℝ} (hp : 1 ≤ p.degree) (c : ℝ) :
+  ∀ᶠ x in filter.at_top, c ≤ ∥p.eval x∥ :=
+begin
+  have := polynomial.abs_tendsto_at_top p hp,
+  rw filter.tendsto_at_top at this,
+  specialize this c,
+  exact this,
+end
+
+lemma comap_thing : (filter.at_top : filter ℕ) = filter.comap (λ n, ↑n : ℕ → ℝ) filter.at_top :=
+begin
+  ext t,
+  split,
+  {
+    intro h,
+    rw filter.mem_comap_sets,
+    rw filter.mem_at_top_sets at h,
+    obtain ⟨a, ha⟩ := h,
+    refine ⟨set.Ici ↑a, _, _⟩,
+    {
+      simp,
+      refine ⟨↑a, λ b, id⟩,
+    },
+    {
+      intros x hx,
+      rw [set.mem_preimage, set.mem_Ici, nat.cast_le] at hx,
+      refine ha x hx,
+    }
+  },
+  {
+    intro h,
+    rw filter.mem_comap_sets at h,
+    obtain ⟨s, hs, h⟩ := h,
+    rw filter.mem_at_top_sets at hs ⊢,
+    obtain ⟨a, ha⟩ := hs,
+    obtain ⟨b, hb⟩ := exists_nat_ge a,
+    refine ⟨b, λ x hx, h _⟩,
+    rw set.mem_preimage,
+    refine ha x (hb.trans _),
+    rw nat.cast_le,
+    exact hx,
+  }
+end

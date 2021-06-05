@@ -62,12 +62,16 @@ def eval_distribution (ca : comp A) [ca.is_well_formed] : pmf A :=
 (eval_distribution' ca (by apply_instance)).fst
 
 theorem eval_distribution_ne_zero_iff (ca : comp A) [ca.is_well_formed] (a : A) :
-  (eval_distribution ca a) ≠ 0 ↔ a ∈ ca.support :=
+  eval_distribution ca a ≠ 0 ↔ a ∈ ca.support :=
 (plift.down (eval_distribution' ca (by apply_instance)).snd) a
 
-lemma eval_distribution_eq_zero_of_not_mem_support (ca : comp A) [ca.is_well_formed] :
-  ∀ a ∉ ca.support, ca.eval_distribution a = 0 :=
-λ a ha, not_not.1 $ (mt (eval_distribution_ne_zero_iff ca a).1) ha
+lemma zero_lt_eval_distribution_iff (ca : comp A) [ca.is_well_formed] (a : A) :
+  0 < eval_distribution ca a ↔ a ∈ ca.support :=
+iff.trans ⟨λ h, ne_of_gt h, λ h, lt_of_le_of_ne zero_le' h.symm⟩ (eval_distribution_ne_zero_iff ca a)
+
+lemma eval_distribution_eq_zero_of_not_mem_support {ca : comp A} [ca.is_well_formed] {a : A}
+  (ha : a ∉ ca.support) : ca.eval_distribution a = 0 :=
+not_not.1 $ (mt (eval_distribution_ne_zero_iff ca a).1) ha
 
 lemma eval_distribution_support_eq_support (ca : comp A) [ca.is_well_formed] :
   (eval_distribution ca).support = ca.support :=
@@ -126,6 +130,26 @@ begin
   { exact absurd (hp a' hpa') h },
   { exact absurd (h.symm ▸ ha : p a') hpa' },
   { refl }
+end
+
+theorem Pr_prop_eq_one_iff (p : A → Prop) [decidable_pred p] :
+  ca-Pr[p] = 1 ↔ ∀ a ∈ ca.support, p a :=
+begin
+  refine ⟨λ h a ha, _, λ h, _⟩,
+  { rw ← zero_lt_eval_distribution_iff ca a at ha,
+    by_contradiction hpa,
+    suffices : ca.Pr_prop p < 1,
+    from ne_of_lt this h,
+    refine lt_of_lt_of_le _ (le_of_eq ca.eval_distribution.tsum_coe),
+    have : ite (p a) (ca.eval_distribution a) 0 < ca.eval_distribution a,
+    by simpa only [hpa, if_false] using ha,
+    refine nnreal.tsum_lt_tsum (λ a, ite_le (p a) le_rfl zero_le') this ca.eval_distribution.summable_coe },
+  { refine trans _ ca.eval_distribution.tsum_coe,
+    unfold Pr_prop,
+    refine congr_arg tsum (funext (λ a, _)),
+    by_cases ha : a ∈ ca.support,
+    { simp [h a ha] },
+    { simp [eval_distribution_eq_zero_of_not_mem_support ha] } }
 end
 
 lemma Pr_prop_eq [decidable_eq A] (a : A) :
