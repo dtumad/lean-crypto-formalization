@@ -222,7 +222,7 @@ begin
     convert is_O_refl _ _,
     ext x,
     have : (x : ℝ) ^ c.nat_abs = x ^ (-c),
-    by simp only [← int.of_nat_nat_abs_of_nonpos (le_of_lt hc), fpow_coe_nat],
+    by simp only [←int.of_nat_nat_abs_of_nonpos (le_of_lt hc), gpow_coe_nat],
     simp [this],
   }
 end
@@ -278,7 +278,45 @@ end
 lemma poly_help {p : polynomial ℝ} (hp : 1 ≤ p.degree) (c : ℝ) :
   ∀ᶠ x in filter.at_top, c ≤ ∥p.eval x∥ :=
 begin
-  sorry,
+  have := polynomial.abs_tendsto_at_top p hp,
+  rw filter.tendsto_at_top at this,
+  specialize this c,
+  exact this,
+end
+
+lemma comap_thing : (filter.at_top : filter ℕ) = filter.comap (λ n, ↑n : ℕ → ℝ) filter.at_top :=
+begin
+  ext t,
+  split,
+  {
+    intro h,
+    rw filter.mem_comap_sets,
+    rw filter.mem_at_top_sets at h,
+    obtain ⟨a, ha⟩ := h,
+    refine ⟨set.Ici ↑a, _, _⟩,
+    {
+      simp,
+      refine ⟨↑a, λ b, id⟩,
+    },
+    {
+      intros x hx,
+      rw [set.mem_preimage, set.mem_Ici, nat.cast_le] at hx,
+      refine ha x hx,
+    }
+  },
+  {
+    intro h,
+    rw filter.mem_comap_sets at h,
+    obtain ⟨s, hs, h⟩ := h,
+    rw filter.mem_at_top_sets at hs ⊢,
+    obtain ⟨a, ha⟩ := hs,
+    obtain ⟨b, hb⟩ := exists_nat_ge a,
+    refine ⟨b, λ x hx, h _⟩,
+    rw set.mem_preimage,
+    refine ha x (hb.trans _),
+    rw nat.cast_le,
+    exact hx,
+  }
 end
 
 theorem mul_polynomial_negligable_iff (f : ℕ → ℝ) (p : polynomial ℝ) (hp0 : p ≠ 0) :
@@ -298,13 +336,20 @@ begin
         { simp [hfx] },
         { refine (le_mul_iff_one_le_left (norm_pos_iff.2 hfx)).2 hx }
       },
-      have := poly_help hp 1,
-      unfold filter.eventually at this ⊢,
-      sorry,
+      suffices : ∀ᶠ (x : ℝ) in filter.at_top, 1 ≤ ∥polynomial.eval x p∥,
+      {
+        rw comap_thing,
+        refine filter.eventually_comap' this,
+      },
+      exact poly_help hp 1,
     },
     {
       rw [not_le] at hp,
-      replace hp : p.degree ≤ 0 := sorry,
+      replace hp : p.degree ≤ 0 := begin
+        contrapose! hp,
+        rwa nat.with_bot.one_le_iff_zero_lt,
+      end,
+      
       have := polynomial.eq_C_of_degree_le_zero hp,
       have hpc0 : p.coeff 0 ≠ 0 := begin
         refine λ h, hp0 (this.trans (by simp only [h, ring_hom.map_zero])),
@@ -335,6 +380,9 @@ end
 
 theorem two_pow_negligable : negligable (λ n, 1 / 2 ^ n) :=
 begin
+  refine (negligable_final_iff_const _ 0).2 _,
+  intros c hc,
+  simp,
   sorry,
 end
 
