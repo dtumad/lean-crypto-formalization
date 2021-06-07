@@ -28,6 +28,7 @@ hash_function.keygen_well_formed H sp
 
 variable (H : hash_function K input_space output_space)
 
+-- Because of correctness assumption, all elements in the support of keygen have matching security parameters
 lemma security_parameter_eq_of_mem_support_keygen (H : hash_function K input_space output_space)
   (s : hash_key K) (n : ℕ) (hsn : s ∈ (H.keygen n).support) : s.sp = n :=
 begin
@@ -36,6 +37,8 @@ begin
   refine this s hsn,
 end
 
+/-- The security game for collision resistance as a probabalistic function. 
+  Adversary implicitly recieves the secuirty parameter via the hashkey from `keygen`-/
 def collision_finding_experiment (H : hash_function K input_space output_space) 
   (A : Π (s : hash_key K), comp ((input_space s.sp) × (input_space s.sp))) :
   ℕ → comp bool :=

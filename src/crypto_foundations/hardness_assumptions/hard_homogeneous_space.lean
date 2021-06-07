@@ -81,7 +81,7 @@ instance vectorization_experiment.is_well_formed {f : X × X → comp G}
   [∀ x y, (f (x, y)).is_well_formed] : (vectorization_experiment f).is_well_formed :=
 by simpa [vectorization_experiment]
 
-/-- Cectorization advantage of an adversary in the vectorization experiment. -/
+/-- Vectorization advantage of an adversary in the vectorization experiment. -/
 noncomputable def vectorization_advantage (adversary : X × X → comp G) 
   [∀ x y, (adversary (x, y)).is_well_formed] : ℝ :=
 (comp.Pr (vectorization_experiment adversary))
@@ -112,6 +112,7 @@ end computational_advantages
 
 section hard_homogeneous_space
 
+/-- Homogenous space where relevant computations can all be performed efficiently -/
 class algorithmic_homogeneous_space (G X : ℕ → Type) 
   [∀ n, fintype (G n)] [∀ n, fintype (X n)]
   [∀ n, decidable_eq (G n)] [∀ n, decidable_eq (X n)]
@@ -136,7 +137,9 @@ let ⟨f, hf, hf'⟩ := H.mul_efficient in
 lemma mul_left_efficient [algorithmic_homogeneous_space G X] (g : Π n, G n) :
   log_poly_time_cost (λ n, λ (x : G n), x * (g n)) :=
 log_poly_time_cost_ext (mul_right_efficient G X g) (λ n x, mul_comm (g n) x)
- 
+
+/-- Extension of `computational_homogenous_space` with hardness assumptions. 
+  Vectorization and parallelization correspond to discrete-log and Diffie-Hellman -/
 class hard_homogeneous_space (G X : ℕ → Type) [∀ n, fintype (G n)] [∀ n, fintype (X n)]
   [∀ n, inhabited (X n)] [∀ n, decidable_eq (G n)] [∀ n, decidable_eq (X n)] 
   [∀ n, homogeneous_space (G n) (X n)]

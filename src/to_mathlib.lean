@@ -144,6 +144,25 @@ begin
   exact this,
 end
 
+lemma eq_zero_of_norm_fpow_eq_zero (r : ℝ) (z : ℤ) (h : ∥r ^ z∥ = 0) : r = 0 :=
+by simpa [real.norm_eq_abs] using fpow_eq_zero (normed_field.norm_fpow r z ▸ h : ∥r∥^z = 0)
+
+lemma eventually_fpow_ne_zero (z : ℤ) : ∀ᶠ (n : ℕ) in filter.at_top, ∥(n : ℝ) ^ z∥ ≠ 0 :=
+begin
+  have : ∀ᶠ (n : ℕ) in filter.at_top, (n : ℝ) ≠ 0,
+  { simp only [filter.eventually_at_top, ge_iff_le, ne.def, nat.cast_eq_zero],
+    refine ⟨1, λ b hb, by linarith⟩ },
+  exact filter.mem_sets_of_superset this (λ x hx, mt (eq_zero_of_norm_fpow_eq_zero _ _) hx),
+end
+
+lemma nat_coe_tendsto : filter.tendsto (λ (n : ℕ), (↑n : ℝ)) filter.at_top filter.at_top :=
+begin
+  refine filter.tendsto_at_top.2 (λ x, _),
+  obtain ⟨m, hm⟩ := exists_nat_ge x,
+  rw filter.eventually_at_top,
+  refine ⟨m, λ y hy, hm.trans $ nat.cast_le.2 hy⟩,
+end
+
 lemma comap_thing : (filter.at_top : filter ℕ) = filter.comap (λ n, ↑n : ℕ → ℝ) filter.at_top :=
 begin
   ext t,
