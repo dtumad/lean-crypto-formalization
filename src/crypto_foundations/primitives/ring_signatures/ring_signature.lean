@@ -5,58 +5,57 @@ import data.list.basic
 # Ring Signatures
 
 This file defines ring signatures and ring signature schemes, and their cryptographic properties.
+The security properties `complete`, `anonomyous`, and `unforgeable` are defined in terms of corresponding experiments.
 -/
 
 section ring_signature
 
-/-- Definition of a -/
-structure ring_signature (M S PK SK : Type) :=
--- Generate a pair of a public key and a secret key
-(generate_keys : comp (PK × SK))
-(generate_keys_well_formed : generate_keys.is_well_formed)
--- Signature on the input `(secret_key, message, user, remaining ring of users)`
-(sign : SK × M × PK × (list PK) → comp S)
-(sign_well_formed : ∀ sk m pk r, (sign (sk, m, pk, r)).is_well_formed)
--- Verification of an input of the form `(message, ring, signature)`
-(verify : M × (list PK) × S → bool)
+/-- Definition of a ring signature, all methods take a security parameter `sp` as input.
+`gen` returns a public key and secret key
+`sign` returns a signature on a message, where `i : fin n` is the signer's index in the `n`-person ring
+  and the list of signers is given in the form of an `n` element vector,
+`verify` checks whether a given signature is valid on a ring and a message -/
+structure ring_signature (M : Type) (S : ℕ → ℕ → Type) (PK SK : ℕ → Type) :=
+(gen (sp : ℕ) : comp (PK sp × SK sp))
+(gen_well_formed : ∀ sp, (gen sp).is_well_formed)
+(sign (sp n : ℕ) (i : fin n) (sk : SK sp) : (vector (PK sp) n) × M → comp (S sp n))
+(sign_well_formed : ∀ sp n i sk inp, (sign sp n i sk inp).is_well_formed)
+(verify (sp n : ℕ) : vector (PK sp) n × M × S sp n → bool)
 
-variables {M S PK SK : Type} (rs : ring_signature M S PK SK)
+variables {M : Type} {PK SK : ℕ → Type} {S : ℕ → ℕ → Type} 
+variables (rs : ring_signature M S PK SK) {sp : ℕ}
 
-instance generate_keys_well_formed : rs.generate_keys.is_well_formed :=
-rs.generate_keys_well_formed
+instance generate_keys_well_formed : (rs.gen sp).is_well_formed :=
+rs.gen_well_formed sp
 
-instance sign_well_formed {sk : SK} {m : M} {pk : PK} {r : list PK} :
-  (rs.sign (sk, m, pk, r)).is_well_formed :=
-rs.sign_well_formed sk m pk r
+instance sign_well_formed (n : ℕ) (i : fin n) (sk : SK sp) (inp : vector (PK sp) n × M):
+  (rs.sign sp n i sk inp).is_well_formed :=
+rs.sign_well_formed sp n i sk inp 
 
 def completeness_experiment (rs : ring_signature M S PK SK)
-  (m : M) (r : list PK) : comp bool :=
-comp.bind (rs.generate_keys) (λ k, 
-comp.bind (rs.sign (k.2, m, k.1, r)) (λ s,
-comp.ret (rs.verify (m, r, s))))
+  (sp n : ℕ) (i : fin n) (sk : SK sp) (r : vector (PK sp) n) (m : M) : comp bool :=
+comp.bind (rs.sign sp n i sk (r, m)) (λ s, comp.ret (rs.verify sp n (r, m, s)))
 
-instance ompleteness_expiriement.is_well_formed {rs : ring_signature M S PK SK}
-  {m : M} {r : list PK} : (completeness_experiment rs m r).is_well_formed :=
+instance completeness_expiriement.is_well_formed (rs : ring_signature M S PK SK)
+  (sp n : ℕ) (i : fin n) (sk : SK sp) (r : vector (PK sp) n) (m : M) : 
+  (completeness_experiment rs sp n i sk r m).is_well_formed :=
 begin
   unfold completeness_experiment,
   apply_instance,
 end
 
+/-- A ring signature is complete if for any list if completeness experiment always succeeds.
+  Note that success is only required if the ring `r` consists of public keys in the support of `-/
 def ring_signature.complete (rs : ring_signature M S PK SK) :=
-∀ m r, comp.Pr (completeness_experiment rs m r) = 1
+∀ (sp n : ℕ) (i : fin n) (sk : SK sp) (r : vector (PK sp) n) (m : M) 
+  (hsk : (r.nth i, sk) ∈ (rs.gen sp).support)
+  (hr : ∀ (j : fin n), ∃ sk, (r.nth i, sk) ∈ (rs.gen sp).support), 
+comp.Pr (completeness_experiment rs sp n i sk r m) = 1
+
+def ring_signature.anonomyous (rs : ring_signature M S PK SK) :=
+false
+
+def ring_signature.unforgeable (rs : ring_signature M S PK SK) :=
+false
 
 end ring_signature
-
-section ring_signature_scheme
-
-/-- A `ring_signature_scheme` is a set of of `ring_signatures` parameterized
-  by some security parameter `k`-/
-def ring_signature_scheme (M S : Type) (PK SK : ℕ → Type) := 
-Π n, ring_signature M S (PK n) (SK n)
-
-variables {M S : Type} {PK SK : ℕ → Type}
-
-def ring_signature_scheme.complete (rss : ring_signature_scheme M S PK SK) :=
-∀ n, (rss n).complete
-
-end ring_signature_scheme

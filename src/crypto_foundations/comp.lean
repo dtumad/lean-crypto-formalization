@@ -126,6 +126,10 @@ begin
   split; assumption,
 end
 
+@[simp] lemma is_well_formed_bind_iff' (cb : comp B) [h : cb.is_well_formed] (ca : B → comp A) :
+  is_well_formed (cb.bind ca) ↔ ∀ b ∈ cb.support, is_well_formed (ca b) :=
+by simp [h]
+
 @[simp] lemma is_well_formed_rnd [inhabited A] [fintype A] [decidable_eq A] : 
   is_well_formed (rnd A) :=
 well_formed_rnd
