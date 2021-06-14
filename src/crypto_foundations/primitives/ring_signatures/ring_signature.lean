@@ -15,14 +15,18 @@ section ring_signature
 `gen` returns a public key and secret key
 `sign` returns a signature on a message, where `i : fin n` is the signer's index in the `n`-person ring
   and the list of signers is given in the form of an `n` element vector,
-`verify` checks whether a given signature is valid on a ring and a message -/
+`verify` checks whether a given signature is valid on a ring and a message
+TODO: Double check the polynomial time stuff -/
 structure ring_signature (M : Type) (S : ℕ → ℕ → Type) (PK SK : ℕ → Type) :=
 (gen (sp : ℕ) : comp (PK sp × SK sp))
 (gen_well_formed : ∀ sp, (gen sp).is_well_formed)
 (gen_poly_time : poly_time_comp gen)
 (sign (sp n : ℕ) (i : fin n) (sk : SK sp) : (vector (PK sp) n) × M → comp (S sp n))
 (sign_well_formed : ∀ sp n i sk inp, (sign sp n i sk inp).is_well_formed)
+(sign_poly_time : ∀ (n : ℕ) (i : fin n) (sk : Π sp, SK sp) (inp : Π sp, vector (PK sp) n × M), 
+  poly_time_cost (λ sp, sign sp n i (sk sp)) ∧ poly_time_comp (λ sp, sign sp n i (sk sp) (inp sp)))
 (verify (sp n : ℕ) : vector (PK sp) n × M × S sp n → bool)
+(verify_poly_time : ∀ (n : ℕ), poly_time_cost (λ sp, verify sp n))
 
 variables {M : Type} {PK SK : ℕ → Type} {S : ℕ → ℕ → Type} 
 variables (rs : ring_signature M S PK SK) {sp : ℕ}
@@ -54,6 +58,7 @@ def ring_signature.complete (rs : ring_signature M S PK SK) :=
   (hr : ∀ (j : fin n), ∃ sk, (r.nth i, sk) ∈ (rs.gen sp).support), 
 comp.Pr (completeness_experiment rs sp n i sk r m) = 1
 
+-- TODO: rerwite these using the branch with oracle stuff
 def ring_signature.anonomyous (rs : ring_signature M S PK SK) :=
 false
 

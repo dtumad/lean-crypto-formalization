@@ -136,9 +136,12 @@ end computational_advantages
 
 section hard_homogeneous_space
 
-/-- Homogenous space is defined by a parameterized collection of homogenous spaces.
-  The maps `G X : ℕ → Type` are parameterized by a security parameter,
-    and we require operations be polynomial in this parameter 
+/-- A homogenous space is defined by a parameterized collection of homogenous spaces (`principal_action_class`).
+  `G` and `X` together define a generation algorithm for homogenous spaces from a security parameter,
+    and we want the following operations to have polynomial-growth time in the security parameter.
+
+  Note that we model `G n` and `X n` as having some *fixed* internal representation,
+    so this definition doesn't include functions for converting to and from representative bit-strings.
   TODO: clean up the massive typeclass dependencies -/
 class algorithmic_homogeneous_space (G X : ℕ → Type) 
   [∀ n, fintype (G n)] [∀ n, fintype (X n)]
@@ -146,8 +149,8 @@ class algorithmic_homogeneous_space (G X : ℕ → Type)
   [∀ n, decidable_eq (G n)] [∀ n, decidable_eq (X n)]
   [∀ n, comm_group (G n)] [∀ n, mul_action (G n) (X n)]
   [∀ n, principal_action_class (G n) (X n)] :=
-(mul_efficient : poly_time_cost (λ n, (λ x, x.1 * x.2 : G n × G n → G n)))
-(inv_efficient : poly_time_cost (λ n, (λ x, x⁻¹ : G n → G n)))
+(mul_efficient : poly_time_cost (λ sp, (λ x, x.1 * x.2 : G sp × G sp → G sp)))
+(inv_efficient : poly_time_cost (λ sp, (λ x, x⁻¹ : G sp → G sp)))
 (smul_efficient : poly_time_cost (λ n, (λ x, x.1 • x.2 : G n × X n → X n)))
 (G_eq_efficient : poly_time_cost (λ n, (λ x, x.1 = x.2 : G n × G n → Prop)))
 (X_eq_efficient : poly_time_cost (λ n, (λ x, x.1 = x.2 : X n × X n → Prop)))
@@ -155,6 +158,8 @@ class algorithmic_homogeneous_space (G X : ℕ → Type)
 -- TODO: This is needed right? to actually construct more complicated functions
 (G_copy_efficient : poly_time_cost (λ n, (λ g, (g, g) : G n → G n × G n)))
 (X_copy_efficient : poly_time_cost (λ n, (λ x, (x, x) : X n → X n × X n)))
+
+-- TODO: derive rnd X efficient by choosing a generator and using G_rnd_efficient
 
 variables (G X : ℕ → Type) 
   [∀ n, fintype (G n)] [∀ n, fintype (X n)]
@@ -172,14 +177,17 @@ lemma mul_left_efficient [algorithmic_homogeneous_space G X] (g : Π n, G n) :
   poly_time_cost (λ n, λ (x : G n), x * (g n)) :=
 poly_time_cost_ext (mul_right_efficient G X g) (λ n x, mul_comm (g n) x)
 
-/-- Extension of `computational_homogenous_space` with hardness assumptions. 
+/-- Extension of `algorithmic_homogenous_space` with hardness assumptions.
   Vectorization and parallelization correspond to discrete-log and Diffie-Hellman -/
+-- TODO: `h'` assumptions look very weird right now.
 class hard_homogeneous_space extends algorithmic_homogeneous_space G X :=
-(vectorization_hard : ∀ (f : Π n, X n × X n → comp (G n))
-  [∀ n x y, (f n (x, y)).is_well_formed] (h : poly_time_cost f),
+(vectorization_hard : ∀ (f : Π n, X n × X n → comp (G n)) 
+  [∀ n x y, (f n (x, y)).is_well_formed] 
+  (h : poly_time_cost f) (h' : ∀ (x y : Π n, X n), poly_time_comp (λ n, f n (x n, y n))),
   negligable (λ n, vectorization_advantage (f n)))
 (parallelization_hard : ∀ (f : Π n, X n × X n × X n → comp (X n))
-  [∀ n x y z, (f n (x, y, z)).is_well_formed] (h : poly_time_cost f),
+  [∀ n x y z, (f n (x, y, z)).is_well_formed]
+  (h : poly_time_cost f) (h' : ∀ (x y z : Π n, X n), poly_time_comp (λ n, f n (x n, y n, z n))),
   negligable (λ n, parallelization_advantage (G n) (f n)))
 
 end hard_homogeneous_space

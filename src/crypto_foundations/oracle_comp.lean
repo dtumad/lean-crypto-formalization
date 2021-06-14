@@ -1,5 +1,14 @@
 import crypto_foundations.comp
 
+/-!
+# Model of Nondeterministic Computation With Oracles
+
+This file extends the `comp` monad to allow compuation with oracle access.
+The definition allows for oracles to hide their internal state,
+  which wouldn't be possible by just giving the adversary an explicit function.
+
+-/
+
 section oracle_comp
 
 variables {A B C : Type}

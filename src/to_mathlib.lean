@@ -2,9 +2,7 @@ import data.bitvec.basic
 import measure_theory.probability_mass_function
 import analysis.special_functions.exp_log
 import analysis.asymptotics.asymptotics
-import analysis.special_functions.polynomials
-import 
-
+import analysis.special_functions.polynomials 
 
 -- Collection of random statements that maybe should eventually move to mathlib
 

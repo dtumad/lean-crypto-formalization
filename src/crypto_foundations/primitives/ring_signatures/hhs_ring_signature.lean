@@ -6,6 +6,10 @@ import data.vector2
 
 /-!
 # Hard Homogenous Space based Ring Signature Scheme
+
+This file constructs a ring signature from a hard homogenous space.
+Note that the construction requires a hash function into the group G.
+
 -/
 
 variables {M : Type} {S G X K : ℕ → Type}

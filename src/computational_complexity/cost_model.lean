@@ -22,6 +22,11 @@ Therefore `has_cost f n` should be thought of as saying that *some* procedure
 
 `has_cost` also only defines a lower bound on the cost (see `has_cost_of_le`),
   which is sufficient for establishing reduction in cryptographic proofs.
+
+Also note that `has_cost` assumes the input and output of functions has some *fixed* internal representation,
+  and all cost statements are being made relative to this fixed representation.
+This allows `has_cost` to behave well with function composition,
+  but also means all axioms need to be valid in the context of shared representations.
 -/
 
 open_locale nnreal
@@ -37,7 +42,7 @@ def comp_cost_model := ∀ {A : Type}, comp A → ℝ → Prop
 def oracle_comp_cost_model := ∀ {A B C : Type}, oracle_comp A B C → (ℝ → ℝ) → Prop
 
 /-- Defines an extensible axiomatic cost model for Lean functions.
-  This constant exists over arbitrary universes `u` and `v` until use,
+  This constant exists over arbitrary universes `u` and `v` until use, 
     in particular we allow `B` to vary over `Type` and `Type 1`. -/
 constant has_cost : function_cost_model.{u v}
 
