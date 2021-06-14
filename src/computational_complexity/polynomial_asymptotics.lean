@@ -90,7 +90,8 @@ begin
 end
 
 /-- Equivalence of definition in terms of powers and polynomials,
-  assuming `𝕜` is a `normed_linear_ordered_field` with an ordered topology (e.g. `ℝ` or `ℚ`)-/
+  assuming `𝕜` is a `normed_linear_ordered_field` with an ordered topology (e.g. `ℝ` or `ℚ`)
+  TODO: `k` shouldn't need to map into `𝕜` here I don't think -/
 theorem poly_growth_in_parameter_iff 
   {𝕜 : Type*} [normed_linear_ordered_field 𝕜] [order_topology 𝕜] 
   {k f : α → 𝕜} (hk : filter.tendsto k filter.at_top filter.at_top) :
@@ -113,6 +114,7 @@ section common_poly_growth_parameters
 
 section poly_growth
 
+/-- TODO: This should also at least work for functions `ℕ → ℝ` -/
 def poly_growth {R : Type*} [preorder R] [normed_ring R] (f : R → R) :=
 poly_growth_in_parameter id f
 

@@ -139,13 +139,14 @@ open comp
 inductive comp_cost : comp_cost_model
 | cost_ret {A : Type} [decidable_eq A] {a : A} :
     comp_cost (ret a) 0
-| cost_bind {A B : Type} {ca : comp A} {cb : A → comp B} {n1 n2 n3 : ℕ} :
+| cost_bind {A B : Type} {ca : comp A} {cb : A → comp B} {n1 n2 n3 : ℝ} :
     comp_cost ca n1 → has_cost cb n2 → (∀ a, comp_cost (cb a) n3) → comp_cost (bind ca cb) (n1 + n2 + n3)
 | cost_rnd_bitvec {n : ℕ} :
     comp_cost (rnd (bitvec n)) ↑n
 | cost_le {A : Type} {ca : comp A} {n m : ℝ} (hnm : n ≤ m) :
     comp_cost ca n → comp_cost ca m
 
+-- This statement holds for `has_cost` as well, but is only provable for `comp_cost`.
 theorem ge_zero_of_comp_cost {A : Type} {ca : comp A} {n : ℝ} (h : comp_cost ca n) :
   n ≥ 0 :=
 begin

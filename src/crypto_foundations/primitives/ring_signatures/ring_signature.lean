@@ -1,4 +1,5 @@
 import crypto_foundations.dist_sem
+import computational_complexity.complexity_class
 import data.list.basic
 
 /-!
@@ -18,6 +19,7 @@ section ring_signature
 structure ring_signature (M : Type) (S : ℕ → ℕ → Type) (PK SK : ℕ → Type) :=
 (gen (sp : ℕ) : comp (PK sp × SK sp))
 (gen_well_formed : ∀ sp, (gen sp).is_well_formed)
+(gen_poly_time : poly_time_comp gen)
 (sign (sp n : ℕ) (i : fin n) (sk : SK sp) : (vector (PK sp) n) × M → comp (S sp n))
 (sign_well_formed : ∀ sp n i sk inp, (sign sp n i sk inp).is_well_formed)
 (verify (sp n : ℕ) : vector (PK sp) n × M × S sp n → bool)
