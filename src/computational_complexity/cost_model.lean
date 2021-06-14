@@ -28,9 +28,8 @@ open_locale nnreal
 
 universes u v w
 
-
-
--- TODO: look more closely at explicit vs. implicit parameters
+-- TODO: Try to get this working with some extensible system
+-- TODO: Think about letting cost be in `ℚ` instead of `ℝ`
 
 /-- Represents a cost assignment model to Lean functions -/
 def function_cost_model := ∀ {A : Type u} {B : Type v}, (A → B) → ℝ → Prop
@@ -46,7 +45,9 @@ namespace has_cost
 
 variables {A : Type u} {B : Type v} {C : Type w} {D : Type*}
 
-/-- Axioms for deriving costs of functions from related functions -/
+-- Axioms for deriving costs of functions from related functions
+
+-- TODO: Is this worth including? Maybe not useful
 axiom ge_zero_of_has_cost {f : A → B} {n : ℝ} (h : has_cost f n) : n ≥ 0
 
 axiom has_cost_of_le {f : A → B} {n m : ℝ} (hnm : n ≤ m) :
@@ -68,7 +69,8 @@ axiom has_cost_of_uncurry' {f : A → B → C} {n : ℝ} (a : A) :
 axiom has_cost_pair {f : A → B} {g : C → D} {n m : ℝ} :
     has_cost f n → has_cost g m → has_cost (λ (x : A × C), (f x.fst, g x.snd)) (n + m)
 
-/-- Costs of basic commonly used functions -/
+-- Costs of basic commonly used functions
+
 axiom has_cost_const (b : B) :
   has_cost (λ _, b : A → B) 0
 
