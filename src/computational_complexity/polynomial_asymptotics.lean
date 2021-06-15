@@ -43,8 +43,8 @@ lemma poly_growth_in_parameter.ext {k : α → R} {f g : α → S}
 
 variable [norm_one_class R]
 
-/-- constants have polynomial growth -/
-@[simp] lemma poly_growth_in_parameter_const (k : α → R) (s : S) :
+@[simp] 
+lemma poly_growth_in_parameter_const (k : α → R) (s : S) :
   poly_growth_in_parameter k (λ _, s) :=
 ⟨0, is_O_of_le' filter.at_top (λ x, by simp : ∀ x, ∥s∥ ≤ ∥s∥ * ∥k x ^ 0∥)⟩
 
@@ -78,23 +78,21 @@ lemma poly_growth_in_parameter_pow {k : α → 𝕜} {f : α → R}
 let ⟨m, hm⟩ := hf in
 ⟨m * n, (is_O.pow hm n).trans $ is_O_of_le filter.at_top (λ x, (pow_mul (k x) m n) ▸ le_rfl)⟩
 
-lemma poly_growth_in_parameter_polynomial {k : α → 𝕜}
-  (hk : ∀ᶠ x in filter.at_top, 1 ≤ ∥k x∥) (p : polynomial 𝕜) :
-  poly_growth_in_parameter k (λ x, eval (k x) p) :=
+lemma poly_growth_in_parameter_polynomial {k : α → 𝕜} (hk : ∀ᶠ x in filter.at_top, 1 ≤ ∥k x∥) 
+  {f : α → R} (hf : poly_growth_in_parameter k f)
+  (p : polynomial R) : poly_growth_in_parameter k (λ x, eval (f x) p) :=
 begin
   refine p.induction_on (λ c, _) (λ p q hp hq, _) (λ n c h, _),
   { exact (poly_growth_in_parameter_const k c).ext (λ x, eval_C) },
   { exact (poly_growth_in_parameter_add hk hp hq).ext (λ x, eval_add) },
-  { exact (poly_growth_in_parameter_mul h (poly_growth_in_parameter_parameter k)).ext
-      (λ x, by simp [pow_add, mul_assoc c]) }
+  { exact (poly_growth_in_parameter_mul h (hf)).ext
+      (λ x, by simp only [eval_C, eval_mul_X_pow, pi.mul_apply, pow_add (f x) n 1, mul_assoc, pow_one]) }
 end
 
 /-- Equivalence of definition in terms of powers and polynomials,
-  assuming `𝕜` is a `normed_linear_ordered_field` with an ordered topology (e.g. `ℝ` or `ℚ`)
-  TODO: `k` shouldn't need to map into `𝕜` here I don't think -/
-theorem poly_growth_in_parameter_iff 
-  {𝕜 : Type*} [normed_linear_ordered_field 𝕜] [order_topology 𝕜] 
-  {k f : α → 𝕜} (hk : filter.tendsto k filter.at_top filter.at_top) :
+  assuming `𝕜` is a `normed_linear_ordered_field` with an ordered topology (e.g. `ℝ` or `ℚ`) -/
+theorem poly_growth_in_parameter_iff {𝕜 : Type*} [normed_linear_ordered_field 𝕜] [order_topology 𝕜] 
+  {k : α → 𝕜} (hk : filter.tendsto k filter.at_top filter.at_top) (f : α → R) :
   poly_growth_in_parameter k f ↔ 
     ∃ (p : polynomial 𝕜), is_O f (λ x, eval (k x) p) filter.at_top :=
 begin
@@ -109,28 +107,31 @@ end
 
 end poly_growth_in_parameter
 
-
-section common_poly_growth_parameters
-
 section poly_growth
 
-/-- TODO: This should also at least work for functions `ℕ → ℝ` -/
-def poly_growth {R : Type*} [preorder R] [normed_ring R] (f : R → R) :=
-poly_growth_in_parameter id f
+/-- A function `f : ℕ → R` has polynomial growth if it is O(p(n)) for some `p : polynomial ℚ`-/
+def poly_growth {R : Type*} [preorder R] [normed_ring R] (f : ℕ → R) :=
+poly_growth_in_parameter (λ n, ↑n : ℕ → ℚ) f
 
-variables {R : Type*} [normed_linear_ordered_field R] 
+variables {R : Type*} [preorder R] [normed_ring R] [norm_one_class R] 
 
-lemma poly_growth_add {f g : R → R} (h : ∀ᶠ (x : R) in filter.at_top, 1 ≤ ∥x∥)
-  (hf : poly_growth f) (hg : poly_growth g) :
+-- TODO: generalize `poly_growth` to any situation allowing *something* like this
+lemma h_help : ∀ᶠ (x : ℕ) in filter.at_top, 1 ≤ ∥(x : ℚ)∥ :=
+begin
+  rw filter.eventually_at_top,
+  refine ⟨1, λ x hx, le_abs.2 $ or.inl _⟩,
+  simpa only [nat.one_le_cast, rat.cast_coe_nat],
+end
+
+lemma poly_growth_add {f g : ℕ → R} (hf : poly_growth f) (hg : poly_growth g) :
   poly_growth (f + g) :=
-poly_growth_in_parameter_add h hf hg
-
+poly_growth_in_parameter_add h_help hf hg
 
 end poly_growth
 
 section log_poly_growth
 
-def log_poly_growth (f : ℝ → ℝ) :=
+def log_poly_growth {R : Type*} [normed_ring R] (f : ℝ → R) :=
 poly_growth_in_parameter (real.log) f
 
 lemma log_poly_growth_add {f g : ℝ → ℝ}
@@ -139,5 +140,3 @@ lemma log_poly_growth_add {f g : ℝ → ℝ}
 poly_growth_in_parameter_add one_eventually_le_log hf hg
 
 end log_poly_growth
-
-end common_poly_growth_parameters

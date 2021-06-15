@@ -153,7 +153,8 @@ begin
   exact filter.mem_sets_of_superset this (λ x hx, mt (eq_zero_of_norm_fpow_eq_zero _ _) hx),
 end
 
-lemma nat_coe_tendsto : filter.tendsto (λ (n : ℕ), (↑n : ℝ)) filter.at_top filter.at_top :=
+lemma nat_coe_tendsto {𝕜 : Type*} [normed_linear_ordered_field 𝕜] [archimedean 𝕜] : 
+  filter.tendsto (λ (n : ℕ), (↑n : 𝕜)) filter.at_top filter.at_top :=
 begin
   refine filter.tendsto_at_top.2 (λ x, _),
   obtain ⟨m, hm⟩ := exists_nat_ge x,

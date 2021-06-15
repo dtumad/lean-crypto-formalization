@@ -51,4 +51,4 @@ def collision_resistant (H : hash_function K input_space output_space) : Prop :=
 ∀ (A : Π (sp : ℕ) (k : K sp), comp ((input_space sp) × (input_space sp)))
   (A_efficient : ∀ (k : Π sp, K sp), poly_time_comp (λ sp, A sp (k sp)))
   (A_well_formed : ∀ (sp : ℕ) (k : K sp) , k ∈ (H.keygen sp).support → (A sp k).is_well_formed),
-negligable_expirement_success (collision_finding_experiment H A) (by simpa using hA)
+negligable_expirement_success (collision_finding_experiment H A) (by simpa using A_well_formed)
