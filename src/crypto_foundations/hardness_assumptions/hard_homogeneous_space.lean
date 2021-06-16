@@ -144,8 +144,8 @@ section hard_homogeneous_space
     so this definition doesn't include functions for converting to and from representative bit-strings.
   TODO: clean up the massive typeclass dependencies -/
 class algorithmic_homogeneous_space (G X : ℕ → Type) 
-  [∀ n, fintype (G n)] [∀ n, fintype (X n)]
   [∀ n, inhabited (G n)] [∀ n, inhabited (X n)]
+  [∀ n, fintype (G n)] [∀ n, fintype (X n)]
   [∀ n, decidable_eq (G n)] [∀ n, decidable_eq (X n)]
   [∀ n, comm_group (G n)] [∀ n, mul_action (G n) (X n)]
   [∀ n, principal_action_class (G n) (X n)] :=

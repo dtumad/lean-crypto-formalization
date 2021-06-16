@@ -9,8 +9,6 @@ The definition allows for oracles to hide their internal state,
 
 -/
 
-section oracle_comp
-
 variables {A B C : Type}
 
 /-- `oracle_comp A B C` is the type of a computation of a value of type `C`,
@@ -34,6 +32,8 @@ def oracle_comp_base_exists (oc : oracle_comp A B C) : (A → B) → C :=
   (λ A B C D oc od hoc hod q, hod (hoc q) q)
   (λ A B C A' B' S hA hB hS oc ob s hoc hob q, ⟨hoc (λ a, (hob s a q).1), s⟩)
 
+namespace oracle_comp
+
 def decidable_eq_of_oracle_comp (oc : oracle_comp A B C) : 
   (A → B) → (A → decidable_eq B) → decidable_eq C :=
 @oracle_comp.rec_on (λ A B C _, (A → B) → (A → decidable_eq B) → decidable_eq C) 
@@ -43,5 +43,19 @@ def decidable_eq_of_oracle_comp (oc : oracle_comp A B C) :
   (λ A B C A' B' S hA hB hS oc ob s hoc hob t h, @prod.decidable_eq C S 
     (hoc (λ a, (oracle_comp_base_exists (ob s a) t).1) 
       (λ a, @decidable_eq_of_prod_left B S ⟨s⟩ (hob s a t h))) hS)
+
+def eval_distribution (oc : oracle_comp A B C)
+  (S : Type) [decidable_eq S] (f : S → A → comp (B × S)) (s : S) :
+  comp (C × S) :=
+begin
+  induction oc,
+  {
+    apply f,
+    use s,
+    use oc_a,
+  },
+  sorry, sorry, sorry,
+end
+
 
 end oracle_comp

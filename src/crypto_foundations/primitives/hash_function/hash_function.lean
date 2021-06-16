@@ -7,6 +7,7 @@ import computational_complexity.negligable
 
 This file defines the notion of a keyed hash function.
 
+TODO: Think about using `encodable` type-class
 -/
 
 /-- `keygen` takes in a security parameter and outputs a key bundled with the parameter

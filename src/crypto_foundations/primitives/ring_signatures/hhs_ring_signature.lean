@@ -24,7 +24,7 @@ Given security parameter `sp`, a signature on `n` parties is an element
   of type `K sp × vector (G sp) n × vector (G sp) n`.
 The first element is the hash key used to sign this, and the two vectors are the signature
 TODO: This should probably maybe a bunch of binds instead of let statemest? -/
-def ring_signature_of_hard_homogenous_space [hard_homogeneous_space G X] 
+def ring_signature_of_hhs [hard_homogeneous_space G X] 
   (x₀ : Π sp, X sp) (H : hash_function K (λ sp, list (X sp) × M) (λ sp, G sp)) : 
   ring_signature M (λ sp n, K sp × vector (G sp) n × vector (G sp) n) X G :=
 {
@@ -32,7 +32,7 @@ def ring_signature_of_hard_homogenous_space [hard_homogeneous_space G X]
     (λ g, comp.ret (g • (x₀ sp), g)),
   gen_well_formed := by apply_instance,
   gen_poly_time := begin
-    sorry
+    sorry,
   end,
   sign := begin
     intros sp n i sk inp,
@@ -51,9 +51,10 @@ def ring_signature_of_hard_homogenous_space [hard_homogeneous_space G X]
     let rᵢ : G sp := t₁ * sk⁻¹ * cᵢ⁻¹,
     let cs' : vector (G sp) n := vector.of_fn (λ j, if j = i then cᵢ else cs.nth j),
     let rs' : vector (G sp) n := vector.of_fn (λ j, if j = i then rᵢ else rs.nth j),
-    refine comp.ret (k, cs', rs'),
+    exact comp.ret (k, cs', rs'),
   end,
   sign_well_formed := by apply_instance,
+  sign_poly_time := sorry,
   verify := begin
     intros sp n inp,
     let R : vector (X sp) n := inp.1,
@@ -64,14 +65,33 @@ def ring_signature_of_hard_homogenous_space [hard_homogeneous_space G X]
     let Ts : vector (X sp) n := vector.of_fn (λ j, (rs.nth j * cs.nth j) • R.nth j),
     let h : list (X sp) × M := ⟨vector.to_list ((x₀ sp) ::ᵥ (R.append Ts)), m⟩,
     exact H.hash (k, h) = cs.to_list.prod,
-  end
+  end,
+  verify_poly_time := sorry,
 }
+
+namespace ring_signature_of_hard_homogenous_space
 
 variables [hard_homogeneous_space G X] 
   (x₀ : Π sp, X sp) (H : hash_function K (λ sp, list (X sp) × M) (λ sp, G sp))
 
+@[simp]
+lemma verify_apply {sp n : ℕ} (R : vector (X sp) n)
+  (m : M) (k : K sp) (cs rs : vector (G sp) n) : 
+  (ring_signature_of_hhs x₀ H).verify sp n (R, m, k, cs, rs) = 
+    (H.hash (k, ⟨vector.to_list ((x₀ sp) ::ᵥ (R.append (vector.of_fn (λ j, (rs.nth j * cs.nth j) • R.nth j)))), m⟩) = cs.to_list.prod) :=
+rfl
+
+@[simp] 
+lemma mem_support_gen_iff {sp : ℕ} (pk : X sp) (sk : G sp) :
+  (pk, sk) ∈ ((ring_signature_of_hhs x₀ H).gen sp).support ↔
+    pk = sk • (x₀ sp) :=
+begin
+  erw comp.mem_support_bind_rnd,
+  simp,
+end
+
 theorem hhs_ring_signature_complete :
-  (ring_signature_of_hard_homogenous_space x₀ H).complete :=
+  (ring_signature_of_hhs x₀ H).complete :=
 begin
   intros sp n i sk r m hsk hr,
   unfold comp.Pr,
@@ -82,7 +102,9 @@ begin
   obtain ⟨⟨k, cs, rs⟩, h, hb⟩ := hb,
   rw comp.mem_support_ret_iff at hb,
   refine hb.trans _,
-  simp [ring_signature_of_hard_homogenous_space],
-  sorry,
-  -- unfold (ring_signature_scheme_of_hard_homogenous_space x₀ H).verify,
+  simp [verify_apply],
+  erw comp.mem_support_bind_rnd at h,
+  simp at h,
 end
+
+end ring_signature_of_hard_homogenous_space

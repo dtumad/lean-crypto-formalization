@@ -1,5 +1,6 @@
 import crypto_foundations.dist_sem
 import computational_complexity.complexity_class
+import computational_complexity.negligable
 import data.list.basic
 
 /-!
@@ -9,7 +10,21 @@ This file defines ring signatures and ring signature schemes, and their cryptogr
 The security properties `complete`, `anonomyous`, and `unforgeable` are defined in terms of corresponding experiments.
 -/
 
-section ring_signature
+-- Old definition built in two steps, might still be preferable
+-- structure ring_signature (M : Type) (S : ℕ → Type) (PK SK : Type)
+--   [decidable_eq PK] [decidable_eq SK] :=
+-- (gen : comp (PK × SK))
+-- (gen_well_formed : gen.is_well_formed)
+-- (sign (n : ℕ) (i : fin n) (sk : SK) : vector PK n × M → comp (S n))
+-- (sign_well_formed (n : ℕ) (i : fin n) (sk : SK) : ∀ inp, (sign n i sk inp).is_well_formed)
+-- (verify (n : ℕ) : vector PK n × M × S n → bool)
+
+-- structure ring_signature_scheme (M : Type) (S : ℕ → ℕ → Type) (PK SK : ℕ → Type)
+--   [∀ sp, decidable_eq $ PK sp] [∀ sp, decidable_eq $ SK sp] :=
+-- (rs (sp : ℕ) : ring_signature' M (S sp) (PK sp) (SK sp))
+-- (gen_poly_time : poly_time_comp (λ sp, (rs sp).gen))
+-- (sign_poly_time : false)
+-- (verify_poly_time : ∀ n, poly_time_cost (λ sp, (rs sp).verify n))
 
 /-- Definition of a ring signature, all methods take a security parameter `sp` as input.
 `gen` returns a public key and secret key
@@ -17,7 +32,8 @@ section ring_signature
   and the list of signers is given in the form of an `n` element vector,
 `verify` checks whether a given signature is valid on a ring and a message
 TODO: Double check the polynomial time stuff -/
-structure ring_signature (M : Type) (S : ℕ → ℕ → Type) (PK SK : ℕ → Type) :=
+structure ring_signature (M : Type) (S : ℕ → ℕ → Type) (PK SK : ℕ → Type)
+  [∀ sp, decidable_eq $ PK sp] [∀ sp, decidable_eq $ SK sp] :=
 (gen (sp : ℕ) : comp (PK sp × SK sp))
 (gen_well_formed : ∀ sp, (gen sp).is_well_formed)
 (gen_poly_time : poly_time_comp gen)
@@ -28,23 +44,31 @@ structure ring_signature (M : Type) (S : ℕ → ℕ → Type) (PK SK : ℕ → 
 (verify (sp n : ℕ) : vector (PK sp) n × M × S sp n → bool)
 (verify_poly_time : ∀ (n : ℕ), poly_time_cost (λ sp, verify sp n))
 
+namespace ring_signature
+
 variables {M : Type} {PK SK : ℕ → Type} {S : ℕ → ℕ → Type} 
+variables [∀ sp, decidable_eq $ PK sp] [∀ sp, decidable_eq $ SK sp]
 variables (rs : ring_signature M S PK SK) {sp : ℕ}
 
-instance generate_keys_well_formed : (rs.gen sp).is_well_formed :=
+instance gen_well_formed' : (rs.gen sp).is_well_formed :=
 rs.gen_well_formed sp
 
-instance sign_well_formed (n : ℕ) (i : fin n) (sk : SK sp) (inp : vector (PK sp) n × M):
+instance sign_well_formed' (n : ℕ) (i : fin n) (sk : SK sp) (inp : vector (PK sp) n × M):
   (rs.sign sp n i sk inp).is_well_formed :=
 rs.sign_well_formed sp n i sk inp 
 
-def completeness_experiment (rs : ring_signature M S PK SK)
-  (sp n : ℕ) (i : fin n) (sk : SK sp) (r : vector (PK sp) n) (m : M) : comp bool :=
-comp.bind (rs.sign sp n i sk (r, m)) (λ s, comp.ret (rs.verify sp n (r, m, s)))
+section complete
+
+def completeness_experiment (rs : ring_signature M S PK SK) (sp n : ℕ) (i : fin n) (m : M)
+  : comp bool :=
+comp.bind (comp.vector_call (rs.gen sp) n) (λ ks,
+comp.bind (comp.ret $ vector.map prod.fst ks) (λ pks, 
+comp.bind (rs.sign sp n i (vector.nth ks i).snd (pks, m)) (λ s,
+comp.ret $ rs.verify sp n (pks, m, s))))
 
 instance completeness_expiriement.is_well_formed (rs : ring_signature M S PK SK)
-  (sp n : ℕ) (i : fin n) (sk : SK sp) (r : vector (PK sp) n) (m : M) : 
-  (completeness_experiment rs sp n i sk r m).is_well_formed :=
+  (sp n : ℕ) (i : fin n) (m : M) : 
+  (completeness_experiment rs sp n i m).is_well_formed :=
 begin
   unfold completeness_experiment,
   apply_instance,
@@ -52,17 +76,80 @@ end
 
 /-- A ring signature is complete if for any list if completeness experiment always succeeds.
   Note that success is only required if the ring `r` consists of public keys in the support of `-/
-def ring_signature.complete (rs : ring_signature M S PK SK) :=
-∀ (sp n : ℕ) (i : fin n) (sk : SK sp) (r : vector (PK sp) n) (m : M) 
-  (hsk : (r.nth i, sk) ∈ (rs.gen sp).support)
-  (hr : ∀ (j : fin n), ∃ sk, (r.nth i, sk) ∈ (rs.gen sp).support), 
-comp.Pr (completeness_experiment rs sp n i sk r m) = 1
+def complete (rs : ring_signature M S PK SK) :=
+∀ (sp n : ℕ) (i : fin n) (m : M), comp.Pr (completeness_experiment rs sp n i m) = 1
+
+end complete
+
+
+def signing_oracle (rs : ring_signature M S PK SK) (sp n : ℕ) :=
+Π (l : ℕ), (fin n × M × fin l × vector (PK sp) l → comp (S sp l))
+
+-- TODO: oracle should reject if PKₛ ∉ R
+def OSign (rs : ring_signature M S PK SK) (sp n : ℕ) (ks : vector (PK sp × SK sp) n) :
+  signing_oracle rs sp n :=
+begin
+  intro l,
+  rintro ⟨s, m, i, R⟩,
+  let pk : PK sp := (ks.nth s).1,
+  let sk : SK sp := (ks.nth s).2,
+  refine if (R.nth i) ≠ pk then sorry else _,
+  refine rs.sign sp l i sk (R, m),
+end
+
+section anonomyous
+
+-- `n` is the number of keys, will be polynomial in `sp`
+def anonomyous_experiment (rs : ring_signature M S PK SK) (sp n : ℕ)
+  (A : vector (PK sp) n → (signing_oracle rs sp n) → 
+    comp (Σ (l : ℕ), M × (fin n × fin l) × (fin n × fin l) × (vector (PK sp) l) × (S sp l → bool))) : 
+    comp bool :=
+(comp.vector_call (rs.gen sp) n).bind (λ ks, begin
+  let pks := vector.map prod.fst ks,
+  let sks := vector.map prod.snd ks,
+  refine comp.bind (A pks (OSign rs sp n ks)) (λ A_out, _),
+  let l := A_out.1,
+  let m : M := A_out.2.1,
+  let i₀ : fin n × fin l := A_out.2.2.1,
+  let i₁ : fin n × fin l := A_out.2.2.2.1,
+  let R : vector (PK sp) l := A_out.2.2.2.2.1,
+  let A' := A_out.2.2.2.2.2,
+  refine comp.bind (comp.rnd bool) (λ b, _),
+  let i : fin n × fin l := if b then i₁ else i₀,
+  let sk : SK sp := (ks.nth i.1).2,
+  refine (rs.sign sp l i.2 sk (R, m)).bind (λ σ, _),
+  refine comp.ret (A' σ = b),
+end)
+
+instance anonomyous_experiment.is_well_formed (rs : ring_signature M S PK SK) (sp n : ℕ)
+  (A : vector (PK sp) n → (signing_oracle rs sp n) → 
+    comp (Σ (l : ℕ), M × (fin n × fin l) × (fin n × fin l) × (vector (PK sp) l) × (S sp l → bool)))
+  (hA : ∀ x y, (A x y).is_well_formed) :
+  (anonomyous_experiment rs sp n A).is_well_formed :=
+begin
+  unfold anonomyous_experiment,
+  apply_instance,
+end
 
 -- TODO: rerwite these using the branch with oracle stuff
-def ring_signature.anonomyous (rs : ring_signature M S PK SK) :=
+def anonomyous (rs : ring_signature M S PK SK) :=
+∀ (p : polynomial ℕ)
+  (A : Π (sp : ℕ), vector (PK sp) (p.eval sp) → (signing_oracle rs sp (p.eval sp)) → 
+    comp (Σ (l : ℕ), M × (fin (p.eval sp) × fin l) × (fin (p.eval sp) × fin l) × (vector (PK sp) l) × (S sp l → bool)))
+  [hA : Π (sp : ℕ), ∀ x y, (A sp x y).is_well_formed],
+negligable (λ sp, begin
+  haveI : (anonomyous_experiment rs sp (p.eval sp) (A sp)).is_well_formed := 
+    anonomyous_experiment.is_well_formed rs sp (p.eval sp) (A sp) (hA sp),
+  exact comp.Pr (anonomyous_experiment rs sp (p.eval sp) (A sp)) - 0.5,
+end)
+
+end anonomyous
+
+section unforgeable
+
+def unforgeable (rs : ring_signature M S PK SK) :=
 false
 
-def ring_signature.unforgeable (rs : ring_signature M S PK SK) :=
-false
+end unforgeable
 
 end ring_signature

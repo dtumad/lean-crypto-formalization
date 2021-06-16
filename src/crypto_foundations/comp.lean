@@ -23,7 +23,6 @@ inductive comp : Π (A : Type), Type 1
 | repeat {A : Type} : Π (p : A → Prop) [decidable_pred p] (ca : comp A) , comp A
 
 namespace comp
-open comp
 
 variables {A B C : Type}
 
@@ -78,6 +77,21 @@ ca.rec (λ _ _ a, {a})
 
 @[simp] lemma mem_support_repeat (ca : comp A) (p : A → Prop) [decidable_pred p] (a : A) :
   a ∈ (repeat p ca).support ↔ a ∈ ca.support ∧ p a := by simp
+
+@[simp] lemma support_bind_ret [decidable_eq A] (a : A) (cb : A → comp B) :
+  ((ret a).bind cb).support = (cb a).support :=
+by rw [support_bind, support_ret, finset.singleton_bUnion]
+
+@[simp] lemma support_bind_rnd [inhabited A] [fintype A] [decidable_eq A] [decidable_eq B]
+  (cb : A → comp B) : ((rnd A).bind cb).support = finset.bUnion finset.univ (λ a, (cb a).support) :=
+begin
+  simp [support_rnd, support_bind],
+  congr,
+end
+
+@[simp] lemma mem_support_bind_rnd [inhabited A] [fintype A] [decidable_eq A] [decidable_eq B]
+  (cb : A → comp B) (b : B) : b ∈ ((rnd A).bind cb).support ↔ ∃ a, b ∈ (cb a).support :=
+by simp
 
 end support
 
@@ -147,15 +161,6 @@ begin
   split; assumption,
 end
 
--- instance repeat.is_well_formed {A : Type} (p : A → Prop) [decidable_pred p] 
---   (ca : comp A) [ca.is_well_formed] :
---   (repeat p ca).is_well_formed :=
--- begin
---   refine is_well_formed.well_formed_repeat p ca _ _,
---   apply_instance,
---   refine ⟨_, _⟩,
--- end
-
 theorem support_nonempty_of_well_formed (ca : comp A)
   [hca : ca.is_well_formed] : ca.support.nonempty :=
 begin
@@ -170,6 +175,29 @@ begin
 end
 
 end is_well_formed
+
+section vector_call
+
+def vector_call {A : Type} [decidable_eq A] (ca : comp A) : 
+  Π n, comp (vector A n)
+| 0 := comp.ret vector.nil
+| (n + 1) := ca.bind (λ a, (vector_call n).bind (λ as, comp.ret (a ::ᵥ as)))
+
+instance vector_call.is_well_formed {A : Type} [decidable_eq A]
+  (ca : comp A) [ca.is_well_formed] (n : ℕ) : (vector_call ca n).is_well_formed :=
+begin
+  induction n,
+  {
+    simp [vector_call],
+  },
+  {
+    simp [vector_call, n_ih],
+  }
+end
+
+variables 
+
+end vector_call
 
 end comp
 
