@@ -103,6 +103,7 @@ section anonomyous
 
 -- `n` is the number of keys, will be polynomial in `sp`
 -- Remember that the adversary can just ask for a challenge of something they've already seen previous oracle outputs for
+-- TODO: better to have two adversaries?
 def anonomyous_experiment (rs : ring_signature M S PK SK) (sp n : ℕ)
   (A : vector (PK sp) n → (signing_oracle rs sp n) → 
     comp (Σ (l : ℕ), M × (fin n × fin l) × (fin n × fin l) × (vector (PK sp) l) × (S sp l → bool))) : 
