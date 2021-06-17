@@ -11,7 +11,7 @@ This file defines ring signatures and ring signature schemes, and their cryptogr
 The security properties `complete`, `anonomyous`, and `unforgeable` are defined in terms of corresponding experiments.
 -/
 
--- Old definition built in two steps, might still be preferable
+-- Old definition built in two steps, probably better to eventually unbundle like this again
 -- structure ring_signature (M : Type) (S : ℕ → Type) (PK SK : Type)
 --   [decidable_eq PK] [decidable_eq SK] :=
 -- (gen : comp (PK × SK))
@@ -32,19 +32,19 @@ The security properties `complete`, `anonomyous`, and `unforgeable` are defined 
 `sign` returns a signature on a message, where `i : fin n` is the signer's index in the `n`-person ring
   and the list of signers is given in the form of an `n` element vector,
 `verify` checks whether a given signature is valid on a ring and a message
-TODO: Double check the polynomial time stuff -/
+-- TODO: Double check the polynomial time stuff, maybe more parameters should be included? -/
 structure ring_signature (M : Type) (S : ℕ → ℕ → Type) (PK SK : ℕ → Type)
   [∀ sp, decidable_eq $ PK sp] [∀ sp, decidable_eq $ SK sp]
   [∀ sp n, decidable_eq $ S sp n] :=
 (gen (sp : ℕ) : comp (PK sp × SK sp))
 (gen_well_formed : ∀ sp, (gen sp).is_well_formed)
-(gen_poly_time : poly_time_comp gen)
+(gen_poly_time : complexity_class.poly_time_comp₀ gen)
 (sign (sp n : ℕ) (i : fin n) (sk : SK sp) : (vector (PK sp) n) × M → comp (S sp n))
 (sign_well_formed : ∀ sp n i sk inp, (sign sp n i sk inp).is_well_formed)
-(sign_poly_time : ∀ (n : ℕ) (i : fin n) (sk : Π sp, SK sp) (inp : Π sp, vector (PK sp) n × M), 
-  poly_time_cost (λ sp, sign sp n i (sk sp)) ∧ poly_time_comp (λ sp, sign sp n i (sk sp) (inp sp)))
+(sign_poly_time : ∀ (n : ℕ) (i : fin n) (sk : Π sp, SK sp), 
+  complexity_class.poly_time_comp₁ (λ sp, sign sp n i (sk sp)))
 (verify (sp n : ℕ) : vector (PK sp) n × M × S sp n → bool)
-(verify_poly_time : ∀ (n : ℕ), poly_time_cost (λ sp, verify sp n))
+(verify_poly_time : ∀ (n : ℕ), complexity_class.poly_time_fun₁ (λ sp, verify sp n))
 
 namespace ring_signature
 
@@ -102,6 +102,7 @@ end
 section anonomyous
 
 -- `n` is the number of keys, will be polynomial in `sp`
+-- Remember that the adversary can just ask for a challenge of something they've already seen previous oracle outputs for
 def anonomyous_experiment (rs : ring_signature M S PK SK) (sp n : ℕ)
   (A : vector (PK sp) n → (signing_oracle rs sp n) → 
     comp (Σ (l : ℕ), M × (fin n × fin l) × (fin n × fin l) × (vector (PK sp) l) × (S sp l → bool))) : 
@@ -148,6 +149,8 @@ end)
 end anonomyous
 
 section unforgeable
+
+-- def unforgeable_experiment (rs : ring_signature M S PK SK) (sp : ℕ)
 
 def unforgeable (rs : ring_signature M S PK SK) :=
 false

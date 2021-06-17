@@ -4,7 +4,6 @@ import computational_complexity.polynomial_asymptotics
 import to_mathlib
 
 import data.real.nnreal
-import analysis.special_functions.exp_log
 
 /-!
 # Cost Model for shallow embedding
@@ -50,7 +49,7 @@ variables {A : Type u} {B : Type v} {C : Type w} {D : Type*}
 
 -- Axioms for deriving costs of functions from related functions
 
--- TODO: Is this worth including? Maybe not useful
+-- TODO: Is this worth including? Maybe not useful (maybe makes `poly_growth` easier down the line?)
 axiom ge_zero_of_has_cost {f : A → B} {n : ℚ} (h : has_cost f n) : n ≥ 0
 
 /-- `has_cost` is a lower bound, so any higher cost is also a bound -/

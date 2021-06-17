@@ -149,15 +149,24 @@ class algorithmic_homogeneous_space (G X : ℕ → Type)
   [∀ n, decidable_eq (G n)] [∀ n, decidable_eq (X n)]
   [∀ n, comm_group (G n)] [∀ n, mul_action (G n) (X n)]
   [∀ n, principal_action_class (G n) (X n)] :=
-(mul_efficient : poly_time_cost (λ sp, (λ x, x.1 * x.2 : G sp × G sp → G sp)))
-(inv_efficient : poly_time_cost (λ sp, (λ x, x⁻¹ : G sp → G sp)))
-(smul_efficient : poly_time_cost (λ n, (λ x, x.1 • x.2 : G n × X n → X n)))
-(G_eq_efficient : poly_time_cost (λ n, (λ x, x.1 = x.2 : G n × G n → Prop)))
-(X_eq_efficient : poly_time_cost (λ n, (λ x, x.1 = x.2 : X n × X n → Prop)))
-(G_rnd_efficient : poly_time_comp (λ n, comp.rnd (G n)))
+-- TODO: see if they should use fun₂ version instead
+(mul_efficient : complexity_class.poly_time_fun₁
+  (λ sp, (λ x, x.1 * x.2 : G sp × G sp → G sp)))
+(inv_efficient : complexity_class.poly_time_fun₁ 
+  (λ sp, (λ x, x⁻¹ : G sp → G sp)))
+(smul_efficient : complexity_class.poly_time_fun₁ 
+  (λ n, (λ x, x.1 • x.2 : G n × X n → X n)))
+(G_eq_efficient : complexity_class.poly_time_fun₁ 
+  (λ n, (λ x, x.1 = x.2 : G n × G n → Prop)))
+(X_eq_efficient : complexity_class.poly_time_fun₁ 
+  (λ n, (λ x, x.1 = x.2 : X n × X n → Prop)))
+(G_rnd_efficient : complexity_class.poly_time_comp₀ 
+  (λ n, comp.rnd (G n)))
 -- TODO: This is needed right? to actually construct more complicated functions
-(G_copy_efficient : poly_time_cost (λ n, (λ g, (g, g) : G n → G n × G n)))
-(X_copy_efficient : poly_time_cost (λ n, (λ x, (x, x) : X n → X n × X n)))
+(G_copy_efficient : complexity_class.poly_time_fun₁ 
+  (λ n, (λ g, (g, g) : G n → G n × G n)))
+(X_copy_efficient : complexity_class.poly_time_fun₁ 
+  (λ n, (λ x, (x, x) : X n → X n × X n)))
 
 -- TODO: derive rnd X efficient by choosing a generator and using G_rnd_efficient
 
@@ -169,25 +178,24 @@ variables (G X : ℕ → Type)
   [∀ n, principal_action_class (G n) (X n)]
 
 lemma mul_right_efficient [H : algorithmic_homogeneous_space G X] (g : Π n, G n) :
-  poly_time_cost (λ n, λ (x : G n), (g n) * x) :=
+  complexity_class.poly_time_fun₁ (λ n, λ (x : G n), (g n) * x) :=
 let ⟨f, hf, hf'⟩ := H.mul_efficient in
   ⟨f, hf, λ n, has_cost.has_cost_of_uncurry' (g n) (hf' n)⟩
 
-lemma mul_left_efficient [algorithmic_homogeneous_space G X] (g : Π n, G n) :
-  poly_time_cost (λ n, λ (x : G n), x * (g n)) :=
-poly_time_cost_ext (mul_right_efficient G X g) (λ n x, mul_comm (g n) x)
+-- lemma mul_left_efficient [algorithmic_homogeneous_space G X] (g : Π n, G n) :
+--   complexity_class.poly_time_fun₁ (λ n, λ (x : G n), x * (g n)) :=
+-- poly_time_cost_ext (mul_right_efficient G X g) (λ n x, mul_comm (g n) x)
 
 /-- Extension of `algorithmic_homogenous_space` with hardness assumptions.
   Vectorization and parallelization correspond to discrete-log and Diffie-Hellman -/
--- TODO: `h'` assumptions look very weird right now.
 class hard_homogeneous_space extends algorithmic_homogeneous_space G X :=
-(vectorization_hard : ∀ (f : Π n, X n × X n → comp (G n)) 
-  [∀ n x y, (f n (x, y)).is_well_formed] 
-  (h : poly_time_cost f) (h' : ∀ (x y : Π n, X n), poly_time_comp (λ n, f n (x n, y n))),
-  negligable (λ n, vectorization_advantage (f n)))
-(parallelization_hard : ∀ (f : Π n, X n × X n × X n → comp (X n))
-  [∀ n x y z, (f n (x, y, z)).is_well_formed]
-  (h : poly_time_cost f) (h' : ∀ (x y z : Π n, X n), poly_time_comp (λ n, f n (x n, y n, z n))),
-  negligable (λ n, parallelization_advantage (G n) (f n)))
+(vectorization_hard : ∀ (A : Π sp, X sp × X sp → comp (G sp)) 
+  [∀ sp x y, (A sp (x, y)).is_well_formed] 
+  (h : complexity_class.poly_time_comp₁ A),
+  negligable (λ sp, vectorization_advantage (A sp)))
+(parallelization_hard : ∀ (A : Π sp, X sp × X sp × X sp → comp (X sp))
+  [∀ sp x y z, (A sp (x, y, z)).is_well_formed]
+  (h : complexity_class.poly_time_comp₁ A),
+  negligable (λ n, parallelization_advantage (G n) (A n)))
 
 end hard_homogeneous_space

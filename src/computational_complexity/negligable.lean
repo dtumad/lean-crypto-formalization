@@ -161,6 +161,7 @@ begin
           pow_mul_negligable_iff, polynomial.eval_monomial] } } }
 end
 
+-- TODO: implement something general like this
 -- theorem two_pow_negligable : negligable (λ n, 1 / 2 ^ n) :=
 -- begin
 --   refine (negligable_final_iff_const _ 0).2 _,
