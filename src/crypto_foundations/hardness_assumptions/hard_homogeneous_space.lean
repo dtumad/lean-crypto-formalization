@@ -98,7 +98,7 @@ def vectorization_experiment (adversary : X × X → comp G) : comp bool :=
 (comp.bind (comp.rnd X) (λ x1, 
   comp.bind (comp.rnd X) (λ x2,
   comp.bind (adversary (x1, x2)) (λ g,
-  comp.ret (g = vectorization x1 x2)))))
+  comp.ret (g = δ x1 x2)))))
 
 instance vectorization_experiment.is_well_formed {f : X × X → comp G} 
   [∀ x y, (f (x, y)).is_well_formed] : (vectorization_experiment f).is_well_formed :=
@@ -112,7 +112,7 @@ noncomputable def vectorization_advantage (adversary : X × X → comp G)
 
 variable (G)
 
-/-- Analogue of the Diffie-Helman assumption game -/
+/-- Analogue of the decisional Diffie-Helman experiment -/
 def parallelization_experiment (adversary : X × X × X → comp X) : comp bool :=
 (comp.bind (comp.rnd X) (λ x1,
   comp.bind (comp.rnd X) (λ x2,

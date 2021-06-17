@@ -49,7 +49,8 @@ structure ring_signature (M : Type) (S : ℕ → ℕ → Type) (PK SK : ℕ → 
 namespace ring_signature
 
 variables {M : Type} {PK SK : ℕ → Type} {S : ℕ → ℕ → Type} 
-variables [∀ sp, decidable_eq $ PK sp] [∀ sp, decidable_eq $ SK sp] [∀ sp n, decidable_eq $ S sp n]
+variables [∀ sp, decidable_eq $ PK sp] [∀ sp, decidable_eq $ SK sp] 
+variables [decidable_eq M] [∀ sp n, decidable_eq $ S sp n]
 variables (rs : ring_signature M S PK SK) {sp : ℕ}
 
 instance gen_well_formed' : (rs.gen sp).is_well_formed :=
@@ -61,7 +62,7 @@ rs.sign_well_formed sp n i sk inp
 
 section complete
 
-def completeness_experiment (rs : ring_signature M S PK SK) (sp n : ℕ) (i : fin n) (m : M)
+def completeness_experiment (rs : ring_signature M S PK SK) (sp n : ℕ) (i : fin n) (m : M) 
   : comp bool :=
 comp.bind (comp.vector_call (rs.gen sp) n) (λ ks,
 comp.bind (comp.ret $ vector.map prod.fst ks) (λ pks, 
@@ -76,27 +77,27 @@ begin
   apply_instance,
 end
 
-/-- A ring signature is complete if for any list if completeness experiment always succeeds.
-  Note that success is only required if the ring `r` consists of public keys in the support of `-/
+/-- A ring signature is complete if for any list if completeness experiment always succeeds `-/
 def complete (rs : ring_signature M S PK SK) :=
 ∀ (sp n : ℕ) (i : fin n) (m : M), comp.Pr (completeness_experiment rs sp n i m) = 1
 
 end complete
 
+/-- Oracle on inputs `(s, m, ⟨l, i, R⟩)` returns `rs.sign sp i skₛ ⟨R, m⟩` -/
+def temp (rs : ring_signature M S PK SK) (sp n : ℕ) (A : Type) :=
+oracle_comp (fin n × M × Σ (l : ℕ), fin l × vector (PK sp) l)
+  (Σ (l : ℕ), with_bot $ S sp l) A
 
-def signing_oracle (rs : ring_signature M S PK SK) (sp n : ℕ) :=
-Π (l : ℕ), (fin n × M × fin l × vector (PK sp) l → comp (with_bot $ S sp l))
-
--- TODO: oracle should reject if PKₛ ∉ R
-def OSign (rs : ring_signature M S PK SK) (sp n : ℕ) (ks : vector (PK sp × SK sp) n) :
-  signing_oracle rs sp n :=
+def temp_run {A : Type} [decidable_eq A] {rs : ring_signature M S PK SK} {sp n : ℕ}
+  (t : temp rs sp n A) (ks : vector (PK sp × SK sp) n) : comp A :=
 begin
-  intro l,
-  rintro ⟨s, m, i, R⟩,
+  refine (t.eval_distribution unit _ ()).bind (λ b, comp.ret b.1),
+  rintros _ ⟨s, m, ⟨l, i, R⟩⟩,
   let pk : PK sp := (ks.nth s).1,
   let sk : SK sp := (ks.nth s).2,
-  refine if (R.nth i) ≠ pk then comp.ret ⊥ else _,
-  refine (rs.sign sp l i sk (R, m)).bind (λ s, comp.ret s),
+  refine (rs.sign sp l i sk (R, m)).bind (λ σ, _),
+  refine comp.ret (⟨l, _⟩, ()),
+  refine if (R.nth i) = pk then σ else ⊥,
 end
 
 section anonomyous
@@ -105,56 +106,76 @@ section anonomyous
 -- Remember that the adversary can just ask for a challenge of something they've already seen previous oracle outputs for
 -- TODO: better to have two adversaries?
 def anonomyous_experiment (rs : ring_signature M S PK SK) (sp n : ℕ)
-  (A : vector (PK sp) n → (signing_oracle rs sp n) → 
-    comp (Σ (l : ℕ), M × (fin n × fin l) × (fin n × fin l) × (vector (PK sp) l) × (S sp l → bool))) : 
-    comp bool :=
+  (A : vector (PK sp) n → temp rs sp n (Σ (l : ℕ), M × (fin n × fin l) × (fin n × fin l) × (vector (PK sp) l)))
+  (A' : vector (PK sp) n → (Σ (l : ℕ), S sp l) → temp rs sp n bool) : 
+  comp bool :=
 (comp.vector_call (rs.gen sp) n).bind (λ ks, begin
   let pks := vector.map prod.fst ks,
   let sks := vector.map prod.snd ks,
-  refine comp.bind (A pks (OSign rs sp n ks)) (λ A_out, _),
+  refine comp.bind (temp_run (A pks) ks) (λ A_out, _),
   let l := A_out.1,
   let m : M := A_out.2.1,
   let i₀ : fin n × fin l := A_out.2.2.1,
   let i₁ : fin n × fin l := A_out.2.2.2.1,
-  let R : vector (PK sp) l := A_out.2.2.2.2.1,
-  let A' := A_out.2.2.2.2.2,
+  let R : vector (PK sp) l := A_out.2.2.2.2,
   refine comp.bind (comp.rnd bool) (λ b, _),
   let i : fin n × fin l := if b then i₁ else i₀,
   let sk : SK sp := (ks.nth i.1).2,
   refine (rs.sign sp l i.2 sk (R, m)).bind (λ σ, _),
-  refine comp.ret (A' σ = b),
+  refine (temp_run (A' pks ⟨l, σ⟩) ks).bind (λ b', _),
+  exact comp.ret (b' = b),
 end)
 
+-- TODO: need to show oracle_comp evaluation gives well_formed comp
 instance anonomyous_experiment.is_well_formed (rs : ring_signature M S PK SK) (sp n : ℕ)
-  (A : vector (PK sp) n → (signing_oracle rs sp n) → 
-    comp (Σ (l : ℕ), M × (fin n × fin l) × (fin n × fin l) × (vector (PK sp) l) × (S sp l → bool)))
-  (hA : ∀ x y, (A x y).is_well_formed) :
-  (anonomyous_experiment rs sp n A).is_well_formed :=
+  (A : vector (PK sp) n → temp rs sp n (Σ (l : ℕ), M × (fin n × fin l) × (fin n × fin l) × (vector (PK sp) l)))
+  (A' : vector (PK sp) n → (Σ (l : ℕ), S sp l) → temp rs sp n bool) :
+  (anonomyous_experiment rs sp n A A').is_well_formed :=
 begin
   unfold anonomyous_experiment,
-  apply_instance,
+  sorry,
+  -- apply_instance,
 end
 
--- TODO: rerwite these using the branch with oracle stuff
+-- TODO: Require `A` and `A'` have some poly_time hypothesis
 def anonomyous (rs : ring_signature M S PK SK) :=
-∀ (p : polynomial ℕ)
-  (A : Π (sp : ℕ), vector (PK sp) (p.eval sp) → (signing_oracle rs sp (p.eval sp)) → 
-    comp (Σ (l : ℕ), M × (fin (p.eval sp) × fin l) × (fin (p.eval sp) × fin l) × (vector (PK sp) l) × (S sp l → bool)))
-  [hA : Π (sp : ℕ), ∀ x y, (A sp x y).is_well_formed],
+∀ (p : polynomial ℕ) (n : ℕ) (hn : n = p.eval sp)
+  (A : Π sp, vector (PK sp) n → temp rs sp n (Σ (l : ℕ), M × (fin n × fin l) × (fin n × fin l) × (vector (PK sp) l)))
+  (A' : Π sp, vector (PK sp) n → (Σ (l : ℕ), S sp l) → temp rs sp n bool),
 negligable (λ sp, begin
-  haveI : (anonomyous_experiment rs sp (p.eval sp) (A sp)).is_well_formed := 
-    anonomyous_experiment.is_well_formed rs sp (p.eval sp) (A sp) (hA sp),
-  exact comp.Pr (anonomyous_experiment rs sp (p.eval sp) (A sp)) - 0.5,
+  haveI : (anonomyous_experiment rs sp n (A sp) (A' sp)).is_well_formed := 
+    anonomyous_experiment.is_well_formed rs sp n (A sp) (A' sp),
+  exact comp.Pr (anonomyous_experiment rs sp n (A sp) (A' sp)) - 0.5,
 end)
 
 end anonomyous
 
 section unforgeable
 
--- def unforgeable_experiment (rs : ring_signature M S PK SK) (sp : ℕ)
+-- TODO: A also needs a corruption oracle for this experiment
+def unforgeable_experiment (rs : ring_signature M S PK SK) (sp n : ℕ)
+  (A : vector (PK sp) n → temp rs sp n (M × Σ (l : ℕ), vector (PK sp) l × S sp l)) : 
+  comp bool :=
+(comp.vector_call (rs.gen sp) n).bind (λ ks, begin
+  let pks := vector.map prod.fst ks,
+  let sks := vector.map prod.snd ks,
+  refine comp.bind (temp_run (A pks) ks) (λ A_out, _),
+  let m : M := A_out.1,
+  let l : ℕ := A_out.2.1,
+  let R : vector (PK sp) l := A_out.2.2.1,
+  -- TODO: `R` should be a subset of `pks` - corrupted parties
+  -- TODO: Adversary can't previously have queried Osign(*, m, R)
+  let σ : S sp l := A_out.2.2.2,
+  exact comp.ret (rs.verify sp l (R, m, σ)),
+end)
 
 def unforgeable (rs : ring_signature M S PK SK) :=
-false
+∀ (p : polynomial ℕ) (n : ℕ) (hn : n = p.eval sp)
+  (A : Π sp, vector (PK sp) n → temp rs sp n (M × Σ (l : ℕ), vector (PK sp) l × S sp l)),
+negligable (λ sp, begin
+  haveI : (unforgeable_experiment rs sp n (A sp)).is_well_formed := sorry,
+  exact comp.Pr (unforgeable_experiment rs sp n (A sp)),
+end)
 
 end unforgeable
 
