@@ -1,4 +1,5 @@
 import crypto_foundations.dist_sem
+import crypto_foundations.vector_call
 import computational_complexity.complexity_class
 import computational_complexity.negligable
 import data.list.basic
@@ -33,7 +34,8 @@ The security properties `complete`, `anonomyous`, and `unforgeable` are defined 
 `verify` checks whether a given signature is valid on a ring and a message
 TODO: Double check the polynomial time stuff -/
 structure ring_signature (M : Type) (S : ℕ → ℕ → Type) (PK SK : ℕ → Type)
-  [∀ sp, decidable_eq $ PK sp] [∀ sp, decidable_eq $ SK sp] :=
+  [∀ sp, decidable_eq $ PK sp] [∀ sp, decidable_eq $ SK sp]
+  [∀ sp n, decidable_eq $ S sp n] :=
 (gen (sp : ℕ) : comp (PK sp × SK sp))
 (gen_well_formed : ∀ sp, (gen sp).is_well_formed)
 (gen_poly_time : poly_time_comp gen)
@@ -47,7 +49,7 @@ structure ring_signature (M : Type) (S : ℕ → ℕ → Type) (PK SK : ℕ → 
 namespace ring_signature
 
 variables {M : Type} {PK SK : ℕ → Type} {S : ℕ → ℕ → Type} 
-variables [∀ sp, decidable_eq $ PK sp] [∀ sp, decidable_eq $ SK sp]
+variables [∀ sp, decidable_eq $ PK sp] [∀ sp, decidable_eq $ SK sp] [∀ sp n, decidable_eq $ S sp n]
 variables (rs : ring_signature M S PK SK) {sp : ℕ}
 
 instance gen_well_formed' : (rs.gen sp).is_well_formed :=
@@ -83,7 +85,7 @@ end complete
 
 
 def signing_oracle (rs : ring_signature M S PK SK) (sp n : ℕ) :=
-Π (l : ℕ), (fin n × M × fin l × vector (PK sp) l → comp (S sp l))
+Π (l : ℕ), (fin n × M × fin l × vector (PK sp) l → comp (with_bot $ S sp l))
 
 -- TODO: oracle should reject if PKₛ ∉ R
 def OSign (rs : ring_signature M S PK SK) (sp n : ℕ) (ks : vector (PK sp × SK sp) n) :
@@ -93,8 +95,8 @@ begin
   rintro ⟨s, m, i, R⟩,
   let pk : PK sp := (ks.nth s).1,
   let sk : SK sp := (ks.nth s).2,
-  refine if (R.nth i) ≠ pk then sorry else _,
-  refine rs.sign sp l i sk (R, m),
+  refine if (R.nth i) ≠ pk then comp.ret ⊥ else _,
+  refine (rs.sign sp l i sk (R, m)).bind (λ s, comp.ret s),
 end
 
 section anonomyous

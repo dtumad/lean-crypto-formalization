@@ -176,28 +176,5 @@ end
 
 end is_well_formed
 
-section vector_call
-
-def vector_call {A : Type} [decidable_eq A] (ca : comp A) : 
-  Π n, comp (vector A n)
-| 0 := comp.ret vector.nil
-| (n + 1) := ca.bind (λ a, (vector_call n).bind (λ as, comp.ret (a ::ᵥ as)))
-
-instance vector_call.is_well_formed {A : Type} [decidable_eq A]
-  (ca : comp A) [ca.is_well_formed] (n : ℕ) : (vector_call ca n).is_well_formed :=
-begin
-  induction n,
-  {
-    simp [vector_call],
-  },
-  {
-    simp [vector_call, n_ih],
-  }
-end
-
-variables 
-
-end vector_call
-
 end comp
 

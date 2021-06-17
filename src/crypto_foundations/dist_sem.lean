@@ -94,8 +94,8 @@ lemma eval_distribution_bind (cb : comp B) (ca : B → comp A) [cb.is_well_forme
   eval_distribution (bind cb ca) = (eval_distribution cb).bind (λ b, eval_distribution (ca b)) :=
 trans (by reflexivity) (pmf.bind_on_support_eq_bind (eval_distribution cb) _)
 
-@[simp] lemma eval_distribution_rnd {A : Type} [inhabited A] [fintype A] [decidable_eq A] 
-  : eval_distribution (rnd A) = pmf.const A := 
+@[simp] lemma eval_distribution_rnd {A : Type} [inhabited A] [fintype A] [decidable_eq A] :
+  eval_distribution (rnd A) = pmf.const A := 
 rfl
 
 end eval_distribution

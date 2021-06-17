@@ -196,3 +196,14 @@ begin
     exact hx,
   }
 end
+
+lemma tsum_unique {α β : Type*} [add_comm_monoid α] [topological_space α]
+  [t2_space α] [decidable_eq β]
+  (f : β → α) (b : β) (hf : ∀ b' ≠ b, f b' = 0) :
+  tsum f = f b :=
+begin
+  refine (tsum_congr (λ b', _)).trans (tsum_ite_eq b (f b)),
+  split_ifs with h h,
+  { exact congr_arg f h },
+  { exact hf _ h }
+end
