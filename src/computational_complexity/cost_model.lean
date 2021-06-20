@@ -74,7 +74,7 @@ axiom has_cost_of_uncurry' {f : A → B → C} {n : ℚ} (a : A) :
     has_cost (function.uncurry f) n → has_cost (f a) n
 
 /-- componentwise evaluation is as easy as the two original evaluations -/
-axiom has_cost_pair {f : A → B} {g : C → D} {n m : ℚ} :
+axiom has_cost_prod {f : A → B} {g : C → D} {n m : ℚ} :
     has_cost f n → has_cost g m → has_cost (λ (x : A × C), (f x.fst, g x.snd)) (n + m)
 
 -- Costs of basic commonly used functions
@@ -82,17 +82,33 @@ axiom has_cost_pair {f : A → B} {g : C → D} {n m : ℚ} :
 axiom has_cost_const (b : B) :
   has_cost (λ _, b : A → B) 0
 
-axiom has_cost_id : 
+axiom has_cost_id (A : Type u) : 
   has_cost (id : A → A) 0
 
-axiom has_cost_fst :
+axiom has_cost_fst (A : Type u) (B : Type v) :
     has_cost (prod.fst : A × B → A) 0
 
-axiom has_cost_snd :
+axiom has_cost_snd (A : Type u) (B : Type v) :
     has_cost (prod.snd : A × B → B) 0
 
-axiom has_cost_ret {A : Type} [decidable_eq A] :
+axiom has_cost_ret (A : Type) [decidable_eq A] :
   has_cost (comp.ret : A → comp A) 0
+
+axiom has_cost_bool_eq :
+  has_cost (λ x, x.1 = x.2 : bool × bool → Prop) 0
+
+axiom has_cost_prod_fst (A : Type u) (B : Type v) :
+  has_cost (λ a, (λ b, (a, b)) : A → (B → A × B)) 0
+
+axiom has_cost_prod_snd {A : Type u} (a : A) (B : Type v) :
+  has_cost (λ b, (a, b) : B → A × B) 0
+
+axiom has_cost_prod_swap (A : Type u) (B : Type v) :
+  has_cost (λ x, (x.snd, x.fst) : A × B → B × A) 0
+
+-- TODO: Is this the best way to make this?
+axiom has_cost_unit (A : Type u) : 
+  has_cost (λ a, (a, unit.star) : A → A × unit) 0
 
 -- Additional properties derived from the basic axioms
 
@@ -103,7 +119,7 @@ lemma has_cost_ext {f g : A → B} {n : ℚ} (hf : has_cost f n)
 
 @[simp] lemma has_cost_id_iff {n : ℚ} : 
   has_cost (id : A → A) n ↔ n ≥ 0 :=
-⟨ge_zero_of_has_cost, λ h, has_cost_of_le h has_cost_id⟩
+⟨ge_zero_of_has_cost, λ h, has_cost_of_le h (has_cost_id A)⟩
 
 @[simp] lemma has_cost_const_iff {b : B} {n : ℚ} :
   has_cost (λ _, b : A → B) n ↔ n ≥ 0 :=
@@ -111,23 +127,24 @@ lemma has_cost_ext {f g : A → B} {n : ℚ} (hf : has_cost f n)
 
 @[simp] lemma has_cost_fst_iff {n : ℚ} :
   has_cost (prod.fst : A × B → A) n ↔ n ≥ 0 :=
-⟨ge_zero_of_has_cost, λ h, has_cost_of_le h has_cost_fst⟩
+⟨ge_zero_of_has_cost, λ h, has_cost_of_le h (has_cost_fst A B)⟩
 
 @[simp] lemma has_cost_snd_iff {n : ℚ} :
   has_cost (prod.snd : A × B → B) n ↔ n ≥ 0 :=
-⟨ge_zero_of_has_cost, λ h, has_cost_of_le h has_cost_snd⟩
+⟨ge_zero_of_has_cost, λ h, has_cost_of_le h (has_cost_snd A B)⟩
 
 @[simp] lemma has_cost_ret_iff {A : Type} [decidable_eq A] {n : ℚ} :
   has_cost (comp.ret : A → comp A) n ↔ n ≥ 0 :=
-⟨ge_zero_of_has_cost, λ h, has_cost_of_le h has_cost_ret⟩
+⟨ge_zero_of_has_cost, λ h, has_cost_of_le h (has_cost_ret A)⟩
 
 lemma has_cost_comp {f : A → B} {g : B → C} {n m : ℚ} : 
   has_cost f n → has_cost g m → has_cost (g ∘ f) (n + m) :=
 λ hf hg, by simpa using has_cost_compose hf (has_cost_const _) (λ _, hg)
 
-lemma has_cost_comp_le {f : A → B} {g : B → C} {n m p : ℚ} (h : n + m ≤ p) :
-  has_cost f n → has_cost g m → has_cost (g ∘ f) p :=
-λ hf hg, has_cost_of_le h (has_cost_comp hf hg)
+lemma has_cost_comp_le {f : A → B} {g : B → C} {n m p : ℚ} 
+  (hf : has_cost f n) (hg : has_cost g m) (h : n + m ≤ p) :
+  has_cost (g ∘ f) p :=
+has_cost_of_le h (has_cost_comp hf hg)
 
 lemma has_cost_uncurry_le {f : A → B → C} {n1 n2 n3 : ℚ} (h : n1 + n2 ≤ n3) :
   has_cost f n1 → (∀ n, has_cost (f n) n2) → has_cost (function.uncurry f) n3 :=
@@ -137,9 +154,45 @@ lemma has_cost_curry {A B C : Type} {f : (A × B) → C} {n : ℚ} :
   has_cost f n → has_cost (function.curry f) n :=
 λ hf, has_cost_of_uncurry (by simpa using hf)
 
-lemma has_cost_pair_le {f : A → B} {g : C → D} {n m p : ℚ} (h : n + m ≤ p) :
-    has_cost f n → has_cost g m → has_cost (λ (x : A × C), (f x.fst, g x.snd)) (p) :=
-λ hf hg, has_cost_of_le h (has_cost_pair hf hg)
+lemma has_cost_prod_snd' {A : Type u} (a : A) (B : Type v) :
+  has_cost (λ b, (b, a) : B → B × A) 0 :=
+begin
+  refine has_cost_ext 
+    (has_cost_comp_le (has_cost_prod_snd a B)
+      (has_cost_prod_swap A B) $ by ring_nf) _,
+  simp only [implies_true_iff, eq_self_iff_true],
+end
+
+lemma has_cost_prod_le {f : A → B} {g : C → D} {n m p : ℚ}
+  (hf : has_cost f n) (hg : has_cost g m) (h : n + m ≤ p) :
+  has_cost (λ (x : A × C), (f x.fst, g x.snd)) (p) :=
+has_cost_of_le h (has_cost_prod hf hg)
+
+-- TODO: These two proofs could have a tactic sort of thing to solve them.
+-- Should take in a list of functions, and set the goal as a proof of composition and proof of extensionality
+lemma has_cost_of_prod {f : A → B} {g : C → D} {n : ℚ} [inhabited C]
+  (h : has_cost (λ (x : A × C), (f x.fst, g x.snd)) n) :
+  has_cost f n :=
+begin
+  have h1 : has_cost (λ a, (a, arbitrary C) : A → A × C) 0 :=
+    has_cost_prod_snd' (arbitrary C) A,
+  have h2 : has_cost (λ x, x.fst : B × D → B) 0 :=
+    has_cost_fst B D,
+  refine has_cost_ext (has_cost_comp_le h1 (has_cost_comp h h2) $ by linarith) _,
+  simp only [implies_true_iff, eq_self_iff_true],
+end
+
+lemma has_cost_of_prod' {f : A → B} {g : C → D} {n : ℚ} [inhabited A]
+  (h : has_cost (λ (x : A × C), (f x.fst, g x.snd)) n) :
+  has_cost g n :=
+begin
+  have h1 : has_cost (λ c, (arbitrary A, c) : C → A × C) 0 :=
+    has_cost_prod_snd (arbitrary A) C,
+  have h2 : has_cost (λ x, x.snd : B × D → D) 0 :=
+    has_cost_snd B D,
+  refine has_cost_ext (has_cost_comp_le h1 (has_cost_comp h h2) $ by linarith) _,
+  simp only [implies_true_iff, eq_self_iff_true],
+end
 
 end has_cost
 

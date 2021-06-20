@@ -13,6 +13,8 @@ For the actual probability distributions of the computation, see `eval_distribut
 Well formed computations are defined so that they will have a nonempty support
 -/
 
+-- TODO: I think the types should just be able to jump universes.
+
 /-- computational monad to extend the base language of Lean for cryptography purposes.
   `rnd n` represents a computation of purely random bits, 
   and `repeat` can repeat a random computation until some predicate holds -/

@@ -149,7 +149,7 @@ class algorithmic_homogeneous_space (G X : ℕ → Type)
   [∀ n, decidable_eq (G n)] [∀ n, decidable_eq (X n)]
   [∀ n, comm_group (G n)] [∀ n, mul_action (G n) (X n)]
   [∀ n, principal_action_class (G n) (X n)] :=
--- TODO: see if they should use fun₂ version instead
+-- TODO: see if they should use fun₂ version instead of currying
 (mul_efficient : complexity_class.poly_time_fun₁
   (λ sp, (λ x, x.1 * x.2 : G sp × G sp → G sp)))
 (inv_efficient : complexity_class.poly_time_fun₁ 

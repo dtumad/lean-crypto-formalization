@@ -11,7 +11,7 @@ This file defines ring signatures and ring signature schemes, and their cryptogr
 The security properties `complete`, `anonomyous`, and `unforgeable` are defined in terms of corresponding experiments.
 -/
 
--- Old definition built in two steps, probably better to eventually unbundle like this again
+-- TODO: Old definition built in two steps, maybe better to eventually unbundle like this again
 -- structure ring_signature (M : Type) (S : ℕ → Type) (PK SK : Type)
 --   [decidable_eq PK] [decidable_eq SK] :=
 -- (gen : comp (PK × SK))
@@ -84,12 +84,12 @@ def complete (rs : ring_signature M S PK SK) :=
 end complete
 
 /-- Oracle on inputs `(s, m, ⟨l, i, R⟩)` returns `rs.sign sp i skₛ ⟨R, m⟩` -/
-def temp (rs : ring_signature M S PK SK) (sp n : ℕ) (A : Type) :=
+def signing_oracle_comp (rs : ring_signature M S PK SK) (sp n : ℕ) (A : Type) :=
 oracle_comp (fin n × M × Σ (l : ℕ), fin l × vector (PK sp) l)
   (Σ (l : ℕ), with_bot $ S sp l) A
 
 def temp_run {A : Type} [decidable_eq A] {rs : ring_signature M S PK SK} {sp n : ℕ}
-  (t : temp rs sp n A) (ks : vector (PK sp × SK sp) n) : comp A :=
+  (t : signing_oracle_comp rs sp n A) (ks : vector (PK sp × SK sp) n) : comp A :=
 begin
   refine (t.eval_distribution unit _ ()).bind (λ b, comp.ret b.1),
   rintros _ ⟨s, m, ⟨l, i, R⟩⟩,
@@ -100,14 +100,22 @@ begin
   refine if (R.nth i) = pk then σ else ⊥,
 end
 
+instance temp_run.is_well_formed {A : Type} [decidable_eq A] {rs : ring_signature M S PK SK} {sp n : ℕ}
+  {t : signing_oracle_comp rs sp n A} {ks : vector (PK sp × SK sp) n} :
+  (temp_run t ks).is_well_formed :=
+begin
+  simp [temp_run],
+end
+
 section anonomyous
 
 -- `n` is the number of keys, will be polynomial in `sp`
 -- Remember that the adversary can just ask for a challenge of something they've already seen previous oracle outputs for
 -- TODO: better to have two adversaries?
+-- Note that the second adversary gets all the secret keys as well
 def anonomyous_experiment (rs : ring_signature M S PK SK) (sp n : ℕ)
-  (A : vector (PK sp) n → temp rs sp n (Σ (l : ℕ), M × (fin n × fin l) × (fin n × fin l) × (vector (PK sp) l)))
-  (A' : vector (PK sp) n → (Σ (l : ℕ), S sp l) → temp rs sp n bool) : 
+  (A : vector (PK sp) n → signing_oracle_comp rs sp n (Σ (l : ℕ), M × (fin n × fin l) × (fin n × fin l) × (vector (PK sp) l)))
+  (A' : vector (PK sp × SK sp) n → (Σ (l : ℕ), S sp l) → signing_oracle_comp rs sp n bool) : 
   comp bool :=
 (comp.vector_call (rs.gen sp) n).bind (λ ks, begin
   let pks := vector.map prod.fst ks,
@@ -122,17 +130,18 @@ def anonomyous_experiment (rs : ring_signature M S PK SK) (sp n : ℕ)
   let i : fin n × fin l := if b then i₁ else i₀,
   let sk : SK sp := (ks.nth i.1).2,
   refine (rs.sign sp l i.2 sk (R, m)).bind (λ σ, _),
-  refine (temp_run (A' pks ⟨l, σ⟩) ks).bind (λ b', _),
+  refine (temp_run (A' ks ⟨l, σ⟩) ks).bind (λ b', _),
   exact comp.ret (b' = b),
 end)
 
 -- TODO: need to show oracle_comp evaluation gives well_formed comp
 instance anonomyous_experiment.is_well_formed (rs : ring_signature M S PK SK) (sp n : ℕ)
-  (A : vector (PK sp) n → temp rs sp n (Σ (l : ℕ), M × (fin n × fin l) × (fin n × fin l) × (vector (PK sp) l)))
-  (A' : vector (PK sp) n → (Σ (l : ℕ), S sp l) → temp rs sp n bool) :
+  (A : vector (PK sp) n → signing_oracle_comp rs sp n (Σ (l : ℕ), M × (fin n × fin l) × (fin n × fin l) × (vector (PK sp) l)))
+  (A' : vector (PK sp × SK sp) n → (Σ (l : ℕ), S sp l) → signing_oracle_comp rs sp n bool) :
   (anonomyous_experiment rs sp n A A').is_well_formed :=
 begin
   unfold anonomyous_experiment,
+  simp,
   sorry,
   -- apply_instance,
 end
@@ -140,8 +149,8 @@ end
 -- TODO: Require `A` and `A'` have some poly_time hypothesis
 def anonomyous (rs : ring_signature M S PK SK) :=
 ∀ (p : polynomial ℕ) (n : ℕ) (hn : n = p.eval sp)
-  (A : Π sp, vector (PK sp) n → temp rs sp n (Σ (l : ℕ), M × (fin n × fin l) × (fin n × fin l) × (vector (PK sp) l)))
-  (A' : Π sp, vector (PK sp) n → (Σ (l : ℕ), S sp l) → temp rs sp n bool),
+  (A : Π sp, vector (PK sp) n → signing_oracle_comp rs sp n (Σ (l : ℕ), M × (fin n × fin l) × (fin n × fin l) × (vector (PK sp) l)))
+  (A' : Π sp, vector (PK sp × SK sp) n → (Σ (l : ℕ), S sp l) → signing_oracle_comp rs sp n bool),
 negligable (λ sp, begin
   haveI : (anonomyous_experiment rs sp n (A sp) (A' sp)).is_well_formed := 
     anonomyous_experiment.is_well_formed rs sp n (A sp) (A' sp),
@@ -154,7 +163,7 @@ section unforgeable
 
 -- TODO: A also needs a corruption oracle for this experiment
 def unforgeable_experiment (rs : ring_signature M S PK SK) (sp n : ℕ)
-  (A : vector (PK sp) n → temp rs sp n (M × Σ (l : ℕ), vector (PK sp) l × S sp l)) : 
+  (A : vector (PK sp) n → signing_oracle_comp rs sp n (M × Σ (l : ℕ), vector (PK sp) l × S sp l)) : 
   comp bool :=
 (comp.vector_call (rs.gen sp) n).bind (λ ks, begin
   let pks := vector.map prod.fst ks,
@@ -171,7 +180,7 @@ end)
 
 def unforgeable (rs : ring_signature M S PK SK) :=
 ∀ (p : polynomial ℕ) (n : ℕ) (hn : n = p.eval sp)
-  (A : Π sp, vector (PK sp) n → temp rs sp n (M × Σ (l : ℕ), vector (PK sp) l × S sp l)),
+  (A : Π sp, vector (PK sp) n → signing_oracle_comp rs sp n (M × Σ (l : ℕ), vector (PK sp) l × S sp l)),
 negligable (λ sp, begin
   haveI : (unforgeable_experiment rs sp n (A sp)).is_well_formed := sorry,
   exact comp.Pr (unforgeable_experiment rs sp n (A sp)),

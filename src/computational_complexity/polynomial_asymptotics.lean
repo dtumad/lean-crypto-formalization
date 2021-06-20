@@ -115,6 +115,18 @@ poly_growth_in_parameter (λ n, ↑n : ℕ → ℚ) f
 
 variables {R : Type*} [preorder R] [normed_ring R] [norm_one_class R] 
 
+@[simp] lemma poly_growth_const (r : R) : 
+  poly_growth (λ _, r) :=
+poly_growth_in_parameter_const _ _
+
+@[simp] lemma poly_growth_zero :
+  poly_growth (0 : ℕ → R) :=
+poly_growth_in_parameter_zero _
+
+@[simp] lemma poly_growth_one :
+  poly_growth (1 : ℕ → R) :=
+poly_growth_in_parameter_one _
+
 -- TODO: generalize `poly_growth` to any situation allowing *something* like this
 lemma h_help : ∀ᶠ (x : ℕ) in filter.at_top, 1 ≤ ∥(x : ℚ)∥ :=
 begin
