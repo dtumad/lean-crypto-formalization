@@ -67,10 +67,13 @@ end
 
 end asymptotics
 
-def decidable_eq_of_prod_left {A B : Type*} [inhabited B] [h : decidable_eq (A × B)] : 
+def decidable_eq_of_prod_left (A B : Type*) [inhabited B] [h : decidable_eq (A × B)] : 
   decidable_eq A :=
-λ a a', decidable.rec (λ h, is_false (λ h', h (prod.mk.inj_iff.mpr ⟨h', rfl⟩))) 
-  (λ h, is_true (prod.mk.inj_iff.mp h).1) (h ⟨a, arbitrary B⟩ ⟨a', arbitrary B⟩)
+λ a a', by simpa only [and_true, prod.mk.inj_iff, eq_self_iff_true] using h (a, arbitrary B) (a', arbitrary B)
+
+def decidable_eq_of_prod_right (A B : Type*) [inhabited A] [h : decidable_eq (A × B)] :
+  decidable_eq B :=
+λ b b', by simpa only [true_and, prod.mk.inj_iff, eq_self_iff_true] using h (arbitrary A, b) (arbitrary A, b')
 
 @[simp] lemma card_bitvec {n : ℕ} : fintype.card (bitvec n) = 2 ^ n :=
 by rw [card_vector n, fintype.card_bool]

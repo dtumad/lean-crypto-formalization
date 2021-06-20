@@ -25,15 +25,17 @@ inductive oracle_comp : Type → Type → Type → Type 1
     Π (oc : oracle_comp A B C) (ob : S → A → oracle_comp A' B' (B × S)) (s : S), 
       oracle_comp A' B' (C × S)
 
+namespace oracle_comp
+
 /-- Every oracle_comp gives rise to a mapping from query assignments to the base comp type,
-  where the value in `C` is the result of the computation if oracles behave like the input -/
+  where the value in `C` is the result of the computation if oracles behave like the input,
+  and internal `comp` values return their base values
+  -- TODO: rename this -/
 def oracle_comp_base_exists (oc : oracle_comp A B C) : (A → B) → C :=
 @oracle_comp.rec_on (λ A B C _, (A → B) → C) A B C oc
   (λ A B a q, q a) (λ A B C cc hcc, cc.comp_base_exists)
   (λ A B C D oc od hoc hod q, hod (hoc q) q)
   (λ A B C A' B' S hA hB hS oc ob s hoc hob q, ⟨hoc (λ a, (hob s a q).1), s⟩)
-
-namespace oracle_comp
 
 def decidable_eq_of_oracle_comp (oc : oracle_comp A B C) : 
   (A → B) → (A → decidable_eq B) → decidable_eq C :=
@@ -49,38 +51,19 @@ def eval_distribution (oc : oracle_comp A B C) :
   Π (S : Type) [decidable_eq S] (f : S → A → comp (B × S)) (s : S), comp (C × S) :=
 begin
   induction oc with A B a A B C c A B C D oc od hoc hod A B C A' B' S' hA hB hS' oc ob s' hoc hob,
-  {
-    intros S hS o s,
-    exact o s a,
-  },
-  {
-    intros S hS o s,
+  { exact λ S hS o s, o s a },
+  { intros S hS o s,
     haveI : decidable_eq C := comp.decidable_eq_of_comp c,
-    refine c.bind (λ c, comp.ret (c, s)),
-  },
-  {
-    introsI S hS o s,
-    specialize hoc S,
-    refine (hoc o s).bind _,
-    rintro ⟨c, s'⟩,
-    exact hod c S o s',
-  },
-  {
-    -- TODO: This is wrong
-    introsI S hS o' s,
-    specialize hoc S',
-    refine (hoc (λ s' a, _) s').bind _,
-    {
-      specialize hob s' a S o' s,
-      refine hob.bind (λ x, comp.ret x.1)
-      
-    },
-    {
-      rintro ⟨c, s'⟩,
-      haveI : decidable_eq C := sorry,
-      refine comp.ret ((c, s'), s),
-    }
-  }
+    refine c.bind (λ c, comp.ret (c, s)) },
+  { introsI S hS o s,
+    exact (hoc S o s).bind (λ cs', hod cs'.fst S o cs'.snd) },
+  { introsI S hS o' s,
+    specialize hoc (S' × S) (λ ss a, (hob ss.fst a S o' ss.snd).bind 
+      (λ x, comp.ret (x.1.1, (x.1.2, x.2)))) (s', s),
+    haveI : decidable_eq (C × S' × S) := comp.decidable_eq_of_comp hoc,
+    haveI : inhabited (S' × S) := ⟨(s', s)⟩,
+    haveI : decidable_eq C := decidable_eq_of_prod_left C (S' × S),
+    refine (hoc.bind $ λ x, comp.ret ((x.1, x.2.1), x.2.2)) }
 end
 
 
