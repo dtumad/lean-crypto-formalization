@@ -44,6 +44,37 @@ poly_time_fun₁ c ∧ ∀ (a : Π n, A n), poly_time_comp₀ (λ n, c n (a n))
 def poly_time_comp₂ (c : Π n, A n → B n → comp (T n)) : Prop :=
 poly_time_fun₁ c ∧ ∀ (a : Π n, A n), poly_time_comp₁ (λ n, c n (a n))
 
+lemma poly_time_fun₂_iff_uncurry (c : Π n, A n → B n → C n) :
+  poly_time_fun₂ c ↔ poly_time_fun₁ (λ n, function.uncurry (c n) : Π n, A n × B n → C n) :=
+begin
+  refine ⟨λ h, _, λ h, _⟩,
+  { obtain ⟨p, hp, hpc⟩ := h,
+    refine ⟨p + p, poly_growth_add hp hp, 
+      λ n, has_cost.has_cost_uncurry (hpc n).1 (hpc n).2⟩ },
+  { obtain ⟨p, hp, hpc⟩ := h,
+    refine ⟨p, hp, λ n, ⟨has_cost.has_cost_of_uncurry (hpc n), 
+      λ a, has_cost.has_cost_of_uncurry' a (hpc n)⟩⟩ }
+end
+
+lemma poly_time_fun₁_of_has_cost_const {A B : ℕ → Type*} {c : Π n, A n → B n} {x : ℚ}
+  (hn : ∀ n, has_cost (c n) x) : poly_time_fun₁ c :=
+⟨λ n, x, poly_growth_const x, hn⟩
+
+@[simp]
+lemma poly_time_fun₁_const (A : ℕ → Type*) {B : ℕ → Type*} (b : Π (n : ℕ), B n) :
+  poly_time_fun₁ (λ n, (λ _, b n : A n → B n)) :=
+poly_time_fun₁_of_has_cost_const (λ n, has_cost.has_cost_const (b n))
+
+@[simp]
+lemma poly_time_fun₁_fst (A B : ℕ → Type*) :
+  poly_time_fun₁ (λ n, (prod.fst : A n × B n → A n)) :=
+poly_time_fun₁_of_has_cost_const (λ n, has_cost.has_cost_fst (A n) (B n))
+
+@[simp]
+lemma poly_time_fun₁_snd (A B : ℕ → Type*) :
+  poly_time_fun₁ (λ n, (prod.snd : A n × B n → B n)) :=
+poly_time_fun₁_of_has_cost_const (λ n, has_cost.has_cost_snd (A n) (B n))
+
 lemma poly_time_fun₁_comp {c : Π n, A n → B n} {d : Π n, B n → C n}
   (hc : poly_time_fun₁ c) (hd : poly_time_fun₁ d) :
   poly_time_fun₁ (λ n, d n ∘ c n) :=
@@ -56,36 +87,7 @@ lemma poly_time_fun₁_comp_ext {c : Π n, A n → B n} {d : Π n, B n → C n} 
 (funext $ λ n, funext $ λ a, (he n a).symm : (λ n, d n ∘ c n) = e)
   ▸ poly_time_fun₁_comp hc hd
 
-lemma poly_time_fun₂_iff_uncurry (c : Π n, A n → B n → C n) :
-  poly_time_fun₂ c ↔ poly_time_fun₁ (λ n, function.uncurry (c n) : Π n, A n × B n → C n) :=
-begin
-  split; intro h,
-  {
-    obtain ⟨p, hp, hpc⟩ := h,
-    refine ⟨p + p, poly_growth_add hp hp, λ n, _⟩,
-    specialize hpc n,
-    refine has_cost.has_cost_uncurry hpc.1 hpc.2,
-  },
-  { obtain ⟨p, hp, hpc⟩ := h,
-    refine ⟨p, hp, λ n, _⟩,
-    specialize hpc n,
-    refine ⟨has_cost.has_cost_of_uncurry hpc, _⟩,
-    exact λ a, has_cost.has_cost_of_uncurry' a hpc,
-  }
-end
-
-section particulars
-
 @[simp]
-lemma poly_time_fun₁_fst (A B : ℕ → Type*) :
-  poly_time_fun₁ (λ n, (prod.fst : A n × B n → A n)) :=
-⟨0, poly_growth_zero, λ n, has_cost.has_cost_fst (A n) (B n)⟩
-
-@[simp]
-lemma poly_time_fun₁_snd (A B : ℕ → Type*) :
-  poly_time_fun₁ (λ n, (prod.snd : A n × B n → B n)) :=
-⟨0, poly_growth_zero, λ n, has_cost.has_cost_snd (A n) (B n)⟩
-
 lemma poly_time_fun₁_pair_iff [∀ n, inhabited $ A n] [∀ n, inhabited $ C n]
   (c : Π n, A n → B n) (d : Π n, C n → D n) :
   poly_time_fun₁ (λ n, (λ x, (c n x.1, d n x.2) : A n × C n → B n × D n)) ↔
@@ -99,8 +101,5 @@ begin
     refine ⟨p + q, poly_growth_add hp hq, λ n, _⟩,
     simpa using has_cost.has_cost_prod (h n) (h' n) }
 end
-
-
-end particulars
 
 end complexity_class

@@ -6,18 +6,16 @@ import to_mathlib
 
 This file defines related notions of `comp A` and `oracle_comp B C A`,
 which represent nondeterministic computations of elements of type `A`.
-`oracle_comp B C A` further extends this to be a computation with an oracle from `B` to `C`.
 
 The support of a computation is further defined to be the possible outputs of the computation.
 For the actual probability distributions of the computation, see `eval_distribution` in `dist_sem.lean`.
-Well formed computations are defined so that they will have a nonempty support
+Well formed computations are defined so that they will have a nonempty support (making the distribution a `pmf`)
 -/
-
--- TODO: I think the types should just be able to jump universes.
 
 /-- computational monad to extend the base language of Lean for cryptography purposes.
   `rnd n` represents a computation of purely random bits, 
-  and `repeat` can repeat a random computation until some predicate holds -/
+  and `repeat` can repeat a random computation until some predicate holds.
+  Note that because Lean doesn't have an impredicative set type, this raises universe levels -/
 inductive comp : Π (A : Type), Type 1
 | ret {A : Type} [hA : decidable_eq A] : Π (a : A), comp A
 | bind {A B : Type} : Π (cb : comp B) (ca : B → comp A), comp A

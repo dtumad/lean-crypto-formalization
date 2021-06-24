@@ -24,20 +24,21 @@ begin
   refine pow_le_pow hx hnm,
 end 
 
-lemma fpow_is_O_fpow_of_le {a b : ℤ} (h : a ≤ b) :
-  (is_O (λ (n : ℕ), (n : ℝ) ^ a) (λ n, (n : ℝ) ^ b) filter.at_top) :=
+
+lemma fpow_is_O_fpow_of_le {α 𝕜 : Type*} [preorder α] [normed_field 𝕜] 
+  (f : α → 𝕜)
+  {a b : ℤ} (h : a ≤ b) (h' : ∀ᶠ (x : α) in filter.at_top, 1 ≤ ∥f x∥):
+  (is_O (λ n, (f n) ^ a) (λ n, (f n) ^ b) filter.at_top) :=
 begin
   refine is_O.of_bound 1 _,
-  rw filter.eventually_at_top,
-  use 2,
+  refine filter.sets_of_superset filter.at_top h' _,
   intros x hx,
-  simp,
-  refine (fpow_le_iff_le _).2 h,
-  rw ← nat.cast_one,
-  exact nat.cast_lt.2 hx,
+  simp only [one_mul, normed_field.norm_fpow, set.mem_set_of_eq],
+  refine fpow_le_of_le hx h,
 end
 
-lemma inv_is_O_inv_iff {l : filter ℕ} (f g : ℕ → ℝ)
+lemma inv_is_O_inv_iff {α 𝕜 𝕜' : Type*} [preorder α] [normed_field 𝕜] [normed_field 𝕜']
+  {l : filter α} {f : α → 𝕜} {g : α → 𝕜'}
   (hf : ∀ᶠ x in l, ∥f x∥ ≠ 0) (hg : ∀ᶠ x in l, ∥g x∥ ≠ 0) :
   is_O (λ n, (f n)⁻¹) (λ n, (g n)⁻¹) l ↔ is_O g f l :=
 begin
@@ -136,7 +137,33 @@ calc y = real.log (real.exp y) : (real.log_exp y).symm
 
 end log_exp
 
-lemma poly_help {p : polynomial ℝ} (hp : 1 ≤ p.degree) (c : ℝ) :
+lemma norm_nat_coe_le {𝕜 : Type*} [normed_field 𝕜]
+  (n : ℕ) : ∥(n : 𝕜)∥ ≤ (n : ℝ) :=
+begin
+  induction n with n hn,
+  { simp only [norm_zero, nat.cast_zero] },
+  { simp only [nat.cast_succ],
+    refine le_trans (norm_add_le _ _) _,
+    refine add_le_add hn (le_of_eq norm_one) }
+end
+
+-- lemma helper' {𝕜 : Type*} [normed_field 𝕜] :
+--   ∀ᶠ (x : ℕ) in filter.at_top, 1 ≤ ∥(x : 𝕜)∥ :=
+-- begin
+
+-- end
+
+-- lemma helper {𝕜 : Type*} [normed_linear_ordered_field 𝕜] :
+--   ∀ᶠ (x : 𝕜) in filter.at_top, 1 ≤ ∥x∥ :=
+-- begin
+--   simp,
+--   use 1,
+--   intros x hx,
+  
+-- end
+
+lemma poly_help
+  {p : polynomial ℝ} (hp : 1 ≤ p.degree) (c : ℝ) :
   ∀ᶠ x in filter.at_top, c ≤ ∥p.eval x∥ :=
 begin
   have := polynomial.abs_tendsto_at_top p hp,
@@ -145,19 +172,18 @@ begin
   exact this,
 end
 
-lemma eq_zero_of_norm_fpow_eq_zero (r : ℝ) (z : ℤ) (h : ∥r ^ z∥ = 0) : r = 0 :=
-by simpa [real.norm_eq_abs] using fpow_eq_zero (normed_field.norm_fpow r z ▸ h : ∥r∥^z = 0)
+lemma eq_zero_of_norm_fpow_eq_zero {𝕜 : Type*} [normed_field 𝕜] {x : 𝕜} {z : ℤ}
+  (hx : ∥x ^ z∥ = 0) : x = 0 :=
+fpow_eq_zero (norm_eq_zero.mp hx)
 
-lemma eventually_fpow_ne_zero (z : ℤ) : ∀ᶠ (n : ℕ) in filter.at_top, ∥(n : ℝ) ^ z∥ ≠ 0 :=
-begin
-  have : ∀ᶠ (n : ℕ) in filter.at_top, (n : ℝ) ≠ 0,
-  { simp only [filter.eventually_at_top, ge_iff_le, ne.def, nat.cast_eq_zero],
-    refine ⟨1, λ b hb, by linarith⟩ },
-  exact filter.mem_sets_of_superset this (λ x hx, mt (eq_zero_of_norm_fpow_eq_zero _ _) hx),
-end
+lemma eventually_fpow_ne_zero {α 𝕜 : Type*} [preorder α]
+  [normed_linear_ordered_field 𝕜] (ι : α → 𝕜)
+  (hι : ∀ᶠ (n : α) in filter.at_top, (ι n) ≠ 0) (z : ℤ) : 
+  ∀ᶠ (n : α) in filter.at_top, ∥(ι n) ^ z∥ ≠ 0 :=
+filter.mem_sets_of_superset hι (λ x hx, mt eq_zero_of_norm_fpow_eq_zero hx)
 
-lemma nat_coe_tendsto {𝕜 : Type*} [normed_linear_ordered_field 𝕜] [archimedean 𝕜] : 
-  filter.tendsto (λ (n : ℕ), (↑n : 𝕜)) filter.at_top filter.at_top :=
+lemma nat_coe_tendsto (R : Type*) [linear_ordered_ring R] [archimedean R] : 
+  filter.tendsto (λ (n : ℕ), (↑n : R)) filter.at_top filter.at_top :=
 begin
   refine filter.tendsto_at_top.2 (λ x, _),
   obtain ⟨m, hm⟩ := exists_nat_ge x,
@@ -165,10 +191,43 @@ begin
   refine ⟨m, λ y hy, hm.trans $ nat.cast_le.2 hy⟩,
 end
 
-lemma comap_thing : (filter.at_top : filter ℕ) = filter.comap (λ n, ↑n : ℕ → ℝ) filter.at_top :=
+lemma nat_coe_eventually_ne_zero (R : Type*) [linear_ordered_ring R] [archimedean R] :
+  ∀ᶠ (x : ℕ) in filter.at_top, (x : R) ≠ 0 :=
+begin
+  simp only [filter.eventually_at_top, ge_iff_le, ne.def, nat.cast_eq_zero],
+  exact ⟨1, λ x hx h, not_le_of_lt zero_lt_one (le_trans hx (le_of_eq h))⟩,
+end
+
+-- This is the main lemma that doesn't generalize away from ℝ
+lemma real.norm_nat_coe_eventually_ge (c : ℝ) :
+  ∀ᶠ (x : ℕ) in filter.at_top, c ≤ ∥(x : ℝ)∥ :=
+begin
+  simp,
+  obtain ⟨y, hy⟩ := exists_nat_ge c,
+  refine ⟨y, λ x hx, hy.trans _⟩,
+  simpa,
+end
+
+@[simp]
+lemma comap_nat_coe_at_top (R : Type*) [linear_ordered_ring R] [archimedean R] : 
+  filter.comap (λ n, ↑n : ℕ → R) filter.at_top = 
+  (filter.at_top : filter ℕ) :=
 begin
   ext t,
   split,
+  {
+    intro h,
+    rw filter.mem_comap_sets at h,
+    obtain ⟨s, hs, h⟩ := h,
+    rw filter.mem_at_top_sets at hs ⊢,
+    obtain ⟨a, ha⟩ := hs,
+    obtain ⟨b, hb⟩ := exists_nat_ge a,
+    refine ⟨b, λ x hx, h _⟩,
+    rw set.mem_preimage,
+    refine ha x (hb.trans _),
+    rw nat.cast_le,
+    exact hx,
+  },
   {
     intro h,
     rw filter.mem_comap_sets,
@@ -185,19 +244,6 @@ begin
       refine ha x hx,
     }
   },
-  {
-    intro h,
-    rw filter.mem_comap_sets at h,
-    obtain ⟨s, hs, h⟩ := h,
-    rw filter.mem_at_top_sets at hs ⊢,
-    obtain ⟨a, ha⟩ := hs,
-    obtain ⟨b, hb⟩ := exists_nat_ge a,
-    refine ⟨b, λ x hx, h _⟩,
-    rw set.mem_preimage,
-    refine ha x (hb.trans _),
-    rw nat.cast_le,
-    exact hx,
-  }
 end
 
 lemma tsum_unique {α β : Type*} [add_comm_monoid α] [topological_space α]

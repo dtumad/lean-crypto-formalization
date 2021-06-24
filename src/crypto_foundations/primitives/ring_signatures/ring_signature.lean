@@ -11,7 +11,7 @@ This file defines ring signatures and ring signature schemes, and their cryptogr
 The security properties `complete`, `anonomyous`, and `unforgeable` are defined in terms of corresponding experiments.
 -/
 
--- TODO: Old definition built in two steps, maybe better to eventually unbundle like this again
+-- TODO: Try this unbundled version again (might help with separation of concerns)
 -- structure ring_signature (M : Type) (S : ℕ → Type) (PK SK : Type)
 --   [decidable_eq PK] [decidable_eq SK] :=
 -- (gen : comp (PK × SK))
@@ -32,7 +32,7 @@ The security properties `complete`, `anonomyous`, and `unforgeable` are defined 
 `sign` returns a signature on a message, where `i : fin n` is the signer's index in the `n`-person ring
   and the list of signers is given in the form of an `n` element vector,
 `verify` checks whether a given signature is valid on a ring and a message
--- TODO: Double check the polynomial time stuff, maybe more parameters should be included? -/
+-- TODO: Double check the polynomial time stuff, maybe more parameters should be included in them? -/
 structure ring_signature (M : Type) (S : ℕ → ℕ → Type) (PK SK : ℕ → Type)
   [∀ sp, decidable_eq $ PK sp] [∀ sp, decidable_eq $ SK sp]
   [∀ sp n, decidable_eq $ S sp n] :=
@@ -105,6 +105,7 @@ instance temp_run.is_well_formed {A : Type} [decidable_eq A] {rs : ring_signatur
   (temp_run t ks).is_well_formed :=
 begin
   simp [temp_run],
+  sorry,
 end
 
 section anonomyous
@@ -142,8 +143,6 @@ instance anonomyous_experiment.is_well_formed (rs : ring_signature M S PK SK) (s
 begin
   unfold anonomyous_experiment,
   simp,
-  sorry,
-  -- apply_instance,
 end
 
 -- TODO: Require `A` and `A'` have some poly_time hypothesis
@@ -151,7 +150,7 @@ def anonomyous (rs : ring_signature M S PK SK) :=
 ∀ (p : polynomial ℕ) (n : ℕ) (hn : n = p.eval sp)
   (A : Π sp, vector (PK sp) n → signing_oracle_comp rs sp n (Σ (l : ℕ), M × (fin n × fin l) × (fin n × fin l) × (vector (PK sp) l)))
   (A' : Π sp, vector (PK sp × SK sp) n → (Σ (l : ℕ), S sp l) → signing_oracle_comp rs sp n bool),
-negligable (λ sp, begin
+asymptotics.negligable (λ sp, begin
   haveI : (anonomyous_experiment rs sp n (A sp) (A' sp)).is_well_formed := 
     anonomyous_experiment.is_well_formed rs sp n (A sp) (A' sp),
   exact comp.Pr (anonomyous_experiment rs sp n (A sp) (A' sp)) - 0.5,
@@ -181,7 +180,7 @@ end)
 def unforgeable (rs : ring_signature M S PK SK) :=
 ∀ (p : polynomial ℕ) (n : ℕ) (hn : n = p.eval sp)
   (A : Π sp, vector (PK sp) n → signing_oracle_comp rs sp n (M × Σ (l : ℕ), vector (PK sp) l × S sp l)),
-negligable (λ sp, begin
+asymptotics.negligable (λ sp, begin
   haveI : (unforgeable_experiment rs sp n (A sp)).is_well_formed := sorry,
   exact comp.Pr (unforgeable_experiment rs sp n (A sp)),
 end)

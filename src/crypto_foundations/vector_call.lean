@@ -18,17 +18,8 @@ end
 @[simp]
 lemma vector.cons_eq_cons_iff {A : Type} {n : ℕ} (a a' : A) (v v' : vector A n) :
   a ::ᵥ v = a' ::ᵥ v' ↔ a = a' ∧ v = v' :=
-begin
-  split,
-  {
-    intro h,
-    sorry,
-  },
-  {
-    rintro ⟨ha, hv⟩,
-    rw [ha, hv],
-  }
-end
+⟨λ h, ⟨by simpa using congr_arg vector.head h, by simpa using congr_arg vector.tail h⟩,
+  λ h, by rw [h.1, h.2]⟩
 
 theorem eval_distribution_vector_call {A : Type} [decidable_eq A] (ca : comp A) [ca.is_well_formed]
   (n : ℕ) (a : A) (v : vector A n) :
@@ -45,6 +36,7 @@ begin
     simp [hv'.symm] }
 end
 
+@[simp]
 theorem mem_support_vector_call_iff {A : Type} [decidable_eq A] 
   (ca : comp A) {n : ℕ} (v : vector A n) : 
   v ∈ (vector_call ca n).support ↔ ∀ (i : fin n), (v.nth i) ∈ ca.support :=
@@ -56,24 +48,19 @@ begin
     { obtain ⟨a, ha, as, has, hv⟩ := h,
       rw hv,
       have := (hn as).1 has,
-      sorry },
-    {
-      refine ⟨v.head, _, v.tail, _, _⟩,
-      {
-        convert h 0,
-        simp only [vector.nth_zero],
-      },
-      {
-        rw hn v.tail,
+      intro i,
+      by_cases hi : i = 0,
+      { simpa [hi] using ha },
+      { rw [← fin.succ_pred i hi, vector.nth_cons_succ a as (i.pred hi)],
+        exact this (i.pred hi) } },
+    { refine ⟨v.head, _, v.tail, _, _⟩,
+      { convert h 0,
+        simp only [vector.nth_zero] },
+      { rw hn v.tail,
         intro i,
         convert h (i + 1) using 1,
-        simp only [fin.coe_eq_cast_succ, fin.coe_succ_eq_succ, vector.nth_tail],
-      },
-      {
-        exact v.cons_head_tail.symm,
-      }
-    }
-  }
+        simp only [fin.coe_eq_cast_succ, fin.coe_succ_eq_succ, vector.nth_tail] },
+      { exact v.cons_head_tail.symm } } }
 end
 
 end comp

@@ -120,7 +120,7 @@ lemma has_cost_ext {f g : A → B} {n : ℚ} (hf : has_cost f n)
 @[simp] lemma has_cost_id_iff {n : ℚ} : 
   has_cost (id : A → A) n ↔ n ≥ 0 :=
 ⟨ge_zero_of_has_cost, λ h, has_cost_of_le h (has_cost_id A)⟩
-
+ 
 @[simp] lemma has_cost_const_iff {b : B} {n : ℚ} :
   has_cost (λ _, b : A → B) n ↔ n ≥ 0 :=
 ⟨ge_zero_of_has_cost, λ h, has_cost_of_le h (has_cost_const _)⟩

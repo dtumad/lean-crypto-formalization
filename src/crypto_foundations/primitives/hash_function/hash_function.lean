@@ -8,54 +8,92 @@ import computational_complexity.negligable
 This file defines the notion of a keyed hash function.
 
 TODO: Think about using `encodable` type-class
-TODO: Think about unbundling the `sp` dependent parts into a `hash_function` → `hash_scheme` type thing
 -/
+
+section hash_f
+
+structure hash_f (K I O : Type) :=
+(keygen : comp K)
+(keygen_is_well_formed : keygen.is_well_formed)
+(hash : K → I → O)
+
+variables {K I O : Type} (h : hash_f K I O)
+
+@[simp]
+instance hash_f.keygen.is_well_formed (h : hash_f K I O) :
+  h.keygen.is_well_formed :=
+h.keygen_is_well_formed
+
+variables [decidable_eq O]
+
+/-- The security game for collision resistance as a probabalistic function. -/
+def hash_f.collision_finding_experiment (h : hash_f K I O) 
+  (a : K → comp (I × I)) : comp bool :=
+comp.bind (h.keygen) (λ k,
+comp.bind (a k) (λ xs, 
+comp.ret (h.hash k xs.1 = h.hash k xs.2)))
+
+@[simp]
+lemma collision_finding_experiment_is_well_formed_iff (h : hash_f K I O)
+  (a : K → comp (I × I)) : 
+  (h.collision_finding_experiment a).is_well_formed ↔ 
+    (∀ (k : K), k ∈ (h.keygen).support → (a k).is_well_formed)  :=
+by simp [hash_f.collision_finding_experiment]
+
+instance collision_finding_experiment.is_well_formed (h : hash_f K I O) 
+  (a : K → comp (I × I)) [ha : ∀ k, (a k).is_well_formed] :
+  (h.collision_finding_experiment a).is_well_formed :=
+begin
+  rw [collision_finding_experiment_is_well_formed_iff],
+  exact λ k _, ha k,
+end
+
+end hash_f
+
+section hash_scheme
 
 /-- `keygen` takes in a security parameter and outputs a key bundled with the parameter
   `hash` takes a `hash_key` from keygen and a string in the input space to a string in the output space -/
-structure hash_function (K : ℕ → Type) (input_space output_space : ℕ → Type) :=
-(keygen (sp : ℕ) : comp (K sp))
-(keygen_well_formed : ∀ sp, (keygen sp).is_well_formed)
-(keygen_poly_time : complexity_class.poly_time_comp₀ keygen)
-(hash {sp : ℕ} : K sp → input_space sp → output_space sp)
-(hash_poly_time : complexity_class.poly_time_fun₂ @hash)
+structure hash_scheme (K I O : ℕ → Type) :=
+(scheme (sp : ℕ) : hash_f (K sp) (I sp) (O sp))
+(keygen_poly_time : complexity_class.poly_time_comp₀ (λ sp, (scheme sp).keygen))
+(hash_poly_time : complexity_class.poly_time_fun₂ (λ sp, (scheme sp).hash))
 
-variables {K : ℕ → Type} {input_space output_space : ℕ → Type} [∀ n, decidable_eq (output_space n)]
+variables {K I O : ℕ → Type} (H : hash_scheme K I O)
+
+section projections
+
+def hash_scheme.keygen (sp : ℕ) : comp (K sp) :=
+(H.scheme sp).keygen
 
 @[simp]
-instance hash_function.keygen.is_well_formed (H : hash_function K input_space output_space) (sp : ℕ) :
-  (H.keygen sp).is_well_formed :=
-hash_function.keygen_well_formed H sp
+lemma hash_scheme.keygen_eq (sp : ℕ) :
+  H.keygen sp = (H.scheme sp).keygen := rfl
+
+def hash_scheme.hash {sp : ℕ} (k : K sp) (i : I sp) : O sp :=
+(H.scheme sp).hash k i
+
+@[simp]
+lemma hash_scheme.hash_eq {sp : ℕ} (k : K sp) (i : I sp) :
+  H.hash k i = (H.scheme sp).hash  k i:= rfl
+
+end projections
+
+variables [∀ n, decidable_eq $ O n]
 
 /-- The security game for collision resistance as a probabalistic function. 
   Adversary implicitly recieves the secuirty parameter via the hashkey from `keygen`-/
-def collision_finding_experiment (H : hash_function K input_space output_space) 
-  (A : Π (sp : ℕ) (k : K sp), comp ((input_space sp) × (input_space sp))) 
-  (sp : ℕ) : comp bool :=
-comp.bind (H.keygen sp) (λ k,
-comp.bind (A sp k) 
-  (λ xs, comp.ret (H.hash k xs.1 = H.hash k xs.2)))
-
-variables (H : hash_function K input_space output_space)
-  (A : Π (sp : ℕ), K sp → comp ((input_space sp) × (input_space sp)))
-
-@[simp]
-lemma collision_finding_experiment_is_well_formed_iff (sp : ℕ) : 
-  (collision_finding_experiment H A sp).is_well_formed ↔ 
-    (∀ (k : K sp), k ∈ (H.keygen sp).support → (A sp k).is_well_formed)  :=
-by simp [collision_finding_experiment]
-
--- TODO: figure out why the hack below is required, maybe change `is_well_formed` definition
-instance collision_finding_experiment.is_well_formed (sp : ℕ)
-  (hA : ∀ (k : K sp), k ∈ (H.keygen sp).support → (A sp k).is_well_formed) :
-  (collision_finding_experiment H A sp).is_well_formed :=
-by simpa using hA  
+def hash_scheme.collision_finding_experiment (H : hash_scheme K I O) 
+  (A : Π (sp : ℕ), K sp → comp ((I sp) × (I sp))) (sp : ℕ) : comp bool :=
+(H.scheme sp).collision_finding_experiment (A sp)
 
 def negligable_expirement_success (exp : ℕ → comp bool) (h : ∀ sp, (exp sp).is_well_formed) : Prop :=
-negligable (λ sp, comp.Pr (exp sp))
+asymptotics.negligable (λ sp, comp.Pr (exp sp))
 
-def collision_resistant (H : hash_function K input_space output_space) : Prop :=
-∀ (A : Π (sp : ℕ), K sp → comp ((input_space sp) × (input_space sp)))
+def collision_resistant (H : hash_scheme K I O) : Prop :=
+∀ (A : Π (sp : ℕ), K sp → comp ((I sp) × (I sp)))
   (A_efficient : complexity_class.poly_time_comp₁ A)
-  [A_well_formed : ∀ (sp : ℕ) (k : K sp) , k ∈ (H.keygen sp).support → (A sp k).is_well_formed],
-negligable_expirement_success (λ sp, (collision_finding_experiment H A sp)) (by simpa)
+  [A_well_formed : ∀ (sp : ℕ) (k : K sp) (hk : k ∈ (H.scheme sp).keygen.support), (A sp k).is_well_formed],
+negligable_expirement_success (λ sp, (H.scheme sp).collision_finding_experiment (A sp)) (by simpa)
+
+end hash_scheme
