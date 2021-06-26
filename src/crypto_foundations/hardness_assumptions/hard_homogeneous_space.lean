@@ -192,10 +192,10 @@ class hard_homogeneous_space extends algorithmic_homogeneous_space G X :=
 (vectorization_hard : ∀ (A : Π sp, X sp × X sp → comp (G sp)) 
   [∀ sp x y, (A sp (x, y)).is_well_formed] 
   (h : complexity_class.poly_time_comp₁ A),
-  negligable (λ sp, vectorization_advantage (A sp)))
+  asymptotics.negligable (λ sp, vectorization_advantage (A sp)))
 (parallelization_hard : ∀ (A : Π sp, X sp × X sp × X sp → comp (X sp))
   [∀ sp x y z, (A sp (x, y, z)).is_well_formed]
   (h : complexity_class.poly_time_comp₁ A),
-  negligable (λ n, parallelization_advantage (G n) (A n)))
+  asymptotics.negligable (λ n, parallelization_advantage (G n) (A n)))
 
 end hard_homogeneous_space
