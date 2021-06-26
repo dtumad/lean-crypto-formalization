@@ -15,7 +15,7 @@ section hash_f
 structure hash_f (K I O : Type) :=
 (keygen : comp K)
 (keygen_is_well_formed : keygen.is_well_formed)
-(hash : K → I → O)
+(hash (key : K) (m : I) : O)
 
 variables {K I O : Type} (h : hash_f K I O)
 

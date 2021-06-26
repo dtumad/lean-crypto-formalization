@@ -101,7 +101,7 @@ section is_well_formed
   1 - All sub-computations are well-formed (Trivial for `ret` and `rnd`)
   2 - The computation has non-empty support (Trivial for all but `repeat`)
   Such a computation is gaurunteed to have a non-empty support 
-  TODO: Try to make this a typeclass that can be infered automatically -/
+  TODO: Maybe this shouldn't be a class? And instead just get `simped` where possible -/
 @[class]
 inductive is_well_formed : ∀ {A : Type}, comp A → Prop
 | well_formed_ret {A : Type} [hA : decidable_eq A] (a : A) :

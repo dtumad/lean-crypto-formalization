@@ -6,7 +6,8 @@ import crypto_foundations.comp
 This file extends the `comp` monad to allow compuation with oracle access.
 The definition allows for oracles to hide their internal state,
   which wouldn't be possible by just giving the adversary an explicit function.
-
+It also allows for definitions that restrict the type of calls made to the oracle,
+  e.g. an `oracle_comp M S (M × S)` attempting to forge a signature on an unqueried message.
 -/
 
 variables {A B C : Type}
@@ -47,6 +48,9 @@ def decidable_eq_of_oracle_comp (oc : oracle_comp A B C) :
     (hoc (λ a, (oracle_comp_base_exists (ob s a) t).1) 
       (λ a, @decidable_eq_of_prod_left B S ⟨s⟩ (hob s a t h))) hS)
 
+/-- Evaluation distribution of an `oracle_comp A B C` as a `comp A`.
+`S` is the type of the internal state of the `A` to `B` oracle, and `s` is the initial state.
+`f` takes the current oracle state and an `A` value, and computes a `B` value and new oracle state. -/
 def eval_distribution (oc : oracle_comp A B C) :
   Π (S : Type) [decidable_eq S] (f : S → A → comp (B × S)) (s : S), comp (C × S) :=
 begin
@@ -64,6 +68,23 @@ begin
     haveI : inhabited (S' × S) := ⟨(s', s)⟩,
     haveI : decidable_eq C := decidable_eq_of_prod_left C (S' × S),
     refine (hoc.bind $ λ x, comp.ret ((x.1, x.2.1), x.2.2)) }
+end
+
+/-- Evaluation distribution for a stateless oracle with `f` simulating the oracle. -/
+def stateless_eval_distribution [decidable_eq B] [decidable_eq C]
+  (oc : oracle_comp A B C) (f : A → comp B) : comp C :=
+begin
+  let f' : unit → A → comp (B × unit) :=
+    λ _ a, comp.bind (f a) (λ b, comp.ret (b, ())),
+  refine (oc.eval_distribution unit f' ()).bind (λ c, comp.ret c.1),
+end
+
+@[simp]
+instance stateless_eval_distribution_well_formed [decidable_eq B] [decidable_eq C]
+  (oc : oracle_comp A B C) (f : A → comp B) :
+  (oc.stateless_eval_distribution f).is_well_formed :=
+begin
+  sorry,
 end
 
 
