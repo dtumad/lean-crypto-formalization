@@ -19,8 +19,8 @@ Well formed computations are defined so that they will have a nonempty support (
 inductive comp : Π (A : Type), Type 1
 | ret {A : Type} [hA : decidable_eq A] (a : A) : comp A
 | bind {A B : Type} : Π (cb : comp B) (ca : B → comp A), comp A
-| rnd (A : Type) [inhabited A] [fintype A] [decidable_eq A] : comp A -- TODO: allow any fintype here
-| repeat {A : Type} : Π (p : A → Prop) [decidable_pred p] (ca : comp A) , comp A
+| rnd (A : Type) [hA : decidable_eq A] [fA : fintype A] [iA : inhabited A] : comp A
+| repeat {A : Type} : Π (p : A → Prop) [hp : decidable_pred p] (ca : comp A) , comp A
 
 namespace comp
 
@@ -31,7 +31,7 @@ variables {A B C : Type}
 def comp_base_exists (ca : comp A) : A :=
 @comp.rec_on (λ A _, A) A ca
   (λ A hA a, a) (λ A B cb ca b fa, fa b)
-  (λ A hA fA dA, @arbitrary A hA) (λ A p hp ca a, a)
+  (λ A hA fA iA, iA.default) (λ A p hp ca a, a)
 
 /-- Because only `ret` and `rnd` terminate computation, and `ret` requires `decidable_eq A`,
   every computation must return a type with decidable equality.
@@ -39,7 +39,7 @@ def comp_base_exists (ca : comp A) : A :=
 def decidable_eq_of_comp (ca : comp A) : decidable_eq A :=
 @comp.rec_on (λ A _, decidable_eq A) A ca
   (λ A hA a, hA) (λ A B cb ca hcb hca, hca cb.comp_base_exists)
-  (λ A hA fA dA, dA) (λ A p hp ca h, h)
+  (λ A hA fA iA, hA) (λ A p hp ca h, h)
 
 /-- alias because this situation is very common due to use of `bUnion` in support -/
 def decidable_eq_of_comp' (cb : comp B) (ca : B → comp A) : decidable_eq A :=
@@ -48,10 +48,12 @@ comp.decidable_eq_of_comp $ bind cb ca
 section support
 
 /-- The support of `comp A` is the elements of `A` with non-zero probability of being computed -/
-def support (ca : comp A) : finset A :=
-ca.rec (λ _ _ a, {a}) 
-  (λ A B cb ca hcb hca, @finset.bUnion B A (decidable_eq_of_comp' cb ca) hcb hca)
-  (λ A hA fA dA, @finset.univ A fA) (λ A p hp ca, @finset.filter _ p hp)
+def support : Π {A : Type}, comp A → finset A
+| A (@ret A' hA' a) := {a}
+| A (@bind A' B cb ca) := @finset.bUnion B A (decidable_eq_of_comp' cb ca) 
+    (support cb) (λ b, support $ ca b)
+| A (@rnd A' hA fA iA) := @finset.univ A fA
+| A (@repeat A' p hp ca) := @finset.filter _ p hp (support ca)
 
 @[simp] lemma support_ret [decidable_eq A] (a : A) :
   (ret a).support = {a} := rfl

@@ -109,11 +109,9 @@ begin
       c.bind (λ x, @comp.ret (C × S) (@prod.decidable_eq C S (comp.decidable_eq_of_comp c) hS) (x, s)) },
   { exact λ S hS s o, (@hoc S hS s o).bind (λ cs', @hod cs'.fst S hS cs'.snd o) },
   { introsI S hS s o',
-    specialize hoc (s', s) (λ ss a, (hob ss.fst a ss.snd o').bind 
-      (λ x, comp.ret (x.1.1, (x.1.2, x.2)))) ,
-    haveI : decidable_eq (C × S' × S) := comp.decidable_eq_of_comp hoc,
-    haveI : inhabited (S' × S) := ⟨(s', s)⟩,
-    haveI : decidable_eq C := decidable_eq_of_prod_left C (S' × S),
+    replace hoc := hoc (s', s) (λ ss a, (hob ss.fst a ss.snd o').bind 
+      (λ x, comp.ret (x.1.1, (x.1.2, x.2)))),
+    haveI : decidable_eq C := @decidable_eq_of_prod_left C (S' × S) ⟨(s', s)⟩ (comp.decidable_eq_of_comp hoc),
     refine (hoc.bind $ λ x, comp.ret ((x.1, x.2.1), x.2.2)) }
 end
 
@@ -137,6 +135,16 @@ lemma eval_distribution_oc_bind {A B C D S : Type} [hS : decidable_eq S]
   (oc_bind oc od).eval_distribution s o = 
     (oc.eval_distribution s o).bind (λ cs', (od cs'.1).eval_distribution cs'.2 o) :=
 rfl
+
+@[simp]
+lemma eval_distribution_oc_run {A B C A' B' S S' : Type} 
+  [decidable_eq A] [decidable_eq B] [decidable_eq S] [decidable_eq S']
+  (oc : oracle_comp A B C) (ob : S → A → oracle_comp A' B' (B × S)) (s : S)
+  (s' : S') (o : S' → A' → comp (B' × S')) :
+  (oc_run oc ob s).eval_distribution s' o = sorry :=
+begin
+  sorry,
+end
 
 @[simp]
 instance eval_distribution_well_formed {S : Type} [decidable_eq S] 
@@ -164,6 +172,7 @@ begin
     exact hod c s' o ho,
   },
   {
+    simp,
     sorry,
   }
 end
