@@ -17,7 +17,7 @@ Well formed computations are defined so that they will have a nonempty support (
   and `repeat` can repeat a random computation until some predicate holds.
   Note that because Lean doesn't have an impredicative set type, this raises universe levels -/
 inductive comp : Π (A : Type), Type 1
-| ret {A : Type} [hA : decidable_eq A] : Π (a : A), comp A
+| ret {A : Type} [hA : decidable_eq A] (a : A) : comp A
 | bind {A B : Type} : Π (cb : comp B) (ca : B → comp A), comp A
 | rnd (A : Type) [inhabited A] [fintype A] [decidable_eq A] : comp A -- TODO: allow any fintype here
 | repeat {A : Type} : Π (p : A → Prop) [decidable_pred p] (ca : comp A) , comp A
@@ -82,6 +82,10 @@ ca.rec (λ _ _ a, {a})
   ((ret a).bind cb).support = (cb a).support :=
 by rw [support_bind, support_ret, finset.singleton_bUnion]
 
+@[simp] lemma mem_support_bind_ret [decidable_eq A] (a : A) (cb : A → comp B) (b : B) :
+  b ∈ ((ret a).bind cb).support ↔ b ∈ (cb a).support :=
+by simp
+
 @[simp] lemma support_bind_rnd [inhabited A] [fintype A] [decidable_eq A] [decidable_eq B]
   (cb : A → comp B) : ((rnd A).bind cb).support = finset.bUnion finset.univ (λ a, (cb a).support) :=
 begin
@@ -101,14 +105,13 @@ section is_well_formed
   1 - All sub-computations are well-formed (Trivial for `ret` and `rnd`)
   2 - The computation has non-empty support (Trivial for all but `repeat`)
   Such a computation is gaurunteed to have a non-empty support 
-  TODO: Maybe this shouldn't be a class? And instead just get `simped` where possible -/
+  TODO: Try and make this instance based wherever possible -/
 @[class]
 inductive is_well_formed : ∀ {A : Type}, comp A → Prop
 | well_formed_ret {A : Type} [hA : decidable_eq A] (a : A) :
     is_well_formed (@ret A hA a)
 | well_formed_bind {A B : Type} (cb : comp B) (ca : B → comp A) 
-    (hcb : is_well_formed cb) 
-    (hca : ∀ b ∈ cb.support, is_well_formed (ca b)) :
+    (hcb : is_well_formed cb) (hca : ∀ b ∈ cb.support, is_well_formed (ca b)) :
     is_well_formed (bind cb ca)
 | well_formed_rnd {A : Type} [inhabited A] [fintype A] [decidable_eq A] :
     is_well_formed (rnd A)

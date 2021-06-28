@@ -74,13 +74,17 @@ variables {rs}
 def signing_oracle_comp.simulate
   {n : ℕ} {T : Type} [decidable_eq T] 
   (t : signing_oracle_comp rs n T) (ks : vector (PK × SK) n) : comp T :=
-begin
-  refine t.stateless_eval_distribution _,
-  rintro ⟨s, m, ⟨l, i, R⟩⟩,
-  obtain ⟨pk, sk⟩ := (ks.nth s),
-  refine (rs.sign l i sk R m).bind (λ σ, 
-    comp.ret ⟨l, if (R.nth i) = pk then σ else ⊥⟩),
-end
+t.stateless_eval_distribution (λ inp,
+  let s : fin n := inp.1 in
+  let m : M := inp.2.1 in
+  let l : ℕ := inp.2.2.1 in
+  let i : fin l := inp.2.2.2.1 in
+  let R : vector PK l := inp.2.2.2.2 in
+  let pk := (ks.nth s).1 in
+  let sk := (ks.nth s).2 in
+  (rs.sign l i sk R m).bind (λ σ, 
+    comp.ret ⟨l, if (R.nth i) = pk then σ else ⊥⟩)
+)
 
 @[simp]
 instance signing_oracle_comp.simulate.is_well_formed {n : ℕ} {T : Type} [decidable_eq T] 

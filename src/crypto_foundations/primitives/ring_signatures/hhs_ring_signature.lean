@@ -19,11 +19,12 @@ variables {M G X K : Type}
   [decidable_eq M] [decidable_eq X] [decidable_eq G] [decidable_eq K]
 variables [group G] [mul_action G X]
 
+@[simps]
+-- TODO: lemmas about the support of sign
 def ring_sig_of_pas [principal_action_class G X]
   (x₀ : X) (H : hash_f K (list X × M) G) :
   ring_sig M (λ n, K × vector G n × vector G n) X G :=
-{
-  gen := comp.bind (comp.rnd (G)) 
+{ gen := comp.bind (comp.rnd (G)) 
     (λ g, comp.ret (g • x₀, g)),
   gen_well_formed := by apply_instance,
   sign := begin
@@ -52,8 +53,7 @@ def ring_sig_of_pas [principal_action_class G X]
     let Ts : vector (X) n := vector.of_fn (λ j, (rs.nth j * cs.nth j) • R.nth j),
     let h : list (X) × M := ⟨vector.to_list (x₀ ::ᵥ (R.append Ts)), m⟩,
     exact H.hash k h = cs.to_list.prod,
-  end,
-}
+  end }
 
 theorem ring_sig_of_pas.complete [principal_action_class G X]
   (x₀ : X) (H : hash_f K (list X × M) G) :
@@ -63,13 +63,16 @@ begin
   unfold comp.Pr,
   rw comp.Pr_prop_eq_one_iff,
   intros b hb,
-  squeeze_simp [ring_sig.completeness_experiment] at hb,
+  simp [ring_sig.completeness_experiment] at hb,
+  obtain ⟨ks, ⟨hks, ⟨k, cs, rs, h, hb⟩⟩⟩ := hb,
+  refine hb.trans _,
+  simp,
   sorry,
 end
 
 end ring_sig_of_pa
 
-variables {M : Type} {S G X K : ℕ → Type}
+variables {M : Type} {G X K : ℕ → Type}
 variables [∀ n, fintype (G n)] [∀ n, fintype (X n)] 
 variables [∀ n, inhabited (G n)] [∀ n, inhabited (X n)]
 variables [decidable_eq M] [∀ n, decidable_eq (G n)] [∀ n, decidable_eq (X n)] [∀ n, decidable_eq (K n)]
