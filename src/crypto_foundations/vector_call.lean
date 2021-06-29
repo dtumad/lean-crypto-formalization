@@ -2,17 +2,20 @@ import crypto_foundations.dist_sem
 
 namespace comp
 
-def vector_call {A : Type} [decidable_eq A] (ca : comp A) : 
+def vector_call {A : Type} (ca : comp A) : 
   Π n, comp (vector A n)
 | 0 := comp.ret vector.nil
 | (n + 1) := ca.bind (λ a, (vector_call n).bind (λ as, comp.ret (a ::ᵥ as)))
 
-instance vector_call.is_well_formed {A : Type} [decidable_eq A]
-  (ca : comp A) [ca.is_well_formed] (n : ℕ) : (vector_call ca n).is_well_formed :=
+@[simp]
+instance vector_call.is_well_formed {A : Type}
+  (ca : comp A) [hca : ca.is_well_formed] (n : ℕ) : (vector_call ca n).is_well_formed :=
 begin
   induction n with n hn,
   { simp [vector_call] },
-  { simp [vector_call, hn] }
+  { simp [vector_call, hn, hca],
+
+   }
 end
 
 @[simp]

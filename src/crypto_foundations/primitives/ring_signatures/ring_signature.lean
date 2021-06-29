@@ -20,7 +20,7 @@ TODO: Closely double check the security definitions before getting to far provin
 `verify` checks whether a given signature is valid on a ring and a message
 -- TODO: Double check the polynomial time stuff, maybe more parameters should be included in them? -/
 structure ring_sig (M : Type) (S : ℕ → Type) (PK SK : Type)
-  [decidable_eq M] [decidable_eq PK] [decidable_eq SK] [∀ n, decidable_eq $ S n] :=
+  [decidable_eq PK] :=
 (gen : comp (PK × SK))
 (gen_well_formed : gen.is_well_formed)
 (sign (n : ℕ) (i : fin n) (sk : SK) (R : vector PK n) (m : M) : comp (S n))
@@ -30,7 +30,8 @@ structure ring_sig (M : Type) (S : ℕ → Type) (PK SK : Type)
 namespace ring_sig
 
 variables {M : Type} {S : ℕ → Type} {PK SK : Type}
-variables [decidable_eq M] [decidable_eq PK] [decidable_eq SK] [∀ n, decidable_eq $ S n]
+variables [decidable_eq PK]
+-- variables [decidable_eq M] [∀ n, decidable_eq $ S n]
 variables (rs : ring_sig M S PK SK)
 
 @[simp]
@@ -72,7 +73,7 @@ oracle_comp (fin n × M × Σ (l : ℕ), fin l × vector PK l)
 variables {rs}
 
 def signing_oracle_comp.simulate
-  {n : ℕ} {T : Type} [decidable_eq T] 
+  {n : ℕ} {T : Type}
   (t : signing_oracle_comp rs n T) (ks : vector (PK × SK) n) : comp T :=
 t.stateless_eval_distribution (λ inp,
   let s : fin n := inp.1 in
@@ -82,15 +83,17 @@ t.stateless_eval_distribution (λ inp,
   let R : vector PK l := inp.2.2.2.2 in
   let pk := (ks.nth s).1 in
   let sk := (ks.nth s).2 in
-  (rs.sign l i sk R m).bind (λ σ, 
-    comp.ret ⟨l, if (R.nth i) = pk then σ else ⊥⟩)
+  do σ ← (rs.sign l i sk R m),
+    return ⟨l, if (R.nth i) = pk then σ else ⊥⟩
 )
 
 @[simp]
-instance signing_oracle_comp.simulate.is_well_formed {n : ℕ} {T : Type} [decidable_eq T] 
-  (t : signing_oracle_comp rs n T) (ks : vector (PK × SK) n) :
+instance signing_oracle_comp.simulate.is_well_formed {n : ℕ} {T : Type}
+  (t : signing_oracle_comp rs n T) [ht : t.is_well_formed] (ks : vector (PK × SK) n) :
   (t.simulate ks).is_well_formed :=
-by simp [signing_oracle_comp.simulate]
+begin
+  simp [signing_oracle_comp.simulate],
+end
 
 end ring_sig_oracle
 
@@ -124,9 +127,13 @@ end)
 @[simp]
 instance anonomyous_experiment.is_well_formed (n : ℕ)
   (A : vector PK n → signing_oracle_comp rs n (Σ (l : ℕ), M × (fin n × fin l) × (fin n × fin l) × (vector PK l)))
-  (A' : vector (PK × SK) n → (Σ (l : ℕ), S l) → signing_oracle_comp rs n bool) :
+  (A' : vector (PK × SK) n → (Σ (l : ℕ), S l) → signing_oracle_comp rs n bool)
+  [hA : ∀ pks, (A pks).is_well_formed] [hA' : ∀ ks σ, (A' ks σ).is_well_formed] :
   (anonomyous_experiment rs n A A').is_well_formed :=
-by simp [anonomyous_experiment]
+begin
+  simp [anonomyous_experiment],
+
+end
 
 end anonomyous_experiment
 
@@ -151,7 +158,8 @@ end)
 
 @[simp]
 instance unforgeable_experiment.is_well_formed (n : ℕ)
-  (A : vector PK n → signing_oracle_comp rs n (M × Σ (l : ℕ), vector PK l × S l)) :
+  (A : vector PK n → signing_oracle_comp rs n (M × Σ (l : ℕ), vector PK l × S l))
+  [hA : ∀ pks, (A pks).is_well_formed] :
   (unforgeable_experiment rs n A).is_well_formed :=
 by simp [unforgeable_experiment]
 
@@ -160,8 +168,7 @@ end unforgeable_experiment
 end ring_sig
 
 structure ring_signature_scheme (M : Type) (S : ℕ → ℕ → Type) (PK SK : ℕ → Type)
-  [decidable_eq M] [∀ sp n, decidable_eq $ S sp n]
-  [∀ sp, decidable_eq $ PK sp] [∀ sp, decidable_eq $ SK sp] :=
+  [∀ sp, decidable_eq $ PK sp] :=
 (rs (sp : ℕ) : ring_sig M (S sp) (PK sp) (SK sp))
 (gen_poly_time : complexity_class.poly_time_comp₀ (λ sp, (rs sp).gen))
 (sign_poly_time : false)
@@ -172,27 +179,37 @@ namespace ring_signature_scheme
 open ring_sig
 
 variables {M : Type} {S : ℕ → ℕ → Type} {PK SK : ℕ → Type}
-  [decidable_eq M] [∀ sp n, decidable_eq $ S sp n]
-  [∀ sp, decidable_eq $ PK sp] [∀ sp, decidable_eq $ SK sp]
+variables [∀ sp, decidable_eq $ PK sp]
 variable (rss : ring_signature_scheme M S PK SK)
 
 -- TODO: Require `A` and `A'` have some poly_time hypothesis
 def anonomyous := ∀ (p : polynomial ℕ)
   (A : Π sp, vector (PK sp) (p.eval sp) → signing_oracle_comp (rss.rs sp) (p.eval sp)
         (Σ (l : ℕ), M × (fin (p.eval sp) × fin l) × (fin (p.eval sp) × fin l) × (vector (PK sp) l)))
+  
   (A' : Π sp, vector (PK sp × SK sp) (p.eval sp) → (Σ (l : ℕ), S sp l) 
     → signing_oracle_comp (rss.rs sp) (p.eval sp) bool)
-  (A_poly_time : true) (A'_poly_time : true),
+   [hA' : ∀ sp ks σ, (A' sp ks σ).is_well_formed]
+  [htA : ∀ sp pks, (A sp pks).is_well_formed]
+  (A_poly_time : true) (A'_poly_time : true)
+  ,
 asymptotics.negligable (λ sp, begin
-  let n : ℕ := p.eval sp,
-  exact comp.Pr (anonomyous_experiment (rss.rs sp) n (A sp) (A' sp)) - 0.5,
+  -- let n : ℕ := p.eval sp,
+  haveI : (anonomyous_experiment (rss.rs sp) (p.eval sp) (A sp) (A' sp)).is_well_formed := begin
+    haveI := htA,
+    refine anonomyous_experiment.is_well_formed _ _ _ _,
+  end,
+  -- -- haveI := hA,
+  exact comp.Pr (anonomyous_experiment (rss.rs sp) (p.eval sp) (A sp) (A' sp)) - 0.5,
 end)
 
 def unforgeable := ∀ (p : polynomial ℕ)
   (A : Π sp, vector (PK sp) (p.eval sp) → 
     signing_oracle_comp (rss.rs sp) (p.eval sp) (M × Σ (l : ℕ), vector (PK sp) l × S sp l))
+  [hA : ∀ sp pks, (A sp pks).is_well_formed]
   (A_poly_time : true),
 asymptotics.negligable (λ sp, begin
+  haveI := hA,
   exact comp.Pr (unforgeable_experiment (rss.rs sp) (p.eval sp) (A sp)),
 end)
 

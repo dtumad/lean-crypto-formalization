@@ -204,7 +204,7 @@ inductive comp_cost : comp_cost_model
 | cost_ret {A : Type} [decidable_eq A] {a : A} :
     comp_cost (ret a) 0
 | cost_bind {A B : Type} {ca : comp A} {cb : A → comp B} {n1 n2 n3 : ℚ} :
-    comp_cost ca n1 → has_cost cb n2 → (∀ a, comp_cost (cb a) n3) → comp_cost (bind ca cb) (n1 + n2 + n3)
+    comp_cost ca n1 → has_cost cb n2 → (∀ a, comp_cost (cb a) n3) → comp_cost (ca >>= cb) (n1 + n2 + n3)
 | cost_rnd_bitvec {n : ℕ} :
     comp_cost (rnd (bitvec n)) ↑n
 | cost_le {A : Type} {ca : comp A} {n m : ℚ} (hnm : n ≤ m) :

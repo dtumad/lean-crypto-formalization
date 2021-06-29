@@ -28,7 +28,7 @@ private def eval_distribution' (ca : comp A) :
   ca.is_well_formed → Σ (da : pmf A), plift (∀ (a : A), (da a ≠ 0 ↔ a ∈ ca.support)) :=
 begin
   refine ca.rec_on _ _ _ _,
-  { exact λ _ _ a _, ⟨pmf.pure a, plift.up (by simp)⟩ },
+  { exact λ _ a _, ⟨pmf.pure a, plift.up (by simp)⟩ },
   { refine λ A B ca cb db da h, _,
     rw is_well_formed_bind_iff at h,
     refine ⟨(db h.1).1.bind_on_support (λ b hb, (da b (h.2 b ((plift.down (db h.1).2 b).mp hb))).1), 
@@ -36,23 +36,28 @@ begin
     rw [mem_support_bind_iff, pmf.bind_on_support_apply,
       tsum_ne_zero_iff (pmf.bind_on_support.summable (db _).1 _ _)],
     split; rintro ⟨b, hb⟩; refine ⟨b, _⟩,
-    { simp only [not_or_distrib, ne.def, mul_eq_zero] at hb,
+    { 
+      simp only [not_or_distrib, ne.def, mul_eq_zero] at hb,
       simp only [dif_neg hb.left] at hb,
-      rwa [← plift.down (db h.1).2, ← plift.down (da b (h.2 b ((plift.down (db h.1).2 b).mp hb.1) )).2] },
-    { have : (db h.1).1 b ≠ 0 := (plift.down (db h.1).2 _).mpr hb.1,
+      rw [← plift.down (db h.1).2, ← plift.down (da b (h.2 b ((plift.down (db h.1).2 b).mp hb.1) )).2],
+      refine ⟨hb.1, hb.2⟩,
+       },
+    { simp at hb,
+      have : (db h.1).1 b ≠ 0 := (plift.down (db h.1).2 _).mpr hb.1,
       simp only [not_or_distrib, ne.def, mul_eq_zero, dif_neg this],
       have := hb.1,
       rwa [← plift.down (db h.1).2, ← plift.down (da b (h.2 b this)).2] at hb } },
-  { introsI A _ _ _ _,
+  { introsI A _ _ _,
     refine ⟨pmf.const A, plift.up (λ a, by simpa using card_ne_zero_of_inhabited)⟩ },
   { introsI A p hp ca da h,
     rw is_well_formed_repeat_iff at h,
     have : ∃ a (ha : p a), (da h.1).1 a ≠ 0,
     { refine h.2.rec (λ a ha, _),
-      rw mem_support_repeat at ha,
+      simp at ha,
+      -- rw mem_support_repeat_iff at ha,
       refine ⟨a, ha.2, (plift.down (da h.1).2 _).2 ha.1⟩ },
     refine ⟨(da h.1).1.filter p this, 
-      plift.up (λ a, by rw [mem_support_repeat ca p a, pmf.filter_apply_ne_zero_iff, 
+      plift.up (λ a, by rw [mem_support_repeat_iff ca p a, pmf.filter_apply_ne_zero_iff, 
         ← (plift.down (da h.1).2 _), set.mem_inter_iff, pmf.mem_support_iff, set.mem_def])⟩ }
 end
 
