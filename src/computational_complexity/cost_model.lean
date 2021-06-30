@@ -246,10 +246,10 @@ inductive oracle_cost (fm : function_cost_model.{0 1}) (cm : comp_cost_model) : 
 | cost_bind {A B C D : Type} {oc : oracle_comp A B C} {od : C → oracle_comp A B D} {n1 n2 n3 : ℕ} :
     oracle_cost oc n1 → fm od n2 → (∀ c, oracle_cost (od c) n3) 
       → oracle_cost (oc_bind oc od) (n1 + n2 + n3)
-| cost_run {A B C A' B' S : Type} [decidable_eq A] [decidable_eq B] [decidable_eq S]
-    {oc : oracle_comp A B C} {ob : S → A → oracle_comp A' B' (B × S)} {s : S} {n m : ℚ} {f g : ℚ → ℚ} :
-    oracle_cost oc f → fm ob n → (∀ s, fm (ob s) m) → (∀ s a, oracle_cost (ob s a) g) 
-      → oracle_cost (oc_run oc ob s) (λ n, f (n + m + (g n)))
+-- | cost_run {A B C A' B' S : Type} [decidable_eq A] [decidable_eq B] [decidable_eq S]
+--     {oc : oracle_comp A B C} {ob : S → A → oracle_comp A' B' (B × S)} {s : S} {n m : ℚ} {f g : ℚ → ℚ} :
+--     oracle_cost oc f → fm ob n → (∀ s, fm (ob s) m) → (∀ s a, oracle_cost (ob s a) g) 
+--       → oracle_cost (oc_run oc s ob) (λ n, f (n + m + (g n)))
 | cost_le {A B C : Type} {oc : oracle_comp A B C} {f g : ℚ → ℚ} (hnm : ∀ n, f n ≤ g n) :
     oracle_cost oc f → oracle_cost oc g
 

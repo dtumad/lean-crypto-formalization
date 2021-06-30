@@ -87,13 +87,30 @@ def hash_scheme.collision_finding_experiment (H : hash_scheme K I O)
   (A : Π (sp : ℕ), K sp → comp ((I sp) × (I sp))) (sp : ℕ) : comp bool :=
 (H.scheme sp).collision_finding_experiment (A sp)
 
+@[simp]
+lemma hash_scheme.collision_finding_experiment_is_well_formed_iff
+  (H : hash_scheme K I O) (A : Π (sp : ℕ), K sp → comp ((I sp) × (I sp))) (sp : ℕ) :
+  (H.collision_finding_experiment A sp).is_well_formed ↔
+    ∀ k ∈ (H.keygen sp).support, (A sp k).is_well_formed :=
+by simp [hash_scheme.collision_finding_experiment]
+
+instance hash_scheme.collision_finding_experiment.is_well_formed (H : hash_scheme K I O)
+  (A : Π (sp : ℕ), K sp → comp ((I sp) × (I sp))) (sp : ℕ)
+  [hA : ∀ k, (A sp k).is_well_formed] :
+  (H.collision_finding_experiment A sp).is_well_formed :=
+begin
+  rw hash_scheme.collision_finding_experiment_is_well_formed_iff,
+  exact λ k hk, hA k,
+end
+
 def negligable_expirement_success (exp : ℕ → comp bool) (h : ∀ sp, (exp sp).is_well_formed) : Prop :=
 asymptotics.negligable (λ sp, comp.Pr (exp sp))
 
+-- TODO: make an admissable adversary
 def collision_resistant (H : hash_scheme K I O) : Prop :=
 ∀ (A : Π (sp : ℕ), K sp → comp ((I sp) × (I sp)))
   (A_efficient : complexity_class.poly_time_comp₁ A)
-  [A_well_formed : ∀ (sp : ℕ) (k : K sp) (hk : k ∈ (H.scheme sp).keygen.support), (A sp k).is_well_formed],
-negligable_expirement_success (λ sp, (H.scheme sp).collision_finding_experiment (A sp)) (by simpa)
+  [A_well_formed : ∀ (sp : ℕ) (k : K sp) (hk : k ∈ (H.keygen sp).support), (A sp k).is_well_formed],
+negligable_expirement_success (H.collision_finding_experiment A) (by simpa)
 
 end hash_scheme

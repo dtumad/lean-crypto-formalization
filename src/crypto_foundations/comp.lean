@@ -22,9 +22,15 @@ inductive comp : Π (A : Type), Type 1
 | rnd (A : Type) [fA : fintype A] [iA : inhabited A] : comp A
 | repeat {A : Type} : Π (p : A → Prop) [hp : decidable_pred p] (ca : comp A) , comp A
 
+@[simps]
 instance comp.monad : monad comp :=
 { pure := λ A a, comp.ret a,
   bind := λ A B ca cb, comp.bind ca cb }
+
+@[simp]
+lemma comp.return_eq {A : Type} (a : A) :
+  (return a : comp A) = comp.ret a :=
+rfl
 
 namespace comp
 
@@ -143,11 +149,6 @@ lemma support_ret (a : A) :
 rfl
 
 @[simp]
-lemma support_monad_pure (a : A) :
-  (pure a : comp A).support = {a} :=
-rfl
-
-@[simp]
 lemma support_bind (cb : comp B) (ca : B → comp A) :
   (cb.bind ca).support = cb.support >>= (λ b, (ca b).support) :=
 rfl
@@ -156,11 +157,6 @@ rfl
 lemma mem_support_bind_iff (cb : comp B) (ca : B → comp A) (a : A) :
   a ∈ (cb.bind ca).support ↔ ∃ b ∈ cb.support, a ∈ (ca b).support :=
 by simp
-
-@[simp]
-lemma support_monad_bind (cb : comp B) (ca : B → comp A) :
-  (cb >>= ca).support = cb.support >>= (λ b, (ca b).support) :=
-rfl
 
 @[simp] 
 lemma support_rnd [inhabited A] [fintype A] : 
@@ -172,45 +168,10 @@ lemma support_repeat (ca : comp A) (p : A → Prop) [decidable_pred p] :
   (repeat p ca).support = { a ∈ ca.support | p a }:= 
 rfl
 
+@[simp]
 lemma mem_support_repeat_iff (ca : comp A) (p : A → Prop) [decidable_pred p] (a : A) :
   a ∈ (repeat p ca).support ↔ a ∈ ca.support ∧ p a :=
 by simp
-
--- @[simp] 
--- lemma support_bind_ret (a : A) (cb : A → comp B) :
---   ((ret a).bind cb).support = (cb a).support :=
--- begin
---   simp,
--- end 
--- -- by simp [support]
-
--- @[simp] lemma mem_support_bind_ret [decidable_eq A] (a : A) (cb : A → comp B) (b : B) :
---   b ∈ ((ret a).bind cb).support ↔ b ∈ (cb a).support :=
--- by simp
-
--- @[simp] 
--- lemma support_bind_rnd [inhabited A] [fintype A] [decidable_eq A] [decidable_eq B]
---   (cb : A → comp B) [∀ a, decidable_comp $ cb a] : 
---   ((rnd A).bind cb).support = finset.bUnion finset.univ (λ a, (cb a).support) :=
--- begin
---   simp [support_rnd, support_bind],
---   congr,
--- end
-
--- lemma tempp : Π {A : Type} (ca : comp A) (h : decidable_comp ca)
---   (h' : decidable_comp ca), (@support A ca h) = (@support A ca h')
--- | A (ret a) h h' := by simp
--- | A (@bind _ B cb ca) h h' := begin
---   simp,
---   congr using 1,
---   ext,
---   simp,
-  
--- end
-
--- @[simp] lemma mem_support_bind_rnd [inhabited A] [fintype A] [decidable_eq A] [decidable_eq B]
---   (cb : A → comp B) (b : B) : b ∈ ((rnd A).bind cb).support ↔ ∃ a, b ∈ (cb a).support :=
--- by simp
 
 end support
 
@@ -219,8 +180,7 @@ section is_well_formed
 /-- A computation is well formed if both of the following conditions hold:
   1 - All sub-computations are well-formed (Trivial for `ret` and `rnd`)
   2 - The computation has non-empty support (Trivial for all but `repeat`)
-  Such a computation is gaurunteed to have a non-empty support 
-  TODO: Try and make this instance based wherever possible -/
+  Such a computation is gaurunteed to have a non-empty support -/
 @[class]
 class inductive is_well_formed : 
   ∀ {A : Type} (ca : comp A), Prop
@@ -236,25 +196,6 @@ class inductive is_well_formed :
     is_well_formed (repeat p ca)
 
 open is_well_formed
-
--- lemma support_nonempty_of_well_formed_bind {A B : Type}
---   (cb : comp B) (ca : B → comp A) :
---   Π [cb.decidable_comp] [cb.is_well_formed], (cb.bind ca).is_well_formed
--- | (decidable_comp.dc_bind hcb hca) (well_formed_bind cb ca h1 h2) := begin
-
--- end
-
-
--- theorem support_nonempty_of_well_formed : 
---   Π {A : Type} (ca : comp A) [h: ca.is_well_formed], ca.support.nonempty
--- | A (ret a) (@well_formed_ret _ _) := by simp
--- | A (bind cb ca) (@well_formed_bind _ B _ _ hcb' h1 h2) := begin
---   simp,
---   obtain ⟨b, hb⟩ := @support_nonempty_of_well_formed B cb hcb' h1,
---   refine ⟨_, _⟩,
---   simp,
---   rw support_bind cb ca,
--- end
 
 @[simp]
 instance ret.is_well_formed {A : Type} (a : A) :

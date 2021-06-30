@@ -17,8 +17,7 @@ TODO: Closely double check the security definitions before getting to far provin
 `gen` returns a public key and secret key
 `sign` returns a signature on a message, where `i : fin n` is the signer's index in the `n`-person ring
   and the list of signers is given in the form of an `n` element vector,
-`verify` checks whether a given signature is valid on a ring and a message
--- TODO: Double check the polynomial time stuff, maybe more parameters should be included in them? -/
+`verify` checks whether a given signature is valid on a ring and a message -/
 structure ring_sig (M : Type) (S : ℕ → Type) (PK SK : Type)
   [decidable_eq PK] :=
 (gen : comp (PK × SK))
@@ -31,7 +30,6 @@ namespace ring_sig
 
 variables {M : Type} {S : ℕ → Type} {PK SK : Type}
 variables [decidable_eq PK]
--- variables [decidable_eq M] [∀ n, decidable_eq $ S n]
 variables (rs : ring_sig M S PK SK)
 
 @[simp]
@@ -93,16 +91,18 @@ instance signing_oracle_comp.simulate.is_well_formed {n : ℕ} {T : Type}
   (t.simulate ks).is_well_formed :=
 begin
   simp [signing_oracle_comp.simulate],
+  apply oracle_comp.stateless_eval_distribution.is_well_formed,
+  apply_instance,
+  simp,
 end
 
 end ring_sig_oracle
 
 section anonomyous_experiment
 
--- `n` is the number of keys, will be polynomial in `sp`
+/-- `n` is the number of keys generated, will be polynomial in `sp`
 -- Remember that the adversary can just ask for a challenge of something they've already seen previous oracle outputs for
--- TODO: better to have two adversaries?
--- Note that the second adversary gets all the secret keys as well
+-- Note that the second adversary gets all the secret keys as well -/
 def anonomyous_experiment (n : ℕ)
   (A : vector PK n → signing_oracle_comp rs n (Σ (l : ℕ), M × (fin n × fin l) × (fin n × fin l) × (vector PK l)))
   (A' : vector (PK × SK) n → (Σ (l : ℕ), S l) → signing_oracle_comp rs n bool) : 
@@ -182,7 +182,6 @@ variables {M : Type} {S : ℕ → ℕ → Type} {PK SK : ℕ → Type}
 variables [∀ sp, decidable_eq $ PK sp]
 variable (rss : ring_signature_scheme M S PK SK)
 
--- TODO: Require `A` and `A'` have some poly_time hypothesis
 def anonomyous := ∀ (p : polynomial ℕ)
   (A : Π sp, vector (PK sp) (p.eval sp) → signing_oracle_comp (rss.rs sp) (p.eval sp)
         (Σ (l : ℕ), M × (fin (p.eval sp) × fin l) × (fin (p.eval sp) × fin l) × (vector (PK sp) l)))
@@ -194,12 +193,7 @@ def anonomyous := ∀ (p : polynomial ℕ)
   (A_poly_time : true) (A'_poly_time : true)
   ,
 asymptotics.negligable (λ sp, begin
-  -- let n : ℕ := p.eval sp,
-  haveI : (anonomyous_experiment (rss.rs sp) (p.eval sp) (A sp) (A' sp)).is_well_formed := begin
-    haveI := htA,
-    refine anonomyous_experiment.is_well_formed _ _ _ _,
-  end,
-  -- -- haveI := hA,
+  haveI := htA,
   exact comp.Pr (anonomyous_experiment (rss.rs sp) (p.eval sp) (A sp) (A' sp)) - 0.5,
 end)
 

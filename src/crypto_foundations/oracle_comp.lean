@@ -22,18 +22,25 @@ inductive oracle_comp : Type → Type → Type → Type 1
 | oc_ret {A B C : Type} : Π (c : comp C), oracle_comp A B C
 | oc_bind {A B C D : Type} : Π (oc : oracle_comp A B C) (od : C → oracle_comp A B D),
     oracle_comp A B D
-| oc_run {A B C A' B' S : Type} :
-    Π (oc : oracle_comp A B C) (s : S) (ob : S → A → oracle_comp A' B' (B × S)) , 
-      oracle_comp A' B' (C × S)
+-- | oc_run {A B C A' B' S : Type} :
+--     Π (oc : oracle_comp A B C) (s : S) (ob : S → A → oracle_comp A' B' (B × S)) , 
+--       oracle_comp A' B' (C × S)
 
+@[simps]
 instance oracle_comp.monad {A B : Type} : monad (oracle_comp A B) :=
 { pure := λ C c, oracle_comp.oc_ret (comp.ret c),
   bind := λ C D, oracle_comp.oc_bind }
 
 namespace oracle_comp
 
--- @[elab_as_eliminator] 
--- lemma oracle_comp.custom_rec
+/-- `oc_run` constructed manually from the other constructors -/
+def oc_run : Π {A B C : Type} (oc : oracle_comp A B C) 
+  {A' B' S : Type} (s : S) (o : S → A → oracle_comp A' B' (B × S)),
+  oracle_comp A' B' (C × S)
+| A _ B (@oc_query _ _ a) A' B' S s o := o s a
+| A B C (@oc_ret _ _ _ cc) A' B' S s o := oc_ret (do c ← cc, return (c, s))
+| A B D (@oc_bind _ _ C _ oc od) A' B' S s o := 
+    (oc_run oc s o) >>= (λ cs, oc_run (od cs.1) cs.2 o)
 
 /-- Every oracle_comp gives rise to a mapping from query assignments to the base comp type,
   where the value in `C` is the result of the computation if oracles behave like the input,
@@ -43,17 +50,6 @@ def oracle_comp_base_exists (oc : oracle_comp A B C) : (A → B) → C :=
 @oracle_comp.rec_on (λ A B C _, (A → B) → C) A B C oc
   (λ A B a q, q a) (λ A B C cc hcc, cc.comp_base_exists)
   (λ A B C D oc od hoc hod q, hod (hoc q) q)
-  (λ A B C A' B' S oc s ob hoc hob q, ⟨hoc (λ a, (hob s a q).1), s⟩)
-
--- def decidable_eq_of_oracle_comp (oc : oracle_comp A B C) : 
---   (A → B) → (A → decidable_eq B) → decidable_eq C :=
--- @oracle_comp.rec_on (λ A B C _, (A → B) → (A → decidable_eq B) → decidable_eq C) 
---   A B C oc (λ A B a t h, h a) 
---   (λ A B C cc tcc hcc, comp.decidable_eq_of_comp cc) 
---   (λ A B C D oc od hoc hod t h, hod (oracle_comp_base_exists oc t) t h)
---   (λ A B C A' B' S hA hB hS oc ob s hoc hob t h, @prod.decidable_eq C S 
---     (hoc (λ a, (oracle_comp_base_exists (ob s a) t).1) 
---       (λ a, @decidable_eq_of_prod_left B S ⟨s⟩ (hob s a t h))) hS)
 
 section is_well_formed
 
@@ -66,24 +62,40 @@ inductive is_well_formed : ∀ {A B C : Type}, oracle_comp A B C → Prop
 | well_formed_oc_bind {A B C D : Type} (oc : oracle_comp A B C) (od : C → oracle_comp A B D)
     (hoc : is_well_formed oc) (hod : ∀ c, is_well_formed $ od c) :
     is_well_formed (oc_bind oc od)
-| well_formed_oc_run {A B C A' B' S : Type}
-    (oc : oracle_comp A B C) (s : S) (ob : S → A → oracle_comp A' B' (B × S)) 
-    (hoc : is_well_formed oc) (hob : ∀ s a, is_well_formed $ ob s a) :
-    is_well_formed (oc_run oc s ob)
 
 @[simp]
 instance oc_query.is_well_formed {A B : Type} (a : A) :
   (oc_query a : oracle_comp A B B).is_well_formed :=
 is_well_formed.well_formed_oc_query a
 
-instance oc_ret.is_well_formed {A B C : Type} (c : comp C)
-  [hc : c.is_well_formed] : (oc_ret c : oracle_comp A B C).is_well_formed :=
+@[simp]
+instance oc_ret.is_well_formed {A B C : Type} (c : comp C) [hc : c.is_well_formed] :
+  (oc_ret c : oracle_comp A B C).is_well_formed :=
 is_well_formed.well_formed_oc_ret c hc
 
+@[simp]
 instance oc_bind.is_well_formed {A B C D : Type} (oc : oracle_comp A B C) (od : C → oracle_comp A B D)
-    [hoc : is_well_formed oc] [hod : ∀ c, is_well_formed $ od c] :
-    is_well_formed (oc_bind oc od) :=
+  [hoc : is_well_formed oc] [hod : ∀ c, is_well_formed $ od c] :
+  (oc_bind oc od).is_well_formed :=
 is_well_formed.well_formed_oc_bind oc od hoc hod
+
+-- @[elab_as_eliminator]
+theorem is_well_formed_induction (p : ∀ (A B C : Type) (oc : oracle_comp A B C), Prop)
+  (h_query : ∀ {A B : Type} (a : A), 
+    p A B B (oc_query a))
+  (h_ret : ∀ {A B C : Type} (cc : comp C) (hcc : cc.is_well_formed), 
+    p A B C (oc_ret cc))
+  (h_bind : ∀ {A B C D : Type} (oc : oracle_comp A B C) (od : C → oracle_comp A B D)
+    (hoc : oc.is_well_formed) (hod : ∀ c, (od c).is_well_formed)
+    (h : p A B C oc) (h' : ∀ c, p A B D (od c)),
+    p A B D (oc_bind oc od)) :
+  Π {A B C : Type} (oc : oracle_comp A B C) [hoc : oc.is_well_formed], p A B C oc
+| A B C _ (is_well_formed.well_formed_oc_query a) := h_query a
+| A B C _ (is_well_formed.well_formed_oc_ret cc hcc) := h_ret cc hcc 
+| A B C _ (is_well_formed.well_formed_oc_bind oc od hoc hod) := h_bind oc od hoc hod (
+   @is_well_formed_induction A B _ oc hoc) begin
+   exact λ c, @is_well_formed_induction A B C (od c) (hod c),
+   end
 
 @[simp]
 lemma oc_ret_is_well_formed_iff {A B C : Type} (c : comp C) :
@@ -104,12 +116,10 @@ lemma is_well_formed_of_oc_bind_right {A B C D : Type}
   (oc >>= od).is_well_formed → ∀ c, (od c).is_well_formed
 | (is_well_formed.well_formed_oc_bind oc od h h') := h'
 
-lemma is_well_formed_of_oc_run_left : true := true.intro
-
 @[simp]
 lemma oc_bind_is_well_formed_iff {A B C D : Type} 
   (oc : oracle_comp A B C) (od : C → oracle_comp A B D) :
-  (oc_bind oc od).is_well_formed ↔ 
+  (oc >>= od).is_well_formed ↔ 
     oc.is_well_formed ∧ ∀ c, (od c).is_well_formed :=
 ⟨λ h, ⟨is_well_formed_of_oc_bind_left h, is_well_formed_of_oc_bind_right h⟩,
   λ h, is_well_formed.well_formed_oc_bind oc od h.1 h.2⟩
@@ -127,24 +137,7 @@ begin
   { exact λ S s o,
       c.bind (λ x, @comp.ret (C × S) (x, s)) },
   { exact λ S s o, (@hoc S s o).bind (λ cs', @hod cs'.fst S cs'.snd o) },
-  { exact λ S s o', ((hoc (s', s) (λ ss a, (hob ss.fst a ss.snd o').bind 
-      (λ x, comp.ret (x.1.1, (x.1.2, x.2))))).bind $ λ x, comp.ret ((x.1, x.2.1), x.2.2)) }
 end
-
--- def eval_distribution' : Π {A B C : Type} (oc : oracle_comp A B C) 
---   {S : Type} (s : S) (o : S → A → comp (B × S)), 
---   comp (C × S)
--- | A B _ (oc_query a) S s o := o s a
--- | A B C (oc_ret cc) S s o := do c ← cc, return (c, s)
--- | A B C (@oc_bind _ _ _ D oc od) S s o :=
---     do c_s' ← (eval_distribution' oc s o),
---       eval_distribution (od c_s'.1) c_s'.2 o
--- | A B C (@oc_run _ _ _ A' B' S' oc s' ob) S s o :=
---     (eval_distribution' oc (s', s) (λ ss a, 
---       (eval_distribution' (ob ss.1 a) ss.2 o).bind 
---       (λ x, comp.ret (x.1.1, (x.1.2, x.2))))).bind
---     (λ x, comp.ret ((x.1, x.2.1), x.2.2))
-
 
 @[simp]
 lemma eval_distribution_oc_query {A B S : Type}
@@ -167,72 +160,56 @@ lemma eval_distribution_oc_bind {A B C D S : Type}
     (oc.eval_distribution s o).bind (λ cs', (od cs'.1).eval_distribution cs'.2 o) :=
 rfl
 
-@[simp]
-lemma eval_distribution_oc_run {A B C A' B' S S' : Type} 
-  (oc : oracle_comp A B C) (s' : S) (ob : S → A → oracle_comp A' B' (B × S)) 
-  (s : S') (o : S' → A' → comp (B' × S')) :
-  (oc_run oc s' ob).eval_distribution s o = ((eval_distribution oc (s', s) (λ ss a, (eval_distribution (ob ss.fst a) ss.snd o).bind 
-      (λ x, comp.ret (x.1.1, (x.1.2, x.2))))).bind $ λ x, comp.ret ((x.1, x.2.1), x.2.2)) :=
-rfl
-
-@[simp]
-instance eval_distribution_well_formed 
-  (oc : oracle_comp A B C) [hoc : oc.is_well_formed] :
-  ∀ {S : Type} (s : S) (o : S → A → comp (B × S)) (ho : ∀ s a, (o s a).is_well_formed),
-    (oc.eval_distribution s o).is_well_formed :=
+instance eval_distribution.is_well_formed (oc : oracle_comp A B C) [oc.is_well_formed] 
+ : ∀ {S : Type} (s : S) (o : S → A → comp (B × S)) (ho : ∀ s a, (o s a).is_well_formed), 
+  (oc.eval_distribution s o).is_well_formed 
+  :=
 begin
-  unfreezingI { induction oc with A B a A B C c A B C D oc od hoc' hod A B C A' B' S' oc s' ob h hob },
-  {
-    intros S s o ho,
-    simpa only using ho s a,
-  },
-  {
-    intros S s o ho,
-    simp,
-    exact (oc_ret_is_well_formed_iff c).1 hoc,
-  },
-  {
-    intros S s o ho,
-    simp,
-    rw oc_bind_is_well_formed_iff at hoc,
-    haveI : oc.is_well_formed := hoc.1,
-    refine ⟨hoc' s o ho, λ c s' h, _⟩,
-    haveI : (od c).is_well_formed := hoc.2 c,
-    exact hod c s' o ho,
-  },
-  {
-    intros S s o ho,
-    simp at ⊢ h hob,
-    haveI : oc.is_well_formed := is_well_formed_of_oc_bind_left hoc,
-    refine h (s', s) _ _,
-    rintros ⟨s', s⟩ a,
-    simp,
-    specialize hob s' a,
-
-    refine eval_distribution_well_formed
-    apply hoc,
-  }
+  refine (is_well_formed_induction 
+    (λ A B C oc, ∀ (S : Type) (s : S) (o : S → A → comp (B × S)) (ho : ∀ s a, (o s a).is_well_formed), 
+  (oc.eval_distribution s o).is_well_formed) _ _ _ oc),
+  { intros A B a S s o ho,
+    simpa using ho s a },
+  { intros A B C cc S s o ho h,
+    simpa },
+  { introsI A B C D oc od hoc hod h h' S s o ho,
+    simp at ⊢ h',
+    refine ⟨h S s o ho, λ c s _, h' c S s _ _⟩,
+    refine ho },
 end
 
+/-- Run the computation using internal state to track queries -/
+def logging_eval_distribution (oc : oracle_comp A B C)
+  (o : A → comp B) : comp (C × (list A)) :=
+begin
+  refine (oc.eval_distribution [] (λ as a, _)),
+  refine (o a >>= λ b, return (b, a :: as)),
+end
+
+@[simp]
+instance logging_eval_distribution.is_well_formed 
+  (oc : oracle_comp A B C) (hoc : oc.is_well_formed)
+  (o : A → comp B) (ho : ∀ a, (o a).is_well_formed) :
+  (logging_eval_distribution oc o).is_well_formed :=
+begin
+  simp [logging_eval_distribution],
+  refine eval_distribution.is_well_formed oc [] _ _,
+  simpa using ho,
+end
+  
 /-- Evaluation distribution for a stateless oracle with `f` simulating the oracle. -/
 def stateless_eval_distribution
   (oc : oracle_comp A B C) (f : A → comp B) : comp C :=
-begin
-  let f' : unit → A → comp (B × unit) :=
-    λ _ a, comp.bind (f a) (λ b, comp.ret (b, ())),
-  refine (oc.eval_distribution () f').bind (λ c, comp.ret c.1),
-end
+(logging_eval_distribution oc f) >>= (λ cas, comp.ret cas.1)
 
 @[simp]
-instance stateless_eval_distribution_well_formed
-  (oc : oracle_comp A B C) [hoc : oc.is_well_formed]
-  (o : A → comp B) [ho : ∀ a, (o a).is_well_formed] :
+instance stateless_eval_distribution.is_well_formed
+  (oc : oracle_comp A B C) (hoc : oc.is_well_formed)
+  (o : A → comp B) (ho : ∀ a, (o a).is_well_formed) :
   (oc.stateless_eval_distribution o).is_well_formed :=
 begin
   simp [stateless_eval_distribution],
-  apply oracle_comp.eval_distribution_well_formed,
-  simpa,
+  exact logging_eval_distribution.is_well_formed oc hoc o ho,
 end
-
 
 end oracle_comp
