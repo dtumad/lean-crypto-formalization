@@ -22,7 +22,7 @@ variables [group G] [mul_action G X]
 @[simps]
 -- TODO: lemmas about the support of sign
 def ring_sig_of_pas [principal_action_class G X]
-  (x₀ : X) (H : hash_f K (list X × M) G) :
+  (x₀ : X) (H : hash_function K (list X × M) G) :
   ring_sig M (λ n, K × vector G n × vector G n) X G :=
 { gen := comp.bind (comp.rnd (G)) 
     (λ g, comp.ret (g • x₀, g)),
@@ -56,7 +56,7 @@ def ring_sig_of_pas [principal_action_class G X]
   end }
 
 theorem ring_sig_of_pas.complete [principal_action_class G X]
-  (x₀ : X) (H : hash_f K (list X × M) G) :
+  (x₀ : X) (H : hash_function K (list X × M) G) :
   (ring_sig_of_pas x₀ H).complete :=
 begin
   intros n i m,
