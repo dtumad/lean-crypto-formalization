@@ -30,7 +30,7 @@ begin
   refine ca.rec_on _ _ _ _,
   { exact λ _ a _, ⟨pmf.pure a, plift.up (by simp)⟩ },
   { refine λ A B ca cb db da h, _,
-    rw is_well_formed_bind_iff at h,
+    rw bind_is_well_formed_iff at h,
     refine ⟨(db h.1).1.bind_on_support (λ b hb, (da b (h.2 b ((plift.down (db h.1).2 b).mp hb))).1), 
       plift.up (λ a, _)⟩,
     rw [mem_support_bind_iff, pmf.bind_on_support_apply,
@@ -50,7 +50,7 @@ begin
   { introsI A _ _ _,
     refine ⟨pmf.const A, plift.up (λ a, by simpa using card_ne_zero_of_inhabited)⟩ },
   { introsI A p hp ca da h,
-    rw is_well_formed_repeat_iff at h,
+    rw repeat_is_well_formed_iff at h,
     have : ∃ a (ha : p a), (da h.1).1 a ≠ 0,
     { refine h.2.rec (λ a ha, _),
       simp at ha,
@@ -79,11 +79,13 @@ lemma eval_distribution_eq_zero_of_not_mem_support {ca : comp A} [ca.is_well_for
   (ha : a ∉ ca.support) : ca.eval_distribution a = 0 :=
 not_not.1 $ (mt (eval_distribution_ne_zero_iff ca a).1) ha
 
+@[simp]
 lemma eval_distribution_support_eq_support (ca : comp A) [ca.is_well_formed] :
   (eval_distribution ca).support = ca.support :=
 set.ext (λ a, eval_distribution_ne_zero_iff ca a)
 
-@[simp] lemma eval_distribution_ret [decidable_eq A] (a : A) :
+@[simp] 
+lemma eval_distribution_ret [decidable_eq A] (a : A) :
   eval_distribution (ret a) = pmf.pure a := 
 rfl
 
@@ -96,9 +98,20 @@ rfl
 
 /-- If we generalize `ha` over all `b` we can further reduce the `bind'` above to `bind`-/
 @[simp]
-lemma eval_distribution_bind (cb : comp B) (ca : B → comp A) [cb.is_well_formed] [∀ b, (ca b).is_well_formed] : 
-  eval_distribution (bind cb ca) = (eval_distribution cb).bind (λ b, eval_distribution (ca b)) :=
-trans (by reflexivity) (pmf.bind_on_support_eq_bind (eval_distribution cb) _)
+lemma eval_distribution_bind_on_support (cb : comp B) (ca : B → comp A) 
+  [h : (bind cb ca).is_well_formed] : 
+  @eval_distribution A (bind cb ca) h = 
+    (@eval_distribution B cb (is_well_formed_of_bind_left h)).bind_on_support 
+      (λ b hb, @eval_distribution A (ca b) (is_well_formed_of_bind_right h b $ by simpa using hb)) :=
+rfl
+
+@[simp]
+lemma eval_distribution_bind (cb : comp B) (ca : B → comp A)
+  [cb.is_well_formed] [∀ b, (ca b).is_well_formed]
+  (h : (bind cb ca).is_well_formed) :
+  (@eval_distribution A (bind cb ca) h) =
+    (cb.eval_distribution).bind (λ b, (ca b).eval_distribution) :=
+trans (by refl) (pmf.bind_on_support_eq_bind cb.eval_distribution _)
 
 @[simp] lemma eval_distribution_rnd {A : Type} [inhabited A] [fintype A] [decidable_eq A] :
   eval_distribution (rnd A) = pmf.const A := 

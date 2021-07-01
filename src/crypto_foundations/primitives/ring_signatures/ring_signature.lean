@@ -190,8 +190,7 @@ def anonomyous := ∀ (p : polynomial ℕ)
     → signing_oracle_comp (rss.rs sp) (p.eval sp) bool)
    [hA' : ∀ sp ks σ, (A' sp ks σ).is_well_formed]
   [htA : ∀ sp pks, (A sp pks).is_well_formed]
-  (A_poly_time : true) (A'_poly_time : true)
-  ,
+  (A_poly_time : true) (A'_poly_time : true),
 asymptotics.negligable (λ sp, begin
   haveI := htA,
   exact comp.Pr (anonomyous_experiment (rss.rs sp) (p.eval sp) (A sp) (A' sp)) - 0.5,
