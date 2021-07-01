@@ -13,6 +13,12 @@ instance oracle_comp_pair.monad {A B A' B' : Type} :
 { pure := λ C c, oc_ret (comp.ret c),
   bind := λ A B ca cb, oc_bind ca cb }
 
+@[simp]
+instance oracle_comp_pair.monad.return_is_well_formed
+  {A B A' B' C : Type} (c : C) :
+  (return c : oracle_comp_pair A B A' B' C).is_well_formed :=
+oc_ret.is_well_formed (comp.ret c)
+
 namespace oracle_comp_pair
 
 variables {A B A' B' C : Type}
@@ -37,41 +43,38 @@ instance eval_distribution.is_well_formed {S S' : Type}
   (oc.eval_distribution s o s' o').is_well_formed :=
 begin
   simp [eval_distribution],
-  apply oracle_comp.eval_distribution.is_well_formed,
-  intros ss' aa',
-  cases aa',
-  {
-    simp,
-    exact ho _ _,
-  },
-  {
-    simp,
-    exact ho' _ _,
-  }
+  apply oracle_comp.eval_distribution_is_well_formed oc hoc _ _ (λ _ aa', _),
+  cases aa'; simp
 end
-
 
 def query_left (a : A) : oracle_comp_pair A B A' B' (with_bot B) :=
 do bb' ← (oc_query (sum.inl a)), 
   return (bb'.rec (λ b, ↑b) (λ _, ⊥))
 
+@[simp]
 instance query_left.is_well_formed (a : A) :
   (query_left a : oracle_comp_pair A B A' B' (with_bot B)).is_well_formed :=
 by simp [query_left]
 
-lemma query_left.eval_distribution {S S' : Type} (a : A) 
-  (s : S) (o : S → A → comp (B × S)) [ho : ∀ s a, (o s a).is_well_formed]
-  (s' : S') (o' : S' → A' → comp (B' × S')) [ho' : ∀ s' a', (o' s' a').is_well_formed] :
-  @comp.eval_distribution _ ((query_left a).eval_distribution s o s' o') 
-    (eval_distribution.is_well_formed _ s o s' o') =
-    ((o s a) >>= (λ bs, return ((↑bs.1, bs.2, s')))).eval_distribution :=
-begin
-  simp [query_left, oracle_comp_pair.eval_distribution],
-  sorry,
-end
-
 def query_right (a' : A') : oracle_comp_pair A B A' B' (with_bot B') :=
 do bb' ← (oc_query (sum.inr a')),
   return (bb'.rec (λ _, ⊥) (λ b', ↑b'))
+
+@[simp]
+instance query_right.is_well_formed (a' : A') :
+  (query_right a' : oracle_comp_pair A B A' B' (with_bot B')).is_well_formed :=
+by simp [query_right]
+
+-- lemma query_left.eval_distribution {S S' : Type} (a : A) 
+--   (s : S) (o : S → A → comp (B × S)) [ho : ∀ s a, (o s a).is_well_formed]
+--   (s' : S') (o' : S' → A' → comp (B' × S')) [ho' : ∀ s' a', (o' s' a').is_well_formed] :
+--   comp.eval_distribution ((query_left a).eval_distribution s o s' o') =
+--     ((o s a) >>= (λ bs, return ((↑bs.1, bs.2, s')))).eval_distribution :=
+-- begin
+--   simp [query_left, eval_distribution,
+--     -comp.eval_distribution_bind_on_support],
+--   refine (comp.eval_distribution_bind _ _ _).trans _,
+--   sorry,
+-- end
 
 end oracle_comp_pair
