@@ -91,7 +91,7 @@ axiom has_cost_fst (A : Type u) (B : Type v) :
 axiom has_cost_snd (A : Type u) (B : Type v) :
     has_cost (prod.snd : A × B → B) 0
 
-axiom has_cost_ret (A : Type) [decidable_eq A] :
+axiom has_cost_ret (A : Type) :
   has_cost (comp.ret : A → comp A) 0
 
 axiom has_cost_bool_eq :
@@ -133,7 +133,7 @@ lemma has_cost_ext {f g : A → B} {n : ℚ} (hf : has_cost f n)
   has_cost (prod.snd : A × B → B) n ↔ n ≥ 0 :=
 ⟨ge_zero_of_has_cost, λ h, has_cost_of_le h (has_cost_snd A B)⟩
 
-@[simp] lemma has_cost_ret_iff {A : Type} [decidable_eq A] {n : ℚ} :
+@[simp] lemma has_cost_ret_iff {A : Type} {n : ℚ} :
   has_cost (comp.ret : A → comp A) n ↔ n ≥ 0 :=
 ⟨ge_zero_of_has_cost, λ h, has_cost_of_le h (has_cost_ret A)⟩
 
@@ -201,7 +201,7 @@ open comp
 
 /-- Cost of a computation `comp A`, relative to a given `function_cost_model` -/
 inductive comp_cost : comp_cost_model
-| cost_ret {A : Type} [decidable_eq A] {a : A} :
+| cost_ret {A : Type} {a : A} :
     comp_cost (ret a) 0
 | cost_bind {A B : Type} {ca : comp A} {cb : A → comp B} {n1 n2 n3 : ℚ} :
     comp_cost ca n1 → has_cost cb n2 → (∀ a, comp_cost (cb a) n3) → comp_cost (ca >>= cb) (n1 + n2 + n3)
@@ -215,7 +215,7 @@ theorem ge_zero_of_comp_cost {A : Type} {ca : comp A} {n : ℚ} (h : comp_cost c
   n ≥ 0 :=
 begin
   refine h.rec_on _ _ _ _,
-  { refine λ _ _ _, le_rfl },
+  { refine λ _ _, le_rfl },
   { refine λ A B ca cb n1 n2 n3 _ hcb _ hn1 hn3, _,
     refine add_nonneg (add_nonneg hn1 _) (hn3 (comp_base_exists ca)),
     refine has_cost.ge_zero_of_has_cost hcb },
@@ -223,7 +223,7 @@ begin
   { refine λ A ca n m hnm hca hn, le_trans hn hnm }
 end
 
-@[simp] lemma comp_cost_ret {A : Type} [decidable_eq A] {a : A} {n : ℚ} :
+@[simp] lemma comp_cost_ret {A : Type} {a : A} {n : ℚ} :
   comp_cost (ret a) n ↔ n ≥ 0 :=
 ⟨ge_zero_of_comp_cost, λ h, comp_cost.cost_le h comp_cost.cost_ret⟩
 
@@ -235,21 +235,16 @@ comp_cost.cost_le (nat.cast_le.mpr hnm) comp_cost.cost_rnd_bitvec
 
 open oracle_comp
 
-inductive oracle_cost (fm : function_cost_model.{0 1}) (cm : comp_cost_model) : oracle_comp_cost_model
+-- Returning the result of a `comp` has cost independent of oracle access cost
 -- Querying the oracle has the same cost as the specified oracle call cost
+inductive oracle_cost (fm : function_cost_model.{0 1}) (cm : comp_cost_model) : oracle_comp_cost_model
 | cost_query {A B : Type} {a : A} :
     oracle_cost (oc_query a : oracle_comp A B B) id
--- Returning the result of a `comp` has cost independent of oracle access cost
 | cost_ret {A B C : Type} {c : comp C} {n : ℚ} :
     cm c n → oracle_cost (oc_ret c : oracle_comp A B C) (λ _, n)
--- TODO: This looks off
 | cost_bind {A B C D : Type} {oc : oracle_comp A B C} {od : C → oracle_comp A B D} {n1 n2 n3 : ℕ} :
     oracle_cost oc n1 → fm od n2 → (∀ c, oracle_cost (od c) n3) 
       → oracle_cost (oc_bind oc od) (n1 + n2 + n3)
--- | cost_run {A B C A' B' S : Type} [decidable_eq A] [decidable_eq B] [decidable_eq S]
---     {oc : oracle_comp A B C} {ob : S → A → oracle_comp A' B' (B × S)} {s : S} {n m : ℚ} {f g : ℚ → ℚ} :
---     oracle_cost oc f → fm ob n → (∀ s, fm (ob s) m) → (∀ s a, oracle_cost (ob s a) g) 
---       → oracle_cost (oc_run oc s ob) (λ n, f (n + m + (g n)))
 | cost_le {A B C : Type} {oc : oracle_comp A B C} {f g : ℚ → ℚ} (hnm : ∀ n, f n ≤ g n) :
     oracle_cost oc f → oracle_cost oc g
 

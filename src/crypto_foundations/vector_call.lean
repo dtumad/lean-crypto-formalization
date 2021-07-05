@@ -13,9 +13,7 @@ instance vector_call.is_well_formed {A : Type}
 begin
   induction n with n hn,
   { simp [vector_call] },
-  { simp [vector_call, hn, hca],
-
-   }
+  { simp [vector_call, hn, hca] }
 end
 
 @[simp]
@@ -40,7 +38,7 @@ begin
 end
 
 @[simp]
-theorem mem_support_vector_call_iff {A : Type} [decidable_eq A] 
+theorem mem_support_vector_call_iff {A : Type}
   (ca : comp A) {n : ℕ} (v : vector A n) : 
   v ∈ (vector_call ca n).support ↔ ∀ (i : fin n), (v.nth i) ∈ ca.support :=
 begin

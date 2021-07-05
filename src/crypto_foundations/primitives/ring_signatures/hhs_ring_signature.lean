@@ -17,43 +17,44 @@ variables {M G X K : Type}
   [fintype G] [fintype X] 
   [inhabited G] [inhabited X] 
   [decidable_eq M] [decidable_eq X] [decidable_eq G] [decidable_eq K]
-variables [comm_group G] [mul_action G X]
+variables [add_comm_group G] [add_action G X]
+
+-- TODO: Clean this up
+structure sig_type (K G : Type) (n : ℕ) : Type :=
+(k : K)
+(rs : vector G n)
+(cs : vector G n)
 
 @[simps]
--- TODO: lemmas about the support of sign
 def ring_sig_of_pas [principal_action_class G X]
   (x₀ : X) (H : hash_function K (list X × M) G) :
-  ring_sig M (λ n, K × vector G n × vector G n) X G :=
-{ gen := (do g ← comp.rnd (G), return (g • x₀, g)),
+  ring_sig M (sig_type K G) X G :=
+{ gen := (do 
+    g ← comp.rnd G, 
+    return (g +ᵥ x₀, g)),
   gen_well_formed := by apply_instance,
-  sign := begin
-    refine λ n i sk R m, _,
-    refine (comp.rnd G).bind (λ tᵢ, _),
-    refine (comp.vector_call (comp.rnd G) n).bind (λ rs, _),
-    refine (comp.vector_call (comp.rnd G) n).bind (λ cs, _),
-    refine (H.keygen).bind (λ k, _),
-    let Ts : vector X n := vector.of_fn (λ j, (rs.nth j * cs.nth j) • R.nth j),
-    let Tᵢ : X := tᵢ • x₀,
-    let Ts' : vector X n := Ts.update_nth i Tᵢ,
-    
-    let h : list X × M := ⟨vector.to_list (x₀ ::ᵥ (R.append Ts')), m⟩,
-    let c : G := H.hash k h,
-    let cᵢ : G := c * (cs.nth i) * ((cs.map (λ g, g⁻¹)).to_list.prod),
-    let rᵢ : G := tᵢ * sk * cᵢ⁻¹,
-    let cs' : vector G n := cs.update_nth i cᵢ,
-    let rs' : vector G n := rs.update_nth i rᵢ,
-    exact comp.ret (k, cs', rs'),
-  end,
+  sign := λ n i sk R m, (do
+    k ← H.keygen,
+    tᵢ ← comp.rnd G,
+    rs ← comp.vector_call (comp.rnd G) n,
+    cs ← comp.vector_call (comp.rnd G) n,
+    return (
+      let Ts : vector X n := vector.of_fn (λ j, (rs.nth j + cs.nth j) +ᵥ R.nth j) in
+      let Ts' : vector X n := Ts.update_nth i (tᵢ +ᵥ x₀) in
+      let h : list X × M := ⟨x₀ :: (R.append Ts').to_list, m⟩ in
+      let c : G := H.hash k h in
+      let cᵢ : G := c + cs.nth i - cs.to_list.sum in
+      let rᵢ : G := tᵢ - sk - cᵢ in
+      { k := k, 
+        cs := cs.update_nth i cᵢ, 
+        rs := rs.update_nth i rᵢ }
+    )),
   sign_well_formed := by apply_instance,
-  verify := begin
-    intros n R m σ,
-    let k : K := σ.1,
-    let cs : vector G n := σ.2.1,
-    let rs : vector G n := σ.2.2,
-    let Ts : vector X n := vector.of_fn (λ j, (rs.nth j * cs.nth j) • R.nth j),
-    let h : list (X) × M := ⟨vector.to_list (x₀ ::ᵥ (R.append Ts)), m⟩,
-    exact H.hash k h = cs.to_list.prod,
-  end }
+  verify := λ n R m σ, 
+    let Ts : vector X n := vector.of_fn (λ j, (σ.rs.nth j + σ.cs.nth j) +ᵥ R.nth j) in 
+    let h : list (X) × M := ⟨x₀ :: (R.append Ts).to_list, m⟩ in 
+    H.hash σ.k h = σ.cs.to_list.sum,
+  }
 
 variables [principal_action_class G X]
   (x₀ : X) (H : hash_function K (list X × M) G)
@@ -61,51 +62,33 @@ variables [principal_action_class G X]
 @[simp]
 lemma ring_sig_of_pas.mem_support_keygen_iff (k : X × G) :
   k ∈ (ring_sig_of_pas x₀ H).gen.support ↔ 
-    k.1 = k.2 • x₀ :=
+    k.1 = k.2 +ᵥ x₀ :=
 begin
   cases k with x g,
   simp,
 end
 
 lemma ring_sig_of_pas.vectorization_of_mem_support_keygen
-  (x : X) (g : G) (hk : (x, g) ∈ (ring_sig_of_pas x₀ H).gen.support) :
-    vectorization x x₀ = g :=
+  (k : X × G) (hk : k ∈ (ring_sig_of_pas x₀ H).gen.support) :
+    vectorization x₀ k.1 = k.2 :=
 begin
+  cases k,
   simp at hk,
   simp [hk],
 end
 
 lemma ring_sig_of_pas.vectorization_of_mem_support_keygen'
   (k : X × G) (hk : k ∈ (ring_sig_of_pas x₀ H).gen.support) :
-    vectorization k.1 x₀ = k.2 :=
-begin
-  cases k,
-  exact ring_sig_of_pas.vectorization_of_mem_support_keygen x₀ H _ _ hk,
-end
+    vectorization k.1 x₀ = - k.2:=
+by rw [vectorization_swap, ring_sig_of_pas.vectorization_of_mem_support_keygen x₀ H k hk]
 
 @[simp]
 lemma ring_sig_of_pas.verify_iff (n : ℕ) (R : vector X n) (m : M) 
-  (σ : K × vector G n × vector G n) :
+  (σ : sig_type K G n) :
     ((ring_sig_of_pas x₀ H).verify n R m σ) =
-      let Ts : vector X n := vector.of_fn (λ j, (σ.2.2.nth j * σ.2.1.nth j) • R.nth j) in
-      H.hash σ.1 ⟨vector.to_list (x₀ ::ᵥ (R.append Ts)), m⟩ = σ.2.1.to_list.prod :=
+      let Ts : vector X n := vector.of_fn (λ j, (σ.rs.nth j + σ.cs.nth j) +ᵥ R.nth j) in
+      H.hash σ.1 ⟨vector.to_list (x₀ ::ᵥ (R.append Ts)), m⟩ = σ.cs.to_list.sum :=
 by simp
-
-@[simp]
-lemma vector.prod_update_nth {G : Type} [group G] {n : ℕ}
-  (v : vector G n) (i : fin n) (g : G) :
-  (v.update_nth i g).to_list.prod = 
-    v.to_list.prod * (v.nth i)⁻¹ * g :=
-begin
-  sorry,
-end
-
-@[simp]
-lemma list.prod_map_inv {G : Type} [comm_group G] (gs : list G): 
-  (gs.map (λ g, g⁻¹)).prod = gs.prod⁻¹ :=
-begin
-  sorry,
-end
 
 theorem ring_sig_of_pas.complete [principal_action_class G X]
   (x₀ : X) (H : hash_function K (list X × M) G) :
@@ -121,27 +104,24 @@ begin
   simp only [vector.to_list_cons, vector.nth_map, vector.to_list_append, vector.to_list_of_fn, ring_sig_of_pas_verify,
     vector.to_list_map, to_bool_iff],
   simp at hσ,
-  obtain ⟨tᵢ, rs, cs, k, hk, hσ⟩ := hσ,
+  obtain ⟨k, hk, tᵢ, rs, cs, hσ⟩ := hσ,
   simp [hσ],
   clear hσ,
-  sorry,
-  -- abel,
-  -- rw group_prod_thing _ i cs,
-  -- congr,
-  -- ext j,
-  -- have hkj : ks.nth j ∈ (ring_sig_of_pas x₀ H).gen.support,
-  -- from hks _ (vector.nth_mem _ _),
-  -- split_ifs,
-  -- {
-  --   rw principal_action_class.smul_eq_iff_left _ tᵢ _ x₀,
-  --   rw ring_sig_of_pas.vectorization_of_mem_support_keygen' x₀ H (ks.nth j) hkj,
-  --   rw [← mul_inv, ← mul_inv],
-  --   convert mul_inv_cancel_right (tᵢ * _) _,
-  --   rw [inv_inv, mul_assoc, mul_comm, mul_comm (cs.nth i), ← mul_assoc],    
-  -- },
-  -- {
-  --   exact rfl,
-  -- }
+  abel,
+  refine congr_arg (H.hash k) _,
+  simp,
+  ext j,
+  by_cases hj : j = i,
+  {
+    simp only [hj, vector.nth_update_nth_same, add_sub_cancel'_right, vector.nth_of_fn],
+    rw principal_action_class.vadd_eq_iff_left _ tᵢ _ x₀,
+    rw ring_sig_of_pas.vectorization_of_mem_support_keygen' x₀ H (ks.nth i) (hks i),
+    rw ← sub_eq_add_neg
+  },
+  {
+    have : i ≠ j := ne.symm hj,
+    simp [vector.nth_update_nth_of_ne this, add_comm (cs.nth j) (rs.nth j)],
+  },
 end
 
 end ring_sig_of_pas
@@ -150,7 +130,7 @@ variables {M : Type} {G X K : ℕ → Type}
 variables [∀ n, fintype (G n)] [∀ n, fintype (X n)] 
 variables [∀ n, inhabited (G n)] [∀ n, inhabited (X n)]
 variables [decidable_eq M] [∀ n, decidable_eq (G n)] [∀ n, decidable_eq (X n)] [∀ n, decidable_eq (K n)]
-variables [∀ n, comm_group (G n)] [∀ n, mul_action (G n) (X n)] [∀ n, principal_action_class (G n) (X n)]
+variables [∀ n, add_comm_group (G n)] [∀ n, add_action (G n) (X n)] [∀ n, principal_action_class (G n) (X n)]
 
 /-- Construct a ring signature scheme from a hard homogenous space.
 `x₀` is an arbitrary generator in `X` used as a base for the public keys.
@@ -160,7 +140,7 @@ The first element is the hash key used to sign this, and the two vectors are the
 TODO: This should probably maybe a bunch of binds instead of let statemest? -/
 def ring_signature_scheme_of_hhs [hard_homogeneous_space G X] 
   (x₀ : Π sp, X sp) (H : hash_scheme K (λ sp, list (X sp) × M) (λ sp, G sp)) : 
-  ring_signature_scheme M (λ sp n, K sp × vector (G sp) n × vector (G sp) n) X G :=
+  ring_signature_scheme M (λ sp, sig_type (K sp) (G sp)) X G :=
 {
   rs := λ sp, ring_sig_of_pas (x₀ sp) (H.scheme sp),
   gen_poly_time := sorry,

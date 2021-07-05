@@ -229,32 +229,148 @@ lemma ite_le {A : Type*} [has_le A] {a b c : A} (p : Prop) [decidable p]
   (hab : b ≤ a) (hac : c ≤ a) : ite p b c ≤ a :=
 by split_ifs; assumption
 
--- @[simp]
--- lemma vector.prod_update_nth {G : Type} [group G] {n : ℕ}
---   (v : vector G n) (i : fin n) (g : G) :
---   (v.update_nth i g).to_list.prod = 
---     v.to_list.prod * (v.nth i)⁻¹ * g :=
--- begin
---   sorry,
--- end
+section sum_stuff
 
--- example : Prop :=
--- begin
---   have := vector.remove_nth
--- end
+@[simp]
+lemma list.sum_map_neg {G : Type} [add_comm_group G] : 
+  ∀ (gs : list G), (gs.map (λ g, -g)).sum = -gs.sum
+| [] := by simp
+| (h :: t) := by simp [list.sum_map_neg, add_comm (-h)]
 
--- @[simp]
--- lemma helper {G : Type} [group G] (g : G) {n : ℕ} (i : fin n)
---   (cs : vector G n) :
---   (vector.of_fn (λ (j : fin n), ite (j = i) g (cs.nth j)))
+@[simp]
+lemma list.sum_thing {G : Type} [add_comm_group G] :
+  ∀ (gs gs' : list G)
+  (h : gs.length = gs'.length),
+  gs.sum - gs'.sum = (list.zip_with (λ g g', g - g') gs gs').sum
+| [] [] h := by simp
+| [] (g' :: gs') h := by contradiction
+| (g :: gs) [] h := by contradiction
+| (g :: gs) (g' :: gs') h := begin
+  have : gs.length = gs'.length,
+  by simpa only [add_left_inj, list.length] using h,
+  simp [← list.sum_thing gs gs' this],
+  abel,
+end
 
--- lemma group_prod_thing {G : Type} [comm_group G] (g : G)
---   {n : ℕ} (i : fin n) (cs : vector G n) : (list.of_fn
---    (λ (j : fin n), ite (j = i) 
---     (g * cs.nth i * (list.map has_inv.inv cs.to_list).prod)
---         (cs.nth j))).prod = g :=
--- begin
---   sorry,
--- end
+lemma list.sum_eq_zero_of_mem_zero {G : Type} [add_group G] :
+  ∀ (gs : list G) (h : ∀ g ∈ gs, g = (0 : G)), gs.sum = 0
+| [] _ := list.sum_nil
+| (g :: gs) h := begin
+  rw [list.sum_cons, h g (list.mem_cons_self g gs), zero_add],
+  exact list.sum_eq_zero_of_mem_zero gs (λ g' hg', h g' $ list.mem_cons_of_mem g hg'),
+end
+
+lemma list.sum_eq_of_unique {G : Type} [add_comm_group G] :
+  ∀ (gs : list G) (g : G) 
+  (n : ℕ) (hn : n < gs.length) (hng : gs.nth_le n hn = g) 
+  (hn' : ∀ (m : ℕ) (hm : m < gs.length), m ≠ n → gs.nth_le m hm = 0),
+  gs.sum = g
+| [] _ n hn _ _ := by simpa using hn
+| (g' :: gs) g 0 hn hng hn' := begin
+  simp at hng,
+  simp [hng],
+  refine list.sum_eq_zero_of_mem_zero gs (λ x hx, _),
+  rw list.mem_iff_nth_le at hx,
+  obtain ⟨m, hm, rfl⟩ := hx,
+  specialize hn' m.succ (by simpa using nat.succ_lt_succ hm) (nat.succ_ne_zero m),
+  rwa list.nth_le at hn',
+end
+| (g' :: gs) g (n + 1) hn hng hn' := begin
+  rw list.sum_cons,
+  have := hn',
+  specialize hn' 0 (nat.zero_lt_succ _) (by contradiction),
+  rw [list.nth_le] at hn',
+  simp [hn'],
+  refine list.sum_eq_of_unique gs g n (nat.succ_lt_succ_iff.1 hn) hng _,
+  intros m hm hm',
+  refine this (m + 1) (nat.succ_lt_succ hm) (nat.succ_ne_succ.2 hm'),
+end
+
+end sum_stuff
+
+
+
+@[simp]
+lemma vector_to_list_nth_le'' {A : Type} {n : ℕ} (v : vector A n)
+  (m : ℕ) (hm : m < v.to_list.length) :
+  v.to_list.nth_le m hm = v.nth ⟨m, lt_of_lt_of_le hm (le_of_eq (vector.to_list_length _))⟩ :=
+begin
+  induction v,
+  simpa,
+end
+
+@[simp]
+lemma vector.to_list_nth {A : Type} {n : ℕ} (v : vector A n)
+  (i : fin n) : v.to_list.nth i = some (v.nth i) :=
+begin
+  induction v,
+  simp,
+  rw list.nth_eq_some,
+  refine ⟨lt_of_lt_of_le i.2 (le_of_eq v_property.symm), rfl⟩,
+end
+
+@[simp]
+lemma vector.sum_update_nth {G : Type} [add_comm_group G] {n : ℕ}
+  (v : vector G n) (i : fin n) (g : G) :
+  (v.update_nth i g).to_list.sum = 
+    v.to_list.sum - (v.nth i) + g :=
+calc (v.update_nth i g).to_list.sum = v.to_list.sum + ((v.update_nth i g).to_list.sum - v.to_list.sum) : by abel
+    ... = v.to_list.sum + (g - (v.nth i)) : begin
+      refine congr_arg _ _, 
+      rw list.sum_thing _,
+      { refine list.sum_eq_of_unique _ (g - v.nth i) i.1 _ _ _,
+        {
+          refine lt_of_lt_of_le i.2 (le_of_eq _),
+          simp,
+        },
+        { simp, 
+          },
+        {
+          intros m hm hm',
+          have hmn : m < n := by simpa using hm,
+          rw list.nth_le_zip_with,
+          simp,
+          rw sub_eq_zero,
+          refine vector.nth_update_nth_of_ne _ _,
+          refine λ hi, hm' _,
+          refine congr_arg (λ (x : fin n), x.1) hi.symm,
+        }, },
+      simp only [vector.to_list_length],
+    end
+    ... = _ : by abel
+
+
+
+@[simp]
+lemma list.append_eq_append_iff' {A : Type} (x y z : list A) :
+  x ++ y = x ++ z ↔ y = z :=
+begin
+  induction x with x xs h,
+  { simp },
+  { simp [h] }
+end
+
+@[simp]
+lemma list.of_fn_eq_vector_to_list_iff {A : Type} {n : ℕ}
+  (f : fin n → A) (v : vector A n) :
+  (list.of_fn f) = v.to_list ↔
+    vector.of_fn f = v :=
+begin
+  refine ⟨λ h, _, λ h, _⟩,
+  {
+    ext j,
+    rw [vector.nth_of_fn],
+    have hj1 : j.1 < (list.of_fn f).length := (list.length_of_fn f).symm ▸ j.2,
+    suffices : (list.of_fn f).nth_le j hj1 = v.to_list.nth_le j ((vector.to_list_length v).symm ▸ j.2),
+    by simpa using this,
+    congr,
+    exact h,
+  },
+  {
+    ext n a,
+    rw ← h,
+    simp,
+  }
+end
 
 end misc
