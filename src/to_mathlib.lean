@@ -4,6 +4,8 @@ import analysis.special_functions.exp_log
 import analysis.asymptotics.asymptotics
 import analysis.special_functions.polynomials 
 
+import data.vector2
+
 /-!
 # Miscelanious Lemams
 
@@ -226,5 +228,33 @@ end
 lemma ite_le {A : Type*} [has_le A] {a b c : A} (p : Prop) [decidable p]
   (hab : b ≤ a) (hac : c ≤ a) : ite p b c ≤ a :=
 by split_ifs; assumption
+
+-- @[simp]
+-- lemma vector.prod_update_nth {G : Type} [group G] {n : ℕ}
+--   (v : vector G n) (i : fin n) (g : G) :
+--   (v.update_nth i g).to_list.prod = 
+--     v.to_list.prod * (v.nth i)⁻¹ * g :=
+-- begin
+--   sorry,
+-- end
+
+-- example : Prop :=
+-- begin
+--   have := vector.remove_nth
+-- end
+
+-- @[simp]
+-- lemma helper {G : Type} [group G] (g : G) {n : ℕ} (i : fin n)
+--   (cs : vector G n) :
+--   (vector.of_fn (λ (j : fin n), ite (j = i) g (cs.nth j)))
+
+-- lemma group_prod_thing {G : Type} [comm_group G] (g : G)
+--   {n : ℕ} (i : fin n) (cs : vector G n) : (list.of_fn
+--    (λ (j : fin n), ite (j = i) 
+--     (g * cs.nth i * (list.map has_inv.inv cs.to_list).prod)
+--         (cs.nth j))).prod = g :=
+-- begin
+--   sorry,
+-- end
 
 end misc

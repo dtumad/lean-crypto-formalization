@@ -54,6 +54,16 @@ instance completeness_expiriement.is_well_formed (n : ℕ) (i : fin n) (m : M) :
   (completeness_experiment rs n i m).is_well_formed :=
 by simp [completeness_experiment]
 
+@[simp]
+lemma mem_support_completeness_experiment_iff (n : ℕ) (i : fin n) (m : M) (b : bool) :
+  b ∈ (completeness_experiment rs n i m).support ↔
+    ∃ (ks : vector (PK × SK) n) (hks : ∀ k ∈ ks.to_list, k ∈ rs.gen.support)
+      (σ : S n) (hσ : σ ∈ (rs.sign n i (vector.nth ks i).2 (vector.map prod.fst ks) m).support),
+      b = rs.verify n (vector.map prod.fst ks) m σ :=
+begin
+  sorry,
+end
+
 /-- A ring signature is complete if for any list if completeness experiment always succeeds `-/
 def complete :=
 ∀ (n : ℕ) (i : fin n) (m : M), comp.Pr (completeness_experiment rs n i m) = 1

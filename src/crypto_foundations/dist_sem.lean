@@ -151,6 +151,7 @@ begin
   { refl }
 end
 
+@[simp]
 theorem Pr_prop_eq_one_iff (p : A → Prop) [decidable_pred p] :
   ca-Pr[p] = 1 ↔ ∀ a ∈ ca.support, p a :=
 begin
@@ -178,6 +179,12 @@ Pr_prop_of_unique ca (λ x, x = a) a rfl (λ _, id)
 /-- Probability of a `comp bool` returning true -/
 def Pr (ca : comp bool) [ca.is_well_formed] : ℝ≥0 := 
 ca-Pr[λ x, x = tt]
+
+@[simp]
+-- TODO: maybe just get rid of this definition?
+lemma Pr_def (ca : comp bool) [ca.is_well_formed] :
+  Pr ca = (ca-Pr[λ x, x = tt]) :=
+rfl
 
 lemma Pr_eq_eval_distribution_tt (ca : comp bool) [ca.is_well_formed] :
   ca.Pr = ca.eval_distribution tt :=

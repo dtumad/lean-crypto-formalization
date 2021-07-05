@@ -77,10 +77,47 @@ theorem principal_action_class.vectorization_unique [principal_action_class G X]
 exists_unique_of_exists_of_unique (transitive_action_class.exists_smul_eq x y)
   (λ g g' hg hg', free_action_class.eq_of_smul_eq x (hg.trans hg'.symm))
 
+section vectorization
+
 /-- The vectorization of `x` and `y` is the unique element of `g` sending `x` to `y` under the action.
 In the case where the homogeneous space is the Diffie-Hellman action this is the discrete log -/
 def vectorization [principal_action_class G X] [fintype G] [decidable_eq X] (x y : X) : G :=
 fintype.choose (λ g, g • x = y) (principal_action_class.vectorization_unique x y)
+
+variables [principal_action_class G X]
+  [fintype G] [decidable_eq X]
+
+variable (G)
+
+@[simp]
+lemma vectorization_apply (x y : X) :
+  (vectorization x y : G) • x = y :=
+begin
+  simp [vectorization],
+  sorry,
+end
+
+@[simp]
+lemma vectorization_smul (x : X) (g : G) :
+  vectorization (g • x) x = g :=
+begin
+  simp [vectorization],
+  sorry,
+end
+
+variable {G}
+
+lemma principal_action_class.smul_eq_iff_left (g g' : G) (x y : X) :
+  g • x = g' • y ↔ g = g' * (vectorization x y) :=
+begin
+  refine ⟨λ h, _, λ h, _⟩,
+  { rw ← vectorization_apply G x y at h,
+    rw smul_smul at h,
+    refine free_action_class.eq_of_smul_eq x h },
+  { rw [h, ← smul_smul, vectorization_apply] }
+end
+
+end vectorization
 
 end action_classes
 
