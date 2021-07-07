@@ -94,17 +94,16 @@ class collision_finding_adversary.admissable {H : hash_scheme K I O}
 (is_well_formed : ∀ sp k, (A sp k).is_well_formed)
 (poly_time : complexity_class.poly_time_comp₁ A)
 
-instance collision_finding_adversary.is_well_formed
-  {H : hash_scheme K I O} {A : collision_finding_adversary H}
-  (hA : A.admissable) (sp : ℕ) (k : K sp) :
-  (A sp k).is_well_formed :=
-collision_finding_adversary.admissable.is_well_formed H sp k
-
 /-- The security game for collision resistance as a probabalistic function. 
   Adversary implicitly recieves the secuirty parameter via the hashkey from `keygen`-/
 def collision_finding_experiment (H : hash_scheme K I O) 
   (A : collision_finding_adversary H) (sp : ℕ) : comp bool :=
 (H.scheme sp).collision_finding_experiment (A sp)
+
+instance collision_finding_adversary.is_well_formed {H : hash_scheme K I O} 
+  (A : collision_finding_adversary H) [hA : A.admissable] : 
+  ∀ sp k, (A sp k).is_well_formed :=
+hA.is_well_formed
 
 @[simp]
 lemma collision_finding_experiment_is_well_formed_iff (H : hash_scheme K I O) 
@@ -114,16 +113,18 @@ lemma collision_finding_experiment_is_well_formed_iff (H : hash_scheme K I O)
 by simp [hash_scheme.collision_finding_experiment]
 
 instance collision_finding_experiment.is_well_formed (H : hash_scheme K I O)
-  (A : collision_finding_adversary H) (hA : A.admissable) (sp : ℕ) :
+  (A : collision_finding_adversary H) [hA : A.admissable] (sp : ℕ) :
   (H.collision_finding_experiment A sp).is_well_formed :=
 begin
   refine hash_function.collision_finding_experiment.is_well_formed _ _ _,
-  refine collision_finding_adversary.is_well_formed hA sp,
+  refine collision_finding_adversary.is_well_formed A sp,
 end
 
 def collision_resistant (H : hash_scheme K I O) : Prop :=
 ∀ (A : collision_finding_adversary H) (hA : A.admissable),
-negligable_expirement_success (H.collision_finding_experiment A)
-  (collision_finding_experiment.is_well_formed H A hA)
+asymptotics.negligable (λ sp, begin 
+  haveI := hA,
+  exact comp.Pr (H.collision_finding_experiment A sp)
+end)
 
 end hash_scheme

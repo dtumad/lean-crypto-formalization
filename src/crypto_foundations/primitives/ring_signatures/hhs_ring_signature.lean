@@ -70,7 +70,7 @@ end
 
 lemma ring_sig_of_pas.vectorization_of_mem_support_keygen
   (k : X × G) (hk : k ∈ (ring_sig_of_pas x₀ H).gen.support) :
-    vectorization x₀ k.1 = k.2 :=
+    vectorization G x₀ k.1 = k.2 :=
 begin
   cases k,
   simp at hk,
@@ -79,7 +79,7 @@ end
 
 lemma ring_sig_of_pas.vectorization_of_mem_support_keygen'
   (k : X × G) (hk : k ∈ (ring_sig_of_pas x₀ H).gen.support) :
-    vectorization k.1 x₀ = - k.2:=
+    vectorization G k.1 x₀ = - k.2:=
 by rw [vectorization_swap, ring_sig_of_pas.vectorization_of_mem_support_keygen x₀ H k hk]
 
 @[simp]
@@ -151,14 +151,16 @@ def ring_signature_scheme_of_hhs [hard_homogeneous_space G X]
 variables [hard_homogeneous_space G X] 
 
 theorem ring_signature_scheme_of_hhs.anonomyous (x₀ : Π sp, X sp) 
-  (H : hash_scheme K (λ sp, list (X sp) × M) (λ sp, G sp)) :
+  (H : hash_scheme K (λ sp, list (X sp) × M) (λ sp, G sp))
+  (hH : hash_scheme.collision_resistant H) :
   (ring_signature_scheme_of_hhs x₀ H).anonomyous :=
 begin
   sorry,
 end
 
 theorem ring_signature_scheme_of_hhs.unforgeable (x₀ : Π sp, X sp) 
-  (H : hash_scheme K (λ sp, list (X sp) × M) (λ sp, G sp)) :
+  (H : hash_scheme K (λ sp, list (X sp) × M) (λ sp, G sp))
+  (hH : hash_scheme.collision_resistant H) :
   (ring_signature_scheme_of_hhs x₀ H).unforgeable :=
 begin
   sorry,

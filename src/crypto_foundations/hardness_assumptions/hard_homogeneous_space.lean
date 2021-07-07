@@ -79,6 +79,8 @@ exists_unique_of_exists_of_unique (transitive_action_class.exists_vadd_eq x y)
 
 section vectorization
 
+variable (G)
+
 /-- The vectorization of `x` and `y` is the unique element of `g` sending `x` to `y` under the action.
 In the case where the homogeneous space is the Diffie-Hellman action this is the discrete log -/
 def vectorization [principal_action_class G X] [fintype G] [decidable_eq X] (x y : X) : G :=
@@ -87,25 +89,23 @@ fintype.choose (λ g, g +ᵥ x = y) (principal_action_class.vectorization_unique
 variables [principal_action_class G X]
   [fintype G] [decidable_eq X]
 
-variable (G)
-
 @[simp]
 lemma vectorization_apply (x y : X) :
-  (vectorization x y : G) +ᵥ x = y :=
+  (vectorization G x y) +ᵥ x = y :=
 fintype.choose_spec (λ g, g +ᵥ x = y) (principal_action_class.vectorization_unique x y)
 
 variable {G}
 
 @[simp]
 lemma vectorization_vadd (x : X) (g : G) :
-  vectorization x (g +ᵥ x) = g :=
+  vectorization G x (g +ᵥ x) = g :=
 begin
   refine free_action_class.eq_of_vadd_eq x _,
   simp,
 end
 
 lemma principal_action_class.vadd_eq_iff_left (g g' : G) (x y : X) :
-  g +ᵥ x = g' +ᵥ y ↔ g = g' + (vectorization x y) :=
+  g +ᵥ x = g' +ᵥ y ↔ g = g' + vectorization G x y :=
 begin
   refine ⟨λ h, _, λ h, _⟩,
   { rw ← vectorization_apply G x y at h,
@@ -116,7 +116,7 @@ end
 
 lemma vectorization_swap (G : Type) {X : Type} [add_group G] [add_action G X]
   [principal_action_class G X] [fintype G] [decidable_eq X]
-  (x y : X) : (vectorization x y : G) = - (vectorization y x : G) :=
+  (x y : X) : (vectorization G x y) = - (vectorization G y x) :=
 begin
   refine free_action_class.eq_of_vadd_eq x _,
   simp [eq_neg_vadd_iff],
@@ -133,18 +133,14 @@ variables {G X : Type} [fintype G] [fintype X]
   [decidable_eq X] [decidable_eq G]
 variables [add_monoid G] [add_action G X] [principal_action_class G X]
 
-local notation `δ` := vectorization
-
 /-- Analogue of Discrete-logarithm asumption game -/
-def vectorization_experiment (adversary : X × X → comp G) : comp bool :=
-(comp.bind (comp.rnd X) (λ x1, 
-  comp.bind (comp.rnd X) (λ x2,
-  comp.bind (adversary (x1, x2)) (λ g,
-  comp.ret (g = δ x1 x2)))))
-
-instance vectorization_experiment.is_well_formed {f : X × X → comp G} 
-  [∀ x y, (f (x, y)).is_well_formed] : (vectorization_experiment f).is_well_formed :=
-by simp [vectorization_experiment]
+@[derive comp.is_well_formed]
+def vectorization_experiment (A : X × X → comp G)
+  [∀ x y, (A (x, y)).is_well_formed] : comp bool :=
+do x₁ ← comp.rnd X,
+  x₂ ← comp.rnd X,
+  g ← A (x₁, x₂),
+  return (g = vectorization G x₁ x₂)
 
 /-- Vectorization advantage of an adversary in the vectorization experiment. -/
 noncomputable def vectorization_advantage (adversary : X × X → comp G) 
@@ -155,17 +151,14 @@ noncomputable def vectorization_advantage (adversary : X × X → comp G)
 variable (G)
 
 /-- Analogue of the decisional Diffie-Helman experiment -/
-def parallelization_experiment (adversary : X × X × X → comp X) : comp bool :=
-(comp.bind (comp.rnd X) (λ x1,
-  comp.bind (comp.rnd X) (λ x2,
-  comp.bind (comp.rnd X) (λ x3,
-  comp.bind (adversary (x1, x2, x3) : comp X) (λ x4,
-  comp.ret ((δ x2 x1 : G) = (δ x4 x3 : G)))))))
-
-instance parallelization_experiment.is_well_formed {f : X × X × X → comp X} 
-  [∀ x y z, (f (x, y, z)).is_well_formed] : 
-  (parallelization_experiment G f).is_well_formed :=
-by simp [parallelization_experiment]
+@[derive comp.is_well_formed]
+def parallelization_experiment (A : X × X × X → comp X)
+  [∀ x y z, (A (x, y, z)).is_well_formed] : comp bool :=
+do x₁ ← (comp.rnd X),
+  x₂ ← (comp.rnd X),
+  x₃ ← (comp.rnd X),
+  x₄ ← (A (x₁, x₂, x₃) : comp X),
+  return ((vectorization G x₂ x₁) = (vectorization G x₄ x₃))
 
 /-- Parallelization advantage of an adversary in parallelization experiment -/
 noncomputable def parallelization_advantage (adversary : X × X × X → comp X) 
