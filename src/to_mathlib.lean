@@ -238,18 +238,52 @@ lemma list.sum_map_neg {G : Type} [add_comm_group G] :
 | (h :: t) := by simp [list.sum_map_neg, add_comm (-h)]
 
 @[simp]
-lemma list.sum_thing {G : Type} [add_comm_group G] :
-  ∀ (gs gs' : list G)
-  (h : gs.length = gs'.length),
-  gs.sum - gs'.sum = (list.zip_with (λ g g', g - g') gs gs').sum
-| [] [] h := by simp
-| [] (g' :: gs') h := by contradiction
-| (g :: gs) [] h := by contradiction
-| (g :: gs) (g' :: gs') h := begin
-  have : gs.length = gs'.length,
-  by simpa only [add_left_inj, list.length] using h,
-  simp [← list.sum_thing gs gs' this],
+lemma list.prod_map_inv {G : Type} [comm_group G] :
+  ∀ (gs : list G), (gs.map (λ g, g⁻¹)).prod = gs.prod⁻¹
+| [] := by simp
+| (h :: t) := by simp [list.prod_map_inv, mul_comm h⁻¹]
+
+lemma list.add_sum_eq_sum_zipwith_drop {G : Type}
+  [add_comm_group G] : ∀ (gs gs' : list G),
+    gs.sum + gs'.sum = 
+      (list.zip_with (λ x y, x + y) gs gs').sum +
+        (gs.drop gs'.length).sum +
+        (gs'.drop gs.length).sum
+| [] gs' := by simp
+| (g :: gs) [] := by simp
+| (g :: gs) (g' :: gs') := begin
+  simp,
   abel,
+  rw list.add_sum_eq_sum_zipwith_drop gs gs',
+  abel,
+end
+
+lemma list.add_sum_eq_sum_zipwith_of_length_eq {G : Type}
+  [add_comm_group G] (gs gs' : list G) (h : gs.length = gs'.length) :
+    gs.sum + gs'.sum = (list.zip_with (λ x y, x + y) gs gs').sum :=
+(list.add_sum_eq_sum_zipwith_drop gs gs').trans (by simp [h])
+
+lemma list.sub_sum_eq_sum_zipwith_drop {G : Type} [add_comm_group G] (gs gs' : list G) :
+  gs.sum - gs'.sum =
+      (list.zip_with (λ x y, x - y) gs gs').sum +
+        (gs.drop gs'.length).sum -
+        (gs'.drop gs.length).sum :=
+begin
+  have : gs.sum - gs'.sum = gs.sum + (gs'.map (λ x, -x)).sum := by simp; abel,
+  rw [this, list.add_sum_eq_sum_zipwith_drop gs],
+  have : (λ (x : G), has_add.add x ∘ has_neg.neg) = λ x, (λ y, x - y),
+  by ext; simp; abel,
+  simp [← list.map_drop, list.zip_with_map_right, this],
+  abel,
+end
+
+lemma list.sum_thing {G : Type} [add_comm_group G] 
+  (gs gs' : list G)
+  (h : gs.length = gs'.length) :
+  gs.sum - gs'.sum = (list.zip_with (λ x y, x - y) gs gs').sum :=
+begin
+  refine (list.sub_sum_eq_sum_zipwith_drop gs gs').trans _,
+  simp [h],
 end
 
 lemma list.sum_eq_zero_of_mem_zero {G : Type} [add_group G] :
@@ -261,29 +295,29 @@ lemma list.sum_eq_zero_of_mem_zero {G : Type} [add_group G] :
 end
 
 lemma list.sum_eq_of_unique {G : Type} [add_comm_group G] :
-  ∀ (gs : list G) (g : G) 
-  (n : ℕ) (hn : n < gs.length) (hng : gs.nth_le n hn = g) 
-  (hn' : ∀ (m : ℕ) (hm : m < gs.length), m ≠ n → gs.nth_le m hm = 0),
-  gs.sum = g
-| [] _ n hn _ _ := by simpa using hn
-| (g' :: gs) g 0 hn hng hn' := begin
-  simp at hng,
-  simp [hng],
-  refine list.sum_eq_zero_of_mem_zero gs (λ x hx, _),
-  rw list.mem_iff_nth_le at hx,
-  obtain ⟨m, hm, rfl⟩ := hx,
-  specialize hn' m.succ (by simpa using nat.succ_lt_succ hm) (nat.succ_ne_zero m),
-  rwa list.nth_le at hn',
+  ∀ (gs : list G) (g : G)
+    (n : ℕ) (hn : gs.nth n = some g)
+    (hng : ∀ (m : ℕ) (hm : m < gs.length), m ≠ n → gs.nth_le m hm = 0),
+    gs.sum = g
+| [] g n hn hng := by contradiction
+| (g' :: gs) g 0 hn hng := begin
+  have hg' : g' = g := by simpa using hn,
+  have hgs : gs.sum = 0 := begin
+    refine list.sum_eq_zero_of_mem_zero gs (λ x hx, _),
+    obtain ⟨m, hm, rfl⟩ := list.mem_iff_nth_le.mp hx,
+    exact hng m.succ (by simpa using nat.succ_lt_succ hm) (nat.succ_ne_zero m),
+  end,
+  simp [hg', hgs],
 end
-| (g' :: gs) g (n + 1) hn hng hn' := begin
-  rw list.sum_cons,
-  have := hn',
-  specialize hn' 0 (nat.zero_lt_succ _) (by contradiction),
-  rw [list.nth_le] at hn',
-  simp [hn'],
-  refine list.sum_eq_of_unique gs g n (nat.succ_lt_succ_iff.1 hn) hng _,
-  intros m hm hm',
-  refine this (m + 1) (nat.succ_lt_succ hm) (nat.succ_ne_succ.2 hm'),
+| (g' :: gs) g (n + 1) hn hng := begin
+  have hg' : g' = 0,
+  from hng 0 (nat.zero_lt_succ _) (by contradiction),
+  have hgs : gs.sum = g := begin
+    apply list.sum_eq_of_unique gs g n hn,
+    intros m hm hmn,
+    refine hng (m + 1) (nat.succ_lt_succ hm) (nat.succ_ne_succ.2 hmn),
+  end,
+  simp [hg', hgs],
 end
 
 end sum_stuff
@@ -314,32 +348,29 @@ lemma vector.sum_update_nth {G : Type} [add_comm_group G] {n : ℕ}
   (v : vector G n) (i : fin n) (g : G) :
   (v.update_nth i g).to_list.sum = 
     v.to_list.sum - (v.nth i) + g :=
-calc (v.update_nth i g).to_list.sum = v.to_list.sum + ((v.update_nth i g).to_list.sum - v.to_list.sum) : by abel
-    ... = v.to_list.sum + (g - (v.nth i)) : begin
-      refine congr_arg _ _, 
-      rw list.sum_thing _,
-      { refine list.sum_eq_of_unique _ (g - v.nth i) i.1 _ _ _,
-        {
-          refine lt_of_lt_of_le i.2 (le_of_eq _),
-          simp,
-        },
-        { simp, 
-          },
-        {
-          intros m hm hm',
-          have hmn : m < n := by simpa using hm,
-          rw list.nth_le_zip_with,
-          simp,
-          rw sub_eq_zero,
-          refine vector.nth_update_nth_of_ne _ _,
-          refine λ hi, hm' _,
-          refine congr_arg (λ (x : fin n), x.1) hi.symm,
-        }, },
-      simp only [vector.to_list_length],
-    end
-    ... = _ : by abel
-
-
+begin
+  suffices : v.to_list.sum + ((v.update_nth i g).to_list.sum - v.to_list.sum)
+     = v.to_list.sum + (g - (v.nth i)),
+  from trans (by abel) (trans this (by abel)),
+  refine congr_arg _ _, 
+  rw list.sum_thing _,
+  { refine list.sum_eq_of_unique _ (g - v.nth i) i.1 _ _,
+    { simp, 
+      rw list.nth_eq_some,
+      refine ⟨by simpa using i.2, _⟩,
+      simp,
+      },
+    { intros m hm hm',
+      have hmn : m < n := by simpa using hm,
+      rw list.nth_le_zip_with,
+      simp,
+      rw sub_eq_zero,
+      refine vector.nth_update_nth_of_ne _ _,
+      refine λ hi, hm' _,
+      refine congr_arg (λ (x : fin n), x.1) hi.symm,
+    }, },
+  simp only [vector.to_list_length],
+end
 
 @[simp]
 lemma list.append_eq_append_iff' {A : Type} (x y z : list A) :
