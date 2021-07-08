@@ -145,32 +145,30 @@ end anonomyous_experiment
 section unforgeable_experiment
 
 -- TODO: See if this is the best approach for this.
-instance test {A : Type} [decidable_eq A] :
-  ∀ (as as' : list A), decidable (as ⊆ as')
+instance list.decidable_subseteq {A : Type} 
+  [decidable_eq A] : ∀ (as as' : list A), decidable (as ⊆ as')
 | [] as' := is_true (list.nil_subset as')
-| (a :: as) as' := by simpa using @and.decidable _ _ _ (test as as')
+| (a :: as) as' := by simpa using @and.decidable _ _ _ (list.decidable_subseteq as as')
 
 -- TODO: A also needs a corruption oracle for this experiment
 @[derive comp.is_well_formed]
 def unforgeable_experiment (n : ℕ)
   (A : vector PK n → signing_oracle_comp rs n (M × Σ (l : ℕ), vector PK l × S l)) 
   [hA : ∀ pks, (A pks).is_well_formed] : comp bool :=
-(comp.vector_call (rs.gen) n).bind (λ ks, begin
-  let pks := vector.map prod.fst ks,
-  let sks := vector.map prod.snd ks,
-  refine comp.bind ((A pks).logging_eval_distribution ks) (λ A_out, _),
-  let m : M := A_out.1.1,
-  let l : ℕ := A_out.1.2.1,
-  let R : vector PK l := A_out.1.2.2.1,
-  let uncorrupted_parties : list PK := R.to_list.filter (λ pk, false),
-  -- `R` can only contain uncorrupted elements of `pks`
-  let R_okay : bool := R.to_list ⊆ uncorrupted_parties,
-  let log := A_out.2,
-  -- Check if they previously got a `R`-signature form `m`
-  let log_okay : bool := ¬ log.any (λ x, m = x.2.1 ∧ (R.to_list = x.2.2.2.2.to_list)),
-  let σ : S l := A_out.1.2.2.2,
-  exact return (if R_okay ∧ log_okay then (rs.verify l R m σ) else false),
-end)
+do ks ← comp.vector_call (rs.gen) n, 
+  pks ← return (vector.map prod.fst ks),
+  sks ← return (vector.map prod.snd ks),
+  A_out ← (A pks).logging_eval_distribution ks,
+  m ← return A_out.1.1,
+  R ← return A_out.1.2.2.1,
+  uncorrupted_parties ← return (R.to_list.filter (λ pk, false)), -- TODO
+  -- Check that the forged signature is on an ucorrupted ring
+  R_okay ← return (R.to_list ⊆ uncorrupted_parties : bool),
+  log ← return A_out.2,
+  -- Check if they previously got a `R`-signature for message `m`
+  log_okay ← return (¬ log.any (λ x, m = x.2.1 ∧ (R.to_list = x.2.2.2.2.to_list)) : bool),
+  σ ← return A_out.1.2.2.2,
+  return (if R_okay ∧ log_okay then (rs.verify A_out.1.2.1 R m σ) else false)
 
 end unforgeable_experiment
 
@@ -218,10 +216,10 @@ instance anonomyous_adversary.adv₂.is_well_formed
   (σ : Σ (l : ℕ), S sp l) : (A.adv₂ sp st ks σ).is_well_formed :=
 A.adv₂_wf sp st ks σ
 
-structure anonomyous := 
-(an : ∀ (p : polynomial ℕ) (A : anonomyous_adversary rss p),
+def anonomyous := 
+∀ (p : polynomial ℕ) (A : anonomyous_adversary rss p),
 asymptotics.negligable (λ sp, 
-  comp.Pr (anonomyous_experiment (rss.rs sp) (p.eval sp) (A.adv₁ sp) (A.adv₂ sp)) - 0.5))
+  comp.Pr (anonomyous_experiment (rss.rs sp) (p.eval sp) (A.adv₁ sp) (A.adv₂ sp)) - 0.5)
 
 end anonomyous
 
@@ -240,11 +238,10 @@ instance unforgeable_adversary.is_well_formed
   (A.adv sp pks).is_well_formed :=
 A.wf sp pks
 
--- NOTE/TODO: Wrapping in a structure allows typeclass inference
-structure unforgeable := 
-(uf : ∀ {p : polynomial ℕ} (A : unforgeable_adversary rss p),
+def unforgeable := 
+∀ {p : polynomial ℕ} (A : unforgeable_adversary rss p),
   asymptotics.negligable (λ sp, 
-    comp.Pr (unforgeable_experiment (rss.rs sp) (p.eval sp) (A.adv sp))))
+    comp.Pr (unforgeable_experiment (rss.rs sp) (p.eval sp) (A.adv sp)))
 
 end unforgeable
 

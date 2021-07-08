@@ -9,10 +9,6 @@ This file defines the notion of a keyed hash function.
 
 TODO: Think about using `encodable` type-class
 -/
-
-def negligable_expirement_success (exp : ℕ → comp bool) (h : ∀ sp, (exp sp).is_well_formed) : Prop :=
-asymptotics.negligable (λ sp, comp.Pr (exp sp))
-
 structure hash_function (K I O : Type) :=
 (keygen : comp K)
 (keygen_is_well_formed : keygen.is_well_formed)
@@ -22,7 +18,6 @@ namespace hash_function
 
 variables {K I O : Type} (h : hash_function K I O)
 
-@[simp]
 instance keygen.is_well_formed (h : hash_function K I O) :
   h.keygen.is_well_formed :=
 h.keygen_is_well_formed
@@ -36,21 +31,6 @@ def collision_finding_experiment (h : hash_function K I O)
 comp.bind (h.keygen) (λ k,
 comp.bind (A k) (λ xs, 
 comp.ret (h.hash k xs.1 = h.hash k xs.2)))
-
--- @[simp]
--- lemma collision_finding_experiment_is_well_formed_iff (h : hash_function K I O)
---   (a : K → comp (I × I)) : 
---   (h.collision_finding_experiment a).is_well_formed ↔ 
---     (∀ (k : K), k ∈ (h.keygen).support → (a k).is_well_formed)  :=
--- by simp [collision_finding_experiment]
-
--- instance collision_finding_experiment.is_well_formed (h : hash_function K I O) 
---   (a : K → comp (I × I)) (ha : ∀ k, (a k).is_well_formed) :
---   (h.collision_finding_experiment a).is_well_formed :=
--- begin
---   rw [collision_finding_experiment_is_well_formed_iff],
---   exact λ k _, ha k,
--- end
 
 end hash_function
 
@@ -87,32 +67,19 @@ end projections
 
 variables [∀ n, decidable_eq $ O n]
 
-def collision_finding_adversary (H : hash_scheme K I O) :=
-Π (sp : ℕ), K sp → comp ((I sp) × (I sp))
+structure collision_finding_adversary (H : hash_scheme K I O) :=
+(adv : Π (sp : ℕ), K sp → comp ((I sp) × (I sp)))
+(wf : ∀ sp k, (adv sp k).is_well_formed)
+(pt : complexity_class.poly_time_comp₁ adv)
 
-class collision_finding_adversary.admissable {H : hash_scheme K I O}
-  (A : collision_finding_adversary H) :=
-(is_well_formed : ∀ sp k, (A sp k).is_well_formed)
-(poly_time : complexity_class.poly_time_comp₁ A)
-
-instance collision_finding_adversary.admissable.is_well_formed'
+instance collision_finding_adversary.is_well_formed
   {H : hash_scheme K I O} (A : collision_finding_adversary H)
-  [hA : A.admissable] : ∀ sp k, (A sp k).is_well_formed :=
-hA.is_well_formed
-
-/-- The security game for collision resistance as a probabalistic function. 
-  Adversary implicitly recieves the secuirty parameter via the hashkey from `keygen`-/
-@[derive comp.is_well_formed]
-def collision_finding_experiment (H : hash_scheme K I O) 
-  (A : collision_finding_adversary H) [hA : A.admissable]
-  (sp : ℕ) : comp bool :=
-(H.scheme sp).collision_finding_experiment (A sp)
+  (sp : ℕ) (k : K sp) : (A.adv sp k).is_well_formed :=
+A.wf sp k
 
 def collision_resistant (H : hash_scheme K I O) : Prop :=
-∀ (A : collision_finding_adversary H) (hA : A.admissable),
-asymptotics.negligable (λ sp, begin 
-  haveI := hA,
-  exact comp.Pr (H.collision_finding_experiment A sp)
-end)
+∀ (A : collision_finding_adversary H),
+asymptotics.negligable (λ sp, 
+  comp.Pr ((H.scheme sp).collision_finding_experiment (A.adv sp)))
 
 end hash_scheme
