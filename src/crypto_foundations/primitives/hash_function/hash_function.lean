@@ -30,26 +30,27 @@ h.keygen_is_well_formed
 variables [decidable_eq O]
 
 /-- The security game for collision resistance as a probabalistic function. -/
+@[derive comp.is_well_formed]
 def collision_finding_experiment (h : hash_function K I O) 
-  (A : K → comp (I × I)) : comp bool :=
+  (A : K → comp (I × I)) [∀ k, (A k).is_well_formed] : comp bool :=
 comp.bind (h.keygen) (λ k,
 comp.bind (A k) (λ xs, 
 comp.ret (h.hash k xs.1 = h.hash k xs.2)))
 
-@[simp]
-lemma collision_finding_experiment_is_well_formed_iff (h : hash_function K I O)
-  (a : K → comp (I × I)) : 
-  (h.collision_finding_experiment a).is_well_formed ↔ 
-    (∀ (k : K), k ∈ (h.keygen).support → (a k).is_well_formed)  :=
-by simp [collision_finding_experiment]
+-- @[simp]
+-- lemma collision_finding_experiment_is_well_formed_iff (h : hash_function K I O)
+--   (a : K → comp (I × I)) : 
+--   (h.collision_finding_experiment a).is_well_formed ↔ 
+--     (∀ (k : K), k ∈ (h.keygen).support → (a k).is_well_formed)  :=
+-- by simp [collision_finding_experiment]
 
-instance collision_finding_experiment.is_well_formed (h : hash_function K I O) 
-  (a : K → comp (I × I)) (ha : ∀ k, (a k).is_well_formed) :
-  (h.collision_finding_experiment a).is_well_formed :=
-begin
-  rw [collision_finding_experiment_is_well_formed_iff],
-  exact λ k _, ha k,
-end
+-- instance collision_finding_experiment.is_well_formed (h : hash_function K I O) 
+--   (a : K → comp (I × I)) (ha : ∀ k, (a k).is_well_formed) :
+--   (h.collision_finding_experiment a).is_well_formed :=
+-- begin
+--   rw [collision_finding_experiment_is_well_formed_iff],
+--   exact λ k _, ha k,
+-- end
 
 end hash_function
 
@@ -94,31 +95,18 @@ class collision_finding_adversary.admissable {H : hash_scheme K I O}
 (is_well_formed : ∀ sp k, (A sp k).is_well_formed)
 (poly_time : complexity_class.poly_time_comp₁ A)
 
-/-- The security game for collision resistance as a probabalistic function. 
-  Adversary implicitly recieves the secuirty parameter via the hashkey from `keygen`-/
-def collision_finding_experiment (H : hash_scheme K I O) 
-  (A : collision_finding_adversary H) (sp : ℕ) : comp bool :=
-(H.scheme sp).collision_finding_experiment (A sp)
-
-instance collision_finding_adversary.is_well_formed {H : hash_scheme K I O} 
-  (A : collision_finding_adversary H) [hA : A.admissable] : 
-  ∀ sp k, (A sp k).is_well_formed :=
+instance collision_finding_adversary.admissable.is_well_formed'
+  {H : hash_scheme K I O} (A : collision_finding_adversary H)
+  [hA : A.admissable] : ∀ sp k, (A sp k).is_well_formed :=
 hA.is_well_formed
 
-@[simp]
-lemma collision_finding_experiment_is_well_formed_iff (H : hash_scheme K I O) 
-  (A : collision_finding_adversary H) (sp : ℕ) :
-  (H.collision_finding_experiment A sp).is_well_formed ↔
-    ∀ k ∈ (H.keygen sp).support, (A sp k).is_well_formed :=
-by simp [hash_scheme.collision_finding_experiment]
-
-instance collision_finding_experiment.is_well_formed (H : hash_scheme K I O)
-  (A : collision_finding_adversary H) [hA : A.admissable] (sp : ℕ) :
-  (H.collision_finding_experiment A sp).is_well_formed :=
-begin
-  refine hash_function.collision_finding_experiment.is_well_formed _ _ _,
-  refine collision_finding_adversary.is_well_formed A sp,
-end
+/-- The security game for collision resistance as a probabalistic function. 
+  Adversary implicitly recieves the secuirty parameter via the hashkey from `keygen`-/
+@[derive comp.is_well_formed]
+def collision_finding_experiment (H : hash_scheme K I O) 
+  (A : collision_finding_adversary H) [hA : A.admissable]
+  (sp : ℕ) : comp bool :=
+(H.scheme sp).collision_finding_experiment (A sp)
 
 def collision_resistant (H : hash_scheme K I O) : Prop :=
 ∀ (A : collision_finding_adversary H) (hA : A.admissable),
