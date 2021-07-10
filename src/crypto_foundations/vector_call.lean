@@ -1,15 +1,26 @@
 import crypto_foundations.dist_sem
+import computational_complexity.complexity_class
 
 namespace comp
 
 def vector_call {A : Type} (ca : comp A) : 
   Π n, comp (vector A n)
-| 0 := comp.ret vector.nil
-| (n + 1) := ca.bind (λ a, (vector_call n).bind (λ as, comp.ret (a ::ᵥ as)))
+| 0 := return vector.nil
+| (n + 1) := do a ← ca,
+  as ← (vector_call n), 
+  return (a ::ᵥ as)
+
+variables {A : Type} (ca : comp A)
 
 @[simp]
-instance vector_call.is_well_formed {A : Type}
-  (ca : comp A) [hca : ca.is_well_formed] (n : ℕ) : (vector_call ca n).is_well_formed :=
+lemma vector_call_zero :
+  (vector_call ca 0) = return vector.nil :=
+rfl
+
+@[simp]
+instance vector_call.is_well_formed
+  [hca : ca.is_well_formed] (n : ℕ) : 
+  (vector_call ca n).is_well_formed :=
 begin
   induction n with n hn,
   { simp [vector_call] },
@@ -17,7 +28,7 @@ begin
 end
 
 @[simp]
-lemma vector.cons_eq_cons_iff {A : Type} {n : ℕ} (a a' : A) (v v' : vector A n) :
+lemma vector.cons_eq_cons_iff {n : ℕ} (a a' : A) (v v' : vector A n) :
   a ::ᵥ v = a' ::ᵥ v' ↔ a = a' ∧ v = v' :=
 ⟨λ h, ⟨by simpa using congr_arg vector.head h, by simpa using congr_arg vector.tail h⟩,
   λ h, by rw [h.1, h.2]⟩
@@ -62,6 +73,30 @@ begin
         convert h (i + 1) using 1,
         simp only [fin.coe_eq_cast_succ, fin.coe_succ_eq_succ, vector.nth_tail] },
       { exact v.cons_head_tail.symm } } }
+end
+
+@[simp]
+lemma vector_call.has_cost (q : ℚ) (hcaq : comp_cost ca q) :
+  ∀ n, comp_cost (vector_call ca n) (q * n + n)
+| 0 := by simp
+| (n + 1) := begin
+  rw vector_call,
+  refine comp_cost_bind_of_le _ _ q 1 (q * n + n) _ _ _ _ _,
+  {
+    exact hcaq,
+  },
+  {
+    sorry,
+  },
+  {
+    intro a,
+    refine comp_cost_bind_of_le _ _ (q * n + n) 1 0 _ _ _ _ _,
+    refine vector_call.has_cost n,
+    sorry, sorry, sorry,
+  },
+  {
+    sorry,
+  }
 end
 
 end comp

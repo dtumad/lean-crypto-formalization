@@ -106,6 +106,9 @@ axiom has_cost_prod_snd {A : Type u} (a : A) (B : Type v) :
 axiom has_cost_prod_swap (A : Type u) (B : Type v) :
   has_cost (λ x, (x.snd, x.fst) : A × B → B × A) 0
 
+axiom has_cost_cons (A : Type) (n : ℕ) :
+  has_cost (λ x, x.1 ::ᵥ x.2 : A × vector A n → vector A (n + 1)) 1
+
 -- TODO: Is this the best way to make this?
 axiom has_cost_unit (A : Type u) : 
   has_cost (λ a, (a, unit.star) : A → A × unit) 0
@@ -199,7 +202,8 @@ end has_cost
 section comp_cost
 open comp
 
-/-- Cost of a computation `comp A`, relative to a given `function_cost_model` -/
+/-- Cost of a computation `ca : comp A`, relative to a given `function_cost_model`.
+  This represents the cost to query an element of `A` from a `comp A` -/
 inductive comp_cost : comp_cost_model
 | cost_ret {A : Type} {a : A} :
     comp_cost (ret a) 0
@@ -232,6 +236,13 @@ comp_cost.cost_rnd_bitvec
 
 lemma comp_cost_rnd_le {n m : ℕ} (hnm : n ≤ m) : comp_cost (rnd (bitvec n)) m :=
 comp_cost.cost_le (nat.cast_le.mpr hnm) comp_cost.cost_rnd_bitvec
+
+lemma comp_cost_bind_of_le {A B : Type} (ca : comp A)
+  (cb : A → comp B) (n1 n2 n3 p : ℚ)
+  (hca : comp_cost ca n1) (hcb : has_cost cb n2)
+  (hcb' : ∀ a, comp_cost (cb a) n3) (h : n1 + n2 + n3 ≤ p) :
+  comp_cost (ca >>= cb) p :=
+comp_cost.cost_le h (comp_cost.cost_bind hca hcb hcb')
 
 open oracle_comp
 
