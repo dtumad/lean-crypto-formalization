@@ -39,7 +39,7 @@ end hash_function
 structure hash_scheme (K I O : ℕ → Type) :=
 (scheme (sp : ℕ) : hash_function (K sp) (I sp) (O sp))
 (keygen_poly_time : complexity_class.poly_time_comp₀ (λ sp, (scheme sp).keygen))
-(hash_poly_time : complexity_class.poly_time_fun₁ (λ sp, (scheme sp).hash))
+(hash_poly_time : complexity_class.poly_time_fun (λ sp, (scheme sp).hash))
 
 namespace hash_scheme
 

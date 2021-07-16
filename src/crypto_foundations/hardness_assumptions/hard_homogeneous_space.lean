@@ -185,22 +185,22 @@ class algorithmic_homogeneous_space (G X : ℕ → Type)
   [∀ n, add_comm_group (G n)] [∀ n, add_action (G n) (X n)]
   [∀ n, principal_action_class (G n) (X n)] :=
 -- TODO: see if they should use fun₂ version instead of currying
-(add_efficient : complexity_class.poly_time_fun₁
+(add_efficient : complexity_class.poly_time_fun
   (λ sp, (λ x, x.1 + x.2 : G sp × G sp → G sp)))
-(inv_efficient : complexity_class.poly_time_fun₁ 
+(inv_efficient : complexity_class.poly_time_fun
   (λ sp, (λ x, -x : G sp → G sp)))
-(vadd_efficient : complexity_class.poly_time_fun₁ 
+(vadd_efficient : complexity_class.poly_time_fun
   (λ n, (λ x, x.1 +ᵥ x.2 : G n × X n → X n)))
-(G_eq_efficient : complexity_class.poly_time_fun₁ 
+(G_eq_efficient : complexity_class.poly_time_fun
   (λ n, (λ x, x.1 = x.2 : G n × G n → Prop)))
-(X_eq_efficient : complexity_class.poly_time_fun₁ 
+(X_eq_efficient : complexity_class.poly_time_fun
   (λ n, (λ x, x.1 = x.2 : X n × X n → Prop)))
 (G_rnd_efficient : complexity_class.poly_time_comp₀ 
   (λ n, comp.rnd (G n)))
--- TODO: This is needed right? to actually construct more complicated functions
-(G_copy_efficient : complexity_class.poly_time_fun₁ 
+-- TODO: Maybe axiomatize this for any `fintype`? or `encodable` type?
+(G_copy_efficient : complexity_class.poly_time_fun
   (λ n, (λ g, (g, g) : G n → G n × G n)))
-(X_copy_efficient : complexity_class.poly_time_fun₁ 
+(X_copy_efficient : complexity_class.poly_time_fun
   (λ n, (λ x, (x, x) : X n → X n × X n)))
 
 -- TODO: derive rnd X efficient by choosing a generator and using G_rnd_efficient
@@ -213,21 +213,32 @@ variables (G X : ℕ → Type)
   [∀ n, principal_action_class (G n) (X n)]
 
 lemma add_right_efficient [H : algorithmic_homogeneous_space G X] (g : Π n, G n) :
-  complexity_class.poly_time_fun₁ (λ n, λ (x : G n), (g n) + x) :=
+  complexity_class.poly_time_fun (λ n, λ (x : G n), (g n) + x) :=
 let ⟨f, hf, hf'⟩ := H.add_efficient in
   ⟨f, hf, λ n, has_cost.has_cost_of_uncurry' (g n) (hf' n)⟩
 
 -- lemma mul_left_efficient [algorithmic_homogeneous_space G X] (g : Π n, G n) :
---   complexity_class.poly_time_fun₁ (λ n, λ (x : G n), x * (g n)) :=
+--   complexity_class.poly_time_fun (λ n, λ (x : G n), x * (g n)) :=
 -- poly_time_cost_ext (mul_right_efficient G X g) (λ n x, mul_comm (g n) x)
+
+variables (G) (X)
+
+-- TODO: do this for parallelization adversary
+structure vectorization_adversary [algorithmic_homogeneous_space G X] :=
+(A : Π sp, X sp × X sp → comp (G sp))
+(well_formed : ∀ sp x, (A sp x).is_well_formed)
+(poly_time : complexity_class.poly_time_comp₁ A)
+
+instance vectorization_advesary.is_well_formed [algorithmic_homogeneous_space G X]
+  (adv : vectorization_adversary G X) (sp : ℕ) (x : X sp × X sp) :
+  (adv.A sp x).is_well_formed :=
+adv.well_formed sp x
 
 /-- Extension of `algorithmic_homogenous_space` with hardness assumptions.
   Vectorization and parallelization correspond to discrete-log and Diffie-Hellman -/
 class hard_homogeneous_space extends algorithmic_homogeneous_space G X :=
-(vectorization_hard : ∀ (A : Π sp, X sp × X sp → comp (G sp)) 
-  [∀ sp x y, (A sp (x, y)).is_well_formed] 
-  (h : complexity_class.poly_time_comp₁ A),
-  asymptotics.negligable (λ sp, vectorization_advantage (A sp)))
+(vectorization_hard : ∀ (adv : vectorization_adversary G X),
+  asymptotics.negligable (λ sp, vectorization_advantage (adv.A sp)))
 (parallelization_hard : ∀ (A : Π sp, X sp × X sp × X sp → comp (X sp))
   [∀ sp x y z, (A sp (x, y, z)).is_well_formed]
   (h : complexity_class.poly_time_comp₁ A),

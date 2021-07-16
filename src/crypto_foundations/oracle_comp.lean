@@ -178,7 +178,7 @@ instance logging_eval_distribution.is_well_formed
   (logging_eval_distribution oc o).is_well_formed :=
 logging_eval_distribution_is_well_formed oc hoc o ho
   
-/-- Evaluation distribution for a stateless oracle with `f` simulating the oracle. -/
+/-- Evaluation distribution for a stateless oracle with `o` simulating the oracle. -/
 def stateless_eval_distribution (oc : oracle_comp A B C) 
   (o : A → comp B) : comp C :=
 (logging_eval_distribution oc o) >>= (λ cas, comp.ret cas.1)

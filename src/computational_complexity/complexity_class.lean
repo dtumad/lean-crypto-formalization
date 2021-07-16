@@ -31,8 +31,8 @@ namespace complexity_class
 
 section poly_time_fun
 
-/-- `poly_time_fun₁ c` means `c` can be evaluated in polynomial time on any input -/
-def poly_time_fun₁ {A B : ℕ → Type} (c : Π n, A n → B n) : Prop :=
+/-- `poly_time_fun c` means `c` can be evaluated in polynomial time on any input -/
+def poly_time_fun {A B : ℕ → Type} (c : Π n, A n → B n) : Prop :=
 c ∈ complexity_class (λ n, A n → B n) 
   poly_growth (λ n c x, has_cost c x)
   
@@ -40,44 +40,49 @@ variables  {A B C D : ℕ → Type}
 
 section poly_growth_const
 
-lemma poly_time_fun₁_of_has_cost_const {A B : ℕ → Type*} {c : Π n, A n → B n} {x : ℚ}
-  (hn : ∀ n, has_cost (c n) x) : poly_time_fun₁ c :=
+lemma poly_time_fun_of_has_cost_const {A B : ℕ → Type*} {c : Π n, A n → B n} (x : ℚ)
+  (hn : ∀ n, has_cost (c n) x) : poly_time_fun c :=
 ⟨λ n, x, poly_growth_const x, hn⟩
 
 @[simp]
-lemma poly_time_fun₁_const (A : ℕ → Type*) {B : ℕ → Type*} (b : Π (n : ℕ), B n) :
-  poly_time_fun₁ (λ n, (λ _, b n : A n → B n)) :=
-poly_time_fun₁_of_has_cost_const (λ n, has_cost.has_cost_const (b n))
+lemma poly_time_fun_const (A : ℕ → Type*) {B : ℕ → Type*} (b : Π (n : ℕ), B n) :
+  poly_time_fun (λ n, (λ _, b n : A n → B n)) :=
+poly_time_fun_of_has_cost_const 0 (λ n, has_cost.has_cost_const (b n))
 
 @[simp]
-lemma poly_time_fun₁_fst (A B : ℕ → Type*) :
-  poly_time_fun₁ (λ n, (prod.fst : A n × B n → A n)) :=
-poly_time_fun₁_of_has_cost_const (λ n, has_cost.has_cost_fst (A n) (B n))
+lemma poly_time_fun_unit {A : ℕ → Type*} (f : Π n, unit → A n) :
+  poly_time_fun f :=
+poly_time_fun_of_has_cost_const 0 (λ n, by simp)
 
 @[simp]
-lemma poly_time_fun₁_snd (A B : ℕ → Type*) :
-  poly_time_fun₁ (λ n, (prod.snd : A n × B n → B n)) :=
-poly_time_fun₁_of_has_cost_const (λ n, has_cost.has_cost_snd (A n) (B n))
+lemma poly_time_fun_fst (A B : ℕ → Type*) :
+  poly_time_fun (λ n, (prod.fst : A n × B n → A n)) :=
+poly_time_fun_of_has_cost_const 0 (λ n, has_cost.has_cost_fst (A n) (B n))
+
+@[simp]
+lemma poly_time_fun_snd (A B : ℕ → Type*) :
+  poly_time_fun (λ n, (prod.snd : A n × B n → B n)) :=
+poly_time_fun_of_has_cost_const 0 (λ n, has_cost.has_cost_snd (A n) (B n))
 
 end poly_growth_const
 
-lemma poly_time_fun₁_comp {c : Π n, A n → B n} {d : Π n, B n → C n}
-  (hc : poly_time_fun₁ c) (hd : poly_time_fun₁ d) :
-  poly_time_fun₁ (λ n, d n ∘ c n) :=
+lemma poly_time_fun_comp {c : Π n, A n → B n} {d : Π n, B n → C n}
+  (hc : poly_time_fun c) (hd : poly_time_fun d) :
+  poly_time_fun (λ n, d n ∘ c n) :=
 let ⟨p, hp, hpc⟩ := hc in let ⟨q, hq, hqd⟩ := hd in
 ⟨p + q, poly_growth_add hp hq, λ n, has_cost.has_cost_comp (hpc n) (hqd n)⟩
 
-lemma poly_time_fun₁_comp_ext {c : Π n, A n → B n} {d : Π n, B n → C n} {e : Π n, A n → C n}
-  (hc : poly_time_fun₁ c) (hd : poly_time_fun₁ d) (he : ∀ n a, e n a = d n (c n a)) :
-  poly_time_fun₁ e :=
+lemma poly_time_fun_comp_ext {c : Π n, A n → B n} {d : Π n, B n → C n} {e : Π n, A n → C n}
+  (hc : poly_time_fun c) (hd : poly_time_fun d) (he : ∀ n a, e n a = d n (c n a)) :
+  poly_time_fun e :=
 (funext $ λ n, funext $ λ a, (he n a).symm : (λ n, d n ∘ c n) = e)
-  ▸ poly_time_fun₁_comp hc hd
+  ▸ poly_time_fun_comp hc hd
 
 @[simp]
-lemma poly_time_fun₁_pair_iff [∀ n, inhabited $ A n] [∀ n, inhabited $ C n]
+lemma poly_time_fun_pair_iff [∀ n, inhabited $ A n] [∀ n, inhabited $ C n]
   (c : Π n, A n → B n) (d : Π n, C n → D n) :
-  poly_time_fun₁ (λ n, (λ x, (c n x.1, d n x.2) : A n × C n → B n × D n)) ↔
-    poly_time_fun₁ c ∧ poly_time_fun₁ d :=
+  poly_time_fun (λ n, (λ x, (c n x.1, d n x.2) : A n × C n → B n × D n)) ↔
+    poly_time_fun c ∧ poly_time_fun d :=
 begin
   refine ⟨_, _⟩,
   { rintro ⟨p, hp, h⟩,
@@ -92,10 +97,13 @@ end poly_time_fun
 
 section poly_time_comp
 
+/--`poly_time_comp₀ c` means sampling from `c : comp (T n)` has polynomial time cost in `n` -/
 def poly_time_comp₀ {T : ℕ → Type} (c : Π n, comp (T n)) : Prop :=
 c ∈ complexity_class (λ n, comp $ T n)
   poly_growth (λ n c x, comp_cost c x)
 
+/-- `poly_time_comp₁ c` means evaluating `c : A n → comp (T n)` at any `a : A n`,
+  and then sampling from the result has polynomial time cost in `n` -/
 def poly_time_comp₁ {A T : ℕ → Type} (c : Π n, A n → comp (T n)) : Prop :=
 c ∈ complexity_class (λ n, A n → comp (T n)) 
   poly_growth (λ n c x, has_cost c x ∧ ∀ a, comp_cost (c a) x)
@@ -134,7 +142,7 @@ lemma poly_time_comp₀_ret (t : Π (n : ℕ), T n) :
 @[simp]
 lemma poly_time_comp₁_ret_iff (u : Π (n : ℕ), A n → T n) :
   poly_time_comp₁ (λ n a, comp.ret $ u n a : Π n, A n → comp (T n)) ↔
-    poly_time_fun₁ u :=
+    poly_time_fun u :=
 begin
   split;
   rintro ⟨p, hp, h⟩,
@@ -180,7 +188,7 @@ end
 lemma poly_time_comp₀_bind_ret_iff (ct : Π n, comp (T n))
   (u : Π n, T n → U n) :
   poly_time_comp₀ (λ n, comp.bind (ct n) (λ t, comp.ret (u n t))) ↔
-    (poly_time_comp₀ ct ∧ poly_time_fun₁ u) :=
+    (poly_time_comp₀ ct ∧ poly_time_fun u) :=
 begin
   simp only [poly_time_comp₀_bind_iff, and.congr_right_iff],
   intro h,
