@@ -40,7 +40,8 @@ rfl
 namespace comp
 
 /-- Every computation gives rise to at least one element of the return type, 
-  in particular this is the result if all `rnd` calls return strings of `1` bits. -/
+  in particular this is the result if all `rnd A` calls return `(inhabited A).default`,
+  and all `repeat` calls don't check the predicate `p` at all. -/
 def comp_base_exists {A : Type} (ca : comp A) : A :=
 @comp.rec_on (λ A _, A) A ca
   (λ A a, a) (λ A B cb ca b fa, fa b)

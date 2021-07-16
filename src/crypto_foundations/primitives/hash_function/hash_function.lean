@@ -7,12 +7,12 @@ import computational_complexity.negligable
 
 This file defines the notion of a keyed hash function.
 
-TODO: Think about using `encodable` type-class
+TODO: Think about using `encodable` type-class for `I` and maybe `O`
 -/
 structure hash_function (K I O : Type) :=
 (keygen : comp K)
 (keygen_is_well_formed : keygen.is_well_formed)
-(hash (key : K) (m : I) : O)
+(hash : K × I → O)
 
 namespace hash_function
 
@@ -30,7 +30,7 @@ def collision_finding_experiment (h : hash_function K I O)
   (A : K → comp (I × I)) [∀ k, (A k).is_well_formed] : comp bool :=
 comp.bind (h.keygen) (λ k,
 comp.bind (A k) (λ xs, 
-comp.ret (h.hash k xs.1 = h.hash k xs.2)))
+comp.ret (h.hash (k, xs.1) = h.hash (k, xs.2))))
 
 end hash_function
 
@@ -39,7 +39,7 @@ end hash_function
 structure hash_scheme (K I O : ℕ → Type) :=
 (scheme (sp : ℕ) : hash_function (K sp) (I sp) (O sp))
 (keygen_poly_time : complexity_class.poly_time_comp₀ (λ sp, (scheme sp).keygen))
-(hash_poly_time : complexity_class.poly_time_fun₂ (λ sp, (scheme sp).hash))
+(hash_poly_time : complexity_class.poly_time_fun₁ (λ sp, (scheme sp).hash))
 
 namespace hash_scheme
 
@@ -57,11 +57,11 @@ lemma keygen_eq (sp : ℕ) :
   H.keygen sp = (H.scheme sp).keygen := rfl
 
 def hash {sp : ℕ} (k : K sp) (i : I sp) : O sp :=
-(H.scheme sp).hash k i
+(H.scheme sp).hash (k, i)
 
 @[simp]
 lemma hash_eq {sp : ℕ} (k : K sp) (i : I sp) :
-  H.hash k i = (H.scheme sp).hash  k i:= rfl
+  H.hash k i = (H.scheme sp).hash (k, i) := rfl
 
 end projections
 

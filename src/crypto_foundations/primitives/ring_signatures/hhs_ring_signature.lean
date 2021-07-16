@@ -42,7 +42,7 @@ def ring_sig_of_pas [principal_action_class G X]
       let Ts : vector X n := vector.of_fn (λ j, (rs.nth j + cs.nth j) +ᵥ R.nth j) in
       let Ts' : vector X n := Ts.update_nth i (tᵢ +ᵥ x₀) in
       let h : list X × M := ⟨x₀ :: (R.append Ts').to_list, m⟩ in
-      let c : G := H.hash k h in
+      let c : G := H.hash (k, h) in
       let cᵢ : G := c + cs.nth i - cs.to_list.sum in
       let rᵢ : G := tᵢ - sk - cᵢ in
       { k := k, 
@@ -53,7 +53,7 @@ def ring_sig_of_pas [principal_action_class G X]
   verify := λ n R m σ, 
     let Ts : vector X n := vector.of_fn (λ j, (σ.rs.nth j + σ.cs.nth j) +ᵥ R.nth j) in 
     let h : list (X) × M := ⟨x₀ :: (R.append Ts).to_list, m⟩ in 
-    H.hash σ.k h = σ.cs.to_list.sum,
+    H.hash (σ.k, h) = σ.cs.to_list.sum,
   }
 
 variables [principal_action_class G X]
@@ -87,7 +87,7 @@ lemma ring_sig_of_pas.verify_iff (n : ℕ) (R : vector X n) (m : M)
   (σ : sig_type K G n) :
     ((ring_sig_of_pas x₀ H).verify n R m σ) =
       let Ts : vector X n := vector.of_fn (λ j, (σ.rs.nth j + σ.cs.nth j) +ᵥ R.nth j) in
-      H.hash σ.1 ⟨vector.to_list (x₀ ::ᵥ (R.append Ts)), m⟩ = σ.cs.to_list.sum :=
+      H.hash (σ.1, ⟨vector.to_list (x₀ ::ᵥ (R.append Ts)), m⟩) = σ.cs.to_list.sum :=
 by simp
 
 theorem ring_sig_of_pas.complete [principal_action_class G X]
@@ -108,7 +108,7 @@ begin
   simp [hσ],
   clear hσ,
   abel,
-  refine congr_arg (H.hash k) _,
+  refine congr_arg (H.hash) _,
   simp,
   ext j,
   by_cases hj : j = i,

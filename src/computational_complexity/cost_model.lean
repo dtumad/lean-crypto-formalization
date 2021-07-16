@@ -94,6 +94,14 @@ axiom has_cost_snd (A : Type u) (B : Type v) :
 axiom has_cost_ret (A : Type) :
   has_cost (comp.ret : A → comp A) 0
 
+-- TODO: maybe this should be derived from something
+@[simp]
+axiom has_cost_ret_comp_iff {A : Type u} {B : Type}
+  (u : A → B) (n : ℚ) : 
+    has_cost (λ a, comp.ret $ u a) n ↔
+      has_cost u n
+
+
 axiom has_cost_bool_eq :
   has_cost (λ x, x.1 = x.2 : bool × bool → Prop) 0
 
@@ -124,9 +132,22 @@ lemma has_cost_ext {f g : A → B} {n : ℚ} (hf : has_cost f n)
   has_cost (id : A → A) n ↔ n ≥ 0 :=
 ⟨ge_zero_of_has_cost, λ h, has_cost_of_le h (has_cost_id A)⟩
  
-@[simp] lemma has_cost_const_iff {b : B} {n : ℚ} :
+@[simp] lemma has_cost_const_iff (A : Type*) (b : B) {n : ℚ} :
   has_cost (λ _, b : A → B) n ↔ n ≥ 0 :=
 ⟨ge_zero_of_has_cost, λ h, has_cost_of_le h (has_cost_const _)⟩
+
+lemma has_cost_iff_of_const {A B : Type*} (f : A → B)
+  (hf : ∀ a a', f a = f a') (a : A) {n : ℚ} :
+  has_cost f n ↔ n ≥ 0 :=
+begin
+  convert (has_cost_const_iff A (f a)),
+  exact funext (λ a', hf a' a),
+end
+
+@[simp]
+lemma has_cost_unit_iff {A : Type*} (f : unit → A)
+  {n : ℚ} : has_cost f n ↔ n ≥ 0 :=
+has_cost_iff_of_const f (λ a a', congr_arg f unit.ext) ()
 
 @[simp] lemma has_cost_fst_iff {n : ℚ} :
   has_cost (prod.fst : A × B → A) n ↔ n ≥ 0 :=
@@ -248,6 +269,8 @@ open oracle_comp
 
 -- Returning the result of a `comp` has cost independent of oracle access cost
 -- Querying the oracle has the same cost as the specified oracle call cost
+/-- The cost of an `oracle_comp` is a map from the cost of the
+  oracle to the cost of sampling from the `oracle_comp` -/
 inductive oracle_cost (fm : function_cost_model.{0 1}) (cm : comp_cost_model) : oracle_comp_cost_model
 | cost_query {A B : Type} {a : A} :
     oracle_cost (oc_query a : oracle_comp A B B) id
