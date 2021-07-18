@@ -58,6 +58,13 @@ def support : Π {A : Type} (ca : comp A), set A
 | A (@rnd _ fA iA) := ⊤
 | A (@repeat _ p hp ca) := {a ∈ ca.support | p a}
 
+@[simp]
+theorem support_finite : ∀ {A : Type} (ca : comp A), ca.support.finite
+| A (ret a) := set.finite_singleton a
+| A (@bind _ B cb ca) := set.finite.bUnion (support_finite cb) (λ b hb, support_finite (ca b))
+| A (@rnd _ fA iA) := set.univ_finite_iff_nonempty_fintype.mpr (nonempty.intro fA)
+| A (@repeat _ p hp ca) := (support_finite ca).subset (λ x hx, hx.1)
+
 @[simp] 
 lemma support_ret (a : A) : 
   (ret a).support = {a} := 
@@ -111,7 +118,6 @@ section is_well_formed
   1 - All sub-computations are well-formed (Trivial for `ret` and `rnd`)
   2 - The computation has non-empty support (Trivial for all but `repeat`)
   Such a computation is gaurunteed to have a non-empty support -/
-
 @[class]
 def is_well_formed : Π {A : Type}, comp A → Prop
 | A (@ret _ a) := true
@@ -120,8 +126,9 @@ def is_well_formed : Π {A : Type}, comp A → Prop
 | A (@repeat _ p hp ca) := (is_well_formed ca) ∧ (@repeat _ p hp ca).support.nonempty
 
 @[simp]
-lemma ret_is_well_formed (a : A) : (ret a).is_well_formed :=
-trivial
+lemma ret_is_well_formed (a : A) : 
+  (ret a).is_well_formed :=
+true.intro
 
 @[simp]
 lemma bind_is_well_formed_iff (cb : comp B) (ca : B → comp A) :
@@ -152,7 +159,7 @@ lemma is_well_formed_of_bind_right {cb : comp B} {ca : B → comp A} :
 @[simp]
 lemma rnd_is_well_formed (A : Type) [fintype A] [inhabited A] :
   (rnd A).is_well_formed :=
-trivial
+true.intro
 
 @[simp]
 lemma repeat_is_well_formed_iff (ca : comp A) (p : A → Prop) [decidable_pred p] :
@@ -188,16 +195,6 @@ instance monad.and_then.is_well_formed {A B : Type} (cb : comp B) (ca : comp A)
   [hcb : cb.is_well_formed] [hca : ca.is_well_formed] :
   (cb >> ca).is_well_formed :=
 by simp [is_well_formed, hcb, hca]
-
--- TODO: This doesn't really work in general
-instance monad.bind_sigma.is_well_formed {B : Type} {B' : B → Type} {A : Type}
-  (cb : comp (Σ (b : B), B' b)) [cb.is_well_formed] 
-  (ca : Π (b : B) (b' : B' b), comp A) [hca : ∀ b b', (ca b b').is_well_formed] :
-  (do ⟨b, b'⟩ ← cb, (ca b b')).is_well_formed :=
-begin
-  simp,
-  exact λ b b' h, hca b b',
-end
 
 instance rnd.is_well_formed (A : Type) [inhabited A] [fintype A] :
   (rnd A).is_well_formed :=
