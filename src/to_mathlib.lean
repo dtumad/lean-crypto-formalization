@@ -401,7 +401,13 @@ begin
     ext n a,
     rw ← h,
     simp,
-  }
+  },
 end
+
+-- TODO: See if this is the best approach for this.
+instance list.decidable_subseteq {A : Type} 
+  [decidable_eq A] : ∀ (as as' : list A), decidable (as ⊆ as')
+| [] as' := is_true (list.nil_subset as')
+| (a :: as) as' := by simpa using @and.decidable _ _ _ (list.decidable_subseteq as as')
 
 end misc

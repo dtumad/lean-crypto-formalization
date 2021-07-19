@@ -195,8 +195,8 @@ class algorithmic_homogeneous_space (G X : ℕ → Type)
   (λ n, (λ x, x.1 = x.2 : G n × G n → Prop)))
 (X_eq_efficient : complexity_class.poly_time_fun
   (λ n, (λ x, x.1 = x.2 : X n × X n → Prop)))
-(G_rnd_efficient : complexity_class.poly_time_comp₀ 
-  (λ n, comp.rnd (G n)))
+(G_rnd_efficient : complexity_class.poly_time_comp₁
+  (λ n, (λ x, comp.rnd (G n) : unit → comp (G n))))
 -- TODO: Maybe axiomatize this for any `fintype`? or `encodable` type?
 (G_copy_efficient : complexity_class.poly_time_fun
   (λ n, (λ g, (g, g) : G n → G n × G n)))

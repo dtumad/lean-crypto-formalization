@@ -10,8 +10,8 @@ This file defines the notion of a keyed hash function.
 TODO: Think about using `encodable` type-class for `I` and maybe `O`
 -/
 structure hash_function (K I O : Type) :=
-(keygen : comp K)
-(keygen_is_well_formed : keygen.is_well_formed)
+(keygen : unit → comp K)
+(keygen_is_well_formed : (keygen ()).is_well_formed)
 (hash : K × I → O)
 
 namespace hash_function
@@ -19,7 +19,7 @@ namespace hash_function
 variables {K I O : Type} (h : hash_function K I O)
 
 instance keygen.is_well_formed (h : hash_function K I O) :
-  h.keygen.is_well_formed :=
+  (h.keygen ()).is_well_formed :=
 h.keygen_is_well_formed
 
 variables [decidable_eq O]
@@ -28,9 +28,9 @@ variables [decidable_eq O]
 @[derive comp.is_well_formed]
 def collision_finding_experiment (h : hash_function K I O) 
   (A : K → comp (I × I)) [∀ k, (A k).is_well_formed] : comp bool :=
-comp.bind (h.keygen) (λ k,
-comp.bind (A k) (λ xs, 
-comp.ret (h.hash (k, xs.1) = h.hash (k, xs.2))))
+do k ← (h.keygen ()),
+  xs ← (A k),
+  return (h.hash (k, xs.1) = h.hash (k, xs.2))
 
 end hash_function
 
@@ -38,7 +38,7 @@ end hash_function
   `hash` takes a `hash_key` from keygen and a string in the input space to a string in the output space -/
 structure hash_scheme (K I O : ℕ → Type) :=
 (scheme (sp : ℕ) : hash_function (K sp) (I sp) (O sp))
-(keygen_poly_time : complexity_class.poly_time_comp₀ (λ sp, (scheme sp).keygen))
+(keygen_poly_time : complexity_class.poly_time_comp₁ (λ sp, (scheme sp).keygen))
 (hash_poly_time : complexity_class.poly_time_fun (λ sp, (scheme sp).hash))
 
 namespace hash_scheme
@@ -50,11 +50,11 @@ section projections
 variable (H)
 
 def keygen (sp : ℕ) : comp (K sp) :=
-(H.scheme sp).keygen
+(H.scheme sp).keygen ()
 
 @[simp]
 lemma keygen_eq (sp : ℕ) :
-  H.keygen sp = (H.scheme sp).keygen := rfl
+  H.keygen sp = (H.scheme sp).keygen () := rfl
 
 def hash {sp : ℕ} (k : K sp) (i : I sp) : O sp :=
 (H.scheme sp).hash (k, i)

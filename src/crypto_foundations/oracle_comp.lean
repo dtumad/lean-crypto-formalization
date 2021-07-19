@@ -165,35 +165,23 @@ begin
   refine (o a >>= λ b, return (b, a :: as)),
 end
 
-lemma logging_eval_distribution_is_well_formed
-  (oc : oracle_comp A B C) (hoc : oc.is_well_formed)
-  (o : A → comp B) (ho : ∀ a, (o a).is_well_formed) :
-  (logging_eval_distribution oc o).is_well_formed :=
-by unfold logging_eval_distribution; apply_instance
-
 @[simp]
 instance logging_eval_distribution.is_well_formed 
   (oc : oracle_comp A B C) [hoc : oc.is_well_formed]
   (o : A → comp B) [ho : ∀ a, (o a).is_well_formed] :
   (logging_eval_distribution oc o).is_well_formed :=
-logging_eval_distribution_is_well_formed oc hoc o ho
+by unfold logging_eval_distribution; apply_instance
   
 /-- Evaluation distribution for a stateless oracle with `o` simulating the oracle. -/
 def stateless_eval_distribution (oc : oracle_comp A B C) 
   (o : A → comp B) : comp C :=
 (logging_eval_distribution oc o) >>= (λ cas, comp.ret cas.1)
 
-lemma stateless_eval_distribution_is_well_formed
-  (oc : oracle_comp A B C) (hoc : oc.is_well_formed)
-  (o : A → comp B) (ho : ∀ a, (o a).is_well_formed) :
-  (oc.stateless_eval_distribution o).is_well_formed :=
-by unfold stateless_eval_distribution; apply_instance
-
 @[simp]
 instance stateless_eval_distribution.is_well_formed
   (oc : oracle_comp A B C) [hoc : oc.is_well_formed]
   (o : A → comp B) [ho : ∀ a, (o a).is_well_formed] :
   (oc.stateless_eval_distribution o).is_well_formed :=
-stateless_eval_distribution_is_well_formed oc hoc o ho
+by unfold stateless_eval_distribution; apply_instance
 
 end oracle_comp

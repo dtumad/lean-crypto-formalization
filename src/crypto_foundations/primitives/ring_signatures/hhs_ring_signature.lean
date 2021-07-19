@@ -16,7 +16,7 @@ section ring_sig_of_pas
 variables {M G X K : Type}
   [fintype G] [fintype X] 
   [inhabited G] [inhabited X] 
-  [decidable_eq M] [decidable_eq X] [decidable_eq G] [decidable_eq K]
+  [decidable_eq M] [decidable_eq G] [decidable_eq X] [decidable_eq K]
 variables [add_comm_group G] [add_action G X]
 
 -- TODO: Clean this up
@@ -29,12 +29,12 @@ structure sig_type (K G : Type) (n : ℕ) : Type :=
 def ring_sig_of_pas [principal_action_class G X]
   (x₀ : X) (H : hash_function K (list X × M) G) :
   ring_sig M (sig_type K G) X G :=
-{ gen := (do 
+{ gen := λ _, (do 
     g ← comp.rnd G, 
     return (g +ᵥ x₀, g)),
   gen_well_formed := by apply_instance,
   sign := λ n i sk R m, (do
-    k ← H.keygen,
+    k ← H.keygen (),
     tᵢ ← comp.rnd G,
     rs ← comp.vector_call (comp.rnd G) n,
     cs ← comp.vector_call (comp.rnd G) n,
@@ -61,7 +61,7 @@ variables [principal_action_class G X]
 
 @[simp]
 lemma ring_sig_of_pas.mem_support_keygen_iff (k : X × G) :
-  k ∈ (ring_sig_of_pas x₀ H).gen.support ↔ 
+  k ∈ ((ring_sig_of_pas x₀ H).gen ()).support ↔ 
     k.1 = k.2 +ᵥ x₀ :=
 begin
   cases k with x g,
@@ -69,7 +69,7 @@ begin
 end
 
 lemma ring_sig_of_pas.vectorization_of_mem_support_keygen
-  (k : X × G) (hk : k ∈ (ring_sig_of_pas x₀ H).gen.support) :
+  (k : X × G) (hk : k ∈ ((ring_sig_of_pas x₀ H).gen ()).support) :
     vectorization G x₀ k.1 = k.2 :=
 begin
   cases k,
@@ -78,7 +78,7 @@ begin
 end
 
 lemma ring_sig_of_pas.vectorization_of_mem_support_keygen'
-  (k : X × G) (hk : k ∈ (ring_sig_of_pas x₀ H).gen.support) :
+  (k : X × G) (hk : k ∈ ((ring_sig_of_pas x₀ H).gen ()).support) :
     vectorization G k.1 x₀ = - k.2:=
 by rw [vectorization_swap, ring_sig_of_pas.vectorization_of_mem_support_keygen x₀ H k hk]
 
@@ -107,7 +107,6 @@ begin
   obtain ⟨k, hk, tᵢ, rs, cs, hσ⟩ := hσ,
   simp [hσ],
   clear hσ,
-  abel,
   refine congr_arg (H.hash) _,
   simp,
   ext j,
@@ -116,7 +115,7 @@ begin
     simp only [hj, vector.nth_update_nth_same, add_sub_cancel'_right, vector.nth_of_fn],
     rw principal_action_class.vadd_eq_iff_left _ tᵢ _ x₀,
     rw ring_sig_of_pas.vectorization_of_mem_support_keygen' x₀ H (ks.nth i) (hks i),
-    rw ← sub_eq_add_neg
+    abel,
   },
   {
     have : i ≠ j := ne.symm hj,
@@ -143,7 +142,9 @@ def ring_signature_scheme_of_hhs [hard_homogeneous_space G X]
   ring_signature_scheme M (λ sp, sig_type (K sp) (G sp)) X G :=
 {
   rs := λ sp, ring_sig_of_pas (x₀ sp) (H.scheme sp),
-  gen_poly_time := sorry,
+  gen_poly_time := begin
+    sorry,
+  end,
   sign_poly_time := sorry,
   verify_poly_time := sorry,
 }

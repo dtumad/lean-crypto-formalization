@@ -75,28 +75,28 @@ begin
       { exact v.cons_head_tail.symm } } }
 end
 
-@[simp]
-lemma vector_call.has_cost (q : ℚ) (hcaq : comp_cost ca q) :
-  ∀ n, comp_cost (vector_call ca n) (q * n + n)
-| 0 := by simp
-| (n + 1) := begin
-  rw vector_call,
-  refine comp_cost_bind_of_le _ _ q 1 (q * n + n) _ _ _ _ _,
-  {
-    exact hcaq,
-  },
-  {
-    sorry,
-  },
-  {
-    intro a,
-    refine comp_cost_bind_of_le _ _ (q * n + n) 1 0 _ _ _ _ _,
-    refine vector_call.has_cost n,
-    sorry, sorry, sorry,
-  },
-  {
-    sorry,
-  }
-end
+-- @[simp]
+-- lemma vector_call.has_cost (q : ℚ) (hcaq : comp_cost ca q) :
+--   ∀ n, comp_cost (vector_call ca n) (q * n + n)
+-- | 0 := by simp
+-- | (n + 1) := begin
+--   rw vector_call,
+--   refine comp_cost_bind_of_le _ _ q 1 (q * n + n) _ _ _ _ _,
+--   {
+--     exact hcaq,
+--   },
+--   {
+--     sorry,
+--   },
+--   {
+--     intro a,
+--     refine comp_cost_bind_of_le _ _ (q * n + n) 1 0 _ _ _ _ _,
+--     refine vector_call.has_cost n,
+--     sorry, sorry, sorry,
+--   },
+--   {
+--     sorry,
+--   }
+-- end
 
 end comp

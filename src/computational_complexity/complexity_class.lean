@@ -13,29 +13,15 @@ It can also apply to both `≤` and `≥`, e.g. sub-polynomial or at-least-polyn
 -- TODO: Do this with oracle_comp, but also require a polynomial number of queries
 -/
 
-/-- `c ∈ complexity_class C growth_pred cost_pred` means there is some `f` satisfying `growth_pred`
-such that `c` and `f` jointly satisfy the cost predicate for all `n`. -/
-def complexity_class {ι G : Type*} (C : ι → Type*) 
-  (growth_pred : (ι → G) → Prop) (cost_pred : Π (i : ι), C i → G → Prop) :
-  set (Π n, C n) :=
-{c | ∃ (f : ι → G), growth_pred f ∧ (∀ n, cost_pred n (c n) (f n))}
-
-lemma mem_complexity_class_iff {ι G : Type*} {C : ι → Type*} (c : Π n, C n)
-  (growth_pred : (ι → G) → Prop) (cost_pred : Π (i : ι), C i → G → Prop) : 
-  c ∈ complexity_class C growth_pred cost_pred ↔
-    ∃ (f : ι → G), growth_pred f ∧ (∀ n, cost_pred n (c n) (f n)) :=
-iff.rfl
-
 namespace complexity_class 
 
 
 section poly_time_fun
 
 /-- `poly_time_fun c` means `c` can be evaluated in polynomial time on any input -/
-def poly_time_fun {A B : ℕ → Type} (c : Π n, A n → B n) : Prop :=
-c ∈ complexity_class (λ n, A n → B n) 
-  poly_growth (λ n c x, has_cost c x)
-  
+def poly_time_fun {A B : ℕ → Type*} (c : Π n, A n → B n) : Prop :=
+∃ f, poly_growth f ∧ ∀ n, has_cost (c n) (f n)
+
 variables  {A B C D : ℕ → Type}
 
 section poly_growth_const
@@ -99,35 +85,46 @@ section poly_time_comp
 
 /--`poly_time_comp₀ c` means sampling from `c : comp (T n)` has polynomial time cost in `n` -/
 def poly_time_comp₀ {T : ℕ → Type} (c : Π n, comp (T n)) : Prop :=
-c ∈ complexity_class (λ n, comp $ T n)
-  poly_growth (λ n c x, comp_cost c x)
+∃ p, poly_growth p ∧ ∀ n, comp_cost (c n) (p n)
 
 /-- `poly_time_comp₁ c` means evaluating `c : A n → comp (T n)` at any `a : A n`,
-  and then sampling from the result has polynomial time cost in `n` -/
+  and then sampling from the result has polynomial time cost in `n`.
+  todo: Essentially non-uniform probabalistic polynomial time -/
 def poly_time_comp₁ {A T : ℕ → Type} (c : Π n, A n → comp (T n)) : Prop :=
-c ∈ complexity_class (λ n, A n → comp (T n)) 
-  poly_growth (λ n c x, has_cost c x ∧ ∀ a, comp_cost (c a) x)
+∃ p, poly_growth p ∧ ∀ n, (has_cost (c n) (p n) ∧ ∀ a, comp_cost (c n a) (p n))
 
-lemma test {T : ℕ → Type} (c : Π n, unit → comp (T n)) :
-  poly_time_comp₁ c ↔ poly_time_comp₀ (λ n, c n ()) :=
+-- Suffices to seperately prove polynomial complexity in the function and the comp
+lemma poly_time_comp₁_iff {A T : ℕ → Type} [hA : ∀ n, nonempty (A n)]
+  (c : Π n, A n → comp (T n)) :
+  poly_time_comp₁ c ↔ poly_time_fun c ∧
+    ∃ p, poly_growth p ∧ ∀ n a, comp_cost (c n a) (p n) :=
 begin
   split,
   {
-    rintro ⟨p, hp, hc⟩,
-    refine ⟨p, hp, λ n, _⟩,
-    specialize hc n,
-    replace hc := hc.2,
-    refine hc _,
+    rintro ⟨p, hp, h⟩,
+    refine ⟨⟨p, hp, _⟩, ⟨p, hp, _⟩⟩,
+    refine λ n, (h n).1,
+    refine λ n a, (h n).2 a,
   },
   {
-    rintro ⟨p, hp, hc⟩,
-    refine ⟨p, hp, λ n, ⟨_, λ a, _⟩⟩,
+    rintro ⟨⟨p, hp, h⟩, ⟨q, hq, h'⟩⟩,
+    use p + q,
+    split,
     {
+      exact poly_growth_add hp hq,
+    },
+    refine λ n, ⟨_, _⟩,
+    {
+      refine has_cost.has_cost_of_le _ (h n),
       simp,
-      sorry,
+      refine nonempty.elim (hA n) (λ a, _),
+      refine ge_zero_of_comp_cost (h' n a),
     },
     {
-      convert hc n,
+      intro a,
+      refine comp_cost.cost_le _ (h' n a),
+      simp,
+      refine has_cost.ge_zero_of_has_cost (h n),
     }
   }
 end
@@ -138,79 +135,6 @@ variables {T U V : ℕ → Type} {A : ℕ → Type}
 lemma poly_time_comp₀_ret (t : Π (n : ℕ), T n) :
   poly_time_comp₀ (λ n, comp.ret $ t n) :=
 ⟨0, poly_growth_zero, λ n, comp_cost.cost_ret⟩
-
-@[simp]
-lemma poly_time_comp₁_ret_iff (u : Π (n : ℕ), A n → T n) :
-  poly_time_comp₁ (λ n a, comp.ret $ u n a : Π n, A n → comp (T n)) ↔
-    poly_time_fun u :=
-begin
-  split;
-  rintro ⟨p, hp, h⟩,
-  {
-    refine ⟨p, hp, λ n, _⟩,
-    specialize h n,
-    replace h := h.1,
-    simp only [] at h,
-    rwa has_cost.has_cost_ret_comp_iff (u n) at h,
-  },
-  {
-    refine ⟨p, hp, λ n, _⟩,
-    specialize h n,
-    simp [h],
-    -- TODO: Can always choose a `p` so this is positive
-    sorry,
-  }
-end
-
-@[simp]
-lemma poly_time_comp₀_bind_iff (ct : Π n, comp (T n))
-  (cu : Π n, T n → comp (U n)) :
-  poly_time_comp₀ (λ n, comp.bind (ct n) (cu n)) ↔
-    poly_time_comp₀ ct ∧ poly_time_comp₁ cu :=
-begin 
-  split,
-  {
-    rintro ⟨p, hp, h⟩,
-    refine ⟨⟨p, hp, λ n, _⟩, ⟨p, hp, λ n, _⟩⟩,
-    sorry,
-    sorry,
-  },
-  {
-    rintro ⟨⟨p, hp, hp'⟩, ⟨q, hq, hq'⟩⟩,
-    refine ⟨p + q + q, _, λ n, _⟩,
-    { refine poly_growth_add _ hq,
-      exact poly_growth_add hp hq },
-    refine comp_cost.cost_bind (hp' n) (hq' n).1 (hq' n).2,
-  }
-end
-
-@[simp]
-lemma poly_time_comp₀_bind_ret_iff (ct : Π n, comp (T n))
-  (u : Π n, T n → U n) :
-  poly_time_comp₀ (λ n, comp.bind (ct n) (λ t, comp.ret (u n t))) ↔
-    (poly_time_comp₀ ct ∧ poly_time_fun u) :=
-begin
-  simp only [poly_time_comp₀_bind_iff, and.congr_right_iff],
-  intro h,
-  clear h,
-  split,
-  {
-    rintro ⟨p, hp, hpc⟩,
-    refine ⟨p, hp, λ n, _⟩,
-    specialize hpc n,
-    replace hpc := hpc.1,
-    sorry,
-  },
-  {
-
-    rintro ⟨p, hp, hpc⟩,
-    refine ⟨p, hp, λ n, _⟩,
-    specialize hpc n,
-    -- TODO: need `p` to be positive
-    simp,
-    sorry,
-  }
-end
 
 end poly_time_comp
 

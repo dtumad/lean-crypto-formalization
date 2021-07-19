@@ -109,11 +109,11 @@ end poly_growth_in_parameter
 
 section poly_growth
 
-/-- A function `f : ℕ → R` has polynomial growth if it is O(p(n)) for some `p : polynomial ℚ`-/
+/-- A function `f : ℕ → R` has polynomial growth if it is O(p(n)) for some `p : polynomial R`-/
 def poly_growth {R : Type*} [preorder R] [normed_ring R] (f : ℕ → R) :=
 poly_growth_in_parameter (λ n, ↑n : ℕ → ℚ) f
 
-variables {R : Type*} [preorder R] [normed_ring R] [norm_one_class R] 
+variables {R : Type*} [preorder R] [normed_ring R] 
 
 @[simp] lemma poly_growth_const (r : R) : 
   poly_growth (λ _, r) :=
@@ -134,6 +134,8 @@ begin
   refine ⟨1, λ x hx, le_abs.2 $ or.inl _⟩,
   simpa only [nat.one_le_cast, rat.cast_coe_nat],
 end
+
+variables [norm_one_class R]
 
 lemma poly_growth_add {f g : ℕ → R} (hf : poly_growth f) (hg : poly_growth g) :
   poly_growth (f + g) :=

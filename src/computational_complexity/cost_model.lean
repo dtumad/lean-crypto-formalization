@@ -29,9 +29,15 @@ This allows `has_cost` to behave well with function composition,
   but also means all axioms need to be valid in the context of shared representations.
 -/
 
+
+
 universes u v w
 
--- TODO: Try to get this working with some extensible system
+-- TODO: Try to get this working with some extensible system using something like this
+-- structure cost_model (C : Type u) (T : Type v) [linear_ordered_field C] :=
+-- (has_cost : T → C → Prop)
+-- (has_cost_of_le (x y : C) (t : T) : has_cost t x → x ≤ y → has_cost t y)
+-- (ge_zero_of_has_cost (x : C) (t : T) : has_cost t x → 0 ≤ x)
 
 /-- Represents a cost assignment model to Lean functions -/
 def function_cost_model := ∀ {A : Type u} {B : Type v}, (A → B) → ℚ → Prop
@@ -229,7 +235,7 @@ inductive comp_cost : comp_cost_model
 | cost_ret {A : Type} {a : A} :
     comp_cost (ret a) 0
 | cost_bind {A B : Type} {ca : comp A} {cb : A → comp B} {n1 n2 n3 : ℚ} :
-    comp_cost ca n1 → has_cost cb n2 → (∀ a, comp_cost (cb a) n3) → comp_cost (ca >>= cb) (n1 + n2 + n3)
+    comp_cost ca n1 → has_cost cb n2 → (∀ a, comp_cost (cb a) n3) → comp_cost (ca.bind cb) (n1 + n2 + n3)
 | cost_rnd_bitvec {n : ℕ} :
     comp_cost (rnd (bitvec n)) ↑n
 | cost_le {A : Type} {ca : comp A} {n m : ℚ} (hnm : n ≤ m) :
@@ -283,3 +289,26 @@ inductive oracle_cost (fm : function_cost_model.{0 1}) (cm : comp_cost_model) : 
     oracle_cost oc f → oracle_cost oc g
 
 end comp_cost
+
+
+-- /-- TODO: Switch to this method of defining things and remove most of the above? -/ 
+-- class has_cost_model (C : Type) (T : Type u) :=
+-- (cost_pred : T → C → Prop)
+
+-- instance function_has_cost (A B : Type*) : 
+--   has_cost_model ℚ (A → B) :=
+-- ⟨has_cost⟩
+
+-- instance comp_has_cost₀ (A : Type) :
+--   has_cost_model ℚ (comp A) :=
+-- ⟨λ c x, comp_cost c x⟩
+
+-- -- This instance overwrites the earlier function instance
+-- instance comp_has_cost₁ (A B : Type) :
+--   has_cost_model ℚ (A → comp B) :=
+-- ⟨λ f x, has_cost f x ∧ ∀ a, comp_cost (f a) x⟩
+
+-- -- TODO: polynomial_cost won't apply to this thing
+-- instance oracle_comp_has_cost (A B C : Type) :
+--   has_cost_model (ℚ → ℚ) (oracle_comp A B C) :=
+-- ⟨λ oc x, oracle_cost @has_cost @comp_cost oc x⟩
