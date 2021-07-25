@@ -127,19 +127,15 @@ poly_growth_in_parameter_zero _
   poly_growth (1 : ℕ → R) :=
 poly_growth_in_parameter_one _
 
--- TODO: generalize `poly_growth` to any situation allowing *something* like this
-lemma h_help : ∀ᶠ (x : ℕ) in filter.at_top, 1 ≤ ∥(x : ℚ)∥ :=
-begin
-  rw filter.eventually_at_top,
-  refine ⟨1, λ x hx, le_abs.2 $ or.inl _⟩,
-  simpa only [nat.one_le_cast, rat.cast_coe_nat],
-end
-
 variables [norm_one_class R]
 
 lemma poly_growth_add {f g : ℕ → R} (hf : poly_growth f) (hg : poly_growth g) :
   poly_growth (f + g) :=
-poly_growth_in_parameter_add h_help hf hg
+poly_growth_in_parameter_add eventually_one_le_rat_norm hf hg
+
+lemma poly_growth_mul {f g : ℕ → R} (hf : poly_growth f) (hg : poly_growth g) :
+  poly_growth (f * g) :=
+poly_growth_in_parameter_mul hf hg
 
 end poly_growth
 

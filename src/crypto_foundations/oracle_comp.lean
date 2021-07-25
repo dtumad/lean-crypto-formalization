@@ -22,9 +22,6 @@ inductive oracle_comp : Type → Type → Type → Type 1
 | oc_ret {A B C : Type} : Π (c : comp C), oracle_comp A B C
 | oc_bind {A B C D : Type} : Π (oc : oracle_comp A B C) (od : C → oracle_comp A B D),
     oracle_comp A B D
--- | oc_run {A B C A' B' S : Type} :
---     Π (oc : oracle_comp A B C) (s : S) (ob : S → A → oracle_comp A' B' (B × S)) , 
---       oracle_comp A' B' (C × S)
 
 @[simps]
 instance oracle_comp.monad {A B : Type} : monad (oracle_comp A B) :=
@@ -33,19 +30,19 @@ instance oracle_comp.monad {A B : Type} : monad (oracle_comp A B) :=
 
 namespace oracle_comp
 
-/-- `oc_run` constructed manually from the other constructors -/
+/-- `oc_run` can be constructed manually from the other constructors -/
 def oc_run : Π {A B C : Type} (oc : oracle_comp A B C) 
   {A' B' S : Type} (s : S) (o : S → A → oracle_comp A' B' (B × S)),
   oracle_comp A' B' (C × S)
 | A _ B (@oc_query _ _ a) A' B' S s o := o s a
-| A B C (@oc_ret _ _ _ cc) A' B' S s o := oc_ret (do c ← cc, return (c, s))
+| A B C (@oc_ret _ _ _ cc) A' B' S s o := 
+    oc_ret (cc >>= λ c, return (c, s))
 | A B D (@oc_bind _ _ C _ oc od) A' B' S s o := 
     (oc_run oc s o) >>= (λ cs, oc_run (od cs.1) cs.2 o)
 
 /-- Every oracle_comp gives rise to a mapping from query assignments to the base comp type,
   where the value in `C` is the result of the computation if oracles behave like the input,
-  and internal `comp` values return their base values
-  -- TODO: rename this -/
+  and internal `comp` values return their base values -/
 def oracle_comp_base_exists (oc : oracle_comp A B C) : (A → B) → C :=
 @oracle_comp.rec_on (λ A B C _, (A → B) → C) A B C oc
   (λ A B a q, q a) (λ A B C cc hcc, cc.comp_base_exists)

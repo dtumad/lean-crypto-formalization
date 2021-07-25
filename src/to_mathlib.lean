@@ -17,6 +17,13 @@ section asymptotics
 
 open asymptotics
 
+lemma eventually_one_le_rat_norm : ∀ᶠ (x : ℕ) in filter.at_top, 1 ≤ ∥(x : ℚ)∥ :=
+begin
+  rw filter.eventually_at_top,
+  refine ⟨1, λ x hx, le_abs.2 $ or.inl _⟩,
+  simpa only [nat.one_le_cast, rat.cast_coe_nat],
+end
+
 lemma is_O_of_pow_le {α 𝕜 : Type*} [normed_field 𝕜] {l : filter α}
   {f : α → 𝕜} (hf : ∀ᶠ x in l, ∥f x∥ ≥ 1) {n m : ℕ} (hnm : n ≤ m) :
   is_O (λ x, (f x) ^ n) (λ x, (f x) ^ m) l :=
