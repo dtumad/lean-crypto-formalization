@@ -171,6 +171,9 @@ end computational_advantages
 
 section hard_homogeneous_space
 
+variables [function_cost_model.{1} ℚ] [function_cost_model.{0} ℚ] 
+variable [comp_eval_model ℚ]
+
 /-- A homogenous space is defined by a parameterized collection of homogenous spaces (`principal_action_class`).
   `G` and `X` together define a generation algorithm for homogenous spaces from a security parameter,
     and we want the following operations to have polynomial-growth time in the security parameter.
@@ -212,10 +215,10 @@ variables (G X : ℕ → Type)
   [∀ n, add_comm_group (G n)] [∀ n, add_action (G n) (X n)]
   [∀ n, principal_action_class (G n) (X n)]
 
-lemma add_right_efficient [H : algorithmic_homogeneous_space G X] (g : Π n, G n) :
-  complexity_class.poly_time_fun (λ n, λ (x : G n), (g n) + x) :=
-let ⟨f, hf, hf'⟩ := H.add_efficient in
-  ⟨f, hf, λ n, has_cost.has_cost_of_uncurry' (g n) (hf' n)⟩
+-- lemma add_right_efficient [H : algorithmic_homogeneous_space G X] (g : Π n, G n) :
+--   complexity_class.poly_time_fun (λ n, λ (x : G n), (g n) + x) :=
+-- let ⟨f, hf, hf'⟩ := H.add_efficient in
+--   ⟨f, hf, λ n, has_cost.has_cost_of_uncurry' (g n) (hf' n)⟩
 
 -- lemma mul_left_efficient [algorithmic_homogeneous_space G X] (g : Π n, G n) :
 --   complexity_class.poly_time_fun (λ n, λ (x : G n), x * (g n)) :=

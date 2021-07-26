@@ -31,136 +31,279 @@ This allows `has_cost` to behave well with function composition,
 
 universes u v w
 
+class has_cost_pred (C : Type) (T : Type u)  :=
+(cost_pred : T → C → Prop)
+
+def cost_at_most {T : Type u} {C : Type} [has_cost_pred C T] :
+  T → C → Prop :=
+has_cost_pred.cost_pred
+
+section cost_model
+
 -- TODO: Try to get this working with some extensible system using something like this
 /-- Cost model on a type `T` where cost takes values in `C`. -/
-class cost_model (C : Type) (T : Type u) [linear_ordered_semiring C] :=
-(cost_at_most : T → C → Prop)
+class cost_model (C : Type) (T : Type v) [linear_ordered_semiring C]
+  extends has_cost_pred C T :=
+-- (cost_pred : T → C → Prop)
 (cost_trans {x y : C} {t : T} : cost_at_most t x → x ≤ y → cost_at_most t y)
 (nonneg_of_has_cost {x : C} {t : T} : cost_at_most t x → 0 ≤ x)
 
-namespace cost_model
+def cost_zero (C : Type) {T : Type v} [linear_ordered_semiring C]
+  [cost_model C T] (t : T) : Prop :=
+cost_at_most t (0 : C)
 
-/-- Need to declare this as a global constant to allow universe level crossing -/
-constant fcm : ∀ (A : Type u) (B : Type v), cost_model ℚ (A → B)
-
-/-- Create a cost model on arbitrary functions (across arbitrary universes). -/
-noncomputable instance function.cost_model {A B : Type*} :
-  cost_model ℚ (A → B) :=
-fcm A B
-
-constant ccm : ∀ (A : Type), cost_model ℚ (comp A)
-
-noncomputable instance comp.cost_model {A : Type} :
-  cost_model ℚ (comp A) :=
-ccm A
-
-constant ocm : ∀ (A B C : Type), cost_model ℚ (oracle_comp A B C × ℚ)
-
-noncomputable instance oracle_comp.cost_model {A B C : Type*} :
-  cost_model ℚ (oracle_comp A B C × ℚ) :=
-ocm A B C
-
-axiom cost_swap' (A : Type u) (B : Type v) : cost_at_most 
-  (prod.swap : A × B → B × A) (0 : ℚ)
+end cost_model
 
 section function_cost_model
 
-variables {A B C D : Type*}
+class function_cost_model (C : Type) [linear_ordered_semiring C] :=
+(cm (T U : Type v) : cost_model C (T → U))
+(cost_id {T : Type v} : cost_zero C (id : T → T))
 
-/-- Assumptions about costs of functions built from other functions -/
-class function_cost_model :=
-(cost_id (A : Type*) : cost_at_most (id : A → A) (0 : ℚ))
-(cost_compose {A B C : Type*} {f : A → B} {g : A → B → C} {n m l : ℚ} 
-  (hf : cost_at_most f n) (hg : cost_at_most g m)
-  (hg' : ∀ a, cost_at_most (g a) l) :
-  cost_at_most (λ a, g a (f a)) (n + m + l))
-(cost_of_uncurry {A B C : Type*} {f : A → B → C} {n : ℚ}
-  (hf : cost_at_most (function.uncurry f) n) :
-  cost_at_most f n ∧ ∀ a, cost_at_most (f a) n)
--- `product` structuring operations
-(cost_prod {A B C : Type*} (f : A → B) (g : A → C)
-  (n m : ℚ) (hf : cost_at_most f n) (hg : cost_at_most g m) :
-  cost_at_most (λ x, (f x, g x) : A → B × C) (n + m))
-(cost_fst (A B : Type*) : cost_at_most 
-  (prod.fst : A × B → A) (0 : ℚ))
-(cost_swap (A B : Type*) : cost_at_most 
-  (prod.swap : A × B → B × A) (0 : ℚ))
--- `vector` structuring operations
-(cost_vector_cons (A : Type*) (n : ℕ) : cost_at_most 
-  (function.uncurry vector.cons : A × vector A n → vector A n.succ) (0 : ℚ))
--- `comp` structuring functions
-(cost_comp_ret (A : Type) : cost_at_most 
-  (comp.ret : A → comp A) (0 : ℚ))
-(cost_comp_bind (A B : Type) : cost_at_most 
-  (function.uncurry comp.bind : comp A × (A → comp B) → comp B) (0 : ℚ))
-
-
-
-example (A : Type v) [h : function_cost_model] : cost_at_most (id : A → A) (0 : ℚ) :=
-begin
-  exact @function_cost_model.cost_id h A,
-  -- exact this,
-end
-
-lemma cost_at_most_comp_of_le [function_cost_model] {A B C : Type*}
-  {f : A → B} {g : B → C} {n m x : ℚ}
-  (hf : cost_at_most f n) (hg : cost_at_most g m) (h : n + m ≤ x) :
-  cost_at_most (g ∘ f) x :=
-begin
-  sorry,
-end
-
-lemma prod_cost_model.cost_snd (A : Type v) (B : Type u) [fcm : function_cost_model] :
-  cost_at_most (prod.snd : A × B → B) (0 : ℚ) :=
-begin
-  have : (prod.snd : A × B → B) = prod.fst ∘ prod.swap,
-  from funext (λ x, by simp),
-  rw this,
-  have := cost_swap' A B,
-  have := @function_cost_model.cost_swap fcm A B,
-  refine cost_at_most_comp_of_le 
-    (function_cost_model.cost_swap A B) _ _,
-  sorry,
-end
+instance function_cost_model.cost_model (C : Type)
+  [linear_ordered_semiring C] [function_cost_model.{v} C] 
+  (T U : Type v) : cost_model C (T → U) :=
+function_cost_model.cm T U
 
 end function_cost_model
 
-section comp_cost_model
-open comp
+section monadic_cost_model
 
-class comp_cost_model :=
-(cost_ret {A : Type} (a : A) : cost_at_most (ret a) (0 : ℚ))
-(cost_bind {A B : Type} {ca : comp A} {cb : A → comp B} {n m l : ℚ}
-  (hca : cost_at_most ca n) (hcb : cost_at_most cb m)
-  (hcb' : ∀ a, cost_at_most (cb a) l) :
-  cost_at_most (ca.bind cb) (n + m + l))
-(cost_bind_ret {A B : Type} {a : A} {cb : A → comp B} {n : ℚ}
-  (hcb : cost_at_most (cb a) n) :
-  cost_at_most ((ret a).bind cb) n)
-(cost_rnd_bit : cost_at_most (rnd bool) (1 : ℚ))
+class monadic_cost_model (C : Type) [linear_ordered_semiring C]
+  [function_cost_model.{0} C] [function_cost_model.{u} C]
+  (M : Type → Type u) [monad M] :=
+(cm (T U : Type) : cost_model C (T → M U))
+(cost_compose {T U V : Type} {x y : C} (f : T → U) (g : U → M V) :
+  cost_at_most f x →
+  cost_at_most g y →
+  cost_at_most (g ∘ f) (x + y))
+(cost_compose' {T U V : Type} {x y : C} (f : T → M U) (g : M U → M V) :
+  cost_at_most f x →
+  cost_at_most g y →
+  cost_at_most (g ∘ f) (x + y))
+(cost_pure (T : Type) : 
+  cost_zero C (pure : T → M T))
+(cost_uncurry_bind (T U : Type) :
+  cost_zero C (function.uncurry bind : M T × (T → M U) → M U))
+
+instance monadic_cost_model.cost_model (C : Type)
+  [linear_ordered_semiring C]
+  [function_cost_model.{0} C] [function_cost_model.{u} C]
+  (M : Type → Type u) [monad M]
+  [monadic_cost_model C M] (T U : Type) : cost_model C (T → M U) :=
+monadic_cost_model.cm T U 
+
+class monad_eval_model (C : Type) [linear_ordered_semiring C]
+  [function_cost_model.{0} C] [function_cost_model.{u} C]
+  (M : Type → Type u) [monad M]
+  extends monadic_cost_model C M :=
+(eval_model (T : Type) : cost_model C (M T))
+(cost_eval_pure {T : Type} (t : T) :
+  cost_zero C (pure t : M T))
+(cost_eval_bind {T U : Type} {x y z : C} (ct : M T) (cu : T → M U) :
+  cost_at_most ct x →
+  cost_at_most cu y →
+  ∀ t, cost_at_most (cu t) z →
+  cost_at_most (bind ct cu : M U) (x + y + z))
+
+instance monad_eval_model.cost_model (C : Type)
+  [linear_ordered_semiring C]
+  [function_cost_model.{0} C] [function_cost_model.{u} C]
+  (M : Type → Type u) [monad M]
+  [monad_eval_model C M] (T : Type) : cost_model C (M T) :=
+monad_eval_model.eval_model T
+
+
+end monadic_cost_model
+
+section comp_cost_model
+
+class comp_cost_model (C : Type) [linear_ordered_semiring C]
+  [function_cost_model.{0} C] [function_cost_model.{1} C]
+  extends monadic_cost_model C comp :=
+(cost_repeat {T : Type} (p : T → Prop) [decidable_pred p] :
+  cost_zero C (comp.repeat p))
+
+class comp_eval_model (C : Type) [linear_ordered_semiring C]
+  [function_cost_model.{0} C] [function_cost_model.{1} C]
+  extends monad_eval_model C comp :=
+(cost_rnd_bit : cost_at_most (comp.rnd bool) (1 : C))
+
 
 end comp_cost_model
 
 section oracle_comp_cost_model
 
-open oracle_comp
+class oracle_comp_cost_model (C : Type) [linear_ordered_semiring C]
+  [function_cost_model.{0} C] [function_cost_model.{1} C]
+  (T U : Type)
+  extends monadic_cost_model C (oracle_comp T U) :=
+(cost_oc_query : 
+  cost_zero C (oracle_comp.oc_query : T → oracle_comp T U U))
 
-class oracle_comp_cost_model :=
-(cost_oc_query {A B : Type} (a : A) (n : ℚ) :
-  cost_at_most (@oc_query A B a, n) n)
-(cost_oc_ret {A B C : Type} {cc : comp C} {n : ℚ} (hcc : cost_at_most cc n) :
-  ∀ (query_cost : ℚ), cost_at_most (@oc_ret A B C cc, query_cost) n)
-(cost_oc_bind {A B C D : Type} {oc : oracle_comp A B C} {od : C → oracle_comp A B D} {n m l qc : ℚ}
-  (hoc : cost_at_most (oc, qc) n) (hod : cost_at_most od m)
-  (hod' : ∀ c, cost_at_most (od c, qc) l) :
-  cost_at_most (oc.oc_bind od, qc) (n + m + l))
+class oracle_comp_eval_model (C : Type) [linear_ordered_semiring C]
+  [function_cost_model.{0} C] [function_cost_model.{1} C]
+  (T U : Type)
+  extends monad_eval_model C (oracle_comp T U) :=
+(cost_oc_query (t : T) : cost_zero C (oracle_comp.oc_query t : oracle_comp T U U))
+
 
 end oracle_comp_cost_model
 
-class standard_cost_model extends function_cost_model,
-  comp_cost_model, oracle_comp_cost_model
+-- structure wrapper_cost_model (C : Type u) (M : Type → Type v)
+--   [linear_ordered_semiring C] :=
+-- (cm (T U : Type) : cost_model C (M T → M U))
+-- (cost_id {T : Type} : (cm T T).cost_pred id 0)
+-- (cost_const {T U : Type} (u : M U) : (cm T U).cost_pred (λ _, u) 0)
+-- (cost_compose {T U V : Type} {n m : C}
+--   {f : M T → M U} {g : M U → M V} :
+--   (cm T U).cost_pred f n →
+--   (cm U V).cost_pred g m →
+--   (cm T V).cost_pred (g ∘ f) (n + m))
 
-end cost_model
+-- section function_cost_model
+
+-- class function_cost_model (C : Type u) [linear_ordered_semiring C]
+--   extends wrapper_cost_model C id :=
+-- (cost_fst {T U : Type} : (cm (T × U) T).cost_pred prod.fst 0)
+-- (cost_snd {T U : Type} : (cm (T × U) U).cost_pred prod.snd 0)
+
+-- instance function.has_cost_pred {A B : Type} (C : Type u)
+--   [linear_ordered_semiring C] [fcm : function_cost_model C] :
+--   has_cost_pred (A → B) C :=
+-- ⟨ cost_model.cost_pred $ fcm.cm A B ⟩
+
+-- end function_cost_model
+
+-- section monadic_cost_model
+
+
+
+-- end monadic_cost_model
+
+-- namespace cost_model
+
+-- /-- Need to declare this as a global constant to allow universe level crossing -/
+-- constant fcm : ∀ (A : Type u) (B : Type v), cost_model ℚ (A → B)
+
+-- /-- Create a cost model on arbitrary functions (across arbitrary universes). -/
+-- noncomputable instance function.cost_model {A B : Type*} :
+--   cost_model ℚ (A → B) :=
+-- fcm A B
+
+-- constant ccm : ∀ (A : Type), cost_model ℚ (comp A)
+
+-- noncomputable instance comp.cost_model {A : Type} :
+--   cost_model ℚ (comp A) :=
+-- ccm A
+
+-- constant ocm : ∀ (A B C : Type), cost_model ℚ (oracle_comp A B C × ℚ)
+
+-- noncomputable instance oracle_comp.cost_model {A B C : Type*} :
+--   cost_model ℚ (oracle_comp A B C × ℚ) :=
+-- ocm A B C
+
+-- axiom cost_swap' (A : Type u) (B : Type v) : cost_at_most 
+--   (prod.swap : A × B → B × A) (0 : ℚ)
+
+-- section function_cost_model
+
+-- variables {A B C D : Type*}
+
+-- /-- Assumptions about costs of functions built from other functions -/
+-- class function_cost_model :=
+-- (cost_id (A : Type*) : cost_at_most (id : A → A) (0 : ℚ))
+-- (cost_compose {A B C : Type*} {f : A → B} {g : A → B → C} {n m l : ℚ} 
+--   (hf : cost_at_most f n) (hg : cost_at_most g m)
+--   (hg' : ∀ a, cost_at_most (g a) l) :
+--   cost_at_most (λ a, g a (f a)) (n + m + l))
+-- (cost_of_uncurry {A B C : Type*} {f : A → B → C} {n : ℚ}
+--   (hf : cost_at_most (function.uncurry f) n) :
+--   cost_at_most f n ∧ ∀ a, cost_at_most (f a) n)
+-- -- `product` structuring operations
+-- (cost_prod {A B C : Type*} (f : A → B) (g : A → C)
+--   (n m : ℚ) (hf : cost_at_most f n) (hg : cost_at_most g m) :
+--   cost_at_most (λ x, (f x, g x) : A → B × C) (n + m))
+-- (cost_fst (A B : Type*) : cost_at_most 
+--   (prod.fst : A × B → A) (0 : ℚ))
+-- (cost_swap (A B : Type*) : cost_at_most 
+--   (prod.swap : A × B → B × A) (0 : ℚ))
+-- -- `vector` structuring operations
+-- (cost_vector_cons (A : Type*) (n : ℕ) : cost_at_most 
+--   (function.uncurry vector.cons : A × vector A n → vector A n.succ) (0 : ℚ))
+-- -- `comp` structuring functions
+-- (cost_comp_ret (A : Type) : cost_at_most 
+--   (comp.ret : A → comp A) (0 : ℚ))
+-- (cost_comp_bind (A B : Type) : cost_at_most 
+--   (function.uncurry comp.bind : comp A × (A → comp B) → comp B) (0 : ℚ))
+
+
+
+-- example (A : Type v) [h : function_cost_model] : cost_at_most (id : A → A) (0 : ℚ) :=
+-- begin
+--   exact @function_cost_model.cost_id h A,
+--   -- exact this,
+-- end
+
+-- lemma cost_at_most_comp_of_le [function_cost_model] {A B C : Type*}
+--   {f : A → B} {g : B → C} {n m x : ℚ}
+--   (hf : cost_at_most f n) (hg : cost_at_most g m) (h : n + m ≤ x) :
+--   cost_at_most (g ∘ f) x :=
+-- begin
+--   sorry,
+-- end
+
+-- lemma prod_cost_model.cost_snd (A : Type v) (B : Type u) [fcm : function_cost_model] :
+--   cost_at_most (prod.snd : A × B → B) (0 : ℚ) :=
+-- begin
+--   have : (prod.snd : A × B → B) = prod.fst ∘ prod.swap,
+--   from funext (λ x, by simp),
+--   rw this,
+--   have := cost_swap' A B,
+--   have := @function_cost_model.cost_swap fcm A B,
+--   refine cost_at_most_comp_of_le 
+--     (function_cost_model.cost_swap A B) _ _,
+--   sorry,
+-- end
+
+-- end function_cost_model
+
+-- section comp_cost_model
+-- open comp
+
+-- class comp_cost_model :=
+-- (cost_ret {A : Type} (a : A) : cost_at_most (ret a) (0 : ℚ))
+-- (cost_bind {A B : Type} {ca : comp A} {cb : A → comp B} {n m l : ℚ}
+--   (hca : cost_at_most ca n) (hcb : cost_at_most cb m)
+--   (hcb' : ∀ a, cost_at_most (cb a) l) :
+--   cost_at_most (ca.bind cb) (n + m + l))
+-- (cost_bind_ret {A B : Type} {a : A} {cb : A → comp B} {n : ℚ}
+--   (hcb : cost_at_most (cb a) n) :
+--   cost_at_most ((ret a).bind cb) n)
+-- (cost_rnd_bit : cost_at_most (rnd bool) (1 : ℚ))
+
+-- end comp_cost_model
+
+-- section oracle_comp_cost_model
+
+-- open oracle_comp
+
+-- class oracle_comp_cost_model :=
+-- (cost_oc_query {A B : Type} (a : A) (n : ℚ) :
+--   cost_at_most (@oc_query A B a, n) n)
+-- (cost_oc_ret {A B C : Type} {cc : comp C} {n : ℚ} (hcc : cost_at_most cc n) :
+--   ∀ (query_cost : ℚ), cost_at_most (@oc_ret A B C cc, query_cost) n)
+-- (cost_oc_bind {A B C D : Type} {oc : oracle_comp A B C} {od : C → oracle_comp A B D} {n m l qc : ℚ}
+--   (hoc : cost_at_most (oc, qc) n) (hod : cost_at_most od m)
+--   (hod' : ∀ c, cost_at_most (od c, qc) l) :
+--   cost_at_most (oc.oc_bind od, qc) (n + m + l))
+
+-- end oracle_comp_cost_model
+
+-- class standard_cost_model extends function_cost_model,
+--   comp_cost_model, oracle_comp_cost_model
+
+-- end cost_model
 
 -- namespace cost_model
 

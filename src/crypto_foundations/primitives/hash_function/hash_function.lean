@@ -2,6 +2,9 @@ import computational_complexity.complexity_class
 import crypto_foundations.dist_sem
 import computational_complexity.negligable
 
+variables [function_cost_model.{1} ℚ] [function_cost_model.{0} ℚ] 
+variable [comp_eval_model ℚ]
+
 /-!
 # Hash Functions
 

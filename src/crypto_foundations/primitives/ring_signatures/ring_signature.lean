@@ -168,6 +168,9 @@ end unforgeable_experiment
 
 end ring_sig
 
+variables [function_cost_model.{1} ℚ] [function_cost_model.{0} ℚ] 
+variable [comp_eval_model ℚ]
+
 structure ring_signature_scheme (M : Type) (S : ℕ → ℕ → Type) (PK SK : ℕ → Type)
   [decidable_eq M] [∀ sp, decidable_eq $ PK sp] :=
 (rs (sp : ℕ) : ring_sig M (S sp) (PK sp) (SK sp))
