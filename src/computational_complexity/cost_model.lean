@@ -31,22 +31,21 @@ This allows `has_cost` to behave well with function composition,
 
 universes u v w
 
-class has_cost_pred (C : Type) (T : Type u)  :=
-(cost_pred : T → C → Prop)
-
-def cost_at_most {T : Type u} {C : Type} [has_cost_pred C T] :
-  T → C → Prop :=
-has_cost_pred.cost_pred
+-- class has_cost_pred (C : Type) (T : Type u)  :=
+-- (cost_pred : T → C → Prop)
 
 section cost_model
 
 -- TODO: Try to get this working with some extensible system using something like this
 /-- Cost model on a type `T` where cost takes values in `C`. -/
-class cost_model (C : Type) (T : Type v) [linear_ordered_semiring C]
-  extends has_cost_pred C T :=
--- (cost_pred : T → C → Prop)
-(cost_trans {x y : C} {t : T} : cost_at_most t x → x ≤ y → cost_at_most t y)
-(nonneg_of_has_cost {x : C} {t : T} : cost_at_most t x → 0 ≤ x)
+class cost_model (C : Type) (T : Type v) [linear_ordered_semiring C] :=
+(cost_pred : T → C → Prop)
+(cost_trans {x y : C} {t : T} : cost_pred t x → x ≤ y → cost_pred t y)
+(nonneg_of_has_cost {x : C} {t : T} : cost_pred t x → 0 ≤ x)
+
+def cost_at_most {T : Type u} {C : Type} [linear_ordered_semiring C]
+  [cost_model C T] (t : T) (c : C) : Prop :=
+cost_model.cost_pred t c
 
 def cost_zero (C : Type) {T : Type v} [linear_ordered_semiring C]
   [cost_model C T] (t : T) : Prop :=
@@ -57,34 +56,53 @@ end cost_model
 section function_cost_model
 
 class function_cost_model (C : Type) [linear_ordered_semiring C] :=
-(cm (T U : Type v) : cost_model C (T → U))
-(cost_id {T : Type v} : cost_zero C (id : T → T))
+(cm (T U : Type u) : cost_model C (T → U))
+(cost_compose {T U V : Type u} {x y : C} (f : T → U) (g : U → V) :
+  cost_at_most f x → cost_at_most g y → cost_at_most (g ∘ f) (x + y))
+(cost_id {T : Type u} : cost_zero C (id : T → T))
+(cost_const {T U : Type u} (u : U) : cost_zero C (λ (t : T), u))
 
 instance function_cost_model.cost_model (C : Type)
   [linear_ordered_semiring C] [function_cost_model.{v} C] 
   (T U : Type v) : cost_model C (T → U) :=
 function_cost_model.cm T U
 
+class pairing_cost_model (C : Type) [linear_ordered_semiring C]
+  extends function_cost_model.{u} C :=
+(cost_fst (T U : Type u) : cost_zero C (prod.fst : T × U → T))
+(cost_snd (T U : Type u) : cost_zero C (prod.snd : T × U → U))
+(cost_of_uncurry (T U V : Type u) {x : C} (f : T → U → V)
+  (hf : cost_at_most (function.uncurry f) x) :
+  cost_at_most f x ∧ ∀ t, cost_at_most (f t) x)
+
+
+
 end function_cost_model
 
 section monadic_cost_model
 
+/-- Cost model on `T → M U` represents cost to evaluate at `t` and then
+  'evaluate' the resulting monad (e.g. sample from the distribution of a `comp`).
+  Monads that add 'non-trivial' functionality e.g. `comp.rnd`,
+  will need to specify the evaluation costs of these functionalities -/
 class monadic_cost_model (C : Type) [linear_ordered_semiring C]
   [function_cost_model.{0} C] [function_cost_model.{u} C]
   (M : Type → Type u) [monad M] :=
 (cm (T U : Type) : cost_model C (T → M U))
-(cost_compose {T U V : Type} {x y : C} (f : T → U) (g : U → M V) :
-  cost_at_most f x →
-  cost_at_most g y →
-  cost_at_most (g ∘ f) (x + y))
-(cost_compose' {T U V : Type} {x y : C} (f : T → M U) (g : M U → M V) :
-  cost_at_most f x →
-  cost_at_most g y →
-  cost_at_most (g ∘ f) (x + y))
 (cost_pure (T : Type) : 
   cost_zero C (pure : T → M T))
-(cost_uncurry_bind (T U : Type) :
-  cost_zero C (function.uncurry bind : M T × (T → M U) → M U))
+(cost_bind (T U A : Type) {x y : C} (t : A → M T) (u : A → T → M U)
+  (ht : cost_at_most t x)
+  (hu : cost_at_most (function.uncurry u) y) :
+  cost_at_most (λ a, bind (t a) (u a)) (x + y))
+(cost_compatible_left {T U V : Type} {x y : C} 
+  (f : T → U) (g : U → M V) :
+  cost_at_most f x → cost_at_most g y → cost_at_most (g ∘ f) (x + y))
+(cost_compatible_right {T U V : Type} {x y : C} 
+  (f : T → M U) (g : M U → M V) :
+  cost_at_most f x → cost_at_most g y → cost_at_most (g ∘ f) (x + y))
+
+
 
 instance monadic_cost_model.cost_model (C : Type)
   [linear_ordered_semiring C]
@@ -93,25 +111,25 @@ instance monadic_cost_model.cost_model (C : Type)
   [monadic_cost_model C M] (T U : Type) : cost_model C (T → M U) :=
 monadic_cost_model.cm T U 
 
-class monad_eval_model (C : Type) [linear_ordered_semiring C]
-  [function_cost_model.{0} C] [function_cost_model.{u} C]
-  (M : Type → Type u) [monad M]
-  extends monadic_cost_model C M :=
-(eval_model (T : Type) : cost_model C (M T))
-(cost_eval_pure {T : Type} (t : T) :
-  cost_zero C (pure t : M T))
-(cost_eval_bind {T U : Type} {x y z : C} (ct : M T) (cu : T → M U) :
-  cost_at_most ct x →
-  cost_at_most cu y →
-  ∀ t, cost_at_most (cu t) z →
-  cost_at_most (bind ct cu : M U) (x + y + z))
+-- class monad_eval_model (C : Type) [linear_ordered_semiring C]
+--   [function_cost_model.{0} C] [function_cost_model.{u} C]
+--   (M : Type → Type u) [monad M]
+--   extends monadic_cost_model C M :=
+-- (eval_model (T : Type) : cost_model C (M T))
+-- (cost_eval_pure {T : Type} (t : T) :
+--   cost_zero C (pure t : M T))
+-- (cost_eval_bind {T U : Type} {x y z : C} (ct : M T) (cu : T → M U) :
+--   cost_at_most ct x →
+--   cost_at_most cu y →
+--   ∀ t, cost_at_most (cu t) z →
+--   cost_at_most (bind ct cu : M U) (x + y + z))
 
-instance monad_eval_model.cost_model (C : Type)
-  [linear_ordered_semiring C]
-  [function_cost_model.{0} C] [function_cost_model.{u} C]
-  (M : Type → Type u) [monad M]
-  [monad_eval_model C M] (T : Type) : cost_model C (M T) :=
-monad_eval_model.eval_model T
+-- instance monad_eval_model.cost_model (C : Type)
+--   [linear_ordered_semiring C]
+--   [function_cost_model.{0} C] [function_cost_model.{u} C]
+--   (M : Type → Type u) [monad M]
+--   [monad_eval_model C M] (T : Type) : cost_model C (M T) :=
+-- monad_eval_model.eval_model T
 
 
 end monadic_cost_model
@@ -124,10 +142,10 @@ class comp_cost_model (C : Type) [linear_ordered_semiring C]
 (cost_repeat {T : Type} (p : T → Prop) [decidable_pred p] :
   cost_zero C (comp.repeat p))
 
-class comp_eval_model (C : Type) [linear_ordered_semiring C]
-  [function_cost_model.{0} C] [function_cost_model.{1} C]
-  extends monad_eval_model C comp :=
-(cost_rnd_bit : cost_at_most (comp.rnd bool) (1 : C))
+-- class comp_eval_model (C : Type) [linear_ordered_semiring C]
+--   [function_cost_model.{0} C] [function_cost_model.{1} C]
+--   extends monad_eval_model C comp :=
+-- (cost_eval_rnd_bit : cost_at_most (comp.rnd bool) (1 : C))
 
 
 end comp_cost_model
@@ -141,11 +159,11 @@ class oracle_comp_cost_model (C : Type) [linear_ordered_semiring C]
 (cost_oc_query : 
   cost_zero C (oracle_comp.oc_query : T → oracle_comp T U U))
 
-class oracle_comp_eval_model (C : Type) [linear_ordered_semiring C]
-  [function_cost_model.{0} C] [function_cost_model.{1} C]
-  (T U : Type)
-  extends monad_eval_model C (oracle_comp T U) :=
-(cost_oc_query (t : T) : cost_zero C (oracle_comp.oc_query t : oracle_comp T U U))
+-- class oracle_comp_eval_model (C : Type) [linear_ordered_semiring C]
+--   [function_cost_model.{0} C] [function_cost_model.{1} C]
+--   (T U : Type)
+--   extends monad_eval_model C (oracle_comp T U) :=
+-- (cost_eval_oc_query (t : T) : cost_zero C (oracle_comp.oc_query t : oracle_comp T U U))
 
 
 end oracle_comp_cost_model

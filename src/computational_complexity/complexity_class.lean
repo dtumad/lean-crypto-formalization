@@ -91,16 +91,28 @@ end poly_time_fun
 section poly_time_comp
 
 variables [function_cost_model.{0} ℚ] [function_cost_model.{1} ℚ]
-variable [comp_eval_model ℚ]
+variable [comp_cost_model ℚ]
 
-def poly_time_comp₀ {T : ℕ → Type} (c : Π n, comp (T n)) : Prop :=
-∃ (p : ℕ → ℚ), poly_growth p ∧ ∀ n, cost_at_most (c n) (p n)
+-- def poly_time_comp₀ {T : ℕ → Type} (c : Π n, comp (T n)) : Prop :=
+-- ∃ (p : ℕ → ℚ), poly_growth p ∧ ∀ n, cost_at_most (c n) (p n)
 
 /-- `poly_time_comp₁ c` means evaluating `c : A n → comp (T n)` at any `a : A n`,
   and then sampling from the result has polynomial time cost in `n`.
   todo: Essentially non-uniform probabalistic polynomial time -/
 def poly_time_comp₁ {A : ℕ → Type} {T : ℕ → Type} (c : Π n, A n → comp (T n)) : Prop :=
-∃ (p : ℕ → ℚ), poly_growth p ∧ ∀ n, (cost_at_most (c n) (p n) ∧ ∀ a, cost_at_most (c n a) (p n))
+∃ (p : ℕ → ℚ), poly_growth p ∧ ∀ n, (cost_at_most (c n) (p n))
+
+lemma poly_time_comp₁_ret_of_poly_time_fun {A B : ℕ → Type} 
+  (f : Π n, A n → B n) (hf : poly_time_fun.{0} f) :
+  poly_time_comp₁ (λ n, (λ a, comp.ret (f n a))) :=
+sorry
+
+lemma poly_time_comp₁_bind_of_poly_time_fun_uncurry {T U V : ℕ → Type}
+  (cu : Π n, T n → comp (U n)) (hcu : poly_time_comp₁ cu)
+  (cv : Π n, T n → U n → comp (V n)) 
+  (hcv : poly_time_comp₁ (λ n, (function.uncurry (cv n) : (T n × U n) → comp (V n)))) :
+  poly_time_comp₁ (λ n, (λ t, comp.bind (cu n t) (cv n t))) :=
+sorry
 
 -- -- Can assume that `p` is a positive polynomial. Maybe this should be *baked in* somewhow?
 -- lemma iff_pos {A : ℕ → Type*} {T : ℕ → Type} (c : Π n, A n → comp (T n)) :
