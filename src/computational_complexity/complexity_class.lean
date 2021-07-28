@@ -21,10 +21,13 @@ namespace complexity_class
 
 open cost_model
 
--- TODO: Maybe just have this singular definition?
+-- TODO: Try working with a more general definition like this?
 def polynomial_complexity {A : ℕ → Type u} [∀ n, cost_model ℚ (A n)]
   (c : Π n, A n) : Prop :=
 ∃ (f : ℕ → ℚ), poly_growth f ∧ ∀ n, cost_at_most (c n) (f n)
+
+
+
 
 section poly_time_fun
 
@@ -65,7 +68,7 @@ lemma poly_time_fun_comp {c : Π n, A n → B n} {d : Π n, B n → C n}
   poly_time_fun (λ n, d n ∘ c n) :=
 let ⟨p, hp, hpc⟩ := hc in let ⟨q, hq, hqd⟩ := hd in
 ⟨p + q, poly_growth_add hp hq, λ n, 
-  function_cost_model.cost_at_most_compose_of_le (hpc n) (hqd n) (by simp)⟩
+  compatible_cost_models.cost_at_most_compose_of_le (hpc n) (hqd n) (by simp)⟩
 
 lemma poly_time_fun_comp_ext {c : Π n, A n → B n} {d : Π n, B n → C n} {e : Π n, A n → C n}
   (hc : poly_time_fun c) (hd : poly_time_fun d) (he : ∀ n a, e n a = d n (c n a)) :
@@ -93,7 +96,7 @@ end poly_time_fun
 
 section poly_time_comp
 
-variables [function_cost_model.{0} ℚ] [function_cost_model.{1} ℚ]
+variables [function_cost_model.{0} ℚ] --[function_cost_model.{1} ℚ]
 variable [comp_cost_model ℚ]
 
 -- def poly_time_comp₀ {T : ℕ → Type} (c : Π n, comp (T n)) : Prop :=
@@ -105,131 +108,19 @@ variable [comp_cost_model ℚ]
 def poly_time_comp₁ {A : ℕ → Type} {T : ℕ → Type} (c : Π n, A n → comp (T n)) : Prop :=
 ∃ (p : ℕ → ℚ), poly_growth p ∧ ∀ n, (cost_at_most (c n) (p n))
 
-lemma poly_time_comp₁_ret_of_poly_time_fun {A B : ℕ → Type} 
-  (f : Π n, A n → B n) (hf : poly_time_fun.{0} f) :
-  poly_time_comp₁ (λ n, (λ a, comp.ret (f n a))) :=
-begin
-  obtain ⟨p, hp, h⟩ := hf,
-end
-
-lemma poly_time_comp₁_bind_of_poly_time_fun_uncurry {T U V : ℕ → Type}
-  (cu : Π n, T n → comp (U n)) (hcu : poly_time_comp₁ cu)
-  (cv : Π n, T n → U n → comp (V n)) 
-  (hcv : poly_time_comp₁ (λ n, (function.uncurry (cv n) : (T n × U n) → comp (V n)))) :
-  poly_time_comp₁ (λ n, (λ t, comp.bind (cu n t) (cv n t))) :=
-sorry
-
--- -- Can assume that `p` is a positive polynomial. Maybe this should be *baked in* somewhow?
--- lemma iff_pos {A : ℕ → Type*} {T : ℕ → Type} (c : Π n, A n → comp (T n)) :
---   poly_time_comp₁ c ↔ 
---     ∃ p, poly_growth p ∧ ∀ n, 0 ≤ p n ∧ (has_cost (c n) (p n)) ∧ ∀ a, comp_cost (c n a) (p n) :=
+-- lemma poly_time_comp₁_ret_of_poly_time_fun {A B : ℕ → Type} 
+--   (f : Π n, A n → B n) (hf : poly_time_fun.{0} f) :
+--   poly_time_comp₁ (λ n, (λ a, comp.ret (f n a))) :=
 -- begin
---   split,
---   {
---     rintro ⟨p, hp, h⟩,
---     refine ⟨p, hp, λ n, _⟩,
---     refine ⟨_, h n⟩,
---     refine has_cost.ge_zero_of_has_cost (h n).1,
---   },
---   {
---     rintro ⟨p, hp, h⟩,
---     refine ⟨p, hp, λ n, (h n).2⟩,
---   }
+--   obtain ⟨p, hp, h⟩ := hf, sorry,
 -- end
 
--- -- Suffices to seperately prove polynomial complexity in the function and the comp
--- lemma poly_time_comp₁_iff {A : ℕ → Type*} {T : ℕ → Type}
---   (c : Π n, A n → comp (T n)) :
---   poly_time_comp₁ c ↔ poly_time_fun c ∧
---     ∃ p, poly_growth p ∧ ∀ n a, comp_cost (c n a) (p n) :=
--- begin
---   split,
---   {
---     rintro ⟨p, hp, h⟩,
---     refine ⟨⟨p, hp, _⟩, ⟨p, hp, _⟩⟩,
---     refine λ n, (h n).1,
---     refine λ n a, (h n).2 a,
---   },
---   {
---     rintro ⟨⟨p, hp, h⟩, ⟨q, hq, h'⟩⟩,
---     use p + q,
---     split,
---     {
---       exact poly_growth_add hp hq,
---     },
---     refine λ n, ⟨_, _⟩,
---     {
---       refine has_cost.has_cost_of_le _ (h n),
---       simp, sorry,
---       -- refine nonempty.elim (hA n) (λ a, _),
---       -- refine ge_zero_of_comp_cost (h' n a),
---     },
---     {
---       intro a,
---       refine comp_cost.cost_le _ (h' n a),
---       simp,
---       refine has_cost.ge_zero_of_has_cost (h n),
---     }
---   }
--- end
-
--- variables {T U V : ℕ → Type} {A : ℕ → Type}
-
--- -- @[simp]
--- -- lemma poly_time_comp₀_ret (t : Π (n : ℕ), T n) :
--- --   poly_time_comp₀ (λ n, comp.ret $ t n) :=
--- -- ⟨0, poly_growth_zero, λ n, comp_cost.cost_ret⟩
-
--- lemma poly_time_comp₁_ret_iff {A : ℕ → Type*} {T : ℕ → Type}
---   (f : Π n, A n → T n) :
---   poly_time_comp₁ (λ n, (λ t, comp.ret $ f n t)) ↔
---     poly_time_fun f :=
--- begin
---   split,
---   {
---     rintro ⟨p, hp, h⟩,
---     refine ⟨p, hp, λ n, _⟩,
---     specialize h n,
---     simp only [ge_iff_le, comp_cost_ret, has_cost.has_cost_ret_comp_iff] at h,
---     refine h.1,
---   },
---   {
---     rintro ⟨p, hp, h⟩,
---     refine ⟨p, hp, λ n, _⟩,
---     simp,
---     refine ⟨h n, λ _, _⟩,
---     refine has_cost.ge_zero_of_has_cost (h n),
---   }
--- end
-
--- lemma want_for_bind {A : ℕ → Type*} {T U : ℕ → Type}
---   (f : Π n, A n → (T n))
---   (cb : Π n, A n → (T n → comp (U n)))
---   (hf : poly_time_fun f)
---   (hcb : poly_time_comp₁ (λ n, (λ a, cb n a (f n a)))) :
---   poly_time_comp₁ (λ n, (λ a, comp.bind (comp.ret (f n a)) (cb n a))) :=
--- begin
---   obtain ⟨p, hp, h⟩ := hf,
---   obtain ⟨q, hq, h'⟩ := hcb,
---   refine ⟨p + q + q, poly_growth_add (poly_growth_add hp hq) hq, λ n, _⟩,
---   specialize h n,
---   specialize h' n,
---   simp at h',
---   split,
---   {
---     simp,
---     sorry,
---   },
---   {
---     intro a,
---     apply cost_of_bind_ret,
---     refine comp_cost.cost_le _ (h'.2 _),
---     simp,
---     refine add_nonneg (has_cost.ge_zero_of_has_cost h)
---       (has_cost.ge_zero_of_has_cost h'.1), 
---   }
--- end
-
+-- lemma poly_time_comp₁_bind_of_poly_time_fun_uncurry {T U V : ℕ → Type}
+--   (cu : Π n, T n → comp (U n)) (hcu : poly_time_comp₁ cu)
+--   (cv : Π n, T n → U n → comp (V n)) 
+--   (hcv : poly_time_comp₁ (λ n, (function.uncurry (cv n) : (T n × U n) → comp (V n)))) :
+--   poly_time_comp₁ (λ n, (λ t, comp.bind (cu n t) (cv n t))) :=
+-- sorry
 
 end poly_time_comp
 

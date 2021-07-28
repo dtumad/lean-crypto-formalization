@@ -18,6 +18,8 @@ variables {M G X K : Type}
   [inhabited G] [inhabited X] 
   [decidable_eq M] [decidable_eq G] [decidable_eq X] [decidable_eq K]
 variables [add_comm_group G] [add_action G X]
+variables [function_cost_model.{0} ℚ] 
+  [comp_cost_model ℚ]
 
 -- TODO: Clean this up
 structure sig_type (K G : Type) (n : ℕ) : Type :=
@@ -130,6 +132,8 @@ variables [∀ n, fintype (G n)] [∀ n, fintype (X n)]
 variables [∀ n, inhabited (G n)] [∀ n, inhabited (X n)]
 variables [decidable_eq M] [∀ n, decidable_eq (G n)] [∀ n, decidable_eq (X n)] [∀ n, decidable_eq (K n)]
 variables [∀ n, add_comm_group (G n)] [∀ n, add_action (G n) (X n)] [∀ n, principal_action_class (G n) (X n)]
+variables [function_cost_model.{0} ℚ] 
+  [comp_cost_model ℚ]
 
 /-- Construct a ring signature scheme from a hard homogenous space.
 `x₀` is an arbitrary generator in `X` used as a base for the public keys.
