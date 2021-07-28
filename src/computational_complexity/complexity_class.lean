@@ -47,13 +47,6 @@ lemma poly_time_fun_const [function_cost_model.{u} ℚ] (A : ℕ → Type u) {B 
 poly_time_fun_of_has_cost_const 0 (λ n, by simp)
 
 @[simp]
-lemma poly_time_fun_unit [function_cost_model.{0} ℚ] {A : ℕ → Type} (f : Π n, unit → A n) :
-  poly_time_fun f :=
-poly_time_fun_of_has_cost_const 0 (λ n, begin
-  refine cost_at_most_ext (function_cost_model.cost_zero_const unit (f n ())) le_rfl (funext (λ x, by congr)),
-end)
-
-@[simp]
 lemma poly_time_fun_fst [pairing_cost_model.{u} ℚ] (A B : ℕ → Type u) :
   poly_time_fun (λ n, (prod.fst : A n × B n → A n)) :=
 poly_time_fun_of_has_cost_const 0 (λ n, by simp)
@@ -71,7 +64,8 @@ lemma poly_time_fun_comp {c : Π n, A n → B n} {d : Π n, B n → C n}
   (hc : poly_time_fun c) (hd : poly_time_fun d) :
   poly_time_fun (λ n, d n ∘ c n) :=
 let ⟨p, hp, hpc⟩ := hc in let ⟨q, hq, hqd⟩ := hd in
-⟨p + q, poly_growth_add hp hq, λ n, sorry⟩
+⟨p + q, poly_growth_add hp hq, λ n, 
+  function_cost_model.cost_at_most_compose_of_le (hpc n) (hqd n) (by simp)⟩
 
 lemma poly_time_fun_comp_ext {c : Π n, A n → B n} {d : Π n, B n → C n} {e : Π n, A n → C n}
   (hc : poly_time_fun c) (hd : poly_time_fun d) (he : ∀ n a, e n a = d n (c n a)) :
@@ -114,7 +108,9 @@ def poly_time_comp₁ {A : ℕ → Type} {T : ℕ → Type} (c : Π n, A n → c
 lemma poly_time_comp₁_ret_of_poly_time_fun {A B : ℕ → Type} 
   (f : Π n, A n → B n) (hf : poly_time_fun.{0} f) :
   poly_time_comp₁ (λ n, (λ a, comp.ret (f n a))) :=
-sorry
+begin
+  obtain ⟨p, hp, h⟩ := hf,
+end
 
 lemma poly_time_comp₁_bind_of_poly_time_fun_uncurry {T U V : ℕ → Type}
   (cu : Π n, T n → comp (U n)) (hcu : poly_time_comp₁ cu)
