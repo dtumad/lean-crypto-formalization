@@ -1,5 +1,5 @@
 import computational_complexity.cost_model
-import crypto_foundations.dist_sem
+import crypto_foundations.computational_monads.dist_sem
 
 /-!
 # Basic Hardness assumptions
