@@ -56,6 +56,18 @@ instance query_left.is_well_formed (a : A) :
   (query_left a : oracle_comp_pair A B A' B' (with_bot B)).is_well_formed :=
 by simp [query_left]
 
+lemma eval_distribution_query_left {S S' : Type} [decidable_eq S']
+  (a : A)
+  (s : S) (s' : S') (o : S → A → comp (B × S)) [ho : ∀ s a, (o s a).is_well_formed]
+  (o' : S' → A' → comp (B' × S')) [ho' : ∀ s' a', (o' s' a').is_well_formed]
+  (b : B) (out_s : S) (out_s' : S') :
+  (comp.eval_distribution ((query_left a).eval_distribution s o s' o')) (b, out_s, out_s') = 
+    if out_s' = s' then (o s a).eval_distribution (b, out_s) else 0 :=
+begin
+  simp [query_left, oracle_comp.eval_distribution],
+  sorry,
+end
+
 def query_right (a' : A') : oracle_comp_pair A B A' B' (with_bot B') :=
 do bb' ← (oc_query (sum.inr a')),
   return (bb'.rec (λ _, ⊥) (λ b', ↑b'))

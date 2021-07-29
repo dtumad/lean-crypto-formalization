@@ -173,7 +173,7 @@ variables [function_cost_model ℚ] [comp_cost_model ℚ]
 structure ring_signature_scheme (M : Type) (S : ℕ → ℕ → Type) (PK SK : ℕ → Type)
   [decidable_eq M] [∀ sp, decidable_eq $ PK sp] :=
 (rs (sp : ℕ) : ring_sig M (S sp) (PK sp) (SK sp))
-(gen_poly_time : complexity_class.poly_time_comp₁ (λ sp, (rs sp).gen))
+(gen_poly_time : complexity_class.polynomial_complexity (λ sp, (rs sp).gen))
 (sign_poly_time : false)
 (verify_poly_time : false)
 

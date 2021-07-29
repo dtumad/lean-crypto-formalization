@@ -40,8 +40,8 @@ end hash_function
   `hash` takes a `hash_key` from keygen and a string in the input space to a string in the output space -/
 structure hash_scheme (K I O : ℕ → Type) :=
 (scheme (sp : ℕ) : hash_function (K sp) (I sp) (O sp))
-(keygen_poly_time : complexity_class.poly_time_comp₁ (λ sp, (scheme sp).keygen))
-(hash_poly_time : complexity_class.poly_time_fun (λ sp, (scheme sp).hash))
+(keygen_poly_time : complexity_class.polynomial_complexity (λ sp, (scheme sp).keygen))
+(hash_poly_time : complexity_class.polynomial_complexity (λ sp, (scheme sp).hash))
 
 namespace hash_scheme
 
@@ -72,7 +72,7 @@ variables [∀ n, decidable_eq $ O n]
 structure collision_finding_adversary (H : hash_scheme K I O) :=
 (adv : Π (sp : ℕ), K sp → comp ((I sp) × (I sp)))
 (wf : ∀ sp k, (adv sp k).is_well_formed)
-(pt : complexity_class.poly_time_comp₁ adv)
+(pt : complexity_class.polynomial_complexity adv)
 
 instance collision_finding_adversary.is_well_formed
   {H : hash_scheme K I O} (A : collision_finding_adversary H)
