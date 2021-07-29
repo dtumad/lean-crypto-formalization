@@ -1,5 +1,5 @@
-import crypto_foundations.oracle_comp
-import crypto_foundations.dist_sem
+import crypto_foundations.computational_monads.oracle_comp
+import crypto_foundations.computational_monads.dist_sem
 
 open oracle_comp
 

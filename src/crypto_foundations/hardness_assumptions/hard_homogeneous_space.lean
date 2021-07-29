@@ -171,9 +171,7 @@ end computational_advantages
 
 section hard_homogeneous_space
 
-variables --[function_cost_model.{1} ℚ] 
-  [function_cost_model.{0} ℚ] 
-  [comp_cost_model ℚ]
+variables [function_cost_model ℚ] [comp_cost_model ℚ]
 
 /-- A homogenous space is defined by a parameterized collection of homogenous spaces (`principal_action_class`).
   `G` and `X` together define a generation algorithm for homogenous spaces from a security parameter,

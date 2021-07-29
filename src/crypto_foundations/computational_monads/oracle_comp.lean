@@ -1,4 +1,4 @@
-import crypto_foundations.comp
+import crypto_foundations.computational_monads.comp
 
 /-!
 # Model of Nondeterministic Computation With Oracles

@@ -1,4 +1,4 @@
-import crypto_foundations.dist_sem
+import crypto_foundations.computational_monads.dist_sem
 import computational_complexity.complexity_class
 
 namespace comp

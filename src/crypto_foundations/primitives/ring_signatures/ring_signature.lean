@@ -1,5 +1,5 @@
-import crypto_foundations.dist_sem
-import crypto_foundations.vector_call
+import crypto_foundations.computational_monads.dist_sem
+import crypto_foundations.computational_monads.vector_call
 import computational_complexity.complexity_class
 import computational_complexity.negligable
 import data.list.basic
@@ -168,8 +168,7 @@ end unforgeable_experiment
 
 end ring_sig
 
-variables [function_cost_model.{0} ℚ] 
-variable [comp_cost_model ℚ]
+variables [function_cost_model ℚ] [comp_cost_model ℚ]
 
 structure ring_signature_scheme (M : Type) (S : ℕ → ℕ → Type) (PK SK : ℕ → Type)
   [decidable_eq M] [∀ sp, decidable_eq $ PK sp] :=

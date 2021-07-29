@@ -1,5 +1,4 @@
-import crypto_foundations.comp
-import 
+import crypto_foundations.computational_monads.comp 
 import measure_theory.probability_mass_function
 
 /-!

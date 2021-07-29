@@ -10,12 +10,10 @@ The growth predicate can for example be polynomial, linear, polylogarithmic, etc
 The cost predicate can make this apply to `comp`, `oracle_comp`, or function evaluation.
 It can also apply to both `≤` and `≥`, e.g. sub-polynomial or at-least-polynomial.
 
--- TODO: Do this with oracle_comp, but also require a polynomial number of queries
+-- TODO: Do this with oracle_comp, but also require a polynomial number of queries?
 -/
 
-universes u v w
-
--- TODO: maybe just have `polynomial_time` and `prob_polynomial_time`?
+universes u v
 
 namespace complexity_class 
 
@@ -32,36 +30,36 @@ def polynomial_complexity {A : ℕ → Type u} [∀ n, cost_model ℚ (A n)]
 section poly_time_fun
 
 /-- `poly_time_fun c` means `c` can be evaluated in polynomial time on any input -/
-def poly_time_fun {A B : ℕ → Type u} [function_cost_model.{u} ℚ]
+def poly_time_fun {A B : ℕ → Type} [function_cost_model ℚ]
   (c : Π n, A n → B n) : Prop :=
-∃ (f : ℕ → ℚ), poly_growth f ∧ ∀ n, cost_at_most (c n) (f n)
+polynomial_complexity c
 
-variables  {A B C D : ℕ → Type u}
+variables  {A B C D : ℕ → Type}
 
 section poly_growth_const
 
-lemma poly_time_fun_of_has_cost_const [function_cost_model.{u} ℚ] {A B : ℕ → Type u} {c : Π n, A n → B n} (x : ℚ)
+lemma poly_time_fun_of_has_cost_const [function_cost_model ℚ] {c : Π n, A n → B n} (x : ℚ)
   (hn : ∀ n, cost_at_most (c n) x) : poly_time_fun c :=
 ⟨λ n, x, poly_growth_const x, hn⟩
 
 @[simp]
-lemma poly_time_fun_const [function_cost_model.{u} ℚ] (A : ℕ → Type u) {B : ℕ → Type u} (b : Π (n : ℕ), B n) :
+lemma poly_time_fun_const [function_cost_model ℚ] (A : ℕ → Type) (b : Π (n : ℕ), B n) :
   poly_time_fun (λ n, (λ _, b n : A n → B n)) :=
 poly_time_fun_of_has_cost_const 0 (λ n, by simp)
 
 @[simp]
-lemma poly_time_fun_fst [pairing_cost_model.{u} ℚ] (A B : ℕ → Type u) :
+lemma poly_time_fun_fst [pairing_cost_model ℚ] (A B : ℕ → Type) :
   poly_time_fun (λ n, (prod.fst : A n × B n → A n)) :=
 poly_time_fun_of_has_cost_const 0 (λ n, by simp)
 
 @[simp]
-lemma poly_time_fun_snd [pairing_cost_model.{u} ℚ] (A B : ℕ → Type u) :
+lemma poly_time_fun_snd [pairing_cost_model ℚ] (A B : ℕ → Type) :
   poly_time_fun (λ n, (prod.snd : A n × B n → B n)) :=
 poly_time_fun_of_has_cost_const 0 (λ n, by simp)
 
 end poly_growth_const
 
-variable [pairing_cost_model.{u} ℚ]
+variable [pairing_cost_model ℚ]
 
 lemma poly_time_fun_comp {c : Π n, A n → B n} {d : Π n, B n → C n}
   (hc : poly_time_fun c) (hd : poly_time_fun d) :
@@ -96,17 +94,13 @@ end poly_time_fun
 
 section poly_time_comp
 
-variables [function_cost_model.{0} ℚ] --[function_cost_model.{1} ℚ]
-variable [comp_cost_model ℚ]
-
--- def poly_time_comp₀ {T : ℕ → Type} (c : Π n, comp (T n)) : Prop :=
--- ∃ (p : ℕ → ℚ), poly_growth p ∧ ∀ n, cost_at_most (c n) (p n)
+variables [function_cost_model ℚ] [comp_cost_model ℚ]
 
 /-- `poly_time_comp₁ c` means evaluating `c : A n → comp (T n)` at any `a : A n`,
   and then sampling from the result has polynomial time cost in `n`.
   todo: Essentially non-uniform probabalistic polynomial time -/
 def poly_time_comp₁ {A : ℕ → Type} {T : ℕ → Type} (c : Π n, A n → comp (T n)) : Prop :=
-∃ (p : ℕ → ℚ), poly_growth p ∧ ∀ n, (cost_at_most (c n) (p n))
+polynomial_complexity c
 
 -- lemma poly_time_comp₁_ret_of_poly_time_fun {A B : ℕ → Type} 
 --   (f : Π n, A n → B n) (hf : poly_time_fun.{0} f) :
