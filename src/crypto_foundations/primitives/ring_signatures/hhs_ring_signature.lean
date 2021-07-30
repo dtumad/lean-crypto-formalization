@@ -14,8 +14,7 @@ Note that the construction requires a hash function into the group G.
 section ring_sig_of_pas
 
 variables {M G X K : Type}
-  [fintype G] [fintype X] 
-  [inhabited G] [inhabited X] 
+  [fintype G] [fintype X] [inhabited G] [inhabited X] 
   [decidable_eq M] [decidable_eq G] [decidable_eq X] [decidable_eq K]
 variables [add_comm_group G] [add_action G X]
 variables [function_cost_model ℚ] [comp_cost_model ℚ]
@@ -131,7 +130,7 @@ variables [∀ n, fintype (G n)] [∀ n, fintype (X n)]
 variables [∀ n, inhabited (G n)] [∀ n, inhabited (X n)]
 variables [decidable_eq M] [∀ n, decidable_eq (G n)] [∀ n, decidable_eq (X n)] [∀ n, decidable_eq (K n)]
 variables [∀ n, add_comm_group (G n)] [∀ n, add_action (G n) (X n)] [∀ n, principal_action_class (G n) (X n)]
-variables [function_cost_model ℚ] [comp_cost_model ℚ]
+variables [pairing_cost_model ℚ] [comp_cost_model ℚ]
 
 /-- Construct a ring signature scheme from a hard homogenous space.
 `x₀` is an arbitrary generator in `X` used as a base for the public keys.
@@ -145,9 +144,18 @@ def ring_signature_scheme_of_hhs [hard_homogeneous_space G X]
 {
   rs := λ sp, ring_sig_of_pas (x₀ sp) (H.scheme sp),
   gen_poly_time := begin
+    simp [ring_sig_of_pas],
+    refine complexity_class.polynomial_complexity_bind_of_subsingleton comp _ _,
+    {
+      exact algorithmic_homogeneous_space.polynomial_complexity_rnd_G X,
+    },
+    {
+      sorry,
+    }
+  end,
+  sign_poly_time := begin
     sorry,
   end,
-  sign_poly_time := sorry,
   verify_poly_time := sorry,
 }
 

@@ -172,6 +172,12 @@ end computational_advantages
 section hard_homogeneous_space
 
 variables [function_cost_model ℚ] [comp_cost_model ℚ]
+variables (G X : ℕ → Type) 
+  [∀ n, fintype (G n)] [∀ n, fintype (X n)]
+  [∀ n, inhabited (G n)] [∀ n, inhabited (X n)]
+  [∀ n, decidable_eq (G n)] [∀ n, decidable_eq (X n)]
+  [∀ n, add_comm_group (G n)] [∀ n, add_action (G n) (X n)]
+  [∀ n, principal_action_class (G n) (X n)]
 
 /-- A homogenous space is defined by a parameterized collection of homogenous spaces (`principal_action_class`).
   `G` and `X` together define a generation algorithm for homogenous spaces from a security parameter,
@@ -180,70 +186,58 @@ variables [function_cost_model ℚ] [comp_cost_model ℚ]
   Note that we model `G n` and `X n` as having some *fixed* internal representation,
     so this definition doesn't include functions for converting to and from representative bit-strings.
   TODO: clean up the massive typeclass dependencies -/
-class algorithmic_homogeneous_space (G X : ℕ → Type) 
-  [∀ n, inhabited (G n)] [∀ n, inhabited (X n)]
-  [∀ n, fintype (G n)] [∀ n, fintype (X n)]
-  [∀ n, decidable_eq (G n)] [∀ n, decidable_eq (X n)]
-  [∀ n, add_comm_group (G n)] [∀ n, add_action (G n) (X n)]
-  [∀ n, principal_action_class (G n) (X n)] :=
+class algorithmic_homogeneous_space :=
 -- TODO: see if they should use fun₂ version instead of currying
-(add_efficient : complexity_class.polynomial_complexity
+(polynomial_complexity_add : complexity_class.polynomial_complexity
   (λ sp, (λ x, x.1 + x.2 : G sp × G sp → G sp)))
-(inv_efficient : complexity_class.polynomial_complexity
+(polynomial_complexity_inv : complexity_class.polynomial_complexity
   (λ sp, (λ x, -x : G sp → G sp)))
-(vadd_efficient : complexity_class.polynomial_complexity
+(polynomial_complexity_vadd : complexity_class.polynomial_complexity
   (λ n, (λ x, x.1 +ᵥ x.2 : G n × X n → X n)))
-(G_eq_efficient : complexity_class.polynomial_complexity
+(polynomial_complexity_eq_G : complexity_class.polynomial_complexity
   (λ n, (λ x, x.1 = x.2 : G n × G n → Prop)))
-(X_eq_efficient : complexity_class.polynomial_complexity
+(polynomial_complexity_eq_X : complexity_class.polynomial_complexity
   (λ n, (λ x, x.1 = x.2 : X n × X n → Prop)))
-(G_rnd_efficient : complexity_class.polynomial_complexity
+(polynomial_complexity_rnd_G : complexity_class.polynomial_complexity
   (λ n, (λ x, comp.rnd (G n) : unit → comp (G n))))
--- TODO: Maybe axiomatize this for any `fintype`? or `encodable` type?
-(G_copy_efficient : complexity_class.polynomial_complexity
-  (λ n, (λ g, (g, g) : G n → G n × G n)))
-(X_copy_efficient : complexity_class.polynomial_complexity
-  (λ n, (λ x, (x, x) : X n → X n × X n)))
 
--- TODO: derive rnd X efficient by choosing a generator and using G_rnd_efficient
+section algorithmic_homogeneous_space
+variable [algorithmic_homogeneous_space G X]
 
-variables (G X : ℕ → Type) 
-  [∀ n, fintype (G n)] [∀ n, fintype (X n)]
-  [∀ n, inhabited (G n)] [∀ n, inhabited (X n)]
-  [∀ n, decidable_eq (G n)] [∀ n, decidable_eq (X n)]
-  [∀ n, add_comm_group (G n)] [∀ n, add_action (G n) (X n)]
-  [∀ n, principal_action_class (G n) (X n)]
+-- -- TODO: derive rnd X efficient by choosing a generator and using G_rnd_efficient
+-- -- Might require some axioms about `comp` with the same distributions
+-- lemma polynomial_complexity_rnd_X : complexity_class.polynomial_complexity
+--   (λ n, (λ x, comp.rnd (X n) : unit → comp (X n))) :=
+-- sorry
 
--- lemma add_right_efficient [H : algorithmic_homogeneous_space G X] (g : Π n, G n) :
---   complexity_class.polynomial_complexity (λ n, λ (x : G n), (g n) + x) :=
--- let ⟨f, hf, hf'⟩ := H.add_efficient in
---   ⟨f, hf, λ n, has_cost.has_cost_of_uncurry' (g n) (hf' n)⟩
-
--- lemma mul_left_efficient [algorithmic_homogeneous_space G X] (g : Π n, G n) :
---   complexity_class.polynomial_complexity (λ n, λ (x : G n), x * (g n)) :=
--- poly_time_cost_ext (mul_right_efficient G X g) (λ n x, mul_comm (g n) x)
-
-variables (G) (X)
-
--- TODO: do this for parallelization adversary
-structure vectorization_adversary [algorithmic_homogeneous_space G X] :=
+structure vectorization_adversary :=
 (A : Π sp, X sp × X sp → comp (G sp))
-(well_formed : ∀ sp x, (A sp x).is_well_formed)
-(poly_time : complexity_class.polynomial_complexity A)
+(is_well_formed : ∀ sp x, (A sp x).is_well_formed)
+(polynomial_complexity : complexity_class.polynomial_complexity A)
 
-instance vectorization_advesary.is_well_formed [algorithmic_homogeneous_space G X]
+instance vectorization_advesary.is_well_formed'
   (adv : vectorization_adversary G X) (sp : ℕ) (x : X sp × X sp) :
   (adv.A sp x).is_well_formed :=
-adv.well_formed sp x
+adv.is_well_formed sp x
+
+structure parallelization_adversary :=
+(A : Π sp, X sp × X sp × X sp → comp (X sp))
+(is_well_formed : ∀ sp x, (A sp x).is_well_formed)
+(polynomial_complexity : complexity_class.polynomial_complexity A)
+
+instance parallelization_adversary.is_well_formed'
+  (adv : parallelization_adversary X) (sp : ℕ) (x : X sp × X sp × X sp) :
+  (adv.A sp x).is_well_formed :=
+adv.is_well_formed sp x
+
+end algorithmic_homogeneous_space
 
 /-- Extension of `algorithmic_homogenous_space` with hardness assumptions.
   Vectorization and parallelization correspond to discrete-log and Diffie-Hellman -/
 class hard_homogeneous_space extends algorithmic_homogeneous_space G X :=
 (vectorization_hard : ∀ (adv : vectorization_adversary G X),
   asymptotics.negligable (λ sp, vectorization_advantage (adv.A sp)))
-(parallelization_hard : ∀ (A : Π sp, X sp × X sp × X sp → comp (X sp))
-  [∀ sp x y z, (A sp (x, y, z)).is_well_formed]
-  (h : complexity_class.polynomial_complexity A),
-  asymptotics.negligable (λ n, parallelization_advantage (G n) (A n)))
+(parallelization_hard : ∀ (adv : parallelization_adversary X),
+  asymptotics.negligable (λ n, parallelization_advantage (G n) (adv.A n)))
 
 end hard_homogeneous_space
