@@ -157,7 +157,6 @@ instance function_cost_model.compatible_cost_models (C : Type)
   (T U V : Type) : compatible_cost_models C T U V :=
 function_cost_model.cm_compatible T U V
 
-
 namespace function_cost_model
 
 variables [function_cost_model C]
@@ -182,9 +181,7 @@ instance cost_zero_of_subsingleton_left {T U : Type} (f : T → U)
   [hT : nonempty T] [subsingleton T] : cost_zero C f :=
 hT.elim (λ t, cost_zero_ext (cost_zero_const T (f t)) (funext (λ t', congr_arg f (by simp))))
 
-
 end function_cost_model
-
 
 class pairing_cost_model (C : Type) [linear_ordered_semiring C]
   extends function_cost_model C :=
@@ -216,7 +213,6 @@ cost_zero_ext (compatible_cost_models.cost_zero_compose prod.swap prod.fst)
 
 end pairing_cost_model
 
-
 /-- Cost model on `T → M U` represents cost to evaluate at `t` and then
   'evaluate' the resulting monad (e.g. sample from the distribution of a `comp`).
   Monads that add 'non-trivial' functionality e.g. `comp.rnd`,
@@ -226,25 +222,19 @@ class monadic_cost_model (C : Type) [linear_ordered_semiring C]
   (M : Type → Type u) [monad M] :=
 (cm (T U : Type) : cost_model C (T → M U))
 (cm_compatible (T U V : Type) : compatible_cost_models C T U (M V))
-(cost_at_most_pure {T U : Type} {x : C} {f : T → U} (hf : cost_at_most f x) :
-  cost_at_most (λ t, pure (f t) : T → M U) x)
-(cost_at_most_bind (T U A : Type) {x y : C} {t : A → M T} {u : A → T → M U}
-  (ht : cost_at_most t x) (hu : cost_at_most (function.uncurry u) y) :
-  cost_at_most (λ a, bind (t a) (u a) : A → M U) (x + y))
+(cost_zero_pure (T : Type) : cost_zero C (pure : T → M T))
+(cost_at_most_bind {T U V : Type} {x y : C} {mu : T → M U} {mv : T → U → M V}
+  (hmu : cost_at_most mu x) (hmv : cost_at_most (function.uncurry mv) y) :
+  cost_at_most (λ a, bind (mu a) (mv a) : T → M V) (x + y))
 
-instance monadic_cost_model.cost_model (C : Type)
-  [linear_ordered_semiring C]
-  [function_cost_model C]
-  (M : Type → Type u) [monad M]
-  [monadic_cost_model C M] (T U : Type) : cost_model C (T → M U) :=
+instance monadic_cost_model.cost_model (C : Type) [linear_ordered_semiring C]
+  [function_cost_model C] (M : Type → Type u) [monad M] [monadic_cost_model C M] 
+  (T U : Type) : cost_model C (T → M U) :=
 monadic_cost_model.cm T U 
 
-instance monadic_cost_model.compatible_cost_models (C : Type)
-  [linear_ordered_semiring C]
-  [function_cost_model C]
-  (M : Type → Type u) [monad M]
-  [monadic_cost_model C M] (T U V : Type) : 
-  compatible_cost_models C T U (M V) :=
+instance monadic_cost_model.compatible_cost_models (C : Type) [linear_ordered_semiring C]
+  [function_cost_model C] (M : Type → Type u) [monad M] [monadic_cost_model C M] 
+  (T U V : Type) : compatible_cost_models C T U (M V) :=
 monadic_cost_model.cm_compatible T U V
 
 namespace monadic_cost_model
@@ -252,18 +242,57 @@ namespace monadic_cost_model
 variables [function_cost_model C]
   (M : Type → Type u) [monad M] [monadic_cost_model C M]
 
-instance cost_zero_pure (T : Type) : 
+instance cost_zero_pure' (T : Type) : 
   cost_zero C (pure : T → M T) :=
-cost_at_most_ext (cost_at_most_pure (function_cost_model.cost_zero_id T)) le_rfl (by simp)
+monadic_cost_model.cost_zero_pure T
+
+lemma cost_at_most_pure {T U : Type} {x : C} {f : T → U} (hf : cost_at_most f x) :
+  cost_at_most (pure ∘ f : T → M U) x :=
+compatible_cost_models.cost_at_most_of_cost_zero_right pure hf
+
+variable {M}
+
+lemma cost_at_most_bind_of_le {T U V : Type} {x y z : C}
+  {mu : T → M U} {mv : T → U → M V}
+  (hmu : cost_at_most mu x) (hmv : cost_at_most (function.uncurry mv) y)
+  (hxyz : x + y ≤ z) : cost_at_most (λ a, bind (mu a) (mv a)) z :=
+cost_model.cost_trans (monadic_cost_model.cost_at_most_bind hmu hmv) hxyz
 
 end monadic_cost_model
 
 class comp_cost_model (C : Type) [linear_ordered_semiring C]
   [function_cost_model C]
   extends monadic_cost_model C comp :=
-(cost_rnd_bitvec {n : ℕ} : cost_at_most (λ (_ : unit), comp.rnd (vector bool n)) (n : C))
+(cost_at_most_comp_rnd_bool (T : Type) : cost_at_most (function.const T $ comp.rnd bool) (1 : C))
+
+instance comp_cost_model.cost_zero_ret [function_cost_model C]
+  [comp_cost_model C] (T : Type) : 
+  cost_zero C (comp.ret : T → comp T) :=
+monadic_cost_model.cost_zero_pure' comp T
 
 namespace comp_cost_model
+
+variables [function_cost_model C] [comp_cost_model C]
+
+lemma cost_at_most_comp_ret {T U : Type} {x : C} {f : T → U}
+  (hf : cost_at_most f x) : cost_at_most (comp.ret ∘ f : T → comp U) x :=
+monadic_cost_model.cost_at_most_pure comp hf
+
+lemma cost_at_most_comp_bind {T U V : Type} {x y : C} 
+  {cu : T → comp U} {cv : T → U → comp V}
+  (hcu : cost_at_most cu x) (hcv : cost_at_most (function.uncurry cv) y) :
+  cost_at_most (λ t, (cu t).bind (cv t)) (x + y) :=
+monadic_cost_model.cost_at_most_bind hcu hcv
+
+lemma cost_at_most_comp_bind_of_le {T U V : Type} {x y z : C}
+  {cu : T → comp U} {cv : T → U → comp V}
+  (hcu : cost_at_most cu x) (hcv : cost_at_most (function.uncurry cv) y)
+  (hxyz : x + y ≤ z) : cost_at_most (λ t, (cu t).bind (cv t)) z :=
+monadic_cost_model.cost_at_most_bind_of_le hcu hcv hxyz
+
+lemma cost_at_most_comp_rnd_bool_of_le (T : Type) {x : C}
+  (hx : 1 ≤ x) : cost_at_most (function.const T $ comp.rnd bool) x :=
+cost_model.cost_trans (cost_at_most_comp_rnd_bool T) hx
 
 end comp_cost_model
 
