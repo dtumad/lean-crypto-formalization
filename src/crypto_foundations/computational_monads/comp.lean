@@ -200,24 +200,43 @@ instance rnd.is_well_formed (A : Type) [inhabited A] [fintype A] :
   (rnd A).is_well_formed :=
 by simp [is_well_formed]
 
-section elims
+section option_elims
+
+@[simp]
+instance dep_option_rec_is_well_formed {T : Type} {T' : A → Type}
+  {B : Type} {B' : A → Type}
+  (a : option A) (b : a.elim T T') 
+  (cnone : T → comp B) (csome : Π (a : A), (T' a) → comp (B' a))
+  [hcnone : ∀ t, (cnone t).is_well_formed]
+  [hcsome : ∀ a t', (csome a t').is_well_formed] :
+  (option.rec cnone csome a b : comp (a.elim B B')).is_well_formed :=
+by cases a; simp; apply_instance
 
 -- These lemmas aren't strictly needed, but simplify a lot of things
 
-lemma with_bot_elim_is_well_formed {A B : Type} (a : with_bot A)
-  (cbot : comp B) (csome : A → comp B) (hcbot : cbot.is_well_formed)
-  (hcsome : ∀ a, (csome a).is_well_formed) :
-  (a.elim cbot csome).is_well_formed :=
+
+@[simp]
+instance option_rec.is_well_formed (a : option A)
+  (cnone : comp B) [h1 : cnone.is_well_formed]
+  (csome : A → comp B) [h2 : ∀ a, (csome a).is_well_formed] :
+  (option.rec cnone csome a : comp B).is_well_formed :=
 by cases a; simp; apply_instance
 
 @[simp]
-instance with_bot_elim.is_well_formed {A B : Type} (a : with_bot A)
-  (cbot : comp B) (csome : A → comp B)
-  [h1 : cbot.is_well_formed] [h2 : ∀ a, (csome a).is_well_formed] :
-  (a.elim cbot csome).is_well_formed :=
-with_bot_elim_is_well_formed a cbot csome h1 h2
+instance option_rec_on.is_well_formed (a : option A)
+  (cnone : comp B) [h1 : cnone.is_well_formed]
+  (csome : A → comp B) [h2 : ∀ a, (csome a).is_well_formed] :
+  (option.rec_on a cnone csome : comp B).is_well_formed :=
+by cases a; simp; apply_instance
 
-end elims
+@[simp]
+instance option_elim.is_well_formed (a : with_bot A)
+  (cbot : comp B) [h1 : cbot.is_well_formed]
+  (csome : A → comp B) [h2 : ∀ a, (csome a).is_well_formed] :
+  (a.elim cbot csome).is_well_formed :=
+by cases a; simp; apply_instance
+
+end option_elims
 
 theorem support_nonempty_of_well_formed : ∀ {A : Type} (ca : comp A)
   [h : ca.is_well_formed], ca.support.nonempty

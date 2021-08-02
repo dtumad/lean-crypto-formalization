@@ -90,63 +90,86 @@ section ring_sig_oracle
 
 /-- Definition of a probabalistic computaiton with oracle signing access
   `n` is the global number of `PK × SK` pairs used in the simulation. -/
-def signing_oracle_comp (rs : ring_signature M S PK SK) (n : ℕ) (T : Type) :=
-oracle_comp (λ (l : ℕ), signing_ring l PK × M)
-  (λ (l : ℕ), with_bot $ S l) T
+def signing_oracle_comp (rs : ring_signature M S PK SK) (n : ℕ) :=
+oracle_comp 
+  (λ (l : ℕ), signing_ring l PK × M)
+  (λ (l : ℕ), with_bot $ S l)
+
+@[derive comp.is_well_formed]
+def signing_oracle (rs : ring_signature M S PK SK) (n : ℕ)
+  (ks : vector (PK × SK) n) :
+  Π (l : ℕ), signing_ring l PK × M → comp (with_bot $ S l) :=
+λ l inp, option.elim (list.find (λ (k : PK × SK), k.1 = inp.1.pk) ks.to_list)
+  (return ⊥) (λ k, functor.map some (rs.sign _ ⟨inp.1, k.2, inp.2⟩))
+
+/-- `n` is the global number of `PK × SK` pairs used in the simulation. -/
+def corruption_oracle_comp (rs : ring_signature M S PK SK) (n : ℕ) :=
+oracle_comp 
+  (λ (_ : unit), fin n)
+  (λ (_ : unit), SK)
+
+@[derive comp.is_well_formed]
+def corruption_oracle (rs : ring_signature M S PK SK) (n : ℕ)
+  (ks : vector (PK × SK) n) :
+  fin n → comp SK :=
+λ i, return (ks.nth i).2 
+
+def signing_and_corruption_oracle_comp (rs : ring_signature M S PK SK) (n : ℕ) :=
+oracle_comp 
+  (λ (t : with_bot ℕ), t.elim (fin n) (λ l, signing_ring l PK × M))
+  (λ (t : with_bot ℕ), t.elim SK (λ l, with_bot (S l)))
 
 variables {rs}
 
-/--
-  returns `⊥` if the `pk` specified by the signing ring isn't in `ks` -/
+@[derive comp.is_well_formed]
 def signing_oracle_comp.logging_eval_distribution {n : ℕ} {T : Type}
-  (t : signing_oracle_comp rs n T) (ks : vector (PK × SK) n) : 
-    comp (T × list (Σ (l : ℕ), signing_ring l PK × M)) :=
-t.logging_eval_distribution (λ l inp,
-  -- Try to find a public in the global ring matching the one specified by the adversary
-  let k : with_bot (PK × SK) := list.find (λ k, k.1 = inp.1.pk) ks.to_list in
-  begin 
-    -- Return `⊥` if no key was found, otherwise return a signature
-    refine k.elim (return ⊥) (λ k, _),
-    refine functor.map some (rs.sign _ ⟨inp.1, k.2, inp.2⟩),
-  end
-)
-
-@[simp]
-instance signing_oracle_comp.logging_eval_distribution.is_well_formed 
-  {n : ℕ} {T : Type} (t : signing_oracle_comp rs n T) 
-  [ht : t.is_well_formed] (ks : vector (PK × SK) n) :
-  (t.logging_eval_distribution ks).is_well_formed :=
-by simp [signing_oracle_comp.logging_eval_distribution]
+  (t : signing_oracle_comp rs n T) [t.is_well_formed]
+  (ks : vector (PK × SK) n) : 
+  comp (T × list (Σ (l : ℕ), signing_ring l PK × M)) :=
+t.logging_eval_distribution 
+  (λ t, signing_oracle rs n ks t)
 
 @[derive comp.is_well_formed]
-def signing_oracle_comp.eval_distribution {n : ℕ} {T : Type}
-  (t : signing_oracle_comp rs n T) [ht : t.is_well_formed] (ks : vector (PK × SK) n) :
-  comp T :=
-do t ← (t.logging_eval_distribution ks),
-  return t.1
+def corruption_oracle_comp.logging_eval_distribution {n : ℕ} {T : Type}
+  (t : corruption_oracle_comp rs n T) [t.is_well_formed] 
+  (ks : vector (PK × SK) n) :
+  comp (T × list (Σ (t : unit), fin n)) :=
+t.logging_eval_distribution 
+  (λ t, corruption_oracle rs n ks)
+
+@[derive comp.is_well_formed]
+def signing_and_corruption_oracle_comp.logging_eval_distribution {n : ℕ} {T : Type}
+  (t : signing_and_corruption_oracle_comp rs n T) [t.is_well_formed]
+  (ks : vector (PK × SK) n) :
+  comp (T × list _) :=
+t.logging_eval_distribution 
+  (λ t, option.rec_on t (corruption_oracle rs n ks) (signing_oracle rs n ks))
 
 end ring_sig_oracle
 
 section unforgeable_experiment
 
+def unforgeable_log_admissable (n : ℕ) (ks : vector (PK × SK) n)
+  (A_out : Σ (m : ℕ), verification_input m PK M S) :
+  list (Σ (t : with_bot ℕ), t.elim (fin n) (λ l, signing_ring l PK × M)) → bool
+| [] := true
+| (⟨none, v⟩ :: t) := let corrupted_party : PK := (ks.nth v).1 in
+    (corrupted_party ∉ A_out.2.mems.to_list) 
+      ∧ unforgeable_log_admissable t
+| (⟨some l, v⟩ :: t) := 
+    ¬ (v.2 = A_out.2.m ∧ v.1.mems.to_list ~ A_out.2.mems.to_list)
+      ∧ unforgeable_log_admissable t
+
 -- TODO: A also needs a corruption oracle for this experiment
 @[derive comp.is_well_formed]
 def unforgeable_experiment (n : ℕ)
-  (A : vector PK n → signing_oracle_comp rs n (Σ (n : ℕ), verification_input n PK M S)) 
+  (A : vector PK n → signing_and_corruption_oracle_comp rs n (Σ (n : ℕ), verification_input n PK M S)) 
   [hA : ∀ pks, (A pks).is_well_formed] : comp bool :=
 do ks ← comp.vector_call (rs.gen ()) n, 
   pks ← return (vector.map prod.fst ks),
-  sks ← return (vector.map prod.snd ks),
   A_out ← (A pks).logging_eval_distribution ks,
-  m ← return A_out.1.2.m,
-  uncorrupted_parties ← return (A_out.1.2.mems.to_list.filter (λ pk, false)), -- TODO
-  -- Check that the forged signature is on an ucorrupted ring
-  R_okay ← return (A_out.1.2.mems.to_list ⊆ uncorrupted_parties : bool),
-  log ← return A_out.2,
-  -- Check if they previously got a `R`-signature for message `m`
-  log_okay ← return (¬ log.any (λ x, m = x.2.2 ∧ (list.perm A_out.1.2.mems.to_list x.2.1.mems.to_list)) : bool),
-  σ ← return A_out.1.2.σ,
-  return (if R_okay ∧ log_okay then (rs.verify _ ⟨A_out.1.2.1, m, σ⟩) else false)
+  admissable ← return (unforgeable_log_admissable n ks A_out.1 A_out.2),
+  return (if admissable then rs.verify _ A_out.1.2 else false)
 
 end unforgeable_experiment
 
@@ -162,7 +185,8 @@ def anonomyous_experiment {A_state : Type} (n : ℕ)
   [hA : ∀ pks, (A pks).is_well_formed] [hA' : ∀ st ks σ, (A' st ks σ).is_well_formed] : 
   comp bool :=
 do ks ← (comp.vector_call (rs.gen ()) n),
-  A_out ← ((A (vector.map prod.fst ks)).eval_distribution ks),
+  A_out ← ((A (vector.map prod.fst ks)).logging_eval_distribution ks),
+  A_out ← return A_out.1,
   m ← return A_out.2.1,
   i₀ ← return A_out.2.2.1,
   i₁ ← return A_out.2.2.2.1,
@@ -172,7 +196,8 @@ do ks ← (comp.vector_call (rs.gen ()) n),
   i ← return (if b then i₁ else i₀),
   sk ← return (ks.nth i.1).2,
   σ ← rs.sign _ ⟨⟨R, i.2⟩, sk, m⟩,
-  b' ← (A' state ks ⟨A_out.1, σ⟩).eval_distribution ks,
+  b' ← (A' state ks ⟨A_out.1, σ⟩).logging_eval_distribution ks,
+  b' ← return b'.1,
   comp.ret (b' = b)
 
 end anonomyous_experiment
@@ -200,7 +225,7 @@ section unforgeable
 
 structure unforgeable_adversary (p : polynomial ℕ) := 
 (adv (sp : ℕ) (pks : vector (PK sp) (p.eval sp)) :
-  signing_oracle_comp (rss.rs sp) (p.eval sp) 
+  signing_and_corruption_oracle_comp (rss.rs sp) (p.eval sp) 
     (Σ (n : ℕ), verification_input n (PK sp) M (S sp)))
 (wf : ∀ sp pks, (adv sp pks).is_well_formed)
 (poly_time : true)
