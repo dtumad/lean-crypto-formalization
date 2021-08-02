@@ -3,13 +3,10 @@ import computational_complexity.cost_model
 /-!
 # Computational Complexity Classes
 
-This file defines the idea of a `complexity_class`, in terms of a `growth_pred` and a `cost_pred`.
-The definition is fairly general so it can specialize to a variety of different possibilities.
+This file defines polynomial and polylogarithmic cost complexity.
+The definitions are made in terms of a `cost_model` on the underlying type.
 
-The growth predicate can for example be polynomial, linear, polylogarithmic, etc.
-The cost predicate can make this apply to `comp`, `oracle_comp`, or function evaluation.
-It can also apply to both `≤` and `≥`, e.g. sub-polynomial or at-least-polynomial.
-
+TODO: This really doesn't need to just apply to `ℚ`
 -/
 
 universes u v

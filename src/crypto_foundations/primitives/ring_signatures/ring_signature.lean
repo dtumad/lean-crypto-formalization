@@ -10,7 +10,7 @@ import data.list.basic
 This file defines ring signatures and ring signature schemes, and their cryptographic properties.
 The security properties `complete`, `anonomyous`, and `unforgeable` are defined in terms of corresponding experiments.
 
-TODO: Closely double check the security definitions before getting to far proving them
+TODO: Closely double check the non-completeness security definitions before getting to far proving them
 -/
 
 section signing_ring
@@ -91,8 +91,8 @@ section ring_sig_oracle
 /-- Definition of a probabalistic computaiton with oracle signing access
   `n` is the global number of `PK × SK` pairs used in the simulation. -/
 def signing_oracle_comp (rs : ring_signature M S PK SK) (n : ℕ) (T : Type) :=
-oracle_comp (Σ (l : ℕ), signing_ring l PK × M)
-  (with_bot $ Σ (l : ℕ), S l) T
+oracle_comp (λ (l : ℕ), signing_ring l PK × M)
+  (λ (l : ℕ), with_bot $ S l) T
 
 variables {rs}
 
@@ -101,11 +101,11 @@ variables {rs}
 def signing_oracle_comp.logging_eval_distribution {n : ℕ} {T : Type}
   (t : signing_oracle_comp rs n T) (ks : vector (PK × SK) n) : 
     comp (T × list (Σ (l : ℕ), signing_ring l PK × M)) :=
-t.logging_eval_distribution (λ inp,
-  let k : with_bot (PK × SK) := list.find (λ k, k.1 = inp.2.1.pk) ks.to_list in
+t.logging_eval_distribution (λ l inp,
+  let k : with_bot (PK × SK) := list.find (λ k, k.1 = inp.1.pk) ks.to_list in
   begin 
     refine k.elim (return ⊥) (λ k, _),
-    refine (rs.sign _ ⟨inp.2.1, k.2, inp.2.2⟩).bind (λ σ, return $ some ⟨inp.1, σ⟩),
+    refine (rs.sign _ ⟨inp.1, k.2, inp.2⟩).bind (λ σ, return $ some σ),
   end
 )
 
