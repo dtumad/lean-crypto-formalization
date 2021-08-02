@@ -6,15 +6,17 @@ import crypto_foundations.computational_monads.comp
 This file extends the `comp` monad to allow compuation with oracle access.
 The definition allows for oracles to hide their internal state,
   which wouldn't be possible by just giving the adversary an explicit function.
-It also allows for definitions that restrict the type of calls made to the oracle,
+It also allows for definitions that inpect the inputs of calls made to the oracle,
   e.g. an `oracle_comp M S (M × S)` attempting to forge a signature on an unqueried message.
 -/
 
 /-- `oracle_comp A B C` is the type of a computation of a value of type `C`,
-  with access to an oracle taking values in `A` to values in `B`.
-  `oc_run` represents computing `oc` with `ob` as a proxy for the oracle
-  -- Lack of impredicative `Set` type means this moves up a type universe
-  TODO: the final return type can't be inferred in general without type hints -/
+  with access to a family of oracle taking values in `A t` to values in `B t`.
+  The oracle's semantics aren't specified until evaluation (`eval_distribution`),
+    since algorithm specification only needs to know the types, not the values.
+    
+  The type `T` is used to index multiple oracles,
+    e.g. taking `T := fin 2` gives access to two distinct oracles -/
 inductive oracle_comp {T : Type} (A B : T → Type) : Type → Type 1
 | oc_ret {C : Type} (c : comp C) : oracle_comp C
 | oc_bind {C D : Type} (oc : oracle_comp C) (od : C → oracle_comp D) : oracle_comp D
@@ -30,26 +32,22 @@ namespace oracle_comp
 
 variables {T : Type} {A B : T → Type} {C : Type}
 
--- /-- `oc_run` can be constructed manually from the other constructors -/
--- def oc_run : Π {T : Type} {A B : T → Type} {C : Type} (oc : oracle_comp A B C) 
---   {A' B' S : Type} (s : S) (o : S → A → oracle_comp A' B' (B × S)),
---   oracle_comp A' B' (C × S)
--- | A _ B (@oc_query _ _ a) A' B' S s o := o s a
--- | A B C (@oc_ret _ _ _ cc) A' B' S s o := 
---     oc_ret (cc >>= λ c, return (c, s))
--- | A B D (@oc_bind _ _ C _ oc od) A' B' S s o := 
---     (oc_run oc s o) >>= (λ cs, oc_run (od cs.1) cs.2 o)
+/-- Simulate an `A → B` oracle as an `A' → B'` oracle,
+  using the stateful function `o` with initial state `s` -/
+def oc_run {T T' S : Type} {A B : T → Type} {A' B' : T → Type} :
+  Π {C : Type} (oc : oracle_comp A B C) (s : S)
+    (o : Π t, S → A t → oracle_comp A' B' (B t × S)),
+  oracle_comp A' B' (C × S)
+| _ (oc_query a) s o := o _ s a
+| _ (oc_ret cc) s o := oc_ret (cc >>= λ c, return (c, s))
+| _ (oc_bind oc od) s o := (oc_run oc s o) >>= (λ cs, oc_run (od cs.1) cs.2 o)
 
 /-- Every oracle_comp gives rise to a mapping from query assignments to the base comp type,
   where the value in `C` is the result of the computation if oracles behave like the input,
   and internal `comp` values return their base values -/
 def oracle_comp_base_exists (oc : oracle_comp A B C) : (Π t, A t → B t) → C :=
-begin
-  refine oracle_comp.rec_on oc _ _ _,
-  refine λ C c _, comp.comp_base_exists c,
-  refine λ C D oc od hoc hod o, hod (hoc o) o,
-  refine λ t a o, o t a,
-end
+oracle_comp.rec_on oc (λ C c _, comp.comp_base_exists c) 
+  (λ C D oc od hoc hod o, hod (hoc o) o) (λ t a o, o t a)
 
 section is_well_formed
 
@@ -158,7 +156,8 @@ instance eval_distribution.is_well_formed {S : Type}
   (oc.eval_distribution s o).is_well_formed :=
 eval_distribution_is_well_formed oc hoc s o ho
 
-/-- Run the computation using internal state to track queries -/
+/-- Run the computation with a stateless oracle `o`,
+  and use the internal state to log queries -/
 def logging_eval_distribution (oc : oracle_comp A B C)
   (o : Π t, A t → comp (B t)) : comp (C × (list $ Σ (t : T), A t)) :=
 oc.eval_distribution [] (λ t as a, (o t a >>= λ b, return (b, ⟨t, a⟩ :: as)))
@@ -169,17 +168,5 @@ instance logging_eval_distribution.is_well_formed
   (o : Π t, A t → comp (B t)) [ho : ∀ t a, (o t a).is_well_formed] :
   (logging_eval_distribution oc o).is_well_formed :=
 eval_distribution_is_well_formed _ hoc _ _ (by simp)
-
-/-- Evaluation distribution for a stateless oracle with `o` simulating the oracle. -/
-def stateless_eval_distribution (oc : oracle_comp A B C) 
-  (o : Π t, A t → comp (B t)) : comp C :=
-(logging_eval_distribution oc o) >>= (λ cas, comp.ret cas.1)
-
-@[simp]
-instance stateless_eval_distribution.is_well_formed
-  (oc : oracle_comp A B C) [hoc : oc.is_well_formed]
-  (o : Π t, A t → comp (B t)) [ho : ∀ t a, (o t a).is_well_formed] :
-  (oc.stateless_eval_distribution o).is_well_formed :=
-by unfold stateless_eval_distribution; apply_instance
 
 end oracle_comp

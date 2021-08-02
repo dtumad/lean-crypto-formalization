@@ -102,10 +102,12 @@ def signing_oracle_comp.logging_eval_distribution {n : ℕ} {T : Type}
   (t : signing_oracle_comp rs n T) (ks : vector (PK × SK) n) : 
     comp (T × list (Σ (l : ℕ), signing_ring l PK × M)) :=
 t.logging_eval_distribution (λ l inp,
+  -- Try to find a public in the global ring matching the one specified by the adversary
   let k : with_bot (PK × SK) := list.find (λ k, k.1 = inp.1.pk) ks.to_list in
   begin 
+    -- Return `⊥` if no key was found, otherwise return a signature
     refine k.elim (return ⊥) (λ k, _),
-    refine (rs.sign _ ⟨inp.1, k.2, inp.2⟩).bind (λ σ, return $ some σ),
+    refine functor.map some (rs.sign _ ⟨inp.1, k.2, inp.2⟩),
   end
 )
 
