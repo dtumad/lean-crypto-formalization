@@ -54,7 +54,7 @@ section support
 /-- The support of `comp A` is the elements of `A` with non-zero probability of being computed -/
 def support : Π {A : Type} (ca : comp A), set A
 | A (ret a) := {a}
-| A (bind cb ca) := cb.support >>= (λ b, (ca b).support)
+| A (bind cb ca) := ⋃ b ∈ cb.support, (ca b).support
 | A (@rnd _ fA iA) := ⊤
 | A (@repeat _ p hp ca) := {a ∈ ca.support | p a}
 
@@ -199,6 +199,25 @@ by simp [is_well_formed, hcb, hca]
 instance rnd.is_well_formed (A : Type) [inhabited A] [fintype A] :
   (rnd A).is_well_formed :=
 by simp [is_well_formed]
+
+section elims
+
+-- These lemmas aren't strictly needed, but simplify a lot of things
+
+lemma with_bot_elim_is_well_formed {A B : Type} (a : with_bot A)
+  (cbot : comp B) (csome : A → comp B) (hcbot : cbot.is_well_formed)
+  (hcsome : ∀ a, (csome a).is_well_formed) :
+  (a.elim cbot csome).is_well_formed :=
+by cases a; simp; apply_instance
+
+@[simp]
+instance with_bot_elim.is_well_formed {A B : Type} (a : with_bot A)
+  (cbot : comp B) (csome : A → comp B)
+  [h1 : cbot.is_well_formed] [h2 : ∀ a, (csome a).is_well_formed] :
+  (a.elim cbot csome).is_well_formed :=
+with_bot_elim_is_well_formed a cbot csome h1 h2
+
+end elims
 
 theorem support_nonempty_of_well_formed : ∀ {A : Type} (ca : comp A)
   [h : ca.is_well_formed], ca.support.nonempty

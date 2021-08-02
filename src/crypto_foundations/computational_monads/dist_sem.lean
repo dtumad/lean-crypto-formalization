@@ -84,7 +84,7 @@ lemma eval_distribution_support_eq_support (ca : comp A) [ca.is_well_formed] :
 set.ext (λ a, eval_distribution_ne_zero_iff ca a)
 
 @[simp] 
-lemma eval_distribution_ret [decidable_eq A] (a : A) :
+lemma eval_distribution_ret (a : A) :
   eval_distribution (ret a) = pmf.pure a := 
 rfl
 
@@ -95,26 +95,33 @@ rfl
 --   eval_distribution (bind cb ca) = (eval_distribution cb).bind_on_support
 --     (λ b hb, (eval_distribution (ca b))) := rfl
 
-/-- If we generalize `ha` over all `b` we can further reduce the `bind'` above to `bind`-/
-@[simp]
-lemma eval_distribution_bind_on_support (cb : comp B) (ca : B → comp A) 
-  [h : (bind cb ca).is_well_formed] : 
-  @eval_distribution A (bind cb ca) h = 
-    (@eval_distribution B cb (is_well_formed_of_bind_left h)).bind_on_support 
-      (λ b hb, @eval_distribution A (ca b) (is_well_formed_of_bind_right h b $ by simpa using hb)) :=
-rfl
+-- /-- If we generalize `ha` over all `b` we can further reduce the `bind'` above to `bind`-/
+-- @[simp]
+-- lemma eval_distribution_bind' (cb : comp B) (ca : B → comp A) 
+--   [h : (bind cb ca).is_well_formed] : 
+--   @eval_distribution A (bind cb ca) h = 
+--     (@eval_distribution B cb (is_well_formed_of_bind_left h)).bind_on_support 
+--       (λ b hb, @eval_distribution A (ca b) (is_well_formed_of_bind_right h b $ by simpa using hb)) :=
+-- rfl
 
 @[simp]
 lemma eval_distribution_bind (cb : comp B) (ca : B → comp A)
-  [cb.is_well_formed] [∀ b, (ca b).is_well_formed]
-  (h : (bind cb ca).is_well_formed) :
-  (@eval_distribution A (bind cb ca) h) =
+  [cb.is_well_formed] [∀ b, (ca b).is_well_formed] :
+  (bind cb ca).eval_distribution =
     (cb.eval_distribution).bind (λ b, (ca b).eval_distribution) :=
 trans (by refl) (pmf.bind_on_support_eq_bind cb.eval_distribution _)
 
-@[simp] lemma eval_distribution_rnd {A : Type} [inhabited A] [fintype A] [decidable_eq A] :
+@[simp] 
+lemma eval_distribution_rnd {A : Type} [inhabited A] [fintype A] :
   eval_distribution (rnd A) = pmf.const A := 
 rfl
+
+@[simp]
+lemma eval_distribution_bind_ret (a : A) (cb : A → comp B)
+  [∀ a, (cb a).is_well_formed] :
+  ((comp.ret a).bind cb).eval_distribution =
+    (cb a).eval_distribution :=
+by simp
 
 end eval_distribution
 

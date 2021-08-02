@@ -33,27 +33,27 @@ def ring_sig_of_pas [principal_action_class G X]
     g ← comp.rnd G, 
     return (g +ᵥ x₀, g)),
   gen_well_formed := by apply_instance,
-  sign := λ n i sk R m, (do
+  sign := λ n inp, (do
     k ← H.keygen (),
     tᵢ ← comp.rnd G,
     rs ← comp.vector_call (comp.rnd G) n,
     cs ← comp.vector_call (comp.rnd G) n,
     return (
-      let Ts : vector X n := vector.of_fn (λ j, (rs.nth j + cs.nth j) +ᵥ R.nth j) in
-      let Ts' : vector X n := Ts.update_nth i (tᵢ +ᵥ x₀) in
-      let h : list X × M := ⟨x₀ :: (R.append Ts').to_list, m⟩ in
+      let Ts : vector X n := vector.of_fn (λ j, (rs.nth j + cs.nth j) +ᵥ inp.R.mems.nth j) in
+      let Ts' : vector X n := Ts.update_nth inp.R.i (tᵢ +ᵥ x₀) in
+      let h : list X × M := ⟨x₀ :: (inp.R.mems.append Ts').to_list, inp.m⟩ in
       let c : G := H.hash (k, h) in
-      let cᵢ : G := c + cs.nth i - cs.to_list.sum in
-      let rᵢ : G := tᵢ - sk - cᵢ in
+      let cᵢ : G := c + cs.nth inp.R.i - cs.to_list.sum in
+      let rᵢ : G := tᵢ - inp.sk - cᵢ in
       { k := k, 
-        cs := cs.update_nth i cᵢ, 
-        rs := rs.update_nth i rᵢ }
+        cs := cs.update_nth inp.R.i cᵢ, 
+        rs := rs.update_nth inp.R.i rᵢ }
     )),
   sign_well_formed := by apply_instance,
-  verify := λ n R m σ, 
-    let Ts : vector X n := vector.of_fn (λ j, (σ.rs.nth j + σ.cs.nth j) +ᵥ R.nth j) in 
-    let h : list (X) × M := ⟨x₀ :: (R.append Ts).to_list, m⟩ in 
-    H.hash (σ.k, h) = σ.cs.to_list.sum,
+  verify := λ n inp, 
+    let Ts : vector X n := vector.of_fn (λ j, (inp.σ.rs.nth j + inp.σ.cs.nth j) +ᵥ inp.mems.nth j) in 
+    let h : list (X) × M := ⟨x₀ :: (inp.mems.append Ts).to_list, inp.m⟩ in 
+    H.hash (inp.σ.k, h) = inp.σ.cs.to_list.sum,
   }
 
 variables [principal_action_class G X]
@@ -85,7 +85,7 @@ by rw [vectorization_swap, ring_sig_of_pas.vectorization_of_mem_support_keygen x
 @[simp]
 lemma ring_sig_of_pas.verify_iff (n : ℕ) (R : vector X n) (m : M) 
   (σ : sig_type K G n) :
-    ((ring_sig_of_pas x₀ H).verify n R m σ) =
+    ((ring_sig_of_pas x₀ H).verify n ⟨R, m, σ⟩) =
       let Ts : vector X n := vector.of_fn (λ j, (σ.rs.nth j + σ.cs.nth j) +ᵥ R.nth j) in
       H.hash (σ.1, ⟨vector.to_list (x₀ ::ᵥ (R.append Ts)), m⟩) = σ.cs.to_list.sum :=
 by simp
@@ -99,7 +99,7 @@ begin
   intro h,
   rw ring_sig.mem_support_completeness_experiment_iff at h,
   obtain ⟨ks, hks, σ, hσ, h⟩ := h,
-  suffices : (ring_sig_of_pas x₀ H).verify n (vector.map prod.fst ks) m σ = tt,
+  suffices : (ring_sig_of_pas x₀ H).verify n ⟨vector.map prod.fst ks, m, σ⟩ = tt,
   from absurd (h.trans this).symm tt_eq_ff_eq_false,
   simp only [vector.to_list_cons, vector.nth_map, vector.to_list_append, vector.to_list_of_fn, ring_sig_of_pas_verify,
     vector.to_list_map, to_bool_iff],
@@ -161,18 +161,18 @@ def ring_signature_scheme_of_hhs [hard_homogeneous_space G X]
 
 variables [hard_homogeneous_space G X] 
 
-theorem ring_signature_scheme_of_hhs.anonomyous (x₀ : Π sp, X sp) 
-  (H : hash_scheme K (λ sp, list (X sp) × M) (λ sp, G sp))
-  (hH : hash_scheme.collision_resistant H) :
-  (ring_signature_scheme_of_hhs x₀ H).anonomyous :=
-begin
-  sorry,
-end
-
 theorem ring_signature_scheme_of_hhs.unforgeable (x₀ : Π sp, X sp) 
   (H : hash_scheme K (λ sp, list (X sp) × M) (λ sp, G sp))
   (hH : hash_scheme.collision_resistant H) :
   (ring_signature_scheme_of_hhs x₀ H).unforgeable :=
+begin
+  sorry,
+end
+
+theorem ring_signature_scheme_of_hhs.anonomyous (x₀ : Π sp, X sp) 
+  (H : hash_scheme K (λ sp, list (X sp) × M) (λ sp, G sp))
+  (hH : hash_scheme.collision_resistant H) :
+  (ring_signature_scheme_of_hhs x₀ H).anonomyous :=
 begin
   sorry,
 end

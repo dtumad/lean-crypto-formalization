@@ -157,10 +157,7 @@ eval_distribution_is_well_formed oc hoc s o ho
 /-- Run the computation using internal state to track queries -/
 def logging_eval_distribution (oc : oracle_comp A B C)
   (o : A → comp B) : comp (C × (list A)) :=
-begin
-  refine (oc.eval_distribution [] (λ as a, _)),
-  refine (o a >>= λ b, return (b, a :: as)),
-end
+oc.eval_distribution [] (λ as a, (o a >>= λ b, return (b, a :: as)))
 
 @[simp]
 instance logging_eval_distribution.is_well_formed 
