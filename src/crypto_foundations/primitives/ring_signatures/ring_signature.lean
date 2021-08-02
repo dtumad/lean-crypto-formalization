@@ -40,7 +40,7 @@ end signing_ring
 `sign` returns a signature on a message, where `i : fin n` is the signer's index in the `n`-person ring
   and the list of signers is given in the form of an `n` element vector,
 `verify` checks whether a given signature is valid on a ring and a message -/
-structure ring_sig (M : Type) (S : ℕ → Type) (PK SK : Type)
+structure ring_signature (M : Type) (S : ℕ → Type) (PK SK : Type)
   [decidable_eq M] [decidable_eq PK] :=
 (gen : unit → comp (PK × SK))
 (gen_well_formed : (gen ()).is_well_formed)
@@ -48,11 +48,11 @@ structure ring_sig (M : Type) (S : ℕ → Type) (PK SK : Type)
 (sign_well_formed : ∀ n inp, (sign n inp).is_well_formed)
 (verify (n : ℕ) : verification_input n PK M S → bool)
 
-namespace ring_sig
+namespace ring_signature
 
 variables {M : Type} {S : ℕ → Type} {PK SK : Type}
 variables [decidable_eq M] [decidable_eq PK]
-variables (rs : ring_sig M S PK SK)
+variables (rs : ring_signature M S PK SK)
 
 @[simp]
 instance gen.is_well_formed : (rs.gen ()).is_well_formed :=
@@ -90,7 +90,7 @@ section ring_sig_oracle
 
 /-- Definition of a probabalistic computaiton with oracle signing access
   `n` is the global number of `PK × SK` pairs used in the simulation. -/
-def signing_oracle_comp (rs : ring_sig M S PK SK) (n : ℕ) (T : Type) :=
+def signing_oracle_comp (rs : ring_signature M S PK SK) (n : ℕ) (T : Type) :=
 oracle_comp (Σ (l : ℕ), signing_ring l PK × M)
   (with_bot $ Σ (l : ℕ), S l) T
 
@@ -175,20 +175,20 @@ do ks ← (comp.vector_call (rs.gen ()) n),
 
 end anonomyous_experiment
 
-end ring_sig
+end ring_signature
 
 variables [function_cost_model ℚ] [comp_cost_model ℚ]
 
 structure ring_signature_scheme (M : Type) (S : ℕ → ℕ → Type) (PK SK : ℕ → Type)
   [decidable_eq M] [∀ sp, decidable_eq $ PK sp] :=
-(rs (sp : ℕ) : ring_sig M (S sp) (PK sp) (SK sp))
+(rs (sp : ℕ) : ring_signature M (S sp) (PK sp) (SK sp))
 (gen_poly_time : complexity_class.polynomial_complexity (λ sp, (rs sp).gen))
 (sign_poly_time (n : ℕ) : complexity_class.polynomial_complexity (λ sp, (rs sp).sign n))
 (verify_poly_time (n : ℕ) : complexity_class.polynomial_complexity (λ sp, (rs sp).verify n))
 
 namespace ring_signature_scheme
 
-open ring_sig
+open ring_signature
 
 variables {M : Type} {S : ℕ → ℕ → Type} {PK SK : ℕ → Type}
 variables [decidable_eq M] [∀ sp, decidable_eq $ PK sp]

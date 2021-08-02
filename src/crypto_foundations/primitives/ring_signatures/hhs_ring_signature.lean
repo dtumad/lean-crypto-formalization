@@ -28,7 +28,7 @@ structure sig_type (K G : Type) (n : ℕ) : Type :=
 @[simps]
 def ring_sig_of_pas [principal_action_class G X]
   (x₀ : X) (H : hash_function K (list X × M) G) :
-  ring_sig M (sig_type K G) X G :=
+  ring_signature M (sig_type K G) X G :=
 { gen := λ _, (do 
     g ← comp.rnd G, 
     return (g +ᵥ x₀, g)),
@@ -97,7 +97,7 @@ begin
   intros n i m,
   simp only [comp.Pr_def, and_true, bool.forall_bool, implies_true_iff, eq_self_iff_true, comp.Pr_prop_eq_one_iff],
   intro h,
-  rw ring_sig.mem_support_completeness_experiment_iff at h,
+  rw ring_signature.mem_support_completeness_experiment_iff at h,
   obtain ⟨ks, hks, σ, hσ, h⟩ := h,
   suffices : (ring_sig_of_pas x₀ H).verify n ⟨vector.map prod.fst ks, m, σ⟩ = tt,
   from absurd (h.trans this).symm tt_eq_ff_eq_false,
