@@ -130,6 +130,13 @@ t.logging_eval_distribution
   (λ t, signing_oracle rs n ks t)
 
 @[derive comp.is_well_formed]
+def signing_oracle_comp.stateless_eval_distribution {n : ℕ} {T : Type}
+  (t : signing_oracle_comp rs n T) [t.is_well_formed]
+  (ks : vector (PK × SK) n) :
+  comp T :=
+(t.logging_eval_distribution ks) >>= (λ tlog, return tlog.1)
+
+@[derive comp.is_well_formed]
 def corruption_oracle_comp.logging_eval_distribution {n : ℕ} {T : Type}
   (t : corruption_oracle_comp rs n T) [t.is_well_formed] 
   (ks : vector (PK × SK) n) :
@@ -154,11 +161,9 @@ def unforgeable_log_admissable (n : ℕ) (ks : vector (PK × SK) n)
   list (Σ (t : with_bot ℕ), t.elim (fin n) (λ l, signing_ring l PK × M)) → bool
 | [] := true
 | (⟨none, v⟩ :: t) := let corrupted_party : PK := (ks.nth v).1 in
-    (corrupted_party ∉ A_out.2.mems.to_list) 
-      ∧ unforgeable_log_admissable t
+    (corrupted_party ∉ A_out.2.mems.to_list) ∧ unforgeable_log_admissable t
 | (⟨some l, v⟩ :: t) := 
-    ¬ (v.2 = A_out.2.m ∧ v.1.mems.to_list ~ A_out.2.mems.to_list)
-      ∧ unforgeable_log_admissable t
+    ¬ (v.2 = A_out.2.m ∧ v.1.mems.to_list ~ A_out.2.mems.to_list) ∧ unforgeable_log_admissable t
 
 -- TODO: A also needs a corruption oracle for this experiment
 @[derive comp.is_well_formed]
@@ -180,13 +185,12 @@ section anonomyous_experiment
 -- Note that the second adversary gets all the secret keys as well -/
 @[derive comp.is_well_formed]
 def anonomyous_experiment {A_state : Type} (n : ℕ)
-  (A : vector PK n → signing_oracle_comp rs n (Σ (l : ℕ), M × (fin n × fin l) × (fin n × fin l) × (vector PK l) × A_state))
+  (A : vector PK n → signing_oracle_comp rs n (Σ (l : ℕ), M × fin l × fin l × (vector PK l) × A_state))
   (A' : A_state → vector (PK × SK) n → (Σ (l : ℕ), S l) → signing_oracle_comp rs n bool)
   [hA : ∀ pks, (A pks).is_well_formed] [hA' : ∀ st ks σ, (A' st ks σ).is_well_formed] : 
   comp bool :=
 do ks ← (comp.vector_call (rs.gen ()) n),
-  A_out ← ((A (vector.map prod.fst ks)).logging_eval_distribution ks),
-  A_out ← return A_out.1,
+  A_out ← ((A (vector.map prod.fst ks)).stateless_eval_distribution ks),
   m ← return A_out.2.1,
   i₀ ← return A_out.2.2.1,
   i₁ ← return A_out.2.2.2.1,
@@ -194,11 +198,13 @@ do ks ← (comp.vector_call (rs.gen ()) n),
   state ← return A_out.2.2.2.2.2,
   b ← comp.rnd bool,
   i ← return (if b then i₁ else i₀),
-  sk ← return (ks.nth i.1).2,
-  σ ← rs.sign _ ⟨⟨R, i.2⟩, sk, m⟩,
-  b' ← (A' state ks ⟨A_out.1, σ⟩).logging_eval_distribution ks,
-  b' ← return b'.1,
-  comp.ret (b' = b)
+  -- Look for a `sk` corresponding to the signer in the adversaries challenge
+  k ← return (list.find (λ (k : PK × SK), k.1 = R.nth i) ks.to_list),
+  -- If `k` is none return false, otherwise get a signature and give as a challenge to the second adversary
+  (k.elim (return false) (λ k, do
+    σ ← rs.sign _ ⟨⟨R, i⟩, k.2, m⟩,
+    b' ← ((A' state ks ⟨A_out.1, σ⟩).stateless_eval_distribution ks),
+    return (b' = b ∧ i₀ ≠ i₁)))
 
 end anonomyous_experiment
 
@@ -224,22 +230,22 @@ variable (rss : ring_signature_scheme M S PK SK)
 section unforgeable
 
 structure unforgeable_adversary (p : polynomial ℕ) := 
-(adv (sp : ℕ) (pks : vector (PK sp) (p.eval sp)) :
+(A (sp : ℕ) (pks : vector (PK sp) (p.eval sp)) :
   signing_and_corruption_oracle_comp (rss.rs sp) (p.eval sp) 
     (Σ (n : ℕ), verification_input n (PK sp) M (S sp)))
-(wf : ∀ sp pks, (adv sp pks).is_well_formed)
+(wf : ∀ sp pks, (A sp pks).is_well_formed)
 (poly_time : true)
 
 instance unforgeable_adversary.is_well_formed
-  {p : polynomial ℕ} (A : unforgeable_adversary rss p) 
+  {p : polynomial ℕ} (adv : unforgeable_adversary rss p) 
   (sp : ℕ) (pks : vector (PK sp) (p.eval sp)) :
-  (A.adv sp pks).is_well_formed :=
-A.wf sp pks
+  (adv.A sp pks).is_well_formed :=
+adv.wf sp pks
 
 def unforgeable := 
-∀ {p : polynomial ℕ} (A : unforgeable_adversary rss p),
+∀ {p : polynomial ℕ} (adv : unforgeable_adversary rss p),
   asymptotics.negligable (λ sp, 
-    comp.Pr (unforgeable_experiment (rss.rs sp) (p.eval sp) (A.adv sp)))
+    comp.Pr (unforgeable_experiment (rss.rs sp) (p.eval sp) (adv.A sp)))
 
 end unforgeable
 
@@ -247,33 +253,33 @@ section anonomyous
 
 structure anonomyous_adversary (p : polynomial ℕ) :=
 (state : Type)
-(adv₁ (sp : ℕ) (pks : vector (PK sp) (p.eval sp)) : 
+(A₁ (sp : ℕ) (pks : vector (PK sp) (p.eval sp)) : 
   signing_oracle_comp (rss.rs sp) (p.eval sp)
-      (Σ (l : ℕ), M × (fin (p.eval sp) × fin l) 
-          × (fin (p.eval sp) × fin l) × (vector (PK sp) l) × state))
-(adv₂ (sp : ℕ) (st : state) (ks : vector (PK sp × SK sp) (p.eval sp))
+      (Σ (l : ℕ), M × (fin l) 
+          × (fin l) × (vector (PK sp) l) × state))
+(A₂ (sp : ℕ) (st : state) (ks : vector (PK sp × SK sp) (p.eval sp))
   (σ : Σ (l : ℕ), S sp l) : signing_oracle_comp (rss.rs sp) (p.eval sp) bool)
-(adv₁_wf : ∀ sp pks, (adv₁ sp pks).is_well_formed)
-(adv₂_wf : ∀ sp st ks σ, (adv₂ sp st ks σ).is_well_formed)
-(adv₁_pt : true)
-(adv₂_pt : true)
+(A₁_wf : ∀ sp pks, (A₁ sp pks).is_well_formed)
+(A₂_wf : ∀ sp st ks σ, (A₂ sp st ks σ).is_well_formed)
+(A₁_pt : true)
+(A₂_pt : true)
 
 instance anonomyous_adversary.adv₁.is_well_formed 
-  {p : polynomial ℕ} (A : anonomyous_adversary rss p)
+  {p : polynomial ℕ} (adv : anonomyous_adversary rss p)
   (sp : ℕ) (pks : vector (PK sp) (p.eval sp)) :
-  (A.adv₁ sp pks).is_well_formed :=
-A.adv₁_wf sp pks
+  (adv.A₁ sp pks).is_well_formed :=
+adv.A₁_wf sp pks
 
 instance anonomyous_adversary.adv₂.is_well_formed
-  {p : polynomial ℕ} (A : anonomyous_adversary rss p)
-  (sp : ℕ) (st : A.state) (ks : vector (PK sp × SK sp) (p.eval sp))
-  (σ : Σ (l : ℕ), S sp l) : (A.adv₂ sp st ks σ).is_well_formed :=
-A.adv₂_wf sp st ks σ
+  {p : polynomial ℕ} (adv : anonomyous_adversary rss p)
+  (sp : ℕ) (st : adv.state) (ks : vector (PK sp × SK sp) (p.eval sp))
+  (σ : Σ (l : ℕ), S sp l) : (adv.A₂ sp st ks σ).is_well_formed :=
+adv.A₂_wf sp st ks σ
 
 def anonomyous := 
-∀ (p : polynomial ℕ) (A : anonomyous_adversary rss p),
+∀ (p : polynomial ℕ) (adv : anonomyous_adversary rss p),
 asymptotics.negligable (λ sp, 
-  comp.Pr (anonomyous_experiment (rss.rs sp) (p.eval sp) (A.adv₁ sp) (A.adv₂ sp)) - 0.5)
+  comp.Pr (anonomyous_experiment (rss.rs sp) (p.eval sp) (adv.A₁ sp) (adv.A₂ sp)) - 0.5)
 
 end anonomyous
 

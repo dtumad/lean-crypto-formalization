@@ -105,15 +105,14 @@ end is_well_formed
 /-- Evaluation distribution of an `oracle_comp A B C` as a `comp A`.
 `S` is the type of the internal state of the `A` to `B` oracle, and `s` is the initial state.
 `o` takes the current oracle state and an `A` value, and computes a `B` value and new oracle state. -/
-def eval_distribution (oc : oracle_comp A B C) :
-  Π {S : Type} (s : S) (o : Π t, S → A t → comp (B t × S)), comp (C × S) :=
-begin
-  induction oc with C c C D oc od hoc hod t a,
-  { exact λ S s o,
-      c.bind (λ x, @comp.ret (C × S) (x, s)) },
-  { exact λ S s o, (@hoc S s o).bind (λ cs', @hod cs'.fst S cs'.snd o) },
-  { exact λ S s o, o t s a },
-end
+def eval_distribution : Π {C : Type} (oc : oracle_comp A B C) 
+  {S : Type} (s : S) (o : Π t, S → A t → comp (B t × S)), comp (C × S)
+| C (oc_ret c) S s o := 
+  (do x ← c, return (x, s))
+| C (oc_bind oc od) S s o :=
+  (do cs' ← eval_distribution oc s o,
+    eval_distribution (od cs'.fst) cs'.snd o)
+| C (oc_query a) S s o := o _ s a
 
 @[simp]
 lemma eval_distribution_oc_query {t : T} {S : Type}
@@ -168,5 +167,12 @@ instance logging_eval_distribution.is_well_formed
   (o : Π t, A t → comp (B t)) [ho : ∀ t a, (o t a).is_well_formed] :
   (logging_eval_distribution oc o).is_well_formed :=
 eval_distribution_is_well_formed _ hoc _ _ (by simp)
+
+section singleton_oracle_comp
+
+def singleton_oracle_comp (A B : Type) : Type → Type 1 :=
+oracle_comp (λ (_ : unit), A) (λ (_ : unit), B)
+
+end singleton_oracle_comp
 
 end oracle_comp

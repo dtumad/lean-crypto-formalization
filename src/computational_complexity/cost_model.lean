@@ -175,15 +175,11 @@ function_cost_model.cost_zero_const T u
 
 instance cost_zero_of_subsingleton_right {T U : Type} (f : T → U)
   [hT : nonempty T] [subsingleton U] : cost_zero C f :=
-begin
-  by_cases hU : nonempty U,
-  { exact hU.elim (λ u, cost_zero_ext (cost_zero_const T u) $ by simp) },
-  { exact absurd (hT.elim (λ t, ⟨f t⟩) : nonempty U) hU }
-end
+hT.elim (λ t, cost_zero_ext (cost_zero_const T $ f t) $ by simp)
 
 instance cost_zero_of_subsingleton_left {T U : Type} (f : T → U)
   [hT : nonempty T] [subsingleton T] : cost_zero C f :=
-hT.elim (λ t, cost_zero_ext (cost_zero_const T (f t)) (funext (λ t', congr_arg f (by simp))))
+hT.elim (λ t, cost_zero_ext (cost_zero_const T $ f t) (funext (λ t', congr_arg f (by simp))))
 
 end function_cost_model
 

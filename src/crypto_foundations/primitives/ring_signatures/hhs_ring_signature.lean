@@ -38,21 +38,20 @@ def ring_sig_of_pas [principal_action_class G X]
     tᵢ ← comp.rnd G,
     rs ← comp.vector_call (comp.rnd G) n,
     cs ← comp.vector_call (comp.rnd G) n,
-    return (
-      let Ts : vector X n := vector.of_fn (λ j, (rs.nth j + cs.nth j) +ᵥ inp.R.mems.nth j) in
-      let Ts' : vector X n := Ts.update_nth inp.R.i (tᵢ +ᵥ x₀) in
-      let h : list X × M := ⟨x₀ :: (inp.R.mems.append Ts').to_list, inp.m⟩ in
-      let c : G := H.hash (k, h) in
-      let cᵢ : G := c + cs.nth inp.R.i - cs.to_list.sum in
-      let rᵢ : G := tᵢ - inp.sk - cᵢ in
-      { k := k, 
+    Ts ← return (vector.of_fn (λ j, (rs.nth j + cs.nth j) +ᵥ inp.R.mems.nth j)),
+    Ts' ← return (Ts.update_nth inp.R.i (tᵢ +ᵥ x₀)),
+    h ← return (⟨x₀ :: (inp.R.mems.append Ts').to_list, inp.m⟩ : list X × M),
+    c ← return (H.hash (k, h)),
+    cᵢ ← return (c + cs.nth inp.R.i - cs.to_list.sum),
+    rᵢ ← return (tᵢ - inp.sk - cᵢ),
+    return ({ k := k, 
         cs := cs.update_nth inp.R.i cᵢ, 
         rs := rs.update_nth inp.R.i rᵢ }
     )),
   sign_well_formed := by apply_instance,
   verify := λ n inp, 
     let Ts : vector X n := vector.of_fn (λ j, (inp.σ.rs.nth j + inp.σ.cs.nth j) +ᵥ inp.mems.nth j) in 
-    let h : list (X) × M := ⟨x₀ :: (inp.mems.append Ts).to_list, inp.m⟩ in 
+    let h : list X × M := ⟨x₀ :: (inp.mems.append Ts).to_list, inp.m⟩ in 
     H.hash (inp.σ.k, h) = inp.σ.cs.to_list.sum,
   }
 
@@ -83,11 +82,10 @@ lemma ring_sig_of_pas.vectorization_of_mem_support_keygen'
 by rw [vectorization_swap, ring_sig_of_pas.vectorization_of_mem_support_keygen x₀ H k hk]
 
 @[simp]
-lemma ring_sig_of_pas.verify_iff (n : ℕ) (R : vector X n) (m : M) 
-  (σ : sig_type K G n) :
-    ((ring_sig_of_pas x₀ H).verify n ⟨R, m, σ⟩) =
-      let Ts : vector X n := vector.of_fn (λ j, (σ.rs.nth j + σ.cs.nth j) +ᵥ R.nth j) in
-      H.hash (σ.1, ⟨vector.to_list (x₀ ::ᵥ (R.append Ts)), m⟩) = σ.cs.to_list.sum :=
+lemma ring_sig_of_pas.verify_iff (n : ℕ) (inp : verification_input n X M (sig_type K G)) : 
+  ((ring_sig_of_pas x₀ H).verify n inp) =
+    let Ts : vector X n := vector.of_fn (λ j, (inp.σ.rs.nth j + inp.σ.cs.nth j) +ᵥ inp.mems.nth j) in
+    H.hash (inp.σ.k, ⟨vector.to_list (x₀ ::ᵥ (inp.mems.append Ts)), inp.m⟩) = inp.σ.cs.to_list.sum :=
 by simp
 
 theorem ring_sig_of_pas.complete [principal_action_class G X]
@@ -160,6 +158,24 @@ def ring_signature_scheme_of_hhs [hard_homogeneous_space G X]
 }
 
 variables [hard_homogeneous_space G X] 
+
+-- Either the adversary is forging a hash, or hacking the `c` values.
+def unforgeable_reduction (x₀ : Π sp, X sp)
+  (H : hash_scheme K (λ sp, list (X sp) × M) (λ sp, G sp))
+  (p : polynomial ℕ)
+  (adv : ring_signature_scheme.unforgeable_adversary
+    (ring_signature_scheme_of_hhs x₀ H) p)
+  : vectorization_adversary G X × hash_scheme.collision_finding_adversary H :=
+⟨{
+  A := λ sp, begin
+    rintro ⟨x₁, x₂⟩,
+    have := ring_signature_scheme.unforgeable_adversary.A adv,
+    specialize this sp,
+    sorry,
+  end,
+  is_well_formed := sorry,
+  polynomial_complexity := sorry,
+}, sorry⟩
 
 theorem ring_signature_scheme_of_hhs.unforgeable (x₀ : Π sp, X sp) 
   (H : hash_scheme K (λ sp, list (X sp) × M) (λ sp, G sp))

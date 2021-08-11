@@ -16,7 +16,7 @@ Well formed computations are defined so that they will have a nonempty support (
   `rnd n` represents a computation of purely random bits, 
   and `repeat` can repeat a random computation until some predicate holds.
   Note that because Lean doesn't have an impredicative set type, this raises universe levels -/
-inductive comp : Π (A : Type), Type 1
+inductive comp : Type → Type 1
 | ret {A : Type} (a : A) : comp A
 | bind {A B : Type} : Π (cb : comp B) (ca : B → comp A), comp A
 | rnd (A : Type) [fA : fintype A] [iA : inhabited A] : comp A

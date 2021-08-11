@@ -187,19 +187,18 @@ variables (G X : ℕ → Type)
     so this definition doesn't include functions for converting to and from representative bit-strings.
   TODO: clean up the massive typeclass dependencies -/
 class algorithmic_homogeneous_space :=
--- TODO: see if they should use fun₂ version instead of currying
-(polynomial_complexity_add : complexity_class.polynomial_complexity
-  (λ sp, (λ x, x.1 + x.2 : G sp × G sp → G sp)))
-(polynomial_complexity_inv : complexity_class.polynomial_complexity
-  (λ sp, (λ x, -x : G sp → G sp)))
-(polynomial_complexity_vadd : complexity_class.polynomial_complexity
-  (λ n, (λ x, x.1 +ᵥ x.2 : G n × X n → X n)))
-(polynomial_complexity_eq_G : complexity_class.polynomial_complexity
-  (λ n, (λ x, x.1 = x.2 : G n × G n → Prop)))
-(polynomial_complexity_eq_X : complexity_class.polynomial_complexity
-  (λ n, (λ x, x.1 = x.2 : X n × X n → Prop)))
-(polynomial_complexity_rnd_G : complexity_class.polynomial_complexity
-  (λ n, (λ x, comp.rnd (G n) : unit → comp (G n))))
+(polynomial_complexity_add : 
+  complexity_class.polynomial_complexity (λ sp, (λ x, x.1 + x.2 : G sp × G sp → G sp)))
+(polynomial_complexity_inv :
+  complexity_class.polynomial_complexity (λ sp, (λ x, -x : G sp → G sp)))
+(polynomial_complexity_vadd : 
+  complexity_class.polynomial_complexity (λ n, (λ x, x.1 +ᵥ x.2 : G n × X n → X n)))
+(polynomial_complexity_eq_G : 
+  complexity_class.polynomial_complexity (λ n, (λ x, x.1 = x.2 : G n × G n → Prop)))
+(polynomial_complexity_eq_X : 
+  complexity_class.polynomial_complexity (λ n, (λ x, x.1 = x.2 : X n × X n → Prop)))
+(polynomial_complexity_rnd_G : 
+  complexity_class.polynomial_complexity (λ n, (λ x, comp.rnd (G n) : unit → comp (G n))))
 
 section algorithmic_homogeneous_space
 variable [algorithmic_homogeneous_space G X]
