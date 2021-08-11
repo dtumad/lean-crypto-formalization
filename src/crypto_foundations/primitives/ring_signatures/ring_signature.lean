@@ -122,34 +122,34 @@ oracle_comp
 variables {rs}
 
 @[derive comp.is_well_formed]
-def signing_oracle_comp.logging_eval_distribution {n : ℕ} {T : Type}
+def signing_oracle_comp.logging_simulate {n : ℕ} {T : Type}
   (t : signing_oracle_comp rs n T) [t.is_well_formed]
   (ks : vector (PK × SK) n) : 
   comp (T × list (Σ (l : ℕ), signing_ring l PK × M)) :=
-t.logging_eval_distribution 
+t.logging_simulate 
   (λ t, signing_oracle rs n ks t)
 
 @[derive comp.is_well_formed]
-def signing_oracle_comp.stateless_eval_distribution {n : ℕ} {T : Type}
+def signing_oracle_comp.stateless_simulate {n : ℕ} {T : Type}
   (t : signing_oracle_comp rs n T) [t.is_well_formed]
   (ks : vector (PK × SK) n) :
   comp T :=
-(t.logging_eval_distribution ks) >>= (λ tlog, return tlog.1)
+(t.logging_simulate ks) >>= (λ tlog, return tlog.1)
 
 @[derive comp.is_well_formed]
-def corruption_oracle_comp.logging_eval_distribution {n : ℕ} {T : Type}
+def corruption_oracle_comp.logging_simulate {n : ℕ} {T : Type}
   (t : corruption_oracle_comp rs n T) [t.is_well_formed] 
   (ks : vector (PK × SK) n) :
   comp (T × list (Σ (t : unit), fin n)) :=
-t.logging_eval_distribution 
+t.logging_simulate 
   (λ t, corruption_oracle rs n ks)
 
 @[derive comp.is_well_formed]
-def signing_and_corruption_oracle_comp.logging_eval_distribution {n : ℕ} {T : Type}
+def signing_and_corruption_oracle_comp.logging_simulate {n : ℕ} {T : Type}
   (t : signing_and_corruption_oracle_comp rs n T) [t.is_well_formed]
   (ks : vector (PK × SK) n) :
   comp (T × list _) :=
-t.logging_eval_distribution 
+t.logging_simulate 
   (λ t, option.rec_on t (corruption_oracle rs n ks) (signing_oracle rs n ks))
 
 end ring_sig_oracle
@@ -172,7 +172,7 @@ def unforgeable_experiment (n : ℕ)
   [hA : ∀ pks, (A pks).is_well_formed] : comp bool :=
 do ks ← comp.vector_call (rs.gen ()) n, 
   pks ← return (vector.map prod.fst ks),
-  A_out ← (A pks).logging_eval_distribution ks,
+  A_out ← (A pks).logging_simulate ks,
   admissable ← return (unforgeable_log_admissable n ks A_out.1 A_out.2),
   return (if admissable then rs.verify _ A_out.1.2 else false)
 
@@ -190,7 +190,7 @@ def anonomyous_experiment {A_state : Type} (n : ℕ)
   [hA : ∀ pks, (A pks).is_well_formed] [hA' : ∀ st ks σ, (A' st ks σ).is_well_formed] : 
   comp bool :=
 do ks ← (comp.vector_call (rs.gen ()) n),
-  A_out ← ((A (vector.map prod.fst ks)).stateless_eval_distribution ks),
+  A_out ← ((A (vector.map prod.fst ks)).stateless_simulate ks),
   m ← return A_out.2.1,
   i₀ ← return A_out.2.2.1,
   i₁ ← return A_out.2.2.2.1,
@@ -203,7 +203,7 @@ do ks ← (comp.vector_call (rs.gen ()) n),
   -- If `k` is none return false, otherwise get a signature and give as a challenge to the second adversary
   (k.elim (return false) (λ k, do
     σ ← rs.sign _ ⟨⟨R, i⟩, k.2, m⟩,
-    b' ← ((A' state ks ⟨A_out.1, σ⟩).stateless_eval_distribution ks),
+    b' ← ((A' state ks ⟨A_out.1, σ⟩).stateless_simulate ks),
     return (b' = b ∧ i₀ ≠ i₁)))
 
 end anonomyous_experiment
