@@ -330,11 +330,19 @@ end comp_cost_model
 
 class oracle_comp_cost_model (C : Type) [linear_ordered_semiring C]
   [function_cost_model C] [comp_cost_model C]
-  {T : Type} (A B : T → Type) (query_cost : C)
-  extends monadic_cost_model C (oracle_comp A B) :=
-(cost_oc_query {t : T} : cost_at_most (oracle_comp.oc_query : A t → oracle_comp A B (B t)) query_cost)
+  (spec : oracle_comp_spec)
+  extends monadic_cost_model C (oracle_comp spec) :=
+(cost_oc_query {i : spec.ι} : 
+  cost_at_most (oracle_comp.oc_query i) (1 : C))
 (cost_oc_ret {T U : Type} {x : C} (cu : T → comp U) (hcu : cost_at_most cu x) :
-  cost_at_most (λ t, oracle_comp.oc_ret (cu t) : T → oracle_comp A B U) x)
+  cost_at_most (λ t, oracle_comp.oc_ret (cu t) : T → oracle_comp spec U) x)
+
+instance oracle_comp_cost_model.cost_model {C : Type} [linear_ordered_semiring C]
+  [function_cost_model C] [comp_cost_model C]
+  (spec : oracle_comp_spec) 
+  [oracle_comp_cost_model C spec] (T U : Type) :
+  cost_model C (T → oracle_comp spec U) :=
+monadic_cost_model.cost_model C (oracle_comp spec) T U
 
 namespace oracle_comp_cost_model
 

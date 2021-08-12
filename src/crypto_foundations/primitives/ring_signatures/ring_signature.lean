@@ -88,12 +88,16 @@ end complete
 
 section ring_sig_oracle
 
+def signing_oracle_spec (rs : ring_signature M S PK SK) :
+  oracle_comp_spec :=
+{ ι := ℕ,
+  D := λ n, signing_ring n PK × M,
+  R := λ n, with_bot (S n) }
+
 /-- Definition of a probabalistic computaiton with oracle signing access
   `n` is the global number of `PK × SK` pairs used in the simulation. -/
-def signing_oracle_comp (rs : ring_signature M S PK SK) (n : ℕ) :=
-oracle_comp 
-  (λ (l : ℕ), signing_ring l PK × M)
-  (λ (l : ℕ), with_bot $ S l)
+def signing_oracle_comp (rs : ring_signature M S PK SK) :=
+oracle_comp (signing_oracle_spec rs)
 
 @[derive comp.is_well_formed]
 def signing_oracle (rs : ring_signature M S PK SK) (n : ℕ)
@@ -102,11 +106,13 @@ def signing_oracle (rs : ring_signature M S PK SK) (n : ℕ)
 λ l inp, option.elim (list.find (λ (k : PK × SK), k.1 = inp.1.pk) ks.to_list)
   (return ⊥) (λ k, functor.map some (rs.sign _ ⟨inp.1, k.2, inp.2⟩))
 
+def corruption_oracle_spec (rs : ring_signature M S PK SK) (n : ℕ) :
+  oracle_comp_spec :=
+oracle_comp_spec.singleton_spec (fin n) SK
+
 /-- `n` is the global number of `PK × SK` pairs used in the simulation. -/
 def corruption_oracle_comp (rs : ring_signature M S PK SK) (n : ℕ) :=
-oracle_comp 
-  (λ (_ : unit), fin n)
-  (λ (_ : unit), SK)
+oracle_comp (corruption_oracle_spec rs n)
 
 @[derive comp.is_well_formed]
 def corruption_oracle (rs : ring_signature M S PK SK) (n : ℕ)

@@ -5,15 +5,17 @@ import computational_complexity.complexity_class
 import computational_complexity.negligable
 import data.list.basic
 
-structure signature (M PK SK S ROI ROO : Type)
+/-- Signature on messages `M`, public and secret keys `PK` and `SK`,
+  signatures of type `S`, given access to a random oracle `ROD → ROR` -/
+structure signature (M PK SK S ROD ROR : Type)
   [decidable_eq M] [decidable_eq PK]
-  [decidable_eq ROI] [fintype ROO]
-  [inhabited ROO] :=
+  [decidable_eq ROD] [fintype ROR]
+  [inhabited ROR] :=
 (gen : unit → comp (PK × SK))
 (gen_is_well_formed : ∀ x, (gen x).is_well_formed)
-(sign : SK × M → random_oracle_comp ROI ROO S)
+(sign : SK × M → oracle_comp (oracle_comp_spec.singleton_spec ROD ROR) S)
 (sign_is_well_formed : ∀ x, (sign x).is_well_formed)
-(verify : PK × S → random_oracle_comp ROI ROO bool)
+(verify : PK × S → oracle_comp (oracle_comp_spec.singleton_spec ROD ROR) bool)
 (verify_is_well_formed : ∀ x, (verify x).is_well_formed)
 
 namespace signature
@@ -47,8 +49,8 @@ section complete
 
 def completeness_experiment (m : M) : comp bool :=
 do (pk, sk) ← sig.gen (),
-  (σ, log) ← (sig.sign (sk, m)).simulate [],
-  (b, _) ← (sig.verify (pk, σ)).simulate log,
+  (σ, log) ← (sig.sign (sk, m)).simulate_random_oracle [],
+  (b, _) ← (sig.verify (pk, σ)).simulate_random_oracle log,
   return b
 
 @[simp]
@@ -61,8 +63,8 @@ by simp [completeness_experiment]
 lemma mem_completeness_experiment_iff (m : M) (b : bool) :
   b ∈ (completeness_experiment sig m).support ↔
     ∃ (pk : PK) (sk : SK) (hks : (pk, sk) ∈ (sig.gen ()).support)
-      (σ : S) log (hσ : (σ, log) ∈ ((sig.sign (sk, m)).simulate []).support)
-      (b' : bool) log' (hb' : (b', log') ∈ ((sig.verify (pk, σ)).simulate log).support),
+      (σ : S) log (hσ : (σ, log) ∈ ((sig.sign (sk, m)).simulate_random_oracle []).support)
+      (b' : bool) log' (hb' : (b', log') ∈ ((sig.verify (pk, σ)).simulate_random_oracle log).support),
       b = b' :=
 by simp [completeness_experiment]
 
@@ -74,6 +76,7 @@ end complete
 end signature
 
 variables [function_cost_model ℚ] [comp_cost_model ℚ]
+  [Π (spec : oracle_comp_spec), oracle_comp_cost_model ℚ spec]
 
 structure signature_scheme (M : Type) (PK SK S ROI ROO : ℕ → Type)
   [decidable_eq M] [∀ sp, decidable_eq $ PK sp]
@@ -81,8 +84,8 @@ structure signature_scheme (M : Type) (PK SK S ROI ROO : ℕ → Type)
   [∀ sp, inhabited $ ROO sp] :=
 (sig (sp : ℕ) : signature M (PK sp) (SK sp) (S sp) (ROI sp) (ROO sp))
 (gen_polnomial_complexity : complexity_class.polynomial_complexity (λ sp, (sig sp).gen))
-(sign_polynomial_complexity : sorry) --complexity_class.polynomial_complexity (λ sp, (sig sp).sign))
-(verify_polynomial_complexity : sorry)
+(sign_polynomial_complexity : complexity_class.polynomial_complexity (λ sp, (sig sp).sign))
+(verify_polynomial_complexity : complexity_class.polynomial_complexity (λ sp, (sig sp).verify))
 
 namespace signature_scheme
 
