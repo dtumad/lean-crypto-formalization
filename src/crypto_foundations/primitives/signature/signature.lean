@@ -49,8 +49,8 @@ section complete
 
 def completeness_experiment (m : M) : comp bool :=
 do (pk, sk) ← sig.gen (),
-  (σ, log) ← (sig.sign (sk, m)).simulate_random_oracle [],
-  (b, _) ← (sig.verify (pk, σ)).simulate_random_oracle log,
+  (σ, log) ← (sig.sign (sk, m)).simulate (random_simulation_oracle _ _) [],
+  (b, _) ← (sig.verify (pk, σ)).simulate (random_simulation_oracle _ _) log,
   return b
 
 @[simp]
@@ -63,8 +63,8 @@ by simp [completeness_experiment]
 lemma mem_completeness_experiment_iff (m : M) (b : bool) :
   b ∈ (completeness_experiment sig m).support ↔
     ∃ (pk : PK) (sk : SK) (hks : (pk, sk) ∈ (sig.gen ()).support)
-      (σ : S) log (hσ : (σ, log) ∈ ((sig.sign (sk, m)).simulate_random_oracle []).support)
-      (b' : bool) log' (hb' : (b', log') ∈ ((sig.verify (pk, σ)).simulate_random_oracle log).support),
+      (σ : S) log (hσ : (σ, log) ∈ ((sig.sign (sk, m)).simulate (random_simulation_oracle _ _) []).support)
+      (b' : bool) log' (hb' : (b', log') ∈ ((sig.verify (pk, σ)).simulate (random_simulation_oracle _ _) log).support),
       b = b' :=
 by simp [completeness_experiment]
 

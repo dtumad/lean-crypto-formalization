@@ -212,6 +212,13 @@ instance dep_option_rec_is_well_formed {T : Type} {T' : A → Type}
   (option.rec cnone csome a b : comp (a.elim B B')).is_well_formed :=
 by cases a; simp; apply_instance
 
+@[simp]
+instance dep_sum_rec_is_well_formed {i : A ⊕ B}
+  (ca : A → comp C) [∀ a, (ca a).is_well_formed]
+  (cb : B → comp C) [∀ b, (cb b).is_well_formed] :
+  (sum.rec_on i ca cb : comp C).is_well_formed :=
+by induction i; apply_instance
+
 -- These lemmas aren't strictly needed, but simplify a lot of things
 
 

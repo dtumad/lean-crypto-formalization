@@ -92,19 +92,33 @@ def signing_oracle_spec (rs : ring_signature M S PK SK) :
   oracle_comp_spec :=
 { ι := ℕ,
   D := λ n, signing_ring n PK × M,
-  R := λ n, with_bot (S n) }
+  R := λ n, option (S n) }
 
 /-- Definition of a probabalistic computaiton with oracle signing access
   `n` is the global number of `PK × SK` pairs used in the simulation. -/
 def signing_oracle_comp (rs : ring_signature M S PK SK) :=
 oracle_comp (signing_oracle_spec rs)
 
-@[derive comp.is_well_formed]
-def signing_oracle (rs : ring_signature M S PK SK) (n : ℕ)
-  (ks : vector (PK × SK) n) :
-  Π (l : ℕ), signing_ring l PK × M → comp (with_bot $ S l) :=
-λ l inp, option.elim (list.find (λ (k : PK × SK), k.1 = inp.1.pk) ks.to_list)
-  (return ⊥) (λ k, functor.map some (rs.sign _ ⟨inp.1, k.2, inp.2⟩))
+def signing_simulation_oracle (rs : ring_signature M S PK SK)
+  {n : ℕ} (ks : vector (PK × SK) n) :
+  oracle_comp.simulation_oracle (signing_oracle_spec rs) :=
+{
+  S := unit,
+  o := λ n _ inp, option.elim (list.find (λ (k : PK × SK), k.1 = inp.1.pk) ks.to_list)
+        (return (none, ())) 
+        (λ k, functor.map (prod.swap ∘ prod.mk () ∘ some) (rs.sign _ ⟨inp.1, k.2, inp.2⟩)),
+  oracle_is_well_formed := by apply_instance
+}
+
+-- -- TODO: This should be a type alias maybe, in oracle_comp
+-- @[derive comp.is_well_formed]
+-- def signing_oracle (rs : ring_signature M S PK SK) (n : ℕ)
+--   (ks : vector (PK × SK) n) :
+--   Π (l : ℕ), signing_ring l PK × M → comp (with_bot $ S l) :=
+-- λ l inp, option.elim (list.find (λ (k : PK × SK), k.1 = inp.1.pk) ks.to_list)
+--   (return ⊥) (λ k, functor.map some (rs.sign _ ⟨inp.1, k.2, inp.2⟩))
+
+-- def signing_oracle
 
 def corruption_oracle_spec (rs : ring_signature M S PK SK) (n : ℕ) :
   oracle_comp_spec :=
@@ -114,49 +128,64 @@ oracle_comp_spec.singleton_spec (fin n) SK
 def corruption_oracle_comp (rs : ring_signature M S PK SK) (n : ℕ) :=
 oracle_comp (corruption_oracle_spec rs n)
 
-@[derive comp.is_well_formed]
-def corruption_oracle (rs : ring_signature M S PK SK) (n : ℕ)
-  (ks : vector (PK × SK) n) :
-  fin n → comp SK :=
-λ i, return (ks.nth i).2 
+def corruption_simulation_oracle (rs : ring_signature M S PK SK)
+  {n : ℕ} (ks : vector (PK × SK) n) :
+  oracle_comp.simulation_oracle (corruption_oracle_spec rs n) :=
+{
+  S := unit,
+  o := λ n _ i, return ((ks.nth i).2, ()),
+  oracle_is_well_formed := by apply_instance,
+}
 
-def signing_and_corruption_oracle_comp (rs : ring_signature M S PK SK) (n : ℕ) :=
-oracle_comp 
-  (λ (t : with_bot ℕ), t.elim (fin n) (λ l, signing_ring l PK × M))
-  (λ (t : with_bot ℕ), t.elim SK (λ l, with_bot (S l)))
+def signing_and_corruption_simulation_oracle (rs : ring_signature M S PK SK)
+  {n : ℕ} (ks : vector (PK × SK) n) :
+  oracle_comp.simulation_oracle (signing_oracle_spec rs ++ corruption_oracle_spec rs n) :=
+oracle_comp.simulation_oracle.append
+  (signing_simulation_oracle rs ks)
+  (corruption_simulation_oracle rs ks)
+
+-- @[derive comp.is_well_formed]
+-- def corruption_oracle (rs : ring_signature M S PK SK) (n : ℕ)
+--   (ks : vector (PK × SK) n) :
+--   fin n → comp SK :=
+-- λ i, return (ks.nth i).2 
+
+-- def signing_and_corruption_oracle
+
+-- def signing_and_corruption_oracle_comp (rs : ring_signature M S PK SK) (n : ℕ) :=
 
 variables {rs}
 
-@[derive comp.is_well_formed]
-def signing_oracle_comp.logging_simulate {n : ℕ} {T : Type}
-  (t : signing_oracle_comp rs n T) [t.is_well_formed]
-  (ks : vector (PK × SK) n) : 
-  comp (T × list (Σ (l : ℕ), signing_ring l PK × M)) :=
-t.logging_simulate 
-  (λ t, signing_oracle rs n ks t)
+-- @[derive comp.is_well_formed]
+-- def signing_oracle_comp.logging_simulate {n : ℕ} {T : Type}
+--   (t : signing_oracle_comp rs n T) [t.is_well_formed]
+--   (ks : vector (PK × SK) n) : 
+--   comp (T × list (Σ (l : ℕ), signing_ring l PK × M)) :=
+-- t.logging_simulate 
+--   (λ t, signing_oracle rs n ks t)
 
-@[derive comp.is_well_formed]
-def signing_oracle_comp.stateless_simulate {n : ℕ} {T : Type}
-  (t : signing_oracle_comp rs n T) [t.is_well_formed]
-  (ks : vector (PK × SK) n) :
-  comp T :=
-(t.logging_simulate ks) >>= (λ tlog, return tlog.1)
+-- @[derive comp.is_well_formed]
+-- def signing_oracle_comp.stateless_simulate {n : ℕ} {T : Type}
+--   (t : signing_oracle_comp rs n T) [t.is_well_formed]
+--   (ks : vector (PK × SK) n) :
+--   comp T :=
+-- (t.logging_simulate ks) >>= (λ tlog, return tlog.1)
 
-@[derive comp.is_well_formed]
-def corruption_oracle_comp.logging_simulate {n : ℕ} {T : Type}
-  (t : corruption_oracle_comp rs n T) [t.is_well_formed] 
-  (ks : vector (PK × SK) n) :
-  comp (T × list (Σ (t : unit), fin n)) :=
-t.logging_simulate 
-  (λ t, corruption_oracle rs n ks)
+-- @[derive comp.is_well_formed]
+-- def corruption_oracle_comp.logging_simulate {n : ℕ} {T : Type}
+--   (t : corruption_oracle_comp rs n T) [t.is_well_formed] 
+--   (ks : vector (PK × SK) n) :
+--   comp (T × list (Σ (t : unit), fin n)) :=
+-- t.logging_simulate 
+--   (λ t, corruption_oracle rs n ks)
 
-@[derive comp.is_well_formed]
-def signing_and_corruption_oracle_comp.logging_simulate {n : ℕ} {T : Type}
-  (t : signing_and_corruption_oracle_comp rs n T) [t.is_well_formed]
-  (ks : vector (PK × SK) n) :
-  comp (T × list _) :=
-t.logging_simulate 
-  (λ t, option.rec_on t (corruption_oracle rs n ks) (signing_oracle rs n ks))
+-- @[derive comp.is_well_formed]
+-- def signing_and_corruption_oracle_comp.logging_simulate {n : ℕ} {T : Type}
+--   (t : signing_and_corruption_oracle_comp rs n T) [t.is_well_formed]
+--   (ks : vector (PK × SK) n) :
+--   comp (T × list _) :=
+-- t.logging_simulate 
+--   (λ t, option.rec_on t (corruption_oracle rs n ks) (signing_oracle rs n ks))
 
 end ring_sig_oracle
 
@@ -164,23 +193,25 @@ section unforgeable_experiment
 
 def unforgeable_log_admissable (n : ℕ) (ks : vector (PK × SK) n)
   (A_out : Σ (m : ℕ), verification_input m PK M S) :
-  list (Σ (t : with_bot ℕ), t.elim (fin n) (λ l, signing_ring l PK × M)) → bool
+  list (Σ (t : ℕ ⊕ unit), t.elim (λ l, signing_ring l PK × M) (λ _, fin n)) → bool
 | [] := true
-| (⟨none, v⟩ :: t) := let corrupted_party : PK := (ks.nth v).1 in
+| (⟨(sum.inr ()), v⟩ :: t) := let corrupted_party : PK := (ks.nth v).1 in
     (corrupted_party ∉ A_out.2.mems.to_list) ∧ unforgeable_log_admissable t
-| (⟨some l, v⟩ :: t) := 
+| (⟨sum.inl l, v⟩ :: t) := 
     ¬ (v.2 = A_out.2.m ∧ v.1.mems.to_list ~ A_out.2.mems.to_list) ∧ unforgeable_log_admissable t
 
 -- TODO: A also needs a corruption oracle for this experiment
 @[derive comp.is_well_formed]
 def unforgeable_experiment (n : ℕ)
-  (A : vector PK n → signing_and_corruption_oracle_comp rs n (Σ (n : ℕ), verification_input n PK M S)) 
+  (A : vector PK n → oracle_comp 
+    (signing_oracle_spec rs ++ corruption_oracle_spec rs n) 
+    (Σ (n : ℕ), verification_input n PK M S)) 
   [hA : ∀ pks, (A pks).is_well_formed] : comp bool :=
 do ks ← comp.vector_call (rs.gen ()) n, 
   pks ← return (vector.map prod.fst ks),
-  A_out ← (A pks).logging_simulate ks,
-  admissable ← return (unforgeable_log_admissable n ks A_out.1 A_out.2),
-  return (if admissable then rs.verify _ A_out.1.2 else false)
+  A_out ← (A pks).simulate (signing_and_corruption_simulation_oracle rs ks) ((), ()),
+  -- admissable ← return (unforgeable_log_admissable n ks A_out.1 A_out.2),
+  return (if true then rs.verify _ A_out.1.2 else false)
 
 end unforgeable_experiment
 
@@ -191,12 +222,12 @@ section anonomyous_experiment
 -- Note that the second adversary gets all the secret keys as well -/
 @[derive comp.is_well_formed]
 def anonomyous_experiment {A_state : Type} (n : ℕ)
-  (A : vector PK n → signing_oracle_comp rs n (Σ (l : ℕ), M × fin l × fin l × (vector PK l) × A_state))
-  (A' : A_state → vector (PK × SK) n → (Σ (l : ℕ), S l) → signing_oracle_comp rs n bool)
+  (A : vector PK n → oracle_comp (signing_oracle_spec rs) (Σ (l : ℕ), M × fin l × fin l × (vector PK l) × A_state))
+  (A' : A_state → vector (PK × SK) n → (Σ (l : ℕ), S l) → oracle_comp (signing_oracle_spec rs) bool)
   [hA : ∀ pks, (A pks).is_well_formed] [hA' : ∀ st ks σ, (A' st ks σ).is_well_formed] : 
   comp bool :=
 do ks ← (comp.vector_call (rs.gen ()) n),
-  A_out ← ((A (vector.map prod.fst ks)).stateless_simulate ks),
+  A_out ← (A (vector.map prod.fst ks)).stateless_simulate (signing_simulation_oracle rs ks) (),
   m ← return A_out.2.1,
   i₀ ← return A_out.2.2.1,
   i₁ ← return A_out.2.2.2.1,
@@ -209,7 +240,7 @@ do ks ← (comp.vector_call (rs.gen ()) n),
   -- If `k` is none return false, otherwise get a signature and give as a challenge to the second adversary
   (k.elim (return false) (λ k, do
     σ ← rs.sign _ ⟨⟨R, i⟩, k.2, m⟩,
-    b' ← ((A' state ks ⟨A_out.1, σ⟩).stateless_simulate ks),
+    b' ← (A' state ks ⟨A_out.1, σ⟩).stateless_simulate (signing_simulation_oracle rs ks) (),
     return (b' = b ∧ i₀ ≠ i₁)))
 
 end anonomyous_experiment
@@ -237,7 +268,7 @@ section unforgeable
 
 structure unforgeable_adversary (p : polynomial ℕ) := 
 (A (sp : ℕ) (pks : vector (PK sp) (p.eval sp)) :
-  signing_and_corruption_oracle_comp (rss.rs sp) (p.eval sp) 
+  oracle_comp (signing_oracle_spec (rss.rs sp) ++ corruption_oracle_spec (rss.rs sp) (p.eval sp)) 
     (Σ (n : ℕ), verification_input n (PK sp) M (S sp)))
 (wf : ∀ sp pks, (A sp pks).is_well_formed)
 (poly_time : true)
@@ -260,11 +291,11 @@ section anonomyous
 structure anonomyous_adversary (p : polynomial ℕ) :=
 (state : Type)
 (A₁ (sp : ℕ) (pks : vector (PK sp) (p.eval sp)) : 
-  signing_oracle_comp (rss.rs sp) (p.eval sp)
+  oracle_comp (signing_oracle_spec (rss.rs sp))
       (Σ (l : ℕ), M × (fin l) 
           × (fin l) × (vector (PK sp) l) × state))
 (A₂ (sp : ℕ) (st : state) (ks : vector (PK sp × SK sp) (p.eval sp))
-  (σ : Σ (l : ℕ), S sp l) : signing_oracle_comp (rss.rs sp) (p.eval sp) bool)
+  (σ : Σ (l : ℕ), S sp l) : oracle_comp (signing_oracle_spec (rss.rs sp)) bool)
 (A₁_wf : ∀ sp pks, (A₁ sp pks).is_well_formed)
 (A₂_wf : ∀ sp st ks σ, (A₂ sp st ks σ).is_well_formed)
 (A₁_pt : true)

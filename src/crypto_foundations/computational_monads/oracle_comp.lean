@@ -148,71 +148,116 @@ lemma is_well_formed_of_oc_bind_right {C D : Type}
 
 end is_well_formed
 
+/-- Specifies a method for simulating an oracle for the given `oracle_comp_spec`,
+  Where `S` is the oracles internal state and `o` simulates the oracle given a current state,
+  eventually returning an updated state value. -/
+structure simulation_oracle (spec : oracle_comp_spec) :=
+(S : Type)
+(o : Π (i : spec.ι), S → spec.domain i → comp (spec.range i × S))
+(oracle_is_well_formed (i : spec.ι) (s : S) (x : spec.domain i) :
+  (o i s x).is_well_formed)
+
+instance simulation_oracle.is_well_formed {spec : oracle_comp_spec}
+  (so : simulation_oracle spec) (i : spec.ι) (s : so.S) (x : spec.domain i) :
+  (so.o i s x).is_well_formed :=
+so.oracle_is_well_formed i s x
+
+def simulation_oracle.append {spec spec' : oracle_comp_spec}
+  (so : simulation_oracle spec) (so' : simulation_oracle spec') :
+  simulation_oracle (spec ++ spec') :=
+{
+  S := so.S × so'.S,
+  o := λ i ss', begin
+    refine i.rec_on _ _,
+    refine λ i x, functor.map (prod.map id (λ s, (s, ss'.2))) (so.o i ss'.1 x),
+    refine λ i x, functor.map (prod.map id (λ s', (ss'.1, s'))) (so'.o i ss'.2 x),
+  end,
+  oracle_is_well_formed := λ i, by induction i; apply_instance,
+}
+
+
 /-- Evaluation distribution of an `oracle_comp A B C` as a `comp A`.
 `S` is the type of the internal state of the `A` to `B` oracle, and `s` is the initial state.
 `o` takes the current oracle state and an `A` value, and computes a `B` value and new oracle state. -/
-def simulate : Π {C : Type} (oc : oracle_comp spec C) 
-  {S : Type} (s : S) (o : Π t, S → spec.domain t → comp (spec.range t × S)), comp (C × S)
-| C (oc_ret c) S s o := 
+def simulate (so : simulation_oracle spec) : 
+  Π {C : Type} (oc : oracle_comp spec C) (s : so.S), comp (C × so.S)
+| C (oc_ret c) s := 
   (do x ← c, return (x, s))
-| C (oc_bind oc od) S s o :=
-  (do cs' ← simulate oc s o,
-    simulate (od cs'.fst) cs'.snd o)
-| C (oc_query i a) S s o := o i s a
+| C (oc_bind oc od) s :=
+  (do cs' ← simulate oc s,
+    simulate (od cs'.fst) cs'.snd)
+| C (oc_query i a) s := so.o i s a
 
 @[simp]
-lemma simulate_oc_query {i : spec.ι} {S : Type}
-  (a : spec.D i) (s : S) (o : Π t, S → spec.D t → comp (spec.R t × S)) :
-  (oc_query i a : oracle_comp spec (spec.R i)).simulate s o = o i s a := 
+lemma simulate_oc_query (so : simulation_oracle spec)
+  {i : spec.ι} (a : spec.domain i) (s : so.S) :
+  (oc_query i a : oracle_comp spec (spec.R i)).simulate so s = so.o i s a := 
 rfl
 
 @[simp]
-lemma simulate_oc_ret {C S : Type}
-  (c : comp C) (s : S) (o : Π t, S → spec.D t → comp (spec.R t × S)) :
-  (oc_ret c : oracle_comp spec C).simulate s o =
-    c.bind (λ x, @comp.ret (C × S) (x, s)) :=
-rfl 
-
-@[simp]
-lemma simulate_oc_bind {C D S : Type}
-  (oc : oracle_comp spec C) (od : C → oracle_comp spec D)
-  (s : S) (o : Π t, S → spec.domain t → comp (spec.range t × S)) :
-  (oc_bind oc od).simulate s o = 
-    (oc.simulate s o).bind (λ cs', (od cs'.1).simulate cs'.2 o) :=
+lemma simulate_oc_ret (so : simulation_oracle spec)
+  {C : Type} (c : comp C) (s : so.S) :
+  (oc_ret c : oracle_comp spec C).simulate so s =
+    c.bind (λ x, comp.ret (x, s)) :=
 rfl
 
-lemma simulate_is_well_formed {S : Type} 
-  (oc : oracle_comp spec C) (hoc : oc.is_well_formed)
-  (s : S) (o : Π t, S → spec.D t → comp (spec.R t × S)) (ho : ∀ t s a, (o t s a).is_well_formed) : 
-  (simulate oc s o).is_well_formed :=
+@[simp]
+lemma simulate_oc_bind (so : simulation_oracle spec)
+  {C D : Type} (oc : oracle_comp spec C) 
+  (od : C → oracle_comp spec D) (s : so.S) :
+  (oc_bind oc od).simulate so s = 
+    (oc.simulate so s).bind (λ cs', (od cs'.1).simulate so cs'.2) :=
+rfl
+
+lemma simulate_is_well_formed (so : simulation_oracle spec)
+  (oc : oracle_comp spec C) (hoc : oc.is_well_formed) (s : so.S) : 
+  (oc.simulate so s).is_well_formed :=
 begin
   unfreezingI { induction oc generalizing s },
   { simpa only [simulate_oc_ret, comp.bind_is_well_formed_iff, and_true, implies_true_iff, comp.ret.is_well_formed] using hoc},
   { simp only [comp.bind_is_well_formed_iff, prod.forall, simulate_oc_bind],
     refine ⟨oc_ih_oc hoc.1 s, λ c s' _, oc_ih_od c (hoc.2 c) s'⟩ },
-  { simp only [ho, simulate_oc_query]},
-
+  { simp only [simulate_oc_query],
+    apply_instance },
 end
 
 @[simp]
-instance simulate.is_well_formed {S : Type} 
-  (oc : oracle_comp spec C) [hoc : oc.is_well_formed] 
-  (s : S) (o : Π t, S → spec.D t → comp (spec.R t × S)) [ho : ∀ t s a, (o t s a).is_well_formed] :
-  (oc.simulate s o).is_well_formed :=
-simulate_is_well_formed oc hoc s o ho
+instance simulate.is_well_formed (so : simulation_oracle spec)
+  (oc : oracle_comp spec C) [hoc : oc.is_well_formed] (s : so.S) : 
+  (oc.simulate so s).is_well_formed :=
+simulate_is_well_formed so oc hoc s
 
-/-- Run the computation with a stateless oracle `o`,
-  and use the internal state to log queries -/
-def logging_simulate (oc : oracle_comp spec C)
-  (o : Π t, spec.D t → comp (spec.R t)) : comp (C × (list $ Σ (t : spec.ι), spec.D t)) :=
-oc.simulate [] (λ t as a, (o t a >>= λ b, return (b, ⟨t, a⟩ :: as)))
+@[derive comp.is_well_formed]
+def stateless_simulate (so : simulation_oracle spec)
+  (oc : oracle_comp spec C) [hoc : oc.is_well_formed] (s : so.S) :
+  comp C :=
+functor.map prod.fst (oc.simulate so s)
 
-@[simp]
-instance logging_simulate.is_well_formed 
-  (oc : oracle_comp spec C) [hoc : oc.is_well_formed]
-  (o : Π t, spec.D t → comp (spec.R t)) [ho : ∀ t a, (o t a).is_well_formed] :
-  (logging_simulate oc o).is_well_formed :=
-simulate_is_well_formed _ hoc _ _ (by simp)
+/-- Construct a simulation oracle from a stateless function,
+  using internal state to log queries to the oracle -/
+def logging_simulation_oracle (oc : oracle_comp spec C)
+  (o : Π (i : spec.ι), spec.domain i → comp (spec.range i))
+  [∀ (i : spec.ι) (x : spec.domain i), (o i x).is_well_formed] :
+  simulation_oracle spec :=
+{
+  S := list (Σ (i : spec.ι), spec.domain i),
+  o := λ t as a, (o t a >>= λ b, return (b, ⟨t, a⟩ :: as)),
+  oracle_is_well_formed := by apply_instance
+}
+
+-- /-- Run the computation with a stateless oracle `o`,
+--   and use the internal state to log queries -/
+-- @[derive comp.is_well_formed]
+-- def logging_simulate (oc : oracle_comp spec C) [oc.is_well_formed]
+--   (o : Π t, spec.D t → comp (spec.R t)) [∀ t s, (o t s).is_well_formed] : comp (C × (list $ Σ (t : spec.ι), spec.D t)) :=
+-- oc.simulate [] (λ t as a, (o t a >>= λ b, return (b, ⟨t, a⟩ :: as)))
+
+-- @[simp]
+-- instance logging_simulate.is_well_formed 
+--   (oc : oracle_comp spec C) [hoc : oc.is_well_formed]
+--   (o : Π t, spec.D t → comp (spec.R t)) [ho : ∀ t a, (o t a).is_well_formed] :
+--   (logging_simulate oc o).is_well_formed :=
+-- simulate_is_well_formed _ hoc _ _ (by simp)
 
 section singleton_oracle_comp
 
