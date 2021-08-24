@@ -57,10 +57,17 @@ inductive oracle_comp (spec : oracle_comp_spec) : Type → Type 1
 | oc_bind {C D : Type} (oc : oracle_comp C) (od : C → oracle_comp D) : oracle_comp D
 | oc_query (i : spec.ι) (a : spec.domain i) : oracle_comp (spec.range i)
 
+@[simps]
 instance oracle_comp.monad (spec : oracle_comp_spec) :
   monad (oracle_comp spec) :=
 { pure := λ C c, oracle_comp.oc_ret (comp.ret c), 
   bind := λ C D oc od, oc.oc_bind od }
+
+@[simp]
+lemma oracle_comp.return_eq (spec : oracle_comp_spec)
+  {A : Type} (a : A) :
+  (return a : oracle_comp spec A) = oracle_comp.oc_ret (comp.ret a) :=
+rfl
 
 -- Example of accessing a pair of different oracles
 example (A B : Type) : 
@@ -119,6 +126,12 @@ lemma oc_bind_is_well_formed_iff {C D : Type}
   (oc_bind oc od).is_well_formed ↔
     oc.is_well_formed ∧ ∀ c, (od c).is_well_formed :=
 iff.rfl
+
+@[simp]
+lemma oc_bind.is_well_formed_iff_left {C D : Type} (oc : oracle_comp spec C) (od : C → oracle_comp spec D)
+  [hoc : is_well_formed oc] :
+  (oc_bind oc od).is_well_formed ↔ (∀ c, (od c).is_well_formed) :=
+by simp [hoc]
 
 @[simp]
 instance oc_query.is_well_formed {i : spec.ι} (a : spec.domain i) :

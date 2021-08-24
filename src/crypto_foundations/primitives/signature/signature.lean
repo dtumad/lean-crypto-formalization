@@ -12,11 +12,8 @@ structure signature (M PK SK S ROD ROR : Type)
   [decidable_eq ROD] [fintype ROR]
   [inhabited ROR] :=
 (gen : unit → comp (PK × SK))
-(gen_is_well_formed : ∀ x, (gen x).is_well_formed)
-(sign : SK × M → oracle_comp (oracle_comp_spec.singleton_spec ROD ROR) S)
-(sign_is_well_formed : ∀ x, (sign x).is_well_formed)
-(verify : PK × S → oracle_comp (oracle_comp_spec.singleton_spec ROD ROR) bool)
-(verify_is_well_formed : ∀ x, (verify x).is_well_formed)
+(sign : PK × SK × M → oracle_comp (oracle_comp_spec.singleton_spec ROD ROR) S)
+(verify : PK × M × S → oracle_comp (oracle_comp_spec.singleton_spec ROD ROR) bool)
 
 namespace signature
 
@@ -28,29 +25,36 @@ variable (sig : signature M PK SK S ROI ROO)
 
 section is_well_formed_instances
 
+class is_well_formed (sig : signature M PK SK S ROI ROO) :=
+(gen_is_well_formed : ∀ inp, (sig.gen inp).is_well_formed)
+(sign_is_well_formed : ∀ inp, (sig.sign inp).is_well_formed)
+(verify_is_well_formed : ∀ inp, (sig.verify inp).is_well_formed)
+
 @[simp]
-instance gen.is_well_formed (u : unit) :
+instance gen.is_well_formed [sig.is_well_formed] (u : unit) :
   (sig.gen u).is_well_formed :=
-sig.gen_is_well_formed _
+signature.is_well_formed.gen_is_well_formed _
 
 @[simp]
-instance sign.is_well_formed (inp : SK × M) :
+instance sign.is_well_formed [sig.is_well_formed] (inp : PK × SK × M) :
   (sig.sign inp).is_well_formed :=
-sig.sign_is_well_formed _
+signature.is_well_formed.sign_is_well_formed _
 
 @[simp]
-instance verify.is_well_formed (inp : PK × S) :
+instance verify.is_well_formed [sig.is_well_formed] (inp : PK × M × S) :
   (sig.verify inp).is_well_formed :=
-sig.verify_is_well_formed _
+signature.is_well_formed.verify_is_well_formed _
 
 end is_well_formed_instances
+
+variable [sig.is_well_formed]
 
 section complete
 
 def completeness_experiment (m : M) : comp bool :=
 do (pk, sk) ← sig.gen (),
-  (σ, log) ← (sig.sign (sk, m)).simulate (random_simulation_oracle _ _) [],
-  (b, _) ← (sig.verify (pk, σ)).simulate (random_simulation_oracle _ _) log,
+  (σ, log) ← (sig.sign (pk, sk, m)).simulate (random_simulation_oracle _ _) [],
+  (b, _) ← (sig.verify (pk, m, σ)).simulate (random_simulation_oracle _ _) log,
   return b
 
 @[simp]
@@ -63,8 +67,8 @@ by simp [completeness_experiment]
 lemma mem_completeness_experiment_iff (m : M) (b : bool) :
   b ∈ (completeness_experiment sig m).support ↔
     ∃ (pk : PK) (sk : SK) (hks : (pk, sk) ∈ (sig.gen ()).support)
-      (σ : S) log (hσ : (σ, log) ∈ ((sig.sign (sk, m)).simulate (random_simulation_oracle _ _) []).support)
-      (b' : bool) log' (hb' : (b', log') ∈ ((sig.verify (pk, σ)).simulate (random_simulation_oracle _ _) log).support),
+      (σ : S) log (hσ : (σ, log) ∈ ((sig.sign (pk, sk, m)).simulate (random_simulation_oracle _ _) []).support)
+      (b' : bool) log' (hb' : (b', log') ∈ ((sig.verify (pk, m, σ)).simulate (random_simulation_oracle _ _) log).support),
       b = b' :=
 by simp [completeness_experiment]
 
@@ -83,6 +87,7 @@ structure signature_scheme (M : Type) (PK SK S ROI ROO : ℕ → Type)
   [∀ sp, decidable_eq $ ROI sp] [∀ sp, fintype $ ROO sp]
   [∀ sp, inhabited $ ROO sp] :=
 (sig (sp : ℕ) : signature M (PK sp) (SK sp) (S sp) (ROI sp) (ROO sp))
+(sig_is_well_formed : ∀ sp, (sig sp).is_well_formed)
 (gen_polnomial_complexity : complexity_class.polynomial_complexity (λ sp, (sig sp).gen))
 (sign_polynomial_complexity : complexity_class.polynomial_complexity (λ sp, (sig sp).sign))
 (verify_polynomial_complexity : complexity_class.polynomial_complexity (λ sp, (sig sp).verify))
@@ -93,11 +98,11 @@ variables (M : Type) (PK SK S ROI ROO : ℕ → Type)
   [decidable_eq M] [∀ sp, decidable_eq $ PK sp]
   [∀ sp, decidable_eq $ ROI sp] [∀ sp, fintype $ ROO sp]
   [∀ sp, inhabited $ ROO sp]
-  (sigs : signature_scheme M PK SK S ROI ROO)
+  (sig_scheme : signature_scheme M PK SK S ROI ROO)
 
 section unforgeable
 
-def unforgeable : Prop := sorry
+-- def unforgeable : Prop := sorry
 
 end unforgeable
 

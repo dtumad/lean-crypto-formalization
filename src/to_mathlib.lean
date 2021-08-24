@@ -13,6 +13,11 @@ This file is a collection of random statements that maybe should eventually move
 Most of these are things that could usually be "handwaved" away in proofs. 
 -/
 
+@[simp] 
+theorem prod.forall₃ {α β γ : Type*}
+  {p : α × β × γ → Prop} : (∀ x, p x) ↔ (∀ a b c, p (a, b, c)) :=
+⟨assume h a b c, h (a, b, c), assume h ⟨a, b, c⟩, h a b c⟩
+
 section asymptotics
 
 open asymptotics
@@ -329,6 +334,11 @@ end
 
 end sum_stuff
 
+
+def vector.zip_with {α β γ : Type*} {n : ℕ}
+  (v : vector α n) (w : vector β n) (f : α → β → γ) : 
+  vector γ n :=
+⟨list.zip_with f v.to_list w.to_list, by simp⟩
 
 
 @[simp]
