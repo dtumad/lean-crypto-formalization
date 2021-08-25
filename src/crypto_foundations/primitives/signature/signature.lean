@@ -1,9 +1,19 @@
-import crypto_foundations.computational_monads.dist_sem
-import crypto_foundations.computational_monads.vector_call
-import crypto_foundations.computational_monads.random_oracle
+import computational_monads.dist_sem
+import computational_monads.vector_call
+import computational_monads.random_oracle
 import computational_complexity.complexity_class
 import computational_complexity.negligable
 import data.list.basic
+
+/-!
+# Cryptographic Signature Schemes
+
+This file defines signature algorithms and security properties for them.
+
+Note that the schemes assume sign and verify have access to a shared random oracle.
+Signature schemes that don't need this can assume a random oracle like `⊥ → ()`, 
+  which won't actually be query-able since `⊥` is an uninhabited type
+-/
 
 /-- Signature on messages `M`, public and secret keys `PK` and `SK`,
   signatures of type `S`, given access to a random oracle `ROD → ROR` -/

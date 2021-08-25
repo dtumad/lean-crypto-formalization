@@ -1,4 +1,4 @@
-import crypto_foundations.computational_monads.oracle_comp
+import computational_monads.oracle_comp
 import computational_complexity.polynomial_asymptotics
 import to_mathlib
 

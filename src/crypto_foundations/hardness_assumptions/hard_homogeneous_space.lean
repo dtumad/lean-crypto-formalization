@@ -1,4 +1,4 @@
-import crypto_foundations.computational_monads.dist_sem
+import computational_monads.dist_sem
 import computational_complexity.complexity_class
 import computational_complexity.negligable
 

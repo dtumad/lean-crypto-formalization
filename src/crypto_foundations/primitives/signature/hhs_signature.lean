@@ -48,6 +48,19 @@ instance signature_of_principal_action_class.is_well_formed (x₀ : X) (t : ℕ)
 
 namespace signature_of_principal_action_class
 
+variables (x₀ : X) (t : ℕ)
+
+@[simp]
+lemma mem_support_gen_iff (u : unit) (ks : X × G) :
+  ks ∈ ((signature_of_principal_action_class M G X x₀ t).gen u).support ↔
+    ks.fst = ks.snd +ᵥ x₀ :=
+begin
+  simp [signature_of_principal_action_class],
+  refine ⟨λ h, _, λ h, ⟨ks.snd, prod.ext h rfl⟩⟩,
+  obtain ⟨i, hi⟩ := h,
+  simp [hi],
+end
+
 theorem complete (x₀ : X) (t : ℕ) :
   (signature_of_principal_action_class M G X x₀ t).complete :=
 begin
@@ -55,6 +68,7 @@ begin
   rw [comp.Pr_def, comp.Pr_prop_eq_one_iff],
   simp only [signature.mem_completeness_experiment_iff],
   rintro a ⟨pk, sk, hks, σ, log, hσ, b', log', hb', h⟩,
+  simp [mem_support_gen_iff] at hks,
   sorry,
 end
 

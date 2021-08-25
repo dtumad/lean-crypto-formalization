@@ -1,4 +1,4 @@
-import crypto_foundations.computational_monads.oracle_comp
+import computational_monads.oracle_comp
 
 open oracle_comp oracle_comp_spec
 

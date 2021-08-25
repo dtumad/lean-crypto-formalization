@@ -1,5 +1,5 @@
 import computational_complexity.complexity_class
-import crypto_foundations.computational_monads.dist_sem
+import computational_monads.dist_sem
 import computational_complexity.negligable
 
 variables [function_cost_model ℚ] [comp_cost_model ℚ]
