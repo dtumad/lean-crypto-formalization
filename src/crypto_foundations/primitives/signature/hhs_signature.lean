@@ -7,15 +7,14 @@ variables (M G X : Type)
   [fintype G] [fintype X] [inhabited G] [inhabited X] 
   [decidable_eq M] [decidable_eq G] [decidable_eq X]
 variables [add_comm_group G] [add_action G X]
-variables [function_cost_model ℚ] [comp_cost_model ℚ]
-
-variable [principal_action_class G X]
+variables [function_cost_model ℚ] [comp_cost_model ℚ] 
 
 open oracle_comp
 
 /-- `x₀` is a base point to use for public keys, analogous to a fixed generator of a cyclic group.
   `t` is the number of repetitions of the proof, higher values increase the soundness of the system. -/
-def signature_of_principal_action_class (x₀ : X) (t : ℕ) : 
+def signature_of_principal_action_class 
+  [principal_action_class G X] (x₀ : X) (t : ℕ) : 
   signature M X G (vector (G × bool) t)
   -- Input and output types for random oracle used to model a hash function
     (list X × M) (vector bool t) :=
@@ -39,6 +38,8 @@ def signature_of_principal_action_class (x₀ : X) (t : ℕ) :
     (h : vector bool t) ← oc_query () (ys.to_list, m),
     return (h = σ.map prod.snd) } 
 }
+
+variable [principal_action_class G X]
 
 instance signature_of_principal_action_class.is_well_formed (x₀ : X) (t : ℕ) :
   (signature_of_principal_action_class M G X x₀ t).is_well_formed :=

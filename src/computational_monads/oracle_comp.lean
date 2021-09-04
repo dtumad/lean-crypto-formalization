@@ -10,6 +10,8 @@ It also allows for definitions that inpect the inputs of calls made to the oracl
   e.g. an `oracle_comp M S (M × S)` attempting to forge a signature on an unqueried message.
 -/
 
+/-- `ι` is an indexing set for the available oracles,
+  `D i` and `R i` give the domain an range of the oracle indexed by `i : ι`-/
 structure oracle_comp_spec :=
 (ι : Type)
 (D R : ι → Type)
@@ -33,6 +35,8 @@ def singleton_spec (A B : Type) : oracle_comp_spec :=
 { ι := unit,
   D := λ _, A,
   R := λ _, B }
+
+alias singleton_spec ← oracle_comp_spec.random_oracle_spec
 
 @[reducible]
 instance has_append : has_append oracle_comp_spec :=
@@ -60,8 +64,8 @@ inductive oracle_comp (spec : oracle_comp_spec) : Type → Type 1
 @[simps]
 instance oracle_comp.monad (spec : oracle_comp_spec) :
   monad (oracle_comp spec) :=
-{ pure := λ C c, oracle_comp.oc_ret (comp.ret c), 
-  bind := λ C D oc od, oc.oc_bind od }
+{ pure := λ C, oracle_comp.oc_ret ∘ comp.ret, 
+  bind := λ C D, oracle_comp.oc_bind }
 
 @[simp]
 lemma oracle_comp.return_eq (spec : oracle_comp_spec)
@@ -104,6 +108,7 @@ oracle_comp.rec_on oc (λ C c _, comp.comp_base_exists c)
 section is_well_formed
 
 @[class]
+-- TODO: Avoid this by moving ret requirement to original constructor?
 def is_well_formed : Π {C : Type}, oracle_comp spec C → Prop
 | _ (oc_query i a) := true
 | _ (oc_ret cc) := cc.is_well_formed
@@ -162,8 +167,8 @@ lemma is_well_formed_of_oc_bind_right {C D : Type}
 end is_well_formed
 
 /-- Specifies a method for simulating an oracle for the given `oracle_comp_spec`,
-  Where `S` is the oracles internal state and `o` simulates the oracle given a current state,
-  eventually returning an updated state value. -/
+  Where `S` is the type of the oracle's internal state and `o` simulates the oracle given a current state,
+  eventually returning a query result and an updated state value. -/
 structure simulation_oracle (spec : oracle_comp_spec) :=
 (S : Type)
 (o : Π (i : spec.ι), S → spec.domain i → comp (spec.range i × S))
@@ -194,11 +199,8 @@ def simulation_oracle.append {spec spec' : oracle_comp_spec}
 `o` takes the current oracle state and an `A` value, and computes a `B` value and new oracle state. -/
 def simulate (so : simulation_oracle spec) : 
   Π {C : Type} (oc : oracle_comp spec C) (s : so.S), comp (C × so.S)
-| C (oc_ret c) s := 
-  (do x ← c, return (x, s))
-| C (oc_bind oc od) s :=
-  (do cs' ← simulate oc s,
-    simulate (od cs'.fst) cs'.snd)
+| C (oc_ret c) s := do {x ← c, return (x, s)}
+| C (oc_bind oc od) s := do {cs' ← simulate oc s, simulate (od cs'.fst) cs'.snd}
 | C (oc_query i a) s := so.o i s a
 
 @[simp]
@@ -252,11 +254,9 @@ def logging_simulation_oracle (oc : oracle_comp spec C)
   (o : Π (i : spec.ι), spec.domain i → comp (spec.range i))
   [∀ (i : spec.ι) (x : spec.domain i), (o i x).is_well_formed] :
   simulation_oracle spec :=
-{
-  S := list (Σ (i : spec.ι), spec.domain i),
+{ S := list (Σ (i : spec.ι), spec.domain i),
   o := λ t as a, (o t a >>= λ b, return (b, ⟨t, a⟩ :: as)),
-  oracle_is_well_formed := by apply_instance
-}
+  oracle_is_well_formed := by apply_instance }
 
 -- /-- Run the computation with a stateless oracle `o`,
 --   and use the internal state to log queries -/

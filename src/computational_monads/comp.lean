@@ -24,8 +24,8 @@ inductive comp : Type → Type 1
 
 @[simps]
 instance comp.monad : monad comp :=
-{ pure := λ A a, comp.ret a,
-  bind := λ A B ca cb, comp.bind ca cb }
+{ pure := λ A, comp.ret,
+  bind := λ A B, comp.bind }
 
 @[simp]
 lemma comp.return_eq {A : Type} (a : A) :
@@ -120,10 +120,10 @@ section is_well_formed
   Such a computation is gaurunteed to have a non-empty support -/
 @[class]
 def is_well_formed : Π {A : Type}, comp A → Prop
-| A (@ret _ a) := true
-| A (@bind _ B cb ca) := (is_well_formed cb) ∧ (∀ b ∈ cb.support, is_well_formed (ca b))
-| A (@rnd _ _ _) := true
-| A (@repeat _ p hp ca) := (is_well_formed ca) ∧ (@repeat _ p hp ca).support.nonempty
+| _ (ret a) := true
+| _ (bind cb ca) := (is_well_formed cb) ∧ (∀ b ∈ cb.support, is_well_formed (ca b))
+| _ (@rnd _ _ _) := true
+| _ (@repeat _ p hp ca) := (is_well_formed ca) ∧ (@repeat _ p hp ca).support.nonempty
 
 @[simp]
 lemma ret_is_well_formed (a : A) : 

@@ -15,20 +15,26 @@ namespace complexity_class
 
 open cost_model
 
-def polynomial_complexity {A : ℕ → Type*} [∀ n, cost_model ℚ (A n)]
-  (c : Π n, A n) : Prop :=
+def polynomial_complexity {τ : ℕ → Type u} [∀ n, cost_model ℚ (τ n)]
+  (c : Π n, τ n) : Prop :=
 ∃ (f : ℕ → ℚ), poly_growth f ∧ ∀ n, cost_at_most (c n) (f n)
 
+variables {τ : ℕ → Type u} [∀ n, cost_model ℚ (τ n)]
+
+lemma polynomial_complexity_of_cost_le
+  (c c' : Π n, τ n) (h : ∀ (n : ℕ) (x : ℚ), cost_at_most (c n) x → cost_at_most (c' n) x)
+  (hc : polynomial_complexity c) : polynomial_complexity c' :=
+let ⟨p, hp, hpc⟩ := hc in 
+  ⟨p, hp, λ n, h n _ $ hpc n⟩
+
 lemma polynomial_complexity_of_has_cost_const 
-  {A : ℕ → Type*} [∀ n, cost_model ℚ (A n)] 
-  (c : Π n, A n) (x : ℚ) (hn : ∀ n, cost_at_most (c n) x) :
+  (c : Π n, τ n) (x : ℚ) (hn : ∀ n, cost_at_most (c n) x) :
   polynomial_complexity c :=
 ⟨λ n, x, poly_growth_const x, hn⟩
 
 @[simp]
 lemma polynomial_complexity_of_has_cost_zero 
-  {A : ℕ → Type*} [∀ n, cost_model ℚ (A n)]
-  (c : Π n, A n) [hc : ∀ n, cost_zero ℚ (c n)] :
+  (c : Π n, τ n) [hc : ∀ n, cost_zero ℚ (c n)] :
   polynomial_complexity c :=
 polynomial_complexity_of_has_cost_const c 0 hc
 
@@ -110,6 +116,13 @@ begin
       (h n) (h' n) }
 end
 
+lemma polynomial_complexity_unit_prod (c : Π n, unit × A n → B n)
+  (hc : polynomial_complexity (λ n, (λ a, c n ((), a)))) :
+  polynomial_complexity c :=
+polynomial_complexity_comp_ext
+  (polynomial_complexity_snd _ _) hc 
+  (λ n a, congr_arg (c n) (prod.ext (unit.ext) rfl))
+
 end pairing_cost_model
 
 section monadic_cost_model
@@ -153,6 +166,64 @@ end
 -- sorry
 
 end monadic_cost_model
+
+section comp_cost_model
+
+section function_cost_model
+
+variables [function_cost_model ℚ] [comp_cost_model ℚ]
+
+-- TODO: Think about naming conventions for this, maybe `comp` → `prob_comp`?
+lemma polynomial_complexity_comp_ext'
+  {T U : ℕ → Type} {cu cu' : Π n, T n → comp (U n)}
+  [∀ n t, (cu n t).is_well_formed] [∀ n t, (cu' n t).is_well_formed]
+  (h : ∀ (n : ℕ) (t : T n), (cu n t).eval_distribution = (cu' n t).eval_distribution)
+  (hcu : polynomial_complexity cu) : polynomial_complexity cu' :=
+polynomial_complexity_of_cost_le cu cu'
+  (λ n x hx, comp_cost_model.cost_at_most_comp_ext (h n) hx) hcu
+
+lemma polynomial_complexity_ret {T : ℕ → Type} :
+  polynomial_complexity (λ n, (comp.ret : T n → comp (T n))) :=
+polynomial_complexity_of_has_cost_zero _
+
+lemma polynomial_complexity_comp_ret_of_polynomial_complexity
+  {T U : ℕ → Type} {c : Π n, T n → U n}
+  (hc : polynomial_complexity c) :
+  polynomial_complexity (λ n, (λ t, comp.ret (c n t))) :=
+polynomial_complexity_comp hc polynomial_complexity_ret
+
+lemma polynomial_complexity_comp_bind
+  {T U V : ℕ → Type} {cu : Π n, T n → comp (U n)}
+  {cv : Π n, T n → U n → comp (V n)}
+  (hcu : polynomial_complexity cu)
+  (hcv : polynomial_complexity (λ n, (function.uncurry (cv n) : T n × U n → comp (V n)))) :
+  polynomial_complexity (λ n, (λ t, (cu n t) >>= (cv n t) : T n → comp (V n))) :=
+begin
+  obtain ⟨p, hp, hpcu⟩ := hcu,
+  obtain ⟨q, hq, hqcv⟩ := hcv,
+  refine ⟨p + q, poly_growth_add hp hq, λ n, _⟩,
+  refine comp_cost_model.cost_at_most_comp_bind (hpcu n) (hqcv n),
+end
+
+end function_cost_model
+
+-- TODO: Maybe make `product_cost_model` a mixin typeclass to avoid needing this type of thing
+section product_cost_model
+
+-- TODO: Maybe some namespacing based on cost models would clear up this naming
+lemma polynomial_complexity_comp_unit_prod
+  [pairing_cost_model ℚ] [comp_cost_model ℚ]
+  {T U : ℕ → Type} (cu : Π n, unit × T n → comp (U n))
+  (hcu : polynomial_complexity (λ n, (λ t, cu n ((), t)))) :
+  polynomial_complexity cu :=
+polynomial_complexity_comp_ext
+  (polynomial_complexity_snd _ _) hcu 
+  (λ n a, congr_arg (cu n) (prod.ext (unit.ext) rfl))
+
+
+end product_cost_model
+
+end comp_cost_model
 
 
 end complexity_class

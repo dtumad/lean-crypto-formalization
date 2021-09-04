@@ -77,6 +77,13 @@ theorem principal_action_class.vectorization_unique [principal_action_class G X]
 exists_unique_of_exists_of_unique (transitive_action_class.exists_vadd_eq x y)
   (λ g g' hg hg', free_action_class.eq_of_vadd_eq x (hg.trans hg'.symm))
 
+lemma principal_action_class.fintype_card_eq [principal_action_class G X]
+  [fintype G] [fintype X] :
+  fintype.card G = fintype.card X :=
+begin
+  sorry,
+end
+
 section vectorization
 
 variable (G)
@@ -104,7 +111,14 @@ begin
   simp,
 end
 
-lemma principal_action_class.vadd_eq_iff_left (g g' : G) (x y : X) :
+@[simp]
+lemma eq_vectorization_iff (g : G) (x y : X) :
+  g = vectorization G x y ↔ y = g +ᵥ x :=
+begin
+  sorry,
+end
+
+lemma vadd_eq_iff_left (g g' : G) (x y : X) :
   g +ᵥ x = g' +ᵥ y ↔ g = g' + vectorization G x y :=
 begin
   refine ⟨λ h, _, λ h, _⟩,
@@ -171,7 +185,7 @@ end computational_advantages
 
 section hard_homogeneous_space
 
-variables [function_cost_model ℚ] [comp_cost_model ℚ]
+variables [pairing_cost_model ℚ] [comp_cost_model ℚ]
 variables (G X : ℕ → Type) 
   [∀ n, fintype (G n)] [∀ n, fintype (X n)]
   [∀ n, inhabited (G n)] [∀ n, inhabited (X n)]
@@ -201,35 +215,54 @@ class algorithmic_homogeneous_space :=
   complexity_class.polynomial_complexity (λ n, (λ x, comp.rnd (G n) : unit → comp (G n))))
 
 section algorithmic_homogeneous_space
-variable [algorithmic_homogeneous_space G X]
 
 -- -- TODO: derive rnd X efficient by choosing a generator and using G_rnd_efficient
--- -- Might require some axioms about `comp` with the same distributions
--- lemma polynomial_complexity_rnd_X : complexity_class.polynomial_complexity
---   (λ n, (λ x, comp.rnd (X n) : unit → comp (X n))) :=
--- sorry
+lemma polynomial_complexity_rnd_X [h : algorithmic_homogeneous_space G X] : 
+  complexity_class.polynomial_complexity (λ n, (λ x, comp.rnd (X n) : unit → comp (X n))) :=
+begin
+  have : complexity_class.polynomial_complexity
+    (λ n, (λ x, do {
+      g ← comp.rnd (G n),
+      return (g +ᵥ (default _))
+    } : unit → comp (X n))),
+  { refine complexity_class.polynomial_complexity_comp_bind _ _,
+    refine algorithmic_homogeneous_space.polynomial_complexity_rnd_G X,
+    refine complexity_class.polynomial_complexity_comp_unit_prod _ _,
+    refine complexity_class.polynomial_complexity_comp_ret_of_polynomial_complexity _,
+    exact complexity_class.polynomial_complexity_comp_ext 
+      (complexity_class.polynomial_complexity_of_has_cost_zero (λ n, (λ g, (g, default _) : G n → G n × X n))) 
+      (h.polynomial_complexity_vadd) (by simp) },
+  refine complexity_class.polynomial_complexity_comp_ext' (λ n _, _) this,
+  refine pmf.ext (λ x, _),
+  simp only [mul_boole, comp.monad_to_has_bind_bind, comp.eval_distribution_rnd, pmf.const_apply, pmf.pure_apply,
+    comp.eval_distribution_bind, pmf.bind_apply, comp.return_eq, comp.eval_distribution_ret],
+  refine trans (tsum_congr (λ g, _)) (tsum_ite_eq (vectorization (G n) (default _) x) _),
+  simp_rw [eq_vectorization_iff],
+  refine congr (congr (by congr) _) rfl,
+  simpa using principal_action_class.fintype_card_eq,
+end
 
-structure vectorization_adversary :=
+end algorithmic_homogeneous_space
+
+structure vectorization_adversary (G X : ℕ → Type) :=
 (A : Π sp, X sp × X sp → comp (G sp))
 (is_well_formed : ∀ sp x, (A sp x).is_well_formed)
 (polynomial_complexity : complexity_class.polynomial_complexity A)
 
-instance vectorization_advesary.is_well_formed'
+instance vectorization_advesary.is_well_formed' {G X : ℕ → Type}
   (adv : vectorization_adversary G X) (sp : ℕ) (x : X sp × X sp) :
   (adv.A sp x).is_well_formed :=
 adv.is_well_formed sp x
 
-structure parallelization_adversary :=
+structure parallelization_adversary (X : ℕ → Type) :=
 (A : Π sp, X sp × X sp × X sp → comp (X sp))
 (is_well_formed : ∀ sp x, (A sp x).is_well_formed)
 (polynomial_complexity : complexity_class.polynomial_complexity A)
 
-instance parallelization_adversary.is_well_formed'
+instance parallelization_adversary.is_well_formed' {X : ℕ → Type}
   (adv : parallelization_adversary X) (sp : ℕ) (x : X sp × X sp × X sp) :
   (adv.A sp x).is_well_formed :=
 adv.is_well_formed sp x
-
-end algorithmic_homogeneous_space
 
 /-- Extension of `algorithmic_homogenous_space` with hardness assumptions.
   Vectorization and parallelization correspond to discrete-log and Diffie-Hellman -/

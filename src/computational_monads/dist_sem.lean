@@ -22,54 +22,72 @@ variables {A B : Type}
 
 section eval_distribution
 
-/-- Used to bootstrap `eval_distribution` and `eval_distribution_ne_zero_iff` -/
-private def eval_distribution' (ca : comp A) : 
-  ca.is_well_formed → Σ (da : pmf A), plift (∀ (a : A), (da a ≠ 0 ↔ a ∈ ca.support)) :=
-begin
-  refine ca.rec_on _ _ _ _,
-  { exact λ _ a _, ⟨pmf.pure a, plift.up (by simp)⟩ },
-  { refine λ A B ca cb db da h, _,
-    rw bind_is_well_formed_iff at h,
-    refine ⟨(db h.1).1.bind_on_support (λ b hb, (da b (h.2 b ((plift.down (db h.1).2 b).mp hb))).1), 
-      plift.up (λ a, _)⟩,
-    rw [mem_support_bind_iff, pmf.bind_on_support_apply,
-      tsum_ne_zero_iff (pmf.bind_on_support.summable (db _).1 _ _)],
+private noncomputable def eval_distribution' : Π {A : Type} (ca : comp A) [ca.is_well_formed], 
+  Σ (da : pmf A), plift (∀ (a : A), (a ∈ da.support ↔ a ∈ ca.support))
+| A (ret a) _ := ⟨pmf.pure a, plift.up (by simp)⟩
+| A (@bind _ B ca cb) h := begin
+  haveI : ca.is_well_formed := h.1,
+  refine ⟨_, plift.up (λ a, _)⟩,
+  { refine (pmf.bind_on_support (eval_distribution' ca).1 (λ a ha, _)),
+    haveI : (cb a).is_well_formed := h.2 a (((plift.down (eval_distribution' ca).2) a).mp ha),
+    refine (eval_distribution' (cb a)).1 },
+  { rw [pmf.mem_support_iff, mem_support_bind_iff, pmf.bind_on_support_apply,
+      tsum_ne_zero_iff (pmf.bind_on_support.summable (eval_distribution' ca).1 _ _)],
     split; rintro ⟨b, hb⟩; refine ⟨b, _⟩,
-    { 
-      simp only [not_or_distrib, ne.def, mul_eq_zero] at hb,
+    { simp only [not_or_distrib, ne.def, mul_eq_zero] at hb,
       simp only [dif_neg hb.left] at hb,
-      rw [← plift.down (db h.1).2, ← plift.down (da b (h.2 b ((plift.down (db h.1).2 b).mp hb.1) )).2],
-      refine ⟨hb.1, hb.2⟩,
-       },
-    { simp at hb,
-      have : (db h.1).1 b ≠ 0 := (plift.down (db h.1).2 _).mpr hb.1,
-      simp only [not_or_distrib, ne.def, mul_eq_zero, dif_neg this],
-      have := hb.1,
-      rwa [← plift.down (db h.1).2, ← plift.down (da b (h.2 b this)).2] at hb } },
-  { introsI A _ _ _,
-    refine ⟨pmf.const A, plift.up (λ a, by simpa using card_ne_zero_of_inhabited)⟩ },
-  { introsI A p hp ca da h,
-    rw repeat_is_well_formed_iff at h,
-    have : ∃ a (ha : p a), (da h.1).1 a ≠ 0,
-    { refine h.2.rec (λ a ha, _),
-      simp at ha,
-      -- rw mem_support_repeat_iff at ha,
-      refine ⟨a, ha.2, (plift.down (da h.1).2 _).2 ha.1⟩ },
-    refine ⟨(da h.1).1.filter p this, 
-      plift.up (λ a, by rw [mem_support_repeat_iff ca p a, pmf.filter_apply_ne_zero_iff, 
-        ← (plift.down (da h.1).2 _), set.mem_inter_iff, pmf.mem_support_iff, set.mem_def])⟩ }
+      haveI : (cb b).is_well_formed := (h.2 b ((plift.down (eval_distribution' ca).2 b).mp hb.1)),
+      rw [← plift.down (eval_distribution' ca).2, ← plift.down (eval_distribution' (cb b)).2],
+      exact ⟨hb.1, hb.2⟩ },
+    { rw exists_prop at hb,
+      simp only [not_or_distrib, ne.def, mul_eq_zero],
+      rw dif_neg _,
+      { haveI : (cb b).is_well_formed := h.2 b hb.1,
+        rwa [← plift.down (eval_distribution' ca).2, 
+          ← plift.down (eval_distribution' (cb b)).2,
+          pmf.mem_support_iff, pmf.mem_support_iff] at hb },
+      { exact ((plift.down (eval_distribution' ca).2) _).2 hb.1 } } }
+end
+| A (@rnd _ fA iA) _ := begin
+  haveI := fA, haveI := iA,
+  exact ⟨@pmf.const A fA iA, plift.up (by simpa using card_ne_zero_of_inhabited)⟩
+end
+| A (@repeat _ p hp ca) h := begin
+  haveI : ca.is_well_formed := h.1,
+  have : ∃ a (ha : p a), (eval_distribution' ca).1 a ≠ 0,
+  { refine h.2.rec (λ a ha, _),
+    exact ⟨a, ha.2, (plift.down (eval_distribution' ca).2 _).2 ha.1⟩ },
+  exact ⟨(eval_distribution' ca).1.filter p this, plift.up (λ a, 
+    by rw [pmf.mem_support_iff, mem_support_repeat_iff ca p a, pmf.filter_apply_ne_zero_iff, 
+      ← (plift.down (eval_distribution' ca).2 _), set.mem_inter_iff, 
+      pmf.mem_support_iff, set.mem_def])⟩
 end
 
 /-- The denotational semantics of a `comp A` is the distribution of resulting values.
   This distribution is given in the form of a `pmf` on the type `A` of the computation.
   Defined for any computation with nonempty support, but only meaningful if `ca` is well formed -/
 def eval_distribution (ca : comp A) [ca.is_well_formed] : pmf A :=
-(eval_distribution' ca (by apply_instance)).fst
+(eval_distribution' ca).fst
 
+@[simp]
+theorem mem_support_eval_distribution_iff (ca : comp A) [ca.is_well_formed] (a : A) :
+  a ∈ (eval_distribution ca).support ↔ a ∈ ca.support :=
+(plift.down (eval_distribution' ca).snd) a
+
+lemma mem_support_of_mem_support_eval_distribution {ca : comp A} [ca.is_well_formed] {a : A}
+  (h : a ∈ (eval_distribution ca).support) : a ∈ ca.support :=
+(mem_support_eval_distribution_iff ca a).mp h
+
+lemma mem_support_eval_distribution_of_mem_support {ca : comp A} [ca.is_well_formed] {a : A}
+  (h : a ∈ ca.support) : a ∈ (eval_distribution ca).support :=
+(mem_support_eval_distribution_iff ca a).mpr h
+
+@[simp]
 theorem eval_distribution_ne_zero_iff (ca : comp A) [ca.is_well_formed] (a : A) :
   eval_distribution ca a ≠ 0 ↔ a ∈ ca.support :=
-(plift.down (eval_distribution' ca (by apply_instance)).snd) a
+mem_support_eval_distribution_iff ca a
 
+@[simp]
 lemma zero_lt_eval_distribution_iff (ca : comp A) [ca.is_well_formed] (a : A) :
   0 < eval_distribution ca a ↔ a ∈ ca.support :=
 iff.trans ⟨λ h, ne_of_gt h, λ h, lt_of_le_of_ne zero_le' h.symm⟩ (eval_distribution_ne_zero_iff ca a)
@@ -88,28 +106,32 @@ lemma eval_distribution_ret (a : A) :
   eval_distribution (ret a) = pmf.pure a := 
 rfl
 
--- /-- If `ca b` is not well formed for all `b ∉ ca.support`, then we can reduce to `bind'`-/
--- @[simp]
--- lemma eval_distribution_bind' (cb : comp B) (ca : B → comp A)
---   [cb.is_well_formed] (hca : ∀ b ∈ cb.support, (ca b).is_well_formed) :
---   eval_distribution (bind cb ca) = (eval_distribution cb).bind_on_support
---     (λ b hb, (eval_distribution (ca b))) := rfl
+@[simp]
+lemma eval_distribution_bind' (cb : comp B) (ca : B → comp A)
+  [h : (cb.bind ca).is_well_formed] :
+  -- [cb.is_well_formed] [hca : ∀ b ∈ cb.support, (ca b).is_well_formed] :
+  eval_distribution (bind cb ca) = 
+    (@eval_distribution B cb (is_well_formed_of_bind_left h)).bind_on_support (λ b hb, 
+      (@eval_distribution A (ca b) (
+        is_well_formed_of_bind_right h b
+          (@mem_support_of_mem_support_eval_distribution B cb (is_well_formed_of_bind_left h) _ hb)
+      ))) :=
+begin
+  rw [eval_distribution, eval_distribution'],
+  refl,
+end
 
--- /-- If we generalize `ha` over all `b` we can further reduce the `bind'` above to `bind`-/
--- @[simp]
--- lemma eval_distribution_bind' (cb : comp B) (ca : B → comp A) 
---   [h : (bind cb ca).is_well_formed] : 
---   @eval_distribution A (bind cb ca) h = 
---     (@eval_distribution B cb (is_well_formed_of_bind_left h)).bind_on_support 
---       (λ b hb, @eval_distribution A (ca b) (is_well_formed_of_bind_right h b $ by simpa using hb)) :=
--- rfl
-
+/-- If `ca b` is not well formed for all `b ∉ ca.support`, then we can reduce to `bind` instead of `bind_on_support`-/
 @[simp]
 lemma eval_distribution_bind (cb : comp B) (ca : B → comp A)
   [cb.is_well_formed] [∀ b, (ca b).is_well_formed] :
   (bind cb ca).eval_distribution =
     (cb.eval_distribution).bind (λ b, (ca b).eval_distribution) :=
-trans (by refl) (pmf.bind_on_support_eq_bind cb.eval_distribution _)
+trans (eval_distribution_bind' cb ca)
+begin
+  convert (pmf.bind_on_support_eq_bind cb.eval_distribution _),
+  refl,
+end
 
 @[simp] 
 lemma eval_distribution_rnd {A : Type} [inhabited A] [fintype A] :
