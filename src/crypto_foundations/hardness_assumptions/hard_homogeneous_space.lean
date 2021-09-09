@@ -77,12 +77,28 @@ theorem principal_action_class.vectorization_unique [principal_action_class G X]
 exists_unique_of_exists_of_unique (transitive_action_class.exists_vadd_eq x y)
   (λ g g' hg hg', free_action_class.eq_of_vadd_eq x (hg.trans hg'.symm))
 
-lemma principal_action_class.fintype_card_eq [principal_action_class G X]
-  [fintype G] [fintype X] :
+variables (G X)
+
+lemma free_action_class.card_le_card [free_action_class G X]
+  [fintype G] [fintype X] [inhabited X] :
+  fintype.card G ≤ fintype.card X :=
+fintype.card_le_of_injective (λ g, g +ᵥ (arbitrary X)) (free_action_class.free $ arbitrary X)
+
+lemma transitive_action_class.card_le_card [transitive_action_class G X]
+  [fintype G] [fintype X] [inhabited X] :
+  fintype.card X ≤ fintype.card G :=
+fintype.card_le_of_surjective (λ g, g +ᵥ (arbitrary X)) (transitive_action_class.trans $ arbitrary X)
+
+theorem principal_action_class.fintype_card_eq [principal_action_class G X]
+  [fintype G] [fintype X] [inhabited X] :
   fintype.card G = fintype.card X :=
-begin
-  sorry,
-end
+le_antisymm (free_action_class.card_le_card G X) (transitive_action_class.card_le_card G X)
+
+noncomputable def principal_action_class.equiv [principal_action_class G X]
+  [fintype G] [fintype X] [inhabited X] : G ≃ X :=
+fintype.equiv_of_card_eq (principal_action_class.fintype_card_eq G X)
+
+variables {G X}
 
 section vectorization
 
@@ -115,10 +131,12 @@ end
 lemma eq_vectorization_iff (g : G) (x y : X) :
   g = vectorization G x y ↔ y = g +ᵥ x :=
 begin
-  sorry,
+  refine ⟨λ h, _, λ h, _⟩,
+  { rw [h, vectorization_apply] },
+  { rw [h, vectorization_vadd] }
 end
 
-lemma vadd_eq_iff_left (g g' : G) (x y : X) :
+lemma vadd_eq_vadd_iff_left (g g' : G) (x y : X) :
   g +ᵥ x = g' +ᵥ y ↔ g = g' + vectorization G x y :=
 begin
   refine ⟨λ h, _, λ h, _⟩,
@@ -239,7 +257,7 @@ begin
   refine trans (tsum_congr (λ g, _)) (tsum_ite_eq (vectorization (G n) (default _) x) _),
   simp_rw [eq_vectorization_iff],
   refine congr (congr (by congr) _) rfl,
-  simpa using principal_action_class.fintype_card_eq,
+  simpa using principal_action_class.fintype_card_eq (G n) (X n),
 end
 
 end algorithmic_homogeneous_space

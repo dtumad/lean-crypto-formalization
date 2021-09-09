@@ -111,7 +111,7 @@ begin
   by_cases hj : j = i,
   {
     simp only [hj, vector.nth_update_nth_same, add_sub_cancel'_right, vector.nth_of_fn],
-    rw principal_action_class.vadd_eq_iff_left _ tᵢ _ x₀,
+    rw vadd_eq_vadd_iff_left _ tᵢ _ x₀,
     rw ring_sig_of_pas.vectorization_of_mem_support_keygen' x₀ H (ks.nth i) (hks i),
     abel,
   },
