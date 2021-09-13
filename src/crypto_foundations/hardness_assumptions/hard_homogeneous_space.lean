@@ -158,6 +158,7 @@ end vectorization
 
 end action_classes
 
+
 section computational_advantages
 
 variables {G X : Type} [fintype G] [fintype X] 
@@ -217,7 +218,7 @@ variables (G X : ℕ → Type)
 
   Note that we model `G n` and `X n` as having some *fixed* internal representation,
     so this definition doesn't include functions for converting to and from representative bit-strings.
-  TODO: clean up the massive typeclass dependencies -/
+  TODO: clean up the many typeclass dependencies -/
 class algorithmic_homogeneous_space :=
 (polynomial_complexity_add : 
   complexity_class.polynomial_complexity (λ sp, (λ x, x.1 + x.2 : G sp × G sp → G sp)))
@@ -250,6 +251,7 @@ begin
     exact complexity_class.polynomial_complexity_comp_ext 
       (complexity_class.polynomial_complexity_of_has_cost_zero (λ n, (λ g, (g, default _) : G n → G n × X n))) 
       (h.polynomial_complexity_vadd) (by simp) },
+      
   refine complexity_class.polynomial_complexity_comp_ext' (λ n _, _) this,
   refine pmf.ext (λ x, _),
   simp only [mul_boole, comp.monad_to_has_bind_bind, comp.eval_distribution_rnd, pmf.const_apply, pmf.pure_apply,

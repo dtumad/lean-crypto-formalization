@@ -4,7 +4,7 @@ import to_mathlib
 /-!
 # Model of Nondeterministic Computation
 
-This file defines related notions of `comp A` and `oracle_comp B C A`,
+This file defines probabilistic computations in the form of a monad `comp A`,
 which represent nondeterministic computations of elements of type `A`.
 
 The support of a computation is further defined to be the possible outputs of the computation.
