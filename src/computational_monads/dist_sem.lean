@@ -18,7 +18,7 @@ noncomputable theory
 
 namespace comp
 
-variables {A B : Type}
+variables {A B C : Type}
 
 section eval_distribution
 
@@ -106,31 +106,47 @@ lemma eval_distribution_ret (a : A) :
   eval_distribution (ret a) = pmf.pure a := 
 rfl
 
+/-- If we only know that the bind result is well formed, we can only reduce to `bind_on_support`,
+  since this only implies `(cb a).is_well_formed` for `a ∈ ca.support` -/
 @[simp]
-lemma eval_distribution_bind' (cb : comp B) (ca : B → comp A)
-  [h : (cb.bind ca).is_well_formed] :
-  -- [cb.is_well_formed] [hca : ∀ b ∈ cb.support, (ca b).is_well_formed] :
-  eval_distribution (bind cb ca) = 
-    (@eval_distribution B cb (is_well_formed_of_bind_left h)).bind_on_support (λ b hb, 
-      (@eval_distribution A (ca b) (
-        is_well_formed_of_bind_right h b
-          (@mem_support_of_mem_support_eval_distribution B cb (is_well_formed_of_bind_left h) _ hb)
+lemma eval_distribution_bind' (ca : comp A) (cb : A → comp B)
+  [h : (ca.bind cb).is_well_formed] :
+  eval_distribution (ca.bind cb) = 
+    (@eval_distribution A ca (is_well_formed_of_bind_left h)).bind_on_support (λ a ha, 
+      (@eval_distribution B (cb a) (
+        is_well_formed_of_bind_right h a
+          (@mem_support_of_mem_support_eval_distribution A ca (is_well_formed_of_bind_left h) _ ha)
       ))) :=
 begin
   rw [eval_distribution, eval_distribution'],
   refl,
 end
 
-/-- If `ca b` is not well formed for all `b ∉ ca.support`, then we can reduce to `bind` instead of `bind_on_support`-/
+/-- If `cb a` is well formed for all `a`, even those outside of `ca.support`,
+  then we can reduce to `bind` instead of `bind_on_support`. -/
 @[simp]
-lemma eval_distribution_bind (cb : comp B) (ca : B → comp A)
-  [cb.is_well_formed] [∀ b, (ca b).is_well_formed] :
-  (bind cb ca).eval_distribution =
-    (cb.eval_distribution).bind (λ b, (ca b).eval_distribution) :=
-trans (eval_distribution_bind' cb ca)
+lemma eval_distribution_bind (ca : comp A) (cb : A → comp B)
+  [ca.is_well_formed] [∀ a, (cb a).is_well_formed] :
+  (ca.bind cb).eval_distribution =
+    (ca.eval_distribution).bind (λ b, (cb b).eval_distribution) :=
+trans (eval_distribution_bind' ca cb)
 begin
-  convert (pmf.bind_on_support_eq_bind cb.eval_distribution _),
+  convert (pmf.bind_on_support_eq_bind ca.eval_distribution _),
   refl,
+end
+
+/-- Two consecutive and independent binds give a simplified probability distribution -/
+lemma eval_distribution_bind_bind {A A' : Type} 
+  (ca : comp A) (ca' : comp A') (cb : A → A' → comp B)
+  [ca.is_well_formed] [ca'.is_well_formed] [∀ a a', (cb a a').is_well_formed] (b : B) :
+  (ca.bind (λ a, ca'.bind (λ a', cb a a'))).eval_distribution b =
+    ∑' (a : A) (a' : A'), ca.eval_distribution a * ca'.eval_distribution a' * (cb a a').eval_distribution b :=
+begin
+  simp only [pmf.bind_apply, eval_distribution_bind, mul_assoc],
+  refine tsum_congr (λ a, _),
+  refine (summable.tsum_mul_left _ _).symm,
+  refine nnreal.summable_of_le (λ a', _) (pmf.summable_coe $ ca'.eval_distribution),
+  refine nnreal.mul_right_le (pmf.coe_le_one _ b),
 end
 
 @[simp] 

@@ -216,6 +216,11 @@ end log_exp
 
 section misc
 
+lemma nnreal.mul_right_le {a b : nnreal} (hb' : b ≤ 1) :
+  a * b ≤ a :=
+if ha : a = 0 then by simp [ha]
+else by rwa [nnreal.mul_le_iff_le_inv ha, inv_mul_cancel ha]
+
 lemma eq_zero_of_norm_fpow_eq_zero {𝕜 : Type*} [normed_field 𝕜] {x : 𝕜} {z : ℤ}
   (hx : ∥x ^ z∥ = 0) : x = 0 :=
 fpow_eq_zero (norm_eq_zero.mp hx)
@@ -334,12 +339,17 @@ end
 
 end sum_stuff
 
+@[simp]
+lemma vector.cons_eq_cons_iff {A : Type*} {n : ℕ} 
+  (a a' : A) (v v' : vector A n) :
+  a ::ᵥ v = a' ::ᵥ v' ↔ a = a' ∧ v = v' :=
+⟨λ h, ⟨by simpa using congr_arg vector.head h, by simpa using congr_arg vector.tail h⟩,
+  λ h, by rw [h.1, h.2]⟩
 
 def vector.zip_with {α β γ : Type*} {n : ℕ}
   (v : vector α n) (w : vector β n) (f : α → β → γ) : 
   vector γ n :=
 ⟨list.zip_with f v.to_list w.to_list, by simp⟩
-
 
 @[simp]
 lemma vector_to_list_nth_le'' {A : Type} {n : ℕ} (v : vector A n)
