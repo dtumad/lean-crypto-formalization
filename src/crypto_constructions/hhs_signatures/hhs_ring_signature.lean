@@ -128,7 +128,7 @@ variables [∀ n, fintype (G n)] [∀ n, fintype (X n)]
 variables [∀ n, inhabited (G n)] [∀ n, inhabited (X n)]
 variables [decidable_eq M] [∀ n, decidable_eq (G n)] [∀ n, decidable_eq (X n)] [∀ n, decidable_eq (K n)]
 variables [∀ n, add_comm_group (G n)] [∀ n, add_action (G n) (X n)] [∀ n, principal_action_class (G n) (X n)]
-variables [pairing_cost_model ℚ] [comp_cost_model ℚ]
+variables [function_cost_model ℚ] [pairing_cost_extension ℚ] [comp_cost_model ℚ]
 
 /-- Construct a ring signature scheme from a hard homogenous space.
 `x₀` is an arbitrary generator in `X` used as a base for the public keys.
@@ -182,7 +182,7 @@ theorem ring_signature_scheme_of_hhs.unforgeable (x₀ : Π sp, X sp)
   (hH : hash_scheme.collision_resistant H) :
   (ring_signature_scheme_of_hhs x₀ H).unforgeable :=
 begin
-  sorry,
+  sorry
 end
 
 theorem ring_signature_scheme_of_hhs.anonomyous (x₀ : Π sp, X sp) 
@@ -190,5 +190,5 @@ theorem ring_signature_scheme_of_hhs.anonomyous (x₀ : Π sp, X sp)
   (hH : hash_scheme.collision_resistant H) :
   (ring_signature_scheme_of_hhs x₀ H).anonomyous :=
 begin
-  sorry,
+  sorry, 
 end

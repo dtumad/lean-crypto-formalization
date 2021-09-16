@@ -3,6 +3,38 @@ import computational_complexity.complexity_class
 
 namespace comp
 
+section vector_call_mmap
+
+-- TODO: This might be a better definition for computational complexity proofs
+def vector_call_mmap {A : Type} (ca : comp A) (n : ℕ) :
+  comp (vector A n) :=
+vector.m_of_fn (function.const _ ca)
+
+variables {A : Type} (ca : comp A)
+
+@[simp]
+lemma vector_call_mmap_zero : 
+  (vector_call_mmap ca 0) = return vector.nil :=
+rfl
+
+@[simp]
+lemma vector_call_mmap_succ {n : ℕ} :
+  (vector_call_mmap ca n.succ) =
+    do { a ← ca, as ← vector_call_mmap ca n, return (a ::ᵥ as) } :=
+by simp [vector_call_mmap, vector.m_of_fn]
+
+@[simp]
+instance vector_call_mmap.is_well_formed
+  [hca : ca.is_well_formed] (n : ℕ) :
+  (vector_call_mmap ca n).is_well_formed :=
+begin
+  induction n with n hn,
+  { simp },
+  { simp [hn] }
+end
+
+end vector_call_mmap
+
 def vector_call {A : Type} (ca : comp A) : 
   Π n, comp (vector A n)
 | 0 := return vector.nil

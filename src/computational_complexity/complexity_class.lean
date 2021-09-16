@@ -1,4 +1,5 @@
 import computational_complexity.cost_model
+import computational_complexity.cost_extensions
 
 /-!
 # Computational Complexity Classes
@@ -63,9 +64,9 @@ lemma polynomial_complexity_comp_ext
 
 end compatible_cost_models
 
-variables {A B C D : ℕ → Type}
-
 section function_cost_model
+
+variables {A B C D : ℕ → Type}
 
 variables [function_cost_model ℚ]
 
@@ -74,11 +75,9 @@ lemma polynomial_complexity_const [function_cost_model ℚ] (A : ℕ → Type) (
   polynomial_complexity (λ n, (λ _, b n : A n → B n)) :=
 polynomial_complexity_of_has_cost_zero _
 
-end function_cost_model
+section pairing_cost_extension
 
-section pairing_cost_model
-
-variable [pairing_cost_model ℚ]
+variables [pairing_cost_extension ℚ]
 
 @[simp]
 lemma polynomial_complexity_fst (A B : ℕ → Type) :
@@ -95,7 +94,7 @@ lemma polynomial_complexity_prod_map {A B C D : ℕ → Type}
   (hf : polynomial_complexity f) (hg : polynomial_complexity g) :
   polynomial_complexity (λ n, (prod.map (f n) (g n) : A n × B n → C n × D n)) :=
 let ⟨p, hp, hpf⟩ := hf in let ⟨q, hq, hqg⟩ := hg in
-⟨p + q, poly_growth_add hp hq, λ n, pairing_cost_model.cost_at_most_prod_map (hpf n) (hqg n)⟩
+⟨p + q, poly_growth_add hp hq, λ n, pairing_cost_extension.cost_at_most_prod_map (hpf n) (hqg n)⟩
 
 @[simp]
 lemma polynomial_complexity_pair_iff [∀ n, inhabited $ A n] [∀ n, inhabited $ C n]
@@ -112,7 +111,7 @@ begin
         (λ c, (arbitrary (A n), c)) _ prod.snd (h n) (by simp) } },
   { rintro ⟨⟨p, hp, h⟩, ⟨q, hq, h'⟩⟩,
     refine ⟨p + q, poly_growth_add hp hq, λ n, _⟩,
-    refine pairing_cost_model.cost_at_most_prod_map
+    refine pairing_cost_extension.cost_at_most_prod_map
       (h n) (h' n) }
 end
 
@@ -123,11 +122,12 @@ polynomial_complexity_comp_ext
   (polynomial_complexity_snd _ _) hc 
   (λ n a, congr_arg (c n) (prod.ext (unit.ext) rfl))
 
-end pairing_cost_model
+end pairing_cost_extension
 
 section monadic_cost_model
 
-variables [pairing_cost_model ℚ] (M : Type → Type u) [monad M]
+variables
+  (M : Type → Type u) [monad M]
   [monadic_cost_model ℚ M]
 
 lemma polynomial_complexity_pure {A B : ℕ → Type} 
@@ -144,6 +144,10 @@ lemma polynomial_complexity_bind {T U V : ℕ → Type}
 let ⟨p, hp, hpmu⟩ := hmu in
 let ⟨q, hq, hqmv⟩ := hmv in
 ⟨p + q, poly_growth_add hp hq, λ n, monadic_cost_model.cost_at_most_bind (hpmu n) (hqmv n)⟩
+
+section pairing_cost_extension
+
+variable [pairing_cost_extension ℚ]
 
 lemma polynomial_complexity_bind_of_subsingleton {T U V : ℕ → Type}
   [∀ n, subsingleton $ T n] [∀ n, inhabited $ T n]
@@ -165,11 +169,11 @@ end
 --   polynomial_complexity (λ n, (λ t, comp.bind (cu n t) (cv n t))) :=
 -- sorry
 
+end pairing_cost_extension
+
 end monadic_cost_model
 
 section comp_cost_model
-
-section function_cost_model
 
 variables [function_cost_model ℚ] [comp_cost_model ℚ]
 
@@ -205,14 +209,13 @@ begin
   refine comp_cost_model.cost_at_most_comp_bind (hpcu n) (hqcv n),
 end
 
-end function_cost_model
-
--- TODO: Maybe make `product_cost_model` a mixin typeclass to avoid needing this type of thing
 section product_cost_model
+
+variable [pairing_cost_extension ℚ]
 
 -- TODO: Maybe some namespacing based on cost models would clear up this naming
 lemma polynomial_complexity_comp_unit_prod
-  [pairing_cost_model ℚ] [comp_cost_model ℚ]
+  [pairing_cost_extension ℚ] [comp_cost_model ℚ]
   {T U : ℕ → Type} (cu : Π n, unit × T n → comp (U n))
   (hcu : polynomial_complexity (λ n, (λ t, cu n ((), t)))) :
   polynomial_complexity cu :=
@@ -220,10 +223,10 @@ polynomial_complexity_comp_ext
   (polynomial_complexity_snd _ _) hcu 
   (λ n a, congr_arg (cu n) (prod.ext (unit.ext) rfl))
 
-
 end product_cost_model
 
 end comp_cost_model
 
+end function_cost_model
 
 end complexity_class

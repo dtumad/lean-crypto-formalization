@@ -203,8 +203,8 @@ end computational_advantages
 
 
 section hard_homogeneous_space
-
-variables [pairing_cost_model ℚ] [comp_cost_model ℚ]
+variable [function_cost_model ℚ]
+variables  [comp_cost_model ℚ]
 variables (G X : ℕ → Type) 
   [∀ n, fintype (G n)] [∀ n, fintype (X n)]
   [∀ n, inhabited (G n)] [∀ n, inhabited (X n)]
@@ -236,7 +236,8 @@ class algorithmic_homogeneous_space :=
 section algorithmic_homogeneous_space
 
 -- -- TODO: derive rnd X efficient by choosing a generator and using G_rnd_efficient
-lemma polynomial_complexity_rnd_X [h : algorithmic_homogeneous_space G X] : 
+lemma polynomial_complexity_rnd_X [h : algorithmic_homogeneous_space G X] 
+  [pairing_cost_extension ℚ] : 
   complexity_class.polynomial_complexity (λ n, (λ x, comp.rnd (X n) : unit → comp (X n))) :=
 begin
   have : complexity_class.polynomial_complexity
