@@ -19,7 +19,7 @@ section poly_growth_in_parameter
 open polynomial asymptotics
 
 /-- A function `f` has polynomial growth in the parameter `k` if `f(x) = O(k(x)^n)` for some `n : ℕ`
-  This is equivalent to `f(x) = O(p ∘ k)` for some polynomial `p`, see `poly_growth_in_parameter_iff` -/
+  This is equivalent to `f(x) = O(p ∘ k)` for some polynomial `p`, see `poly_growth_in_parameter_iff`. -/
 def poly_growth_in_parameter {α R S : Type*} [preorder α] [normed_ring R] [normed_ring S]
   (k : α → R) (f : α → S) :=
 ∃ (n : ℕ), is_O f (λ x, (k x) ^ n) filter.at_top
@@ -48,13 +48,13 @@ lemma poly_growth_in_parameter_const (k : α → R) (s : S) :
   poly_growth_in_parameter k (λ _, s) :=
 ⟨0, is_O_of_le' filter.at_top (λ x, by simp : ∀ x, ∥s∥ ≤ ∥s∥ * ∥k x ^ 0∥)⟩
 
-lemma poly_growth_in_parameter_one (k : α → R) :
-  poly_growth_in_parameter k (1 : α → S) :=
-poly_growth_in_parameter_const k 1
-
 lemma poly_growth_in_parameter_zero (k : α → R) :
   poly_growth_in_parameter k (0 : α → S) :=
 poly_growth_in_parameter_const k 0
+
+lemma poly_growth_in_parameter_one (k : α → R) :
+  poly_growth_in_parameter k (1 : α → S) :=
+poly_growth_in_parameter_const k 1
 
 /-- If the parameter is eventually greater than `1`, then polynomial growth in `k` is additive -/
 lemma poly_growth_in_parameter_add {k : α → 𝕜}
@@ -63,7 +63,7 @@ lemma poly_growth_in_parameter_add {k : α → 𝕜}
   poly_growth_in_parameter k (f + g) :=
 let ⟨n, hn⟩ := hf in let ⟨m, hm⟩ := hg in
 ⟨max n m, is_O.add (hn.trans $ is_O_of_pow_le hk (le_max_left n m)) 
-    (hm.trans $ is_O_of_pow_le hk (le_max_right n m))⟩
+  (hm.trans $ is_O_of_pow_le hk (le_max_right n m))⟩
 
 /-- Polynomial growth is multiplicative regardless of the parameter-/
 lemma poly_growth_in_parameter_mul {k : α → 𝕜} {f g : α → R}
@@ -141,12 +141,16 @@ end poly_growth
 
 section log_poly_growth
 
-def log_poly_growth {R : Type*} [normed_ring R] (f : ℝ → R) :=
-poly_growth_in_parameter (real.log) f
+def polylogarithmic_growth {R : Type*} [normed_ring R] (f : ℝ → R) :=
+poly_growth_in_parameter real.log f
 
-lemma log_poly_growth_add {f g : ℝ → ℝ}
-  (hf : log_poly_growth f) (hg : log_poly_growth g) :
-  log_poly_growth (f + g) :=
+lemma polylogarithmic_growth_log :
+  polylogarithmic_growth real.log :=
+poly_growth_in_parameter_parameter real.log
+
+lemma polylogarithmic_growth_add {f g : ℝ → ℝ}
+  (hf : polylogarithmic_growth f) (hg : polylogarithmic_growth g) :
+  polylogarithmic_growth (f + g) :=
 poly_growth_in_parameter_add one_eventually_le_log hf hg
 
 end log_poly_growth

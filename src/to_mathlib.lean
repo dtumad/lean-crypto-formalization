@@ -1,10 +1,10 @@
-import data.bitvec.basic
 import measure_theory.probability_mass_function
 import analysis.special_functions.exp_log
 import analysis.asymptotics.asymptotics
 import analysis.special_functions.polynomials 
 
-import data.vector2
+import data.vector.basic
+import data.vector.zip
 
 /-!
 # Miscelanious Lemams
@@ -59,13 +59,13 @@ lemma inv_is_O_inv_iff {α 𝕜 𝕜' : Type*} [preorder α] [normed_field 𝕜]
 begin
   let hfg := filter.eventually.and hf hg,
   have hfg : ∀ᶠ x in l, 0 < ∥f x∥ ∧ 0 < ∥g x∥ := begin
-    refine filter.mem_sets_of_superset hfg (λ x hx, by simpa using hx),
+    refine filter.sets_of_superset _ hfg (λ x hx, by simpa using hx),
   end,
   simp only [is_O_iff],
   refine exists_congr (λ c, ⟨λ hc, _, λ hc, _⟩),
   {
 
-    refine filter.mem_sets_of_superset (hc.and hfg) _,
+    refine filter.sets_of_superset _ (hc.and hfg) _,
     intros x hx,
     obtain ⟨hx, hx0⟩ := hx,
     simp_rw [ normed_field.norm_inv, inv_eq_one_div, ← mul_div_assoc,
@@ -73,7 +73,7 @@ begin
     refine (one_le_div hx0.2).1 hx,
   },
   {
-    refine filter.mem_sets_of_superset (hc.and hfg) _,
+    refine filter.sets_of_superset _ (hc.and hfg) _,
     intros x hx,
     simp_rw [set.mem_set_of_eq, normed_field.norm_inv, inv_eq_one_div, ← mul_div_assoc,
       mul_one, div_le_iff hx.2.1, div_mul_eq_mul_div],
@@ -126,7 +126,8 @@ begin
   split,
   {
     intro h,
-    rw filter.mem_comap_sets at h,
+    rw filter.mem_comap at h,
+    -- rw filter.mem_comap_sets at h,
     obtain ⟨s, hs, h⟩ := h,
     rw filter.mem_at_top_sets at hs ⊢,
     obtain ⟨a, ha⟩ := hs,
@@ -139,7 +140,7 @@ begin
   },
   {
     intro h,
-    rw filter.mem_comap_sets,
+    rw filter.mem_comap,
     rw filter.mem_at_top_sets at h,
     obtain ⟨a, ha⟩ := h,
     refine ⟨set.Ici ↑a, _, _⟩,
@@ -226,10 +227,10 @@ lemma eq_zero_of_norm_fpow_eq_zero {𝕜 : Type*} [normed_field 𝕜] {x : 𝕜}
 fpow_eq_zero (norm_eq_zero.mp hx)
 
 lemma eventually_fpow_ne_zero {α 𝕜 : Type*} [preorder α]
-  [normed_linear_ordered_field 𝕜] (ι : α → 𝕜)
+  [normed_field 𝕜] (ι : α → 𝕜)
   (hι : ∀ᶠ (n : α) in filter.at_top, (ι n) ≠ 0) (z : ℤ) : 
   ∀ᶠ (n : α) in filter.at_top, ∥(ι n) ^ z∥ ≠ 0 :=
-filter.mem_sets_of_superset hι (λ x hx, mt eq_zero_of_norm_fpow_eq_zero hx)
+filter.sets_of_superset _ hι (λ x hx, mt eq_zero_of_norm_fpow_eq_zero hx)
 
 lemma tsum_unique {α β : Type*} [add_comm_monoid α] [topological_space α]
   [t2_space α] [decidable_eq β]
@@ -346,11 +347,6 @@ lemma vector.cons_eq_cons_iff {A : Type*} {n : ℕ}
 ⟨λ h, ⟨by simpa using congr_arg vector.head h, by simpa using congr_arg vector.tail h⟩,
   λ h, by rw [h.1, h.2]⟩
 
-def vector.zip_with {α β γ : Type*} {n : ℕ}
-  (v : vector α n) (w : vector β n) (f : α → β → γ) : 
-  vector γ n :=
-⟨list.zip_with f v.to_list w.to_list, by simp⟩
-
 @[simp]
 lemma vector_to_list_nth_le'' {A : Type} {n : ℕ} (v : vector A n)
   (m : ℕ) (hm : m < v.to_list.length) :
@@ -400,7 +396,7 @@ begin
 end
 
 @[simp]
-lemma list.append_eq_append_iff' {A : Type} (x y z : list A) :
+lemma list.append_eq_append_iff_left {A : Type} (x y z : list A) :
   x ++ y = x ++ z ↔ y = z :=
 begin
   induction x with x xs h,
@@ -408,10 +404,23 @@ begin
   { simp [h] }
 end
 
+-- @[simp]
+-- lemma list.append_eq_append_iff_right {A : Type} :
+--   ∀ (x y z : list A), x ++ z = y ++ z ↔ x = y
+-- | [] [] z := by simp
+-- | [] ys [] := by simp
+-- | [] ys (z :: zs) := begin
+--   simp,
+--   refine (list.cons_eq_append_iff).trans _,
+--   simp,
+-- end
+-- | (x :: xs) [] z := sorry
+-- | (x :: xs) (y :: ys) z := sorry
+
 @[simp]
 lemma list.of_fn_eq_vector_to_list_iff {A : Type} {n : ℕ}
   (f : fin n → A) (v : vector A n) :
-  (list.of_fn f) = v.to_list ↔
+  list.of_fn f = v.to_list ↔
     vector.of_fn f = v :=
 begin
   refine ⟨λ h, _, λ h, _⟩,

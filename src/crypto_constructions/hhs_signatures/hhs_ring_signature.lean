@@ -1,8 +1,7 @@
 import crypto_foundations.hardness_assumptions.hard_homogeneous_space
 import crypto_foundations.primitives.ring_signatures.ring_signature
 import crypto_foundations.primitives.hash_function.hash_function
-
-import data.vector2
+import data.vector.basic
 
 /-!
 # Hard Homogenous Space based Ring Signature Scheme

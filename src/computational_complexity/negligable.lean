@@ -10,6 +10,7 @@ For convenience, the definition is given in terms of `is_O`,
 
 namespace asymptotics
 
+-- TODO: The domain probably doesn't need to be `ℝ`
 def negligable (f : ℕ → ℝ) :=
 ∀ (c : ℤ), is_O f (λ n, (n : ℝ) ^ c) filter.at_top
 
@@ -21,9 +22,17 @@ lemma negligable.negligable_of_is_O (hg : negligable g)
   (h : is_O f g filter.at_top) : negligable f :=
 λ c, h.trans $ hg c
 
-lemma negligable.add (hf : negligable f) (hg : negligable g) :
+lemma negligable_add (hf : negligable f) (hg : negligable g) :
   negligable (f + g) :=
 λ c, (hf c).add $ hg c
+
+lemma negligable_mul (hf : negligable f) (hg : negligable g) :
+  negligable (f * g) :=
+λ c, begin
+  specialize hf c,
+  specialize hg c,
+  sorry,
+end
 
 @[simp] 
 lemma negligable_zero : negligable (λ n, 0) :=
@@ -93,7 +102,7 @@ begin
         refine @filter.eventually_comap' ℕ ℝ filter.at_top coe (λ x, polynomial.eval x p ≠ 0) _,
         exact polynomial.eventually_no_roots p hp,
       },
-      refine filter.mem_sets_of_superset this (λ x hx h, hx (norm_eq_zero.1 h)) },
+      refine filter.sets_of_superset _ this (λ x hx h, hx (norm_eq_zero.1 h)) },
     simp only [fpow_neg],
     rw inv_is_O_inv_iff (_) h2,
     have := polynomial.is_O_of_degree_le p (polynomial.X ^ p.nat_degree) (by simp),
@@ -131,7 +140,7 @@ lemma negligable_x_mul_iff (f : ℕ → ℝ) :
   negligable (λ n, (n : ℝ) * f n) ↔ negligable f :=
 begin
   refine ⟨λ h, _, λ h c, _⟩,
-  { refine h.negligable_of_eventually_le _,
+  { refine negligable_of_eventually_le h _,
     -- refine filter.mem_sets_of_superset (λ x hx, _),
     simp,
     use 1,
@@ -173,7 +182,7 @@ begin
   { by_cases hp : 1 ≤ p.degree,
     { have : ∀ᶠ (n : ℕ) in filter.at_top, 1 ≤ ∥polynomial.eval ↑n p∥ :=
         (comap_nat_coe_at_top ℝ) ▸ filter.eventually_comap' (poly_help hp 1),
-      refine (h.negligable_of_eventually_le $ filter.mem_sets_of_superset this (λ x hx, _)),
+      refine (negligable_of_eventually_le h $ filter.sets_of_superset _ this (λ x hx, _)),
       simp only [normed_field.norm_mul, set.mem_set_of_eq] at ⊢ hx,
       by_cases hfx : f x = 0,
       { simp only [hfx, norm_zero, mul_zero]},
@@ -187,7 +196,7 @@ begin
       rw [hp_C] at h,
       simpa only [polynomial.eval_C, negligable_const_mul_iff _ hpc0] using h } },
   { refine λ h, polynomial.induction_on' p (λ p q hp hq, _) (λ n x, _),
-    { simpa [polynomial.eval_add, add_mul] using hp.add hq },
+    { simpa [polynomial.eval_add, add_mul] using negligable_add hp hq },
     { by_cases hx : x = 0,
       { simp only [hx, negligable_zero, zero_mul, polynomial.monomial_zero_right, polynomial.eval_zero] },
       { simpa only [polynomial.eval_monomial, mul_assoc x,

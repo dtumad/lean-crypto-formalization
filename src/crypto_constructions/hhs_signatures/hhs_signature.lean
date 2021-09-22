@@ -1,6 +1,6 @@
 import crypto_foundations.primitives.signature.signature
 import crypto_foundations.hardness_assumptions.hard_homogeneous_space
-import data.vector2
+import data.vector.basic
 
 
 variables (M G X : Type)
@@ -29,8 +29,7 @@ def signature_of_principal_action_class
     ys ← return (cs.map (λ c, c +ᵥ pk)),
     -- Query the random oracle on `ys`
     (h : vector bool t) ← oc_query () (ys.to_list, m),
-    return (vector.zip_with cs h 
-      (λ c b, (if b then c else c + sk, b))) },
+    return (vector.zip_with (λ c b, (if b then c else c + sk, b)) cs h) },
   verify := λ inp, do
   { (pk, m, σ) ← return inp,
     -- This should be the same `ys` value for honest signatures

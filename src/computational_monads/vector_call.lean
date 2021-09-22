@@ -48,7 +48,7 @@ begin
       { rw [← fin.succ_pred i hi, vector.nth_cons_succ a as (i.pred hi)],
         exact (hn as).1 has (i.pred hi) } },
     { refine ⟨as.head, vector.nth_zero as ▸ h 0, as.tail,
-        (hn as.tail).2 (λ i, (vector.nth_tail as i).symm ▸ h i.succ),
+        (hn as.tail).2 (λ i, (vector.nth_tail as i).symm ▸ h _),
         symm $ vector.cons_head_tail as⟩ } }
 end
 
