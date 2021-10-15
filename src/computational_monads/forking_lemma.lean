@@ -44,19 +44,20 @@ def fork_comp {q : ℕ} (A : X × (vector H q.succ) → comp (fin q.succ × SO))
   X → comp (bool × SO × SO) :=
 λ x, do {
   hs ← vector_call (rnd H) q.succ,
-  (I, σ) ← A (x, hs),
+  -- TODO: This is annoying to have to do all the time
+  Iσ ← A (x, hs),
   -- Generating this way should avoid needing to do index arithmetic on the vector length
   hs_temp ← vector_call (rnd H) q.succ,
-  hs' ← return (vector.of_fn (λ i, if i < I then hs.nth i else hs_temp.nth i)),
+  hs' ← return (vector.of_fn (λ i, if i < Iσ.1 then hs.nth i else hs_temp.nth i)),
   -- TODO: need a way to run this A with the same coins as the original
   (I', σ') ← A (x, hs'),
-  return (if (I = 0 ∨ I ≠ I' ∨ hs.nth I = hs'.nth I) then ff else tt, σ, σ')
+  return (if (Iσ.1 = 0 ∨ Iσ.1 ≠ I' ∨ hs.nth Iσ.1 = hs'.nth Iσ.1) then ff else tt, Iσ.2, σ')
 }
 
 instance fork_comp.is_well_formed {q : ℕ} (A : X × (vector H q.succ) → comp (fin q.succ × SO))
   [∀ inp, (A inp).is_well_formed] (x : X) :
   (fork_comp A x).is_well_formed :=
-sorry
+by simp [fork_comp]
 
 lemma forking_lemma {q : ℕ} (A : X × (vector H q.succ) → comp (fin q.succ × SO)) 
   [∀ inp, (A inp).is_well_formed]
@@ -65,7 +66,7 @@ lemma forking_lemma {q : ℕ} (A : X × (vector H q.succ) → comp (fin q.succ �
     let acc := (accepting_probability A input_generator)
       in acc * ((acc / q) - (1 / fintype.card H)) :=
 begin
-  simp [fork_comp, accepting_probability],
+  simp [fork_comp, accepting_probability, -vector_call_succ],
   sorry,
 end
 
