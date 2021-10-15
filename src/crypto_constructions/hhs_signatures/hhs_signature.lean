@@ -29,7 +29,7 @@ def signature_of_principal_action_class
     ys ← return (cs.map (λ c, c +ᵥ pk)),
     -- Query the random oracle on `ys`
     (h : vector bool t) ← oc_query () (ys.to_list, m),
-    return (vector.zip_with (λ c b, (if b then c else c + sk, b)) cs h) },
+    return (vector.zip_with (λ c (b : bool), (if b then c else c + sk, b)) cs h) },
   verify := λ inp, do
   { (pk, m, σ) ← return inp,
     -- This should be the same `ys` value for honest signatures

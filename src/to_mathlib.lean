@@ -29,16 +29,6 @@ begin
   simpa only [nat.one_le_cast, rat.cast_coe_nat],
 end
 
-lemma is_O_of_pow_le {α 𝕜 : Type*} [normed_field 𝕜] {l : filter α}
-  {f : α → 𝕜} (hf : ∀ᶠ x in l, ∥f x∥ ≥ 1) {n m : ℕ} (hnm : n ≤ m) :
-  is_O (λ x, (f x) ^ n) (λ x, (f x) ^ m) l :=
-begin
-  rw is_O_iff,
-  refine ⟨1, filter.eventually_of_mem hf (λ x hx, _)⟩,
-  simp only [one_mul, normed_field.norm_pow],
-  refine pow_le_pow hx hnm,
-end 
-
 
 lemma fpow_is_O_fpow_of_le {α 𝕜 : Type*} [preorder α] [normed_field 𝕜] 
   (f : α → 𝕜)
@@ -79,16 +69,6 @@ begin
       mul_one, div_le_iff hx.2.1, div_mul_eq_mul_div],
     refine (one_le_div hx.2.2).2 hx.1,
   },
-end
-
-lemma poly_help
-  {p : polynomial ℝ} (hp : 1 ≤ p.degree) (c : ℝ) :
-  ∀ᶠ x in filter.at_top, c ≤ ∥p.eval x∥ :=
-begin
-  have := polynomial.abs_tendsto_at_top p hp,
-  rw filter.tendsto_at_top at this,
-  specialize this c,
-  exact this,
 end
 
 lemma nat_coe_tendsto (R : Type*) [linear_ordered_ring R] [archimedean R] : 

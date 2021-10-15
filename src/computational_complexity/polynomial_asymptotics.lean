@@ -1,156 +1,225 @@
 import analysis.asymptotics.asymptotics
 import analysis.special_functions.polynomials
-import analysis.special_functions.exp_log
-import to_mathlib
 
 /-!
 # Polynomial Growth
 
-This file defines polynomial growth of functions via `poly_growth_in_parameter`.
-This definition is given in terms of a parameter function `k : α → R`,
- which can specialize to e.g. `id` or `log` to represent polynomial and polylogarithmic growth resp.
+This file defines polynomial growth of functions as `asymptotics.polynomial_growth l k f`.
+A function `f : α → E` has polynomial growth in the parameter `k : α → S` on the filter `l` if
+  there exists `n : ℕ` such that `f(x)` is `O(k(x) ^ n)`.
+Equivalently `f(x)` is `O(p(k(x)))` for some polynomial `p`.
 
-The main defintion is given in terms of powers, see `poly_growth_in_parameter_iff` for an equivalent
- formulation in terms of `polynomial`.
+When the parameter is a linear inclusion, this gives standard polynomial growth.
+When the parameter is logarithmic, it gives polylogarithmic growth as described here:
+https://en.wikipedia.org/wiki/Polylogarithmic_function
 -/
 
-section poly_growth_in_parameter
+namespace asymptotics
 
-open polynomial asymptotics
+open polynomial filter
 
-/-- A function `f` has polynomial growth in the parameter `k` if `f(x) = O(k(x)^n)` for some `n : ℕ`
-  This is equivalent to `f(x) = O(p ∘ k)` for some polynomial `p`, see `poly_growth_in_parameter_iff`. -/
-def poly_growth_in_parameter {α R S : Type*} [preorder α] [normed_ring R] [normed_ring S]
-  (k : α → R) (f : α → S) :=
-∃ (n : ℕ), is_O f (λ x, (k x) ^ n) filter.at_top
+lemma is_O_pow_pow_of_le {α 𝕜 : Type*} [normed_field 𝕜] {l : filter α}
+  {f : α → 𝕜} (hf : ∀ᶠ x in l, 1 ≤ ∥f x∥) {n m : ℕ} (hnm : n ≤ m) :
+  is_O (λ x, (f x) ^ n) (λ x, (f x) ^ m) l :=
+begin
+  refine is_O.of_bound 1 (eventually_of_mem hf (λ x hx, _)),
+  simp_rw [one_mul, normed_field.norm_pow],
+  exact pow_le_pow hx hnm,
+end 
 
-variables {α : Type*} [preorder α]
-variables {R S : Type*} [normed_ring R] [normed_ring S]
-variables {𝕜 : Type*} [normed_field 𝕜]
+/-- A function `f` has polynomial growth in `k` if `f` is `O(k(x)^n)` for some `n : ℕ`.
+  The domain of `f` can be any normed space, but the domain of `k` must be a normed ring. -/
+def polynomial_growth {α E K : Type*} [has_norm E] [normed_ring K]
+  (l : filter α) (k : α → K) (f : α → E) :=
+∃ (n : ℕ), is_O f (λ x, (k x) ^ n) l
 
-lemma poly_growth_in_parameter_def (k : α → R) (f : α → S) :
-  poly_growth_in_parameter k f ↔ ∃ (n : ℕ), is_O f (λ x, (k x) ^ n) filter.at_top :=
-iff.rfl
+variables {α : Type*} {l : filter α}
+variables {E E' S S' R R' : Type*} [has_norm E] [has_norm E']
+   [normed_group S] [normed_group S'] [normed_ring R] [normed_ring R']
 
-lemma poly_growth_in_parameter.ext {k : α → R} {f g : α → S}
-  (hf : poly_growth_in_parameter k f) (hfg : ∀ x, g x = f x) :
-  poly_growth_in_parameter k g :=
-(funext hfg : g = f).symm ▸ hf
+section normed_ring
 
-@[simp] lemma poly_growth_in_parameter_parameter (k : α → R) :
-  poly_growth_in_parameter k k :=
-⟨1, by simpa using is_O_refl k filter.at_top⟩
+variables {K : Type*} [normed_ring K] {k : α → R}
 
-variable [norm_one_class R]
+lemma polynomial_growth.mono {f : α → S} {g : α → E}
+  (hf : polynomial_growth l k f) (hfg : ∀ x, ∥g x∥ ≤ ∥f x∥) :
+  polynomial_growth l k g :=
+let ⟨n, hn⟩ := hf in ⟨n, (is_O_of_le l hfg).trans hn⟩
+
+lemma polynomial_growth.is_O_trans {f : α → S} {g : α → E}
+  (hf : polynomial_growth l k f) (h : is_O g f l) :
+  polynomial_growth l k g :=
+let ⟨n, hn⟩ := hf in ⟨n, h.trans hn⟩
+
+lemma polynomial_growth.eventually_trans {f : α → S} {g : α → E}
+  (hf : polynomial_growth l k f) (h : ∀ᶠ x in l, ∥g x∥ ≤ ∥f x∥) :
+  polynomial_growth l k g :=
+hf.is_O_trans $ is_O_iff.2 ⟨1, by simpa using h⟩
+
+variables (l k)
+
+/-- For any parameter `k`, it is polynomial growth in itself. -/
+@[simp] lemma polynomial_growth_parameter :
+  polynomial_growth l k k :=
+⟨1, by simpa only [pow_one] using is_O_refl k l⟩
 
 @[simp] 
-lemma poly_growth_in_parameter_const (k : α → R) (s : S) :
-  poly_growth_in_parameter k (λ _, s) :=
-⟨0, is_O_of_le' filter.at_top (λ x, by simp : ∀ x, ∥s∥ ≤ ∥s∥ * ∥k x ^ 0∥)⟩
+lemma polynomial_growth_const [norm_one_class R] (x : E) :
+  polynomial_growth l k (λ _, x) :=
+⟨0, is_O_of_le' l (λ x, by simp only [mul_one, norm_one, pow_zero])⟩
 
-lemma poly_growth_in_parameter_zero (k : α → R) :
-  poly_growth_in_parameter k (0 : α → S) :=
-poly_growth_in_parameter_const k 0
+lemma polynomial_growth_zero [norm_one_class R] [has_zero S] :
+  polynomial_growth l k (0 : α → S) :=
+polynomial_growth_const l k 0
 
-lemma poly_growth_in_parameter_one (k : α → R) :
-  poly_growth_in_parameter k (1 : α → S) :=
-poly_growth_in_parameter_const k 1
+lemma polynomial_growth_one [norm_one_class R] [has_one S] :
+  polynomial_growth l k (1 : α → S) :=
+polynomial_growth_const l k 1
 
-/-- If the parameter is eventually greater than `1`, then polynomial growth in `k` is additive -/
-lemma poly_growth_in_parameter_add {k : α → 𝕜}
-  {f g : α → R} (hk : ∀ᶠ x in filter.at_top, 1 ≤ ∥k x∥)
-  (hf : poly_growth_in_parameter k f) (hg : poly_growth_in_parameter k g) :
-  poly_growth_in_parameter k (f + g) :=
+variables {l k}
+
+end normed_ring
+
+section normed_field
+
+variables {K : Type*} [normed_field K] {k : α → K}
+
+/-- Polynomial growth in `k` is additive if `k` eventually has norm at least `1` -/
+lemma polynomial_growth.add {f g : α → S}
+  (hf : polynomial_growth l k f) (hg : polynomial_growth l k g) 
+  (hk : ∀ᶠ x in l, 1 ≤ ∥k x∥) : polynomial_growth l k (f + g) :=
 let ⟨n, hn⟩ := hf in let ⟨m, hm⟩ := hg in
-⟨max n m, is_O.add (hn.trans $ is_O_of_pow_le hk (le_max_left n m)) 
-  (hm.trans $ is_O_of_pow_le hk (le_max_right n m))⟩
+⟨max n m, is_O.add (hn.trans $ is_O_pow_pow_of_le hk (le_max_left n m)) 
+  (hm.trans $ is_O_pow_pow_of_le hk (le_max_right n m))⟩
 
-/-- Polynomial growth is multiplicative regardless of the parameter-/
-lemma poly_growth_in_parameter_mul {k : α → 𝕜} {f g : α → R}
-  (hf : poly_growth_in_parameter k f) (hg : poly_growth_in_parameter k g) :
-  poly_growth_in_parameter k (f * g) :=
+/-- Polynomial growth is multiplicative for arbitrary parameters -/
+lemma polynomial_growth.mul {f g : α → R}
+  (hf : polynomial_growth l k f) (hg : polynomial_growth l k g) :
+  polynomial_growth l k (f * g) :=
 let ⟨n, hn⟩ := hf in let ⟨m, hm⟩ := hg in
-⟨n + m, (is_O.mul hn hm).trans $ is_O_of_le filter.at_top (λ x, (pow_add (k x) n m) ▸ le_rfl)⟩
+⟨n + m, (is_O.mul hn hm).trans $ is_O_of_le l (λ x, (pow_add (k x) n m) ▸ le_rfl)⟩
 
-lemma poly_growth_in_parameter_pow {k : α → 𝕜} {f : α → R}
-  (hf : poly_growth_in_parameter k f) (n : ℕ) :
-  poly_growth_in_parameter k (λ x, f x ^ n) :=
-let ⟨m, hm⟩ := hf in
-⟨m * n, (is_O.pow hm n).trans $ is_O_of_le filter.at_top (λ x, (pow_mul (k x) m n) ▸ le_rfl)⟩
+lemma polynomial_growth.pow {f : α → R}
+  (hf : polynomial_growth l k f) (n : ℕ) :
+  polynomial_growth l k (f ^ n) :=
+let ⟨m, hm⟩ := hf in 
+  ⟨m * n, (is_O.pow hm n).trans $ is_O_of_le l (λ x, (pow_mul (k x) m n) ▸ le_rfl)⟩
 
-lemma poly_growth_in_parameter_polynomial {k : α → 𝕜} (hk : ∀ᶠ x in filter.at_top, 1 ≤ ∥k x∥) 
-  {f : α → R} (hf : poly_growth_in_parameter k f)
-  (p : polynomial R) : poly_growth_in_parameter k (λ x, eval (f x) p) :=
+/-- A polynomial evaluated at a polynomial growth function is polynomial growth -/
+lemma polynomial_growth.polynomial_eval {f : α → R} 
+  (hf : polynomial_growth l k f) (hk : ∀ᶠ x in l, 1 ≤ ∥k x∥) 
+  (p : polynomial R) : polynomial_growth l k (λ x, eval (f x) p) :=
 begin
   refine p.induction_on (λ c, _) (λ p q hp hq, _) (λ n c h, _),
-  { exact (poly_growth_in_parameter_const k c).ext (λ x, eval_C) },
-  { exact (poly_growth_in_parameter_add hk hp hq).ext (λ x, eval_add) },
-  { exact (poly_growth_in_parameter_mul h (hf)).ext
-      (λ x, by simp only [eval_C, eval_mul_X_pow, pi.mul_apply, pow_add (f x) n 1, mul_assoc, pow_one]) }
+  { exact (polynomial_growth_const l k c).mono (λ x, le_of_eq $ congr_arg _ eval_C) },
+  { exact (hp.add hq hk).mono (λ x, le_of_eq $ congr_arg _ eval_add) },
+  { exact (h.mul (hf)).mono (λ x, le_of_eq $ congr_arg _ $ 
+      by simp only [eval_C, eval_mul_X_pow, pi.mul_apply, pow_add (f x) n 1, mul_assoc, pow_one]) }
 end
 
-/-- Equivalence of definition in terms of powers and polynomials,
-  assuming `𝕜` is a `normed_linear_ordered_field` with an ordered topology (e.g. `ℝ` or `ℚ`) -/
-theorem poly_growth_in_parameter_iff {𝕜 : Type*} [normed_linear_ordered_field 𝕜] [order_topology 𝕜] 
-  {k : α → 𝕜} (hk : filter.tendsto k filter.at_top filter.at_top) (f : α → R) :
-  poly_growth_in_parameter k f ↔ 
-    ∃ (p : polynomial 𝕜), is_O f (λ x, eval (k x) p) filter.at_top :=
+end normed_field
+
+section nondiscrete_normed_field
+
+variables {𝕜 : Type*} [nondiscrete_normed_field 𝕜] {k : α → 𝕜}
+
+lemma polynomial_growth_of_norm_bdd_above
+  {f : α → E} (hf : bdd_above (set.range (λ x, ∥f x∥))) :
+  polynomial_growth l k f :=
+let ⟨c, hc⟩ := hf in
+let ⟨y, hy⟩ := normed_field.exists_lt_norm 𝕜 c in
+(polynomial_growth_const l k y).mono $
+  λ x, ((mem_upper_bounds.1 hc) (∥f x∥) (set.mem_range_self x)).trans (le_of_lt hy)
+
+lemma polynomial_growth_of_eventually_le
+  {f : α → E} (b : ℝ) (hf : ∀ᶠ x in l, ∥f x∥ ≤ b) :
+  polynomial_growth l k f :=
+let ⟨y, hy⟩ := normed_field.exists_lt_norm 𝕜 b in
+(polynomial_growth_const l k y).eventually_trans $ 
+  sets_of_superset l hf (λ x hx, (le_trans hx (le_of_lt hy) : ∥f x∥ ≤ ∥y∥))
+
+end nondiscrete_normed_field
+
+section normed_linear_ordered_field
+
+variables {𝕜 : Type*} [normed_linear_ordered_field 𝕜] [order_topology 𝕜] {k : α → 𝕜}
+
+/-- Equivalence of definition in terms of powers and polynomials, assuming order topology on `𝕜`,
+  and that the parameter tendsto to `at_top` -/
+theorem polynomial_growth_iff (hk : tendsto k l at_top) (f : α → E) :
+  polynomial_growth l k f ↔ 
+    ∃ (p : polynomial 𝕜), is_O f (λ x, eval (k x) p) l :=
 begin
   refine ⟨λ h, let ⟨n, hn⟩ := h in ⟨X ^ n, by simpa⟩, _⟩,
   rintro ⟨p, hp⟩,
   refine ⟨p.nat_degree, is_O.trans hp _⟩,
-  suffices : is_O ((λ a, eval a p) ∘ k) ((λ a, eval a (X ^ p.nat_degree)) ∘ k) filter.at_top,
-  by simpa using this,
-  have := polynomial.is_O_of_degree_le p (X ^ p.nat_degree) (by simp),
-  refine is_O.comp_tendsto this hk,
+  have : is_O ((λ a, eval a p) ∘ k) ((λ a, eval a (X ^ p.nat_degree)) ∘ k) l,
+  from is_O.comp_tendsto (polynomial.is_O_of_degree_le p (X ^ p.nat_degree) (by simp)) hk,
+  simpa only [eval_X, eval_pow] using this,
 end
 
-end poly_growth_in_parameter
+lemma polynomial_growth_of_is_O_polynomial (hk : tendsto k l at_top)
+  (f : α → E) (p : polynomial 𝕜) (h : is_O f (λ x, eval (k x) p) l) :
+  polynomial_growth l k f :=
+(polynomial_growth_iff hk f).2 ⟨p, h⟩
 
-section poly_growth
+end normed_linear_ordered_field
+
+end asymptotics
+
+
+
+
+
+
+
+
+
+
+-- section poly_growth
 
 /-- A function `f : ℕ → R` has polynomial growth if it is O(p(n)) for some `p : polynomial R`-/
 def poly_growth {R : Type*} [preorder R] [normed_ring R] (f : ℕ → R) :=
-poly_growth_in_parameter (λ n, ↑n : ℕ → ℚ) f
+asymptotics.polynomial_growth filter.at_top (λ n, ↑n : ℕ → ℚ) f
 
-variables {R : Type*} [preorder R] [normed_ring R] 
+-- variables {R : Type*} [preorder R] [normed_ring R] 
 
-@[simp] lemma poly_growth_const (r : R) : 
-  poly_growth (λ _, r) :=
-poly_growth_in_parameter_const _ _
+-- @[simp] lemma poly_growth_const (r : R) : 
+--   poly_growth (λ _, r) :=
+-- poly_growth_in_parameter_const _ _
 
-@[simp] lemma poly_growth_zero :
-  poly_growth (0 : ℕ → R) :=
-poly_growth_in_parameter_zero _
+-- @[simp] lemma poly_growth_zero :
+--   poly_growth (0 : ℕ → R) :=
+-- poly_growth_in_parameter_zero _
 
-@[simp] lemma poly_growth_one :
-  poly_growth (1 : ℕ → R) :=
-poly_growth_in_parameter_one _
+-- @[simp] lemma poly_growth_one :
+--   poly_growth (1 : ℕ → R) :=
+-- poly_growth_in_parameter_one _
 
-variables [norm_one_class R]
+-- variables [norm_one_class R]
 
-lemma poly_growth_add {f g : ℕ → R} (hf : poly_growth f) (hg : poly_growth g) :
-  poly_growth (f + g) :=
-poly_growth_in_parameter_add eventually_one_le_rat_norm hf hg
+-- lemma poly_growth_add {f g : ℕ → R} (hf : poly_growth f) (hg : poly_growth g) :
+--   poly_growth (f + g) :=
+-- poly_growth_in_parameter_add eventually_one_le_rat_norm hf hg
 
-lemma poly_growth_mul {f g : ℕ → R} (hf : poly_growth f) (hg : poly_growth g) :
-  poly_growth (f * g) :=
-poly_growth_in_parameter_mul hf hg
+-- lemma poly_growth_mul {f g : ℕ → R} (hf : poly_growth f) (hg : poly_growth g) :
+--   poly_growth (f * g) :=
+-- poly_growth_in_parameter_mul hf hg
 
-end poly_growth
+-- end poly_growth
 
-section log_poly_growth
+-- section log_poly_growth
 
-def polylogarithmic_growth {R : Type*} [normed_ring R] (f : ℝ → R) :=
-poly_growth_in_parameter real.log f
+-- def polylogarithmic_growth {R : Type*} [normed_ring R] (f : ℝ → R) :=
+-- poly_growth_in_parameter real.log f
 
-lemma polylogarithmic_growth_log :
-  polylogarithmic_growth real.log :=
-poly_growth_in_parameter_parameter real.log
+-- lemma polylogarithmic_growth_log :
+--   polylogarithmic_growth real.log :=
+-- poly_growth_in_parameter_parameter real.log
 
-lemma polylogarithmic_growth_add {f g : ℝ → ℝ}
-  (hf : polylogarithmic_growth f) (hg : polylogarithmic_growth g) :
-  polylogarithmic_growth (f + g) :=
-poly_growth_in_parameter_add one_eventually_le_log hf hg
+-- lemma polylogarithmic_growth_add {f g : ℝ → ℝ}
+--   (hf : polylogarithmic_growth f) (hg : polylogarithmic_growth g) :
+--   polylogarithmic_growth (f + g) :=
+-- poly_growth_in_parameter_add one_eventually_le_log hf hg
 
-end log_poly_growth
+-- end log_poly_growth
