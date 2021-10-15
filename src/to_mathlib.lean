@@ -250,7 +250,7 @@ section sum_stuff
 
 @[simp]
 lemma list.sum_map_neg {G : Type} [add_comm_group G] : 
-  ∀ (gs : list G), (gs.map (λ g, -g)).sum = -gs.sum
+  ∀ (gs : list G), (gs.map has_neg.neg).sum = -gs.sum
 | [] := by simp
 | (h :: t) := by simp [list.sum_map_neg, add_comm (-h)]
 
@@ -303,7 +303,7 @@ begin
   simp [h],
 end
 
-lemma list.sum_eq_zero_of_mem_zero {G : Type} [add_group G] :
+lemma list.sum_eq_zero_of_mem_zero {G : Type} [add_monoid G] :
   ∀ (gs : list G) (h : ∀ g ∈ gs, g = (0 : G)), gs.sum = 0
 | [] _ := list.sum_nil
 | (g :: gs) h := begin
