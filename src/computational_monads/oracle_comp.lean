@@ -76,11 +76,13 @@ rfl
 -- Example of accessing a pair of different oracles
 example (A B : Type) : 
   oracle_comp (singleton_spec ℕ A ++ singleton_spec ℤ B) (A × B) :=
-do x ← oracle_comp.oc_ret (comp.rnd (fin 100)),
+do {
+  x ← oracle_comp.oc_ret (comp.rnd (fin 100)),
   x' ← oracle_comp.oc_query (sum.inl ()) x.val,
   y ← return (x : ℤ),
   y' ← oracle_comp.oc_query (sum.inr ()) y,
   return (x', y')
+}
 
 variables 
 

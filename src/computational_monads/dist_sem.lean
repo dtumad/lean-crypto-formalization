@@ -216,6 +216,44 @@ begin
     { simp [eval_distribution_eq_zero_of_not_mem_support ha] } }
 end
 
+lemma tsum_ite (p : Prop) [decidable p] (f : A → ℝ≥0) :
+  ∑' (a : A), ite p (f a) 0 =
+    ite p (∑' (a : A), f a) 0 :=
+by split_ifs; simp
+
+open_locale classical
+
+lemma helper' (f : A → B) (ev : A → ℝ≥0) :
+  ∑' (b : B) (a : A), ite (b = f a) (ev a) 0 =
+    ∑' (a : A), ev a :=
+begin
+  rw tsum_comm',
+  {
+    simp,
+  },
+  sorry, sorry, sorry,
+end
+
+@[simp]
+lemma Pr_prop_bind_ret  (ca : comp A) (f : A → B)
+  [ca.is_well_formed]
+  (p : B → Prop) [decidable_pred p] :
+  (ca.bind (λ a, ret $ f a)).Pr_prop (p) =
+    ca.Pr_prop (p ∘ f) :=
+begin
+  rw Pr_prop,
+  simp only [Pr_prop, ← tsum_ite, mul_boole, pmf.pure_apply, function.comp_app, 
+    eval_distribution_ret, pmf.bind_apply, eval_distribution_bind],
+  calc ∑' (b : B), ∑' (a : A), ite (p b) (ite (b = f a) (ca.eval_distribution a) 0) 0
+    = ∑' (b : B) (a : A), ite (b = f a) (ite (p (f a)) (ca.eval_distribution a) 0) 0 : begin
+        refine tsum_congr (λ b, tsum_congr $ λ a, _),
+        split_ifs; try { refl },
+        exact absurd h (h_1.symm ▸ h_2),
+        exact absurd h_2 (h_1 ▸ h),
+      end
+    ... = ∑' (a : A), ite (p (f a)) (ca.eval_distribution a) 0 : helper' f _
+end
+
 lemma Pr_prop_eq [decidable_eq A] (a : A) :
   ca-Pr[λ x, x = a] = ca.eval_distribution a :=
 Pr_prop_of_unique ca (λ x, x = a) a rfl (λ _, id)

@@ -30,15 +30,16 @@ class principal_action_class (G X : Type*) [add_monoid G] [add_action G X]
 
 variables {G X : Type*} [add_monoid G] [add_action G X]
 
-lemma free_action_class_iff :
-  free_action_class G X ↔ ∀ (x : X) (g g' : G), g +ᵥ x = g' +ᵥ x → g = g' :=
-begin
-  split,
-  { introsI h x,
-    exact free_action_class.free x },
-  { exact λ h, { free := h } }
-end
+-- lemma free_action_class_iff :
+--   free_action_class G X ↔ ∀ (x : X) (g g' : G), g +ᵥ x = g' +ᵥ x → g = g' :=
+-- begin
+--   split,
+--   { introsI h x,
+--     exact free_action_class.free x },
+--   { exact λ h, { free := h } }
+-- end
 
+@[simp]
 lemma free_action_class.vadd_eq_iff [free_action_class G X] 
   (x : X) (g g' : G) : g +ᵥ x = g' +ᵥ x ↔ g = g' :=
 ⟨λ hx, free_action_class.free x hx, λ h, congr_arg _ h⟩
@@ -47,14 +48,14 @@ lemma free_action_class.eq_of_vadd_eq [free_action_class G X]
   (x : X) {g g' : G} (h : g +ᵥ x = g' +ᵥ x) : g = g' :=
 (free_action_class.vadd_eq_iff x g g').mp h
 
-lemma transitive_action_class_iff :
-  transitive_action_class G X ↔ ∀ (x y : X), ∃ (g : G), g +ᵥ x = y :=
-begin
-  split,
-  { introsI h x,
-    exact transitive_action_class.trans x },
-  { exact λ h, { trans := h } }
-end
+-- lemma transitive_action_class_iff :
+--   transitive_action_class G X ↔ ∀ (x y : X), ∃ (g : G), g +ᵥ x = y :=
+-- begin
+--   split,
+--   { introsI h x,
+--     exact transitive_action_class.trans x },
+--   { exact λ h, { trans := h } }
+-- end
 
 lemma transitive_action_class.exists_vadd_eq [transitive_action_class G X]
   (x y : X) : ∃ (g : G), g +ᵥ x = y :=

@@ -1,5 +1,5 @@
 import computational_complexity.cost_model
-import data.vector2
+import data.vector.basic
 
 open cost_model
 
