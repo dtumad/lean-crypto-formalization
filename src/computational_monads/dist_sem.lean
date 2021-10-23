@@ -146,7 +146,7 @@ begin
   refine tsum_congr (λ a, _),
   refine (summable.tsum_mul_left _ _).symm,
   refine nnreal.summable_of_le (λ a', _) (pmf.summable_coe $ ca'.eval_distribution),
-  refine nnreal.mul_right_le (pmf.coe_le_one _ b),
+  refine mul_le_of_le_one_right zero_le' (pmf.coe_le_one _ b)
 end
 
 @[simp] 

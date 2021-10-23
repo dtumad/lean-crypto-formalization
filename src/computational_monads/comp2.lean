@@ -39,14 +39,14 @@ instance oracle_comp'.monad (M : Type → Type 1) [monad M]
   bind := λ C D, oracle_comp'.oc_bind }
 
 instance oracle_comp'.has_is_well_formed (M : Type → Type 1) [monad M]
-  [comp.has_is_well_formed M] (spec : oracle_comp_spec) : 
-  comp.has_is_well_formed (oracle_comp' M spec) :=
+  [has_is_well_formed M] (spec : oracle_comp_spec) : 
+  has_is_well_formed (oracle_comp' M spec) :=
 {
   is_well_formed := λ A oca, begin
     refine oca.rec_on _ _ _,
     {
       intros,
-      exact comp.has_is_well_formed.is_well_formed c,
+      exact has_is_well_formed.is_well_formed c,
     },
     {
       intros,
@@ -61,7 +61,7 @@ instance oracle_comp'.has_is_well_formed (M : Type → Type 1) [monad M]
   return_is_well_formed := begin
     intros,
     simp [],
-    exact comp.has_is_well_formed.return_is_well_formed a,
+    exact has_is_well_formed.return_is_well_formed a,
   end,
   bind_is_well_formed_of_well_formed := begin
     intros A B ma mb h h',

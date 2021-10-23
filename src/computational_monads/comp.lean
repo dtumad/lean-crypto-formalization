@@ -15,7 +15,7 @@ Well formed computations are defined so that they will have a nonempty support (
 /-- computational monad to extend the base language of Lean for cryptography purposes.
   `rnd n` represents a computation of purely random bits, 
   and `repeat` can repeat a random computation until some predicate holds.
-  Note that because Lean doesn't have an impredicative set type, this raises universe levels -/
+  Note that because Lean doesn't have an impredicative base type, this raises universe levels -/
 inductive comp : Type → Type 1
 | ret {A : Type} (a : A) : comp A
 | bind {A B : Type} : Π (cb : comp B) (ca : B → comp A), comp A
@@ -125,6 +125,16 @@ def is_well_formed : Π {A : Type}, comp A → Prop
 | _ (@rnd _ _ _) := true
 | _ (@repeat _ p hp ca) := (is_well_formed ca) ∧ (@repeat _ p hp ca).support.nonempty
 
+theorem support_nonempty_of_well_formed : ∀ {A : Type} (ca : comp A)
+  [h : ca.is_well_formed], ca.support.nonempty
+| A (ret a) h := ⟨a, mem_support_ret a⟩
+| A (@bind _ B cb ca) h := 
+    let ⟨b, hb⟩ := @support_nonempty_of_well_formed B cb h.1 in
+    let ⟨a, ha⟩ := @support_nonempty_of_well_formed A (ca b) (h.2 b hb) in
+    ⟨a, mem_support_bind a b hb ha⟩
+| A (@rnd _ fA hA) h := ⟨@arbitrary A hA, @mem_support_rnd A fA hA _⟩
+| A (@repeat _ p hp ca) h := h.2
+
 @[simp]
 lemma ret_is_well_formed (a : A) : 
   (ret a).is_well_formed :=
@@ -219,41 +229,28 @@ instance dep_sum_rec_is_well_formed {i : A ⊕ B}
   (sum.rec_on i ca cb : comp C).is_well_formed :=
 by induction i; apply_instance
 
--- These lemmas aren't strictly needed, but simplify a lot of things
-
-
 @[simp]
-instance option_rec.is_well_formed (a : option A)
-  (cnone : comp B) [h1 : cnone.is_well_formed]
-  (csome : A → comp B) [h2 : ∀ a, (csome a).is_well_formed] :
+instance option_rec_is_well_formed (a : option A)
+  (cnone : comp B) [cnone.is_well_formed]
+  (csome : A → comp B) [∀ a, (csome a).is_well_formed] :
   (option.rec cnone csome a : comp B).is_well_formed :=
-by cases a; simp; apply_instance
+option.rec (by apply_instance) (by apply_instance) a
 
 @[simp]
-instance option_rec_on.is_well_formed (a : option A)
-  (cnone : comp B) [h1 : cnone.is_well_formed]
-  (csome : A → comp B) [h2 : ∀ a, (csome a).is_well_formed] :
+instance option_rec_on_is_well_formed (a : option A)
+  (cnone : comp B) [cnone.is_well_formed]
+  (csome : A → comp B) [∀ a, (csome a).is_well_formed] :
   (option.rec_on a cnone csome : comp B).is_well_formed :=
-by cases a; simp; apply_instance
+option.rec_on a (by apply_instance) (by apply_instance)
 
 @[simp]
-instance option_elim.is_well_formed (a : with_bot A)
-  (cbot : comp B) [h1 : cbot.is_well_formed]
-  (csome : A → comp B) [h2 : ∀ a, (csome a).is_well_formed] :
-  (a.elim cbot csome).is_well_formed :=
-by cases a; simp; apply_instance
+instance option_elim_is_well_formed (a : option A)
+  (cbot : comp B) [cbot.is_well_formed]
+  (csome : A → comp B) [∀ a, (csome a).is_well_formed] :
+  (option.elim a cbot csome).is_well_formed :=
+option.rec_on a (by simpa) (by simpa)
 
 end option_elims
-
-theorem support_nonempty_of_well_formed : ∀ {A : Type} (ca : comp A)
-  [h : ca.is_well_formed], ca.support.nonempty
-| A (ret a) h := ⟨a, mem_support_ret a⟩
-| A (@bind _ B cb ca) h := 
-    let ⟨b, hb⟩ := @support_nonempty_of_well_formed B cb h.1 in
-    let ⟨a, ha⟩ := @support_nonempty_of_well_formed A (ca b) (h.2 b hb) in
-    ⟨a, mem_support_bind a b hb ha⟩
-| A (@rnd _ fA hA) h := ⟨@arbitrary A hA, @mem_support_rnd A fA hA _⟩
-| A (@repeat _ p hp ca) h := h.2
 
 end is_well_formed
 

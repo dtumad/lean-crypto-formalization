@@ -31,7 +31,7 @@ let ⟨p, hp, hpc⟩ := hc in
 lemma polynomial_complexity_of_has_cost_const 
   (c : Π n, τ n) (x : ℚ) (hn : ∀ n, cost_at_most (c n) x) :
   polynomial_complexity c :=
-⟨λ n, x, poly_growth_const x, hn⟩
+⟨λ n, x, sorry, hn⟩
 
 @[simp]
 lemma polynomial_complexity_of_has_cost_zero 
@@ -52,7 +52,7 @@ lemma polynomial_complexity_comp
   (hc : polynomial_complexity c) (hd : polynomial_complexity d) :
   polynomial_complexity (λ n, d n ∘ c n : Π n, A n → C n) :=
 let ⟨p, hp, hpc⟩ := hc in let ⟨q, hq, hqd⟩ := hd in
-⟨p + q, poly_growth_add hp hq, λ n, 
+⟨p + q, sorry, λ n, 
   compatible_cost_models.cost_at_most_compose (hpc n) (hqd n)⟩
 
 lemma polynomial_complexity_comp_ext 
@@ -94,7 +94,7 @@ lemma polynomial_complexity_prod_map {A B C D : ℕ → Type}
   (hf : polynomial_complexity f) (hg : polynomial_complexity g) :
   polynomial_complexity (λ n, (prod.map (f n) (g n) : A n × B n → C n × D n)) :=
 let ⟨p, hp, hpf⟩ := hf in let ⟨q, hq, hqg⟩ := hg in
-⟨p + q, poly_growth_add hp hq, λ n, pairing_cost_extension.cost_at_most_prod_map (hpf n) (hqg n)⟩
+⟨p + q, sorry, λ n, pairing_cost_extension.cost_at_most_prod_map (hpf n) (hqg n)⟩
 
 @[simp]
 lemma polynomial_complexity_pair_iff [∀ n, inhabited $ A n] [∀ n, inhabited $ C n]
@@ -110,7 +110,7 @@ begin
     { exact compatible_cost_models.cost_at_most_of_cost_zero_wrap_ext
         (λ c, (arbitrary (A n), c)) _ prod.snd (h n) (by simp) } },
   { rintro ⟨⟨p, hp, h⟩, ⟨q, hq, h'⟩⟩,
-    refine ⟨p + q, poly_growth_add hp hq, λ n, _⟩,
+    refine ⟨p + q, sorry, λ n, _⟩,
     refine pairing_cost_extension.cost_at_most_prod_map
       (h n) (h' n) }
 end
@@ -143,7 +143,7 @@ lemma polynomial_complexity_bind {T U V : ℕ → Type}
   polynomial_complexity (λ n, (λ t, bind (mu n t) (mv n t))) :=
 let ⟨p, hp, hpmu⟩ := hmu in
 let ⟨q, hq, hqmv⟩ := hmv in
-⟨p + q, poly_growth_add hp hq, λ n, monadic_cost_model.cost_at_most_bind (hpmu n) (hqmv n)⟩
+⟨p + q, sorry, λ n, monadic_cost_model.cost_at_most_bind (hpmu n) (hqmv n)⟩
 
 section pairing_cost_extension
 
@@ -205,7 +205,7 @@ lemma polynomial_complexity_comp_bind
 begin
   obtain ⟨p, hp, hpcu⟩ := hcu,
   obtain ⟨q, hq, hqcv⟩ := hcv,
-  refine ⟨p + q, poly_growth_add hp hq, λ n, _⟩,
+  refine ⟨p + q, sorry, λ n, _⟩,
   refine comp_cost_model.cost_at_most_comp_bind (hpcu n) (hqcv n),
 end
 
