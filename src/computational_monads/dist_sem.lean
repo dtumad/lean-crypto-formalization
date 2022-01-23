@@ -31,7 +31,8 @@ private noncomputable def eval_distribution' : Π {A : Type} (ca : comp A) [ca.i
   { refine (pmf.bind_on_support (eval_distribution' ca).1 (λ a ha, _)),
     haveI : (cb a).is_well_formed := h.2 a (((plift.down (eval_distribution' ca).2) a).mp ha),
     refine (eval_distribution' (cb a)).1 },
-  { rw [pmf.mem_support_iff, mem_support_bind_iff, pmf.bind_on_support_apply,
+  { -- TODO: refactor most of this to facts about `bind_on_support` in mathlib
+    rw [pmf.mem_support_iff, mem_support_bind_iff, pmf.bind_on_support_apply,
       tsum_ne_zero_iff (pmf.bind_on_support.summable (eval_distribution' ca).1 _ _)],
     split; rintro ⟨b, hb⟩; refine ⟨b, _⟩,
     { simp only [not_or_distrib, ne.def, mul_eq_zero] at hb,

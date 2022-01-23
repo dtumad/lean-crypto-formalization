@@ -188,6 +188,11 @@ hT.elim (λ t, cost_zero_ext (cost_zero_const T $ f t) (funext (λ t', congr_arg
 
 end function_cost_model
 
+-- TODO: Does this make any sense?
+class test_cost_model (C : Type) [ordered_semiring C]
+  [function_cost_model C] (M : Type → Type u) [monad M] :=
+(cm (T U : Type) : cost_model C (reader_t T M U))
+
 /-- Cost model on `T → M U` represents cost to evaluate at `t` and then
   'evaluate' the resulting monad (e.g. sample from the distribution of a `comp`).
   Monads that add 'non-trivial' functionality e.g. `comp.rnd`,

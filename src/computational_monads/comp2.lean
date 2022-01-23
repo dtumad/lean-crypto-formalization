@@ -2,6 +2,9 @@ import to_mathlib
 import computational_monads.comp
 import computational_monads.oracle_comp
 
+inductive t : Type
+| tt : t
+
 class has_is_well_formed (M : Type → Type 1) [monad M] :=
 (is_well_formed {A : Type} : M A → Prop)
 (support {A : Type} : M A → set A)
@@ -23,7 +26,7 @@ class has_evaluation (M : Type → Type 1) [monad M]
 (T : Type → Type)
 (eval {A : Type} (ma : M A) : has_is_well_formed.is_well_formed ma → T A)
 
-
+ 
 
 inductive oracle_comp' (M : Type → Type 1) [monad M]
   (spec : oracle_comp_spec) : Type → Type 1
