@@ -1,5 +1,5 @@
-import measure_theory.probability_mass_function
-import analysis.special_functions.exp_log
+import measure_theory.probability_mass_function.basic
+-- import analysis.special_functions.exp_log
 import analysis.asymptotics.asymptotics
 import analysis.special_functions.polynomials 
 
@@ -85,49 +85,6 @@ by split_ifs; assumption
 
 section sum_stuff
 
-lemma list.add_sum_eq_sum_zipwith_drop {G : Type}
-  [add_comm_group G] : ∀ (gs gs' : list G),
-    gs.sum + gs'.sum = 
-      (list.zip_with (λ x y, x + y) gs gs').sum +
-        (gs.drop gs'.length).sum +
-        (gs'.drop gs.length).sum
-| [] gs' := by simp only [list.sum_nil, list.zip_with_nil_left, list.length, list.drop_eq_nil_of_le, zero_add, zero_le', list.drop]
-| gs [] := by simp
-| (g :: gs) (g' :: gs') := begin
-  simp,
-  abel,
-  rw list.add_sum_eq_sum_zipwith_drop gs gs',
-  abel,
-end
-
-lemma list.add_sum_eq_sum_zipwith_of_length_eq {G : Type}
-  [add_comm_group G] (gs gs' : list G) (h : gs.length = gs'.length) :
-    gs.sum + gs'.sum = (list.zip_with (λ x y, x + y) gs gs').sum :=
-(list.add_sum_eq_sum_zipwith_drop gs gs').trans (by simp [h])
-
-lemma list.sub_sum_eq_sum_zipwith_drop {G : Type} [add_comm_group G] (gs gs' : list G) :
-  gs.sum - gs'.sum =
-      (list.zip_with (λ x y, x - y) gs gs').sum +
-        (gs.drop gs'.length).sum -
-        (gs'.drop gs.length).sum :=
-begin
-  have : gs.sum - gs'.sum = gs.sum + (gs'.map (λ x, -x)).sum := by simp; abel,
-  rw [this, list.add_sum_eq_sum_zipwith_drop gs],
-  have : (λ (x : G), has_add.add x ∘ has_neg.neg) = λ x, (λ y, x - y),
-  by ext; simp; abel,
-  simp [← list.map_drop, list.zip_with_map_right, this],
-  abel,
-end
-
-lemma list.sum_thing {G : Type} [add_comm_group G] 
-  (gs gs' : list G)
-  (h : gs.length = gs'.length) :
-  gs.sum - gs'.sum = (list.zip_with (λ x y, x - y) gs gs').sum :=
-begin
-  refine (list.sub_sum_eq_sum_zipwith_drop gs gs').trans _,
-  simp [h],
-end
-
 lemma list.sum_eq_zero_of_mem_zero {G : Type} [add_monoid G] :
   ∀ (gs : list G) (h : ∀ g ∈ gs, g = (0 : G)), gs.sum = 0
 | [] _ := list.sum_nil
@@ -188,35 +145,6 @@ begin
   simp,
   rw list.nth_eq_some,
   refine ⟨lt_of_lt_of_le i.2 (le_of_eq v_property.symm), rfl⟩,
-end
-
-@[simp]
-lemma vector.sum_update_nth {G : Type} [add_comm_group G] {n : ℕ}
-  (v : vector G n) (i : fin n) (g : G) :
-  (v.update_nth i g).to_list.sum = 
-    v.to_list.sum - (v.nth i) + g :=
-begin
-  suffices : v.to_list.sum + ((v.update_nth i g).to_list.sum - v.to_list.sum)
-     = v.to_list.sum + (g - (v.nth i)),
-  from trans (by abel) (trans this (by abel)),
-  refine congr_arg _ _, 
-  rw list.sum_thing _,
-  { refine list.sum_eq_of_unique _ (g - v.nth i) i.1 _ _,
-    { simp, 
-      rw list.nth_eq_some,
-      refine ⟨by simpa using i.2, _⟩,
-      simp,
-      },
-    { intros m hm hm',
-      have hmn : m < n := by simpa using hm,
-      rw list.nth_le_zip_with,
-      simp,
-      rw sub_eq_zero,
-      refine vector.nth_update_nth_of_ne _ _,
-      refine λ hi, hm' _,
-      refine congr_arg (λ (x : fin n), x.1) hi.symm,
-    }, },
-  simp only [vector.to_list_length],
 end
 
 @[simp]

@@ -1,5 +1,5 @@
 import computational_monads.comp 
-import measure_theory.probability_mass_function
+import measure_theory.probability_mass_function.constructions
 
 /-!
 # Distributional Semantics of comp Evaluation
@@ -59,9 +59,12 @@ end
   { refine h.2.rec (λ a ha, _),
     exact ⟨a, ha.2, (plift.down (eval_distribution' ca).2 _).2 ha.1⟩ },
   exact ⟨(eval_distribution' ca).1.filter p this, plift.up (λ a, 
-    by rw [pmf.mem_support_iff, mem_support_repeat_iff ca p a, pmf.filter_apply_ne_zero_iff, 
-      ← (plift.down (eval_distribution' ca).2 _), set.mem_inter_iff, 
-      pmf.mem_support_iff, set.mem_def])⟩
+    begin 
+      rw [pmf.mem_support_iff, mem_support_repeat_iff ca p a, pmf.filter_apply_ne_zero_iff],
+      rw [(plift.down (eval_distribution' ca).2 _)],
+      rw and_comm _ (p a),
+      rw set.mem_def,      
+    end)⟩
 end
 
 /-- The denotational semantics of a `comp A` is the distribution of resulting values.
