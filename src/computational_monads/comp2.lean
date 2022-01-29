@@ -13,9 +13,8 @@ inductive prob_comp : Π (A : Type), Type 1
 
 namespace prob_comp
 
-
-variables {A B C : Type} (a a' : A) (b b' : B) (c : C)
-  (ca : prob_comp A) (cb : A → prob_comp B)
+variables {A B : Type} (a a' : A) (b : B)
+  (ca ca' : prob_comp A) (cb : A → prob_comp B)
   (bag : finset A) (p : A → Prop)
 
 section monad
@@ -36,10 +35,11 @@ end monad
 
 /-- Example of a computation computing the sum of a random odd element and random even element -/
 example : prob_comp ℕ :=
-let nums : finset ℕ := {1, 2, 3, 4, 5} in
-do x ← (prob_comp.uniform nums).repeat odd,
+let nums : finset ℕ := {1, 2, 3, 4, 5} in do { 
+  x ← (prob_comp.uniform nums).repeat odd,
   y ← (prob_comp.uniform nums).repeat even,
   return (x + y)
+}
 
 section support
 
@@ -112,6 +112,13 @@ lemma uniform_well_formed_iff :
 
 lemma uniform_well_formed {bag : finset A} (hbag : bag.nonempty) :
   (uniform bag).well_formed := hbag
+
+instance uniform_singleton.well_formed (a : A) :
+  (uniform {a}).well_formed := uniform_well_formed (finset.singleton_nonempty a)
+
+instance uniform_insert.well_formed [decidable_eq A] (bag : finset A) (a : A) :
+  (uniform (insert a bag)).well_formed := 
+uniform_well_formed (finset.insert_nonempty a bag)
 
 lemma nonempty_of_uniform_well_formed [h : (uniform bag).well_formed] : bag.nonempty :=
 by exact h
@@ -223,7 +230,7 @@ lemma eval_distribution_return_apply :
 @[simp]
 lemma eval_distribution_return_apply_self :
   eval_distribution (return a) a = 1 := by simp
-  
+
 @[simp]
 lemma eval_distribution_bind'_eq_bind_on_support [h : well_formed $ bind' A B ca cb] :
   eval_distribution (bind' A B ca cb) =
@@ -263,3 +270,114 @@ inductive decidable : Π {A : Type}, prob_comp A → Type 1
 end decidable
 
 end prob_comp
+
+structure oracle_comp_spec :=
+(ι : Type)
+(D R : ι → Type)
+
+namespace oracle_comp_spec
+
+def domain (spec : oracle_comp_spec)
+  (i : spec.ι) : Type :=
+spec.D i
+
+def range (spec : oracle_comp_spec)
+  (i : spec.ι) : Type :=
+spec.R i
+
+/-- No access to any oracles -/
+def empty_spec : oracle_comp_spec :=
+{ ι := empty,
+  D := empty.elim,
+  R := empty.elim }
+
+/-- Access to a single oracle `A → B` -/
+def singleton_spec (A B : Type) : oracle_comp_spec :=
+{ ι := unit,
+  D := λ _, A,
+  R := λ _, B }
+
+alias singleton_spec ← oracle_comp_spec.random_oracle_spec
+
+@[reducible]
+instance has_append : has_append oracle_comp_spec :=
+{ append := λ spec spec', 
+  { ι := spec.ι ⊕ spec'.ι,
+    D := sum.elim spec.D spec'.D,
+    R := sum.elim spec.R spec'.R } } 
+
+end oracle_comp_spec 
+
+open oracle_comp_spec
+
+/-- `oracle_comp A B C` is the type of a computation of a value of type `C`,
+  with access to a family of oracle taking values in `A t` to values in `B t`.
+  The oracle's semantics aren't specified until evaluation (`eval_distribution`),
+    since algorithm specification only needs to know the types, not the values.
+  Requiring well formed in the constructor avoids
+  
+TODO: ret → sample, bind → bind' -/
+inductive oracle_comp (spec : oracle_comp_spec) : Type → Type 1
+| oc_ret {C : Type} (c : prob_comp C) [c.well_formed] : oracle_comp C
+| oc_bind {C D : Type} (oc : oracle_comp C) (od : C → oracle_comp D) : oracle_comp D
+| oc_query (i : spec.ι) (a : spec.domain i) : oracle_comp (spec.range i)
+
+namespace oracle_comp
+
+@[simps]
+instance monad (spec : oracle_comp_spec) :
+  monad (oracle_comp spec) :=
+{ pure := λ C c, oracle_comp.oc_ret (return c),
+  bind := λ C D, oracle_comp.oc_bind }
+
+-- Example of accessing a pair of different oracles and passing
+example (α β A B : Type) (ca : prob_comp α) (cb : prob_comp β) [ca.well_formed] [cb.well_formed] : 
+  oracle_comp (singleton_spec α A ++ singleton_spec β B) (A × B) :=
+do {
+  x ← oc_ret ca, y ← oc_ret cb,
+  x' ← oc_query (sum.inl ()) x,
+  y' ← oc_query (sum.inr ()) y,
+  return (x', y')
+}
+
+/-- Specifies a method for simulating an oracle for the given `oracle_comp_spec`,
+  Where `S` is the type of the oracle's internal state and `o` simulates the oracle given a current state,
+  eventually returning a query result and an updated state value. -/
+structure simulation_oracle (spec : oracle_comp_spec) :=
+(S : Type)
+(o : Π (i : spec.ι), S → spec.domain i → prob_comp (spec.range i × S))
+(oracle_well_formed (i : spec.ι) (s : S) (x : spec.domain i) : (o i s x).well_formed)
+
+instance simulation_oracle.is_well_formed {spec : oracle_comp_spec}
+  (so : simulation_oracle spec) (i : spec.ι) (s : so.S) (x : spec.domain i) :
+  (so.o i s x).well_formed :=
+so.oracle_well_formed i s x
+
+/-- Combine simultation oracles two get a simulation oracle on the appended `spec`,
+  using a product type to track internal states of both oracles -/
+def simulation_oracle.append {spec spec' : oracle_comp_spec}
+  (so : simulation_oracle spec) (so' : simulation_oracle spec') :
+  simulation_oracle (spec ++ spec') :=
+{ S := so.S × so'.S,
+  o := λ i ⟨s, s'⟩, match i with
+  | (sum.inl i) := λ x, functor.map (prod.map id (λ new_s, (new_s, s'))) (so.o i s x)
+  | (sum.inr i) := λ x, functor.map (prod.map id (λ new_s', (s, new_s'))) (so'.o i s' x)
+  end,
+  oracle_well_formed := λ i ⟨s, s'⟩, match i with
+  | (sum.inl i) := λ x, by simp [simulation_oracle.append._match_1,
+      simulation_oracle.append._match_2]; apply_instance
+  | (sum.inr i) := λ x, by simp [simulation_oracle.append._match_1,
+      simulation_oracle.append._match_2]; apply_instance
+  end,
+ }
+
+/-- Evaluation distribution of an `oracle_comp A B C` as a `comp A`.
+`S` is the type of the internal state of the `A` to `B` oracle, and `s` is the initial state.
+`o` takes the current oracle state and an `A` value, and computes a `B` value and new oracle state. -/
+def simulate {spec : oracle_comp_spec} (so : simulation_oracle spec) : 
+  Π {C : Type} (oc : oracle_comp spec C) (s : so.S), prob_comp (C × so.S)
+| C (@oc_ret _ _ c c_wf) s := do {x ← c, return (x, s)}
+| C (oc_bind oc od) s := do {⟨c, s'⟩ ← simulate oc s, simulate (od c) s'}
+| C (oc_query i a) s := so.o i s a
+
+end oracle_comp
