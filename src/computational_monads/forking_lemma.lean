@@ -49,7 +49,6 @@ def fork_comp {q : ℕ} (A : X × (vector H q.succ) → comp (fin q.succ × SO))
   -- Generating this way should avoid needing to do index arithmetic on the vector length
   hs_temp ← vector_call (rnd H) q.succ,
   hs' ← return (vector.of_fn (λ i, if i < Iσ.1 then hs.nth i else hs_temp.nth i)),
-  -- TODO: need a way to run this A with the same coins as the original
   (I', σ') ← A (x, hs'),
   return (if (Iσ.1 = 0 ∨ Iσ.1 ≠ I' ∨ hs.nth Iσ.1 = hs'.nth Iσ.1) then ff else tt, Iσ.2, σ')
 }

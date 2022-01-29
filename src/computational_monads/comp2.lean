@@ -106,6 +106,8 @@ lemma support_nonempty_of_well_formed :
     set.nonempty_Union.2 ⟨a, set.nonempty_Union.2 ⟨ha, ⟨b, hb⟩⟩⟩
 | A (repeat ca p) repeat_wf := let ⟨ca_wf, ⟨a, ha, hpa⟩⟩ := repeat_wf in ⟨a, ⟨ha, hpa⟩⟩
 
+section uniform
+
 @[simp]
 lemma uniform_well_formed_iff :
   (uniform bag).well_formed ↔ bag.nonempty := iff.rfl
@@ -123,15 +125,23 @@ uniform_well_formed (finset.insert_nonempty a bag)
 lemma nonempty_of_uniform_well_formed [h : (uniform bag).well_formed] : bag.nonempty :=
 by exact h
 
+end uniform
+
+section return
+
 @[simp]
 instance return.well_formed :
   (return a : prob_comp A).well_formed := by exact ⟨a, finset.mem_singleton_self a⟩
+
+end return
+
+section bind
 
 @[simp]
 lemma bind'_well_formed_iff :
   (bind' A B ca cb).well_formed ↔ ca.well_formed ∧ ∀ a ∈ ca.support, (cb a).well_formed := iff.rfl
 
-instance bind'.well_formed {ca : prob_comp A} {cb : A → prob_comp B}
+instance bind'.well_formed (ca : prob_comp A) (cb : A → prob_comp B)
   [hca : ca.well_formed] [hcb : ∀ a ∈ ca.support, (cb a).well_formed] :
   (bind' A B ca cb).well_formed := ⟨hca, hcb⟩
 
@@ -139,9 +149,13 @@ instance bind'.well_formed {ca : prob_comp A} {cb : A → prob_comp B}
 lemma bind_well_formed_iff :
   (ca >>= cb).well_formed ↔ ca.well_formed ∧ ∀ a ∈ ca.support, (cb a).well_formed := iff.rfl
 
-instance bind.well_formed {ca : prob_comp A} {cb : A → prob_comp A}
+instance bind.well_formed (ca : prob_comp A) (cb : A → prob_comp A)
   [hca : ca.well_formed] [hcb : ∀ a ∈ ca.support, (cb a).well_formed] :
   (ca >>= cb).well_formed := by exact ⟨hca, hcb⟩
+
+end bind
+
+section repeat
 
 @[simp]
 lemma repeat_well_formed_iff :
@@ -153,6 +167,8 @@ lemma repeat_well_formed {ca : prob_comp A} {p : A → Prop}
 
 lemma well_formed_of_repeat_well_formed [h : well_formed $ repeat ca p] : well_formed ca :=
 by exact h.1
+
+end repeat
 
 example (z : ℕ) : well_formed 
   (do x ← return (z + 3),
@@ -258,6 +274,25 @@ end prob_event
 
 end eval_distribution
 
+section prod
+
+def prod (ca : prob_comp A) (cb : prob_comp B) :
+  prob_comp (A × B) :=
+do { a ← ca, b ← cb, return (a, b) }
+
+infix ` ×× `:80 := prod
+
+lemma support_prod (ca : prob_comp A) (cb : prob_comp B) :
+  (ca ×× cb).support = ⋃ (a ∈ ca.support) (b ∈ cb.support), {(a, b)} :=
+by simp only [prod, bind_eq_bind', finset.coe_singleton,
+  support_uniform, support_bind', return_eq_uniform_singleton]
+
+instance prod.well_formed (ca : prob_comp A) (cb : prob_comp B)
+  [ca.well_formed] [cb.well_formed] : (ca ×× cb).well_formed :=
+by unfold prod; apply_instance 
+
+end prod
+
 section decidable
 
 inductive decidable : Π {A : Type}, prob_comp A → Type 1
@@ -353,24 +388,6 @@ instance simulation_oracle.is_well_formed {spec : oracle_comp_spec}
   (so.o i s x).well_formed :=
 so.oracle_well_formed i s x
 
-/-- Combine simultation oracles two get a simulation oracle on the appended `spec`,
-  using a product type to track internal states of both oracles -/
-def simulation_oracle.append {spec spec' : oracle_comp_spec}
-  (so : simulation_oracle spec) (so' : simulation_oracle spec') :
-  simulation_oracle (spec ++ spec') :=
-{ S := so.S × so'.S,
-  o := λ i ⟨s, s'⟩, match i with
-  | (sum.inl i) := λ x, functor.map (prod.map id (λ new_s, (new_s, s'))) (so.o i s x)
-  | (sum.inr i) := λ x, functor.map (prod.map id (λ new_s', (s, new_s'))) (so'.o i s' x)
-  end,
-  oracle_well_formed := λ i ⟨s, s'⟩, match i with
-  | (sum.inl i) := λ x, by simp [simulation_oracle.append._match_1,
-      simulation_oracle.append._match_2]; apply_instance
-  | (sum.inr i) := λ x, by simp [simulation_oracle.append._match_1,
-      simulation_oracle.append._match_2]; apply_instance
-  end,
- }
-
 /-- Evaluation distribution of an `oracle_comp A B C` as a `comp A`.
 `S` is the type of the internal state of the `A` to `B` oracle, and `s` is the initial state.
 `o` takes the current oracle state and an `A` value, and computes a `B` value and new oracle state. -/
@@ -379,5 +396,44 @@ def simulate {spec : oracle_comp_spec} (so : simulation_oracle spec) :
 | C (@oc_ret _ _ c c_wf) s := do {x ← c, return (x, s)}
 | C (oc_bind oc od) s := do {⟨c, s'⟩ ← simulate oc s, simulate (od c) s'}
 | C (oc_query i a) s := so.o i s a
+
+section append
+
+/-- Combine simultation oracles two get a simulation oracle on the appended `spec`,
+  using a product type to track internal states of both oracles -/
+def simulation_oracle.append {spec spec' : oracle_comp_spec}
+  (so : simulation_oracle spec) (so' : simulation_oracle spec') :
+  simulation_oracle (spec ++ spec') :=
+{ S := so.S × so'.S,
+  o := λ i ⟨s, s'⟩, match i with
+    | (sum.inl i) := λ x, functor.map (prod.map id (λ new_s, (new_s, s'))) (so.o i s x)
+    | (sum.inr i) := λ x, functor.map (prod.map id (λ new_s', (s, new_s'))) (so'.o i s' x)
+  end,
+  oracle_well_formed := λ i ⟨s, s'⟩, match i with
+    | (sum.inl i) := λ x, by simp [simulation_oracle.append._match_1,
+        simulation_oracle.append._match_2]; apply_instance
+    | (sum.inr i) := λ x, by simp [simulation_oracle.append._match_1,
+        simulation_oracle.append._match_2]; apply_instance
+  end }
+
+end append
+
+section random_oracle
+
+/-- Return random values for any new query, returning the same value for repeated queries -/
+def random_oracle (T U : Type) 
+  [decidable_eq T] [fintype U] [nonempty U] :
+  simulation_oracle (singleton_spec T U) :=
+{ S := list (T × U),
+  o := λ _ log t, match (log.find (λ tu, prod.fst tu = t)) with
+    | none := prob_comp.uniform (⊤ : finset U) >>= (λ u, return ⟨u, ⟨t, u⟩ :: log⟩)
+    | (some ⟨t, u⟩) := return ⟨u, log⟩
+  end,
+  oracle_well_formed := λ _ log t, match (log.find (λ tu, prod.fst tu = t)) with
+    | none := by simpa [random_oracle._match_1] using finset.univ_nonempty
+    | (some ⟨t, u⟩) := prob_comp.return.well_formed _
+  end }
+
+end random_oracle
 
 end oracle_comp
