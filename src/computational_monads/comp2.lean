@@ -90,6 +90,7 @@ section well_formed
   In particular, for any `uniform bag` step `bag` must be nonempty,
   and for each `repeat p ca` there must be some output of `ca` satisfying `p` -/
 @[class]
+
 def well_formed : Π {A : Type}, prob_comp A → Prop
 | A (uniform bag) := bag.nonempty
 | _ (bind' A B ca cb) := ca.well_formed ∧ ∀ a ∈ ca.support, (cb a).well_formed
@@ -153,6 +154,10 @@ instance bind.well_formed (ca : prob_comp A) (cb : A → prob_comp A)
   [hca : ca.well_formed] [hcb : ∀ a ∈ ca.support, (cb a).well_formed] :
   (ca >>= cb).well_formed := by exact ⟨hca, hcb⟩
 
+lemma bind.well_formed'' (ca : prob_comp A) (cb : A → prob_comp B)
+  (hca : ca.well_formed) (hcb : ∀ a ∈ ca.support, (cb a).well_formed) :
+  (ca >>= cb).well_formed := ⟨hca, hcb⟩
+
 end bind
 
 section repeat
@@ -178,6 +183,18 @@ by apply_instance
 
 end well_formed
 
+structure ProbComp (A : Type) :=
+(prob_alg : prob_comp A)
+(well_formed : prob_alg.well_formed)
+
+namespace ProbComp
+
+instance monad : monad ProbComp :=
+{ pure := λ A a, ⟨return a, return.well_formed a⟩,
+  bind := λ A B ca cb, ⟨bind ca.prob_alg (prob_alg ∘ cb), bind.well_formed'' _ _ ca.well_formed (λ a ha, (cb a).well_formed)⟩}
+
+end ProbComp
+
 section eval_distribution
 
 open_locale classical big_operators nnreal ennreal
@@ -186,7 +203,7 @@ open_locale classical big_operators nnreal ennreal
   The reason this is to equate the `pmf` supports with the `prob_comp` supports
   TODO: Maybe this should return an option, and not require well_formed -/
 private noncomputable def eval_distribution' :
-  Π {A : Type} (ca : prob_comp A) (_ : ca.well_formed), 
+  Π {A : Type} (ca : prob_comp A) (hca : ca.well_formed), 
     Σ (pa : pmf A), plift (∀ (a : A), (a ∈ pa.support ↔ a ∈ ca.support))
 | A (uniform bag) uniform_wf :=
   ⟨pmf.uniform_of_finset bag uniform_wf,
@@ -211,6 +228,9 @@ private noncomputable def eval_distribution' :
   This requires providing a proof of well formedness to ensure the distribution sums to `1`.-/
 noncomputable def eval_distribution (ca : prob_comp A) [hca : ca.well_formed] : pmf A := 
 (eval_distribution' ca hca).1
+
+noncomputable def eval_distribution'' (ca : ProbComp A) : pmf A :=
+(eval_distribution' ca.prob_alg ca.well_formed).1
 
 @[simp]
 theorem support_eval_distribution_eq_support (ca : prob_comp A) [hca : ca.well_formed] :
