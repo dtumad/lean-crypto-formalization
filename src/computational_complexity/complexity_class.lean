@@ -179,29 +179,28 @@ variables [function_cost_model ℚ] [comp_cost_model ℚ]
 
 -- TODO: Think about naming conventions for this, maybe `comp` → `prob_comp`?
 lemma polynomial_complexity_comp_ext'
-  {T U : ℕ → Type} {cu cu' : Π n, T n → comp (U n)}
-  [∀ n t, (cu n t).is_well_formed] [∀ n t, (cu' n t).is_well_formed]
+  {T U : ℕ → Type} {cu cu' : Π n, T n → prob_comp (U n)}
   (h : ∀ (n : ℕ) (t : T n), (cu n t).eval_distribution = (cu' n t).eval_distribution)
   (hcu : polynomial_complexity cu) : polynomial_complexity cu' :=
 polynomial_complexity_of_cost_le cu cu'
   (λ n x hx, comp_cost_model.cost_at_most_comp_ext (h n) hx) hcu
 
 lemma polynomial_complexity_ret {T : ℕ → Type} :
-  polynomial_complexity (λ n, (comp.ret : T n → comp (T n))) :=
+  polynomial_complexity (λ n, (return : T n → prob_comp (T n))) :=
 polynomial_complexity_of_has_cost_zero _
 
 lemma polynomial_complexity_comp_ret_of_polynomial_complexity
   {T U : ℕ → Type} {c : Π n, T n → U n}
   (hc : polynomial_complexity c) :
-  polynomial_complexity (λ n, (λ t, comp.ret (c n t))) :=
+  polynomial_complexity (λ n, (λ t, return (c n t) : T n → prob_comp (U n))) :=
 polynomial_complexity_comp hc polynomial_complexity_ret
 
 lemma polynomial_complexity_comp_bind
-  {T U V : ℕ → Type} {cu : Π n, T n → comp (U n)}
-  {cv : Π n, T n → U n → comp (V n)}
+  {T U V : ℕ → Type} {cu : Π n, T n → prob_comp (U n)}
+  {cv : Π n, T n → U n → prob_comp (V n)}
   (hcu : polynomial_complexity cu)
-  (hcv : polynomial_complexity (λ n, (function.uncurry (cv n) : T n × U n → comp (V n)))) :
-  polynomial_complexity (λ n, (λ t, (cu n t) >>= (cv n t) : T n → comp (V n))) :=
+  (hcv : polynomial_complexity (λ n, (function.uncurry (cv n) : T n × U n → prob_comp (V n)))) :
+  polynomial_complexity (λ n, (λ t, (cu n t) >>= (cv n t) : T n → prob_comp (V n))) :=
 begin
   obtain ⟨p, hp, hpcu⟩ := hcu,
   obtain ⟨q, hq, hqcv⟩ := hcv,
@@ -216,7 +215,7 @@ variable [pairing_cost_extension ℚ]
 -- TODO: Maybe some namespacing based on cost models would clear up this naming
 lemma polynomial_complexity_comp_unit_prod
   [pairing_cost_extension ℚ] [comp_cost_model ℚ]
-  {T U : ℕ → Type} (cu : Π n, unit × T n → comp (U n))
+  {T U : ℕ → Type} (cu : Π n, unit × T n → prob_comp (U n))
   (hcu : polynomial_complexity (λ n, (λ t, cu n ((), t)))) :
   polynomial_complexity cu :=
 polynomial_complexity_comp_ext

@@ -1,5 +1,5 @@
-import computational_monads.oracle_comp
-import computational_monads.dist_sem
+import computational_monads.oracle_access.oracle_comp
+import computational_monads.probabalistic_computation.constructions
 import computational_complexity.polynomial_asymptotics
 import to_mathlib
  
@@ -256,58 +256,51 @@ end monadic_cost_model
   so that the cost model is a fact about the behaviour not the algorithm -/
 class comp_cost_model (C : Type) [ordered_semiring C]
   [function_cost_model C]
-  extends monadic_cost_model C comp :=
-(cost_at_most_comp_rnd_bool (T : Type) : cost_at_most (function.const T $ comp.rnd bool) (1 : C))
-(cost_at_most_comp_ext {T U : Type} {ct ct' : U → comp T} {c : C} 
-  [∀ u, (ct u).is_well_formed] [∀ u, (ct' u).is_well_formed]
+  extends monadic_cost_model C prob_comp :=
+(cost_at_most_comp_ext {T U : Type} {ct ct' : U → prob_comp T} {c : C}
   (h : ∀ u, (ct u).eval_distribution = (ct' u).eval_distribution)
   (hct : cost_at_most ct c) : cost_at_most ct' c)
 
 instance comp_cost_model.cost_model {C : Type} [ordered_semiring C]
   [function_cost_model C] [comp_cost_model C]
-  (T U : Type) : cost_model C (T → comp U) :=
-monadic_cost_model.cost_model C comp T U
+  (T U : Type) : cost_model C (T → prob_comp U) :=
+monadic_cost_model.cost_model C prob_comp T U
 
 instance comp_cost_model.compatible_cost_models {C : Type} [ordered_semiring C]
   [function_cost_model C] [comp_cost_model C]
-  (T U V : Type) : compatible_cost_models C T U (comp V) :=
-monadic_cost_model.compatible_cost_models C comp T U V
+  (T U V : Type) : compatible_cost_models C T U (prob_comp V) :=
+monadic_cost_model.compatible_cost_models C prob_comp T U V
 
 instance comp_cost_model.cost_zero_ret [function_cost_model C]
   [comp_cost_model C] (T : Type) : 
-  cost_zero C (comp.ret : T → comp T) :=
-monadic_cost_model.cost_zero_pure' comp T
+  cost_zero C (return : T → prob_comp T) :=
+monadic_cost_model.cost_zero_pure' prob_comp T
 
 namespace comp_cost_model
 
 variables [function_cost_model C] [comp_cost_model C]
 
-lemma cost_at_most_comp_ext_iff {T U : Type} {ct ct' : U → comp T}
-  [∀ u, (ct u).is_well_formed] [∀ u, (ct' u).is_well_formed]
+lemma cost_at_most_comp_ext_iff {T U : Type} {ct ct' : U → prob_comp T}
   (h : ∀ u, (ct u).eval_distribution = (ct' u).eval_distribution)
   (c : C) : cost_at_most ct c ↔ cost_at_most ct' c :=
 ⟨comp_cost_model.cost_at_most_comp_ext h,
   comp_cost_model.cost_at_most_comp_ext (λ u, eq.symm $ h u)⟩
 
 lemma cost_at_most_comp_ret {T U : Type} {x : C} {f : T → U}
-  (hf : cost_at_most f x) : cost_at_most (comp.ret ∘ f : T → comp U) x :=
-monadic_cost_model.cost_at_most_pure comp hf
+  (hf : cost_at_most f x) : cost_at_most (return ∘ f : T → prob_comp U) x :=
+monadic_cost_model.cost_at_most_pure prob_comp hf
 
 lemma cost_at_most_comp_bind {T U V : Type} {x y : C} 
-  {cu : T → comp U} {cv : T → U → comp V}
+  {cu : T → prob_comp U} {cv : T → U → prob_comp V}
   (hcu : cost_at_most cu x) (hcv : cost_at_most (function.uncurry cv) y) :
-  cost_at_most (λ t, (cu t).bind (cv t)) (x + y) :=
+  cost_at_most (λ t, (cu t) >>= (cv t)) (x + y) :=
 monadic_cost_model.cost_at_most_bind hcu hcv
 
 lemma cost_at_most_comp_bind_of_le {T U V : Type} {x y z : C}
-  {cu : T → comp U} {cv : T → U → comp V}
+  {cu : T → prob_comp U} {cv : T → U → prob_comp V}
   (hcu : cost_at_most cu x) (hcv : cost_at_most (function.uncurry cv) y)
-  (hxyz : x + y ≤ z) : cost_at_most (λ t, (cu t).bind (cv t)) z :=
+  (hxyz : x + y ≤ z) : cost_at_most (λ t, (cu t) >>= (cv t)) z :=
 monadic_cost_model.cost_at_most_bind_of_le hcu hcv hxyz
-
-lemma cost_at_most_comp_rnd_bool_of_le (T : Type) {x : C}
-  (hx : 1 ≤ x) : cost_at_most (function.const T $ comp.rnd bool) x :=
-cost_model.cost_trans (cost_at_most_comp_rnd_bool T) hx
 
 end comp_cost_model
 
@@ -317,7 +310,7 @@ class oracle_comp_cost_model (C : Type) [ordered_semiring C]
   extends monadic_cost_model C (oracle_comp spec) :=
 (cost_oc_query {i : spec.ι} : 
   cost_at_most (oracle_comp.oc_query i) (1 : C))
-(cost_oc_ret {T U : Type} {x : C} (cu : T → comp U) (hcu : cost_at_most cu x) :
+(cost_oc_ret {T U : Type} {x : C} (cu : T → prob_comp U) (hcu : cost_at_most cu x) :
   cost_at_most (λ t, oracle_comp.oc_ret (cu t) : T → oracle_comp spec U) x)
 
 instance oracle_comp_cost_model.cost_model {C : Type} [ordered_semiring C]
@@ -330,7 +323,7 @@ monadic_cost_model.cost_model C (oracle_comp spec) T U
 instance oracle_comp_cost_model.cost_zero_oc_ret {C : Type} [ordered_semiring C]
   [function_cost_model C] [comp_cost_model C]
   (spec : oracle_comp_spec) [oracle_comp_cost_model C spec]
-  (T : Type) : cost_zero C (oracle_comp.oc_ret ∘ comp.ret : T → oracle_comp spec T) :=
+  (T : Type) : cost_zero C (oracle_comp.oc_ret ∘ return : T → oracle_comp spec T) :=
 monadic_cost_model.cost_zero_pure' (oracle_comp spec) T
 
 namespace oracle_comp_cost_model

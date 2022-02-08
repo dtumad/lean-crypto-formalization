@@ -1,5 +1,4 @@
-import computational_monads.dist_sem
-import computational_monads.vector_call
+import computational_monads.probabalistic_computation.constructions
 import computational_complexity.complexity_class
 import computational_complexity.negligable
 import data.list.basic
@@ -9,9 +8,9 @@ import data.list.basic
 
 This file defines ring signatures and ring signature schemes, and their cryptographic properties.
 The security properties `complete`, `anonomyous`, and `unforgeable` are defined in terms of corresponding experiments.
-
-TODO: Closely double check the non-completeness security definitions before getting to far proving them
 -/
+
+open prob_comp
 
 section signing_ring
 
@@ -42,10 +41,8 @@ end signing_ring
 `verify` checks whether a given signature is valid on a ring and a message -/
 structure ring_signature (M : Type) (S : ℕ → Type) (PK SK : Type)
   [decidable_eq M] [decidable_eq PK] :=
-(gen : unit → comp (PK × SK))
-(gen_well_formed : (gen ()).is_well_formed)
-(sign (n : ℕ) : signing_input n PK SK M → comp (S n))
-(sign_well_formed : ∀ n inp, (sign n inp).is_well_formed)
+(gen : unit → prob_comp (PK × SK))
+(sign (n : ℕ) : signing_input n PK SK M → prob_comp (S n))
 (verify (n : ℕ) : verification_input n PK M S → bool)
 
 namespace ring_signature
@@ -54,35 +51,26 @@ variables {M : Type} {S : ℕ → Type} {PK SK : Type}
 variables [decidable_eq M] [decidable_eq PK]
 variables (rs : ring_signature M S PK SK)
 
-@[simp]
-instance gen.is_well_formed : (rs.gen ()).is_well_formed :=
-rs.gen_well_formed
-
-@[simp]
-instance sign.is_well_formed (n : ℕ) (inp : signing_input n PK SK M) :
-  (rs.sign n inp).is_well_formed :=
-rs.sign_well_formed _ inp
-
 section complete
 
-@[derive comp.is_well_formed]
-def completeness_experiment (n : ℕ) (i : fin n) (m : M) : comp bool :=
-do ks ← (comp.vector_call (rs.gen ()) n),
+def completeness_experiment (n : ℕ) (i : fin n) (m : M) : prob_comp bool :=
+do ks ← (vector_call (rs.gen ()) n),
   mems ← return (vector.map prod.fst ks), 
   σ ← (rs.sign n ⟨⟨mems, i⟩, (vector.nth ks i).2, m⟩),
   return (rs.verify n ⟨mems, m, σ⟩)
 
 @[simp]
 lemma mem_support_completeness_experiment_iff (n : ℕ) (i : fin n) (m : M) (b : bool) :
-  b ∈ (completeness_experiment rs n i m).support ↔
-    ∃ (ks : vector (PK × SK) n) (hks : ∀ (i : fin n), ks.nth i ∈ (rs.gen ()).support)
-      (σ : S n) (hσ : σ ∈ (rs.sign n ⟨⟨vector.map prod.fst ks, i⟩, (vector.nth ks i).2, m⟩).support),
+  b ∈ (completeness_experiment rs n i m).alg.support ↔
+    ∃ (ks : vector (PK × SK) n) (hks : ∀ (i : fin n), ks.nth i ∈ (rs.gen ()).alg.support)
+      (σ : S n) (hσ : σ ∈ (rs.sign n ⟨⟨vector.map prod.fst ks, i⟩, (vector.nth ks i).2, m⟩).alg.support),
       b = rs.verify n ⟨vector.map prod.fst ks, m, σ⟩ :=
-by simp [completeness_experiment]
+sorry
+-- by simp [completeness_experiment]
 
 /-- A ring signature is complete if for any list if completeness experiment always succeeds `-/
 def complete :=
-∀ (n : ℕ) (i : fin n) (m : M), comp.Pr (completeness_experiment rs n i m) = 1
+∀ (n : ℕ) (i : fin n) (m : M), (completeness_experiment rs n i m).prob_success = 1
 
 end complete
 
@@ -107,7 +95,6 @@ def signing_simulation_oracle (rs : ring_signature M S PK SK)
   o := λ n _ inp, option.elim (list.find (λ (k : PK × SK), k.1 = inp.1.pk) ks.to_list)
         (return (none, ())) 
         (λ k, functor.map (prod.swap ∘ prod.mk () ∘ some) (rs.sign _ ⟨inp.1, k.2, inp.2⟩)),
-  oracle_is_well_formed := by apply_instance
 }
 
 -- -- TODO: This should be a type alias maybe, in oracle_comp
@@ -134,7 +121,6 @@ def corruption_simulation_oracle (rs : ring_signature M S PK SK)
 {
   S := unit,
   o := λ n _ i, return ((ks.nth i).2, ()),
-  oracle_is_well_formed := by apply_instance,
 }
 
 def signing_and_corruption_simulation_oracle (rs : ring_signature M S PK SK)
@@ -201,13 +187,12 @@ def unforgeable_log_admissable (n : ℕ) (ks : vector (PK × SK) n)
     ¬ (v.2 = A_out.2.m ∧ v.1.mems.to_list ~ A_out.2.mems.to_list) ∧ unforgeable_log_admissable t
 
 -- TODO: A also needs a corruption oracle for this experiment
-@[derive comp.is_well_formed]
 def unforgeable_experiment (n : ℕ)
   (A : vector PK n → oracle_comp 
     (signing_oracle_spec rs ++ corruption_oracle_spec rs n) 
-    (Σ (n : ℕ), verification_input n PK M S)) 
-  [hA : ∀ pks, (A pks).is_well_formed] : comp bool :=
-do ks ← comp.vector_call (rs.gen ()) n, 
+    (Σ (n : ℕ), verification_input n PK M S)) :
+    prob_comp bool :=
+do ks ← vector_call (rs.gen ()) n, 
   pks ← return (vector.map prod.fst ks),
   A_out ← (A pks).simulate (signing_and_corruption_simulation_oracle rs ks) ((), ()),
   -- admissable ← return (unforgeable_log_admissable n ks A_out.1 A_out.2),
@@ -220,27 +205,25 @@ section anonomyous_experiment
 /-- `n` is the number of keys generated, will be polynomial in `sp`
 -- Remember that the adversary can just ask for a challenge of something they've already seen previous oracle outputs for
 -- Note that the second adversary gets all the secret keys as well -/
-@[derive comp.is_well_formed]
 def anonomyous_experiment {A_state : Type} (n : ℕ)
   (A : vector PK n → oracle_comp (signing_oracle_spec rs) (Σ (l : ℕ), M × fin l × fin l × (vector PK l) × A_state))
-  (A' : A_state → vector (PK × SK) n → (Σ (l : ℕ), S l) → oracle_comp (signing_oracle_spec rs) bool)
-  [hA : ∀ pks, (A pks).is_well_formed] [hA' : ∀ st ks σ, (A' st ks σ).is_well_formed] : 
-  comp bool :=
-do ks ← (comp.vector_call (rs.gen ()) n),
-  A_out ← (A (vector.map prod.fst ks)).stateless_simulate (signing_simulation_oracle rs ks) (),
+  (A' : A_state → vector (PK × SK) n → (Σ (l : ℕ), S l) → oracle_comp (signing_oracle_spec rs) bool) : 
+  prob_comp bool :=
+do ks ← (vector_call (rs.gen ()) n),
+  A_out ← (A (vector.map prod.fst ks)).simulate_result (signing_simulation_oracle rs ks) (),
   m ← return A_out.2.1,
   i₀ ← return A_out.2.2.1,
   i₁ ← return A_out.2.2.2.1,
   R ← return A_out.2.2.2.2.1,
   state ← return A_out.2.2.2.2.2,
-  b ← comp.rnd bool,
+  b ← random bool,
   i ← return (if b then i₁ else i₀),
   -- Look for a `sk` corresponding to the signer in the adversaries challenge
   k ← return (list.find (λ (k : PK × SK), k.1 = R.nth i) ks.to_list),
   -- If `k` is none return false, otherwise get a signature and give as a challenge to the second adversary
   (k.elim (return false) (λ k, do
     σ ← rs.sign _ ⟨⟨R, i⟩, k.2, m⟩,
-    b' ← (A' state ks ⟨A_out.1, σ⟩).stateless_simulate (signing_simulation_oracle rs ks) (),
+    b' ← (A' state ks ⟨A_out.1, σ⟩).simulate_result (signing_simulation_oracle rs ks) (),
     return (b' = b ∧ i₀ ≠ i₁)))
 
 end anonomyous_experiment
@@ -270,19 +253,12 @@ structure unforgeable_adversary (p : polynomial ℕ) :=
 (A (sp : ℕ) (pks : vector (PK sp) (p.eval sp)) :
   oracle_comp (signing_oracle_spec (rss.rs sp) ++ corruption_oracle_spec (rss.rs sp) (p.eval sp)) 
     (Σ (n : ℕ), verification_input n (PK sp) M (S sp)))
-(wf : ∀ sp pks, (A sp pks).is_well_formed)
 (poly_time : true)
-
-instance unforgeable_adversary.is_well_formed
-  {p : polynomial ℕ} (adv : unforgeable_adversary rss p) 
-  (sp : ℕ) (pks : vector (PK sp) (p.eval sp)) :
-  (adv.A sp pks).is_well_formed :=
-adv.wf sp pks
 
 def unforgeable := 
 ∀ {p : polynomial ℕ} (adv : unforgeable_adversary rss p),
   asymptotics.negligable (λ sp, 
-    comp.Pr (unforgeable_experiment (rss.rs sp) (p.eval sp) (adv.A sp)))
+    (unforgeable_experiment (rss.rs sp) (p.eval sp) (adv.A sp)).prob_success)
 
 end unforgeable
 
@@ -296,27 +272,13 @@ structure anonomyous_adversary (p : polynomial ℕ) :=
           × (fin l) × (vector (PK sp) l) × state))
 (A₂ (sp : ℕ) (st : state) (ks : vector (PK sp × SK sp) (p.eval sp))
   (σ : Σ (l : ℕ), S sp l) : oracle_comp (signing_oracle_spec (rss.rs sp)) bool)
-(A₁_wf : ∀ sp pks, (A₁ sp pks).is_well_formed)
-(A₂_wf : ∀ sp st ks σ, (A₂ sp st ks σ).is_well_formed)
 (A₁_pt : true)
 (A₂_pt : true)
-
-instance anonomyous_adversary.adv₁.is_well_formed 
-  {p : polynomial ℕ} (adv : anonomyous_adversary rss p)
-  (sp : ℕ) (pks : vector (PK sp) (p.eval sp)) :
-  (adv.A₁ sp pks).is_well_formed :=
-adv.A₁_wf sp pks
-
-instance anonomyous_adversary.adv₂.is_well_formed
-  {p : polynomial ℕ} (adv : anonomyous_adversary rss p)
-  (sp : ℕ) (st : adv.state) (ks : vector (PK sp × SK sp) (p.eval sp))
-  (σ : Σ (l : ℕ), S sp l) : (adv.A₂ sp st ks σ).is_well_formed :=
-adv.A₂_wf sp st ks σ
 
 def anonomyous := 
 ∀ (p : polynomial ℕ) (adv : anonomyous_adversary rss p),
 asymptotics.negligable (λ sp, 
-  comp.Pr (anonomyous_experiment (rss.rs sp) (p.eval sp) (adv.A₁ sp) (adv.A₂ sp)) - 0.5)
+  (anonomyous_experiment (rss.rs sp) (p.eval sp) (adv.A₁ sp) (adv.A₂ sp)).prob_success - 0.5)
 
 end anonomyous
 

@@ -92,8 +92,14 @@ section prob_event
 /-- The probability of an event holding on the result of a probablistic computation.
   The definition is in terms of the `outer_measure` structure induced by the `eval_distribution`.
   This is equivalent to the sum of the probabilities of each element of the set. -/
-noncomputable def prob_event (ca : prob_comp A) (event : set A) : ennreal :=
-ca.eval_distribution.to_outer_measure event
+noncomputable def prob_event (ca : prob_comp A) (event : set A) : ℝ≥0 :=
+ennreal.to_nnreal (ca.eval_distribution.to_outer_measure event)
+
+-- notation `prob_success` ca := prob_event ca (= tt)
+
+@[simp]
+noncomputable def prob_success (ca : prob_comp bool) : ℝ≥0 :=
+ca.prob_event (= tt)
 
 end prob_event
 

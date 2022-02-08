@@ -1,4 +1,8 @@
 import computational_complexity.polynomial_asymptotics
+import analysis.asymptotics.superpolynomial_decay
+
+open_locale topological_space
+open filter
 
 /-!
 # Negligable Growth
@@ -11,7 +15,6 @@ For convenience, the definition is given in terms of `is_O`,
 namespace asymptotics
 
 -- TODO: Use superpolynomial decay instead
-def negligable (f : ℕ → ℝ) :=
-∀ (c : ℤ), is_O f (λ n, (n : ℝ) ^ c) filter.at_top
+def negligable (f : ℕ → ℝ) := superpolynomial_decay at_top coe f
 
 end asymptotics

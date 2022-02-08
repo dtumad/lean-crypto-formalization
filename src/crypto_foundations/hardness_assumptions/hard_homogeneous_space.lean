@@ -1,8 +1,9 @@
-import computational_monads.dist_sem
+import computational_monads.probabalistic_computation.prob_comp
 import computational_complexity.complexity_class
 import computational_complexity.negligable
-
 import group_theory.group_action
+
+open_locale nnreal ennreal
 
 /-!
 # Hard Homogeneous Spaces
@@ -30,15 +31,6 @@ class principal_action_class (G X : Type*) [add_monoid G] [add_action G X]
 
 variables {G X : Type*} [add_monoid G] [add_action G X]
 
--- lemma free_action_class_iff :
---   free_action_class G X ↔ ∀ (x : X) (g g' : G), g +ᵥ x = g' +ᵥ x → g = g' :=
--- begin
---   split,
---   { introsI h x,
---     exact free_action_class.free x },
---   { exact λ h, { free := h } }
--- end
-
 @[simp]
 lemma free_action_class.vadd_eq_iff [free_action_class G X] 
   (x : X) (g g' : G) : g +ᵥ x = g' +ᵥ x ↔ g = g' :=
@@ -47,15 +39,6 @@ lemma free_action_class.vadd_eq_iff [free_action_class G X]
 lemma free_action_class.eq_of_vadd_eq [free_action_class G X] 
   (x : X) {g g' : G} (h : g +ᵥ x = g' +ᵥ x) : g = g' :=
 (free_action_class.vadd_eq_iff x g g').mp h
-
--- lemma transitive_action_class_iff :
---   transitive_action_class G X ↔ ∀ (x y : X), ∃ (g : G), g +ᵥ x = y :=
--- begin
---   split,
---   { introsI h x,
---     exact transitive_action_class.trans x },
---   { exact λ h, { trans := h } }
--- end
 
 lemma transitive_action_class.exists_vadd_eq [transitive_action_class G X]
   (x y : X) : ∃ (g : G), g +ᵥ x = y :=
@@ -159,6 +142,7 @@ end vectorization
 
 end action_classes
 
+open prob_comp
 
 section computational_advantages
 
@@ -168,44 +152,36 @@ variables {G X : Type} [fintype G] [fintype X]
 variables [add_monoid G] [add_action G X] [principal_action_class G X]
 
 /-- Analogue of Discrete-logarithm asumption game -/
-@[derive comp.is_well_formed]
-def vectorization_experiment (A : X × X → comp G)
-  [∀ x y, (A (x, y)).is_well_formed] : comp bool :=
-do x₁ ← comp.rnd X,
-  x₂ ← comp.rnd X,
-  g ← A (x₁, x₂),
-  return (g = vectorization G x₁ x₂)
+def vectorization_experiment (A : X × X → prob_comp G) : prob_comp bool :=
+do{ x₁ ← random X, x₂ ← random X,
+    g ← A (x₁, x₂),
+    return (g = vectorization G x₁ x₂) }
 
 /-- Vectorization advantage of an adversary in the vectorization experiment. -/
-noncomputable def vectorization_advantage (adversary : X × X → comp G) 
-  [∀ x y, (adversary (x, y)).is_well_formed] : ℝ :=
-(comp.Pr (vectorization_experiment adversary))
-- (comp.Pr (vectorization_experiment (λ (_ : X × X), comp.rnd G)))
+noncomputable def vectorization_advantage (adversary : X × X → prob_comp G) : ℝ≥0 :=
+(vectorization_experiment adversary).prob_success
+  - (vectorization_experiment (λ (_ : X × X), prob_comp.random G)).prob_success
 
 variable (G)
 
 /-- Analogue of the decisional Diffie-Helman experiment -/
-@[derive comp.is_well_formed]
-def parallelization_experiment (A : X × X × X → comp X)
-  [∀ x y z, (A (x, y, z)).is_well_formed] : comp bool :=
-do x₁ ← (comp.rnd X),
-  x₂ ← (comp.rnd X),
-  x₃ ← (comp.rnd X),
-  x₄ ← (A (x₁, x₂, x₃) : comp X),
-  return ((vectorization G x₂ x₁) = (vectorization G x₄ x₃))
+def parallelization_experiment (A : X × X × X → prob_comp X) : prob_comp bool :=
+do{ x₁ ← prob_comp.random X,
+    x₂ ← prob_comp.random X,
+    x₃ ← prob_comp.random X,
+    x₄ ← A (x₁, x₂, x₃),
+    return ((vectorization G x₂ x₁) = (vectorization G x₄ x₃)) }
 
 /-- Parallelization advantage of an adversary in parallelization experiment -/
-noncomputable def parallelization_advantage (adversary : X × X × X → comp X) 
-  [∀ x y z, (adversary (x, y, z)).is_well_formed] : ℝ :=
-(comp.Pr (parallelization_experiment G adversary))
-- (comp.Pr (parallelization_experiment G (λ (_ : X × X × X), comp.rnd X)))
+noncomputable def parallelization_advantage (adversary : X × X × X → prob_comp X) : ℝ≥0 :=
+(parallelization_experiment G adversary).prob_success
+  - (parallelization_experiment G (λ (_ : X × X × X), prob_comp.random X)).prob_success
 
 end computational_advantages
 
-
 section hard_homogeneous_space
-variable [function_cost_model ℚ]
-variables  [comp_cost_model ℚ]
+
+variables [function_cost_model ℚ] [comp_cost_model ℚ]
 variables (G X : ℕ → Type) 
   [∀ n, fintype (G n)] [∀ n, fintype (X n)]
   [∀ n, inhabited (G n)] [∀ n, inhabited (X n)]
@@ -232,59 +208,47 @@ class algorithmic_homogeneous_space :=
 (polynomial_complexity_eq_X : 
   complexity_class.polynomial_complexity (λ n, (λ x, x.1 = x.2 : X n × X n → Prop)))
 (polynomial_complexity_rnd_G : 
-  complexity_class.polynomial_complexity (λ n, (λ x, comp.rnd (G n) : unit → comp (G n))))
+  complexity_class.polynomial_complexity (λ n, (λ x, random (G n) : unit → prob_comp (G n))))
 
 section algorithmic_homogeneous_space
 
 -- -- TODO: derive rnd X efficient by choosing a generator and using G_rnd_efficient
 lemma polynomial_complexity_rnd_X [h : algorithmic_homogeneous_space G X] 
   [pairing_cost_extension ℚ] : 
-  complexity_class.polynomial_complexity (λ n, (λ x, comp.rnd (X n) : unit → comp (X n))) :=
+  complexity_class.polynomial_complexity (λ n, (λ x, random (X n) : unit → prob_comp (X n))) :=
 begin
   have : complexity_class.polynomial_complexity
     (λ n, (λ x, do {
-      g ← comp.rnd (G n),
-      return (g +ᵥ (default _))
-    } : unit → comp (X n))),
+      g ← random (G n),
+      return (g +ᵥ (default))
+    } : unit → prob_comp (X n))),
   { refine complexity_class.polynomial_complexity_comp_bind _ _,
     refine algorithmic_homogeneous_space.polynomial_complexity_rnd_G X,
     refine complexity_class.polynomial_complexity_comp_unit_prod _ _,
     refine complexity_class.polynomial_complexity_comp_ret_of_polynomial_complexity _,
     exact complexity_class.polynomial_complexity_comp_ext 
-      (complexity_class.polynomial_complexity_of_has_cost_zero (λ n, (λ g, (g, default _) : G n → G n × X n))) 
+      (complexity_class.polynomial_complexity_of_has_cost_zero (λ n, (λ g, (g, default) : G n → G n × X n))) 
       (h.polynomial_complexity_vadd) (by simp) },
       
   refine complexity_class.polynomial_complexity_comp_ext' (λ n _, _) this,
   refine pmf.ext (λ x, _),
-  simp only [mul_boole, comp.monad_to_has_bind_bind, comp.eval_distribution_rnd, pmf.const_apply, pmf.pure_apply,
-    comp.eval_distribution_bind, pmf.bind_apply, comp.return_eq, comp.eval_distribution_ret],
-  refine trans (tsum_congr (λ g, _)) (tsum_ite_eq (vectorization (G n) (default _) x) _),
+  simp,
+  refine trans (tsum_congr (λ g, _)) (tsum_ite_eq (vectorization (G n) (default) x) _),
   simp_rw [eq_vectorization_iff],
-  refine congr (congr (by congr) _) rfl,
-  simpa using principal_action_class.fintype_card_eq (G n) (X n),
+  sorry,
+  -- refine congr (congr (by congr) _) _,
+  -- simpa using principal_action_class.fintype_card_eq (G n) (X n),
 end
 
 end algorithmic_homogeneous_space
 
 structure vectorization_adversary (G X : ℕ → Type) :=
-(A : Π sp, X sp × X sp → comp (G sp))
-(is_well_formed : ∀ sp x, (A sp x).is_well_formed)
+(A : Π sp, X sp × X sp → prob_comp (G sp))
 (polynomial_complexity : complexity_class.polynomial_complexity A)
-
-instance vectorization_advesary.is_well_formed' {G X : ℕ → Type}
-  (adv : vectorization_adversary G X) (sp : ℕ) (x : X sp × X sp) :
-  (adv.A sp x).is_well_formed :=
-adv.is_well_formed sp x
 
 structure parallelization_adversary (X : ℕ → Type) :=
-(A : Π sp, X sp × X sp × X sp → comp (X sp))
-(is_well_formed : ∀ sp x, (A sp x).is_well_formed)
+(A : Π sp, X sp × X sp × X sp → prob_comp (X sp))
 (polynomial_complexity : complexity_class.polynomial_complexity A)
-
-instance parallelization_adversary.is_well_formed' {X : ℕ → Type}
-  (adv : parallelization_adversary X) (sp : ℕ) (x : X sp × X sp × X sp) :
-  (adv.A sp x).is_well_formed :=
-adv.is_well_formed sp x
 
 /-- Extension of `algorithmic_homogenous_space` with hardness assumptions.
   Vectorization and parallelization correspond to discrete-log and Diffie-Hellman -/
