@@ -1,6 +1,5 @@
 import computational_monads.probabalistic_computation.constructions
 import computational_complexity.complexity_class
-import computational_complexity.negligable
 import data.list.basic
 
 /-!
@@ -257,7 +256,7 @@ structure unforgeable_adversary (p : polynomial ℕ) :=
 
 def unforgeable := 
 ∀ {p : polynomial ℕ} (adv : unforgeable_adversary rss p),
-  asymptotics.negligable (λ sp, 
+  negligable (λ sp, 
     (unforgeable_experiment (rss.rs sp) (p.eval sp) (adv.A sp)).prob_success)
 
 end unforgeable
@@ -277,7 +276,7 @@ structure anonomyous_adversary (p : polynomial ℕ) :=
 
 def anonomyous := 
 ∀ (p : polynomial ℕ) (adv : anonomyous_adversary rss p),
-asymptotics.negligable (λ sp, 
+negligable (λ sp, 
   (anonomyous_experiment (rss.rs sp) (p.eval sp) (adv.A₁ sp) (adv.A₂ sp)).prob_success - 0.5)
 
 end anonomyous

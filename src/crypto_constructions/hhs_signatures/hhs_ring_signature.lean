@@ -1,6 +1,6 @@
 import crypto_foundations.hardness_assumptions.hard_homogeneous_space
-import crypto_foundations.primitives.ring_signatures.ring_signature
-import crypto_foundations.primitives.hash_function.hash_function
+import crypto_foundations.primitives.ring_signature
+import crypto_foundations.primitives.hash_function
 import data.vector.basic
 
 /-!
@@ -11,6 +11,8 @@ Note that the construction requires a hash function into the group G.
 -/
 
 section ring_sig_of_pas
+
+open prob_comp
 
 variables {M G X K : Type}
   [fintype G] [fintype X] [inhabited G] [inhabited X] 
@@ -29,14 +31,13 @@ def ring_sig_of_pas [principal_action_class G X]
   (x₀ : X) (H : hash_function K (list X × M) G) :
   ring_signature M (sig_type K G) X G :=
 { gen := λ _, (do 
-    g ← comp.rnd G, 
+    g ← random G, 
     return (g +ᵥ x₀, g)),
-  gen_well_formed := by apply_instance,
   sign := λ n inp, (do
     k ← H.keygen (),
-    tᵢ ← comp.rnd G,
-    rs ← comp.vector_call (comp.rnd G) n,
-    cs ← comp.vector_call (comp.rnd G) n,
+    tᵢ ← random G,
+    rs ← vector_call (random G) n,
+    cs ← vector_call (random G) n,
     Ts ← return (vector.of_fn (λ j, (rs.nth j + cs.nth j) +ᵥ inp.R.mems.nth j)),
     Ts' ← return (Ts.update_nth inp.R.i (tᵢ +ᵥ x₀)),
     h ← return (⟨x₀ :: (inp.R.mems.append Ts').to_list, inp.m⟩ : list X × M),
@@ -47,7 +48,6 @@ def ring_sig_of_pas [principal_action_class G X]
         cs := cs.update_nth inp.R.i cᵢ, 
         rs := rs.update_nth inp.R.i rᵢ }
     )),
-  sign_well_formed := by apply_instance,
   verify := λ n inp, 
     let Ts : vector X n := vector.of_fn (λ j, (inp.σ.rs.nth j + inp.σ.cs.nth j) +ᵥ inp.mems.nth j) in 
     let h : list X × M := ⟨x₀ :: (inp.mems.append Ts).to_list, inp.m⟩ in 
@@ -59,24 +59,24 @@ variables [principal_action_class G X]
 
 @[simp]
 lemma ring_sig_of_pas.mem_support_keygen_iff (k : X × G) :
-  k ∈ ((ring_sig_of_pas x₀ H).gen ()).support ↔ 
-    k.1 = k.2 +ᵥ x₀ :=
+  k ∈ ((ring_sig_of_pas x₀ H).gen ()).alg.support ↔ 
+    k.2 +ᵥ x₀ = k.1 :=
 begin
   cases k with x g,
-  simp,
+  simp
 end
 
 lemma ring_sig_of_pas.vectorization_of_mem_support_keygen
-  (k : X × G) (hk : k ∈ ((ring_sig_of_pas x₀ H).gen ()).support) :
+  (k : X × G) (hk : k ∈ ((ring_sig_of_pas x₀ H).gen ()).alg.support) :
     vectorization G x₀ k.1 = k.2 :=
 begin
   cases k,
   simp at hk,
-  simp [hk],
+  simp [hk.symm],
 end
 
 lemma ring_sig_of_pas.vectorization_of_mem_support_keygen'
-  (k : X × G) (hk : k ∈ ((ring_sig_of_pas x₀ H).gen ()).support) :
+  (k : X × G) (hk : k ∈ ((ring_sig_of_pas x₀ H).gen ()).alg.support) :
     vectorization G k.1 x₀ = - k.2:=
 by rw [vectorization_swap, ring_sig_of_pas.vectorization_of_mem_support_keygen x₀ H k hk]
 
@@ -92,32 +92,33 @@ theorem ring_sig_of_pas.complete [principal_action_class G X]
   (ring_sig_of_pas x₀ H).complete :=
 begin
   intros n i m,
-  simp only [comp.Pr_def, and_true, bool.forall_bool, implies_true_iff, eq_self_iff_true, comp.Pr_prop_eq_one_iff],
-  intro h,
-  rw ring_signature.mem_support_completeness_experiment_iff at h,
-  obtain ⟨ks, hks, σ, hσ, h⟩ := h,
-  suffices : (ring_sig_of_pas x₀ H).verify n ⟨vector.map prod.fst ks, m, σ⟩ = tt,
-  from absurd (h.trans this).symm tt_eq_ff_eq_false,
-  simp only [vector.to_list_cons, vector.nth_map, vector.to_list_append, vector.to_list_of_fn, ring_sig_of_pas_verify,
-    vector.to_list_map, to_bool_iff],
-  simp at hσ,
-  obtain ⟨k, hk, tᵢ, rs, cs, hσ⟩ := hσ,
-  simp [hσ],
-  clear hσ,
-  refine congr_arg (H.hash) _,
-  simp,
-  ext j,
-  by_cases hj : j = i,
-  {
-    simp only [hj, vector.nth_update_nth_same, add_sub_cancel'_right, vector.nth_of_fn],
-    rw vadd_eq_vadd_iff_left _ tᵢ _ x₀,
-    rw ring_sig_of_pas.vectorization_of_mem_support_keygen' x₀ H (ks.nth i) (hks i),
-    abel,
-  },
-  {
-    have : i ≠ j := ne.symm hj,
-    simp [vector.nth_update_nth_of_ne this, add_comm (cs.nth j) (rs.nth j)],
-  },
+  simp only [and_true, bool.forall_bool, implies_true_iff, eq_self_iff_true, prob_success],
+  sorry,
+  -- intro h,
+  -- rw ring_signature.mem_support_completeness_experiment_iff at h,
+  -- obtain ⟨ks, hks, σ, hσ, h⟩ := h,
+  -- suffices : (ring_sig_of_pas x₀ H).verify n ⟨vector.map prod.fst ks, m, σ⟩ = tt,
+  -- from absurd (h.trans this).symm tt_eq_ff_eq_false,
+  -- simp only [vector.to_list_cons, vector.nth_map, vector.to_list_append, vector.to_list_of_fn, ring_sig_of_pas_verify,
+  --   vector.to_list_map, to_bool_iff],
+  -- simp at hσ,
+  -- obtain ⟨k, hk, tᵢ, rs, cs, hσ⟩ := hσ,
+  -- simp [hσ],
+  -- clear hσ,
+  -- refine congr_arg (H.hash) _,
+  -- simp,
+  -- ext j,
+  -- by_cases hj : j = i,
+  -- {
+  --   simp only [hj, vector.nth_update_nth_same, add_sub_cancel'_right, vector.nth_of_fn],
+  --   rw vadd_eq_vadd_iff_left _ tᵢ _ x₀,
+  --   rw ring_sig_of_pas.vectorization_of_mem_support_keygen' x₀ H (ks.nth i) (hks i),
+  --   abel,
+  -- },
+  -- {
+  --   have : i ≠ j := ne.symm hj,
+  --   simp [vector.nth_update_nth_of_ne this, add_comm (cs.nth j) (rs.nth j)],
+  -- },
 end
 
 end ring_sig_of_pas
@@ -142,7 +143,7 @@ def ring_signature_scheme_of_hhs [hard_homogeneous_space G X]
   rs := λ sp, ring_sig_of_pas (x₀ sp) (H.scheme sp),
   gen_poly_time := begin
     simp [ring_sig_of_pas],
-    refine complexity_class.polynomial_complexity_bind_of_subsingleton comp _ _,
+    refine complexity_class.polynomial_complexity_bind_of_subsingleton prob_comp _ _,
     {
       exact algorithmic_homogeneous_space.polynomial_complexity_rnd_G X,
     },
@@ -172,7 +173,6 @@ def unforgeable_reduction (x₀ : Π sp, X sp)
     specialize this sp,
     sorry,
   end,
-  is_well_formed := sorry,
   polynomial_complexity := sorry,
 }, sorry⟩
 

@@ -1,5 +1,6 @@
 import computational_complexity.cost_model
 import computational_complexity.cost_extensions
+import analysis.asymptotics.superpolynomial_decay
 
 /-!
 # Computational Complexity Classes
@@ -9,6 +10,11 @@ The definitions are made in terms of a `cost_model` on the underlying type.
 
 TODO: This really doesn't need to just apply to `ℚ`
 -/
+
+/-- Random extra definition aliasing the new mathlib ported version -/
+def negligable (f : ℕ → ℝ) := 
+  asymptotics.superpolynomial_decay filter.at_top coe f
+
 
 universes u v
 
@@ -31,7 +37,7 @@ let ⟨p, hp, hpc⟩ := hc in
 lemma polynomial_complexity_of_has_cost_const 
   (c : Π n, τ n) (x : ℚ) (hn : ∀ n, cost_at_most (c n) x) :
   polynomial_complexity c :=
-⟨λ n, x, sorry, hn⟩
+⟨λ n, x, by simp [poly_growth], hn⟩
 
 @[simp]
 lemma polynomial_complexity_of_has_cost_zero 
@@ -162,13 +168,6 @@ begin
   simp [subsingleton.elim t (arbitrary $ T n)],
 end
 
--- lemma polynomial_complexity_bind_of_polynomial_complexity_uncurry {T U V : ℕ → Type}
---   (cu : Π n, T n → comp (U n)) (hcu : polynomial_complexity cu)
---   (cv : Π n, T n → U n → comp (V n)) 
---   (hcv : polynomial_complexity (λ n, (function.uncurry (cv n) : (T n × U n) → comp (V n)))) :
---   polynomial_complexity (λ n, (λ t, comp.bind (cu n t) (cv n t))) :=
--- sorry
-
 end pairing_cost_extension
 
 end monadic_cost_model
@@ -177,7 +176,6 @@ section comp_cost_model
 
 variables [function_cost_model ℚ] [comp_cost_model ℚ]
 
--- TODO: Think about naming conventions for this, maybe `comp` → `prob_comp`?
 lemma polynomial_complexity_comp_ext'
   {T U : ℕ → Type} {cu cu' : Π n, T n → prob_comp (U n)}
   (h : ∀ (n : ℕ) (t : T n), (cu n t).eval_distribution = (cu' n t).eval_distribution)

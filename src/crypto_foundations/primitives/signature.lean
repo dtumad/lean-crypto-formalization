@@ -1,6 +1,5 @@
 import computational_monads.probabalistic_computation.constructions
 import computational_complexity.complexity_class
-import computational_complexity.negligable
 import data.list.basic
 
 /-!
@@ -79,7 +78,7 @@ variables (M : Type) (PK SK S ROI ROO : ℕ → Type)
 
 section unforgeable
 
--- def unforgeable : Prop := sorry
+-- def unforgeable : Prop :=
 
 end unforgeable
 

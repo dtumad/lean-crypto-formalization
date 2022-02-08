@@ -182,6 +182,8 @@ end asymptotics
 def poly_growth {R : Type*} [preorder R] [normed_ring R] (f : ℕ → R) :=
 asymptotics.polynomial_growth filter.at_top (λ n, ↑n : ℕ → ℚ) f
 
+
+
 -- variables {R : Type*} [preorder R] [normed_ring R] 
 
 -- @[simp] lemma poly_growth_const (r : R) : 

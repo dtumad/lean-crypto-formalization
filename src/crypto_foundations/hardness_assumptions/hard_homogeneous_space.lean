@@ -1,6 +1,5 @@
 import computational_monads.probabalistic_computation.prob_comp
 import computational_complexity.complexity_class
-import computational_complexity.negligable
 import group_theory.group_action
 
 open_locale nnreal ennreal
@@ -254,8 +253,8 @@ structure parallelization_adversary (X : ℕ → Type) :=
   Vectorization and parallelization correspond to discrete-log and Diffie-Hellman -/
 class hard_homogeneous_space extends algorithmic_homogeneous_space G X :=
 (vectorization_hard : ∀ (adv : vectorization_adversary G X),
-  asymptotics.negligable (λ sp, vectorization_advantage (adv.A sp)))
+  negligable (λ sp, vectorization_advantage (adv.A sp)))
 (parallelization_hard : ∀ (adv : parallelization_adversary X),
-  asymptotics.negligable (λ n, parallelization_advantage (G n) (adv.A n)))
+  negligable (λ sp, parallelization_advantage (G sp) (adv.A sp)))
 
 end hard_homogeneous_space

@@ -1,6 +1,5 @@
 import computational_complexity.complexity_class
 import computational_monads.probabalistic_computation.constructions
-import computational_complexity.negligable
 
 variables [function_cost_model ℚ] [comp_cost_model ℚ]
 
@@ -69,7 +68,7 @@ structure collision_finding_adversary (H : hash_scheme K I O) :=
 
 def collision_resistant (H : hash_scheme K I O) : Prop :=
 ∀ (A : collision_finding_adversary H),
-asymptotics.negligable (λ sp, 
+negligable (λ sp, 
   ((H.scheme sp).collision_finding_experiment (A.adv sp)).prob_success)
 
 end hash_scheme

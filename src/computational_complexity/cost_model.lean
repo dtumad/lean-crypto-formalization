@@ -1,13 +1,12 @@
 import computational_monads.oracle_access.oracle_comp
 import computational_monads.probabalistic_computation.constructions
 import computational_complexity.polynomial_asymptotics
-import to_mathlib
  
 /-!
 # Cost Model for shallow embedding
 
 This file defines an extensible cost model for lean fucntions,
-  as well as functions extended with `comp` or `oracle_comp A B` monads.
+  as well as functions extended with `prob_comp` or `oracle_comp A B` monads.
 A model `cost_model C T` define a predicate `cost_at_most (t : T) (c : C)`,
   such that `cost_at_most t x → cost_at_most t y` whenever `x ≤ y`.
 `cost_at_most t x` semantically means `t` can be evaluated in time at most `x`,
@@ -26,12 +25,12 @@ Also note that `cost_at_most` assumes the input and output of functions has some
 
 Cost models are defined for the following types:
 * `function_cost_model` → `cost_model C (T → U)`
-* `comp_cost_model` → `cost_model C (T → comp U)`
+* `comp_cost_model` → `cost_model C (T → prob_comp U)`
 * `oracle_comp_cost_model A B` → `cost_model C (T → oracle_comp A B U)`
 
 The cost model on a function `f : T → U` represents the cost of evaluating `f` on an arbitrary input.
-For a function of the form `f : T → comp U`, it represents the cost of evaluating `f` on an input,
-  and sampling some `U` from the resulting `comp U`.
+For a function of the form `f : T → prob_comp U`, it represents the cost of evaluating `f` on an input,
+  and sampling some `U` from the resulting `prob_comp U`.
 
 -/
 
@@ -194,8 +193,8 @@ class test_cost_model (C : Type) [ordered_semiring C]
 (cm (T U : Type) : cost_model C (reader_t T M U))
 
 /-- Cost model on `T → M U` represents cost to evaluate at `t` and then
-  'evaluate' the resulting monad (e.g. sample from the distribution of a `comp`).
-  Monads that add 'non-trivial' functionality e.g. `comp.rnd`,
+  'evaluate' the resulting monad (e.g. sample from the distribution of a `prob_comp`).
+  Monads that add 'non-trivial' functionality e.g. `prob_comp.rnd`,
   will need to specify the evaluation costs of these functionalities -/
 class monadic_cost_model (C : Type) [ordered_semiring C]
   [function_cost_model C]
@@ -250,7 +249,7 @@ cost_model.cost_trans (monadic_cost_model.cost_at_most_bind hmu hmv) hxyz
 
 end monadic_cost_model
 
-/-- Implement a specific monadic cost model for `comp`. 
+/-- Implement a specific monadic cost model for `prob_comp`. 
   Sampling random bits is defined to have unit cost.
   Extensionality makes this behave more like the function cost model,
   so that the cost model is a fact about the behaviour not the algorithm -/

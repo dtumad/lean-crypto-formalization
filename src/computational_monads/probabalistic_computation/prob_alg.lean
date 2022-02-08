@@ -1,4 +1,3 @@
-import to_mathlib
 import measure_theory.probability_mass_function.constructions
 
 open_locale classical big_operators nnreal ennreal

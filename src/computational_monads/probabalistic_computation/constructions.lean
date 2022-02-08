@@ -12,6 +12,10 @@ section uniform
 def uniform (bag : finset A) (h : bag.nonempty) : prob_comp A :=
 ⟨prob_alg.uniform bag, prob_alg.uniform_well_formed h⟩
 
+@[simp] lemma support_uniform (bag : finset A) (h : bag.nonempty) :
+  (uniform bag h).alg.support = ↑bag :=
+by simp
+
 @[simp] lemma eval_distribution_uniform (bag : finset A) (h : bag.nonempty) :
   eval_distribution (uniform bag h) = pmf.uniform_of_finset bag h :=
 rfl
@@ -43,6 +47,7 @@ end prod
 
 section vector_call
 
+@[simp]
 def vector_call (ca : prob_comp A) (n : ℕ) : prob_comp (vector A n) :=
 vector.m_of_fn (function.const _ ca)
 
@@ -51,8 +56,15 @@ end vector_call
 section random
 
 /-- Draw uniformly at random from a finite and nonempty type `A` -/
+@[simp]
 def random (A : Type) [fintype A] [nonempty A] : prob_comp A :=
 uniform finset.univ finset.univ_nonempty
+
+variables (A) [fintype A] [nonempty A]
+
+@[simp] lemma support_random :
+  (random A).alg.support = set.univ :=
+by simp [random]
 
 end random
 

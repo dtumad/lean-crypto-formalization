@@ -1,6 +1,6 @@
-import crypto_foundations.primitives.signature.signature
+import crypto_foundations.primitives.signature
 import crypto_foundations.hardness_assumptions.hard_homogeneous_space
-import data.vector.basic
+import data.vector.zip
 
 
 variables (M G X : Type)
@@ -9,7 +9,7 @@ variables (M G X : Type)
 variables [add_comm_group G] [add_action G X]
 variables [function_cost_model ℚ] [comp_cost_model ℚ] 
 
-open oracle_comp
+open prob_comp oracle_comp
 
 /-- `x₀` is a base point to use for public keys, analogous to a fixed generator of a cyclic group.
   `t` is the number of repetitions of the proof, higher values increase the soundness of the system. -/
@@ -20,12 +20,12 @@ def signature_of_principal_action_class
     (list X × M) (vector bool t) :=
 { 
   gen := λ _, do
-  { sk ← comp.rnd G,
+  { sk ← random G,
     return (sk +ᵥ x₀, sk) },
   sign := λ inp, do
   { (pk, sk, m) ← return inp,
     -- Choose `t` values from `G` at random
-    cs ← oc_ret (comp.vector_call (comp.rnd G) t),
+    cs ← oc_ret (vector_call (random G) t),
     ys ← return (cs.map (λ c, c +ᵥ pk)),
     -- Query the random oracle on `ys`
     (h : vector bool t) ← oc_query () (ys.to_list, m),
@@ -40,36 +40,31 @@ def signature_of_principal_action_class
 
 variable [principal_action_class G X]
 
-instance signature_of_principal_action_class.is_well_formed (x₀ : X) (t : ℕ) :
-  (signature_of_principal_action_class M G X x₀ t).is_well_formed :=
-{ gen_is_well_formed := by simp [signature_of_principal_action_class],
-  sign_is_well_formed := by simp [signature_of_principal_action_class],
-  verify_is_well_formed := by simp [signature_of_principal_action_class] }
-
 namespace signature_of_principal_action_class
 
 variables (x₀ : X) (t : ℕ)
 
 @[simp]
 lemma mem_support_gen_iff (u : unit) (ks : X × G) :
-  ks ∈ ((signature_of_principal_action_class M G X x₀ t).gen u).support ↔
+  ks ∈ ((signature_of_principal_action_class M G X x₀ t).gen u).alg.support ↔
     ks.fst = ks.snd +ᵥ x₀ :=
 begin
   simp [signature_of_principal_action_class],
-  refine ⟨λ h, _, λ h, ⟨ks.snd, prod.ext h rfl⟩⟩,
+
+  refine ⟨λ h, _, λ h, ⟨ks.snd, prod.ext h.symm rfl⟩⟩,
   obtain ⟨i, hi⟩ := h,
-  simp [hi],
+  simp [hi.symm],
 end
 
 theorem complete (x₀ : X) (t : ℕ) :
   (signature_of_principal_action_class M G X x₀ t).complete :=
 begin
-  intro m,
-  rw [comp.Pr_def, comp.Pr_prop_eq_one_iff],
-  simp only [signature.mem_completeness_experiment_iff],
-  rintro a ⟨pk, sk, hks, σ, log, hσ, b', log', hb', h⟩,
-  simp [mem_support_gen_iff] at hks,
-  sorry,
+  intro m, sorry
+  -- rw [comp.Pr_def, comp.Pr_prop_eq_one_iff],
+  -- simp only [signature.mem_completeness_experiment_iff],
+  -- rintro a ⟨pk, sk, hks, σ, log, hσ, b', log', hb', h⟩,
+  -- simp [mem_support_gen_iff] at hks,
+  -- sorry,
 end
 
 end signature_of_principal_action_class
