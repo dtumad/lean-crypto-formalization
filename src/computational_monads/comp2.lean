@@ -3,7 +3,7 @@ import measure_theory.probability_mass_function.constructions
 
 open_locale classical big_operators nnreal ennreal
 
-variables {A B : Type} (a a' : A) (b : B)
+variables {A B : Type}
 
 /-- computational monad to extend the base language of Lean for modeling cryptographic algorithms.
   Note that because Lean doesn't have an impredicative base type, this raises universe levels.
@@ -18,7 +18,6 @@ inductive prob_alg : Π (A : Type), Type 1
 namespace prob_alg
 
 variables (ca ca' : prob_alg A) (cb : A → prob_alg B)
-  (bag : finset A) (p : A → Prop)
 
 section monad
 
@@ -28,11 +27,9 @@ instance monad : monad prob_alg :=
 { pure := λ A a, uniform {a},
   bind := bind' }
 
-@[simp] lemma return_eq_uniform_singleton :
-  (return a : prob_alg A) = uniform {a} := rfl
-
-@[simp] lemma bind_eq_bind' :
-  ca >>= cb = bind' A B ca cb := rfl
+@[simp] lemma return_eq_uniform_singleton (a : A) :
+  (return a : prob_alg A) = uniform {a} :=
+rfl
 
 end monad
 
@@ -52,35 +49,45 @@ def support : Π {A : Type}, prob_alg A → set A
 | _ (bind' A B ca cb) := ⋃ a ∈ ca.support, (cb a).support
 | A (repeat ca p) := {a ∈ ca.support | p a}
 
-@[simp] lemma support_uniform :
-  (uniform bag).support = ↑bag := rfl
+@[simp] lemma support_uniform (bag : finset A) :
+  (uniform bag).support = ↑bag :=
+rfl
 
-lemma mem_support_uniform_iff :
-  a ∈ (uniform bag).support ↔ a ∈ bag := iff.rfl
+lemma mem_support_uniform_iff (a : A) (bag : finset A) :
+  a ∈ (uniform bag).support ↔ a ∈ bag :=
+iff.rfl
 
-lemma support_return :
-  support (return a) = ({a} : finset A) := support_uniform {a}
+lemma support_return (a : A) :
+  support (return a) = ({a} : finset A) :=
+support_uniform {a}
 
-lemma mem_support_return_iff (a' : A) :
-  a ∈ support (return a') ↔ a = a':= by simp
+lemma mem_support_return_iff (a a' : A) :
+  a ∈ support (return a') ↔ a = a':=
+by simp
 
 @[simp] lemma support_bind' :
-  (bind' A B ca cb).support = ⋃ a ∈ ca.support, (cb a).support := rfl
+  (bind' A B ca cb).support = ⋃ a ∈ ca.support, (cb a).support :=
+rfl
 
-lemma mem_support_bind'_iff : 
-  b ∈ (bind' A B ca cb).support ↔ ∃ a ∈ ca.support, b ∈ (cb a).support := by simp
+lemma mem_support_bind'_iff (b : B) : 
+  b ∈ (bind' A B ca cb).support ↔ ∃ a ∈ ca.support, b ∈ (cb a).support :=
+by simp
 
 lemma support_bind :
-  (ca >>= cb).support = ⋃ a ∈ ca.support, (cb a).support := rfl
+  (ca >>= cb).support = ⋃ a ∈ ca.support, (cb a).support :=
+rfl
 
-lemma mem_support_bind_iff :
-  b ∈ (ca >>= cb).support ↔ ∃ a ∈ ca.support, b ∈ (cb a).support := by simp
+lemma mem_support_bind_iff (b : B) :
+  b ∈ (ca >>= cb).support ↔ ∃ a ∈ ca.support, b ∈ (cb a).support :=
+by simp
 
-@[simp] lemma support_repeat :
-  (ca.repeat p).support = {a ∈ ca.support | p a} := rfl
+@[simp] lemma support_repeat (p : A → Prop) :
+  (ca.repeat p).support = {a ∈ ca.support | p a} := 
+rfl
 
-lemma mem_support_repeat_iff :
-  a ∈ (ca.repeat p).support ↔ a ∈ ca.support ∧ p a := iff.rfl
+lemma mem_support_repeat_iff (a : A) (p : A → Prop) :
+  a ∈ (ca.repeat p).support ↔ a ∈ ca.support ∧ p a := 
+iff.rfl
 
 end support
 
@@ -105,48 +112,64 @@ lemma support_nonempty_of_well_formed :
     set.nonempty_Union.2 ⟨a, set.nonempty_Union.2 ⟨ha, ⟨b, hb⟩⟩⟩
 | A (repeat ca p) repeat_wf := let ⟨ca_wf, ⟨a, ha, hpa⟩⟩ := repeat_wf in ⟨a, ⟨ha, hpa⟩⟩
 
-@[simp] lemma uniform_well_formed_iff :
-  (uniform bag).well_formed ↔ bag.nonempty := iff.rfl
+@[simp] lemma uniform_well_formed_iff (bag : finset A) :
+  (uniform bag).well_formed ↔ bag.nonempty := 
+iff.rfl
 
 lemma uniform_well_formed {bag : finset A} (hbag : bag.nonempty) :
-  (uniform bag).well_formed := hbag
+  (uniform bag).well_formed :=
+hbag
 
 lemma uniform_singleton_well_formed (a : A) :
-  (uniform ({a} : finset A)).well_formed := uniform_well_formed (finset.singleton_nonempty a)
+  (uniform ({a} : finset A)).well_formed :=
+uniform_well_formed (finset.singleton_nonempty a)
 
-lemma uniform_insert_well_formed [decidable_eq A] (bag : finset A) (a : A) :
+lemma uniform_insert_well_formed [decidable_eq A] (a : A) (bag : finset A) :
   (uniform (insert a bag)).well_formed := 
 uniform_well_formed (finset.insert_nonempty a bag)
 
-lemma nonempty_of_uniform_well_formed : (uniform bag).well_formed → bag.nonempty
+lemma nonempty_of_uniform_well_formed (bag : finset A) :
+  (uniform bag).well_formed → bag.nonempty
 | h := h
 
-@[simp] lemma return_well_formed :
-  (return a : prob_alg A).well_formed := by exact ⟨a, finset.mem_singleton_self a⟩
+@[simp] lemma return_well_formed (a : A) :
+  (return a : prob_alg A).well_formed :=
+⟨a, finset.mem_singleton_self a⟩
 
 @[simp] lemma bind'_well_formed_iff :
-  (bind' A B ca cb).well_formed ↔ ca.well_formed ∧ ∀ a ∈ ca.support, (cb a).well_formed := iff.rfl
+  (bind' A B ca cb).well_formed ↔ ca.well_formed ∧ ∀ a ∈ ca.support, (cb a).well_formed :=
+iff.rfl
 
 lemma bind'_well_formed {ca : prob_alg A} {cb : A → prob_alg B}
   (hca : ca.well_formed) (hcb : ∀ a ∈ ca.support, (cb a).well_formed) :
-  (bind' A B ca cb).well_formed := ⟨hca, hcb⟩
+  (bind' A B ca cb).well_formed :=
+⟨hca, hcb⟩
 
 @[simp] lemma bind_well_formed_iff :
-  (ca >>= cb).well_formed ↔ ca.well_formed ∧ ∀ a ∈ ca.support, (cb a).well_formed := iff.rfl
+  (ca >>= cb).well_formed ↔ ca.well_formed ∧ ∀ a ∈ ca.support, (cb a).well_formed :=
+iff.rfl
 
 lemma bind_well_formed {ca : prob_alg A} {cb : A → prob_alg B}
   (hca : ca.well_formed) (hcb : ∀ a ∈ ca.support, (cb a).well_formed) :
-  (ca >>= cb).well_formed := ⟨hca, hcb⟩
+  (ca >>= cb).well_formed :=
+⟨hca, hcb⟩
 
-@[simp] lemma repeat_well_formed_iff :
-  (repeat ca p).well_formed ↔ ca.well_formed ∧ ∃ a ∈ ca.support, p a := iff.rfl
+@[simp] lemma repeat_well_formed_iff (p : A → Prop) :
+  (repeat ca p).well_formed ↔ ca.well_formed ∧ ∃ a ∈ ca.support, p a :=
+iff.rfl
 
 lemma repeat_well_formed {ca : prob_alg A} {p : A → Prop}
   (hca : ca.well_formed) (hp : ∃ a ∈ ca.support, p a) :
-  (repeat ca p).well_formed := ⟨hca, hp⟩
+  (repeat ca p).well_formed := 
+⟨hca, hp⟩
 
-lemma well_formed_of_repeat_well_formed : (repeat ca p).well_formed → well_formed ca
+lemma well_formed_of_repeat_well_formed {ca : prob_alg A} {p : A → Prop} :
+  (repeat ca p).well_formed → well_formed ca
 | h := h.1
+
+lemma exists_mem_support_of_repeat_well_formed {ca : prob_alg A} {p : A → Prop} :
+  (repeat ca p).well_formed → ∃ a ∈ ca.support, p a
+| h := h.2
 
 example (z : ℕ) : well_formed 
   (do x ← return (z + 3),
@@ -165,13 +188,12 @@ structure prob_comp (A : Type) :=
 
 namespace prob_comp
 
-variables (ca : prob_comp A) (cb : A → prob_comp B)
-
 section eval_distribution
 
 /-- Private definition used to bootstrap the actual evalution function.
-  The reason this is to equate the `pmf` supports with the `prob_comp` supports
-  TODO: Maybe this should return an option, and not require well_formed -/
+  The reason this is needed is to equate the `pmf` supports with the `prob_comp` supports.
+  The use of sigma types also requires lifting the condition from a `Sort` to a `Type`.
+   -/
 private noncomputable def eval_distribution' :
   Π {A : Type} (ca : prob_alg A) (hca : ca.well_formed), 
     Σ (pa : pmf A), plift (∀ (a : A), (a ∈ pa.support ↔ a ∈ ca.support))
@@ -187,22 +209,59 @@ private noncomputable def eval_distribution' :
       split; rintro ⟨a, ha, ha'⟩; refine ⟨a, ha, _⟩; simpa [(plift.down (pb a ha).2) b] using ha'
     end⟩
 | A (prob_alg.repeat ca p) repeat_wf :=
-  let ⟨ca_wf, hp⟩ := repeat_wf in
-  let ⟨pa, hpa⟩ := eval_distribution' ca ca_wf in
-  ⟨pa.filter p (let ⟨a, ha, hap⟩ := hp in ⟨a, hap, (plift.down hpa a).2 ha⟩),
+  -- let ⟨ca_wf, hp⟩ := repeat_wf in
+  let pa := eval_distribution' ca (prob_alg.well_formed_of_repeat_well_formed repeat_wf) in
+  let hp : ∃ a ∈ ca.support, p a := prob_alg.exists_mem_support_of_repeat_well_formed repeat_wf in
+  ⟨pa.1.filter p (let ⟨a, ha, hap⟩ := hp in ⟨a, hap, (plift.down pa.2 a).2 ha⟩),
     plift.up $ λ a, (pmf.mem_support_filter_iff _ a).trans
-      (by rw [plift.down hpa a]; exact and_comm (p a) (a ∈ ca.support))⟩
+      (by rw [plift.down pa.2 a]; exact and_comm (p a) (a ∈ ca.support))⟩
 
 /-- Denotational semantics for evaluation of a `prob_comp A`, as a probability distribution.
   The distribution is given by a probability mass function `pmf A` on the underlying type.
-  This requires providing a proof of well formedness to ensure the distribution sums to `1`.-/
-noncomputable def eval_distribution (ca : prob_comp A) : pmf A :=
-(eval_distribution' ca.alg ca.wf).1
+  The well-formed condition ensures the distribution sums to `1` (part of the definition of `pmf`).
+  Noncomputability comes from the use of `classical.choice` in defining `ℝ≥0` (and hence `pmf`).
+  Computable semantics can be given with some kind of small-step evaluation system. -/
+noncomputable def eval_distribution : prob_comp A → pmf A :=
+λ ca, (eval_distribution' ca.alg ca.wf).1
 
 @[simp]
 theorem support_eval_distribution_eq_support (ca : prob_comp A) :
   (eval_distribution ca).support = ca.alg.support :=
 set.ext (plift.down (eval_distribution' ca.alg ca.wf).snd)
+
+lemma mem_support_of_mem_support_eval_distribution {ca : prob_comp A} {a : A}
+  (ha : a ∈ ca.eval_distribution.support) : a ∈ ca.alg.support :=
+(support_eval_distribution_eq_support ca) ▸ ha
+
+lemma mem_support_eval_distribution_of_mem_support {ca : prob_comp A} {a : A}
+  (ha : a ∈ ca.alg.support) : a ∈ ca.eval_distribution.support :=
+(support_eval_distribution_eq_support ca).symm ▸ ha
+
+@[simp] lemma eval_distribution_alg_uniform (bag : finset A)
+  (h : (prob_alg.uniform bag).well_formed) :
+  eval_distribution ⟨prob_alg.uniform bag, h⟩ =
+    pmf.uniform_of_finset bag (prob_alg.nonempty_of_uniform_well_formed bag h) :=
+rfl
+
+@[simp] lemma eval_distribution_alg_bind' (ca : prob_alg A) (cb : A → prob_alg B)
+  (h : (ca >>= cb).well_formed) :
+  eval_distribution ⟨ca >>= cb, h⟩ =
+    let hca : ca.well_formed := ((prob_alg.bind_well_formed_iff ca cb).1 h).1 in
+    (eval_distribution ⟨ca, hca⟩).bind_on_support (λ a ha, 
+      let hcb : (cb a).well_formed := ((prob_alg.bind_well_formed_iff ca cb).1 h).2 a
+        (mem_support_of_mem_support_eval_distribution ha) in
+      eval_distribution ⟨cb a, hcb⟩) :=
+by simpa [eval_distribution, eval_distribution']
+
+@[simp] lemma eval_distribution_alg_repeat (ca : prob_alg A) (p : A → Prop)
+  (h : (ca.repeat p).well_formed) :
+  eval_distribution ⟨ca.repeat p, h⟩ =
+    let hca : ca.well_formed := prob_alg.well_formed_of_repeat_well_formed h in
+    let hp : ∃ (a : A) (h : set.mem a p), a ∈ (eval_distribution ⟨ca, hca⟩).support :=
+      (let ⟨a, ha, hap⟩ := ((prob_alg.repeat_well_formed_iff ca p).1 h).2 in
+        ⟨a, hap, mem_support_eval_distribution_of_mem_support ha⟩) in
+    (eval_distribution ⟨ca, hca⟩).filter p hp :=
+by simp [eval_distribution, eval_distribution']
 
 end eval_distribution
 
@@ -216,36 +275,57 @@ ca.eval_distribution.to_outer_measure event
 
 end prob_event
 
+------------------------------------- CONSTRUCTIONS FILE
+
+section bind_on_support
+
+/-- General definition of bind, requiring well-formedness of `(cb a)` for
+  only elements `a ∈ ca.alg.support`. Monadic `bind` is defined in terms of this -/
+@[simps]
+def bind_on_support (ca : prob_comp A) (cb : A → prob_alg B)
+  (h : ∀ a ∈ ca.alg.support, (cb a).well_formed) : prob_comp B :=
+⟨ca.alg >>= cb, prob_alg.bind_well_formed ca.wf h⟩
+
+@[simp] lemma eval_distribution_bind_on_support (ca : prob_comp A) (cb : A → prob_alg B)
+  (h : ∀ a ∈ ca.alg.support, (cb a).well_formed) :
+  (bind_on_support ca cb h).eval_distribution =
+    ca.eval_distribution.bind_on_support
+      (λ a ha, eval_distribution ⟨cb a, h a $ support_eval_distribution_eq_support ca ▸ ha⟩) :=
+(eval_distribution_alg_bind' ca.alg cb (ca.bind_on_support cb h).wf)
+
+end bind_on_support
+
 section monad 
 
+@[simps]
 instance monad : monad prob_comp :=
 { pure := λ A a, ⟨return a, prob_alg.return_well_formed a⟩,
-  bind := λ A B ca cb, ⟨ca.alg >>= (alg ∘ cb),
-    prob_alg.bind_well_formed ca.wf (λ a _, (cb a).wf)⟩ }
+  bind := λ A B ca cb, ca.bind_on_support (alg ∘ cb) (λ a _, (cb a).wf) }
 
-@[simp] lemma alg_return : alg (return a) = return a := rfl
-
-@[simp] lemma alg_bind : alg (ca >>= cb) = (alg ca) >>= (alg ∘ cb) := rfl
-
-@[simp]
-lemma eval_distribution_return_eq_pure : eval_distribution (return a) = pmf.pure a :=
+@[simp] lemma eval_distribution_return (a : A) :
+  eval_distribution (return a) = pmf.pure a :=
 begin
   show pmf.uniform_of_finset {a} _ = pmf.pure a,
-  refine pmf.ext (λ a, by simp)
+  from pmf.ext (λ a, by simp)
 end
 
-@[simp]
-lemma eval_distribution_return_apply :
-  eval_distribution (return a') a = if a = a' then 1 else 0 := by simp
+lemma eval_distribution_return_apply (a a' : A) :
+  eval_distribution (return a) a' = if a' = a then 1 else 0 :=
+by simp
 
 @[simp]
-lemma eval_distribution_return_apply_self :
-  eval_distribution (return a) a = 1 := by simp
-
-@[simp]
-lemma eval_distribution_bind_eq_bind :
+lemma eval_distribution_bind (ca : prob_comp A) (cb : A → prob_comp B) :
   eval_distribution (ca >>= cb) = (eval_distribution ca) >>= (eval_distribution ∘ cb) :=
-sorry
+begin
+  refine (eval_distribution_bind_on_support ca (alg ∘ cb) _).trans _,
+  show ca.eval_distribution.bind_on_support (λ a _, (cb a).eval_distribution) = _,
+  from pmf.bind_on_support_eq_bind ca.eval_distribution _,
+end
+
+lemma eval_distribution_bind_apply (ca : prob_comp A) (cb : A → prob_comp B) (b : B) :
+  eval_distribution (ca >>= cb) b =
+    ∑' a, (eval_distribution ca a) * (eval_distribution (cb a) b) :=
+(eval_distribution_bind ca cb).symm ▸ pmf.bind_apply ca.eval_distribution _ b
 
 end monad
 
@@ -255,14 +335,13 @@ section uniform
 def uniform (bag : finset A) (h : bag.nonempty) : prob_comp A :=
 ⟨prob_alg.uniform bag, prob_alg.uniform_well_formed h⟩
 
-@[simp]
-lemma eval_distribution_uniform_eq_uniform_of_finset (bag : finset A) (h : bag.nonempty) :
-  eval_distribution (uniform bag h) = pmf.uniform_of_finset bag h := rfl
+@[simp] lemma eval_distribution_uniform (bag : finset A) (h : bag.nonempty) :
+  eval_distribution (uniform bag h) = pmf.uniform_of_finset bag h :=
+rfl
 
-lemma eval_distribution_uniform_apply (bag : finset A) (h : bag.nonempty) :
+lemma eval_distribution_uniform_apply (bag : finset A) (h : bag.nonempty) (a : A) :
   eval_distribution (uniform bag h) a = if a ∈ bag then (bag.card : ℝ≥0)⁻¹ else 0 :=
 by exact pmf.uniform_of_finset_apply h a
-
 
 end uniform
 
@@ -276,21 +355,18 @@ end repeat
 
 section prod
 
+@[simps]
 def prod (ca : prob_comp A) (cb : prob_comp B) :
   prob_comp (A × B) :=
 do { a ← ca, b ← cb, return (a, b) }
 
 infix ` ×× `:80 := prod
 
-lemma support_prod (ca : prob_comp A) (cb : prob_comp B) :
-  (ca ×× cb).alg.support = ⋃ (a ∈ ca.alg.support) (b ∈ cb.alg.support), {(a, b)} :=
-by simp [prod]
-
 end prod
 
 end prob_comp
 
---------------------------------------------------------
+---------------------------------------------ORACLE FILE-----------
 
 structure oracle_comp_spec :=
 (ι : Type)
