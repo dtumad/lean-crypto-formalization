@@ -12,7 +12,7 @@ TODO: This really doesn't need to just apply to `ℚ`
 -/
 
 /-- Random extra definition aliasing the new mathlib ported version -/
-def negligable (f : ℕ → ℝ) := 
+def negligable {R : Type*} [topological_space R] [comm_semiring R] (f : ℕ → R) := 
   asymptotics.superpolynomial_decay filter.at_top coe f
 
 

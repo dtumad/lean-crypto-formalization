@@ -14,15 +14,13 @@ Signature schemes that don't need this can assume a random oracle like `⊥ → 
 
 open prob_comp oracle_comp
 
-/-- Signature on messages `M`, public and secret keys `PK` and `SK`,
-  signatures of type `S`, given access to a random oracle `ROD → ROR` -/
-structure signature (M PK SK S ROD ROR : Type)
-  [decidable_eq M] [decidable_eq PK]
-  [decidable_eq ROD] [fintype ROR]
-  [inhabited ROR] :=
-(gen : unit → prob_comp (PK × SK))
-(sign : PK × SK × M → oracle_comp (oracle_comp_spec.random_oracle_spec ROD ROR) S)
-(verify : PK × M × S → oracle_comp (oracle_comp_spec.random_oracle_spec ROD ROR) bool)
+/-- Signature on messages `M`, public and secret keys `PK` and `SK`, signatures of type `S`. 
+  `oracle_access` specifies the oracles the algorithm can make use of  -/
+structure signature (oracle_access : oracle_comp_spec)
+  (M PK SK S : Type) [decidable_eq M] [decidable_eq PK] :=
+(gen : unit → oracle_comp oracle_access (PK × SK))
+(sign : PK × SK × M → oracle_comp oracle_access S)
+(verify : PK × M × S → oracle_comp oracle_access bool)
 
 namespace signature
 
@@ -30,15 +28,17 @@ variables {M PK SK S ROI ROO : Type}
   [decidable_eq M] [decidable_eq PK]
   [decidable_eq ROI] [fintype ROO]
   [inhabited ROO]
-variable (sig : signature M PK SK S ROI ROO)
+variable (sig : signature (singleton_spec ROI ROO) M PK SK S)
 
 section complete
 
 def completeness_experiment (m : M) : prob_comp bool :=
-do (pk, sk) ← sig.gen (),
-  (σ, log) ← (sig.sign (pk, sk, m)).simulate (random_oracle ROI ROO) [],
-  (b, _) ← (sig.verify (pk, m, σ)).simulate (random_oracle ROI ROO) log,
+(do {
+  (pk, sk) ← sig.gen (),
+  σ ← sig.sign (pk, sk, m),
+  b ← sig.verify (pk, m, σ),
   return b
+}).simulate_result (random_oracle ROI ROO) []
 
 -- @[simp]
 -- lemma mem_completeness_experiment_iff (m : M) (b : bool) :
@@ -57,24 +57,23 @@ end complete
 end signature
 
 variables [function_cost_model ℚ] [comp_cost_model ℚ]
-  [Π (spec : oracle_comp_spec), oracle_comp_cost_model ℚ spec]
 
-structure signature_scheme (M : Type) (PK SK S ROI ROO : ℕ → Type)
-  [decidable_eq M] [∀ sp, decidable_eq $ PK sp]
-  [∀ sp, decidable_eq $ ROI sp] [∀ sp, fintype $ ROO sp]
-  [∀ sp, inhabited $ ROO sp] :=
-(sig (sp : ℕ) : signature M (PK sp) (SK sp) (S sp) (ROI sp) (ROO sp))
+structure signature_scheme (oracle_access : oracle_comp_spec)
+  [oracle_comp_cost_model ℚ oracle_access]
+  (M : Type) (PK SK S ROI ROO : ℕ → Type)
+  [decidable_eq M] [∀ sp, decidable_eq $ PK sp] :=
+(sig (sp : ℕ) : signature oracle_access M (PK sp) (SK sp) (S sp))
 (gen_polnomial_complexity : complexity_class.polynomial_complexity (λ sp, (sig sp).gen))
 (sign_polynomial_complexity : complexity_class.polynomial_complexity (λ sp, (sig sp).sign))
 (verify_polynomial_complexity : complexity_class.polynomial_complexity (λ sp, (sig sp).verify))
 
 namespace signature_scheme
 
-variables (M : Type) (PK SK S ROI ROO : ℕ → Type)
+variables (oracle_access : oracle_comp_spec)
+  [oracle_comp_cost_model ℚ oracle_access]
+  (M : Type) (PK SK S ROI ROO : ℕ → Type)
   [decidable_eq M] [∀ sp, decidable_eq $ PK sp]
-  [∀ sp, decidable_eq $ ROI sp] [∀ sp, fintype $ ROO sp]
-  [∀ sp, inhabited $ ROO sp]
-  (sig_scheme : signature_scheme M PK SK S ROI ROO)
+  (sig_scheme : signature_scheme oracle_access M PK SK S ROI ROO)
 
 section unforgeable
 

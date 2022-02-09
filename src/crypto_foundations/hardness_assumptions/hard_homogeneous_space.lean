@@ -157,7 +157,7 @@ do{ x₁ ← random X, x₂ ← random X,
     return (g = vectorization G x₁ x₂) }
 
 /-- Vectorization advantage of an adversary in the vectorization experiment. -/
-noncomputable def vectorization_advantage (adversary : X × X → prob_comp G) : ℝ≥0 :=
+noncomputable def vectorization_advantage (adversary : X × X → prob_comp G) : ℝ≥0∞ :=
 (vectorization_experiment adversary).prob_success
   - (vectorization_experiment (λ (_ : X × X), prob_comp.random G)).prob_success
 
@@ -172,7 +172,7 @@ do{ x₁ ← prob_comp.random X,
     return ((vectorization G x₂ x₁) = (vectorization G x₄ x₃)) }
 
 /-- Parallelization advantage of an adversary in parallelization experiment -/
-noncomputable def parallelization_advantage (adversary : X × X × X → prob_comp X) : ℝ≥0 :=
+noncomputable def parallelization_advantage (adversary : X × X × X → prob_comp X) : ℝ≥0∞ :=
 (parallelization_experiment G adversary).prob_success
   - (parallelization_experiment G (λ (_ : X × X × X), prob_comp.random X)).prob_success
 
@@ -248,6 +248,8 @@ structure vectorization_adversary (G X : ℕ → Type) :=
 structure parallelization_adversary (X : ℕ → Type) :=
 (A : Π sp, X sp × X sp × X sp → prob_comp (X sp))
 (polynomial_complexity : complexity_class.polynomial_complexity A)
+
+example : comm_semiring ℝ≥0 := by apply_instance
 
 /-- Extension of `algorithmic_homogenous_space` with hardness assumptions.
   Vectorization and parallelization correspond to discrete-log and Diffie-Hellman -/

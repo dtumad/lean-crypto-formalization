@@ -201,10 +201,11 @@ class monadic_cost_model (C : Type) [ordered_semiring C]
   (M : Type → Type u) [monad M] :=
 (cm (T U : Type) : cost_model C (T → M U))
 (cm_compatible (T U V : Type) : compatible_cost_models C T U (M V))
-(cost_zero_pure (T : Type) : cost_zero C (pure : T → M T))
+(cost_zero_pure (T : Type) :
+  cost_zero C (pure : T → M T))
 (cost_at_most_bind {T U V : Type} {x y : C} {mu : T → M U} {mv : T → U → M V}
   (hmu : cost_at_most mu x) (hmv : cost_at_most (function.uncurry mv) y) :
-  cost_at_most (λ a, bind (mu a) (mv a) : T → M V) (x + y))
+  cost_at_most (λ a, mu a >>= mv a) (x + y))
 
 instance monadic_cost_model.cost_model (C : Type) [ordered_semiring C]
   [function_cost_model C] (M : Type → Type u) [monad M] [monadic_cost_model C M] 

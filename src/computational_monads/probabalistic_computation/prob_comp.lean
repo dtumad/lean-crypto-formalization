@@ -46,8 +46,9 @@ private noncomputable def eval_distribution' :
 noncomputable def eval_distribution : prob_comp A → pmf A :=
 λ ca, (eval_distribution' ca.alg ca.wf).1
 
-@[simp]
-theorem support_eval_distribution_eq_support (ca : prob_comp A) :
+notation ca `-Pr[=` x `]` := ca.eval_distribution x
+
+@[simp] theorem support_eval_distribution_eq_support (ca : prob_comp A) :
   (eval_distribution ca).support = ca.alg.support :=
 set.ext (plift.down (eval_distribution' ca.alg ca.wf).snd)
 
@@ -59,6 +60,11 @@ lemma mem_support_eval_distribution_of_mem_support {ca : prob_comp A} {a : A}
   (ha : a ∈ ca.alg.support) : a ∈ ca.eval_distribution.support :=
 (support_eval_distribution_eq_support ca).symm ▸ ha
 
+@[simp] lemma eval_distribution_eq_zero_iff (ca : prob_comp A) (a : A) :
+  ca.eval_distribution a = 0 ↔ a ∉ ca.alg.support :=
+(support_eval_distribution_eq_support ca)
+  ▸ (pmf.apply_eq_zero_iff ca.eval_distribution a)
+
 @[simp] lemma eval_distribution_alg_uniform (bag : finset A)
   (h : (prob_alg.uniform bag).well_formed) :
   eval_distribution ⟨prob_alg.uniform bag, h⟩ =
@@ -66,8 +72,8 @@ lemma mem_support_eval_distribution_of_mem_support {ca : prob_comp A} {a : A}
 rfl
 
 @[simp] lemma eval_distribution_alg_bind' (ca : prob_alg A) (cb : A → prob_alg B)
-  (h : (ca >>= cb).well_formed) :
-  eval_distribution ⟨ca >>= cb, h⟩ =
+  (h : (prob_alg.bind' A B ca cb).well_formed) :
+  eval_distribution ⟨prob_alg.bind' A B ca cb, h⟩ =
     let hca : ca.well_formed := ((prob_alg.bind_well_formed_iff ca cb).1 h).1 in
     (eval_distribution ⟨ca, hca⟩).bind_on_support (λ a ha, 
       let hcb : (cb a).well_formed := ((prob_alg.bind_well_formed_iff ca cb).1 h).2 a
@@ -91,14 +97,40 @@ section prob_event
 
 /-- The probability of an event holding on the result of a probablistic computation.
   The definition is in terms of the `outer_measure` structure induced by the `eval_distribution`.
-  This is equivalent to the sum of the probabilities of each element of the set. -/
-noncomputable def prob_event (ca : prob_comp A) (event : set A) : ℝ≥0 :=
-ennreal.to_nnreal (ca.eval_distribution.to_outer_measure event)
+  This is equivalent to the sum of the probabilities of each element of the set.
+  
+  The resulting value has type `ℝ≥0∞`, but provably is not actually `∞` and in particular
+    `0 ≤ ca.prob_event event ≤ 1` for any `event : set A` (see `TODO`).
+  The actual value of this is given by an infinite sum, with finitely many non-zero terms.
+  This allows for easy point-wise comparisons between distributions with different supports. -/
+noncomputable def prob_event (ca : prob_comp A) (event : set A) : ℝ≥0∞ :=
+(ca.eval_distribution.to_outer_measure event)
 
--- notation `prob_success` ca := prob_event ca (= tt)
+@[simp] lemma prob_event_eq_one_iff (ca : prob_comp A) (event : set A) :
+  ca.prob_event event = 1 ↔ ca.alg.support ⊆ event :=
+(support_eval_distribution_eq_support ca) ▸ pmf.to_outer_measure_apply_eq_one_iff _ event
+
+@[simp] lemma prob_event_eq_zero_iff (ca : prob_comp A) (event : set A) :
+  ca.prob_event event = 0 ↔ disjoint ca.alg.support event :=
+(support_eval_distribution_eq_support ca) ▸ pmf.to_outer_measure_apply_eq_zero_iff _ event
 
 @[simp]
-noncomputable def prob_success (ca : prob_comp bool) : ℝ≥0 :=
+lemma prob_event_alg_uniform (bag : finset A)
+  (h : (prob_alg.uniform bag).well_formed) (event : set A) :
+  prob_event ⟨prob_alg.uniform bag, h⟩ event = (bag.filter event).card / bag.card :=
+sorry
+
+@[simp]
+lemma prob_event_alg_bind' (ca : prob_alg A) (cb : A → prob_alg B)
+  (h : (prob_alg.bind' A B ca cb).well_formed) (event : set B) :
+  prob_event ⟨prob_alg.bind' A B ca cb, h⟩ event =
+    let ca' : prob_comp A := ⟨ca, h.1⟩ in
+    (∑' (a : A), (ca' -Pr[= a ]) * if ha : a ∈ ca.support
+      then (eval_distribution ⟨cb a, h.2 a ha⟩).to_outer_measure event else 0) :=
+by simp [prob_event, pmf.to_outer_measure_bind_on_support_apply]
+
+@[simp]
+noncomputable def prob_success (ca : prob_comp bool) : ℝ≥0∞ :=
 ca.prob_event (= tt)
 
 end prob_event
