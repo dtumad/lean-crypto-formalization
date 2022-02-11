@@ -2,7 +2,7 @@ import computational_monads.probabalistic_computation.constructions
 
 variables {A B : Type}
 
-structure oracle_comp_spec :=
+structure oracle_comp_spec := 
 (ι : Type)
 (domain range : ι → Type)
 
@@ -11,9 +11,9 @@ structure oracle_comp_spec :=
   The oracle's semantics aren't specified until evaluation (`eval_distribution`),
     since algorithm specification only needs to know the types, not the values. -/
 inductive oracle_comp (spec : oracle_comp_spec) : Type → Type 1
-| oc_bind (C D : Type) (oc : oracle_comp C) (od : C → oracle_comp D) : oracle_comp D
-| oc_query (i : spec.ι) (a : spec.domain i) : oracle_comp (spec.range i)
-| oc_ret {C : Type} (c : prob_comp C) : oracle_comp C
+| sample {C : Type} (c : prob_comp C) : oracle_comp C
+| bind' (C D : Type) (oc : oracle_comp C) (od : C → oracle_comp D) : oracle_comp D
+| query (i : spec.ι) (a : spec.domain i) : oracle_comp (spec.range i)
 
 namespace oracle_comp
 
@@ -45,15 +45,15 @@ section monad
 @[simps]
 instance monad (spec : oracle_comp_spec) :
   monad (oracle_comp spec) :=
-{ pure := λ C c, oracle_comp.oc_ret (return c),
-  bind := oracle_comp.oc_bind }
+{ pure := λ C c, oracle_comp.sample (return c),
+  bind := oracle_comp.bind' }
 
 -- Example of accessing a pair of different oracles and passing
 example {α β : Type}(ca : prob_comp α) (cb : prob_comp β) : 
   oracle_comp (singleton_spec α A ++ singleton_spec β B) (A × B) :=
-do{ x ← oc_ret ca, y ← oc_ret cb,
-    x' ← oc_query (sum.inl ()) x,
-    y' ← oc_query (sum.inr ()) y,
+do{ x ← sample ca, y ← sample cb,
+    x' ← query (sum.inl ()) x,
+    y' ← query (sum.inr ()) y,
     return (x', y') }
 
 end monad
@@ -107,9 +107,9 @@ section simulate
 `o` takes the current oracle state and an `A` value, and computes a `B` value and new oracle state. -/
 def simulate {spec : oracle_comp_spec} (so : simulation_oracle spec) : 
   Π {C : Type} (oc : oracle_comp spec C) (s : so.S), prob_comp (C × so.S)
-| C (oc_ret c) s := do {x ← c, return (x, s)}
-| C (oc_bind _ D oc od) s := do{⟨c, s'⟩ ← simulate oc s, simulate (od c) s'}
-| C (oc_query i a) s := so.o i a s
+| C (sample c) s := do {x ← c, return (x, s)}
+| C (bind' _ D oc od) s := do{⟨c, s'⟩ ← simulate oc s, simulate (od c) s'}
+| C (query i a) s := so.o i a s
 
 def simulate_result {C : Type} {spec : oracle_comp_spec} (so : simulation_oracle spec)
   (oc : oracle_comp spec C) (s : so.S) : prob_comp C :=
@@ -118,20 +118,20 @@ functor.map prod.fst (simulate so oc s)
 @[simp]
 lemma simulate_oc_query {spec : oracle_comp_spec} (so : simulation_oracle spec)
   {i : spec.ι} (a : spec.domain i) (s : so.S) :
-  (oc_query i a : oracle_comp spec (spec.range i)).simulate so s = so.o i a s := 
+  (query i a : oracle_comp spec (spec.range i)).simulate so s = so.o i a s := 
 rfl
 
 @[simp]
-lemma simulate_oc_ret {spec : oracle_comp_spec} (so : simulation_oracle spec)
+lemma simulate_sample {spec : oracle_comp_spec} (so : simulation_oracle spec)
   {C : Type} (c : prob_comp C) (s : so.S) :
-  simulate so (oc_ret c) s = do {x ← c, return (x, s)} :=
+  simulate so (sample c) s = do {x ← c, return (x, s)} :=
 rfl
 
 @[simp]
-lemma simulate_oc_bind {spec : oracle_comp_spec} (so : simulation_oracle spec)
+lemma simulate_bind' {spec : oracle_comp_spec} (so : simulation_oracle spec)
   {C D : Type} (oc : oracle_comp spec C) 
   (od : C → oracle_comp spec D) (s : so.S) :
-  simulate so (oc_bind C D oc od) s = 
+  simulate so (bind' C D oc od) s = 
     do {⟨c, s⟩ ← simulate so oc s, simulate so (od c) s} :=
 congr_arg (λ x, simulate so oc s >>= x) (funext $ prod.rec $ by simp [simulate])
 
@@ -140,7 +140,7 @@ lemma simulate_bind {spec : oracle_comp_spec} (so : simulation_oracle spec)
   (od : C → oracle_comp spec D) (s : so.S) :
   simulate so (oc >>= od) s =
     do {⟨c, s'⟩ ← simulate so oc s, simulate so (od c) s'} :=
-simulate_oc_bind so oc od s
+simulate_bind' so oc od s
 
 end simulate
 

@@ -309,9 +309,9 @@ class oracle_comp_cost_model (C : Type) [ordered_semiring C]
   (spec : oracle_comp_spec)
   extends monadic_cost_model C (oracle_comp spec) :=
 (cost_oc_query {i : spec.ι} : 
-  cost_at_most (oracle_comp.oc_query i) (1 : C))
-(cost_oc_ret {T U : Type} {x : C} (cu : T → prob_comp U) (hcu : cost_at_most cu x) :
-  cost_at_most (λ t, oracle_comp.oc_ret (cu t) : T → oracle_comp spec U) x)
+  cost_at_most (oracle_comp.query i) (1 : C))
+(cost_sample {T U : Type} {x : C} (cu : T → prob_comp U) (hcu : cost_at_most cu x) :
+  cost_at_most (λ t, oracle_comp.sample (cu t) : T → oracle_comp spec U) x)
 
 instance oracle_comp_cost_model.cost_model {C : Type} [ordered_semiring C]
   [function_cost_model C] [comp_cost_model C]
@@ -320,10 +320,10 @@ instance oracle_comp_cost_model.cost_model {C : Type} [ordered_semiring C]
   cost_model C (T → oracle_comp spec U) :=
 monadic_cost_model.cost_model C (oracle_comp spec) T U
 
-instance oracle_comp_cost_model.cost_zero_oc_ret {C : Type} [ordered_semiring C]
+instance oracle_comp_cost_model.cost_zero_sample {C : Type} [ordered_semiring C]
   [function_cost_model C] [comp_cost_model C]
   (spec : oracle_comp_spec) [oracle_comp_cost_model C spec]
-  (T : Type) : cost_zero C (oracle_comp.oc_ret ∘ return : T → oracle_comp spec T) :=
+  (T : Type) : cost_zero C (oracle_comp.sample ∘ return : T → oracle_comp spec T) :=
 monadic_cost_model.cost_zero_pure' (oracle_comp spec) T
 
 namespace oracle_comp_cost_model

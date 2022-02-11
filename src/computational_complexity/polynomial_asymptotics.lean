@@ -18,6 +18,17 @@ namespace asymptotics
 
 open polynomial filter
 
+def polynomial_growth' {α β : Type*} [normed_ring β]
+  (l : filter α) (k f : α → β) :=
+∃ (p : polynomial β), is_O f (λ x, p.eval (k x)) l
+
+namespace polynomial_growth'
+
+-- TODO: Try this definition instead
+
+
+end polynomial_growth'
+
 lemma is_O_pow_pow_of_le {α 𝕜 : Type*} [normed_field 𝕜] {l : filter α}
   {f : α → 𝕜} (hf : ∀ᶠ x in l, 1 ≤ ∥f x∥) {n m : ℕ} (hnm : n ≤ m) :
   is_O (λ x, (f x) ^ n) (λ x, (f x) ^ m) l :=

@@ -118,7 +118,7 @@ noncomputable def prob_event (ca : prob_comp A) (event : set A) : ℝ≥0∞ :=
 lemma prob_event_alg_uniform (bag : finset A)
   (h : (prob_alg.uniform bag).well_formed) (event : set A) :
   prob_event ⟨prob_alg.uniform bag, h⟩ event = (bag.filter event).card / bag.card :=
-sorry
+by simpa [prob_event, eval_distribution_alg_uniform, pmf.to_outer_measure_uniform_of_finset_apply]
 
 @[simp]
 lemma prob_event_alg_bind' (ca : prob_alg A) (cb : A → prob_alg B)

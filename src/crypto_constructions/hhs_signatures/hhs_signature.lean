@@ -22,21 +22,21 @@ def signature_of_principal_action_class
   signature (singleton_spec (list X × M) (vector bool t)) M X G (vector (G × bool) t) :=
 { 
   gen := λ _, do
-  { sk ← oc_ret (random G),
+  { sk ← sample (random G),
     return (sk +ᵥ x₀, sk) },
   sign := λ inp, do
   { (pk, sk, m) ← return inp,
     -- Choose `t` values from `G` at random
-    cs ← oc_ret (vector_call (random G) t),
+    cs ← sample (vector_call (random G) t),
     ys ← return (cs.map (λ c, c +ᵥ pk)),
-    -- Query the random oracle on `ys`
-    (h : vector bool t) ← oc_query () (ys.to_list, m),
+    -- Query the random oracle on `ys` and `m` to get a hash
+    (h : vector bool t) ← query () (ys.to_list, m),
     return (vector.zip_with (λ c (b : bool), (if b then c else c + sk, b)) cs h) },
   verify := λ inp, do
   { (pk, m, σ) ← return inp,
     -- This should be the same `ys` value for honest signatures
     ys ← return (σ.map (λ ⟨c, b⟩, if b then c +ᵥ pk else c +ᵥ x₀)),
-    (h : vector bool t) ← oc_query () (ys.to_list, m),
+    (h : vector bool t) ← query () (ys.to_list, m),
     return (h = σ.map prod.snd) } 
 }
 
