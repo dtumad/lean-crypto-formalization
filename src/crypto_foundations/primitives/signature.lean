@@ -7,7 +7,7 @@ import data.list.basic
 
 This file defines signature algorithms and security properties for them.
 
-Note that the schemes assume sign and verify have access to a shared random oracle.
+Note that the schemes assume algorithms have access to a shared random oracle.
 Signature schemes that don't need this can assume a random oracle like `⊥ → ()`, 
   which won't actually be query-able since `⊥` is an uninhabited type
 -/

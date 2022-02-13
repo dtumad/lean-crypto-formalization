@@ -1,4 +1,16 @@
--- import computational_monads.vector_call
+import computational_monads.probabalistic_computation.constructions
+
+namespace prob_comp
+
+
+
+variables {A B H : Type}
+
+-- def fork (IG : prob_comp A) (q : ℕ) (bag : finset A)
+--   (ca : A ×  prob_comp A)
+
+
+end prob_comp
 
 -- open_locale nnreal
 

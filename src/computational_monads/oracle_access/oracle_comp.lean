@@ -2,7 +2,7 @@ import computational_monads.probabalistic_computation.constructions
 
 variables {A B : Type}
 
-structure oracle_comp_spec := 
+structure oracle_comp_spec : Type 1 := 
 (ι : Type)
 (domain range : ι → Type)
 
@@ -49,7 +49,7 @@ instance monad (spec : oracle_comp_spec) :
   bind := oracle_comp.bind' }
 
 -- Example of accessing a pair of different oracles and passing
-example {α β : Type}(ca : prob_comp α) (cb : prob_comp β) : 
+example {α β : Type} (ca : prob_comp α) (cb : prob_comp β) : 
   oracle_comp (singleton_spec α A ++ singleton_spec β B) (A × B) :=
 do{ x ← sample ca, y ← sample cb,
     x' ← query (sum.inl ()) x,
@@ -63,7 +63,7 @@ section simulation_oracle
 /-- Specifies a method for simulating an oracle for the given `oracle_comp_spec`,
   Where `S` is the type of the oracle's internal state and `o` simulates the oracle given a current state,
   eventually returning a query result and an updated state value. -/
-structure simulation_oracle (spec : oracle_comp_spec) :=
+structure simulation_oracle (spec : oracle_comp_spec) : Type 1 :=
 (S : Type)
 (o : Π (i : spec.ι), spec.domain i → S → prob_comp (spec.range i × S))
 
@@ -100,6 +100,13 @@ def logging_simulation_oracle {C : Type} {spec : oracle_comp_spec}
 
 end simulation_oracle
 
+section simulate_from_log
+
+-- def with_sample_logging {spec : oracle_comp_spec} :
+--   Π {C : Type}, oracle_comp spec C → oracle_comp spec (list (Σ (a : Type), a))
+
+end simulate_from_log
+
 section simulate
 
 /-- Evaluation distribution of an `oracle_comp A B C` as a `prob_comp A`.
@@ -116,7 +123,7 @@ def simulate_result {C : Type} {spec : oracle_comp_spec} (so : simulation_oracle
 functor.map prod.fst (simulate so oc s)
 
 @[simp]
-lemma simulate_oc_query {spec : oracle_comp_spec} (so : simulation_oracle spec)
+lemma simulate_query {spec : oracle_comp_spec} (so : simulation_oracle spec)
   {i : spec.ι} (a : spec.domain i) (s : so.S) :
   (query i a : oracle_comp spec (spec.range i)).simulate so s = so.o i a s := 
 rfl
@@ -143,5 +150,19 @@ lemma simulate_bind {spec : oracle_comp_spec} (so : simulation_oracle spec)
 simulate_bind' so oc od s
 
 end simulate
+
+section queries_at_most
+
+inductive queries_at_most {spec : oracle_comp_spec} : 
+  Π {A : Type}, oracle_comp spec A → ℕ → Type 1
+| queries_at_most_sample {A : Type} (ca : prob_comp A) :
+    queries_at_most (sample ca) 0
+| queries_at_most_bind' {A B : Type} (ca : oracle_comp spec A) (cb : A → oracle_comp spec B)
+    (p q : ℕ) (hca : queries_at_most ca p) (hcb : ∀ a, queries_at_most (cb a) q) :
+    queries_at_most (bind' A B ca cb) (p + q)
+| queries_at_most_query {i : spec.ι} (a : spec.domain i) :
+    queries_at_most (query i a) 1
+
+end queries_at_most
 
 end oracle_comp

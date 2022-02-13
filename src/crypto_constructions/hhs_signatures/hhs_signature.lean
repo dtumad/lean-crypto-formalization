@@ -11,10 +11,6 @@ variables [function_cost_model ℚ] [comp_cost_model ℚ]
 
 open prob_comp oracle_comp
 
-@[simps]
-def hash_access (t : ℕ) : oracle_comp_spec :=
-singleton_spec (list X × M) (vector bool t)
-
 /-- `x₀` is a base point to use for public keys, analogous to a fixed generator of a cyclic group.
   `t` is the number of repetitions of the proof, higher values increase the soundness of the system. -/
 def signature_of_principal_action_class 
@@ -28,15 +24,18 @@ def signature_of_principal_action_class
   { (pk, sk, m) ← return inp,
     -- Choose `t` values from `G` at random
     cs ← sample (vector_call (random G) t),
+    -- Mask each random value with a public key
     ys ← return (cs.map (λ c, c +ᵥ pk)),
-    -- Query the random oracle on `ys` and `m` to get a hash
+    -- Query the random oracle on `ys` and `m` to get a bitstring of length `t`
     (h : vector bool t) ← query () (ys.to_list, m),
+    -- Further mask the indexes which are `1` in the hash with the secret key
     return (vector.zip_with (λ c (b : bool), (if b then c else c + sk, b)) cs h) },
   verify := λ inp, do
   { (pk, m, σ) ← return inp,
     -- This should be the same `ys` value for honest signatures
     ys ← return (σ.map (λ ⟨c, b⟩, if b then c +ᵥ pk else c +ᵥ x₀)),
     (h : vector bool t) ← query () (ys.to_list, m),
+    -- Check that the hash matches the bitstring given by the signer
     return (h = σ.map prod.snd) } 
 }
 

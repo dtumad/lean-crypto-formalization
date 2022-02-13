@@ -4,7 +4,7 @@ open_locale classical big_operators nnreal ennreal
 
 variables {A B : Type}
 
-structure prob_comp (A : Type) :=
+structure prob_comp (A : Type) : Type 1 :=
 (alg : prob_alg A)
 (wf : alg.well_formed)
 

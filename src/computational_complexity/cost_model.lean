@@ -308,7 +308,7 @@ class oracle_comp_cost_model (C : Type) [ordered_semiring C]
   [function_cost_model C] [comp_cost_model C]
   (spec : oracle_comp_spec)
   extends monadic_cost_model C (oracle_comp spec) :=
-(cost_oc_query {i : spec.ι} : 
+(cost_query {i : spec.ι} : 
   cost_at_most (oracle_comp.query i) (1 : C))
 (cost_sample {T U : Type} {x : C} (cu : T → prob_comp U) (hcu : cost_at_most cu x) :
   cost_at_most (λ t, oracle_comp.sample (cu t) : T → oracle_comp spec U) x)
