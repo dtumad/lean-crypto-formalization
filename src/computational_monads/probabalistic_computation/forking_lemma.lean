@@ -1,8 +1,11 @@
 import computational_monads.probabalistic_computation.constructions
+import computational_monads.oracle_access.oracle_comp
 
 namespace prob_comp
 
-
+constant fork {A : Type} {spec : oracle_comp_spec}
+  :
+  oracle_comp spec A → oracle_comp spec (A × A)
 
 variables {A B H : Type}
 

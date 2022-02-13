@@ -1,5 +1,7 @@
 import measure_theory.probability_mass_function.constructions
 
+open vector
+
 open_locale classical big_operators nnreal ennreal
 
 variables {A B : Type}
@@ -13,6 +15,8 @@ inductive prob_alg : Π (A : Type), Type 1
 | uniform {A : Type} (bag : finset A) : prob_alg A
 | bind' (A B : Type) (ca : prob_alg A) (cb : A → prob_alg B) : prob_alg B
 | repeat {A : Type} (ca : prob_alg A) (p : A → Prop) : prob_alg A
+
+#check finset.to_list
 
 namespace prob_alg
 

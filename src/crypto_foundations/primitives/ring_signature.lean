@@ -185,7 +185,6 @@ def unforgeable_log_admissable (n : ℕ) (ks : vector (PK × SK) n)
 | (⟨sum.inl l, v⟩ :: t) := 
     ¬ (v.2 = A_out.2.m ∧ v.1.mems.to_list ~ A_out.2.mems.to_list) ∧ unforgeable_log_admissable t
 
--- TODO: A also needs a corruption oracle for this experiment
 def unforgeable_experiment (n : ℕ)
   (A : vector PK n → oracle_comp 
     (signing_oracle_spec rs ++ corruption_oracle_spec rs n) 
@@ -195,7 +194,8 @@ do ks ← vector_call (rs.gen ()) n,
   pks ← return (vector.map prod.fst ks),
   A_out ← (A pks).simulate (signing_and_corruption_simulation_oracle rs ks) ((), ()),
   -- admissable ← return (unforgeable_log_admissable n ks A_out.1 A_out.2),
-  return (if true then rs.verify _ A_out.1.2 else false)
+  admissable ← return tt,
+  return (if admissable then rs.verify _ A_out.1.2 else false)
 
 end unforgeable_experiment
 

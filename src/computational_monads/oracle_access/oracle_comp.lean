@@ -48,6 +48,10 @@ instance monad (spec : oracle_comp_spec) :
 { pure := λ C c, oracle_comp.sample (return c),
   bind := oracle_comp.bind' }
 
+@[simp]
+lemma return_eq_sample {spec : oracle_comp_spec} (a : A) :
+  (return a : oracle_comp spec A) = sample (return a) := rfl
+
 -- Example of accessing a pair of different oracles and passing
 example {α β : Type} (ca : prob_comp α) (cb : prob_comp β) : 
   oracle_comp (singleton_spec α A ++ singleton_spec β B) (A × B) :=
@@ -79,6 +83,7 @@ def simulation_oracle.append {spec spec' : oracle_comp_spec}
   end }
 
 /-- Return random values for any new query, returning the same value for repeated queries -/
+@[simps]
 def random_oracle (T U : Type) 
   [decidable_eq T] [fintype U] [nonempty U] :
   simulation_oracle (singleton_spec T U) :=
@@ -118,8 +123,9 @@ def simulate {spec : oracle_comp_spec} (so : simulation_oracle spec) :
 | C (bind' _ D oc od) s := do{⟨c, s'⟩ ← simulate oc s, simulate (od c) s'}
 | C (query i a) s := so.o i a s
 
-def simulate_result {C : Type} {spec : oracle_comp_spec} (so : simulation_oracle spec)
-  (oc : oracle_comp spec C) (s : so.S) : prob_comp C :=
+@[simp]
+def simulate_result {C : Type} {spec : oracle_comp_spec} (so : simulation_oracle spec) (s : so.S) 
+  (oc : oracle_comp spec C) : prob_comp C :=
 functor.map prod.fst (simulate so oc s)
 
 @[simp]
@@ -146,7 +152,7 @@ lemma simulate_bind {spec : oracle_comp_spec} (so : simulation_oracle spec)
   {C D : Type} (oc : oracle_comp spec C)
   (od : C → oracle_comp spec D) (s : so.S) :
   simulate so (oc >>= od) s =
-    do {⟨c, s'⟩ ← simulate so oc s, simulate so (od c) s'} :=
+    do {(c, s') ← simulate so oc s, simulate so (od c) s'} :=
 simulate_bind' so oc od s
 
 end simulate
