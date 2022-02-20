@@ -1,10 +1,12 @@
 import computational_monads.probabalistic_computation.prob_alg
 
+universes u v
+
 open_locale classical big_operators nnreal ennreal
 
-variables {A B : Type}
+variables {A B : Type u}
 
-structure prob_comp (A : Type) : Type 1 :=
+structure prob_comp (A : Type u) : Type (u + 1) :=
 (alg : prob_alg A)
 (wf : alg.well_formed)
 
@@ -17,10 +19,10 @@ section eval_distribution
   The use of sigma types also requires lifting the condition from a `Sort` to a `Type`.
    -/
 private noncomputable def eval_distribution' :
-  Π {A : Type} (ca : prob_alg A) (hca : ca.well_formed), 
+  Π {A : Type u} (ca : prob_alg A) (hca : ca.well_formed), 
     Σ (pa : pmf A), plift (∀ (a : A), (a ∈ pa.support ↔ a ∈ ca.support))
 | A (prob_alg.uniform bag) uniform_wf :=
-  ⟨pmf.uniform_of_finset bag uniform_wf,
+  ⟨do{ pmf.uniform_of_finset bag uniform_wf },
     plift.up $ pmf.mem_support_uniform_of_finset_iff uniform_wf⟩
 | _ (prob_alg.bind' A B ca cb) bind_wf :=
   let pa := eval_distribution' ca bind_wf.1 in

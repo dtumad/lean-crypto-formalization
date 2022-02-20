@@ -32,7 +32,7 @@ def complete (so : simulation_oracle oracle_access) (s : so.S) : Prop :=
 
 -- TODO: integrate this
 def signing_oracle (M S : Type) : oracle_comp_spec :=
-singleton_spec M S
+⟦M →ᵒ S⟧
 
 def unforgeable_experiment (so : simulation_oracle (oracle_access ++ signing_oracle M S)) (s : so.S)
   (A : L → oracle_comp (oracle_access ++ signing_oracle M S) (M × S))
@@ -49,21 +49,22 @@ variables [function_cost_model ℚ] [comp_cost_model ℚ]
 
 -- Proof of knowledge of the discrete log (wrt `x₀`) of `x`
 -- Language := point in `X`, Witness := discrete log wrt `x₀`
--- Verification of language membership by checking 
+-- Verification of language membership by checking
+-- Needs access to a random oracle on `M × X` outputting a single bit
 @[simps]
-def hhs_sigk [principal_action_class G X] : 
-  signature_of_knowledge (singleton_spec (M × X) bool) 
-    (λ (x : X × X) (g : G), x.2 = g +ᵥ x.1) M (G × bool) :=
+def hhs_sigk [principal_action_class G X] (x₀ : X) : 
+  signature_of_knowledge ⟦M × X →ᵒ bool⟧ 
+    (λ (x : X) (g : G), x = g +ᵥ x₀) M (G × bool) :=
 { 
   sign := λ inp, do{
-    (m, (x₀, x), g) ← return inp,
+    (m, x, g) ← return inp,
     g' ← sample (random G),
     y ← return (g' +ᵥ x),
     (b : bool) ← query () (m, y),
     return (if b then g' else g' + g, b)
   },
   verify := λ inp, do{
-    (m, (x₀, x), c, b) ← return inp,
+    (m, x, c, b) ← return inp,
     -- This recovers `y = (g' + g) +ᵥ x₀` for an honest signer
     y ← return (if b then c +ᵥ x else c +ᵥ x₀),
     (b' : bool) ← query () (m, y),
@@ -74,20 +75,20 @@ def hhs_sigk [principal_action_class G X] :
 -- TODO: will need an additional oracle in `A` but probably not the result.
 -- More general simulation by reducing between oracle_spec
 def forkable_vec_adv_of_hhs_sigk_adv
-  (A : X × X → oracle_comp (singleton_spec (M × X) bool) (M × (G × bool))) :
+  (A : X × X → oracle_comp ⟦M × X →ᵒ bool⟧ (M × (G × bool))) :
   X × X → sorry := sorry
 
 def vec_adv_of_hhs_sigk_adv
-  (A : X × X → oracle_comp (singleton_spec (M × X) bool) (M × (G × bool))) :
+  (A : X × X → oracle_comp ⟦M × X →ᵒ bool⟧ (M × (G × bool))) :
   X × X → prob_comp G :=
 sorry
 
 
 
-theorem thing [principal_action_class G X] :
-  (hhs_sigk M G X).complete (random_oracle (M × X) bool) [] :=
+theorem thing [principal_action_class G X] (x₀ : X) :
+  (hhs_sigk M G X x₀).complete (random_oracle (M × X) bool) [] :=
 begin
-  rintros m ⟨x₀, x⟩ g hg,
+  rintros m x g hg,
   rw [prob_success, prob_event_eq_one_iff],
   rw [signature_of_knowledge.completeness_experiment],
   rw [simulate_result],

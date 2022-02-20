@@ -108,7 +108,7 @@ def signing_simulation_oracle (rs : ring_signature M S PK SK)
 
 def corruption_oracle_spec (rs : ring_signature M S PK SK) (n : ℕ) :
   oracle_comp_spec :=
-oracle_comp.singleton_spec (fin n) SK
+⟦fin n →ᵒ SK⟧
 
 /-- `n` is the global number of `PK × SK` pairs used in the simulation. -/
 def corruption_oracle_comp (rs : ring_signature M S PK SK) (n : ℕ) :=

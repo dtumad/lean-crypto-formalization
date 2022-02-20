@@ -28,7 +28,7 @@ variables {M PK SK S ROI ROO : Type}
   [decidable_eq M] [decidable_eq PK]
   [decidable_eq ROI] [fintype ROO]
   [inhabited ROO]
-variable (sig : signature (singleton_spec ROI ROO) M PK SK S)
+variable (sig : signature ⟦ROI →ᵒ ROO⟧ M PK SK S)
 
 section complete
 

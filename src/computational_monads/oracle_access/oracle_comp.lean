@@ -1,42 +1,53 @@
 import computational_monads.probabalistic_computation.constructions
 
-variables {A B : Type}
+variables {C D : Type}
 
 structure oracle_comp_spec : Type 1 := 
 (ι : Type)
+(ι_decidable_eq : decidable_eq ι)
 (domain range : ι → Type)
 
-/-- `oracle_comp oracle_spec A` is a probablistic computation of a value in `A`,
-  with access to oracles as specified by `oracle_spec` via the `query` constructor
-  The oracle's semantics aren't specified until evaluation (`eval_distribution`),
-    since algorithm specification only needs to know the types, not the values. -/
+/-- `oracle_comp oracle_spec C` is a probablistic computation of a value in `C`,
+  with access to oracles (specified by `oracle_spec`) via the `query` constructor.
+  The oracle's semantics aren't specified until evaluation (`simulate`),
+    since algorithm specification only needs to know the types of queries, not the values. -/
 inductive oracle_comp (spec : oracle_comp_spec) : Type → Type 1
 | sample {C : Type} (c : prob_comp C) : oracle_comp C
 | bind' (C D : Type) (oc : oracle_comp C) (od : C → oracle_comp D) : oracle_comp D
-| query (i : spec.ι) (a : spec.domain i) : oracle_comp (spec.range i)
+| query (i : spec.ι) (t : spec.domain i) : oracle_comp (spec.range i)
 
 namespace oracle_comp
 
 section oracle_comp_spec
 
+instance oracle_comp_spec.ι_decidable_eq {spec : oracle_comp_spec} :
+  decidable_eq (spec.ι) := spec.ι_decidable_eq
+
 /-- No access to any oracles -/
 def empty_spec : oracle_comp_spec :=
 { ι := empty,
+  ι_decidable_eq := decidable_eq_of_subsingleton,
   domain := empty.elim,
   range := empty.elim }
 
-/-- Access to a single oracle `A → B` -/
-def singleton_spec (A B : Type) : oracle_comp_spec :=
+/-- Access to a single oracle `T → U` -/
+def singleton_spec (T U : Type) : oracle_comp_spec :=
 { ι := unit,
-  domain := λ _, A,
-  range := λ _, B }
+  ι_decidable_eq := decidable_eq_of_subsingleton,
+  domain := λ _, T,
+  range := λ _, U }
+
+notation `⟦` T `→ᵒ` U `⟧` := singleton_spec T U
+
+example (T U : Type) : oracle_comp_spec := ⟦T →ᵒ U⟧
 
 /-- Combine two specifications using a `sum` type to index the different specs -/
 instance has_append : has_append oracle_comp_spec :=
 { append := λ spec spec', 
   { ι := spec.ι ⊕ spec'.ι,
+    ι_decidable_eq := @sum.decidable_eq spec.ι spec.ι_decidable_eq spec'.ι spec'.ι_decidable_eq,
     domain := sum.elim spec.domain spec'.domain,
-    range := sum.elim spec.range spec'.range } } 
+    range := sum.elim spec.range spec'.range } }
 
 end oracle_comp_spec 
 
@@ -49,18 +60,37 @@ instance monad (spec : oracle_comp_spec) :
   bind := oracle_comp.bind' }
 
 @[simp]
-lemma return_eq_sample {spec : oracle_comp_spec} (a : A) :
-  (return a : oracle_comp spec A) = sample (return a) := rfl
+lemma return_eq_sample {spec : oracle_comp_spec} (c : C) :
+  (return c : oracle_comp spec C) = sample (return c) := rfl
 
 -- Example of accessing a pair of different oracles and passing
 example {α β : Type} (ca : prob_comp α) (cb : prob_comp β) : 
-  oracle_comp (singleton_spec α A ++ singleton_spec β B) (A × B) :=
+  oracle_comp (⟦α →ᵒ C⟧ ++ ⟦β →ᵒ D⟧) (C × D) :=
 do{ x ← sample ca, y ← sample cb,
     x' ← query (sum.inl ()) x,
     y' ← query (sum.inr ()) y,
     return (x', y') }
 
 end monad
+
+section query_log
+
+/-- Type defining a log of oracle queries and the returned values,
+  parameterized by the specification of the oracle access.
+  Oracle simulation dracks this value automatically. -/
+def query_log (spec : oracle_comp_spec) : Type :=
+Π (i : spec.ι), list (spec.domain i × spec.range i)
+
+def log_query {spec : oracle_comp_spec} (log : query_log spec)
+  (i : spec.ι) (t : spec.domain i) (u : spec.range i) : query_log spec :=
+λ i', if hi : i = i' then ⟨hi.rec_on t, hi.rec_on u⟩ :: log i' else log i'
+
+def get_output {spec : oracle_comp_spec} (log : query_log spec)
+  (i : spec.ι) [decidable_eq $ spec.domain i] (t : spec.domain i) : 
+  option (spec.range i) :=
+option.map prod.snd ((log i).find ((=) t ∘ prod.fst))
+
+end query_log
 
 section simulation_oracle
 
@@ -86,7 +116,7 @@ def simulation_oracle.append {spec spec' : oracle_comp_spec}
 @[simps]
 def random_oracle (T U : Type) 
   [decidable_eq T] [fintype U] [nonempty U] :
-  simulation_oracle (singleton_spec T U) :=
+  simulation_oracle ⟦T →ᵒ U⟧ :=
 { S := list (T × U),
   o := λ _ t log, match (log.find (λ tu, prod.fst tu = t)) with
     | none := prob_comp.uniform (⊤ : finset U) (finset.univ_nonempty)
@@ -104,13 +134,6 @@ def logging_simulation_oracle {C : Type} {spec : oracle_comp_spec}
   o := λ t a as, do { b ← o t a, return (b, ⟨t, a⟩ :: as) } }
 
 end simulation_oracle
-
-section simulate_from_log
-
--- def with_sample_logging {spec : oracle_comp_spec} :
---   Π {C : Type}, oracle_comp spec C → oracle_comp spec (list (Σ (a : Type), a))
-
-end simulate_from_log
 
 section simulate
 

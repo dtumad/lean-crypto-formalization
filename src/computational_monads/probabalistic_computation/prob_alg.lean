@@ -1,22 +1,22 @@
 import measure_theory.probability_mass_function.constructions
 
+universes u v
+
 open vector
 
 open_locale classical big_operators nnreal ennreal
 
-variables {A B : Type}
+variables {A B : Type u}
 
 /-- computational monad to extend the base language of Lean for modeling cryptographic algorithms.
   Note that because Lean doesn't have an impredicative base type, this raises universe levels.
   `uniform bag` represents uniformly randomly sampling an element of the finite set `bag`.
   `bind ca cb` represents running `ca`, passing the result to `cb`, and running the result.
   `repeat p ca` represents running `ca` until the output satisfies `p` -/
-inductive prob_alg : Π (A : Type), Type 1
-| uniform {A : Type} (bag : finset A) : prob_alg A
-| bind' (A B : Type) (ca : prob_alg A) (cb : A → prob_alg B) : prob_alg B
-| repeat {A : Type} (ca : prob_alg A) (p : A → Prop) : prob_alg A
-
-#check finset.to_list
+inductive prob_alg : Π (A : Type u), Type (u + 1)
+| uniform {A : Type u} (bag : finset A) : prob_alg A
+| bind' (A B : Type u) (ca : prob_alg A) (cb : A → prob_alg B) : prob_alg B
+| repeat {A : Type u} (ca : prob_alg A) (p : A → Prop) : prob_alg A
 
 namespace prob_alg
 
@@ -47,7 +47,7 @@ let nums : finset ℕ := {1, 2, 3, 4, 5} in do {
 section support
 
 /-- The support of `ca : prob_comp A` is the set outputs in `A` with non-zero probability -/
-def support : Π {A : Type}, prob_alg A → set A
+def support : Π {A : Type u}, prob_alg A → set A
 | A (uniform bag) := ↑bag
 | _ (bind' A B ca cb) := ⋃ a ∈ ca.support, (cb a).support
 | A (repeat ca p) := {a ∈ ca.support | p a}
@@ -99,7 +99,7 @@ section well_formed
 /-- `well_formed ca` says that `ca` has at least one possible output, needed to define evalutaion.
   In particular, for any `uniform bag` step `bag` must be nonempty,
   and for each `repeat p ca` there must be some output of `ca` satisfying `p` -/
-def well_formed : Π {A : Type}, prob_alg A → Prop
+def well_formed : Π {A : Type u}, prob_alg A → Prop
 | A (uniform bag) := bag.nonempty
 | _ (bind' A B ca cb) := ca.well_formed ∧ ∀ a ∈ ca.support, (cb a).well_formed
 | A (repeat ca p) := ca.well_formed ∧ ∃ a ∈ ca.support, p a

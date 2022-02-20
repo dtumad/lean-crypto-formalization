@@ -15,7 +15,7 @@ open prob_comp oracle_comp
   `t` is the number of repetitions of the proof, higher values increase the soundness of the system. -/
 def signature_of_principal_action_class 
   [principal_action_class G X] (x₀ : X) (t : ℕ) : 
-  signature (singleton_spec (list X × M) (vector bool t)) M X G (vector (G × bool) t) :=
+  signature ⟦list X × M →ᵒ vector bool t⟧ M X G (vector (G × bool) t) :=
 { 
   gen := λ _, do
   { sk ← sample (random G),

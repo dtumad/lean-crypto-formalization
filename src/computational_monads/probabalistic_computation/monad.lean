@@ -1,8 +1,10 @@
 import computational_monads.probabalistic_computation.prob_comp
 
+universes u v
+
 open_locale classical big_operators
 
-variables {A B : Type}
+variables {A B : Type u}
 
 namespace prob_comp
 
