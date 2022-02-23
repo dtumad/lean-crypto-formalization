@@ -26,18 +26,34 @@ simulate_result so s (do {
   σ ← sok.sign (m, stmt, witness),
   sok.verify (m, stmt, σ) })
 
+/-- Perfect completeness: not failing even negligibly often -/
 def complete (so : simulation_oracle oracle_access) (s : so.S) : Prop :=
 ∀ (m : M) (statement : L) (witness : W), is_witness statement witness →
   (completeness_experiment sok so s m statement witness).prob_success = 1
+
+-- /-- Simsetup generates a trapdoor for simsign to use -/
+-- def simulatability_experiment (so : simulation_oracle oracle_access) (s : so.S)
+--   {T : Type} (sim_setup : oracle_comp oracle_access T)
+--   (sim_sign )
+--   (adv : oracle_comp (oracle_access ++ ⟦M × L × W →ᵒ S⟧) bool) :=
+-- do {
+
+-- }
 
 -- TODO: integrate this
 def signing_oracle (M S : Type) : oracle_comp_spec :=
 ⟦M →ᵒ S⟧
 
-def unforgeable_experiment (so : simulation_oracle (oracle_access ++ signing_oracle M S)) (s : so.S)
-  (A : L → oracle_comp (oracle_access ++ signing_oracle M S) (M × S))
-  (stmt : L) : prob_comp bool :=
-sorry -- TODO: need to jump between oracle accesses for this
+-- def unforgeable_experiment (so : simulation_oracle (oracle_access ++ signing_oracle M S)) (s : so.S)
+--   (A : L → oracle_comp (oracle_access ++ signing_oracle M S) (M × S))
+--   (stmt : L) : prob_comp bool :=
+-- simulate_result so s (do {
+--   (m, σ) ← A stmt,
+--   sok.verify (m, stmt, σ)
+-- })
+
+-- def unforgeable (so : simulation_oracle oracle_access) (s : so.S) : Prop :=
+-- ∀ 
 
 end signature_of_knowledge
 
@@ -82,8 +98,6 @@ def vec_adv_of_hhs_sigk_adv
   (A : X × X → oracle_comp ⟦M × X →ᵒ bool⟧ (M × (G × bool))) :
   X × X → prob_comp G :=
 sorry
-
-
 
 theorem thing [principal_action_class G X] (x₀ : X) :
   (hhs_sigk M G X x₀).complete (random_oracle (M × X) bool) [] :=

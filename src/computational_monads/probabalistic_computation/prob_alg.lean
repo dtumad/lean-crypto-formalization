@@ -11,6 +11,7 @@ variables {A B : Type u}
 /-- computational monad to extend the base language of Lean for modeling cryptographic algorithms.
   Note that because Lean doesn't have an impredicative base type, this raises universe levels.
   `uniform bag` represents uniformly randomly sampling an element of the finite set `bag`.
+    This represents a "random selecting" model of computation.
   `bind ca cb` represents running `ca`, passing the result to `cb`, and running the result.
   `repeat p ca` represents running `ca` until the output satisfies `p` -/
 inductive prob_alg : Π (A : Type u), Type (u + 1)

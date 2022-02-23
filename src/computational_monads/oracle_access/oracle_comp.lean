@@ -77,7 +77,8 @@ section query_log
 
 /-- Type defining a log of oracle queries and the returned values,
   parameterized by the specification of the oracle access.
-  Oracle simulation dracks this value automatically. -/
+  Oracle simulation dracks this value automatically.
+  TODO: does this work very well with computational complexity things? -/
 def query_log (spec : oracle_comp_spec) : Type :=
 Π (i : spec.ι), list (spec.domain i × spec.range i)
 

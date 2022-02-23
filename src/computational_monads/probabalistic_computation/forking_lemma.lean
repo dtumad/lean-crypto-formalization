@@ -7,13 +7,23 @@ noncomputable theory
 
 namespace oracle_comp
 
-variables {T U A : Type} [decidable_eq T] [fintype U] [nonempty U]
+variables {T U A X : Type} [decidable_eq T] [fintype U] [nonempty U]
+
+def acc_e (input_generator : prob_comp X)
+  (adv : X → oracle_comp ⟦T →ᵒ U⟧ A)
+  (validate : A → prob_comp (option T)) :
+  prob_comp (option T) :=
+do {
+  x ← input_generator,
+  (σ, log) ← simulate (random_oracle T U) (adv x) [],
+  validate σ
+}
 
 def accepting_experiment (adv : oracle_comp ⟦T →ᵒ U⟧ A)
-  (validate : A → prob_comp (option T)) : prob_comp (option T) :=
+  (validate : A × list (T × U) → prob_comp (option T)) : prob_comp (option T) :=
 do {
   (σ, log) ← simulate (random_oracle T U) adv [],
-  validate σ
+  validate (σ, log)
 }
 
 def acc (adv : oracle_comp ⟦T →ᵒ U⟧ A)
