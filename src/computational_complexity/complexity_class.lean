@@ -1,6 +1,8 @@
 import computational_complexity.cost_model
 import computational_complexity.cost_extensions
 import analysis.asymptotics.superpolynomial_decay
+import computability.tm_computable
+
 
 /-!
 # Computational Complexity Classes

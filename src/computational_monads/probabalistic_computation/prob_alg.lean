@@ -13,7 +13,12 @@ variables {A B : Type u}
   `uniform bag` represents uniformly randomly sampling an element of the finite set `bag`.
     This represents a "random selecting" model of computation.
   `bind ca cb` represents running `ca`, passing the result to `cb`, and running the result.
-  `repeat p ca` represents running `ca` until the output satisfies `p` -/
+  `repeat p ca` represents running `ca` until the output satisfies `p` 
+  
+  TODO: Can limit uniform to sampling `bool`, and build up `vector bool n` from that.
+    Then build up `fin i` by using `repeat`.
+    Then build up `vector A i` from that and `bind`. 
+    Should then allow for logging and repeated simulation -/
 inductive prob_alg : Π (A : Type u), Type (u + 1)
 | uniform {A : Type u} (bag : finset A) : prob_alg A
 | bind' (A B : Type u) (ca : prob_alg A) (cb : A → prob_alg B) : prob_alg B

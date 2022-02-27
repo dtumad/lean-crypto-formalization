@@ -7,55 +7,53 @@ noncomputable theory
 
 namespace oracle_comp
 
-variables {T U A X : Type} [decidable_eq T] [fintype U] [nonempty U]
+variables {T U A X : Type} [decidable_eq T] [fintype U] [nonempty U] [decidable_eq U]
 
-def acc_e (input_generator : prob_comp X)
+def accepting_exp
   (adv : X → oracle_comp ⟦T →ᵒ U⟧ A)
-  (validate : A → prob_comp (option T)) :
-  prob_comp (option T) :=
-do {
+  (query_to_fork : A → T) :
+  X → prob_comp (A × (T × U)) :=
+λ x, simulate_result (random_oracle T U) [] (do {
+  a ← adv x,
+  t ← return (query_to_fork a),
+  u ← query () t,
+  return (a, (t, u))
+})
+
+def accepting_probability (input_generator : prob_comp X)
+  (adv : X → oracle_comp ⟦T →ᵒ U⟧ A)
+  (query_to_fork : A → T)
+  (validate : A × (T × U) → prob_comp bool) : ℝ≥0∞ :=
+prob_comp.prob_success (do {
   x ← input_generator,
-  (σ, log) ← simulate (random_oracle T U) (adv x) [],
-  validate σ
-}
+  (a, (t, u)) ← (accepting_exp adv query_to_fork x),
+  val ← validate (a, (t, u)),
+  return val
+})
 
-def accepting_experiment (adv : oracle_comp ⟦T →ᵒ U⟧ A)
-  (validate : A × list (T × U) → prob_comp (option T)) : prob_comp (option T) :=
-do {
-  (σ, log) ← simulate (random_oracle T U) adv [],
-  validate (σ, log)
-}
+constant fork (adv : X → oracle_comp ⟦T →ᵒ U⟧ A)
+  (query_to_fork : A → T) :
+  X → prob_comp ((A × (T × U)) × (A × (T × U)))
 
-def acc (adv : oracle_comp ⟦T →ᵒ U⟧ A)
-  (validate : A → prob_comp (option T)) : ℝ≥0∞ :=
-(accepting_experiment adv validate).prob_event
-  (λ t, t.is_some)
+def forking_probability (input_generator : prob_comp X)
+  (adv : X → oracle_comp ⟦T →ᵒ U⟧ A)
+  (query_to_fork : A → T)
+  (validate : A × (T × U) → prob_comp bool) : ℝ≥0∞ :=
+prob_comp.prob_success (do {
+  x ← input_generator,
+  ((a, (t, u)), (a', (t', u'))) ← fork adv query_to_fork x,
+  val ← validate (a, (t, u)),
+  val' ← validate (a', (t', u')),
+  return (t = t' ∧ u ≠ u' ∧ val ∧ val')
+})
 
-constant fork (adv : oracle_comp ⟦T →ᵒ U⟧ A) :
-  oracle_comp ⟦T →ᵒ U⟧ (A × A)
-
-def forking_experiment (adv : oracle_comp ⟦T →ᵒ U⟧ A)
-  (validate : A → prob_comp (option T)) : prob_comp (option T × option T) :=
-do {
-  ((σ, σ'), log) ← simulate (random_oracle T U) (fork adv) [],
-  t1 ← validate σ,
-  t2 ← validate σ',
-  return (t1, t2)
-}
-
-def fork_success {T : Type*} : option T × option T → Prop
-| ((some t), (some t')) := t ≠ t'
-| _ := false
-
-def frk (adv : oracle_comp ⟦T →ᵒ U⟧ A)
-  (validate : A → prob_comp (option T)) : ℝ≥0∞ :=
-(forking_experiment adv validate).prob_event
-  fork_success
-
-axiom forking_lemma (adv : oracle_comp ⟦T →ᵒ U⟧ A)
-  (q : ℕ) (hq : queries_at_most adv q)
-  (validate : A → prob_comp (option T)) :
-  (frk)
+axiom forking_lemma (input_generator : prob_comp X)
+  (adv : X → oracle_comp ⟦T →ᵒ U⟧ A) (query_to_fork : A → T)
+  (validate : A × (T × U) → prob_comp bool)
+  (q : ℕ) (hq : ∀ x, queries_at_most (adv x) q) :
+    let frk := forking_probability input_generator adv query_to_fork validate in
+    let acc := accepting_probability input_generator adv query_to_fork validate in
+    frk ≥ acc * (acc / q - 1 / fintype.card U)
 
 
 end oracle_comp

@@ -10,7 +10,8 @@ structure oracle_comp_spec : Type 1 :=
 /-- `oracle_comp oracle_spec C` is a probablistic computation of a value in `C`,
   with access to oracles (specified by `oracle_spec`) via the `query` constructor.
   The oracle's semantics aren't specified until evaluation (`simulate`),
-    since algorithm specification only needs to know the types of queries, not the values. -/
+    since algorithm specification only needs to know the types of queries, not the values.
+  TODO: Add back `run` constructor to convert between oracles -/
 inductive oracle_comp (spec : oracle_comp_spec) : Type → Type 1
 | sample {C : Type} (c : prob_comp C) : oracle_comp C
 | bind' (C D : Type) (oc : oracle_comp C) (od : C → oracle_comp D) : oracle_comp D
@@ -119,7 +120,7 @@ def random_oracle (T U : Type)
   [decidable_eq T] [fintype U] [nonempty U] :
   simulation_oracle ⟦T →ᵒ U⟧ :=
 { S := list (T × U),
-  o := λ _ t log, match (log.find (λ tu, prod.fst tu = t)) with
+  o := λ _ t log, match (log.find ((= t) ∘ prod.fst)) with
     | none := prob_comp.uniform (⊤ : finset U) (finset.univ_nonempty)
                 >>= (λ u, return ⟨u, ⟨t, u⟩ :: log⟩)
     | (some ⟨t, u⟩) := return ⟨u, log⟩
