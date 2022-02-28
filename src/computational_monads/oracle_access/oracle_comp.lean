@@ -11,7 +11,7 @@ structure oracle_comp_spec : Type 1 :=
   with access to oracles (specified by `oracle_spec`) via the `query` constructor.
   The oracle's semantics aren't specified until evaluation (`simulate`),
     since algorithm specification only needs to know the types of queries, not the values.
-  TODO: Add back `run` constructor to convert between oracles -/
+  TODO: Add back `run` constructor to convert between oracles (or construct it manually) -/
 inductive oracle_comp (spec : oracle_comp_spec) : Type → Type 1
 | sample {C : Type} (c : prob_comp C) : oracle_comp C
 | bind' (C D : Type) (oc : oracle_comp C) (od : C → oracle_comp D) : oracle_comp D

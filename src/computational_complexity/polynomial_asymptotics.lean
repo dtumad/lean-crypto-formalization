@@ -1,6 +1,8 @@
 import analysis.asymptotics.asymptotics
 import analysis.special_functions.polynomials
 
+universes u w
+
 /-!
 # Polynomial Growth
 

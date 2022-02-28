@@ -3,6 +3,7 @@ import computational_complexity.cost_extensions
 import analysis.asymptotics.superpolynomial_decay
 import computability.tm_computable
 
+universes u v w
 
 /-!
 # Computational Complexity Classes
@@ -17,8 +18,65 @@ TODO: This really doesn't need to just apply to `ℚ`
 def negligable {R : Type*} [topological_space R] [comm_semiring R] (f : ℕ → R) := 
 asymptotics.superpolynomial_decay filter.at_top coe f
 
+open turing computability
 
-universes u v
+/-- Class for pairs of types `α` and `β` such that `α → β` has a notion of polynomial complexity -/
+class has_poly_time (α : Type u) (β : Type v) :=
+(poly_time_implementation : (α → β) → Type w)
+
+/-- A function is `poly_time` if there is some polynomial time implementation -/
+def poly_time {α : Type u} {β : Type v} [has_poly_time α β] (f : α → β) :=
+has_poly_time.poly_time_implementation f
+
+/-- Base types have a definition of polynomial time in terms of Turing machines -/
+instance has_poly_time_base (α β : Type) : has_poly_time α β :=
+{ poly_time_implementation := λ f, Σ (ea : fin_encoding α) (eb : fin_encoding β),
+    tm2_computable_in_poly_time ea eb f }
+
+section has_poly_time_base
+
+end has_poly_time_base
+
+/-- Extend the definition of polynomial time to a monad -/
+class monadic_poly_time_model (M : Type → Type 1) [monad M] :=
+(has_poly_time' (α β : Type) : has_poly_time α (M β))
+(poly_time_return {α β : Type} (f : α → β) (hf : poly_time f) : 
+  poly_time (return ∘ f : α → M β))
+(poly_time_bind {α β γ : Type} (f : α → M β) (g : α → β → M γ)
+  (hf : poly_time f) (hg : poly_time (function.uncurry g)) :
+  poly_time (λ a, (f a) >>= (g a)))
+(poly_time_dcomp {α β γ : Type} (f : α → β) (g : α → β → M γ)
+  (hf : poly_time f) (hg : poly_time $ function.uncurry g) :
+  poly_time (g ∘' f))
+
+instance monadic_cost_model.has_poly_time (M : Type → Type 1)
+  [monad M] [monadic_poly_time_model M] (α β : Type) : has_poly_time α (M β) :=
+monadic_poly_time_model.has_poly_time' α β
+
+namespace monadic_cost_model
+
+
+end monadic_cost_model
+
+class prob_poly_time_model
+  extends monadic_poly_time_model prob_comp
+
+namespace prob_poly_time_model
+
+
+end prob_poly_time_model
+
+/-- Note : model should assume oracle query has cost `0`,
+  simulation can account for it's own additional cost in lemmas -/
+class oracle_poly_time_model (spec : oracle_comp_spec) [prob_poly_time_model]
+  extends monadic_poly_time_model (oracle_comp spec) :=
+(poly_time_sample {α β : Type} (f : α → prob_comp β)
+  (hf : poly_time f) : poly_time (oracle_comp.sample ∘ f : α → oracle_comp spec β))
+
+namespace oracle_poly_time_model
+
+
+end oracle_poly_time_model
 
 namespace complexity_class 
 
