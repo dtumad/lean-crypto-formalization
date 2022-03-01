@@ -178,6 +178,53 @@ noncomputable def parallelization_advantage (adversary : X × X × X → prob_co
 
 end computational_advantages
 
+section algorithmic_homogenous_space
+
+-- Note we moved from `add_monoid` to `add_comm_group` to match standard defintiions
+-- TODO: Could just derive instances on `G` from instances on `X`? doesn't change much
+/-- TODO: Use this version instead. -/
+class alg_homogenous_space (G X : Type)
+  [fintype G] [fintype X] [inhabited G] [inhabited X]
+  [decidable_eq X] [decidable_eq G]
+  [add_comm_group G] [add_action G X]
+  extends principal_action_class G X :=
+(poly_time_add : poly_time (λ x, x.1 + x.2 : G × G → G))
+(poly_time_inv : poly_time (λ x, -x : G → G))
+(poly_time_vadd : poly_time (λ x, x.1 +ᵥ x.2 : G × X → X))
+(poly_time_eq_G : poly_time (λ x, x.1 = x.2 : G × G → bool))
+(poly_time_eq_X : poly_time (λ x, x.1 = x.2 : X × X → bool))
+(poly_time_rnd_G : prob_poly_time (λ _, prob_comp.random G : unit → prob_comp G))
+
+/-- algorithmic homogenous space parameterized by a set up public parameters and a `setup` algorithm.
+  Hardness assumptions are given relative to 
+TODO: This is really tedious to have this many typeclasses
+TODO: Use this version -/
+class har_homogenous_space {public_parameters : Type} (G X : public_parameters → Type)
+  [∀ p, fintype $ G p] [∀ p, fintype $ X p] [∀ p, inhabited $ G p] [∀ p, inhabited $ X p]
+  [∀ p, decidable_eq $ X p] [∀ p, decidable_eq $ G p]
+  [∀ p, add_comm_group $ G p] [∀ p, add_action (G p) (X p)]
+  [∀ p, alg_homogenous_space (G p) (X p)] :=
+(setup : ℕ → prob_comp public_parameters)
+(poly_time_setup : prob_poly_time setup)
+(vectorization_hard : 
+  ∀ (A : Π p, X p × X p → prob_comp (G p))
+    (hA : ∀ p, prob_poly_time (A p)),
+  negligable (λ sp, prob_comp.prob_success $ do {
+    p ← setup sp,
+    vectorization_experiment (A p)
+  })
+)
+(parallelization_hard :
+  ∀ (A : Π p, X p × X p × X p → prob_comp (X p))
+    (hA : ∀ p, prob_poly_time (A p)),
+  negligable (λ sp, prob_comp.prob_success $ do {
+    p ← setup sp,
+    parallelization_experiment (G p) (A p)
+  })
+)
+
+end algorithmic_homogenous_space
+
 section hard_homogeneous_space
 
 variables [function_cost_model ℚ] [comp_cost_model ℚ]
