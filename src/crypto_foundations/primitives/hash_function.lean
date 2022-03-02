@@ -30,7 +30,8 @@ do{ k ← (h.keygen ()),
 end hash_function
 
 /-- `keygen` takes in a security parameter and outputs a key bundled with the parameter
-  `hash` takes a `hash_key` from keygen and a string in the input space to a string in the output space -/
+  `hash` takes a `hash_key` from keygen and a string in the input space to a string in the output space
+  TODO: Use better complexity model and public parameters model for this -/
 structure hash_scheme (K I O : ℕ → Type) :=
 (scheme (sp : ℕ) : hash_function (K sp) (I sp) (O sp))
 (keygen_poly_time : complexity_class.polynomial_complexity (λ sp, (scheme sp).keygen))

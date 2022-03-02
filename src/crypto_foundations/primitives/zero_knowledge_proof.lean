@@ -31,7 +31,8 @@ def complete [zkp.random_oracles.finite] (ε : ℝ≥0) : Prop :=
 })).prob_success ≥ ε
 
 /-- System is `ε`-sound if no polynomial time adversary can generate a proof for a non-witness,
-  except with probability at most `ε` (given access to the same shared random oracles)-/
+  except with probability at most `ε` (given access to the same shared random oracles)
+  TODO: Build an adversary for this-/
 def sound [zkp.random_oracles.finite] (ε : ℝ≥0) : Prop :=
 ∀ (language : L) (witness : W) (h : ¬ is_witness language witness)
   (adv : L × W → oracle_comp zkp.random_oracles zkp.P)

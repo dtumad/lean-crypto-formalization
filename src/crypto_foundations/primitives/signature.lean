@@ -32,7 +32,7 @@ variable (sig : signature ⟦ROI →ᵒ ROO⟧ M PK SK S)
 
 section complete
 
-def completeness_experiment (m : M) : prob_comp bool :=
+noncomputable def completeness_experiment (m : M) : prob_comp bool :=
 (do {
   (pk, sk) ← sig.gen (),
   σ ← sig.sign (pk, sk, m),

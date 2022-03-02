@@ -41,7 +41,7 @@ def complete (so : simulation_oracle oracle_access) (s : so.S) : Prop :=
 -- }
 
 -- TODO: integrate this
-def signing_oracle (M S : Type) : oracle_comp_spec :=
+def signing_oracle (M S : Type) [decidable_eq M] [nonempty S] : oracle_comp_spec :=
 ⟦M →ᵒ S⟧
 
 -- def unforgeable_experiment (so : simulation_oracle (oracle_access ++ signing_oracle M S)) (s : so.S)
@@ -67,14 +67,16 @@ variables [function_cost_model ℚ] [comp_cost_model ℚ]
 -- Language := point in `X`, Witness := discrete log wrt `x₀`
 -- Verification of language membership by checking
 -- Needs access to a random oracle on `M × X` outputting a single bit
+
+-- TODO: Random sampling of an element of `G` makes this noncomputable (could add something `- ≃ᵖ $ᵗ G` in HHS definition)
 @[simps]
-def hhs_sigk [principal_action_class G X] (x₀ : X) : 
+noncomputable def hhs_sigk [principal_action_class G X] (x₀ : X) : 
   signature_of_knowledge ⟦M × X →ᵒ bool⟧ 
     (λ (x : X) (g : G), x = g +ᵥ x₀) M (G × bool) :=
 { 
   sign := λ inp, do{
     (m, x, g) ← return inp,
-    g' ← sample (random G),
+    g' ← sample ($ᵗ G),
     y ← return (g' +ᵥ x),
     (b : bool) ← query () (m, y),
     return (if b then g' else g' + g, b)

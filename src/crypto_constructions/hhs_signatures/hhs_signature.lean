@@ -13,17 +13,17 @@ open prob_comp oracle_comp
 
 /-- `x₀` is a base point to use for public keys, analogous to a fixed generator of a cyclic group.
   `t` is the number of repetitions of the proof, higher values increase the soundness of the system. -/
-def signature_of_principal_action_class 
+noncomputable def signature_of_principal_action_class 
   [principal_action_class G X] (x₀ : X) (t : ℕ) : 
   signature ⟦list X × M →ᵒ vector bool t⟧ M X G (vector (G × bool) t) :=
 { 
   gen := λ _, do
-  { sk ← sample (random G),
+  { sk ← sample ($ᵗ G),
     return (sk +ᵥ x₀, sk) },
   sign := λ inp, do
   { (pk, sk, m) ← return inp,
     -- Choose `t` values from `G` at random
-    cs ← sample (vector_call (random G) t),
+    cs ← sample (vector_call ($ᵗ G) t),
     -- Mask each random value with a public key
     ys ← return (cs.map (λ c, c +ᵥ pk)),
     -- Query the random oracle on `ys` and `m` to get a bitstring of length `t`
