@@ -172,24 +172,22 @@ def simulation_oracle.append {spec spec' : oracle_comp_spec}
     | (sum.inr i) := λ x ⟨s, s'⟩, do{ (y, s') ← (so'.o i x s'), return (y, ⟨s, s'⟩) }
   end }
 
-def random_oracle' (spec : oracle_comp_spec) [spec.finite]:
+noncomputable def random_oracle' (spec : oracle_comp_spec) [spec.finite]:
   simulation_oracle spec := 
 { S := query_log spec,
   o := λ i x log, match query_log.get_output log i x with
-  | none := (prob_comp.uniform (⊤ : finset $ spec.range i) finset.univ_nonempty)
-      >>= (λ u, return ⟨u, log.log_query i x u⟩)
+  | none := do {u ←$ᵗ (spec.range i), return ⟨u, log.log_query i x u⟩}
   | (some y) := return ⟨y, log⟩
   end }
 
 /-- Return random values for any new query, returning the same value for repeated queries -/
 @[simps]
-def random_oracle (T U : Type) 
+noncomputable def random_oracle (T U : Type) 
   [decidable_eq T] [fintype U] [nonempty U] :
   simulation_oracle ⟦T →ᵒ U⟧ :=
 { S := list (T × U),
   o := λ _ t log, match (log.find ((= t) ∘ prod.fst)) with
-    | none := prob_comp.uniform (⊤ : finset U) (finset.univ_nonempty)
-                >>= (λ u, return ⟨u, ⟨t, u⟩ :: log⟩)
+    | none := do {u ←$ᵗ U, return ⟨u, ⟨t, u⟩ :: log⟩}
     | (some ⟨t, u⟩) := return ⟨u, log⟩
   end }
 

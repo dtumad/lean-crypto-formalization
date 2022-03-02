@@ -1,10 +1,8 @@
 import computational_monads.probabalistic_computation.prob_comp
 
-universes u v
-
 open_locale classical big_operators
 
-variables {A B : Type u}
+variables {A B : Type}
 
 namespace prob_comp
 
@@ -41,27 +39,20 @@ instance monad : monad prob_comp :=
 section return
 
 @[simp] lemma support_return (a : A) :
-  (return a : prob_comp A).alg.support = {a} :=
-by simp
+  (return a : prob_comp A).alg.support = {a} := rfl
 
 @[simp] lemma eval_distribution_return (a : A) :
-  eval_distribution (return a) = pmf.pure a :=
-begin
-  show pmf.uniform_of_finset {a} _ = pmf.pure a,
-  from pmf.ext (λ a, by simp)
-end
+  eval_distribution (return a) = pmf.pure a := rfl
 
 lemma eval_distribution_return_apply (a a' : A) :
-  eval_distribution (return a) a' = if a' = a then 1 else 0 :=
-by simp
+  eval_distribution (return a) a' = if a' = a then 1 else 0 := rfl
 
 end return
 
 section bind
 
 @[simp] lemma support_bind (ca : prob_comp A) (cb : A → prob_comp B) :
-  (ca >>= cb).alg.support = ⋃ a ∈ ca.alg.support, (cb a).alg.support :=
-by simp
+  (ca >>= cb).alg.support = ⋃ a ∈ ca.alg.support, (cb a).alg.support := rfl
 
 @[simp] lemma eval_distribution_bind (ca : prob_comp A) (cb : A → prob_comp B) :
   eval_distribution (ca >>= cb) = (eval_distribution ca) >>= (eval_distribution ∘ cb) :=

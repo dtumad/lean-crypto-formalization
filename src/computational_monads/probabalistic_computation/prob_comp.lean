@@ -1,12 +1,10 @@
 import computational_monads.probabalistic_computation.prob_alg
 
-universes u v
-
 open_locale classical big_operators nnreal ennreal
 
-variables {A B : Type u}
+variables {A B : Type}
 
-structure prob_comp (A : Type u) : Type (u + 1) :=
+structure prob_comp (A : Type) : Type 1 :=
 (alg : prob_alg A)
 (wf : alg.well_formed)
 
@@ -19,11 +17,10 @@ section eval_distribution
   The use of sigma types also requires lifting the condition from a `Sort` to a `Type`.
    -/
 private noncomputable def eval_distribution' :
-  Π {A : Type u} (ca : prob_alg A) (hca : ca.well_formed), 
+  Π {A : Type} (ca : prob_alg A) (hca : ca.well_formed), 
     Σ (pa : pmf A), plift (∀ (a : A), (a ∈ pa.support ↔ a ∈ ca.support))
-| A (prob_alg.uniform bag) uniform_wf :=
-  ⟨do{ pmf.uniform_of_finset bag uniform_wf },
-    plift.up $ pmf.mem_support_uniform_of_finset_iff uniform_wf⟩
+| _ (prob_alg.pure' A a) uniform_wf := 
+  ⟨pmf.pure a, plift.up $ by simp⟩
 | _ (prob_alg.bind' A B ca cb) bind_wf :=
   let pa := eval_distribution' ca bind_wf.1 in
   let pb := λ a ha, eval_distribution' (cb a) (bind_wf.2 a ha) in
@@ -32,6 +29,8 @@ private noncomputable def eval_distribution' :
       simp only [pmf.mem_support_bind_on_support_iff, prob_alg.mem_support_bind'_iff, plift.down pa.2],
       split; rintro ⟨a, ha, ha'⟩; refine ⟨a, ha, _⟩; simpa [(plift.down (pb a ha).2) b] using ha'
     end⟩
+| _ prob_alg.coin coin_wf := 
+  ⟨pmf.uniform_of_fintype bool, plift.up $ by simp⟩
 | A (prob_alg.repeat ca p) repeat_wf :=
   -- let ⟨ca_wf, hp⟩ := repeat_wf in
   let pa := eval_distribution' ca (prob_alg.well_formed_of_repeat_well_formed repeat_wf) in
@@ -67,12 +66,11 @@ lemma mem_support_eval_distribution_of_mem_support {ca : prob_comp A} {a : A}
 (support_eval_distribution_eq_support ca)
   ▸ (pmf.apply_eq_zero_iff ca.eval_distribution a)
 
-@[simp] lemma eval_distribution_alg_uniform (bag : finset A)
-  (h : (prob_alg.uniform bag).well_formed) :
-  eval_distribution ⟨prob_alg.uniform bag, h⟩ =
-    pmf.uniform_of_finset bag (prob_alg.nonempty_of_uniform_well_formed bag h) :=
-rfl
+@[simp] lemma eval_distribution_alg_pure' (a : A) (h : (prob_alg.pure' A a).well_formed) :
+  eval_distribution ⟨prob_alg.pure' A a, h⟩ = pmf.pure a := rfl
 
+/-- The non-`prob_comp` version of `bind` leads to a more complicated `pmf`,
+  because of `support` issues requires using a partial function to be well defined -/
 @[simp] lemma eval_distribution_alg_bind' (ca : prob_alg A) (cb : A → prob_alg B)
   (h : (prob_alg.bind' A B ca cb).well_formed) :
   eval_distribution ⟨prob_alg.bind' A B ca cb, h⟩ =
@@ -82,6 +80,9 @@ rfl
         (mem_support_of_mem_support_eval_distribution ha) in
       eval_distribution ⟨cb a, hcb⟩) :=
 by simpa [eval_distribution, eval_distribution']
+
+@[simp] lemma eval_distribution_alg_coin (h : prob_alg.coin.well_formed) :
+  eval_distribution ⟨prob_alg.coin, h⟩ = pmf.uniform_of_fintype bool := rfl
 
 @[simp] lemma eval_distribution_alg_repeat (ca : prob_alg A) (p : A → Prop)
   (h : (ca.repeat p).well_formed) :
@@ -117,10 +118,9 @@ noncomputable def prob_event (ca : prob_comp A) (event : set A) : ℝ≥0∞ :=
 (support_eval_distribution_eq_support ca) ▸ pmf.to_outer_measure_apply_eq_zero_iff _ event
 
 @[simp]
-lemma prob_event_alg_uniform (bag : finset A)
-  (h : (prob_alg.uniform bag).well_formed) (event : set A) :
-  prob_event ⟨prob_alg.uniform bag, h⟩ event = (bag.filter event).card / bag.card :=
-by simpa [prob_event, eval_distribution_alg_uniform, pmf.to_outer_measure_uniform_of_finset_apply]
+lemma prob_event_alg_pure' (a : A) (h : (prob_alg.pure' A a).well_formed) (event : set A) :
+  prob_event ⟨prob_alg.pure' A a, h⟩ event = if a ∈ event then 1 else 0 :=
+by simp [prob_event]
 
 @[simp]
 lemma prob_event_alg_bind' (ca : prob_alg A) (cb : A → prob_alg B)
@@ -130,6 +130,12 @@ lemma prob_event_alg_bind' (ca : prob_alg A) (cb : A → prob_alg B)
     (∑' (a : A), (ca' -Pr[= a ]) * if ha : a ∈ ca.support
       then (eval_distribution ⟨cb a, h.2 a ha⟩).to_outer_measure event else 0) :=
 by simp [prob_event, pmf.to_outer_measure_bind_on_support_apply]
+
+@[simp]
+lemma prob_event_alg_coin (h : prob_alg.coin.well_formed) (event : set bool) :
+  prob_event ⟨prob_alg.coin, h⟩ event =
+    (if tt ∈ event then 0.5 else 0) + (if ff ∈ event then 0.5 else 0) :=
+by simp [prob_event, set.indicator]; split_ifs; simp
 
 @[simp]
 noncomputable def prob_success (ca : prob_comp bool) : ℝ≥0∞ :=
