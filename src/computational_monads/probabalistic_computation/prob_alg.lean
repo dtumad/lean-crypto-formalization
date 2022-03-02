@@ -18,6 +18,8 @@ variables {A B : Type u}
   TODO: Can limit uniform to sampling `bool`, and build up `vector bool n` from that.
     Then build up `fin i` by using `repeat`.
     Then build up `vector A i` from that and `bind`. 
+    Then build up `list A` from that using `length`.
+    Finally build up `finset` from that using `finset.to_list` -- Will be noncomputable (uses AOC)
     Should then allow for logging and repeated simulation -/
 inductive prob_alg : Π (A : Type u), Type (u + 1)
 | uniform {A : Type u} (bag : finset A) : prob_alg A
