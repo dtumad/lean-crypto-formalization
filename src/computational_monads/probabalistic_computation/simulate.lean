@@ -1,90 +1,94 @@
 import data.bitvec.basic
-import computational_monads.probabalistic_computation.prob_alg
+import computational_monads.probabalistic_computation.constructions
 
 namespace prob_alg
 
-section decidable
+variables {A B : Type} (ca : prob_comp A)
 
--- #check decidable_eq
-
-inductive decidable' : Π {A : Type} (ca : prob_alg A), Type 1
-| decidable_pure' {A : Type} (hA : decidable_eq A) (a : A) : decidable' (pure' A a)
-| decidable_bind' {A B : Type} (ca : prob_alg A) (cb : A → prob_alg B)
-    (hca : decidable' ca) (hcb : ∀ a, decidable' (cb a)) : decidable' (bind' A B ca cb)
-| decidable_coin : decidable' coin
-| decidable_repeat {A : Type} (ca : prob_alg A) (p : A → Prop)
-    (hca : decidable' ca) (hp : decidable_pred p) : decidable' (repeat ca p)
-
-def decidable : Π {A : Type} (ca : prob_alg A), Sort 1
-| _ (pure' A a) := decidable_eq A
-| _ (bind' A B ca cb) := decidable ca × Π a, decidable (cb a)
-| _ coin := unit
-| A (repeat ca p) := decidable ca × decidable_pred p
-
-def decidable_eq_of_prob_alg : Π {A : Type} (ca : prob_alg A) (hca : decidable ca), decidable_eq A
-| _ (pure' A a) h := h
-| _ (bind' A B ca cb) h := let ⟨a⟩ := inhabited_of_prob_alg ca
-  in decidable_eq_of_prob_alg (cb a) (h.2 a)
-| _ coin _ := bool.decidable_eq
-| A (repeat ca p) h := decidable_eq_of_prob_alg ca h.1
-
-
-
-end decidable
-
-open decidable'
-
-section partial_simulate
-
--- def simulate_step : Π {A : Type} (ca : prob_alg A) (b : bool), 
+open decidable_alg
 
 /-- The result of simulation is either a value and a list of remaining random coins,
   or a `prob_comp` representing the remaining computation after running out of random coins -/
--- def simulation_result (A : Type) := (A × list bool) ⊕ prob_alg A
-
 inductive simulation_result (A : Type) : Type 1
 | done (result : A) : simulation_result
-| more (ca : prob_alg A) (hca : decidable' ca) : simulation_result
+| done_unused (result : A) (b : bool) : simulation_result
+| more (ca : prob_alg A) (hca : decidable_alg ca) : simulation_result
 
-def step : Π {A : Type} (ca : prob_alg A) (h : decidable' ca) (b : bool), simulation_result A
-| _ (pure' A a) (decidable_pure' _ _) seed := simulation_result.done a
-| _ (bind' A B _ _) (decidable_bind' ca cb hca hcb) seed := match step ca hca seed with
-  | simulation_result.done a := simulation_result.more (cb a) (hcb a)
-  | simulation_result.more ca' hca' := simulation_result.more (ca' >>= cb) (decidable_bind' ca' cb hca' hcb)
+namespace simulation_result
+
+def to_prob_comp (sa : simulation_result A) : prob_alg A :=
+match sa with
+| (done a) := return a
+| (done_unused a b) := return a
+| (more ca hca) := ca
 end
+
+def to_prob_comp_decidable (A : Type) [hA : decidable_eq A] (sa : simulation_result A) :
+  (sa.to_prob_comp).decidable_alg :=
+match sa with
+| (done a) := decidable_pure' hA a
+| (done_unused a b) := decidable_pure' hA a
+| (more ca hca) := hca
+end
+
+end simulation_result
+
+/-- Single simulation step used to build up the actual simulation.
+  If the step computes a value without using the given bit it will return it back -/
+def simulate_step : Π {A : Type} (ca : prob_alg A) (h : decidable_alg ca) (b : bool), simulation_result A
 | _ coin _ b := simulation_result.done b
-| A (repeat _ _) (decidable_repeat ca p hca hp) seed := 
-  by haveI : decidable_pred p := hp; exact (simulation_result.more (do {
-  a ← ca, x ← if p a then return a else repeat ca p, return x
-}) (decidable_bind' ca _ hca (λ a, decidable_bind' _ _ (sorry) (λ _, sorry))))
-
-def steps : Π {A : Type} (ca : prob_alg A) (h : decidable' ca) (seed : list bool), simulation_result A
-| A ca h [] := simulation_result.more ca h
-| A ca h (x :: xs) := match step ca h x with
-  | simulation_result.done a := simulation_result.done a
-  | simulation_result.more ca' hca' := steps ca' hca' xs
+| _ (pure' A a) h seed := simulation_result.done_unused a seed
+| _ (bind' A B _ _) (decidable_bind' ca cb hca hcb) seed := match simulate_step ca hca seed with
+  -- If we use the bit and compute a value, then suspend at the binding operation
+  | simulation_result.done a := simulation_result.more (cb a) (hcb a)
+  -- If we never used the bit we can continuse simulating the next branch in this step
+  | simulation_result.done_unused a seed' := simulate_step (cb a) (hcb a) seed'
+  -- If we used the bit without completing, store our current place in a `more`
+  | simulation_result.more ca' hca' := simulation_result.more (ca' >>= cb) (decidable_bind' _ _ hca' hcb)
+end
+| A (repeat _ _) (decidable_repeat ca p hca hp) seed := begin
+  haveI : decidable_pred p := hp,
+  haveI hA : decidable_eq A := decidable_eq_of_decidable_alg ca hca,
+  exact match simulate_step ca hca seed with
+  | (simulation_result.done a) := if p a then simulation_result.done a
+      else simulation_result.more (repeat ca p) (decidable_repeat ca p hca hp)
+  -- `p a` must hold if we are in this case (assuming the original computation is well-formed)
+  | (simulation_result.done_unused a b) := if p a then simulation_result.done_unused a b
+      else simulation_result.more (repeat ca p) (decidable_repeat ca p hca hp)
+  -- If the computation partially finishes, then unroll a single loop iteration
+  | (simulation_result.more ca' hca') := simulation_result.more
+      (do { a ← ca', x ← if p a then return a else repeat ca p, return x })
+      (by { refine decidable_bind' _ _ hca' (λ a, decidable_bind' _ _ _ (λ x, decidable_pure' hA x)),
+        split_ifs, exact (decidable_pure' hA a), exact (decidable_repeat ca p hca hp) })
+  end,
 end
 
--- /-- Small-step semantics for simulating a `prob_alg` from a set of predetermined coin flips.
---   Decidabilty of the `prob_alg` is needed to -/
--- def partial_simulate : Π {A : Type} (ca : prob_alg A) (h : decidable' ca)
---   (seed : list bool), simulation_result A
--- | _ (pure' A a) (decidable_pure' _ _) seed := sum.inl ⟨a, seed⟩
--- | _ (bind' A B ca cb) h seed := match partial_simulate ca sorry seed with
---   | sum.inl ⟨a, seed'⟩ := partial_simulate (cb a) sorry seed'
---   | sum.inr ca' := sum.inr (ca' >>= cb)
--- end
--- | _ coin _ (b :: seed) := sum.inl ⟨b, seed⟩
--- | _ coin _ [] := sum.inr coin
--- | A (repeat ca p) h seed :=
---   by haveI : decidable_pred p := sorry; exact
---   match partial_simulate ca sorry seed with
---   | sum.inl ⟨a, seed'⟩ := if p a then sum.inl ⟨a, seed'⟩ else partial_simulate (repeat ca p) h seed'
---   | sum.inr ca' := begin 
---     exact sum.inr sorry
--- end
--- end
+lemma simulate_step_eq_done_unused_iff {A : Type} (ca : prob_comp A)
+  (h : decidable_alg ca.alg) (b b' : bool) (a : A) :
+  simulate_step ca.alg h b = simulation_result.done_unused a b' ↔
+    ca.eval_distribution a = 1 ∧ b = b' :=
+sorry
+    
 
-end partial_simulate
+/-- Small-step semantics for simulating a `prob_alg` from a set of predetermined coin flips.
+  Decidabilty of the `prob_alg` is needed to -/
+def simulate : Π {A : Type} (ca : prob_alg A) (h : decidable_alg ca) (seed : list bool), simulation_result A
+| A ca h [] := simulation_result.more ca h
+| A ca h (x :: xs) := match simulate_step ca h x with
+  | simulation_result.done a := simulation_result.done a
+  | simulation_result.done_unused a b := simulation_result.done_unused a b
+  | simulation_result.more ca' hca' := simulate ca' hca' xs
+end
+
+lemma simulate_well_formed {A : Type} (ca : prob_comp A) (h : decidable_alg ca.alg) (seed : list bool) :
+  well_formed (simulation_result.to_prob_comp (simulate ca.alg h seed)) :=
+sorry
+
+lemma simulate_correct {A : Type} (ca : prob_comp A) (h : decidable_alg ca.alg) :
+  ∃ (n₀ : ℕ), ∀ n, n > n₀ → (ca.eval_distribution = (do {
+    v ← prob_comp.vector_call ⟨coin, coin_well_formed⟩ n,
+    ⟨simulation_result.to_prob_comp (simulate ca.alg h v.to_list), simulate_well_formed ca h v.to_list⟩
+  }).eval_distribution) :=
+sorry
 
 end prob_alg

@@ -171,4 +171,26 @@ def inhabited_of_prob_alg : Π {A : Type} (ca : prob_alg A), inhabited A
 | _ coin := bool.inhabited
 | _ (repeat ca p) := inhabited_of_prob_alg ca
 
+section decidable
+
+inductive decidable_alg : Π {A : Type} (ca : prob_alg A), Type 1
+| decidable_pure' {A : Type} (hA : decidable_eq A) (a : A) : decidable_alg (pure' A a)
+| decidable_bind' {A B : Type} (ca : prob_alg A) (cb : A → prob_alg B)
+    (hca : decidable_alg ca) (hcb : ∀ a, decidable_alg (cb a)) : decidable_alg (bind' A B ca cb)
+| decidable_coin : decidable_alg coin
+| decidable_repeat {A : Type} (ca : prob_alg A) (p : A → Prop)
+    (hca : decidable_alg ca) (hp : decidable_pred p) : decidable_alg (repeat ca p)
+
+open decidable_alg
+
+def decidable_eq_of_decidable_alg : Π {A : Type} (ca : prob_alg A)
+  (hca : decidable_alg ca), decidable_eq A
+| _ _ (decidable_pure' hA _) := hA
+| _ _ (decidable_bind' ca cb _ hcb) := let ⟨a⟩ := inhabited_of_prob_alg ca
+  in decidable_eq_of_decidable_alg (cb a) (hcb a)
+| _ _ decidable_coin := bool.decidable_eq
+| _ _ (decidable_repeat ca _ hca _) := decidable_eq_of_decidable_alg ca hca
+
+end decidable
+
 end prob_alg
