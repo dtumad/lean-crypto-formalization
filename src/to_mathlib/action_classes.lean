@@ -1,5 +1,11 @@
 import group_theory.group_action
 
+/-!
+# Free, Transative, and Principal group actions.
+
+Defines type classes for group actions that are (in/sur/bi)jective maps on the base type
+-/
+
 section action_classes
 
 /-- Mixin typeclass for free actions, where the action of group elements is injective -/

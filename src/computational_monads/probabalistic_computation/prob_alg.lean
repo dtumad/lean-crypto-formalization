@@ -159,4 +159,16 @@ example (z : ℕ) : well_formed
 
 end well_formed
 
+instance prob_alg.nonempty (A : Type) [hA : nonempty A] : nonempty (prob_alg A) :=
+let ⟨a⟩ := hA in ⟨pure' A a⟩
+
+instance prob_alg.inhabited (A : Type) [inhabited A] : inhabited (prob_alg A) :=
+⟨pure' A default⟩
+
+def inhabited_of_prob_alg : Π {A : Type} (ca : prob_alg A), inhabited A
+| _ (pure' A a) := ⟨a⟩
+| _ (bind' A B ca cb) := let ⟨a⟩ := inhabited_of_prob_alg ca in (inhabited_of_prob_alg (cb a))
+| _ coin := bool.inhabited
+| _ (repeat ca p) := inhabited_of_prob_alg ca
+
 end prob_alg
