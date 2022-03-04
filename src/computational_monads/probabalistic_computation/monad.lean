@@ -22,9 +22,8 @@ by simp
 
 @[simp] lemma eval_distribution_bind_on_support (ca : prob_comp A) (cb : A → prob_alg B)
   (h : ∀ a ∈ ca.alg.support, (cb a).well_formed) :
-  (bind_on_support ca cb h).eval_distribution =
-    ca.eval_distribution.bind_on_support
-      (λ a ha, eval_distribution ⟨cb a, h a $ support_eval_distribution_eq_support ca ▸ ha⟩) :=
+  ⟦bind_on_support ca cb h⟧ᵖ =
+    ⟦ca⟧ᵖ.bind_on_support (λ a ha, ⟦cb a | h a (support_eval_distribution_eq_support ca ▸ ha)⟧ᵖ) :=
 (eval_distribution_alg_bind' ca.alg cb (ca.bind_on_support cb h).wf)
 
 end bind_on_support
@@ -42,10 +41,10 @@ section return
   (return a : prob_comp A).alg.support = {a} := rfl
 
 @[simp] lemma eval_distribution_return (a : A) :
-  eval_distribution (return a) = pmf.pure a := rfl
+  ⟦return a⟧ᵖ = pmf.pure a := rfl
 
 lemma eval_distribution_return_apply (a a' : A) :
-  eval_distribution (return a) a' = if a' = a then 1 else 0 := rfl
+  ⟦return a⟧ᵖ a' = if a' = a then 1 else 0 := rfl
 
 end return
 
@@ -55,17 +54,16 @@ section bind
   (ca >>= cb).alg.support = ⋃ a ∈ ca.alg.support, (cb a).alg.support := rfl
 
 @[simp] lemma eval_distribution_bind (ca : prob_comp A) (cb : A → prob_comp B) :
-  eval_distribution (ca >>= cb) = (eval_distribution ca) >>= (eval_distribution ∘ cb) :=
+  ⟦ca >>= cb⟧ᵖ = ⟦ca⟧ᵖ >>= (λ a, ⟦cb a⟧ᵖ) :=
 begin
   refine (eval_distribution_bind_on_support ca (alg ∘ cb) _).trans _,
-  show ca.eval_distribution.bind_on_support (λ a _, (cb a).eval_distribution) = _,
-  from pmf.bind_on_support_eq_bind ca.eval_distribution _,
+  show ⟦ca⟧ᵖ.bind_on_support (λ a _, ⟦cb a⟧ᵖ) = _,
+  from pmf.bind_on_support_eq_bind ⟦ca⟧ᵖ _,
 end
 
 lemma eval_distribution_bind_apply (ca : prob_comp A) (cb : A → prob_comp B) (b : B) :
-  eval_distribution (ca >>= cb) b =
-    ∑' a, (eval_distribution ca a) * (eval_distribution (cb a) b) :=
-(eval_distribution_bind ca cb).symm ▸ pmf.bind_apply ca.eval_distribution _ b
+  ⟦ca >>= cb⟧ᵖ b = ∑' a, ⟦ca⟧ᵖ a * ⟦cb a⟧ᵖ b :=
+(eval_distribution_bind ca cb).symm ▸ pmf.bind_apply ⟦ca⟧ᵖ _ b
 
 end bind
 

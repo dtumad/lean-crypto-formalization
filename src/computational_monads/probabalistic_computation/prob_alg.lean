@@ -102,7 +102,7 @@ def well_formed : Π {A : Type}, prob_alg A → Prop
 | _ (pure' A a) := true
 | _ (bind' A B ca cb) := ca.well_formed ∧ ∀ a ∈ ca.support, (cb a).well_formed
 | _ coin := true
-| A (repeat ca p) := ca.well_formed ∧ ∃ a ∈ ca.support, p a
+| _ (@repeat A ca p) := ca.well_formed ∧ ∃ a ∈ ca.support, p a
 
 /-- The `well_formed` predicate is equivalent to having nonempty support -/
 lemma support_nonempty_of_well_formed :
@@ -129,6 +129,9 @@ lemma bind'_well_formed {ca : prob_alg A} {cb : A → prob_alg B}
   (hca : ca.well_formed) (hcb : ∀ a ∈ ca.support, (cb a).well_formed) :
   (bind' A B ca cb).well_formed := ⟨hca, hcb⟩
 
+lemma well_formed_of_bind'_well_formed_left {ca : prob_alg A} {cb : A → prob_alg B}
+  (h : (bind' A B ca cb).well_formed) : ca.well_formed := h.1
+
 @[simp] lemma bind_well_formed_iff :
   (ca >>= cb).well_formed ↔ ca.well_formed ∧ ∀ a ∈ ca.support, (cb a).well_formed := iff.rfl
 
@@ -146,10 +149,10 @@ lemma repeat_well_formed {ca : prob_alg A} {p : A → Prop}
   (repeat ca p).well_formed := ⟨hca, hp⟩
 
 lemma well_formed_of_repeat_well_formed {ca : prob_alg A} {p : A → Prop} :
-  (repeat ca p).well_formed → well_formed ca | h := h.1
+  (repeat ca p).well_formed → well_formed ca := λ h, h.1
 
 lemma exists_mem_support_of_repeat_well_formed {ca : prob_alg A} {p : A → Prop} :
-  (repeat ca p).well_formed → ∃ a ∈ ca.support, p a | h := h.2
+  (repeat ca p).well_formed → ∃ a ∈ ca.support, p a := λ h, h.2
 
 example (z : ℕ) : well_formed 
   (do x ← return (z + 3),

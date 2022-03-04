@@ -32,7 +32,6 @@ private noncomputable def eval_distribution' :
 | _ prob_alg.coin coin_wf := 
   ⟨pmf.uniform_of_fintype bool, plift.up $ by simp⟩
 | A (prob_alg.repeat ca p) repeat_wf :=
-  -- let ⟨ca_wf, hp⟩ := repeat_wf in
   let pa := eval_distribution' ca (prob_alg.well_formed_of_repeat_well_formed repeat_wf) in
   let hp : ∃ a ∈ ca.support, p a := prob_alg.exists_mem_support_of_repeat_well_formed repeat_wf in
   ⟨pa.1.filter p (let ⟨a, ha, hap⟩ := hp in ⟨a, hap, (plift.down pa.2 a).2 ha⟩),
@@ -47,51 +46,50 @@ private noncomputable def eval_distribution' :
 noncomputable def eval_distribution : prob_comp A → pmf A :=
 λ ca, (eval_distribution' ca.alg ca.wf).1
 
-notation ca `-Pr[=` x `]` := ca.eval_distribution x
+-- Notation for distribution semantics with explict or implicit well-formed predicates
+notation `⟦` ca `⟧ᵖ` := eval_distribution ca
+notation `⟦` ca `|` wf `⟧ᵖ` := eval_distribution (prob_comp.mk ca wf)
+
+-- notation ca `-Pr[=` x `]` := ca.eval_distribution x
 
 @[simp] theorem support_eval_distribution_eq_support (ca : prob_comp A) :
-  (eval_distribution ca).support = ca.alg.support :=
+  ⟦ca⟧ᵖ.support = ca.alg.support :=
 set.ext (plift.down (eval_distribution' ca.alg ca.wf).snd)
 
 lemma mem_support_of_mem_support_eval_distribution {ca : prob_comp A} {a : A}
-  (ha : a ∈ ca.eval_distribution.support) : a ∈ ca.alg.support :=
+  (ha : a ∈ ⟦ca⟧ᵖ.support) : a ∈ ca.alg.support :=
 (support_eval_distribution_eq_support ca) ▸ ha
 
 lemma mem_support_eval_distribution_of_mem_support {ca : prob_comp A} {a : A}
-  (ha : a ∈ ca.alg.support) : a ∈ ca.eval_distribution.support :=
+  (ha : a ∈ ca.alg.support) : a ∈ ⟦ca⟧ᵖ.support :=
 (support_eval_distribution_eq_support ca).symm ▸ ha
 
 @[simp] lemma eval_distribution_eq_zero_iff (ca : prob_comp A) (a : A) :
-  ca.eval_distribution a = 0 ↔ a ∉ ca.alg.support :=
+  ⟦ca⟧ᵖ a = 0 ↔ a ∉ ca.alg.support :=
 (support_eval_distribution_eq_support ca)
   ▸ (pmf.apply_eq_zero_iff ca.eval_distribution a)
 
 @[simp] lemma eval_distribution_alg_pure' (a : A) (h : (prob_alg.pure' A a).well_formed) :
-  eval_distribution ⟨prob_alg.pure' A a, h⟩ = pmf.pure a := rfl
+  ⟦prob_alg.pure' A a | h⟧ᵖ = pmf.pure a := rfl
 
 /-- The non-`prob_comp` version of `bind` leads to a more complicated `pmf`,
   because of `support` issues requires using a partial function to be well defined -/
 @[simp] lemma eval_distribution_alg_bind' (ca : prob_alg A) (cb : A → prob_alg B)
   (h : (prob_alg.bind' A B ca cb).well_formed) :
-  eval_distribution ⟨prob_alg.bind' A B ca cb, h⟩ =
-    let hca : ca.well_formed := ((prob_alg.bind_well_formed_iff ca cb).1 h).1 in
-    (eval_distribution ⟨ca, hca⟩).bind_on_support (λ a ha, 
-      let hcb : (cb a).well_formed := ((prob_alg.bind_well_formed_iff ca cb).1 h).2 a
-        (mem_support_of_mem_support_eval_distribution ha) in
-      eval_distribution ⟨cb a, hcb⟩) :=
+  ⟦prob_alg.bind' A B ca cb | h⟧ᵖ = ⟦ca | h.1⟧ᵖ.bind_on_support 
+    (λ a ha, ⟦cb a | h.2 a (mem_support_of_mem_support_eval_distribution ha)⟧ᵖ) :=
 by simpa [eval_distribution, eval_distribution']
 
 @[simp] lemma eval_distribution_alg_coin (h : prob_alg.coin.well_formed) :
-  eval_distribution ⟨prob_alg.coin, h⟩ = pmf.uniform_of_fintype bool := rfl
+ ⟦prob_alg.coin | h⟧ᵖ = pmf.uniform_of_fintype bool := rfl
 
 @[simp] lemma eval_distribution_alg_repeat (ca : prob_alg A) (p : A → Prop)
-  (h : (ca.repeat p).well_formed) :
-  eval_distribution ⟨ca.repeat p, h⟩ =
-    let hca : ca.well_formed := prob_alg.well_formed_of_repeat_well_formed h in
-    let hp : ∃ (a : A) (h : set.mem a p), a ∈ (eval_distribution ⟨ca, hca⟩).support :=
-      (let ⟨a, ha, hap⟩ := ((prob_alg.repeat_well_formed_iff ca p).1 h).2 in
-        ⟨a, hap, mem_support_eval_distribution_of_mem_support ha⟩) in
-    (eval_distribution ⟨ca, hca⟩).filter p hp :=
+  (h : (prob_alg.repeat ca p).well_formed) :
+  ⟦ca.repeat p | h⟧ᵖ =
+    let h' : ca.well_formed ∧ ∃ a ∈ ca.support, p a := by exact h in
+    let hp : ∃ (a : A) (h : set.mem a p), a ∈ ⟦ca | h'.1⟧ᵖ.support :=
+      (let ⟨a, ha, hap⟩ := h'.2 in ⟨a, hap, mem_support_eval_distribution_of_mem_support ha⟩) in
+    ⟦ca | h'.1⟧ᵖ.filter p hp :=
 by simp [eval_distribution, eval_distribution']
 
 end eval_distribution
@@ -126,9 +124,8 @@ by simp [prob_event]
 lemma prob_event_alg_bind' (ca : prob_alg A) (cb : A → prob_alg B)
   (h : (prob_alg.bind' A B ca cb).well_formed) (event : set B) :
   prob_event ⟨prob_alg.bind' A B ca cb, h⟩ event =
-    let ca' : prob_comp A := ⟨ca, h.1⟩ in
-    (∑' (a : A), (ca' -Pr[= a ]) * if ha : a ∈ ca.support
-      then (eval_distribution ⟨cb a, h.2 a ha⟩).to_outer_measure event else 0) :=
+    (∑' (a : A), ⟦ca | h.1⟧ᵖ a * if ha : a ∈ ca.support
+      then ⟦cb a | h.2 a ha⟧ᵖ.to_outer_measure event else 0) :=
 by simp [prob_event, pmf.to_outer_measure_bind_on_support_apply]
 
 @[simp]

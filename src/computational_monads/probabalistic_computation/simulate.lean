@@ -66,7 +66,7 @@ end
 lemma simulate_step_eq_done_unused_iff {A : Type} (ca : prob_comp A)
   (h : decidable_alg ca.alg) (b b' : bool) (a : A) :
   simulate_step ca.alg h b = simulation_result.done_unused a b' ↔
-    ca.eval_distribution a = 1 ∧ b = b' :=
+    ⟦ca⟧ᵖ a = 1 ∧ b = b' :=
 sorry
     
 
@@ -85,10 +85,10 @@ lemma simulate_well_formed {A : Type} (ca : prob_comp A) (h : decidable_alg ca.a
 sorry
 
 lemma simulate_correct {A : Type} (ca : prob_comp A) (h : decidable_alg ca.alg) :
-  ∃ (n₀ : ℕ), ∀ n, n > n₀ → (ca.eval_distribution = (do {
+  ∃ (n₀ : ℕ), ∀ n, n > n₀ → ⟦ca⟧ᵖ = ⟦do {
     v ← prob_comp.vector_call ⟨coin, coin_well_formed⟩ n,
     ⟨simulation_result.to_prob_comp (simulate ca.alg h v.to_list), simulate_well_formed ca h v.to_list⟩
-  }).eval_distribution) :=
+  }⟧ᵖ :=
 sorry
 
 end prob_alg

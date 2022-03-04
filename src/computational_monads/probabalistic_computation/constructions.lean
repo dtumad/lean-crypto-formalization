@@ -77,7 +77,7 @@ end vector_call
 
 section uniform_fin
 
-lemma t (n : ℕ) : 
+lemma bitvec.to_nat_repeat_ff (n : ℕ) : 
   bitvec.to_nat (vector.repeat ff n) = 0 :=
 sorry
 
@@ -87,8 +87,8 @@ sorry
 def uniform_fin (n : ℕ) : prob_comp (fin $ n + 1) :=
 do {
   (bvec : bitvec (2 ^ n.size)) ← repeat (vector_call coin (2 ^ n.size)) 
-    (λ bvec, bitvec.to_nat bvec < n + 1) 
-    ⟨vector.repeat ff (2 ^ n.size), by simp, (t $ 2 ^ n.size).symm ▸ nat.zero_lt_succ n⟩,
+    (λ bvec, bitvec.to_nat bvec < n + 1) ⟨vector.repeat ff (2 ^ n.size),
+      by simp, (bitvec.to_nat_repeat_ff $ 2 ^ n.size).symm ▸ nat.zero_lt_succ n⟩,
   return (fin.of_nat' (bitvec.to_nat bvec))
 }
 
@@ -101,7 +101,7 @@ sorry
 
 @[simp]
 lemma eval_distribution_uniform_fin (n : ℕ) :
-  eval_distribution $[0... n] = pmf.uniform_of_fintype (fin $ n + 1) :=
+  ⟦$[0... n]⟧ᵖ = pmf.uniform_of_fintype (fin $ n + 1) :=
 sorry
 
 end uniform_fin
