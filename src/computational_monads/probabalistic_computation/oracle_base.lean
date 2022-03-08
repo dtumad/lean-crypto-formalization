@@ -128,13 +128,18 @@ open oracle_comp_spec
 /-- TODO: docs
 
 Semantically, `repeat oa p` represents a procedure like: `while (a ∉ p) {a ← oa}; return a`.
-Simulation semantics can be defined for this, since only one step is needed.
-Probability distribution semantics are harder, since if `p` always fails there may be no output.
+Simulation semantics can be defined for this, although repeated simulation may not be terminating.
+
+Probability distribution semantics are harder, since if `p` always fails there will be no output.
 To solve this, let `repeatₙ oa p` be the procedure that makes at most `n` loops before stopping.
+Note that if `p` never holds on the output of `oa`, we have `repeatₙ oa p ≃ oa` for all `n`, 
 `repeat oa p` then semantically represents the limit of `repeatₙ oa p` as `n → ∞`.
+Note that in the case where the oracle is just a tape of random bits,
+  the distribution of `repeatₙ` get arbitrarily close to that of `repeat` as `n → ∞`.
 
 Note that time-complexity semantics don't assume `repeat oa p` is polynomial time,
-so it can't be used in a polynomial-time reduction, unless that is taken as an additional axiom -/
+so it can't be used in a polynomial-time reduction, unless that is taken as an additional axiom.
+However it is still usable for describing security games and definitions of correctness. -/
 inductive oracle_comp (spec : oracle_comp_spec) : Type → Type 1
 | pure' (A : Type) (a : A) : oracle_comp A
 | bind' (A B : Type) (oa : oracle_comp A) (ob : A → oracle_comp B) : oracle_comp B
@@ -169,6 +174,7 @@ def decidable.decidable_eq {spec : oracle_comp_spec} [computable spec] :
 | _ _ (decidable_query i t) := by apply_instance
 | _ _ (decidable_repeat A oa p hoa hp) := hoa.decidable_eq
 
+-- TODO: implicit type class args
 def fin_support {spec : oracle_comp_spec} [spec.computable] [spec.finite_range] :
   Π {A : Type} (oa : oracle_comp spec A), decidable oa → finset A
 | _ _ (decidable_pure' A a h) := {a}
@@ -181,6 +187,14 @@ def fin_support {spec : oracle_comp_spec} [spec.computable] [spec.finite_range] 
   refine if (∃ a ∈ (fin_support oa hoa), p a)
     then (fin_support oa hoa).filter p else (fin_support oa hoa)
 
+-- Big step semantics for a computation with finite range oracles
+-- The result of queries is assumed to be uniform over the oracle's codomain
+-- Usually the `spec` when calling this will just be `unit →ₒ bool` (i.e. a tape of random bits),
+-- However it can be any more general things as well, e.g. uniform sampling from finite sets
+
+-- For `repeat oa p`, we filter the distribution by `p`, unless this filters everything,
+-- in which case we instead keep the original distribution for `oa`.
+-- This represents the limit of the distribution as the number of allowed loops goes to `∞`
 private noncomputable def eval_dist {spec : oracle_comp_spec} [spec.computable] [spec.finite_range] :
   Π {A : Type} (oa : oracle_comp spec A) (hoa : decidable oa),
     Σ (pa : pmf A), plift (pa.support = oa.fin_support hoa)
@@ -213,9 +227,18 @@ private noncomputable def eval_dist {spec : oracle_comp_spec} [spec.computable] 
     { exact plift.down hpa }
   end
 
+noncomputable def eval_distribution {A : Type} {spec : oracle_comp_spec} [spec.computable] [spec.finite_range]
+  (oa : oracle_comp spec A) [hca : oa.decidable] : pmf A :=
+(eval_dist oa hca).1
 
-lemma support_eval_distribution {A : Type} (ca : oracle_comp coin_oracle A) (hca : decidable ca) :
-  (eval_dist ca sorry).1.support = ca.fin_support hca :=
-sorry
+notation `⟦` oa `⟧` := eval_distribution oa
+
+lemma support_eval_distribution {A : Type} {spec : oracle_comp_spec} [spec.computable] [spec.finite_range]
+  (oa : oracle_comp spec A) [hoa : oa.decidable] :
+  ⟦oa⟧.support = oa.fin_support hoa :=
+plift.down (eval_dist oa _).2
+
+-- TODO: Should this be an actual definition? or is notation easier?
+notation oa `≃ₚ` oa' := ⟦oa⟧ = ⟦oa'⟧
 
 end oracle_comp
