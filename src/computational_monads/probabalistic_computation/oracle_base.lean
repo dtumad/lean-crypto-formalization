@@ -146,6 +146,9 @@ inductive oracle_comp (spec : oracle_comp_spec) : Type → Type 1
 | query (i : spec.ι) (t : spec.domain i) : oracle_comp (spec.range i)
 | repeat (A : Type) (oa : oracle_comp A) (p : set A) : oracle_comp A
 
+instance oracle_comp.monad (spec : oracle_comp_spec) : monad (oracle_comp spec) :=
+{ pure := oracle_comp.pure', bind := oracle_comp.bind' }
+
 namespace oracle_comp
 
 def inhabited_base {spec : oracle_comp_spec} [computable spec] :
@@ -186,6 +189,39 @@ def fin_support {spec : oracle_comp_spec} [spec.computable] [spec.finite_range] 
   by haveI : decidable_pred p := hp;
   refine if (∃ a ∈ (fin_support oa hoa), p a)
     then (fin_support oa hoa).filter p else (fin_support oa hoa)
+
+section sim
+
+structure simulation_oracle (spec spec' : oracle_comp_spec) :=
+(S : Type)
+(o (i : spec.ι) (t : spec.domain i) (s : S) : oracle_comp spec' (spec.range i × S))
+
+/-- Simulate an oracle comp to an oracle comp with a different spec.
+  Requires providing a maximum recursion depth for the `repeat` constructor -/
+def simulate {spec spec' : oracle_comp_spec} (sim_oracle : simulation_oracle spec spec')
+  [spec.computable] [spec'.computable] :
+  Π {A : Type} (n : ℕ) (oa : oracle_comp spec A) (hoa : decidable oa), sim_oracle.S → oracle_comp spec' (A × sim_oracle.S)
+| _ n (pure' A a) _ state := return ⟨a, state⟩
+| _ n (bind' _ _ _ _) (decidable_bind' A B oa ob hoa hob) state :=
+    (simulate n oa hoa state) >>= (λ ⟨a, state'⟩, simulate n (ob a) (hob a) state')
+| _ n (query i t) _ state := sim_oracle.o i t state
+| _ n (repeat _ _ _) (decidable_repeat A oa p hoa hp) state :=
+  let m := n in
+  match n with
+  | 0 := simulate m oa hoa state
+  | (n + 1) := begin
+  haveI : decidable_pred p := hp,
+  exact do {
+    ⟨a, state'⟩ ← simulate m oa hoa state,
+    ⟨a', state''⟩ ← if p a then return (a, state') else simulate n oa hoa state',
+    return (a', state'')
+  }
+  end
+end
+
+end sim
+
+section eval_dist
 
 -- Big step semantics for a computation with finite range oracles
 -- The result of queries is assumed to be uniform over the oracle's codomain
@@ -240,5 +276,7 @@ plift.down (eval_dist oa _).2
 
 -- TODO: Should this be an actual definition? or is notation easier?
 notation oa `≃ₚ` oa' := ⟦oa⟧ = ⟦oa'⟧
+
+end eval_dist
 
 end oracle_comp
