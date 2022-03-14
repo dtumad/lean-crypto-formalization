@@ -1,127 +1,6 @@
 import data.fintype.card
 import measure_theory.probability_mass_function.constructions
-
-/-- Specification of the various oracles available to a computation.
-  `ι` index the set of oracles (e.g. `ι := ℕ` gives a different oracle for each `n : ℕ)`.
-  `domain range : ι → Type` give the input and output of the oracle corresponding to `i : ι`. -/
-structure oracle_comp_spec : Type 1 := 
-(ι : Type)
-(domain range : ι → Type)
-
-namespace oracle_comp_spec
-
-section instances
-
-variables (spec : oracle_comp_spec)
-
-/-- Class or `oracle_comp_spec` that can be computably simulated -/
-class computable (spec : oracle_comp_spec) :=
-(ι_decidable_eq : decidable_eq spec.ι)
-(domain_decidable_eq (i : spec.ι) : decidable_eq $ spec.domain i)
-(range_decidable_eq (i : spec.ι) : decidable_eq $ spec.range i)
-(range_inhabited (i : spec.ι) : inhabited $ spec.range i)
-
-instance computable.ι_decidable_eq' [spec.computable] :
-  decidable_eq spec.ι := computable.ι_decidable_eq
-
-instance computable.domain_decidable_eq' [spec.computable] (i : spec.ι) :
-  decidable_eq (spec.domain i) := computable.domain_decidable_eq i
-
-instance computable.range_decidable_eq' [spec.computable] (i : spec.ι) :
-  decidable_eq (spec.range i) := computable.range_decidable_eq i
-
-instance computable.range_inhabited' [spec.computable] (i : spec.ι) :
-  inhabited (spec.range i) := computable.range_inhabited i
-
-/-- Class of `oracle_comp_spec` for which uniform random oracles are well defined -/
-class finite_range (spec : oracle_comp_spec) :=
-(range_fintype (i : spec.ι) : fintype $ spec.range i)
-
-instance finite_range.range_fintype' [spec.finite_range] (i : spec.ι) :
-  fintype (spec.range i) := finite_range.range_fintype i
-
-end instances
-
-section empty_spec
-
-/-- No access to any oracles -/
-def empty_spec : oracle_comp_spec :=
-{ ι := empty,
-  domain := empty.elim,
-  range := empty.elim, }
-
-notation `[]ₒ` := empty_spec
-
-instance empty_spec.computable : computable []ₒ := 
-{ ι_decidable_eq := empty.decidable_eq,
-  domain_decidable_eq := λ i, i.elim,
-  range_decidable_eq := λ i, i.elim,
-  range_inhabited := λ i, i.elim }
-
-instance empty_spec.finite_range : finite_range []ₒ :=
-{ range_fintype := λ i, i.elim }
-
-instance inhabited : inhabited oracle_comp_spec := ⟨[]ₒ⟩
-
-end empty_spec
-
-section singleton_spec
-
-/-- Access to a single oracle `T → U` -/
-def singleton_spec (T U : Type) : oracle_comp_spec :=
-{ ι := unit,
-  domain := λ _, T,
-  range := λ _, U, }
-
-notation T `→ₒ` U : 67 := singleton_spec T U
-
-variables (T U : Type)
-
-instance singleton_spec.computable [hT : decidable_eq T] [hU' : decidable_eq U] [hU : inhabited U] :
-  computable (T →ₒ U) :=
-{ ι_decidable_eq := punit.decidable_eq,
-  domain_decidable_eq := λ _, hT,
-  range_decidable_eq := λ _, hU',
-  range_inhabited := λ _, hU }
-
-instance singleton_spec.finite_range [hU : fintype U] :
-  finite_range (T →ₒ U) :=
-{ range_fintype := λ _, hU }
-
-end singleton_spec
-
-section append
-
-/-- Combine two specifications using a `sum` type to index the different specs -/
-instance oracle_comp_spec.has_append : has_append oracle_comp_spec :=
-{ append := λ spec spec', 
-  { ι := spec.ι ⊕ spec'.ι,
-    domain := sum.elim spec.domain spec'.domain,
-    range := sum.elim spec.range spec'.range } }
-
-variables (spec spec' : oracle_comp_spec)
-
-instance append_computable [spec.computable] [spec'.computable] :
-  computable (spec ++ spec') :=
-{ ι_decidable_eq := sum.decidable_eq spec.ι spec'.ι,
-  domain_decidable_eq := by refine (λ i, sum.rec_on i _ _); exact computable.domain_decidable_eq,
-  range_decidable_eq := by refine (λ i, sum.rec_on i _ _); exact computable.range_decidable_eq,
-  range_inhabited := by refine (λ i, sum.rec_on i _ _); exact computable.range_inhabited }
-
-instance append_finite_range [spec.finite_range] [spec'.finite_range] :
-  (spec ++ spec').finite_range :=
-{ range_fintype := by refine (λ i, sum.rec_on i _ _); exact finite_range.range_fintype }
-
-end append
-
-section coin_oracle
-
-@[derive [computable, finite_range]]
-def coin_oracle : oracle_comp_spec := unit →ₒ bool
-
-end coin_oracle
-
-end oracle_comp_spec 
+import computational_monads.probabalistic_computation.oracle_comp_spec
 
 open oracle_comp_spec
 
@@ -144,80 +23,75 @@ inductive oracle_comp (spec : oracle_comp_spec) : Type → Type 1
 | pure' (A : Type) (a : A) : oracle_comp A
 | bind' (A B : Type) (oa : oracle_comp A) (ob : A → oracle_comp B) : oracle_comp B
 | query (i : spec.ι) (t : spec.domain i) : oracle_comp (spec.range i)
-| repeat (A : Type) (oa : oracle_comp A) (p : set A) : oracle_comp A
 
 instance oracle_comp.monad (spec : oracle_comp_spec) : monad (oracle_comp spec) :=
 { pure := oracle_comp.pure', bind := oracle_comp.bind' }
 
 namespace oracle_comp
 
-def inhabited_base {spec : oracle_comp_spec} [computable spec] :
-  Π {A : Type} (oa : oracle_comp spec A), inhabited A
-| _ (pure' A a) := ⟨a⟩
-| _ (bind' A B oa ob) := let ⟨a⟩ := inhabited_base oa in inhabited_base (ob a)
-| _ (query i t) := ⟨arbitrary (spec.range i)⟩
-| _ (repeat A oa p) := inhabited_base oa
+def coin : oracle_comp coin_oracle bool := query () ()
 
-@[class]
-inductive decidable {spec : oracle_comp_spec} : 
-  Π {A : Type}, oracle_comp spec A → Type 1
-| decidable_pure' (A : Type) (a : A) (h : decidable_eq A) : decidable (pure' A a)
-| decidable_bind' (A B : Type) (oa : oracle_comp spec A) (ob : A → oracle_comp spec B)
-    (hoa : decidable oa) (hob : ∀ a, decidable (ob a)) : decidable (bind' A B oa ob)
-| decidable_query (i : spec.ι) (t : spec.domain i) : decidable (query i t)
-| decidable_repeat (A : Type) (oa : oracle_comp spec A) (p : set A)
-    (hoa : decidable oa) (hp : decidable_pred p) : decidable (repeat A oa p)
+def uniform_fin (n : ℕ) : oracle_comp uniform_selecting (fin $ n + 1) := query n ()
 
-open decidable
+notation `$[0..` n `]` := uniform_fin n
 
-def decidable.decidable_eq {spec : oracle_comp_spec} [computable spec] :
-  Π {A : Type} {oa : oracle_comp spec A}, decidable oa → decidable_eq A
-| _ _ (decidable_pure' A a h) := h
-| _ _ (decidable_bind' A B oa ob hoa hob) := let ⟨a⟩ := inhabited_base oa in (hob a).decidable_eq
-| _ _ (decidable_query i t) := by apply_instance
-| _ _ (decidable_repeat A oa p hoa hp) := hoa.decidable_eq
-
--- TODO: implicit type class args
-def fin_support {spec : oracle_comp_spec} [spec.computable] [spec.finite_range] :
-  Π {A : Type} (oa : oracle_comp spec A), decidable oa → finset A
-| _ _ (decidable_pure' A a h) := {a}
-| _ _ (decidable_bind' A B oa ob hoa hob) := 
-  by haveI : decidable_eq B := (let ⟨a⟩ := inhabited_base oa in (hob a).decidable_eq);
-  refine (fin_support oa hoa).bUnion (λ a, fin_support (ob a) (hob a))
-| _ _ (decidable_query i t) := finset.univ
-| _ _ (decidable_repeat A oa p hoa hp) := 
-  by haveI : decidable_pred p := hp;
-  refine if (∃ a ∈ (fin_support oa hoa), p a)
-    then (fin_support oa hoa).filter p else (fin_support oa hoa)
+/-- Set of possible outputs of the computation, allowing for any possible output for the queries. -/
+def support {spec : oracle_comp_spec} : Π {A : Type} (oa : oracle_comp spec A), set A
+| _ (pure' A a) := {a}
+| _ (bind' A B ca cb) := ⋃ a ∈ support ca, support (cb a)
+| _ (query i t) := ⊤
 
 section sim
 
+/-- Specifies a way to simulate a set of oracles using another set of oracles. 
+  e.g. using uniform random selection to simulate a hash oracle -/
 structure simulation_oracle (spec spec' : oracle_comp_spec) :=
 (S : Type)
 (o (i : spec.ι) (t : spec.domain i) (s : S) : oracle_comp spec' (spec.range i × S))
 
+def identity_simulation_oracle (spec : oracle_comp_spec) : simulation_oracle spec spec :=
+{ S := unit,
+  o := λ i t _, query i t >>= λ u, return (u, ()) }
+
+def logging_simulation_oracle (spec : oracle_comp_spec) : simulation_oracle spec spec :=
+{ S := list (Σ (i : spec.ι), spec.domain i × spec.range i),
+  o := λ i t log, query i t >>= λ u, return (u, ⟨i, t, u⟩ :: log) }
+
+def query_cache (spec : oracle_comp_spec) : Type :=
+list (Σ (i : spec.ι), spec.domain i × spec.range i)
+
+def query_cache.lookup (spec : oracle_comp_spec) [spec.computable] (i : spec.ι) (t : spec.domain i) :
+  query_cache spec → option (spec.range i)
+| (⟨i', t', u⟩ :: log) := if hi : i' = i
+  then if t = hi.rec_on t'
+  then hi.rec_on (some u)
+  else query_cache.lookup log
+  else query_cache.lookup log
+| [] := none
+
+def caching_simulation_oracle (spec : oracle_comp_spec) [spec.computable] : simulation_oracle spec spec :=
+{ S := query_cache spec,
+  o := λ i t log, match query_cache.lookup spec i t log with
+  | (some u) := return (u, log)
+  | none := do { u ← query i t, return (u, ⟨i, t, u⟩ :: log) }
+  end }
+
+def simulation_oracle_append (spec₁ spec₂ spec' : oracle_comp_spec)
+  (so : simulation_oracle spec₁ spec') (so' : simulation_oracle spec₂ spec') :
+  simulation_oracle (spec₁ ++ spec₂) spec' :=
+{ S := so.S × so'.S,
+  o := λ i, match i with
+  | sum.inl i := λ t s, do { ⟨u, s'⟩ ← so.o i t s.1, return (u, s', s.2) }
+  | sum.inr i := λ t s, do { ⟨u, s'⟩ ← so'.o i t s.2, return (u, s.1, s') }
+  end }
+
 /-- Simulate an oracle comp to an oracle comp with a different spec.
   Requires providing a maximum recursion depth for the `repeat` constructor -/
-def simulate {spec spec' : oracle_comp_spec} (sim_oracle : simulation_oracle spec spec')
-  [spec.computable] [spec'.computable] :
-  Π {A : Type} (n : ℕ) (oa : oracle_comp spec A) (hoa : decidable oa), sim_oracle.S → oracle_comp spec' (A × sim_oracle.S)
-| _ n (pure' A a) _ state := return ⟨a, state⟩
-| _ n (bind' _ _ _ _) (decidable_bind' A B oa ob hoa hob) state :=
-    (simulate n oa hoa state) >>= (λ ⟨a, state'⟩, simulate n (ob a) (hob a) state')
-| _ n (query i t) _ state := sim_oracle.o i t state
-| _ n (repeat _ _ _) (decidable_repeat A oa p hoa hp) state :=
-  let m := n in
-  match n with
-  | 0 := simulate m oa hoa state
-  | (n + 1) := begin
-  haveI : decidable_pred p := hp,
-  exact do {
-    ⟨a, state'⟩ ← simulate m oa hoa state,
-    ⟨a', state''⟩ ← if p a then return (a, state') else simulate n oa hoa state',
-    return (a', state'')
-  }
-  end
-end
+def simulate {spec spec' : oracle_comp_spec} (sim_oracle : simulation_oracle spec spec') :
+  Π {A : Type} (oa : oracle_comp spec A), sim_oracle.S → oracle_comp spec' (A × sim_oracle.S)
+| _ (pure' A a) state := return ⟨a, state⟩
+| _ (bind' A B oa ob) state := simulate oa state >>= λ ⟨a, state'⟩, simulate (ob a) state'
+| _ (query i t) state := sim_oracle.o i t state
 
 end sim
 
@@ -232,47 +106,31 @@ section eval_dist
 -- in which case we instead keep the original distribution for `oa`.
 -- This represents the limit of the distribution as the number of allowed loops goes to `∞`
 private noncomputable def eval_dist {spec : oracle_comp_spec} [spec.computable] [spec.finite_range] :
-  Π {A : Type} (oa : oracle_comp spec A) (hoa : decidable oa),
-    Σ (pa : pmf A), plift (pa.support = oa.fin_support hoa)
-| _ _ (decidable_pure' A a h) := ⟨pmf.pure a, 
-  plift.up $ (pmf.support_pure a).trans (finset.coe_singleton a).symm⟩
-| _ _ (decidable_bind' A B oa ob hoa hob) := 
-  let pa := eval_dist oa hoa in
-  let pb := λ a, eval_dist (ob a) (hob a) in
+  Π {A : Type} (oa : oracle_comp spec A),
+    Σ (pa : pmf A), plift (pa.support = oa.support)
+| _ (pure' A a) := ⟨pmf.pure a, 
+  plift.up $ (pmf.support_pure a)⟩
+| _ (bind' A B oa ob) := 
+  let pa := eval_dist oa in
+  let pb := λ a, eval_dist (ob a) in
   ⟨pa.1 >>= (λ a, (pb a).1), begin
-    refine plift.up _,
-    refine set.ext (λ b, _),
+    refine plift.up (set.ext $ λ b, _),
     erw pmf.mem_support_bind_iff pa.1,
-    rw fin_support,
-    simp only [plift.down pa.2, finset.mem_coe, finset.mem_bUnion],
-    split; rintro ⟨a, ha, ha'⟩; refine ⟨a, ha, _⟩; simpa [(plift.down (pb a).2)] using ha',
-
+    simp only [support, plift.down pa.2, set.mem_Union],
+    split; rintro ⟨a, ha, ha'⟩; refine ⟨a, ha, _⟩; simpa [(plift.down (pb a).2)] using ha'
   end⟩
-| _ _ (decidable_query i t) := ⟨pmf.uniform_of_fintype (spec.range i),
-  plift.up ((pmf.support_uniform_of_fintype (spec.range i)).trans finset.coe_univ.symm)⟩
-| _ _ (decidable_repeat A oa p hoa hp) := 
-  let ⟨pa, hpa⟩ := eval_dist oa hoa in
-  begin
-    haveI : decidable_pred p := hp,
-    refine ⟨if h : ∃ a ∈ (fin_support oa hoa), p a
-      then pmf.filter pa p (let ⟨a, ha, ha'⟩ := h in ⟨a, ha', (plift.down hpa).symm ▸ ha⟩) else pa, _⟩,
-    refine plift.up _,
-    rw fin_support,
-    split_ifs,
-    { simpa [plift.down hpa, set.inter_comm p] },
-    { exact plift.down hpa }
-  end
+| _ (query i t) := ⟨pmf.uniform_of_fintype (spec.range i),
+  plift.up ((pmf.support_uniform_of_fintype (spec.range i)))⟩
 
-noncomputable def eval_distribution {A : Type} {spec : oracle_comp_spec} [spec.computable] [spec.finite_range]
-  (oa : oracle_comp spec A) [hca : oa.decidable] : pmf A :=
-(eval_dist oa hca).1
+noncomputable def eval_distribution {A : Type} {spec : oracle_comp_spec}
+  [spec.computable] [spec.finite_range] (oa : oracle_comp spec A) : pmf A :=
+(eval_dist oa).1
 
 notation `⟦` oa `⟧` := eval_distribution oa
 
 lemma support_eval_distribution {A : Type} {spec : oracle_comp_spec} [spec.computable] [spec.finite_range]
-  (oa : oracle_comp spec A) [hoa : oa.decidable] :
-  ⟦oa⟧.support = oa.fin_support hoa :=
-plift.down (eval_dist oa _).2
+  (oa : oracle_comp spec A) : ⟦oa⟧.support = oa.support :=
+plift.down (eval_dist oa).2
 
 -- TODO: Should this be an actual definition? or is notation easier?
 notation oa `≃ₚ` oa' := ⟦oa⟧ = ⟦oa'⟧
