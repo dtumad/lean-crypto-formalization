@@ -125,6 +125,15 @@ def uniform_selecting : oracle_comp_spec :=
   domain := λ n, unit,
   range := λ n, fin (n + 1) }
 
+instance uniform_selecting.computable : computable uniform_selecting :=
+{ ι_decidable_eq := nat.decidable_eq,
+  domain_decidable_eq := λ _, by apply_instance,
+  range_decidable_eq := λ n, fin.decidable_eq (n + 1),
+  range_inhabited := λ _, fin.inhabited }
+
+instance uniform_selecting.finite_range : finite_range uniform_selecting :=
+{ range_fintype := λ n, fin.fintype (n + 1) }
+
 end coin_oracle
 
 end oracle_comp_spec 

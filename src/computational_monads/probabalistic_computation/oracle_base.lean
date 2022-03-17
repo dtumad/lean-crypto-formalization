@@ -29,19 +29,80 @@ instance oracle_comp.monad (spec : oracle_comp_spec) : monad (oracle_comp spec) 
 
 namespace oracle_comp
 
+/-- TODO: could instead simp everything into `return` and `>>=`? -/
+@[simp]
+lemma pure_eq_pure' {A : Type} (spec : oracle_comp_spec) (a : A) :
+  (pure a : oracle_comp spec A) = pure' A a := rfl
+
+@[simp]
+lemma return_eq_pure' {A : Type} (spec : oracle_comp_spec) (a : A) :
+  (return a : oracle_comp spec A) = pure' A a := rfl
+
+@[simp]
+lemma bind_eq_bind' {A B : Type} {spec : oracle_comp_spec}
+  (ca : oracle_comp spec A) (cb : A → oracle_comp spec B) :
+  (ca >>= cb) = bind' A B ca cb := rfl
+
+section constructions
+
 def coin : oracle_comp coin_oracle bool := query () ()
 
-def uniform_fin (n : ℕ) : oracle_comp uniform_selecting (fin $ n + 1) := query n ()
+def uniform_fin (n : ℕ) :
+  oracle_comp uniform_selecting (fin $ n + 1) := query n ()
 
 notation `$[0..` n `]` := uniform_fin n
 
-/-- Set of possible outputs of the computation, allowing for any possible output for the queries. -/
+def uniform_select_vector {A : Type} {n : ℕ} (v : vector A (n + 1)) :
+  oracle_comp uniform_selecting A := v.nth <$> $[0..n] 
+
+def uniform_select_list {A : Type} : Π (xs : list A) (h : ¬ xs.empty),
+  oracle_comp uniform_selecting A
+| [] h := false.elim (h rfl)
+| (x :: xs) _ := uniform_select_vector ⟨x :: xs, list.length_cons x xs⟩ 
+
+noncomputable def uniform_select_finset {A : Type} (bag : finset A) (h : bag.nonempty) :
+  oracle_comp uniform_selecting A := 
+uniform_select_list (bag.to_list) (let ⟨x, hx⟩ := h in
+  λ h', list.not_mem_nil x ((list.empty_iff_eq_nil.1 h') ▸ (finset.mem_to_list bag).2 hx))
+
+noncomputable def uniform_select_fintype {A : Type} [fintype A] [nonempty A] :
+  oracle_comp uniform_selecting A :=
+uniform_select_finset ⊤ finset.univ_nonempty
+
+end constructions
+
+section support
+
+/-- Set of possible outputs of the computation, allowing for any possible output of the queries. -/
 def support {spec : oracle_comp_spec} : Π {A : Type} (oa : oracle_comp spec A), set A
 | _ (pure' A a) := {a}
-| _ (bind' A B ca cb) := ⋃ a ∈ support ca, support (cb a)
+| _ (bind' A B ca cb) := ⋃ a ∈ ca.support, (cb a).support
 | _ (query i t) := ⊤
 
-section sim
+@[simp]
+lemma support_pure' {A : Type} (spec : oracle_comp_spec) (a : A) :
+  (pure' A a : oracle_comp spec A).support = {a} := rfl
+
+-- @[simp]
+-- lemma support_pure {A : Type} (spec : oracle_comp_spec) (a : A) :
+--   (pure a : oracle_comp spec A).support = {a} := by simp
+
+-- @[simp]
+-- lemma support_return {A : Type} (spec : oracle_comp_spec) (a : A) :
+--   (return a : oracle_comp spec A).support = {a} := by simp
+
+@[simp]
+lemma support_bind' {A B : Type} {spec : oracle_comp_spec}
+  (ca : oracle_comp spec A) (cb : A → oracle_comp spec B) :
+  (bind' A B ca cb).support = ⋃ a ∈ ca.support, (cb a).support := rfl
+
+@[simp]
+lemma support_query {spec : oracle_comp_spec} (i : spec.ι) (t : spec.domain i) :
+  (query i t : oracle_comp spec (spec.range i)).support = ⊤ := rfl
+
+end support
+
+section simulation_oracle
 
 /-- Specifies a way to simulate a set of oracles using another set of oracles. 
   e.g. using uniform random selection to simulate a hash oracle -/
@@ -49,9 +110,20 @@ structure simulation_oracle (spec spec' : oracle_comp_spec) :=
 (S : Type)
 (o (i : spec.ι) (t : spec.domain i) (s : S) : oracle_comp spec' (spec.range i × S))
 
-def identity_simulation_oracle (spec : oracle_comp_spec) : simulation_oracle spec spec :=
+def stateless_simulation_oracle (spec spec' : oracle_comp_spec)
+  (o : Π (i : spec.ι), spec.domain i → oracle_comp spec' (spec.range i)) :
+  simulation_oracle spec spec' :=
 { S := unit,
-  o := λ i t _, query i t >>= λ u, return (u, ()) }
+  o := λ i t _, o i t >>= λ u, return (u, ()) }
+
+notation `⟪` o `⟫` := stateless_simulation_oracle _ _ o
+
+def identity_simulation_oracle (spec : oracle_comp_spec) : simulation_oracle spec spec :=
+⟪ query ⟫
+
+noncomputable def random_simulation_oracle (spec : oracle_comp_spec) [spec.computable] [spec.finite_range] : 
+  simulation_oracle spec uniform_selecting :=
+⟪ λ i t, uniform_select_fintype ⟫
 
 def logging_simulation_oracle (spec : oracle_comp_spec) : simulation_oracle spec spec :=
 { S := list (Σ (i : spec.ι), spec.domain i × spec.range i),
@@ -63,13 +135,12 @@ list (Σ (i : spec.ι), spec.domain i × spec.range i)
 def query_cache.lookup (spec : oracle_comp_spec) [spec.computable] (i : spec.ι) (t : spec.domain i) :
   query_cache spec → option (spec.range i)
 | (⟨i', t', u⟩ :: log) := if hi : i' = i
-  then if t = hi.rec_on t'
-  then hi.rec_on (some u)
-  else query_cache.lookup log
-  else query_cache.lookup log
+    then (if t = hi.rec_on t' then hi.rec_on (some u)
+    else query_cache.lookup log) else query_cache.lookup log
 | [] := none
 
-def caching_simulation_oracle (spec : oracle_comp_spec) [spec.computable] : simulation_oracle spec spec :=
+def caching_simulation_oracle (spec : oracle_comp_spec) [spec.computable] :
+  simulation_oracle spec spec :=
 { S := query_cache spec,
   o := λ i t log, match query_cache.lookup spec i t log with
   | (some u) := return (u, log)
@@ -85,56 +156,26 @@ def simulation_oracle_append (spec₁ spec₂ spec' : oracle_comp_spec)
   | sum.inr i := λ t s, do { ⟨u, s'⟩ ← so'.o i t s.2, return (u, s.1, s') }
   end }
 
+notation so `⟪++⟫` so' := simulation_oracle_append _ _ _ so so'
+
+end simulation_oracle
+
+section simulate
+
 /-- Simulate an oracle comp to an oracle comp with a different spec.
   Requires providing a maximum recursion depth for the `repeat` constructor -/
 def simulate {spec spec' : oracle_comp_spec} (sim_oracle : simulation_oracle spec spec') :
   Π {A : Type} (oa : oracle_comp spec A), sim_oracle.S → oracle_comp spec' (A × sim_oracle.S)
 | _ (pure' A a) state := return ⟨a, state⟩
-| _ (bind' A B oa ob) state := simulate oa state >>= λ ⟨a, state'⟩, simulate (ob a) state'
+| _ (bind' A B oa ob) state := do { ⟨a, state'⟩ ← simulate oa state, simulate (ob a) state' }
 | _ (query i t) state := sim_oracle.o i t state
 
-end sim
+/-- Get the result of simulation without returning the internal oracle state -/
+def simulate' {spec spec' : oracle_comp_spec} (sim_oracle : simulation_oracle spec spec') 
+  {A : Type} (oa : oracle_comp spec A) (s : sim_oracle.S) :
+  oracle_comp spec' A :=
+prod.fst <$> oa.simulate sim_oracle s
 
-section eval_dist
-
--- Big step semantics for a computation with finite range oracles
--- The result of queries is assumed to be uniform over the oracle's codomain
--- Usually the `spec` when calling this will just be `unit →ₒ bool` (i.e. a tape of random bits),
--- However it can be any more general things as well, e.g. uniform sampling from finite sets
-
--- For `repeat oa p`, we filter the distribution by `p`, unless this filters everything,
--- in which case we instead keep the original distribution for `oa`.
--- This represents the limit of the distribution as the number of allowed loops goes to `∞`
-private noncomputable def eval_dist {spec : oracle_comp_spec} [spec.computable] [spec.finite_range] :
-  Π {A : Type} (oa : oracle_comp spec A),
-    Σ (pa : pmf A), plift (pa.support = oa.support)
-| _ (pure' A a) := ⟨pmf.pure a, 
-  plift.up $ (pmf.support_pure a)⟩
-| _ (bind' A B oa ob) := 
-  let pa := eval_dist oa in
-  let pb := λ a, eval_dist (ob a) in
-  ⟨pa.1 >>= (λ a, (pb a).1), begin
-    refine plift.up (set.ext $ λ b, _),
-    erw pmf.mem_support_bind_iff pa.1,
-    simp only [support, plift.down pa.2, set.mem_Union],
-    split; rintro ⟨a, ha, ha'⟩; refine ⟨a, ha, _⟩; simpa [(plift.down (pb a).2)] using ha'
-  end⟩
-| _ (query i t) := ⟨pmf.uniform_of_fintype (spec.range i),
-  plift.up ((pmf.support_uniform_of_fintype (spec.range i)))⟩
-
-noncomputable def eval_distribution {A : Type} {spec : oracle_comp_spec}
-  [spec.computable] [spec.finite_range] (oa : oracle_comp spec A) : pmf A :=
-(eval_dist oa).1
-
-notation `⟦` oa `⟧` := eval_distribution oa
-
-lemma support_eval_distribution {A : Type} {spec : oracle_comp_spec} [spec.computable] [spec.finite_range]
-  (oa : oracle_comp spec A) : ⟦oa⟧.support = oa.support :=
-plift.down (eval_dist oa).2
-
--- TODO: Should this be an actual definition? or is notation easier?
-notation oa `≃ₚ` oa' := ⟦oa⟧ = ⟦oa'⟧
-
-end eval_dist
+end simulate
 
 end oracle_comp
