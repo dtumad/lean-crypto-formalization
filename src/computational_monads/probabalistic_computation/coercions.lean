@@ -1,4 +1,5 @@
 import computational_monads.probabalistic_computation.oracle_base
+import computational_monads.probabalistic_computation.simulation_oracles
 
 -- TODO: Full coercion file
 open oracle_comp oracle_comp_spec

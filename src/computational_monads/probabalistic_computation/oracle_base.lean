@@ -102,65 +102,13 @@ lemma support_query {spec : oracle_comp_spec} (i : spec.ι) (t : spec.domain i) 
 
 end support
 
-section simulation_oracle
+section simulate
 
 /-- Specifies a way to simulate a set of oracles using another set of oracles. 
   e.g. using uniform random selection to simulate a hash oracle -/
 structure simulation_oracle (spec spec' : oracle_comp_spec) :=
 (S : Type)
 (o (i : spec.ι) (t : spec.domain i) (s : S) : oracle_comp spec' (spec.range i × S))
-
-def stateless_simulation_oracle (spec spec' : oracle_comp_spec)
-  (o : Π (i : spec.ι), spec.domain i → oracle_comp spec' (spec.range i)) :
-  simulation_oracle spec spec' :=
-{ S := unit,
-  o := λ i t _, o i t >>= λ u, return (u, ()) }
-
-notation `⟪` o `⟫` := stateless_simulation_oracle _ _ o
-
-def identity_simulation_oracle (spec : oracle_comp_spec) : simulation_oracle spec spec :=
-⟪ query ⟫
-
-noncomputable def random_simulation_oracle (spec : oracle_comp_spec) [spec.computable] [spec.finite_range] : 
-  simulation_oracle spec uniform_selecting :=
-⟪ λ i t, uniform_select_fintype ⟫
-
-def logging_simulation_oracle (spec : oracle_comp_spec) : simulation_oracle spec spec :=
-{ S := list (Σ (i : spec.ι), spec.domain i × spec.range i),
-  o := λ i t log, query i t >>= λ u, return (u, ⟨i, t, u⟩ :: log) }
-
-def query_cache (spec : oracle_comp_spec) : Type :=
-list (Σ (i : spec.ι), spec.domain i × spec.range i)
-
-def query_cache.lookup (spec : oracle_comp_spec) [spec.computable] (i : spec.ι) (t : spec.domain i) :
-  query_cache spec → option (spec.range i)
-| (⟨i', t', u⟩ :: log) := if hi : i' = i
-    then (if t = hi.rec_on t' then hi.rec_on (some u)
-    else query_cache.lookup log) else query_cache.lookup log
-| [] := none
-
-def caching_simulation_oracle (spec : oracle_comp_spec) [spec.computable] :
-  simulation_oracle spec spec :=
-{ S := query_cache spec,
-  o := λ i t log, match query_cache.lookup spec i t log with
-  | (some u) := return (u, log)
-  | none := do { u ← query i t, return (u, ⟨i, t, u⟩ :: log) }
-  end }
-
-def simulation_oracle_append (spec₁ spec₂ spec' : oracle_comp_spec)
-  (so : simulation_oracle spec₁ spec') (so' : simulation_oracle spec₂ spec') :
-  simulation_oracle (spec₁ ++ spec₂) spec' :=
-{ S := so.S × so'.S,
-  o := λ i, match i with
-  | sum.inl i := λ t s, do { ⟨u, s'⟩ ← so.o i t s.1, return (u, s', s.2) }
-  | sum.inr i := λ t s, do { ⟨u, s'⟩ ← so'.o i t s.2, return (u, s.1, s') }
-  end }
-
-notation so `⟪++⟫` so' := simulation_oracle_append _ _ _ so so'
-
-end simulation_oracle
-
-section simulate
 
 /-- Simulate an oracle comp to an oracle comp with a different spec.
   Requires providing a maximum recursion depth for the `repeat` constructor -/
@@ -177,5 +125,28 @@ def simulate' {spec spec' : oracle_comp_spec} (sim_oracle : simulation_oracle sp
 prod.fst <$> oa.simulate sim_oracle s
 
 end simulate
+
+/-- Oracle computations that uniformly make at most a given number of queries.
+  In particular `simulate` will always the `simulation_oracle` at most that many times -/
+inductive queries_at_most {spec : oracle_comp_spec} : 
+  Π {A : Type}, oracle_comp spec A → ℕ → Type 1
+| queries_at_most_sample {A : Type} (a : A) :
+    queries_at_most (pure' A a) 0
+| queries_at_most_bind' {A B : Type} (ca : oracle_comp spec A) (cb : A → oracle_comp spec B)
+    (p q : ℕ) (hca : queries_at_most ca p) (hcb : ∀ a, queries_at_most (cb a) q) :
+    queries_at_most (bind' A B ca cb) (p + q)
+| queries_at_most_query {i : spec.ι} (a : spec.domain i) :
+    queries_at_most (query i a) 1 
+
+def count_oracle_queries {spec : oracle_comp_spec} :
+  simulation_oracle spec spec :=
+{ S := ℕ,
+  o := λ i t n, do { u ← query i t, return ⟨u, n + 1⟩ } }
+
+/-- Soundness of `queries_at_most` with respect to simulation -/
+theorem qam {spec spec' : oracle_comp_spec} {A : Type} (oa : oracle_comp spec A)
+  (x : A × ℕ) (hx : x ∈ (simulate count_oracle_queries oa nat.zero).support)
+  (n : ℕ) (hn : queries_at_most oa n) : x.2 ≤ n :=
+sorry
 
 end oracle_comp
