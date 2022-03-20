@@ -1,4 +1,4 @@
-import computational_monads.probabalistic_computation.oracle_base
+import computational_monads.probabalistic_computation.oracle_comp
 
 namespace oracle_comp 
 

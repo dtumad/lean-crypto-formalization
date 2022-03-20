@@ -1,7 +1,6 @@
-import computational_monads.probabalistic_computation.oracle_base
+import computational_monads.probabalistic_computation.uniform_select
 import computational_monads.probabalistic_computation.simulation_oracles
 
--- TODO: Full coercion file
 open oracle_comp oracle_comp_spec
 
 variables (spec spec' spec'' : oracle_comp_spec) (A : Type)
@@ -44,28 +43,28 @@ instance simulation_oracle.coe (spec spec' : oracle_comp_spec) :
   has_coe (simulation_oracle spec spec') (simulation_oracle spec (spec ++ spec')) :=
 { coe := λ so, {
   S := so.S,
-  o := λ i t s, ↑(so.o i t s)
+  o := λ i x, ↑(so.o i x)
 }}
 
 instance c' (spec spec' : oracle_comp_spec) :
   has_coe (simulation_oracle spec spec') (simulation_oracle spec (spec' ++ spec)) :=
 { coe := λ so, {
   S := so.S,
-  o := λ i t s, ↑(so.o i t s)
+  o := λ i x, ↑(so.o i x)
 }}
 
 instance c'' (spec spec' spec'' : oracle_comp_spec) :
   has_coe (simulation_oracle spec spec') (simulation_oracle spec (spec' ++ spec'')) :=
 { coe := λ so, {
   S := so.S,
-  o := λ i t s, ↑(so.o i t s)
+  o := λ i x, ↑(so.o i x)
 }}
 
 instance c''' (spec spec' spec'' : oracle_comp_spec) :
   has_coe (simulation_oracle spec spec') (simulation_oracle spec (spec'' ++ spec')) :=
 { coe := λ so, {
   S := so.S,
-  o := λ i t s, ↑(so.o i t s)
+  o := λ i x, ↑(so.o i x)
 }}
 
 noncomputable example {A B C D : Type} [fintype C] [inhabited C] [decidable_eq C] :

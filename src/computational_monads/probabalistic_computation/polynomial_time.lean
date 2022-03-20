@@ -1,7 +1,9 @@
 import analysis.asymptotics.superpolynomial_decay
 import computability.tm_computable
 
-import computational_monads.probabalistic_computation.oracle_base
+import computational_monads.probabalistic_computation.oracle_comp
+import computational_monads.probabalistic_computation.eval_distribution
+
 
 universes u v w
 
@@ -26,6 +28,9 @@ def poly_time {α β : Type} (f : α → β) :=
 Σ (ea : fin_encoding α) (eb : fin_encoding β),
   tm2_computable_in_poly_time ea eb f
 
+noncomputable lemma poly_time_id (α : Type) (ea : fin_encoding α) : poly_time (id : α → α) :=
+⟨ea, ea, id_computable_in_poly_time ea⟩
+
 end poly_time
 
 section poly_time_oracle_comp
@@ -42,5 +47,21 @@ inductive poly_time_oracle_comp {spec : oracle_comp_spec} :
     poly_time_oracle_comp (λ a, bind' β γ (f a) (g a))
 | poly_time_query {α : Type} (i : spec.ι) (f : α → spec.domain i) (hf : poly_time f) :
     poly_time_oracle_comp (λ a, query i (f a))
+| poly_time_ext [spec.finite_range] [spec.computable]
+    {α β : Type} (f g : α → oracle_comp spec β)
+    (h : ∀ a, f a ≃ₚ g a) (hf : poly_time_oracle_comp g) :
+    poly_time_oracle_comp f
+
+open poly_time_oracle_comp
+
+/-- Simulating something polynomial time with polynomial time oracles is still polynomial time-/
+theorem poly_time_simulate {spec spec' : oracle_comp_spec} {α β : Type}
+  (so : simulation_oracle spec spec') (s : so.S)
+  (hso : ∀ (i : spec.ι), poly_time_oracle_comp $ so.o i) :
+  Π (f : α → oracle_comp spec β) (hf : poly_time_oracle_comp f),
+  poly_time_oracle_comp (λ a, simulate so (f a) s) :=
+begin
+  sorry
+end
 
 end poly_time_oracle_comp
