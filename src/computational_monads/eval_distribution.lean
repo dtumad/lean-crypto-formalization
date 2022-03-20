@@ -1,4 +1,4 @@
-import computational_monads.probabalistic_computation.oracle_comp
+import computational_monads.oracle_comp
 
 open oracle_comp oracle_comp_spec
 

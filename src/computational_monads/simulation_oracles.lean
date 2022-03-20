@@ -1,4 +1,4 @@
-import computational_monads.probabalistic_computation.uniform_select
+import computational_monads.uniform_select
 
 open oracle_comp oracle_comp_spec
 

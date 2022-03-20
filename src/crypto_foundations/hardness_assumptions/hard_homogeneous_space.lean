@@ -1,4 +1,4 @@
--- import computational_monads.probabalistic_computation.prob_comp
+-- import computational_monads.prob_comp
 -- import computational_complexity.complexity_class
 -- import to_mathlib.action_classes
 

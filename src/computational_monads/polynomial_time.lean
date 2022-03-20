@@ -1,8 +1,8 @@
 import analysis.asymptotics.superpolynomial_decay
 import computability.tm_computable
 
-import computational_monads.probabalistic_computation.oracle_comp
-import computational_monads.probabalistic_computation.eval_distribution
+import computational_monads.oracle_comp
+import computational_monads.eval_distribution
 
 
 universes u v w

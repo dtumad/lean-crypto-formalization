@@ -1,5 +1,5 @@
 -- import computational_complexity.complexity_class
--- import computational_monads.probabalistic_computation.constructions
+-- import computational_monads.constructions
 
 -- variables [function_cost_model ℚ] [comp_cost_model ℚ]
 

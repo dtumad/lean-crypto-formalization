@@ -1,4 +1,4 @@
--- import computational_monads.probabalistic_computation.forking_lemma
+-- import computational_monads.forking_lemma
 -- import computational_complexity.complexity_class
 -- import data.list.basic
 

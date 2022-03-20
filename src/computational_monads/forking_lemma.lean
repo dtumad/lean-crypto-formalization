@@ -1,5 +1,5 @@
--- import computational_monads.probabalistic_computation.constructions
--- import computational_monads.oracle_access.oracle_comp
+-- import computational_monads.constructions
+-- import computational_monads.oracle_comp
 
 -- open_locale nnreal ennreal
 

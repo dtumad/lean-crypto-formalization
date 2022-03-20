@@ -1,4 +1,4 @@
--- import computational_monads.probabalistic_computation.constructions
+-- import computational_monads.constructions
 -- import computational_complexity.complexity_class
 -- import data.list.basic
 

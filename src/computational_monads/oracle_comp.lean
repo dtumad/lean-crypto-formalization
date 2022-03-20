@@ -1,6 +1,6 @@
 import data.fintype.card
 import measure_theory.probability_mass_function.constructions
-import computational_monads.probabalistic_computation.oracle_comp_spec
+import computational_monads.oracle_comp_spec
 
 variables {A B : Type} {spec : oracle_comp_spec}
 

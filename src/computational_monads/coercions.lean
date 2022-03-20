@@ -1,5 +1,5 @@
-import computational_monads.probabalistic_computation.uniform_select
-import computational_monads.probabalistic_computation.simulation_oracles
+import computational_monads.uniform_select
+import computational_monads.simulation_oracles
 
 open oracle_comp oracle_comp_spec
 
