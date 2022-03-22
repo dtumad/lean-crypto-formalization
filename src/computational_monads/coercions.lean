@@ -1,5 +1,5 @@
-import computational_monads.uniform_select
-import computational_monads.simulation_oracles
+import computational_monads.constructions.uniform_select
+import computational_monads.simulation_semantics.simulation_oracles
 
 open oracle_comp oracle_comp_spec
 
