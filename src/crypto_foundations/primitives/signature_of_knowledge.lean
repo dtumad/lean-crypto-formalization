@@ -9,14 +9,14 @@
 -- open prob_comp oracle_comp
 
 -- -- M - message; L - Language; W - Witness; S - Signature
--- structure signature_of_knowledge (oracle_access : oracle_comp_spec)
+-- structure signature_of_knowledge (oracle_access : oracle_spec)
 --   {L W : Type} (is_witness : L → W → Prop) (M S : Type) :=
 -- (sign (inp : M × L × W) : oracle_comp oracle_access S)
 -- (verify (inp : M × L × S) : oracle_comp oracle_access bool)
 
 -- namespace signature_of_knowledge
 
--- variables {oracle_access : oracle_comp_spec}
+-- variables {oracle_access : oracle_spec}
 --   {L W : Type} {is_witness : L → W → Prop} {M S : Type}
 --   (sok : signature_of_knowledge oracle_access is_witness M S)
 
@@ -41,7 +41,7 @@
 -- -- }
 
 -- -- TODO: integrate this
--- def signing_oracle (M S : Type) [decidable_eq M] [nonempty S] : oracle_comp_spec :=
+-- def signing_oracle (M S : Type) [decidable_eq M] [nonempty S] : oracle_spec :=
 -- ⟦M →ᵒ S⟧
 
 -- -- def unforgeable_experiment (so : simulation_oracle (oracle_access ++ signing_oracle M S)) (s : so.S)

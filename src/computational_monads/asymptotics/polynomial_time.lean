@@ -38,7 +38,7 @@ section poly_time_oracle_comp
 open oracle_comp
 
 /-- Extend polynomial time to the `oracle_comp` monad in the natural way. -/
-inductive poly_time_oracle_comp {spec : oracle_comp_spec} :
+inductive poly_time_oracle_comp {spec : oracle_spec} :
   Π {α β : Type} (f : α → oracle_comp spec β), Type 1
 | poly_time_pure' {α β : Type} (f : α → β) (hf : poly_time f) :
     poly_time_oracle_comp (λ a, pure' β (f a))
@@ -55,7 +55,7 @@ inductive poly_time_oracle_comp {spec : oracle_comp_spec} :
 open poly_time_oracle_comp
 
 -- /-- Simulating something polynomial time with polynomial time oracles is still polynomial time-/
--- theorem poly_time_simulate {spec spec' : oracle_comp_spec} {α β : Type}
+-- theorem poly_time_simulate {spec spec' : oracle_spec} {α β : Type}
 --   (so : simulation_oracle spec spec') (s : so.S)
 --   (hso : ∀ (i : spec.ι), poly_time_oracle_comp $ so.o i) :
 --   Π (f : α → oracle_comp spec β) (hf : poly_time_oracle_comp f),

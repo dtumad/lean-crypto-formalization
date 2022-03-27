@@ -1,8 +1,8 @@
 import computational_monads.oracle_comp
 
-open oracle_comp oracle_comp_spec
+open oracle_comp oracle_spec
 
-variables {A B : Type} {spec : oracle_comp_spec} [h : spec.computable] [h' : spec.finite_range]
+variables {A B : Type} {spec : oracle_spec} [h : spec.computable] [h' : spec.finite_range]
 
 include h h'
 

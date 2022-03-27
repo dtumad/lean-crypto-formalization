@@ -76,7 +76,7 @@ The security properties `complete`, `anonomyous`, and `unforgeable` are defined 
 -- section ring_sig_oracle
 
 -- def signing_oracle_spec (rs : ring_signature M S PK SK) :
---   oracle_comp_spec :=
+--   oracle_spec :=
 -- { ι := ℕ,
 --   domain := λ n, signing_ring n PK × M,
 --   range := λ n, option (S n) }
@@ -107,7 +107,7 @@ The security properties `complete`, `anonomyous`, and `unforgeable` are defined 
 -- -- def signing_oracle
 
 -- def corruption_oracle_spec (rs : ring_signature M S PK SK) (n : ℕ) :
---   oracle_comp_spec :=
+--   oracle_spec :=
 -- ⟦fin n →ᵒ SK⟧
 
 -- /-- `n` is the global number of `PK × SK` pairs used in the simulation. -/

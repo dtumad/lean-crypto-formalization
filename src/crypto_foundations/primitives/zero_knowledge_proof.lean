@@ -10,7 +10,7 @@
 --   `is_witness` is an abstract specification of the witnesses for statements in the language -/
 -- structure zero_knowledge_proof {L W : Type} 
 --   (is_witness : L → W → Prop) :=
--- (random_oracles : oracle_comp_spec) -- Common random oracles for prove and verify
+-- (random_oracles : oracle_spec) -- Common random oracles for prove and verify
 -- (P : Type) -- The type of the resulting proof
 -- (prove : L × W → oracle_comp random_oracles P) -- Construct a proof of `x : L` using a witness `w : W`
 -- (verify : L × P → oracle_comp random_oracles bool) -- Verify a proof in `σ : P` of a statement in `x : L`

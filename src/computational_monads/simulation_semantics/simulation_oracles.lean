@@ -1,11 +1,11 @@
 import computational_monads.constructions.uniform_select
 import computational_monads.simulation_semantics.simulate
 
-open oracle_comp oracle_comp_spec
+open oracle_comp oracle_spec
 
 section stateless_oracles
 
-def stateless_simulation_oracle (spec spec' : oracle_comp_spec)
+def stateless_simulation_oracle (spec spec' : oracle_spec)
   (o : Π (i : spec.ι), spec.domain i → oracle_comp spec' (spec.range i)) :
   simulation_oracle spec spec' :=
 { S := unit,
@@ -13,10 +13,10 @@ def stateless_simulation_oracle (spec spec' : oracle_comp_spec)
 
 notation `⟪` o `⟫` := stateless_simulation_oracle _ _ o
 
-def identity_simulation_oracle (spec : oracle_comp_spec) : simulation_oracle spec spec :=
+def identity_simulation_oracle (spec : oracle_spec) : simulation_oracle spec spec :=
 ⟪ query ⟫
 
-noncomputable def random_simulation_oracle (spec : oracle_comp_spec) [spec.computable] [spec.finite_range] : 
+noncomputable def random_simulation_oracle (spec : oracle_spec) [spec.computable] [spec.finite_range] : 
   simulation_oracle spec uniform_selecting :=
 ⟪ λ i t, uniform_select_fintype ⟫
 
@@ -24,23 +24,23 @@ end stateless_oracles
 
 section caching_oracles
 
-def query_cache (spec : oracle_comp_spec) : Type :=
+def query_cache (spec : oracle_spec) : Type :=
 list (Σ (i : spec.ι), spec.domain i × spec.range i)
 
-def logging_simulation_oracle (spec : oracle_comp_spec) : simulation_oracle spec spec :=
+def logging_simulation_oracle (spec : oracle_spec) : simulation_oracle spec spec :=
 { S := query_cache spec,
   o := λ i ⟨t, log⟩, query i t >>= λ u, return (u, ⟨i, t, u⟩ :: log) }
 
 /-- Looking up a cache value requires use of the first equality condition
   to make the following conditions and return values type correct. -/
-def query_cache.lookup (spec : oracle_comp_spec) [spec.computable] (i : spec.ι) (t : spec.domain i) :
+def query_cache.lookup (spec : oracle_spec) [spec.computable] (i : spec.ι) (t : spec.domain i) :
   query_cache spec → option (spec.range i)
 | (⟨i', t', u⟩ :: log) := if hi : i' = i
     then (if t = hi.rec_on t' then hi.rec_on (some u)
     else query_cache.lookup log) else query_cache.lookup log
 | [] := none
 
-def caching_simulation_oracle (spec : oracle_comp_spec) [spec.computable] :
+def caching_simulation_oracle (spec : oracle_spec) [spec.computable] :
   simulation_oracle spec spec :=
 { S := query_cache spec,
   o := λ i ⟨t, log⟩, match query_cache.lookup spec i t log with
@@ -52,7 +52,7 @@ end caching_oracles
 
 section oracle_append
 
-def simulation_oracle_append (spec₁ spec₂ spec' : oracle_comp_spec)
+def simulation_oracle_append (spec₁ spec₂ spec' : oracle_spec)
   (so : simulation_oracle spec₁ spec') (so' : simulation_oracle spec₂ spec') :
   simulation_oracle (spec₁ ++ spec₂) spec' :=
 { S := so.S × so'.S,

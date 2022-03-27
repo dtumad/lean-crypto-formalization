@@ -1,9 +1,9 @@
 import computational_monads.constructions.uniform_select
 import computational_monads.simulation_semantics.simulation_oracles
 
-open oracle_comp oracle_comp_spec
+open oracle_comp oracle_spec
 
-variables (spec spec' spec'' : oracle_comp_spec) (A : Type)
+variables (spec spec' spec'' : oracle_spec) (A : Type)
 
 instance coe_append_right :
   has_coe (oracle_comp spec A) (oracle_comp (spec ++ spec') A) :=
@@ -36,31 +36,31 @@ instance coe_spec_assoc :
 end⟫ ()⟩
 
 /-- coercion makes it possible to mix computations on individual oracles -/
-example {spec : oracle_comp_spec} : oracle_comp (coin_oracle ++ uniform_selecting ++ spec) bool := 
+example {spec : oracle_spec} : oracle_comp (coin_oracle ++ uniform_selecting ++ spec) bool := 
 do { n ←$[0..10], if n = 0 then return ff else coin }
 
-instance simulation_oracle.coe (spec spec' : oracle_comp_spec) :
+instance simulation_oracle.coe (spec spec' : oracle_spec) :
   has_coe (simulation_oracle spec spec') (simulation_oracle spec (spec ++ spec')) :=
 { coe := λ so, {
   S := so.S,
   o := λ i x, ↑(so.o i x)
 }}
 
-instance c' (spec spec' : oracle_comp_spec) :
+instance c' (spec spec' : oracle_spec) :
   has_coe (simulation_oracle spec spec') (simulation_oracle spec (spec' ++ spec)) :=
 { coe := λ so, {
   S := so.S,
   o := λ i x, ↑(so.o i x)
 }}
 
-instance c'' (spec spec' spec'' : oracle_comp_spec) :
+instance c'' (spec spec' spec'' : oracle_spec) :
   has_coe (simulation_oracle spec spec') (simulation_oracle spec (spec' ++ spec'')) :=
 { coe := λ so, {
   S := so.S,
   o := λ i x, ↑(so.o i x)
 }}
 
-instance c''' (spec spec' spec'' : oracle_comp_spec) :
+instance c''' (spec spec' spec'' : oracle_spec) :
   has_coe (simulation_oracle spec spec') (simulation_oracle spec (spec'' ++ spec')) :=
 { coe := λ so, {
   S := so.S,

@@ -1,8 +1,8 @@
 import computational_monads.distribution_semantics.eval_distribution
-import computational_monads.oracle_comp_spec
+import computational_monads.oracle_spec
 import computational_monads.asymptotics.polynomial_time
 
-open oracle_comp oracle_comp_spec
+open oracle_comp oracle_spec
 
 /-!
 # Hash Functions

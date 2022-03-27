@@ -16,7 +16,7 @@
 
 -- /-- Signature on messages `M`, public and secret keys `PK` and `SK`, signatures of type `S`. 
 --   `oracle_access` specifies the oracles the algorithm can make use of  -/
--- structure signature (oracle_access : oracle_comp_spec)
+-- structure signature (oracle_access : oracle_spec)
 --   (M PK SK S : Type) [decidable_eq M] [decidable_eq PK] :=
 -- (gen : unit → oracle_comp oracle_access (PK × SK))
 -- (sign : PK × SK × M → oracle_comp oracle_access S)
@@ -58,7 +58,7 @@
 
 -- variables [function_cost_model ℚ] [comp_cost_model ℚ]
 
--- structure signature_scheme (oracle_access : oracle_comp_spec)
+-- structure signature_scheme (oracle_access : oracle_spec)
 --   [oracle_comp_cost_model ℚ oracle_access]
 --   (M : Type) (PK SK S ROI ROO : ℕ → Type)
 --   [decidable_eq M] [∀ sp, decidable_eq $ PK sp] :=
@@ -69,7 +69,7 @@
 
 -- namespace signature_scheme
 
--- variables (oracle_access : oracle_comp_spec)
+-- variables (oracle_access : oracle_spec)
 --   [oracle_comp_cost_model ℚ oracle_access]
 --   (M : Type) (PK SK S ROI ROO : ℕ → Type)
 --   [decidable_eq M] [∀ sp, decidable_eq $ PK sp]

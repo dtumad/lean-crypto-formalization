@@ -2,11 +2,11 @@ import computational_monads.oracle_comp
 
 namespace oracle_comp
 
-variables {A B : Type} {spec spec' : oracle_comp_spec}
+variables {A B : Type} {spec spec' : oracle_spec}
 
 /-- Specifies a way to simulate a set of oracles using another set of oracles. 
   e.g. using uniform random selection to simulate a hash oracle -/
-structure simulation_oracle (spec spec' : oracle_comp_spec) :=
+structure simulation_oracle (spec spec' : oracle_spec) :=
 (S : Type)
 (o (i : spec.ι) : (spec.domain i × S) → oracle_comp spec' (spec.range i × S))
 
@@ -16,7 +16,7 @@ section simulate
 
 /-- Simulate an oracle comp to an oracle comp with a different spec.
   Requires providing a maximum recursion depth for the `repeat` constructor -/
-def simulate {spec spec' : oracle_comp_spec} (so : simulation_oracle spec spec') :
+def simulate {spec spec' : oracle_spec} (so : simulation_oracle spec spec') :
   Π {A : Type} (oa : oracle_comp spec A), so.S → oracle_comp spec' (A × so.S)
 | _ (pure' A a) state := return ⟨a, state⟩
 | _ (bind' A B oa ob) state := simulate oa state >>= λ x, simulate (ob x.1) x.2

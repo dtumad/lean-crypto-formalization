@@ -6,7 +6,7 @@ import to_mathlib.to_mathlib
 
 namespace oracle_comp
 
-open oracle_comp_spec
+open oracle_spec
 
 variables {A : Type}
 

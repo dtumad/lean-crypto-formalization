@@ -4,18 +4,18 @@ import data.fintype.basic
 /-- Specification of the various oracles available to a computation.
   `ι` index the set of oracles (e.g. `ι := ℕ` gives a different oracle for each `n : ℕ)`.
   `domain range : ι → Type` give the input and output of the oracle corresponding to `i : ι`. -/
-structure oracle_comp_spec : Type 1 := 
+structure oracle_spec : Type 1 := 
 (ι : Type)
 (domain range : ι → Type)
 
-namespace oracle_comp_spec
+namespace oracle_spec
 
 section instances
 
-variables (spec : oracle_comp_spec)
+variables (spec : oracle_spec)
 
-/-- Class or `oracle_comp_spec` that can be computably simulated -/
-class computable (spec : oracle_comp_spec) :=
+/-- Class or `oracle_spec` that can be computably simulated -/
+class computable (spec : oracle_spec) :=
 (ι_decidable_eq : decidable_eq spec.ι)
 (domain_decidable_eq (i : spec.ι) : decidable_eq $ spec.domain i)
 (range_decidable_eq (i : spec.ι) : decidable_eq $ spec.range i)
@@ -33,8 +33,8 @@ instance computable.range_decidable_eq' [spec.computable] (i : spec.ι) :
 instance computable.range_inhabited' [spec.computable] (i : spec.ι) :
   inhabited (spec.range i) := computable.range_inhabited i
 
-/-- Class of `oracle_comp_spec` for which uniform random oracles are well defined -/
-class finite_range (spec : oracle_comp_spec) :=
+/-- Class of `oracle_spec` for which uniform random oracles are well defined -/
+class finite_range (spec : oracle_spec) :=
 (range_fintype (i : spec.ι) : fintype $ spec.range i)
 
 instance finite_range.range_fintype' [spec.finite_range] (i : spec.ι) :
@@ -45,7 +45,7 @@ end instances
 section empty_spec
 
 /-- No access to any oracles -/
-def empty_spec : oracle_comp_spec :=
+def empty_spec : oracle_spec :=
 { ι := empty,
   domain := empty.elim,
   range := empty.elim, }
@@ -61,14 +61,14 @@ instance empty_spec.computable : computable []ₒ :=
 instance empty_spec.finite_range : finite_range []ₒ :=
 { range_fintype := λ i, i.elim }
 
-instance inhabited : inhabited oracle_comp_spec := ⟨[]ₒ⟩
+instance inhabited : inhabited oracle_spec := ⟨[]ₒ⟩
 
 end empty_spec
 
 section singleton_spec
 
 /-- Access to a single oracle `T → U` -/
-def singleton_spec (T U : Type) : oracle_comp_spec :=
+def singleton_spec (T U : Type) : oracle_spec :=
 { ι := unit,
   domain := λ _, T,
   range := λ _, U, }
@@ -93,13 +93,13 @@ end singleton_spec
 section append
 
 /-- Combine two specifications using a `sum` type to index the different specs -/
-instance oracle_comp_spec.has_append : has_append oracle_comp_spec :=
+instance oracle_spec.has_append : has_append oracle_spec :=
 { append := λ spec spec', 
   { ι := spec.ι ⊕ spec'.ι,
     domain := sum.elim spec.domain spec'.domain,
     range := sum.elim spec.range spec'.range } }
 
-variables (spec spec' : oracle_comp_spec)
+variables (spec spec' : oracle_spec)
 
 instance append_computable [spec.computable] [spec'.computable] :
   computable (spec ++ spec') :=
@@ -117,10 +117,10 @@ end append
 section coin_oracle
 
 @[derive [computable, finite_range]]
-def coin_oracle : oracle_comp_spec := unit →ₒ bool
+def coin_oracle : oracle_spec := unit →ₒ bool
 
 -- @[derive [computable]]
-def uniform_selecting : oracle_comp_spec :=
+def uniform_selecting : oracle_spec :=
 { ι := ℕ,
   domain := λ n, unit,
   range := λ n, fin (n + 1) }
@@ -136,4 +136,4 @@ instance uniform_selecting.finite_range : finite_range uniform_selecting :=
 
 end coin_oracle
 
-end oracle_comp_spec 
+end oracle_spec 

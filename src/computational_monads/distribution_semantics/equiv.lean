@@ -1,6 +1,6 @@
 import computational_monads.distribution_semantics.eval_distribution
 
-open oracle_comp oracle_comp_spec
+open oracle_comp oracle_spec
 
 variables {A B : Type}
 
@@ -8,7 +8,7 @@ variables {A B : Type}
 notation oa `≃ₚ` oa' := ⟦oa⟧ = ⟦oa'⟧
 
 @[simp]
-lemma bind'_pure'_equiv {spec : oracle_comp_spec} [spec.computable] [spec.finite_range]
+lemma bind'_pure'_equiv {spec : oracle_spec} [spec.computable] [spec.finite_range]
   {A : Type} (ca : oracle_comp spec A) :
   (bind' A A ca (pure' A)) ≃ₚ ca :=
 begin
@@ -17,13 +17,13 @@ begin
 end
 
 @[simp]
-lemma bind_return_equiv {spec : oracle_comp_spec} [spec.computable] [spec.finite_range]
+lemma bind_return_equiv {spec : oracle_spec} [spec.computable] [spec.finite_range]
   {A : Type} (ca : oracle_comp spec A) :
   (ca >>= return) ≃ₚ ca :=
 bind'_pure'_equiv ca
 
 @[simp]
-lemma pure'_bind'_equiv {spec : oracle_comp_spec} [spec.computable] [spec.finite_range]
+lemma pure'_bind'_equiv {spec : oracle_spec} [spec.computable] [spec.finite_range]
   {A B : Type} (a : A) (cb : A → oracle_comp spec B) :
   (bind' A B (pure' A a) cb) ≃ₚ cb a :=
 begin
@@ -32,7 +32,7 @@ begin
 end
 
 @[simp]
-lemma return_bind_equiv {spec : oracle_comp_spec} [spec.computable] [spec.finite_range]
+lemma return_bind_equiv {spec : oracle_spec} [spec.computable] [spec.finite_range]
   {A B : Type} (a : A) (cb : A → oracle_comp spec B) :
   (return a >>= cb) ≃ₚ cb a :=
 pure'_bind'_equiv a cb

@@ -1,8 +1,8 @@
 import computational_monads.simulation_semantics.simulate
 
-open oracle_comp oracle_comp_spec
+open oracle_comp oracle_spec
 
-variables {A : Type} {spec spec' : oracle_comp_spec}
+variables {A : Type} {spec spec' : oracle_spec}
 
 /-- Oracle computations that uniformly make at most a given number of queries.
   In particular `simulate` will always the `simulation_oracle` at most that many times -/
