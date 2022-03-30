@@ -10,8 +10,6 @@ structure simulation_oracle (spec spec' : oracle_spec) :=
 (S : Type)
 (o (i : spec.ι) : (spec.domain i × S) → oracle_comp spec' (spec.range i × S))
 
-variables (so : simulation_oracle spec spec')
-
 section simulate
 
 /-- Simulate an oracle comp to an oracle comp with a different spec.
@@ -21,6 +19,14 @@ def simulate {spec spec' : oracle_spec} (so : simulation_oracle spec spec') :
 | _ (pure' A a) state := return ⟨a, state⟩
 | _ (bind' A B oa ob) state := simulate oa state >>= λ x, simulate (ob x.1) x.2
 | _ (query i t) state := so.o i (t, state)
+
+/-- Get the result of simulation without returning the internal oracle state -/
+@[reducible, inline]
+def simulate' (so : simulation_oracle spec spec') (oa : oracle_comp spec A) (s : so.S) :
+  oracle_comp spec' A :=
+prod.fst <$> oa.simulate so s
+
+variables (so : simulation_oracle spec spec')
 
 @[simp]
 lemma simulate_pure (a : A) (s : so.S) :
@@ -39,12 +45,10 @@ lemma simulate_bind (oa : oracle_comp spec A) (ob : A → oracle_comp spec B) (s
 lemma simulate_bind' (oa : oracle_comp spec A) (ob : A → oracle_comp spec B) (s : so.S) :
   simulate so (bind' A B oa ob) s = bind (simulate so oa s) (λ x, simulate so (ob x.1) x.2) := rfl
 
-end simulate
+@[simp]
+lemma simulate_query  (i : spec.ι) (t : spec.domain i) (s : so.S) :
+  simulate so (query i t) s = so.o i (t, s) := rfl
 
-/-- Get the result of simulation without returning the internal oracle state -/
-@[reducible, inline]
-def simulate' (oa : oracle_comp spec A) (s : so.S) :
-  oracle_comp spec' A :=
-prod.fst <$> oa.simulate so s
+end simulate
 
 end oracle_comp

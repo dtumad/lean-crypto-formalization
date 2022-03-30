@@ -37,12 +37,11 @@ lemma bind'_eq_bind (ca : oracle_comp spec A) (cb : A → oracle_comp spec B) :
 end monad
 
 /-- Constructing an `oracle_comp` implies the existence of some element of the underlying type -/
-def inhabited_base {spec : oracle_spec} [computable spec] :
+def inhabited_base {spec : oracle_spec} :
   Π {A : Type} (oa : oracle_comp spec A), inhabited A
 | _ (pure' A a) := ⟨a⟩
 | _ (bind' A B oa ob) := let ⟨a⟩ := inhabited_base oa in inhabited_base (ob a)
 | _ (query i t) := ⟨arbitrary (spec.range i)⟩
-
 
 section support
 
@@ -85,6 +84,8 @@ by ext x; simp
 
 end support
 
+section decidable
+
 @[class]
 inductive decidable {spec : oracle_spec} : 
   Π {A : Type}, oracle_comp spec A → Type 1
@@ -125,5 +126,7 @@ theorem coe_fin_support_eq_support {spec : oracle_spec} [spec.computable] [spec.
 set.ext (mem_fin_support_iff_mem_support oa hoa)
 
 end fin_support
+
+end decidable
 
 end oracle_comp

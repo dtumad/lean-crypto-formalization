@@ -67,14 +67,14 @@ instance c''' (spec spec' spec'' : oracle_spec) :
   o := λ i x, ↑(so.o i x)
 }}
 
-noncomputable example {A B C D : Type} [fintype C] [inhabited C] [decidable_eq C] :
+noncomputable example {A B C D : Type} [inhabited B] [inhabited C] [fintype C] [decidable_eq C] :
   simulation_oracle ((A →ₒ C) ++ (unit →ₒ C))
     ((A →ₒ B) ++ (B →ₒ C) ++ uniform_selecting) :=
-simulation_oracle_append _ _ _
   ↑(stateless_simulation_oracle (A →ₒ C) ((A →ₒ B) ++ (B →ₒ C))
     (λ i a, do {
       b ← query (sum.inl ()) a,
       c ← query (sum.inr ()) b,
       return c
   }))
-  ↑(random_simulation_oracle (unit →ₒ C))
+    ⟪++⟫
+  (random_simulation_oracle (unit →ₒ C))

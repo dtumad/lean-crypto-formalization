@@ -2,9 +2,9 @@ import computational_monads.oracle_comp
 
 open oracle_comp oracle_spec
 
-variables {A B : Type} {spec : oracle_spec} [h : spec.computable] [h' : spec.finite_range]
+variables {A B : Type} {spec : oracle_spec} [h' : spec.finite_range]
 
-include h h'
+include h'
 
 -- Big step semantics for a computation with finite range oracles
 -- The result of queries is assumed to be uniform over the oracle's codomain
@@ -44,3 +44,10 @@ by simp [eval_distribution, eval_dist, -bind'_eq_bind, bind]
 @[simp]
 lemma eval_distribution_query (i : spec.ι) (t : spec.domain i) :
   ⟦query i t⟧ = pmf.uniform_of_fintype (spec.range i) := rfl
+
+@[simp]
+lemma eval_distribution_map (oa : oracle_comp spec A) (f : A → B) :
+  ⟦f <$> oa⟧ = ⟦oa⟧.map f :=
+begin
+  sorry,
+end
