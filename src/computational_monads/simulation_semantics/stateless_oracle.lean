@@ -36,7 +36,7 @@ end identity_oracle
 
 section random_oracle
 
-noncomputable def random_simulation_oracle (spec : oracle_spec) [spec.computable] [spec.finite_range] : 
+noncomputable def random_simulation_oracle (spec : oracle_spec) [spec.finite_range] : 
   simulation_oracle spec uniform_selecting :=
 ⟪ λ i t, uniform_select_fintype ⟫
 

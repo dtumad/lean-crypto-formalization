@@ -24,14 +24,18 @@ end query_log
 
 section logging_oracle
 
-def logging_simulation_oracle (spec : oracle_spec) : simulation_oracle spec spec :=
-{ S := query_log spec,
-  o := λ i ⟨t, log⟩, query i t >>= λ u, return (u, ⟨i, t, u⟩ :: log) }
+/-- Extend the state of a simulation oracle to also track the inputs and outputs of queries.
+  The actual oracle calls are forwarded directly to the original oracle. -/
+def logging_simulation_oracle (spec spec' : oracle_spec)
+  (so : simulation_oracle spec spec') : simulation_oracle spec spec' :=
+{ S := so.S × query_log spec,
+  o := λ i ⟨t, ⟨s, log⟩⟩, so.o i (t, s) >>= λ ⟨u, s⟩, return (u, (s, ⟨i, t, u⟩ :: log)) }
 
 end logging_oracle
 
 section caching_oracle
 
+-- TODO: make this a extension property instead.
 def caching_simulation_oracle (spec : oracle_spec) [spec.computable] :
   simulation_oracle spec spec :=
 { S := query_log spec,
