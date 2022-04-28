@@ -26,6 +26,15 @@ def simulate' (so : simulation_oracle spec spec') (oa : oracle_comp spec A) (s :
   oracle_comp spec' A :=
 prod.fst <$> oa.simulate so s
 
+def sim_comp {spec spec' spec'' : oracle_spec}
+  (so : simulation_oracle spec spec') (so' : simulation_oracle spec' spec'') :
+  simulation_oracle spec spec'' :=
+{ S := so.S × so'.S,
+  o := λ i ⟨x, s⟩, begin
+    sorry
+  end
+}
+
 variables (so : simulation_oracle spec spec')
 
 @[simp]

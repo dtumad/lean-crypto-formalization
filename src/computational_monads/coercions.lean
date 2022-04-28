@@ -67,13 +67,17 @@ instance c''' (spec spec' spec'' : oracle_spec) :
   o := λ i x, ↑(so.o i x)
 }}
 
-noncomputable example {A B : Type} [inhabited B] [fintype B] :
+noncomputable example {A B : Type} [inhabited B] [fintype B]
+  [decidable_eq A] [decidable_eq B] [inhabited B] :
   simulation_oracle (coin_oracle ++ uniform_selecting ++ (A →ₒ B)) uniform_selecting :=
-⟪λ _ _, uniform_select_fintype⟫
+⟪λ _ _, uniform_select_fintype bool⟫
   ⟪++⟫
 identity_oracle uniform_selecting
   ⟪++⟫
-⟪λ _ _, caching_simulation_oracle ⟫
+begin
+  let := caching_simulation_oracle (A →ₒ B),
+  sorry
+end
 
 noncomputable example {A B C D : Type} [inhabited B] [inhabited C] [fintype C] [decidable_eq C] :
   simulation_oracle ((A →ₒ C) ++ (unit →ₒ C))
