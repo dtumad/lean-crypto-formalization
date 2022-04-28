@@ -73,7 +73,7 @@ noncomputable example {A B : Type} [inhabited B] [fintype B] :
   ⟪++⟫
 identity_oracle uniform_selecting
   ⟪++⟫
-⟪λ _ _, uniform_select_fintype⟫
+⟪λ _ _, caching_simulation_oracle ⟫
 
 noncomputable example {A B C D : Type} [inhabited B] [inhabited C] [fintype C] [decidable_eq C] :
   simulation_oracle ((A →ₒ C) ++ (unit →ₒ C))

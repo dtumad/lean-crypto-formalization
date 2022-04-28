@@ -1,19 +1,28 @@
--- import computational_monads.prob_comp
--- import computational_complexity.complexity_class
--- import to_mathlib.action_classes
+import computational_monads.asymptotics.polynomial_time
+import to_mathlib.action_classes
 
--- open_locale nnreal ennreal
+open_locale nnreal ennreal
 
--- /-!
--- # Hard Homogeneous Spaces
+/-!
+# Hard Homogeneous Spaces
 
--- This file builds up the definition of a hard homogeneous space.
+This file builds up the definition of a hard homogeneous space.
 
--- `algorithmic_homogeneous_space` further requires the group action and group operations are efficiently computable.
--- `hard_homogeneous_space` further requires vectorization and parallelization are hard.
--- -/
+`algorithmic_homogeneous_space` further requires the group action and group operations are efficiently computable.
+`hard_homogeneous_space` further requires vectorization and parallelization are hard.
+-/
 
--- open prob_comp
+open oracle_comp
+
+structure algorithmic_homogenous_space {G X : Type} [fintype G] [add_group G] [add_action G X]
+  [decidable_eq G] [decidable_eq X]
+  extends principal_action_class G X :=
+(poly_time_add : poly_time (λ x, x.1 + x.2 : G × G → G))
+(poly_time_inv : poly_time (λ x, -x : G → G))
+(poly_time_vadd : poly_time (λ x, x.1 +ᵥ x.2 : G × X → X))
+(poly_time_eq_G : poly_time (λ x, x.1 = x.2 : G × G → bool))
+(poly_time_eq_X : poly_time (λ x, x.1 = x.2 : X × X → bool))
+(poly_time_rnd_G : poly_time_oracle_comp (λ _, uniform_select_fintype G : unit → oracle_comp oracle_spec.uniform_selecting G))
 
 -- section computational_advantages
 

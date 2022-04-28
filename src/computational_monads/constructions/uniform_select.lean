@@ -60,7 +60,7 @@ end uniform_select_finset
 
 section uniform_select_fintype
 
-noncomputable def uniform_select_fintype {A : Type} [fintype A] [nonempty A] :
+noncomputable def uniform_select_fintype (A : Type) [fintype A] [nonempty A] :
   oracle_comp uniform_selecting A :=
 uniform_select_finset ⊤ finset.univ_nonempty
 
