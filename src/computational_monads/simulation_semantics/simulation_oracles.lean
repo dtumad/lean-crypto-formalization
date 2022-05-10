@@ -4,7 +4,22 @@ import computational_monads.simulation_semantics.stateless_oracle
 
 open oracle_comp oracle_spec
 
-variables {spec spec' : oracle_spec}
+variables {spec spec' spec'' : oracle_spec}
+
+section compose
+
+def oracle_compose {spec spec' spec'' : oracle_spec}
+  (so : simulation_oracle spec spec') (so' : simulation_oracle spec' spec'') :
+  simulation_oracle spec spec'' :=
+{ S := so.S × so'.S,
+  o := λ i ⟨t, s, s'⟩, simulate so' (so.o i (t, s)) s' >>= λ ⟨⟨u, s⟩, s'⟩, return (u, s, s') }
+
+notation so' `∘ₛ` so := oracle_compose so so'
+
+variables (so : simulation_oracle spec spec') (so' : simulation_oracle spec' spec'')
+
+
+end compose
 
 section query_log
 
@@ -13,12 +28,12 @@ list (Σ (i : spec.ι), spec.domain i × spec.range i)
 
 /-- Looking up a cache value requires use of the first equality condition
   to make the following conditions and return values type correct. -/
-def query_log.lookup (spec : oracle_spec) [spec.computable] (i : spec.ι) (t : spec.domain i) :
-  query_log spec → option (spec.range i)
-| (⟨i', t', u⟩ :: log) := if hi : i' = i
+def query_log.lookup {spec : oracle_spec} [spec.computable] :
+  Π (log : query_log spec) (i : spec.ι) (t : spec.domain i), option (spec.range i)
+| (⟨i', t', u⟩ :: log) i t := if hi : i' = i
     then (if t = hi.rec_on t' then hi.rec_on (some u)
-    else query_log.lookup log) else query_log.lookup log
-| [] := none
+    else query_log.lookup log i t) else query_log.lookup log i t
+| [] i t := none
 
 end query_log
 
@@ -39,7 +54,7 @@ section caching_oracle
 def caching_simulation_oracle (spec : oracle_spec) [spec.computable] :
   simulation_oracle spec spec :=
 { S := query_log spec,
-  o := λ i ⟨t, log⟩, match query_log.lookup spec i t log with
+  o := λ i ⟨t, log⟩, match query_log.lookup i t log with
   | (some u) := return (u, log) -- Return the cached value if it already exists
   | none := do { u ← query i t, return (u, ⟨i, t, u⟩ :: log) }
   end }
@@ -63,3 +78,12 @@ noncomputable example : simulation_oracle (coin_oracle ++ uniform_selecting) uni
 random_simulation_oracle coin_oracle ⟪++⟫ identity_oracle uniform_selecting
 
 end oracle_append
+
+section simulate_sides
+
+def simulate_right {spec spec' : oracle_spec}
+  (so : simulation_oracle spec' spec) :
+  simulation_oracle (spec ++ spec') spec :=
+identity_oracle spec ⟪++⟫ so
+
+end simulate_sides

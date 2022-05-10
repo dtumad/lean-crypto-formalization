@@ -82,15 +82,15 @@ def singleton_spec (T U : Type) [hU : inhabited U] : oracle_spec :=
 
 notation T `→ₒ` U : 67 := singleton_spec T U
 
-variables (T U : Type)
+variables (T U : Type) [inhabited U]
 
-instance singleton_spec.computable [hT : decidable_eq T] [hU' : decidable_eq U] [hU : inhabited U] :
+instance singleton_spec.computable [hT : decidable_eq T] [hU' : decidable_eq U] :
   computable (T →ₒ U) :=
 { ι_decidable_eq := punit.decidable_eq,
   domain_decidable_eq := λ _, hT,
   range_decidable_eq := λ _, hU' }
 
-instance singleton_spec.finite_range [inhabited U] [hU : fintype U] :
+instance singleton_spec.finite_range [hU : fintype U] :
   finite_range (T →ₒ U) :=
 { range_fintype := λ _, hU }
 

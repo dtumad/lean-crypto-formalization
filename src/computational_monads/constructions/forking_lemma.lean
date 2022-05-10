@@ -1,3 +1,46 @@
+import computational_monads.simulation_semantics.simulation_oracles
+import computational_monads.constructions.uniform_select
+
+open oracle_comp oracle_spec
+
+@[inline, reducible]
+def fork_spec (T U : Type) [inhabited U] :
+  oracle_spec := uniform_selecting ++ (T →ₒ U)
+
+noncomputable def fork_sim {T U A : Type} [inhabited U] [fintype U] [decidable_eq T] [decidable_eq U]
+  (adversary : oracle_comp (fork_spec T U) A)
+  (seed : query_log (fork_spec T U)) :
+  oracle_comp uniform_selecting (A × query_log (fork_spec T U)) :=
+(simulate (((simulate_right $ random_simulation_oracle (T →ₒ U))
+  ∘ₛ (caching_simulation_oracle _))) adversary ([], ((), ())))
+    >>= λ ⟨a, log, _, _⟩, return (a, log)
+
+noncomputable def fork {T U A : Type} [inhabited U] [fintype U] [decidable_eq T] [decidable_eq U]
+  (adversary : oracle_comp (uniform_selecting ++ (T →ₒ U)) A)
+  (fork_pred : A → T × U) :
+  oracle_comp uniform_selecting (option $ A × A) :=
+begin
+  -- let spec := uniform_selecting ++ (T →ₒ U),
+  let := ((simulate_right $ random_simulation_oracle (T →ₒ U))
+    ∘ₛ (caching_simulation_oracle _)),
+  refine do {
+    ⟨a, log⟩ ← fork_sim adversary [],
+
+    ⟨t, u⟩ ← return (fork_pred a),
+    v ← return (query_log.lookup log (sum.inr ()) t),
+
+    log_pre_fork ← return log,
+
+    ⟨a', log'⟩ ← fork_sim adversary log_pre_fork,
+    ⟨t', u'⟩ ← return (fork_pred a'),
+
+    return ((a, a'))
+  },
+end
+
+
+
+
 -- import computational_monads.constructions
 -- import computational_monads.oracle_comp
 
