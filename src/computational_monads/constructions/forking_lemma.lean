@@ -1,105 +1,76 @@
 import computational_monads.simulation_semantics.simulation_oracles
 import computational_monads.constructions.uniform_select
+import computational_monads.asymptotics.queries_at_most
+import computational_monads.distribution_semantics.eval_distribution
+
+noncomputable theory
 
 open oracle_comp oracle_spec
 
-@[inline, reducible]
-def fork_spec (T U : Type) [inhabited U] :
-  oracle_spec := uniform_selecting ++ (T →ₒ U)
+open_locale nnreal ennreal
 
-noncomputable def fork_sim {T U A : Type} [inhabited U] [fintype U] [decidable_eq T] [decidable_eq U]
-  (adversary : oracle_comp (fork_spec T U) A)
-  (seed : query_log (fork_spec T U)) :
-  oracle_comp uniform_selecting (A × query_log (fork_spec T U)) :=
-(simulate (((simulate_right $ random_simulation_oracle (T →ₒ U))
-  ∘ₛ (caching_simulation_oracle _))) adversary ([], ((), ())))
-    >>= λ ⟨a, log, _, _⟩, return (a, log)
+variables {T U A : Type} [inhabited U] [fintype U] [decidable_eq T] [decidable_eq U]
 
-noncomputable def fork {T U A : Type} [inhabited U] [fintype U] [decidable_eq T] [decidable_eq U]
-  (adversary : oracle_comp (uniform_selecting ++ (T →ₒ U)) A)
-  (fork_pred : A → T × U) :
-  oracle_comp uniform_selecting (option $ A × A) :=
-begin
-  -- let spec := uniform_selecting ++ (T →ₒ U),
-  let := ((simulate_right $ random_simulation_oracle (T →ₒ U))
-    ∘ₛ (caching_simulation_oracle _)),
-  refine do {
-    ⟨a, log⟩ ← fork_sim adversary [],
+variables (adversary : oracle_comp (uniform_selecting ++ (T →ₒ U)) A)
+  {q : ℕ} --(hq : queries_at_most adversary q)
+  (choose_fork : A → query_log (T →ₒ U) → option (fin q))
 
-    ⟨t, u⟩ ← return (fork_pred a),
-    v ← return (query_log.lookup log (sum.inr ()) t),
+/-- Simulation oracle for forking algorithm.
+  Log the uniform selection oracle and cache the random outputs of the forked oracle -/
+def fork_sim : simulation_oracle (uniform_selecting ++ (T →ₒ U)) uniform_selecting :=
+(logging_simulation_oracle uniform_selecting) ⟪++⟫
+  (random_simulation_oracle (T →ₒ U) ∘ₛ (caching_simulation_oracle (T →ₒ U)))
 
-    log_pre_fork ← return log,
+-- TODO: random extra things floating around from random_simulation_oracle
+/--
+  Run the adversary and then return the result of what should be forked on.
+  If `choose_fork` returns `none` then adversary failed (e.g. an invalid signature in unforgability experiment).
+  Otherwise `choose_fork` returns the index of query that the output should correspond to -/
+def acc_experiment : oracle_comp uniform_selecting (option (fin q)) :=
+do {
+  ⟨x, ⟨log, ⟨cache, ()⟩⟩⟩ ← (simulate fork_sim adversary ([], ([], ()))),
+  return (choose_fork x cache)
+}
 
-    ⟨a', log'⟩ ← fork_sim adversary log_pre_fork,
-    ⟨t', u'⟩ ← return (fork_pred a'),
+/-- Chance that the pre-fork algorithm has a positive result with `choose_fork` -/
+def acc_prob : ℝ≥0∞ := ⟦ (≠) none | acc_experiment adversary choose_fork ⟧
 
-    return ((a, a'))
-  },
+/-- Remove parts of the cache after the query chosen to fork on
+  TODO: might need to reverse this first? otherwise build that into a lower API -/
+def fork_cache : (option $ fin q) → query_log (T →ₒ U) → query_log (T →ₒ U)
+| none log := []
+| (some n) log := log.take ↑n
+
+/-- Run computation twice, using the same random information for both,
+  responding differently to a query specified by `choose_fork`,
+  and returning the results if `choose_fork` makes the same choice each time -/
+def fork : oracle_comp uniform_selecting (option $ (fin q) × A × (query_log (T →ₒ U)) × A × (query_log (T →ₒ U))) :=
+do {
+  ⟨x, ⟨log, ⟨cache, ()⟩⟩⟩ ← (simulate fork_sim adversary ([], ([], ()))),
+  i ← return (choose_fork x cache),
+  forked_cache ← return (fork_cache i cache),
+  ⟨x', ⟨_, ⟨cache', ()⟩⟩⟩ ← (simulate fork_sim adversary (log.reverse, (forked_cache, ()))),
+  i' ← return (choose_fork x' cache'),
+  return (if i ≠ none ∧ i = i' then i.map (λ n, (n, x, cache, x', cache')) else none)
+}
+
+/-- `n`th position in both caches has the same input and different outputs-/
+def cache_same_in_diff_out (n : ℕ) (cache : query_log (T →ₒ U)) (cache' : query_log (T →ₒ U)) : Prop :=
+match (cache.nth n, cache'.nth n) with
+| ((some ⟨(), t, u⟩), (some ⟨(), t', u'⟩)) := t = t' ∧ u ≠ u'
+| _ := false
 end
 
+/- successfully got two caches, two adversary outputs, and and integer `n`,
+  such that `choose_fork` given `n` for both outputs, and the `n`th position in cache has the same inputs and different outputs.
+  Being the result of `choose_fork` should give that the result is a valid signature or whatever.
+-/
+def fork_success (fork_result : option $ (fin q) × A × (query_log (T →ₒ U)) × A × (query_log (T →ₒ U))) : Prop :=
+match fork_result with
+| none := false
+| (some ⟨n, x, cache, x', cache'⟩) := cache_same_in_diff_out n cache cache'
+    ∧ some n = choose_fork x cache ∧ some n = choose_fork x' cache'
+end
 
-
-
--- import computational_monads.constructions
--- import computational_monads.oracle_comp
-
--- open_locale nnreal ennreal
-
--- noncomputable theory
-
--- namespace oracle_comp
-
--- variables {T U A X : Type} [decidable_eq T] [fintype U] [nonempty U] [decidable_eq U]
-
--- def accepting_exp
---   (adv : X → oracle_comp ⟦T →ᵒ U⟧ A)
---   (query_to_fork : A → T) :
---   X → prob_comp (A × (T × U)) :=
--- λ x, simulate_result (random_oracle T U) [] (do {
---   a ← adv x,
---   t ← return (query_to_fork a),
---   u ← query () t,
---   return (a, (t, u))
--- })
-
--- def accepting_probability (input_generator : prob_comp X)
---   (adv : X → oracle_comp ⟦T →ᵒ U⟧ A)
---   (query_to_fork : A → T)
---   (validate : A × (T × U) → prob_comp bool) : ℝ≥0∞ :=
--- prob_comp.prob_success (do {
---   x ← input_generator,
---   (a, (t, u)) ← (accepting_exp adv query_to_fork x),
---   val ← validate (a, (t, u)),
---   return val
--- })
-
--- constant fork (adv : X → oracle_comp ⟦T →ᵒ U⟧ A)
---   (query_to_fork : A → T) :
---   X → prob_comp ((A × (T × U)) × (A × (T × U)))
-
--- def forking_probability (input_generator : prob_comp X)
---   (adv : X → oracle_comp ⟦T →ᵒ U⟧ A)
---   (query_to_fork : A → T)
---   (validate : A × (T × U) → prob_comp bool) : ℝ≥0∞ :=
--- prob_comp.prob_success (do {
---   x ← input_generator,
---   ((a, (t, u)), (a', (t', u'))) ← fork adv query_to_fork x,
---   val ← validate (a, (t, u)),
---   val' ← validate (a', (t', u')),
---   return (t = t' ∧ u ≠ u' ∧ val ∧ val')
--- })
-
--- axiom forking_lemma (input_generator : prob_comp X)
---   (adv : X → oracle_comp ⟦T →ᵒ U⟧ A) (query_to_fork : A → T)
---   (validate : A × (T × U) → prob_comp bool)
---   (q : ℕ) (hq : ∀ x, queries_at_most (adv x) q) :
---     let frk := forking_probability input_generator adv query_to_fork validate in
---     let acc := accepting_probability input_generator adv query_to_fork validate in
---     frk ≥ acc * (acc / q - 1 / fintype.card U)
-
-
--- end oracle_comp
-
-
--- end prob_comp 
+/-- Chance of forking algorithm being successful -/
+def frk_prob : ℝ≥0∞ := ⟦ fork_success choose_fork | fork adversary choose_fork ⟧

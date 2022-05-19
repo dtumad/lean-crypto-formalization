@@ -41,10 +41,10 @@ section logging_oracle
 
 /-- Extend the state of a simulation oracle to also track the inputs and outputs of queries.
   The actual oracle calls are forwarded directly to the original oracle. -/
-def logging_simulation_oracle (spec spec' : oracle_spec)
-  (so : simulation_oracle spec spec') : simulation_oracle spec spec' :=
-{ S := so.S × query_log spec,
-  o := λ i ⟨t, ⟨s, log⟩⟩, so.o i (t, s) >>= λ ⟨u, s⟩, return (u, (s, ⟨i, t, u⟩ :: log)) }
+def logging_simulation_oracle (spec : oracle_spec) : 
+  simulation_oracle spec spec :=
+{ S := query_log spec,
+  o := λ i ⟨t, log⟩, do { u ← query i t, return (u, ⟨i, t, u⟩ :: log) } }
 
 end logging_oracle
 
@@ -54,7 +54,7 @@ section caching_oracle
 def caching_simulation_oracle (spec : oracle_spec) [spec.computable] :
   simulation_oracle spec spec :=
 { S := query_log spec,
-  o := λ i ⟨t, log⟩, match query_log.lookup i t log with
+  o := λ i ⟨t, log⟩, match log.lookup i t with
   | (some u) := return (u, log) -- Return the cached value if it already exists
   | none := do { u ← query i t, return (u, ⟨i, t, u⟩ :: log) }
   end }

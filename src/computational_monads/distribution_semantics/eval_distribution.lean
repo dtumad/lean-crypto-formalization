@@ -2,6 +2,9 @@ import computational_monads.oracle_comp
 
 open oracle_comp oracle_spec
 
+open_locale nnreal ennreal
+
+
 variables {A B : Type} {spec : oracle_spec} [h' : spec.finite_range]
 
 include h'
@@ -51,3 +54,11 @@ lemma eval_distribution_map (oa : oracle_comp spec A) (f : A → B) :
 begin
   sorry,
 end
+
+noncomputable def eval_prob (oa : oracle_comp spec A) (event : A → Prop) :
+  ℝ≥0∞ := ⟦oa⟧.to_outer_measure event
+
+notation `⟦` event `|` oa `⟧` := eval_prob oa event
+
+noncomputable example (oa : oracle_comp coin_oracle (fin 10)) :
+  ℝ≥0∞ := ⟦ (≥) 5 | oa ⟧
