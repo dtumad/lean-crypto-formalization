@@ -2,7 +2,10 @@ import computational_monads.oracle_comp
 
 open oracle_comp oracle_spec
 
-open_locale nnreal ennreal
+noncomputable theory
+
+-- Assuming `classical` when working with distributions, as they're already noncomputable
+open_locale big_operators nnreal ennreal classical
 
 
 variables {A B : Type} {spec : oracle_spec} [h' : spec.finite_range]
@@ -26,7 +29,7 @@ private noncomputable def eval_dist : Π {A : Type} (oa : oracle_comp spec A),
 | _ (query i t) := ⟨pmf.uniform_of_fintype (spec.range i),
       plift.up ((pmf.support_uniform_of_fintype (spec.range i)))⟩
 
-noncomputable def eval_distribution (oa : oracle_comp spec A) : pmf A :=
+def eval_distribution (oa : oracle_comp spec A) : pmf A :=
 (eval_dist oa).1
 
 notation `⟦` oa `⟧` := eval_distribution oa
@@ -55,10 +58,36 @@ begin
   sorry,
 end
 
-noncomputable def eval_prob (oa : oracle_comp spec A) (event : A → Prop) :
+noncomputable def eval_prob (oa : oracle_comp spec A) (event : set A) :
   ℝ≥0∞ := ⟦oa⟧.to_outer_measure event
 
 notation `⟦` event `|` oa `⟧` := eval_prob oa event
 
 noncomputable example (oa : oracle_comp coin_oracle (fin 10)) :
   ℝ≥0∞ := ⟦ (≥) 5 | oa ⟧
+
+@[simp]
+lemma eval_prob_return (a : A) (event : set A) :
+  ⟦ event | (return a : oracle_comp spec A) ⟧ = if a ∈ event then 1 else 0 :=
+pmf.to_outer_measure_pure_apply a event
+
+lemma eval_prob_return_of_true (a : A) (event : set A) (ha : a ∈ event) :
+  ⟦ event | (return a : oracle_comp spec A) ⟧ = 1 :=
+by simp only [ha, eval_prob_return, if_true]
+
+lemma eval_prob_return_of_false (a : A) (event : set A) (ha : a ∉ event) :
+  ⟦ event | (return a : oracle_comp spec A) ⟧ = 0 :=
+by simp only [ha, eval_prob_return, if_false]
+
+@[simp]
+lemma eval_prob_bind (oa : oracle_comp spec A) (ob : A → oracle_comp spec B) (event : set B) :
+  ⟦ event | oa >>= ob ⟧ = ∑' (a : A), ⟦oa⟧ a * ⟦ event | ob a ⟧ :=
+begin
+  simp only [eval_prob, eval_distribution_bind],
+  refine pmf.to_outer_measure_bind_apply ⟦oa⟧ (λ a, ⟦ob a⟧) event,
+end
+
+@[simp]
+lemma eval_prop_query (i : spec.ι) (t : spec.domain i) (event : set $ spec.range i) :
+  ⟦ event | query i t ⟧ = fintype.card event / fintype.card (spec.range i) :=
+pmf.to_outer_measure_uniform_of_fintype_apply event

@@ -48,6 +48,24 @@ def logging_simulation_oracle (spec : oracle_spec) :
 
 end logging_oracle
 
+section seeded_oracle
+
+def seeded_simulation_oracle (spec : oracle_spec) [computable spec] :
+  simulation_oracle spec spec :=
+{ S := query_log spec,
+  o := λ i ⟨t, seed⟩, match seed with
+  | ⟨i', t', u⟩ :: seed := if hi : i = i'
+    then begin
+      induction hi,
+      refine if t = t' then (return (u, seed))
+        else (do {u ← query i t, return (u, [])}),
+    end
+    else do { u ← query i t, return (u, []) }
+  | [] := do {u ← query i t, return (u, []) }
+  end }
+
+end seeded_oracle
+
 section caching_oracle
 
 -- TODO: make this a extension property instead.

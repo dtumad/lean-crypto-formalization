@@ -21,6 +21,10 @@ def fork_sim : simulation_oracle (uniform_selecting ++ (T →ₒ U)) uniform_sel
 (logging_simulation_oracle uniform_selecting) ⟪++⟫
   (random_simulation_oracle (T →ₒ U) ∘ₛ (caching_simulation_oracle (T →ₒ U)))
 
+def fork_sim' : simulation_oracle (uniform_selecting ++ (T →ₒ U)) uniform_selecting :=
+(seeded_simulation_oracle uniform_selecting) ⟪++⟫
+  (random_simulation_oracle (T →ₒ U) ∘ₛ (caching_simulation_oracle (T →ₒ U)))
+
 -- TODO: random extra things floating around from random_simulation_oracle
 /--
   Run the adversary and then return the result of what should be forked on.
@@ -49,7 +53,7 @@ do {
   ⟨x, ⟨log, ⟨cache, ()⟩⟩⟩ ← (simulate fork_sim adversary ([], ([], ()))),
   i ← return (choose_fork x cache),
   forked_cache ← return (fork_cache i cache),
-  ⟨x', ⟨_, ⟨cache', ()⟩⟩⟩ ← (simulate fork_sim adversary (log.reverse, (forked_cache, ()))),
+  ⟨x', ⟨_, ⟨cache', ()⟩⟩⟩ ← (simulate fork_sim' adversary (log.reverse, (forked_cache, ()))),
   i' ← return (choose_fork x' cache'),
   return (if i ≠ none ∧ i = i' then i.map (λ n, (n, x, cache, x', cache')) else none)
 }
