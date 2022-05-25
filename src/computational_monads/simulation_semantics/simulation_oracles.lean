@@ -4,7 +4,7 @@ import computational_monads.simulation_semantics.stateless_oracle
 
 open oracle_comp oracle_spec
 
-variables {spec spec' spec'' : oracle_spec}
+variables {spec spec' spec'' : oracle_spec} {A B C : Type}
 
 section compose
 
@@ -23,17 +23,58 @@ end compose
 
 section query_log
 
+-- log by keeping a list for each of the indexed oracles
+-- TODO: this version seems to work a lot better. For complexity stuff can maybe axiomatize
+def query_log' (spec : oracle_spec) : Type :=
+  Π (i : spec.ι), list (spec.domain i × spec.range i)
+
+-- log with no entries for any of the oracles
+def query_log'.init (spec : oracle_spec) : query_log' spec :=
+λ i, []
+
+-- remove the head of the index `i` log
+def query_log'.remove_head [spec.computable]
+  (log : query_log' spec) (i : spec.ι) : query_log' spec :=
+λ i', if i' = i then (log i').tail else (log i')
+
+def query_log'.lookup [spec.computable]
+  (log : query_log' spec) (i : spec.ι) (t : spec.domain i) :
+  option (spec.range i) :=
+((log i).find $ (= t) ∘ prod.fst).map prod.snd
+
+-- Different lookup that only looks at head, and removes the element from the cache
+def query_log'.lookup_fst [spec.computable]
+  (log : query_log' spec) (i : spec.ι) (t : spec.domain i) :
+  option (spec.range i) × query_log' spec :=
+begin
+  refine match (log i).nth 0 with
+  | none := (none, query_log'.init spec)
+  | some ⟨t', u⟩ := if t' = t then (some u, log.remove_head i)
+                    else (none, query_log'.init spec) -- TODO: maybe don't clear everything here?
+  end
+end
+
+-- TODO: this might work better as a function type? (above ↑)
 def query_log (spec : oracle_spec) : Type :=
 list (Σ (i : spec.ι), spec.domain i × spec.range i)
 
+namespace query_log
+
 /-- Looking up a cache value requires use of the first equality condition
   to make the following conditions and return values type correct. -/
-def query_log.lookup {spec : oracle_spec} [spec.computable] :
+def lookup {spec : oracle_spec} [spec.computable] :
   Π (log : query_log spec) (i : spec.ι) (t : spec.domain i), option (spec.range i)
 | (⟨i', t', u⟩ :: log) i t := if hi : i' = i
     then (if t = hi.rec_on t' then hi.rec_on (some u)
-    else query_log.lookup log i t) else query_log.lookup log i t
+    else lookup log i t) else lookup log i t
 | [] i t := none
+
+/-- Like `lookup-/
+def query_log.lookup_head {spec : oracle_spec} [spec.computable] :
+  Π (log : query_log spec) (i : spec.ι) (t : spec.domain i), (option $ spec.range i) × query_log spec :=
+sorry
+
+end query_log
 
 end query_log
 
@@ -45,6 +86,46 @@ def logging_simulation_oracle (spec : oracle_spec) :
   simulation_oracle spec spec :=
 { S := query_log spec,
   o := λ i ⟨t, log⟩, do { u ← query i t, return (u, ⟨i, t, u⟩ :: log) } }
+
+namespace logging_simulation_oracle
+
+@[simp]
+lemma simulate_pure (a : A) (log : query_log spec) :
+  simulate (logging_simulation_oracle _) (return a) log = return ⟨a, log⟩ :=
+rfl
+
+@[simp]
+lemma simulate_query (i : spec.ι) (t : spec.domain i) (log : query_log spec) :
+  simulate (logging_simulation_oracle _) (query i t) log =
+    do { u ← query i t, return (u, ⟨i, t, u⟩ :: log) } :=
+rfl
+
+@[simp]
+lemma simulate_bind (oa : oracle_comp spec A) (ob : A → oracle_comp spec B) (log : query_log spec) :
+  simulate (logging_simulation_oracle _) (oa >>= ob) log =
+    (simulate (logging_simulation_oracle _) oa log) >>=
+      (λ x, simulate (logging_simulation_oracle _) (ob x.1) x.2) :=
+rfl
+
+@[simp]
+lemma eval_distribution_fst_simulate [spec.finite_range] (oa : oracle_comp spec A) (log : query_log spec) :
+  ⟦ (simulate (logging_simulation_oracle _) oa log) >>= (λ a, return a.1) ⟧ = ⟦ oa ⟧ :=
+begin
+  induction oa,
+  {
+    simp,
+    refine (pmf.pure_bind _ _).trans _,
+    simp,
+  },
+  {
+    sorry,
+  },
+  {
+    sorry
+  }
+end
+
+end logging_simulation_oracle
 
 end logging_oracle
 
@@ -63,6 +144,12 @@ def seeded_simulation_oracle (spec : oracle_spec) [computable spec] :
     else do { u ← query i t, return (u, []) }
   | [] := do {u ← query i t, return (u, []) }
   end }
+
+namespace seeded_simulation_oracle
+
+
+
+end seeded_simulation_oracle
 
 end seeded_oracle
 
