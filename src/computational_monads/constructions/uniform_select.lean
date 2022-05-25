@@ -30,13 +30,13 @@ section uniform_select_vector
 def uniform_select_vector {n : ℕ} (v : vector A (n + 1)) :
   oracle_comp uniform_selecting A := v.nth <$> $[0..n]
 
-notation `$ᵥ` v := uniform_select_vector v
+notation `$ᵛ` v := uniform_select_vector v
 
 variables {n : ℕ} (v : vector A (n + 1))
 
 @[simp]
 lemma eval_distribution_uniform_select_vector :
-  eval_distribution ($ᵥ v) = pmf.uniform_of_vector v :=
+  eval_distribution ($ᵛ v) = pmf.uniform_of_vector v :=
 sorry
 
 end uniform_select_vector
@@ -48,6 +48,8 @@ def uniform_select_list : Π (xs : list A) (h : ¬ xs.empty),
 | [] h := false.elim (h rfl)
 | (x :: xs) _ := uniform_select_vector ⟨x :: xs, list.length_cons x xs⟩ 
 
+notation `$ˡ` := uniform_select_list
+
 end uniform_select_list
 
 section uniform_select_finset
@@ -56,6 +58,8 @@ noncomputable def uniform_select_finset (bag : finset A) (h : bag.nonempty) :
   oracle_comp uniform_selecting A := 
 uniform_select_list (bag.to_list) (finset.to_list_nonempty bag h)
 
+notation `$ˢ` := uniform_select_finset
+
 end uniform_select_finset
 
 section uniform_select_fintype
@@ -63,6 +67,8 @@ section uniform_select_fintype
 noncomputable def uniform_select_fintype (A : Type) [fintype A] [nonempty A] :
   oracle_comp uniform_selecting A :=
 uniform_select_finset ⊤ finset.univ_nonempty
+
+notation `$ᵗ` := uniform_select_fintype
 
 end uniform_select_fintype
 

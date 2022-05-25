@@ -28,8 +28,7 @@ def fork_sim' : simulation_oracle (uniform_selecting ++ (T →ₒ U)) uniform_se
 /-- Remove parts of the cache after the query chosen to fork on
   TODO: might need to reverse this first? (double check) otherwise build that into a lower API -/
 def fork_cache : (option $ fin q) → query_log (T →ₒ U) → query_log (T →ₒ U)
-| none log := []
-| (some n) log := log.reverse.take ↑n
+:= sorry
 
 /-- Run computation twice, using the same random information for both,
   responding differently to a query specified by `choose_fork`,
@@ -37,54 +36,59 @@ def fork_cache : (option $ fin q) → query_log (T →ₒ U) → query_log (T �
 def fork : oracle_comp uniform_selecting (option $ (fin q) × A × (query_log (T →ₒ U)) × A × (query_log (T →ₒ U))) :=
 do {
   -- run the adversary normally, logging the first oracle and caching the second
-  ⟨x, ⟨log, ⟨cache, ()⟩⟩⟩ ← (simulate fork_sim adversary ([], ([], ()))),
+  ⟨x, ⟨log, ⟨cache, ()⟩⟩⟩ ← (simulate fork_sim adversary (query_log.init _, (query_log.init _, ()))),
   -- choose the index of the query to fork on
   i ← return (choose_fork x cache),
   -- remove things in the cache after the forking query
   forked_cache ← return (fork_cache i cache),
   -- run again, using the same random choices for first oracle, and forked cache
-  ⟨x', ⟨_, ⟨cache', ()⟩⟩⟩ ← (simulate fork_sim' adversary (log.reverse, (forked_cache, ()))),
+  ⟨x', ⟨_, ⟨cache', ()⟩⟩⟩ ← (simulate fork_sim' adversary (log.to_seed, (forked_cache, ()))),
   -- check the forking index for the second result
   i' ← return (choose_fork x' cache'),
   -- return a value if both runs choose the same cache value and where successful (not `none`)
+  -- TODO: maybe some of this pre-checking should be different?
+  --        wouldn't even need to return an option if we just put this in the success pred?
   return (if i ≠ none ∧ i = i' then i.map (λ n, (n, x, cache, x', cache')) else none)
 }
 
-/-- `n`th position in both caches has the same input and different outputs-/
-def cache_same_in_diff_out (n : ℕ) (cache : query_log (T →ₒ U)) (cache' : query_log (T →ₒ U)) : Prop :=
-match (cache.nth n, cache'.nth n) with
-| ((some ⟨(), t, u⟩), (some ⟨(), t', u'⟩)) := t = t' ∧ u ≠ u'
-| _ := false
-end
+/-- Because of the logging and shared cache, both results of fork make the same query if the result succeeds -/
+lemma cache_same_at (n : fin q) (cache cache' : query_log (T →ₒ U)) (x x' : A)
+  (h : (some (n, x, cache, x', cache')) ∈ (fork adversary choose_fork).support) :
+  ((cache ()).nth n).map prod.fst = ((cache ()).nth n).map prod.fst :=
+sorry
 
-section probabilities
+-- Correctness with respect to `choose_fork`, i.e. `i` and is the result for both calls
+-- For signature will correspond to both signatures being valid
+lemma mem_choose_fork (n : fin q) (cache cache' : query_log (T →ₒ U)) (x x' : A)
+  (h : (some (n, x, cache, x', cache')) ∈ (fork adversary choose_fork).support) :
+  choose_fork x cache = n ∧ choose_fork x' cache' = n :=
+sorry
 
--- TODO: random extra things floating around from random_simulation_oracle
-/--
-  Run the adversary and then return the result of what should be forked on.
-  If `choose_fork` returns `none` then adversary failed (e.g. an invalid signature in unforgability experiment).
-  Otherwise `choose_fork` returns the index of query that the output should correspond to -/
-def acc_experiment : oracle_comp uniform_selecting (option (fin q)) :=
+def accepting_experiment : oracle_comp uniform_selecting (option $ fin q) :=
 do {
-  ⟨x, ⟨log, ⟨cache, ()⟩⟩⟩ ← (simulate fork_sim adversary ([], ([], ()))),
+  (x, ⟨log, ⟨cache, ()⟩⟩) ← simulate fork_sim (adversary) (query_log.init _, (query_log.init _, ())),
   return (choose_fork x cache)
 }
 
-/-- Chance that the pre-fork algorithm has a positive result with `choose_fork` -/
-def acc_prob : ℝ≥0∞ := ⟦ (≠) none | acc_experiment adversary choose_fork ⟧
+-- Adversary succeeds wrt the choose_fork function
+def accepting_prob : ℝ≥0∞ := ⟦ coe ∘ option.is_some | accepting_experiment adversary choose_fork ⟧
 
-/- successfully got two caches, two adversary outputs, and and integer `n`,
-  such that `choose_fork` given `n` for both outputs, and the `n`th position in cache has the same inputs and different outputs.
-  Being the result of `choose_fork` should give that the result is a valid signature or whatever.
--/
-def fork_success (fork_result : option $ (fin q) × A × (query_log (T →ₒ U)) × A × (query_log (T →ₒ U))) : Prop :=
-match fork_result with
+-- query_results are different for the two caches at `n`
+def query_output_diff_at (n : fin q) (cache cache' : query_log (T →ₒ U)) : Prop :=
+  ((cache ()).nth n).map prod.snd ≠ ((cache' ()).nth n).map prod.snd
+
+-- forking algorithm succeeds if both `choose_fork` calls return the same success value
+--    (captured in `fork` already by the `i ≠ none ∧ i = i'` clause)
+-- and also the query results for the `i`th thing in the cache are distinct
+def fork_success : option (fin q × A × query_log (T →ₒ U) × A × query_log (T →ₒ U)) → Prop
 | none := false
-| (some ⟨n, x, cache, x', cache'⟩) := cache_same_in_diff_out n cache cache'
-    ∧ some n = choose_fork x cache ∧ some n = choose_fork x' cache'
-end
+| (some ⟨n, x, cache, x', cache'⟩) :=
+    ((cache ()).nth n).map prod.snd ≠ ((cache' ()).nth n).map prod.snd
 
-/-- Chance of forking algorithm being successful -/
-def frk_prob : ℝ≥0∞ := ⟦ fork_success choose_fork | fork adversary choose_fork ⟧
-
-end probabilities
+-- Probability that both adversaries have the same `choose_fork` result, and that the they correspond to distinct query results.
+-- For signature will correspond to both signatures being on different hash result values
+-- Sort of the "meat" of the forking lemma
+lemma prob_fork_success :
+  ⟦ fork_success | fork adversary choose_fork ⟧
+    ≥ (((accepting_prob adversary choose_fork) ^ 2 / q) - (1 / fintype.card U)) :=
+sorry

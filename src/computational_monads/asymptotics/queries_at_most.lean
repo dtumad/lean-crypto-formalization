@@ -1,4 +1,5 @@
 import computational_monads.simulation_semantics.simulate
+import data.polynomial
 
 open oracle_comp oracle_spec
 
@@ -24,3 +25,7 @@ theorem queries_at_most_sound (oa : oracle_comp spec A)
   (x : A × ℕ) (hx : x ∈ (simulate count_oracle_queries oa nat.zero).support)
   (n : ℕ) (hn : queries_at_most oa n) : x.2 ≤ n :=
 sorry
+
+-- TODO: should this be a `Prop`
+def polynomial_queries (oa : ℕ → oracle_comp spec A) : Type 1 :=
+Σ (p : polynomial ℕ), ∀ n, queries_at_most (oa n) (p.eval n)

@@ -25,56 +25,71 @@ section query_log
 
 -- log by keeping a list for each of the indexed oracles
 -- TODO: this version seems to work a lot better. For complexity stuff can maybe axiomatize
-def query_log' (spec : oracle_spec) : Type :=
+def query_log (spec : oracle_spec) : Type :=
   Π (i : spec.ι), list (spec.domain i × spec.range i)
 
+namespace query_log
+
 -- log with no entries for any of the oracles
-def query_log'.init (spec : oracle_spec) : query_log' spec :=
+@[inline, reducible]
+def init (spec : oracle_spec) : query_log spec :=
 λ i, []
 
+def log_query [spec.computable] (log : query_log spec) (i : spec.ι)
+  (t : spec.domain i) (u : spec.range i) : query_log spec :=
+λ i', if hi : i = i' then hi.rec_on ((t, u) :: (log i)) else log i'
+
 -- remove the head of the index `i` log
-def query_log'.remove_head [spec.computable]
-  (log : query_log' spec) (i : spec.ι) : query_log' spec :=
+def remove_head [spec.computable]
+  (log : query_log spec) (i : spec.ι) : query_log spec :=
 λ i', if i' = i then (log i').tail else (log i')
 
-def query_log'.lookup [spec.computable]
-  (log : query_log' spec) (i : spec.ι) (t : spec.domain i) :
+def lookup [spec.computable]
+  (log : query_log spec) (i : spec.ι) (t : spec.domain i) :
   option (spec.range i) :=
 ((log i).find $ (= t) ∘ prod.fst).map prod.snd
 
 -- Different lookup that only looks at head, and removes the element from the cache
-def query_log'.lookup_fst [spec.computable]
-  (log : query_log' spec) (i : spec.ι) (t : spec.domain i) :
-  option (spec.range i) × query_log' spec :=
-begin
-  refine match (log i).nth 0 with
-  | none := (none, query_log'.init spec)
-  | some ⟨t', u⟩ := if t' = t then (some u, log.remove_head i)
-                    else (none, query_log'.init spec) -- TODO: maybe don't clear everything here?
-  end
+def take_fst [spec.computable]
+  (log : query_log spec) (i : spec.ι) (t : spec.domain i) :
+  option (spec.range i) × query_log spec :=
+match (log i).nth 0 with
+| none := (none, query_log.init spec)
+| some ⟨t', u⟩ := if t' = t then (some u, log.remove_head i)
+    else (none, query_log.init spec) -- TODO: maybe don't clear everything here?
 end
 
--- TODO: this might work better as a function type? (above ↑)
-def query_log (spec : oracle_spec) : Type :=
-list (Σ (i : spec.ι), spec.domain i × spec.range i)
+-- reverse every log, so that it is ordered by query order. used to pass into seed
+-- TODO: this seems cumbersome and unintuitive
+def to_seed (log : query_log spec) :
+  query_log spec :=
+λ i, (log i).reverse
 
-namespace query_log
-
-/-- Looking up a cache value requires use of the first equality condition
-  to make the following conditions and return values type correct. -/
-def lookup {spec : oracle_spec} [spec.computable] :
-  Π (log : query_log spec) (i : spec.ι) (t : spec.domain i), option (spec.range i)
-| (⟨i', t', u⟩ :: log) i t := if hi : i' = i
-    then (if t = hi.rec_on t' then hi.rec_on (some u)
-    else lookup log i t) else lookup log i t
-| [] i t := none
-
-/-- Like `lookup-/
-def query_log.lookup_head {spec : oracle_spec} [spec.computable] :
-  Π (log : query_log spec) (i : spec.ι) (t : spec.domain i), (option $ spec.range i) × query_log spec :=
-sorry
+-- def drop_after_query (log : query_log spec)
 
 end query_log
+
+-- -- TODO: this might work better as a function type? (above ↑)
+-- def query_log (spec : oracle_spec) : Type :=
+-- list (Σ (i : spec.ι), spec.domain i × spec.range i)
+
+-- namespace query_log
+
+-- /-- Looking up a cache value requires use of the first equality condition
+--   to make the following conditions and return values type correct. -/
+-- def lookup {spec : oracle_spec} [spec.computable] :
+--   Π (log : query_log spec) (i : spec.ι) (t : spec.domain i), option (spec.range i)
+-- | (⟨i', t', u⟩ :: log) i t := if hi : i' = i
+--     then (if t = hi.rec_on t' then hi.rec_on (some u)
+--     else lookup log i t) else lookup log i t
+-- | [] i t := none
+
+-- /-- Like `lookup-/
+-- def query_log.lookup_head {spec : oracle_spec} [spec.computable] :
+--   Π (log : query_log spec) (i : spec.ι) (t : spec.domain i), (option $ spec.range i) × query_log spec :=
+-- sorry
+
+-- end query_log
 
 end query_log
 
@@ -82,33 +97,33 @@ section logging_oracle
 
 /-- Extend the state of a simulation oracle to also track the inputs and outputs of queries.
   The actual oracle calls are forwarded directly to the original oracle. -/
-def logging_simulation_oracle (spec : oracle_spec) : 
+def logging_simulation_oracle (spec : oracle_spec) [spec.computable] : 
   simulation_oracle spec spec :=
 { S := query_log spec,
-  o := λ i ⟨t, log⟩, do { u ← query i t, return (u, ⟨i, t, u⟩ :: log) } }
+  o := λ i ⟨t, log⟩, do { u ← query i t, return (u, log.log_query i t u) } }
 
 namespace logging_simulation_oracle
 
 @[simp]
-lemma simulate_pure (a : A) (log : query_log spec) :
+lemma simulate_pure [spec.computable] (a : A) (log : query_log spec) :
   simulate (logging_simulation_oracle _) (return a) log = return ⟨a, log⟩ :=
 rfl
 
 @[simp]
-lemma simulate_query (i : spec.ι) (t : spec.domain i) (log : query_log spec) :
+lemma simulate_query [spec.computable] (i : spec.ι) (t : spec.domain i) (log : query_log spec) :
   simulate (logging_simulation_oracle _) (query i t) log =
-    do { u ← query i t, return (u, ⟨i, t, u⟩ :: log) } :=
+    do { u ← query i t, return (u, log.log_query i t u) } :=
 rfl
 
 @[simp]
-lemma simulate_bind (oa : oracle_comp spec A) (ob : A → oracle_comp spec B) (log : query_log spec) :
+lemma simulate_bind [spec.computable] (oa : oracle_comp spec A) (ob : A → oracle_comp spec B) (log : query_log spec) :
   simulate (logging_simulation_oracle _) (oa >>= ob) log =
     (simulate (logging_simulation_oracle _) oa log) >>=
       (λ x, simulate (logging_simulation_oracle _) (ob x.1) x.2) :=
 rfl
 
 @[simp]
-lemma eval_distribution_fst_simulate [spec.finite_range] (oa : oracle_comp spec A) (log : query_log spec) :
+lemma eval_distribution_fst_simulate [spec.computable] [spec.finite_range] (oa : oracle_comp spec A) (log : query_log spec) :
   ⟦ (simulate (logging_simulation_oracle _) oa log) >>= (λ a, return a.1) ⟧ = ⟦ oa ⟧ :=
 begin
   induction oa,
@@ -134,20 +149,14 @@ section seeded_oracle
 def seeded_simulation_oracle (spec : oracle_spec) [computable spec] :
   simulation_oracle spec spec :=
 { S := query_log spec,
-  o := λ i ⟨t, seed⟩, match seed with
-  | ⟨i', t', u⟩ :: seed := if hi : i = i'
-    then begin
-      induction hi,
-      refine if t = t' then (return (u, seed))
-        else (do {u ← query i t, return (u, [])}),
+  o := λ i ⟨t, seed⟩, begin
+    refine let ⟨u', seed⟩ := seed.take_fst i t in match u' with
+    | none := do { u ← query i t, return (u, seed) }
+    | (some u) := return (u, seed)
     end
-    else do { u ← query i t, return (u, []) }
-  | [] := do {u ← query i t, return (u, []) }
   end }
 
 namespace seeded_simulation_oracle
-
-
 
 end seeded_simulation_oracle
 
@@ -161,7 +170,7 @@ def caching_simulation_oracle (spec : oracle_spec) [spec.computable] :
 { S := query_log spec,
   o := λ i ⟨t, log⟩, match log.lookup i t with
   | (some u) := return (u, log) -- Return the cached value if it already exists
-  | none := do { u ← query i t, return (u, ⟨i, t, u⟩ :: log) }
+  | none := do { u ← query i t, return (u, log.log_query i t u) }
   end }
 
 end caching_oracle

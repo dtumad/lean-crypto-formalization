@@ -35,8 +35,12 @@ instance coe_spec_assoc :
   λ t, let i' : (spec ++ spec' ++ spec'').ι := sum.inr i in query i' t
 end⟫ ()⟩
 
+noncomputable instance coe_coin_uniform_select :
+  has_coe (oracle_comp coin_oracle A) (oracle_comp uniform_selecting A) :=
+{ coe := λ oa, simulate' (stateless_simulation_oracle coin_oracle uniform_selecting (λ _ _, uniform_select_fintype bool)) oa () }
+
 /-- coercion makes it possible to mix computations on individual oracles -/
-example {spec : oracle_spec} : oracle_comp (coin_oracle ++ uniform_selecting ++ spec) bool := 
+noncomputable example {spec : oracle_spec} : oracle_comp (uniform_selecting ++ spec) bool := 
 do { n ←$[0..10], if n = 0 then return ff else coin }
 
 instance simulation_oracle.coe (spec spec' : oracle_spec) :
