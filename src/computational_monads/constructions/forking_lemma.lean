@@ -25,10 +25,6 @@ def fork_sim' : simulation_oracle (uniform_selecting ++ (T →ₒ U)) uniform_se
 (seeded_simulation_oracle uniform_selecting) ⟪++⟫
   (random_simulation_oracle (T →ₒ U) ∘ₛ (caching_simulation_oracle (T →ₒ U)))
 
-/-- Remove parts of the cache after the query chosen to fork on
-  TODO: might need to reverse this first? (double check) otherwise build that into a lower API -/
-def fork_cache : (option $ fin q) → query_log (T →ₒ U) → query_log (T →ₒ U)
-:= sorry
 
 /-- Run computation twice, using the same random information for both,
   responding differently to a query specified by `choose_fork`,
@@ -40,9 +36,9 @@ do {
   -- choose the index of the query to fork on
   i ← return (choose_fork x cache),
   -- remove things in the cache after the forking query
-  forked_cache ← return (fork_cache i cache),
+  forked_cache ← return (cache.fork_cache i),
   -- run again, using the same random choices for first oracle, and forked cache
-  ⟨x', ⟨_, ⟨cache', ()⟩⟩⟩ ← (simulate fork_sim' adversary (log.to_seed, (forked_cache, ()))),
+  ⟨x', ⟨log', ⟨cache', ()⟩⟩⟩ ← (simulate fork_sim' adversary (log.to_seed, (forked_cache, ()))),
   -- check the forking index for the second result
   i' ← return (choose_fork x' cache'),
   -- return a value if both runs choose the same cache value and where successful (not `none`)

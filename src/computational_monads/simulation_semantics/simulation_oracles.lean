@@ -65,6 +65,23 @@ def to_seed (log : query_log spec) :
   query_log spec :=
 λ i, (log i).reverse
 
+-- Check that a input was never queried
+def not_queried [spec.computable] (log : query_log spec)
+  (i : spec.ι) (t : spec.domain i) : bool :=
+((log i).find ((=) t ∘ prod.fst)).is_some
+
+def get_index [spec.computable] (log : query_log spec)
+  (i : spec.ι) (t : spec.domain i) (q : ℕ) : option (fin q) :=
+match (log i) with
+| [] := none
+| ((t', u) :: ls) := sorry
+end 
+
+/-- Remove parts of the cache after the query chosen to fork on -/
+def fork_cache {q : ℕ} {T U : Type} [inhabited U] : (option $ fin q) → query_log (T →ₒ U) → query_log (T →ₒ U)
+:= sorry -- TODO: This is essentially in the `query_log.lean` file but needs a few modifications
+
+
 -- def drop_after_query (log : query_log spec)
 
 end query_log
