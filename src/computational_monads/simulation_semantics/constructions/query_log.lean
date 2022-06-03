@@ -64,15 +64,6 @@ def lookup (log : query_log spec) (i : spec.ι) (t : spec.domain i) :
   option (spec.range i) :=
 ((log i).find $ (= t) ∘ prod.fst).map prod.snd
 
-/-- `lookup`, but only checking the front element of the list.
-  Main use case is using the `query_log` is a seed for a second computation -/
-def lookup_fst (log : query_log spec) (i : spec.ι) (t : spec.domain i) :
-  option (spec.range i) :=
-match log i with
-| [] := none
-| ((t', u)) :: _ := if t = t' then some u else none
-end
-
 @[simp]
 lemma lookup_init (spec : oracle_spec) [spec.computable]
   (i : spec.ι) (t : spec.domain i) :
@@ -84,8 +75,7 @@ option.map_none'
 lemma lookup_log_query (i j : spec.ι)
   (t : spec.domain i) (t' : spec.domain j) (u : spec.range i) :
   (log.log_query i t u).lookup j t' = if hi : i = j
-    then (if hi.rec_on t = t' then hi.rec_on (some u) else log.lookup j t')
-    else log.lookup j t' := 
+    then (if hi.rec_on t = t' then hi.rec_on (some u) else log.lookup j t') else log.lookup j t' := 
 begin
   split_ifs with hi ht,
   { induction hi, induction ht,
@@ -122,6 +112,56 @@ lemma lookup_log_query_of_input_ne (i : spec.ι)
 trans (log.lookup_log_query_same_index i t t' u) (if_neg ht)
 
 end lookup
+
+section lookup_fst
+
+variable [spec.computable]
+
+/-- `lookup`, but only checking the front element of the list.
+  Main use case is using the `query_log` is a seed for a second computation -/
+def lookup_fst (log : query_log spec) (i : spec.ι) (t : spec.domain i) :
+  option (spec.range i) :=
+match log i with
+| [] := none
+| ((t', u)) :: _ := if t = t' then some u else none
+end
+
+lemma lookup_fst_init (spec : oracle_spec) [spec.computable]
+  (i : spec.ι) (t : spec.domain i) :
+  (query_log.init spec).lookup_fst i t = none :=
+rfl
+
+lemma lookup_fst_log_query (i j : spec.ι)
+  (t : spec.domain i) (t' : spec.domain j) (u : spec.range i) :
+  (log.log_query i t u).lookup_fst j t' = if hi : i = j
+    then (if hi.rec_on t = t' then hi.rec_on (some u) else none) else log.lookup_fst j t' :=
+begin
+  split_ifs with hi ht,
+  { induction hi, induction ht,
+    simp only [lookup_fst, log_query_apply_same_index, eq_self_iff_true, if_true] },
+  { induction hi,
+    simpa [lookup_fst] using ne.symm ht },
+  { simp only [lookup_fst, log_query_apply_of_index_ne _ hi] }
+end
+
+lemma lookup_fst_log_query_of_index_eq {i j : spec.ι} (hi : i = j)
+  (t : spec.domain i) (t' : spec.domain j) (u : spec.range i) :
+  (log.log_query i t u).lookup_fst j t' =
+    if hi.rec_on t = t' then hi.rec_on (some u) else none :=
+(log.lookup_fst_log_query i j t t' u).trans (dif_pos hi)
+
+lemma lookup_fst_log_query_same_index (i : spec.ι)
+  (t t' : spec.domain i) (u : spec.range i) :
+  (log.log_query i t u).lookup_fst i t' =
+    if t = t' then some u else none :=
+log.lookup_fst_log_query_of_index_eq rfl t t' u
+
+lemma lookup_fst_log_query_of_index_ne {i j : spec.ι} (hi : i ≠ j)
+  (t : spec.domain i) (t' : spec.domain j) (u : spec.range i) :
+  (log.log_query i t u).lookup_fst j t' = log.lookup_fst j t' :=
+(log.lookup_fst_log_query i j t t' u).trans (dif_neg hi)
+
+end lookup_fst
 
 section remove_head
 
