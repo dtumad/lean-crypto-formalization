@@ -1,6 +1,8 @@
 import computational_monads.constructions.uniform_select
 import computational_monads.simulation_semantics.simulate
 import computational_monads.simulation_semantics.stateless_oracle
+import computational_monads.simulation_semantics.constructions.query_log
+
 
 open oracle_comp oracle_spec
 
@@ -18,97 +20,7 @@ notation so' `∘ₛ` so := oracle_compose so so'
 
 variables (so : simulation_oracle spec spec') (so' : simulation_oracle spec' spec'')
 
-
 end compose
-
-section query_log
-
--- log by keeping a list for each of the indexed oracles
--- TODO: this version seems to work a lot better. For complexity stuff can maybe axiomatize
-def query_log (spec : oracle_spec) : Type :=
-  Π (i : spec.ι), list (spec.domain i × spec.range i)
-
-namespace query_log
-
--- log with no entries for any of the oracles
-@[inline, reducible]
-def init (spec : oracle_spec) : query_log spec :=
-λ i, []
-
-def log_query [spec.computable] (log : query_log spec) (i : spec.ι)
-  (t : spec.domain i) (u : spec.range i) : query_log spec :=
-λ i', if hi : i = i' then hi.rec_on ((t, u) :: (log i)) else log i'
-
--- remove the head of the index `i` log
-def remove_head [spec.computable]
-  (log : query_log spec) (i : spec.ι) : query_log spec :=
-λ i', if i' = i then (log i').tail else (log i')
-
-def lookup [spec.computable]
-  (log : query_log spec) (i : spec.ι) (t : spec.domain i) :
-  option (spec.range i) :=
-((log i).find $ (= t) ∘ prod.fst).map prod.snd
-
--- Different lookup that only looks at head, and removes the element from the cache
-def take_fst [spec.computable]
-  (log : query_log spec) (i : spec.ι) (t : spec.domain i) :
-  option (spec.range i) × query_log spec :=
-match (log i).nth 0 with
-| none := (none, query_log.init spec)
-| some ⟨t', u⟩ := if t' = t then (some u, log.remove_head i)
-    else (none, query_log.init spec) -- TODO: maybe don't clear everything here?
-end
-
--- reverse every log, so that it is ordered by query order. used to pass into seed
--- TODO: this seems cumbersome and unintuitive
-def to_seed (log : query_log spec) :
-  query_log spec :=
-λ i, (log i).reverse
-
--- Check that a input was never queried
-def not_queried [spec.computable] (log : query_log spec)
-  (i : spec.ι) (t : spec.domain i) : bool :=
-((log i).find ((=) t ∘ prod.fst)).is_some
-
-def get_index [spec.computable] (log : query_log spec)
-  (i : spec.ι) (t : spec.domain i) (q : ℕ) : option (fin q) :=
-match (log i) with
-| [] := none
-| ((t', u) :: ls) := sorry
-end 
-
-/-- Remove parts of the cache after the query chosen to fork on -/
-def fork_cache {q : ℕ} {T U : Type} [inhabited U] : (option $ fin q) → query_log (T →ₒ U) → query_log (T →ₒ U)
-:= sorry -- TODO: This is essentially in the `query_log.lean` file but needs a few modifications
-
-
--- def drop_after_query (log : query_log spec)
-
-end query_log
-
--- -- TODO: this might work better as a function type? (above ↑)
--- def query_log (spec : oracle_spec) : Type :=
--- list (Σ (i : spec.ι), spec.domain i × spec.range i)
-
--- namespace query_log
-
--- /-- Looking up a cache value requires use of the first equality condition
---   to make the following conditions and return values type correct. -/
--- def lookup {spec : oracle_spec} [spec.computable] :
---   Π (log : query_log spec) (i : spec.ι) (t : spec.domain i), option (spec.range i)
--- | (⟨i', t', u⟩ :: log) i t := if hi : i' = i
---     then (if t = hi.rec_on t' then hi.rec_on (some u)
---     else lookup log i t) else lookup log i t
--- | [] i t := none
-
--- /-- Like `lookup-/
--- def query_log.lookup_head {spec : oracle_spec} [spec.computable] :
---   Π (log : query_log spec) (i : spec.ι) (t : spec.domain i), (option $ spec.range i) × query_log spec :=
--- sorry
-
--- end query_log
-
-end query_log
 
 section logging_oracle
 
