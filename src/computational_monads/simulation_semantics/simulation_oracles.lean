@@ -75,15 +75,16 @@ end logging_oracle
 
 section seeded_oracle
 
+/-- Use the first element of the `seed` as the query result if inputs match.
+  If the query values don't match then throw away the seed as computation has diverged.
+  Using this with a log from a previous computation ensures they behave identically. -/
 def seeded_simulation_oracle (spec : oracle_spec) [computable spec] :
   simulation_oracle spec spec :=
 { S := query_log spec,
-  o := λ i ⟨t, seed⟩, begin
-    refine let ⟨u', seed⟩ := seed.take_fst i t in match u' with
-    | none := do { u ← query i t, return (u, seed) }
-    | (some u) := return (u, seed)
-    end
-  end }
+  o := λ i ⟨t, seed⟩, match seed.lookup_fst i t with
+    | none := functor.map (λ u, (u, query_log.init spec)) (query i t)
+    | (some u) := return (u, seed.remove_head i)
+    end }
 
 namespace seeded_simulation_oracle
 

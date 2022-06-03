@@ -64,6 +64,15 @@ def lookup (log : query_log spec) (i : spec.ι) (t : spec.domain i) :
   option (spec.range i) :=
 ((log i).find $ (= t) ∘ prod.fst).map prod.snd
 
+/-- `lookup`, but only checking the front element of the list.
+  Main use case is using the `query_log` is a seed for a second computation -/
+def lookup_fst (log : query_log spec) (i : spec.ι) (t : spec.domain i) :
+  option (spec.range i) :=
+match log i with
+| [] := none
+| ((t', u)) :: _ := if t = t' then some u else none
+end
+
 @[simp]
 lemma lookup_init (spec : oracle_spec) [spec.computable]
   (i : spec.ι) (t : spec.domain i) :
@@ -243,7 +252,7 @@ section to_seed
 
 /-- Wrapping function that just reverses every list in the given `query_log`. 
   Intended to turn a log into something that can be used as a seed for a computation.
-  Needed because the logging function adds the new queries to the front  -/
+  Needed because the logging function adds the new queries to the front of the list  -/
 def to_seed (log : query_log spec) :
   query_log spec :=
 λ i, (log i).reverse
