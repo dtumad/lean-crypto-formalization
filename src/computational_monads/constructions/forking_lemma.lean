@@ -2,6 +2,8 @@ import computational_monads.simulation_semantics.simulation_oracles
 import computational_monads.constructions.uniform_select
 import computational_monads.asymptotics.queries_at_most
 import computational_monads.distribution_semantics.eval_distribution
+import computational_monads.simulation_semantics.constructions.logging
+
 
 noncomputable theory
 
@@ -14,6 +16,7 @@ variables {T U A : Type} [inhabited U] [fintype U] [decidable_eq T] [decidable_e
 variables (adversary : oracle_comp (uniform_selecting ++ (T →ₒ U)) A)
   {q : ℕ} --(hq : queries_at_most adversary q)
   (choose_fork : A → query_log (T →ₒ U) → option (fin q))
+  -- TODO: this might work better with input as a product type? matches the fork output then
 
 /-- Simulation oracle for forking algorithm.
   Log the uniform selection oracle and cache the random outputs of the forked oracle -/
@@ -36,7 +39,7 @@ do {
   -- choose the index of the query to fork on
   i ← return (choose_fork x cache),
   -- remove things in the cache after the forking query
-  forked_cache ← return (cache.fork_cache i),
+  forked_cache ← return (cache.fork_cache () i),
   -- run again, using the same random choices for first oracle, and forked cache
   ⟨x', ⟨log', ⟨cache', ()⟩⟩⟩ ← (simulate fork_sim' adversary (log.to_seed, (forked_cache, ()))),
   -- check the forking index for the second result

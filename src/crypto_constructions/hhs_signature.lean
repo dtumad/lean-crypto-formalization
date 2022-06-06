@@ -39,7 +39,12 @@ noncomputable def signature_of_principal_action_class (x₀ : X) (n : ℕ) :
 
 -- The choose_fork that will be passed to forking lemma
 -- `q` will be the max queries of the adversary
-def choose_fork (x₀ : X) (n q : ℕ) (pk : X) (m : M) : (vector (G × bool) n)
-  → (query_log $ ((vector X n × M) →ₒ vector bool n)) → option (fin q) :=
-λ σ log, log.get_index () -- Get the index of the thing the adversary should have had to query
-  (σ.map (λ ⟨c, b⟩, if b then c +ᵥ pk else c +ᵥ x₀), m) q
+def choose_fork {q : ℕ} (x₀ : X) (n : ℕ) (pk : X) (m : M) 
+  (σ : vector (G × bool) n) (log : query_log $ ((vector X n × M) →ₒ vector bool n)) : 
+  option (fin q) :=
+let index' : option ℕ := log.index_of_input ()
+  (σ.map (λ ⟨c, b⟩, if b then c +ᵥ pk else c +ᵥ x₀), m) in
+match index' with
+| none := none
+| (some index) := if h : index < q then some ⟨index, h⟩ else none
+end

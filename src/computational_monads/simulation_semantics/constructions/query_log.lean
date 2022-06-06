@@ -59,7 +59,8 @@ section lookup
 variable [spec.computable]
 
 /-- Find the query output of the first oracle query with the given input.
-  Result is returned as an `option`, with `none` for inputs that haven't previously been queried -/
+  Result is returned as an `option`, with `none` for inputs that haven't previously been queried.
+  Main use case is for using the log as a cache for repeated queries. -/
 def lookup (log : query_log spec) (i : spec.ι) (t : spec.domain i) :
   option (spec.range i) :=
 ((log i).find $ (= t) ∘ prod.fst).map prod.snd
@@ -162,6 +163,37 @@ lemma lookup_fst_log_query_of_index_ne {i j : spec.ι} (hi : i ≠ j)
 (log.lookup_fst_log_query i j t t' u).trans (dif_neg hi)
 
 end lookup_fst
+
+section map_at_index
+
+/-- Apply a mapping function to the log corresponding to a particular index
+  TODO: I think a lot of the above functions can use this as a helper -/
+def map_at_index [spec.computable] (log : query_log spec) (i : spec.ι)
+  (f : list (spec.domain i × spec.range i) → list (spec.domain i × spec.range i)) :
+  query_log spec :=
+λ j, if hi : i = j then hi.rec_on (f $ log i) else (log j)
+
+@[simp]
+lemma map_at_index_apply [spec.computable] (log : query_log spec) (i j : spec.ι)
+  (f : list (spec.domain i × spec.range i) → list (spec.domain i × spec.range i)) :
+  log.map_at_index i f j = if hi : i = j
+    then hi.rec_on (f $ log i) else log j :=
+rfl
+
+end map_at_index
+
+section get_index
+
+/-- Get the index of the first query with the given input `t`.
+  Returns `none` if the input has never been queried
+  TODO: check if the fold should be right or left
+  TODO: `not_queried` can be defined using this instead? -/
+def index_of_input [spec.computable] (log : query_log spec)
+  (i : spec.ι) (t : spec.domain i) : option ℕ :=
+(log i).foldr_with_index
+  (λ n ⟨t', _⟩ m, if t' = t then some n else m) none
+
+end get_index
 
 section remove_head
 
@@ -297,6 +329,29 @@ def to_seed (log : query_log spec) :
   query_log spec :=
 λ i, (log i).reverse
 
+@[simp]
+lemma to_seed_apply (log : query_log spec) (i : spec.ι) :
+  log.to_seed i = (log i).reverse :=
+rfl
+
+@[simp]
+lemma to_seed_init (spec : oracle_spec) :
+  (init spec).to_seed = init spec :=
+rfl
+
+lemma to_seed_log_query [spec.computable] (log : query_log spec)
+  (i : spec.ι) (t : spec.domain i) (u : spec.range i) :
+  (log.log_query i t u).to_seed = λ j, if hi : i = j
+    then log.to_seed j ++ [hi.rec_on (t, u)] else log.to_seed j :=
+begin
+  refine funext (λ j, _),
+  split_ifs,
+  { induction h,
+    exact trans (congr_arg list.reverse $ log.log_query_apply_same_index i t u)
+      (list.reverse_cons (t, u) (log i)) },
+  { exact congr_arg list.reverse (log.log_query_apply_of_index_ne h t u) }
+end
+
 end to_seed
 
 -- Different lookup that only looks at head, and removes the element from the cache
@@ -309,18 +364,14 @@ match (log i).nth 0 with
     else (none, query_log.init spec) -- TODO: maybe don't clear everything here?
 end
 
-/-- Get the index of the given input, with depth at most equal to the given number `q`.
-  In most applications `q` will be the maximum number of queries that a computation makes.
-  This allows the result to be bounded and therefore returned as a `fin q` rather than a `ℕ` -/
-def get_index [spec.computable] (log : query_log spec)
-  (i : spec.ι) (t : spec.domain i) (q : ℕ) : option (fin q) :=
-match (log i) with
-| [] := none
-| ((t', u) :: ls) := sorry
-end 
-
-/-- Remove parts of the cache after the query chosen to fork on -/
-def fork_cache {q : ℕ} {T U : Type} [inhabited U] : (option $ fin q) → query_log (T →ₒ U) → query_log (T →ₒ U)
-:= sorry -- TODO: This is essentially in the `query_log.lean` file but needs a few modifications
+/-- Remove parts of the cache after the query chosen to fork on
+  TODO: is there any point not just making `n` a `ℕ` ? -/
+def fork_cache [spec.computable] {q : ℕ} (log : query_log spec)
+  (i : spec.ι) (n : option $ fin q) :
+  query_log spec :=
+match n with
+| none := log -- TODO: this case doesn't really matter but whatever
+| (some m) := log.map_at_index i (list.drop ↑m)
+end
 
 end query_log
