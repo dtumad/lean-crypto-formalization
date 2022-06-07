@@ -15,10 +15,9 @@ This file builds up the definition of a hard homogeneous space.
 
 open oracle_comp oracle_spec
 
-structure algorithmic_homogenous_space (G X : Type) [fintype G] [fintype X] [inhabited X]
-  [add_group G] [add_action G X]
-  [decidable_eq G] [decidable_eq X]
-  [principal_action_class G X] :=
+class algorithmic_homogenous_space (G X : Type) [fintype G] [fintype X] [inhabited X]
+  [add_group G] [add_action G X] [decidable_eq G] [decidable_eq X]
+  extends principal_action_class G X :=
 (poly_time_add : poly_time (λ x, x.1 + x.2 : G × G → G))
 (poly_time_inv : poly_time (λ x, -x : G → G))
 (poly_time_vadd : poly_time (λ x, x.1 +ᵥ x.2 : G × X → X))
@@ -66,12 +65,12 @@ noncomputable def parallelization_advantage (adversary : X × X × X → oracle_
 end computational_advantages
 
 -- TODO: the algorithmic stuff is kinda weird here?
-structure hard_homogenous_space {G X : ℕ → Type} 
+class hard_homogenous_space {G X : ℕ → Type} 
   [∀ n, fintype $ G n] [∀ n, fintype $ X n] [∀ n, inhabited $ X n]
   [∀ n, add_group $ G n] [∀ n, add_action (G n) (X n)]
   [∀ n, decidable_eq $ G n] [∀ n, decidable_eq $ X n]
-  [∀ n, principal_action_class (G n) (X n)] :=
-(algorithmic : ∀ n, algorithmic_homogenous_space (G n) (X n))
+  [∀ n, algorithmic_homogenous_space (G n) (X n)] :=
+-- (algorithmic : ∀ n, algorithmic_homogenous_space (G n) (X n))
 (vectorization_hard : ∀ (adversary : Π (n : ℕ), X n × X n → oracle_comp uniform_selecting (G n))
   (poly_time : ∀ n, poly_time_oracle_comp $ adversary n),
   negligable (λ n, vectorization_advantage (adversary n)))

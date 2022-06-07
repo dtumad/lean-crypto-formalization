@@ -6,14 +6,12 @@ import data.vector.zip
 open oracle_comp oracle_spec
 
 variables (G X M : Type) [fintype G] [fintype X] [inhabited X] [inhabited G]
-  [add_group G] [add_action G X]
   [decidable_eq G] [decidable_eq X] [decidable_eq M]
-  [principal_action_class G X]
+  [add_group G] [add_action G X] [algorithmic_homogenous_space G X]
 
-noncomputable def signature_of_principal_action_class (x₀ : X) (n : ℕ) :
+noncomputable def hhs_signature (x₀ : X) (n : ℕ) :
   signature M X G (vector (G × bool) n) :=
-{
-  oracles := uniform_selecting ++ ((vector X n × M) →ₒ vector bool n),
+{ oracles := uniform_selecting ++ ((vector X n × M) →ₒ vector bool n),
   oracles_finite_range := by apply_instance,
   gen := λ _, do {
     sk ←$ᵗ G,
@@ -32,22 +30,37 @@ noncomputable def signature_of_principal_action_class (x₀ : X) (n : ℕ) :
   },
   gen_poly_time := sorry,
   sign_poly_time := sorry,
-  verify_poly_time := sorry
-}
+  verify_poly_time := sorry }
 
-#check set.Union_singleton_eq_range
-
+namespace signature_of_principal_action_class 
+ 
+variable [h'' : algorithmic_homogenous_space G X]
+include h''
 variables (x₀ : X) (n : ℕ)
 
-lemma support_signature_of_principal_action_class :
-  ((signature_of_principal_action_class G X M x₀ n).gen ()).support =
-    { (sk +ᵥ x₀, sk) | sk : G } :=
-begin
-  sorry
-end
+/-- We can coerce any uniform selection computation up to one for the oracles of `hhs_signature` -/
+instance coe_uniform_selecting_oracles (A : Type) :
+  has_coe (oracle_comp uniform_selecting A) (oracle_comp (hhs_signature G X M x₀ n).oracles A) :=
+⟨λ oa, @has_coe.coe _ _ (coe_append_right uniform_selecting _ A) oa⟩
+ 
+@[simp]
+lemma support_coe_uniform_selecting_oracles {A : Type} (oa : oracle_comp uniform_selecting A) :
+  support (oa : oracle_comp (hhs_signature G X M x₀ n).oracles A) = oa.support :=
+sorry
+
+@[simp]
+lemma gen_apply (u : unit) :
+  ((hhs_signature G X M x₀ n).gen u) = ↑($ᵗ G) >>= λ sk, return (sk +ᵥ x₀, sk) :=
+rfl
+
+lemma support_gen :
+  ((hhs_signature G X M x₀ n).gen ()).support =
+    set.range (λ (sk : G), (sk +ᵥ x₀, sk)) :=
+by simp only [gen_apply, support_bind, support_coe_uniform_selecting_oracles,
+  support_uniform_select_fintype, support_pure, set.Union_true, set.Union_singleton_eq_range]
 
 theorem signature_of_principal_action_class_complete :
-  (signature_of_principal_action_class G X M x₀ n).complete :=
+  (hhs_signature G X M x₀ n).complete :=
 begin
   rw signature.complete_iff_signatures_support_subset,
   intros m pk sk σ hgen hsign,
@@ -65,3 +78,5 @@ match index' with
 | none := none
 | (some index) := if h : index < q then some ⟨index, h⟩ else none
 end
+
+end signature_of_principal_action_class
