@@ -5,7 +5,7 @@ import data.vector.zip
 
 open oracle_comp oracle_spec
 
-variables {G X M : Type} [fintype G] [fintype X] [inhabited X] [inhabited G]
+variables (G X M : Type) [fintype G] [fintype X] [inhabited X] [inhabited G]
   [add_group G] [add_action G X]
   [decidable_eq G] [decidable_eq X] [decidable_eq M]
   [principal_action_class G X]
@@ -35,7 +35,24 @@ noncomputable def signature_of_principal_action_class (x₀ : X) (n : ℕ) :
   verify_poly_time := sorry
 }
 
+#check set.Union_singleton_eq_range
 
+variables (x₀ : X) (n : ℕ)
+
+lemma support_signature_of_principal_action_class :
+  ((signature_of_principal_action_class G X M x₀ n).gen ()).support =
+    { (sk +ᵥ x₀, sk) | sk : G } :=
+begin
+  sorry
+end
+
+theorem signature_of_principal_action_class_complete :
+  (signature_of_principal_action_class G X M x₀ n).complete :=
+begin
+  rw signature.complete_iff_signatures_support_subset,
+  intros m pk sk σ hgen hsign,
+  sorry
+end
 
 -- The choose_fork that will be passed to forking lemma
 -- `q` will be the max queries of the adversary

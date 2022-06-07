@@ -47,29 +47,35 @@ do {
   sig.verify (pk, m, σ) 
 }
 
+@[simp]
+lemma support_completeness_experiment (sig : signature M PK SK S) (m : M) :
+  (completeness_experiment sig m).support =
+    ⋃ (k : PK × SK) (hk : k ∈ (sig.gen ()).support) (σ : S)
+      (hσ : σ ∈ (sig.sign (k.1, k.2, m)).support),
+        (sig.verify (k.1, m, σ)).support :=
+begin
+  sorry
+end
+
 /-- Honest signer always generates a valid message -/
 def complete (sig : signature M PK SK S) :=
-∀ (m : M), ⟦ (=) tt | completeness_experiment sig m ⟧ = 1
+∀ (m : M), ⟦ completeness_experiment sig m ⟧ tt = 1
 
 lemma complete_iff_signatures_support_subset (sig : signature M PK SK S) :
   sig.complete ↔ ∀ (m : M) (pk : PK) (sk : SK) (σ : S),
     (pk, sk) ∈ (sig.gen ()).support → σ ∈ (sig.sign (pk, sk, m)).support
       → ff ∉ (sig.verify (pk, m, σ)).support :=
 begin
-  refine ⟨λ h, _, λ h, _⟩,
-  {
-    intros m pk sk σ hgen hsign,
-    specialize h m,
-    rw eval_prob_eq_one_iff_support_subset at h,
-    erw support_bind at h,
-    simp at h,
-    specialize h pk sk hgen,
-    erw support_bind at h,
-    simp at h,
-    specialize h σ hsign,
-    exact λ h', bool.ff_ne_tt (symm $ h h'),
-    rw eval_prob_eq_one_iff
-  }
+  refine ⟨λ h m pk sk σ hgen hsign, _, λ h, _⟩,
+  { specialize h m,
+    rw eval_distribution_eq_one_iff_support_subset_singleton at h,
+    simp [support_completeness_experiment, set.Union_subset_iff,
+      eval_prob_eq_one_iff_support_subset, prod.forall] at h,
+    exact λ h', (h pk sk hgen σ hsign h').elim },
+  { intro m,
+    simp [eval_distribution_eq_one_iff_support_subset_singleton,
+      support_completeness_experiment],
+    exact λ pk sk hgen σ hsign, h m pk sk σ hgen hsign }
 end
 
 end complete

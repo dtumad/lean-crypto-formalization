@@ -29,7 +29,6 @@ lemma pure'_bind'_equiv {spec : oracle_spec} [spec.finite_range]
   (bind' A B (pure' A a) cb) ≃ₚ cb a :=
 begin
   simp,
-  exact pmf.pure_bind (eval_distribution ∘ cb) a,
 end
 
 @[simp]

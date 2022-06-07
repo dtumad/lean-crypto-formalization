@@ -51,6 +51,11 @@ lemma eval_distribution_eq_zero_iff_not_mem_support (oa : oracle_comp spec A) (a
 sorry 
 
 @[simp]
+lemma eval_distribution_eq_one_iff_support_subset_singleton (oa : oracle_comp spec A) (a : A) :
+  ⟦oa⟧ a = 1 ↔ oa.support ⊆ {a} :=
+sorry
+
+@[simp]
 lemma eval_distribution_pure (a : A) :
   ⟦(pure a : oracle_comp spec A)⟧ = pmf.pure a :=
 rfl

@@ -43,8 +43,6 @@ begin
   induction oa,
   {
     simp,
-    refine (pmf.pure_bind _ _).trans _,
-    simp,
   },
   {
     sorry,
