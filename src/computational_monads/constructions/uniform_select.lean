@@ -48,12 +48,19 @@ variables {n : ℕ} (v : vector A (n + 1))
 @[simp]
 lemma support_uniform_of_vector :
   support ($ᵛ v) = {a | a ∈ v.to_list} :=
-sorry
+begin
+  rw uniform_select_vector,
+  rw support_map,
+  rw support_uniform_fin,
+  sorry
+end
 
 @[simp]
 lemma eval_distribution_uniform_select_vector :
   ⟦$ᵛ v⟧ = pmf.uniform_of_vector v :=
-sorry
+begin
+  sorry
+end
 
 end uniform_select_vector
 

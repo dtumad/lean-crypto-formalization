@@ -5,9 +5,9 @@ import computational_monads.oracle_spec
 variables {A B : Type} {spec spec' : oracle_spec}
 
 open oracle_spec
+-- TODO: a lot of this is pretty outdated notation/documentation wise at this point -/
 
-/-- Type to represent computations with access so oracles specified by and `oracle_spec`.
-  TODO: Could instead define this as a special case of a free monad -/
+/-- Type to represent computations with access so oracles specified by and `oracle_spec` -/
 inductive oracle_comp (spec : oracle_spec) : Type → Type 1
 | pure' (A : Type) (a : A) : oracle_comp A
 | bind' (A B : Type) (oa : oracle_comp A) (ob : A → oracle_comp B) : oracle_comp B
@@ -73,6 +73,11 @@ lemma support_bind' {A B : Type} {spec : oracle_spec}
 @[simp]
 lemma support_query {spec : oracle_spec} (i : spec.ι) (t : spec.domain i) :
   (query i t : oracle_comp spec (spec.range i)).support = ⊤ := rfl
+
+@[simp]
+lemma support_map {spec : oracle_spec} (f : A → B) (oa : oracle_comp spec A) :
+  (f <$> oa).support = f '' oa.support :=
+sorry
 
 example : support (do {
   b ← coin, b' ← coin,
