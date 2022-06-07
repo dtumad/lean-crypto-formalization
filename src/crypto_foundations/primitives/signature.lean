@@ -12,6 +12,8 @@ Signature schemes that don't need this can assume a random oracle like `⊥ → 
   which won't actually be query-able since `⊥` is an uninhabited type
 -/
 
+open_locale ennreal nnreal
+
 open oracle_comp oracle_spec
 
 /-- Signature on messages `M`, public and secret keys `PK` and `SK`, signatures of type `S`. 
@@ -45,10 +47,30 @@ do {
   sig.verify (pk, m, σ) 
 }
 
-/-- Honest signer always generates a valid message. 
-  TODO: could account for negligible failure rate? -/
-def complete (sig : signature M PK SK S):=
+/-- Honest signer always generates a valid message -/
+def complete (sig : signature M PK SK S) :=
 ∀ (m : M), ⟦ (=) tt | completeness_experiment sig m ⟧ = 1
+
+lemma complete_iff_signatures_support_subset (sig : signature M PK SK S) :
+  sig.complete ↔ ∀ (m : M) (pk : PK) (sk : SK) (σ : S),
+    (pk, sk) ∈ (sig.gen ()).support → σ ∈ (sig.sign (pk, sk, m)).support
+      → ff ∉ (sig.verify (pk, m, σ)).support :=
+begin
+  refine ⟨λ h, _, λ h, _⟩,
+  {
+    intros m pk sk σ hgen hsign,
+    specialize h m,
+    rw eval_prob_eq_one_iff_support_subset at h,
+    erw support_bind at h,
+    simp at h,
+    specialize h pk sk hgen,
+    erw support_bind at h,
+    simp at h,
+    specialize h σ hsign,
+    exact λ h', bool.ff_ne_tt (symm $ h h'),
+    rw eval_prob_eq_one_iff
+  }
+end
 
 end complete
 
@@ -56,14 +78,20 @@ section unforgeable
 
 variables [inhabited S] [decidable_eq M] [decidable_eq S]
 
+/-- An adversary for the unforgeable signature experiment.
+  Note that the adversary only has access to the public key. -/
 structure unforgeable_adversary (sig : signature M PK SK S) :=
 (adv : PK → oracle_comp (sig.oracles ++ (M →ₒ S)) (M × S))
 (adv_poly_time : poly_time_oracle_comp adv)
 
+/-- When we simulate the adversary, we forward the "coin flip" queries through.
+  When simulating the signing, and then answer the query by using the secret key. -/
 def simulate_sign (sig : signature M PK SK S) (pk : PK) (sk : SK) :
   simulation_oracle (sig.oracles ++ (M →ₒ S)) (sig.oracles) :=
-identity_oracle sig.oracles ⟪++⟫ (⟪λ _ m, sig.sign (pk, sk, m)⟫ ∘ₛ (logging_simulation_oracle (M →ₒ S)))
+identity_oracle sig.oracles ⟪++⟫
+  (⟪λ _ m, sig.sign (pk, sk, m)⟫ ∘ₛ (logging_simulation_oracle (M →ₒ S)))
 
+/-- Wrapper function for simulation that hides the "state values" of the stateless oracles. -/
 def simulate_adversary (sig : signature M PK SK S)
   (adversary : unforgeable_adversary sig) (pk : PK) (sk : SK) :
   oracle_comp sig.oracles (M × S × query_log (M →ₒ S)) :=
@@ -72,6 +100,9 @@ do {
   return (m, s, log)
 }
 
+/-- Experiement for testing if a signature scheme is unforgeable.
+  Generate the public / secret keys, then simulate the adversary to get a signature.
+  Adversary succeeds if the signature verifies and the message hasn't been queried -/
 def unforgeable_experiment (sig : signature M PK SK S)
   (adversary : unforgeable_adversary sig) :
   oracle_comp sig.oracles bool :=
@@ -81,6 +112,12 @@ do {
   b ← sig.verify (pk, m, σ),
   return (b ∧ log.not_queried () m)
 }
+
+/-- Adversaries success at forging a signature.
+  TODO: maybe this doesn't need an independent definition -/
+noncomputable def unforgeable_advantage (sig : signature M PK SK S)
+  (adversary : unforgeable_adversary sig) : ℝ≥0∞ :=
+⟦ (= tt) | unforgeable_experiment sig adversary ⟧
 
 end unforgeable
 
@@ -101,6 +138,6 @@ variables {M PK SK S : ℕ → Type}
   `unforgeable_experiment` as security parameter grows -/
 def unforgeable (sig_scheme : signature_scheme M PK SK S) : Prop :=
 ∀ (adversary : Π (sp : ℕ), unforgeable_adversary $ sig_scheme sp),
-  negligable (λ sp, ⟦ (=) tt | unforgeable_experiment (sig_scheme sp) (adversary sp)⟧)
+  negligable (λ sp, unforgeable_advantage (sig_scheme sp) (adversary sp))
 
 end signature_scheme

@@ -12,6 +12,8 @@ variables {A B : Type} {spec : oracle_spec} [h' : spec.finite_range]
 
 include h'
 
+section eval_distribution
+
 -- Big step semantics for a computation with finite range oracles
 -- The result of queries is assumed to be uniform over the oracle's codomain
 -- Usually the `spec` when calling this would just be `unit →ₒ bool` (i.e. a tape of random bits),
@@ -39,8 +41,24 @@ lemma support_eval_distribution (oa : oracle_comp spec A) :
 plift.down (eval_dist oa).2
 
 @[simp]
+lemma eval_distribution_ge_zero_iff_mem_support (oa : oracle_comp spec A) (a : A) :
+  0 ≤ ⟦oa⟧ a ↔ a ∈ oa.support :=
+sorry
+
+@[simp]
+lemma eval_distribution_eq_zero_iff_not_mem_support (oa : oracle_comp spec A) (a : A) :
+  ⟦oa⟧ a = 0 ↔ a ∉ oa.support :=
+sorry 
+
+@[simp]
 lemma eval_distribution_pure (a : A) :
-  ⟦(pure a : oracle_comp spec A)⟧ = pmf.pure a := rfl
+  ⟦(pure a : oracle_comp spec A)⟧ = pmf.pure a :=
+rfl
+
+@[simp]
+lemma eval_distribution_return (a : A) :
+  ⟦(return a : oracle_comp spec A)⟧ = pmf.pure a :=
+rfl
 
 @[simp]
 lemma eval_distribution_bind (oa : oracle_comp spec A) (ob : A → oracle_comp spec B) :
@@ -48,15 +66,23 @@ lemma eval_distribution_bind (oa : oracle_comp spec A) (ob : A → oracle_comp s
 by simp [eval_distribution, eval_dist, -bind'_eq_bind, bind]
 
 @[simp]
-lemma eval_distribution_query (i : spec.ι) (t : spec.domain i) :
-  ⟦query i t⟧ = pmf.uniform_of_fintype (spec.range i) := rfl
+lemma eval_distibution_pure_bind (a : A) (ob : A → oracle_comp spec B) :
+  ⟦return a >>= ob⟧ = ⟦ob a⟧ :=
+(eval_distribution_bind (return a) ob).trans (pmf.pure_bind (λ a, ⟦ob a⟧) a)
 
 @[simp]
 lemma eval_distribution_map (oa : oracle_comp spec A) (f : A → B) :
   ⟦f <$> oa⟧ = ⟦oa⟧.map f :=
-begin
-  sorry,
-end
+eval_distribution_bind oa (pure ∘ f)
+
+@[simp]
+lemma eval_distribution_query (i : spec.ι) (t : spec.domain i) :
+  ⟦query i t⟧ = pmf.uniform_of_fintype (spec.range i) :=
+rfl
+
+end eval_distribution
+
+section eval_prob
 
 noncomputable def eval_prob (oa : oracle_comp spec A) (event : set A) :
   ℝ≥0∞ := ⟦oa⟧.to_outer_measure event
@@ -65,6 +91,16 @@ notation `⟦` event `|` oa `⟧` := eval_prob oa event
 
 noncomputable example (oa : oracle_comp coin_oracle (fin 10)) :
   ℝ≥0∞ := ⟦ (≥) 5 | oa ⟧
+
+@[simp]
+lemma eval_prob_eq_zero_iff_disjoint_support (oa : oracle_comp spec A) (event : set A) :
+  ⟦ event | oa ⟧ = 0 ↔ disjoint oa.support event :=
+sorry
+
+@[simp]
+lemma eval_prob_eq_one_iff_support_subset (oa : oracle_comp spec A) (event : set A) :
+  ⟦ event | oa ⟧ = 1 ↔ oa.support ⊆ event :=
+sorry
 
 @[simp]
 lemma eval_prob_return (a : A) (event : set A) :
@@ -88,6 +124,17 @@ begin
 end
 
 @[simp]
+lemma eval_prob_pure_bind (a : A) (ob : A → oracle_comp spec B) (event : set B) :
+  ⟦ event | return a >>= ob ⟧ = ⟦ event | ob a ⟧ :=
+begin
+  simp only [eval_prob_bind, eval_distribution_return, pmf.pure_apply],
+  refine trans (tsum_congr $ λ a', _) (tsum_ite_eq a ⟦ event | ob a⟧),
+  split_ifs with h; simp [h],
+end
+
+@[simp]
 lemma eval_prop_query (i : spec.ι) (t : spec.domain i) (event : set $ spec.range i) :
   ⟦ event | query i t ⟧ = fintype.card event / fintype.card (spec.range i) :=
 pmf.to_outer_measure_uniform_of_fintype_apply event
+
+end eval_prob
