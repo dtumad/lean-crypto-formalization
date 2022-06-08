@@ -71,7 +71,7 @@ lemma eval_distribution_bind (oa : oracle_comp spec A) (ob : A → oracle_comp s
 by simp [eval_distribution, eval_dist, -bind'_eq_bind, bind]
 
 @[simp]
-lemma eval_distibution_pure_bind (a : A) (ob : A → oracle_comp spec B) :
+lemma eval_distribution_pure_bind (a : A) (ob : A → oracle_comp spec B) :
   ⟦return a >>= ob⟧ = ⟦ob a⟧ :=
 (eval_distribution_bind (return a) ob).trans (pmf.pure_bind (λ a, ⟦ob a⟧) a)
 
@@ -138,7 +138,7 @@ begin
 end
 
 @[simp]
-lemma eval_prop_query (i : spec.ι) (t : spec.domain i) (event : set $ spec.range i) :
+lemma eval_prob_query (i : spec.ι) (t : spec.domain i) (event : set $ spec.range i) :
   ⟦ event | query i t ⟧ = fintype.card event / fintype.card (spec.range i) :=
 pmf.to_outer_measure_uniform_of_fintype_apply event
 

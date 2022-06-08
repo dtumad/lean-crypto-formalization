@@ -17,38 +17,61 @@ open_locale ennreal nnreal
 open oracle_comp oracle_spec
 
 /-- Signature on messages `M`, public and secret keys `PK` and `SK`, signatures of type `S`. 
-  `oracle_access` specifies the oracles the algorithm can make use of.
-  TODO: Something is off with the oracles, as we can't declare how they are simulated.  -/
+  We model the algorithms as having access to a uniform selection oracle,
+    and a set of random oracles that the algorithm has access to.
+  If not in the random oracle model, can just take `random_oracles := []ₒ`, the empty `oracle_spec`
+  We also bundle the polynomial complexity of the algorithms into the structure. -/
 structure signature (M PK SK S : Type) :=
-(oracles : oracle_spec) (oracles_finite_range : oracles.finite_range)
--- (random_oracles : oracle_spec) (random_oracles_finite_range : random_oracles.finite_range)
---    ^^ This seems cumbersome, but gives a clear way to have a set of "random" oracles
-(gen : unit → oracle_comp oracles (PK × SK))
-(sign : PK × SK × M → oracle_comp oracles S)
-(verify : PK × M × S → oracle_comp oracles bool)
+-- Random oracles for the algorithms, with finite ranges and computablity requirements.
+(random_oracles : oracle_spec)
+(random_oracles_finite_range : random_oracles.finite_range)
+(random_oracles_computable : random_oracles.computable)
+-- The actual algorithms of the signature scheme.
+(gen : unit → oracle_comp (uniform_selecting ++ random_oracles) (PK × SK))
+(sign : PK × SK × M → oracle_comp (uniform_selecting ++ random_oracles) S)
+(verify : PK × M × S → oracle_comp (uniform_selecting ++ random_oracles) bool)
+-- Requirement that all the algorithms have polynomial time complexity.
 (gen_poly_time : poly_time_oracle_comp gen)
 (sign_poly_time : poly_time_oracle_comp sign)
 (verify_poly_time : poly_time_oracle_comp verify)
 
 namespace signature
 
-variables {M PK SK S : Type}
+variables {A M PK SK S : Type}
 
-/-- Add the `finite_range` to global type-class instances -/
-instance oracles.finite_range (sig : signature M PK SK S) :
-  sig.oracles.finite_range :=
-sig.oracles_finite_range
+instance signature.random_oracles.finite_range (sig : signature M PK SK S) :
+  sig.random_oracles.finite_range :=
+sig.random_oracles_finite_range
+
+instance signature.random_oracles.computable (sig : signature M PK SK S) :
+  sig.random_oracles.computable :=
+sig.random_oracles_computable
+
+/-- Shorthand for the combination of the `uniform_selecting` oracle and the `random_oracles`-/
+@[reducible, inline, derive finite_range, derive computable]
+def oracles (sig : signature M PK SK S) :
+  oracle_spec :=
+uniform_selecting ++ sig.random_oracles
+
+/-- Simulate a computation with access to the signatures random oracles,
+  using a uniform selection oracle with cacheing of the previous queries-/
+noncomputable def simulate_random_oracles
+  {sig : signature M PK SK S} (oa : oracle_comp sig.oracles A) :
+  oracle_comp uniform_selecting A :=
+simulate' (identity_oracle uniform_selecting ⟪++⟫ random_simulation_oracle' sig.random_oracles)
+  oa ((), query_log.init sig.random_oracles, ())
 
 section complete
 
-/-- Generate a key, sign on the given message, and return the result of verify on the signature -/
-def completeness_experiment (sig : signature M PK SK S) (m : M) :
-  oracle_comp sig.oracles bool :=
-do { 
+/-- Generate a key, sign on the given message, and return the result of verify on the signature.
+  Random oracles have a shared cached state of previous queries, handled by a call to `simulate'` -/
+noncomputable def completeness_experiment (sig : signature M PK SK S) (m : M) :
+  oracle_comp uniform_selecting bool :=
+simulate_random_oracles (do { 
   (pk, sk) ← sig.gen (),
   σ ← sig.sign (pk, sk, m),
   sig.verify (pk, m, σ) 
-}
+})
 
 @[simp]
 lemma support_completeness_experiment (sig : signature M PK SK S) (m : M) :
@@ -112,15 +135,15 @@ do {
 /-- Experiement for testing if a signature scheme is unforgeable.
   Generate the public / secret keys, then simulate the adversary to get a signature.
   Adversary succeeds if the signature verifies and the message hasn't been queried -/
-def unforgeable_experiment (sig : signature M PK SK S)
+noncomputable def unforgeable_experiment (sig : signature M PK SK S)
   (adversary : unforgeable_adversary sig) :
-  oracle_comp sig.oracles bool :=
-do {
+  oracle_comp uniform_selecting bool :=
+simulate_random_oracles (do {
   (pk, sk) ← sig.gen (),
   (m, σ, log) ← simulate_adversary sig adversary pk sk,
   b ← sig.verify (pk, m, σ),
   return (b ∧ log.not_queried () m)
-}
+})
 
 /-- Adversaries success at forging a signature.
   TODO: maybe this doesn't need an independent definition -/

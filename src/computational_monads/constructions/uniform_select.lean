@@ -1,12 +1,14 @@
 import computational_monads.oracle_comp
 import computational_monads.distribution_semantics.eval_distribution
 
+import measure_theory.probability_mass_function.monad 
 import to_mathlib.uniform_of_vector
 import to_mathlib.to_mathlib
 
 namespace oracle_comp
 
 open oracle_spec
+open_locale classical
 
 variables {A : Type}
 
@@ -32,6 +34,18 @@ lemma eval_distribution_uniform_fin :
   ⟦$[0..n]⟧ = pmf.uniform_of_fintype (fin $ n + 1) :=
 rfl
 
+@[simp]
+lemma eval_distribution_uniform_fin_apply (m : fin $ n + 1) :
+  ⟦$[0..n]⟧ m = 1 / (n + 1) :=
+by simp only [eval_distribution_uniform_fin n, pmf.uniform_of_fintype_apply m,
+  fintype.card_fin (n + 1), nat.cast_add, nat.cast_one, one_div]
+
+@[simp]
+lemma prob_event_uniform_fin (event : set (fin $ n + 1)) :
+  ⟦event | $[0..n]⟧ = (fintype.card event) / (n + 1) :=
+by simp only [uniform_fin, eval_prob_query, uniform_selecting.range_apply,
+  fintype.card_fin, nat.cast_add, nat.cast_one]
+
 end uniform_fin
 
 section uniform_select_vector
@@ -47,12 +61,11 @@ variables {n : ℕ} (v : vector A (n + 1))
 
 @[simp]
 lemma support_uniform_of_vector :
-  support ($ᵛ v) = {a | a ∈ v.to_list} :=
+  support ($ᵛ v) = v.nth '' ⊤ :=
 begin
   rw uniform_select_vector,
   rw support_map,
   rw support_uniform_fin,
-  sorry
 end
 
 @[simp]

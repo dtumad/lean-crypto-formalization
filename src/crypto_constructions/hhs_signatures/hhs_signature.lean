@@ -1,6 +1,6 @@
 import crypto_foundations.primitives.signature
 import crypto_foundations.hardness_assumptions.hard_homogeneous_space
-import computational_monads.constructions.vector_call
+import computational_monads.constructions.repeat_n
 import data.vector.zip
 
 open oracle_comp oracle_spec
@@ -30,8 +30,9 @@ variables (G X M)
     "random oracle" for completeness to even hold -/
 noncomputable def hhs_signature (x₀ : X) (n : ℕ) :
   signature M X G (vector (G × bool) n) :=
-{ oracles := uniform_selecting ++ ((vector X n × M) →ₒ vector bool n),
-  oracles_finite_range := by apply_instance,
+{ random_oracles := ((vector X n × M) →ₒ vector bool n),
+  random_oracles_finite_range := singleton_spec.finite_range _ _,
+  random_oracles_computable := singleton_spec.computable _ _,
   gen := λ _, do {
     sk ←$ᵗ G,
     return (sk +ᵥ x₀, sk)
@@ -58,7 +59,7 @@ namespace signature_of_principal_action_class
 variables [algorithmic_homogenous_space G X] (x₀ : X) (n : ℕ)
 
 /-- We can coerce any uniform selection computation up to one for the oracles of `hhs_signature` -/
-instance coe_uniform_selecting_oracles (A : Type) :
+noncomputable instance coe_uniform_selecting_oracles (A : Type) :
   has_coe (oracle_comp uniform_selecting A) (oracle_comp (hhs_signature G X M x₀ n).oracles A) :=
 ⟨λ oa, @has_coe.coe _ _ (coe_append_right uniform_selecting _ A) oa⟩
  

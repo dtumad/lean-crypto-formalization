@@ -125,6 +125,10 @@ section coin_oracle
 @[derive [finite_range, computable]]
 def coin_oracle : oracle_spec := unit →ₒ bool
 
+end coin_oracle
+
+section uniform_selecting
+
 def uniform_selecting : oracle_spec :=
 { ι := ℕ,
   domain := λ n, unit,
@@ -139,6 +143,16 @@ instance uniform_selecting.computable : computable uniform_selecting :=
 instance uniform_selecting.finite_range : finite_range uniform_selecting :=
 { range_fintype := λ n, fin.fintype (n + 1) }
 
-end coin_oracle
+@[simp]
+lemma uniform_selecting.domain_apply (n : ℕ) :
+  uniform_selecting.domain n = unit :=
+rfl
+
+@[simp]
+lemma uniform_selecting.range_apply (n : ℕ) :
+  uniform_selecting.range n = fin (n + 1) :=
+rfl
+
+end uniform_selecting
 
 end oracle_spec 
