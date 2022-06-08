@@ -1,6 +1,6 @@
 import computational_monads.constructions.uniform_select
 import computational_monads.simulation_semantics.simulate
-import computational_monads.simulation_semantics.stateless_oracle
+import computational_monads.simulation_semantics.simulation_oracles
 import computational_monads.simulation_semantics.constructions.query_log
 
 open oracle_comp oracle_spec
@@ -77,7 +77,6 @@ end seeded_oracle
 
 section caching_oracle
 
--- TODO: make this a extension property instead.
 def caching_simulation_oracle (spec : oracle_spec) [spec.computable] :
   simulation_oracle spec spec :=
 { S := query_log spec,
@@ -87,3 +86,15 @@ def caching_simulation_oracle (spec : oracle_spec) [spec.computable] :
   end }
 
 end caching_oracle
+
+section random_oracle
+
+-- TODO: this should be the random oracle naming, other one should be different.
+/-- Oracle that responds uniformly at random to any new queries,
+  but returns the same result to subsequent oracle queries -/
+noncomputable def random_simulation_oracle' (spec : oracle_spec) [spec.computable] [spec.finite_range] :
+  simulation_oracle spec uniform_selecting :=
+(random_simulation_oracle spec) ∘ₛ (caching_simulation_oracle spec)
+
+
+end random_oracle

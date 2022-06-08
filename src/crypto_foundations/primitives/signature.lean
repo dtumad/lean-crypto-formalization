@@ -17,9 +17,12 @@ open_locale ennreal nnreal
 open oracle_comp oracle_spec
 
 /-- Signature on messages `M`, public and secret keys `PK` and `SK`, signatures of type `S`. 
-  `oracle_access` specifies the oracles the algorithm can make use of  -/
+  `oracle_access` specifies the oracles the algorithm can make use of.
+  TODO: Something is off with the oracles, as we can't declare how they are simulated.  -/
 structure signature (M PK SK S : Type) :=
 (oracles : oracle_spec) (oracles_finite_range : oracles.finite_range)
+-- (random_oracles : oracle_spec) (random_oracles_finite_range : random_oracles.finite_range)
+--    ^^ This seems cumbersome, but gives a clear way to have a set of "random" oracles
 (gen : unit → oracle_comp oracles (PK × SK))
 (sign : PK × SK × M → oracle_comp oracles S)
 (verify : PK × M × S → oracle_comp oracles bool)
