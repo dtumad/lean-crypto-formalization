@@ -12,8 +12,6 @@ variables {A B : Type} {spec : oracle_spec} [h' : spec.finite_range]
 
 include h'
 
-section eval_distribution
-
 -- Big step semantics for a computation with finite range oracles
 -- The result of queries is assumed to be uniform over the oracle's codomain
 -- Usually the `spec` when calling this would just be `unit →ₒ bool` (i.e. a tape of random bits),
@@ -35,6 +33,8 @@ def eval_distribution (oa : oracle_comp spec A) : pmf A :=
 (eval_dist oa).1
 
 notation `⟦` oa `⟧` := eval_distribution oa
+
+section eval_distribution
 
 lemma support_eval_distribution (oa : oracle_comp spec A) :
   ⟦oa⟧.support = oa.support :=
@@ -87,8 +87,6 @@ rfl
 
 end eval_distribution
 
-section eval_prob
-
 noncomputable def eval_prob (oa : oracle_comp spec A) (event : set A) :
   ℝ≥0∞ := ⟦oa⟧.to_outer_measure event
 
@@ -96,6 +94,8 @@ notation `⟦` event `|` oa `⟧` := eval_prob oa event
 
 noncomputable example (oa : oracle_comp coin_oracle (fin 10)) :
   ℝ≥0∞ := ⟦ (≥) 5 | oa ⟧
+
+section eval_prob
 
 @[simp]
 lemma eval_prob_eq_zero_iff_disjoint_support (oa : oracle_comp spec A) (event : set A) :

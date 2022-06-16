@@ -27,14 +27,14 @@ variables (G X M)
   `n` represents the number of commitments to make, more corresponding to more difficult forgery.
   `x₀` is some arbitrary public base point in `X`, used to compute public keys from secret keys
   TODO: we need some way to declare that the second oracle is a
-    "random oracle" for completeness to even hold -/
+    "random oracle" for completeness to even hold. -/
 noncomputable def hhs_signature (x₀ : X) (n : ℕ) :
   signature M X G (vector (G × bool) n) :=
 { random_oracles := ((vector X n × M) →ₒ vector bool n),
   random_oracles_finite_range := singleton_spec.finite_range _ _,
   random_oracles_computable := singleton_spec.computable _ _,
   gen := λ _, do {
-    sk ←$ᵗ G,
+    sk ←$ᵗ G, -- TODO: should be choosing a base point `x₀` at random, include in public key
     return (sk +ᵥ x₀, sk)
   },
   sign := λ ⟨pk, sk, m⟩, do {
@@ -123,5 +123,19 @@ match index' with
 | none := none
 | (some index) := if h : index < q then some ⟨index, h⟩ else none
 end
+
+def hard_homogenous_space_reduction
+  (adversary : signature.unforgeable_adversary $ hhs_signature G X M x₀ n) :
+  vectorization_adversary G X :=
+{
+  -- We want to set `pk := x` and `x₀ := x'` (TODO: what we really want is `x₀` in `pk` instead of general parameter).
+  -- Then forking the adversary get `c` and `c'` with `c +ᵥ x = c' +ᵥ x'`.
+  -- We can then take `c - c'` ad the vectorization
+  adv := λ ⟨x, x'⟩, begin
+    sorry
+  end,
+  adv_poly_time := sorry
+}
+
 
 end signature_of_principal_action_class

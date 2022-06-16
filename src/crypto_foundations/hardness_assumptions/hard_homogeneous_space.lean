@@ -33,19 +33,38 @@ variables {G X : Type} [fintype G] [fintype X] [inhabited X]
   [principal_action_class G X]
   
 -- instance to_principal_action_class : principal_action_class G X :=
+section vectorization
+
+variables (G X)
+
+structure vectorization_adversary : Type 1 :=
+(adv : X × X → oracle_comp uniform_selecting G)
+(adv_poly_time : poly_time_oracle_comp adv)
+
+noncomputable def naive_adversary : vectorization_adversary G X :=
+{ adv := λ _, $ᵗ G,
+  adv_poly_time := sorry }
+
+variables {G X}
 
 /-- Analogue of Discrete-logarithm asumption game -/
-noncomputable def vectorization_experiment (adversary : X × X → oracle_comp uniform_selecting G) :
+noncomputable def vectorization_experiment (adversary : vectorization_adversary G X) :
   oracle_comp uniform_selecting bool :=
 do{ x₁ ←$ᵗ X, x₂ ←$ᵗ X,
-    g ← adversary (x₁, x₂),
+    g ← adversary.adv (x₁, x₂),
     return (g = vectorization G x₁ x₂) }
 
 /-- Vectorization advantage of an adversary in the vectorization experiment. -/
-noncomputable def vectorization_advantage (adversary : X × X → oracle_comp uniform_selecting G) :
+noncomputable def vectorization_advantage (adversary : vectorization_adversary G X) :
   ℝ≥0∞ :=
 ⟦ (=) tt | vectorization_experiment adversary ⟧
-  - ⟦ (=) tt | vectorization_experiment (λ (_ : X × X), $ᵗ G) ⟧
+  - ⟦ (=) tt | vectorization_experiment (naive_adversary G X) ⟧
+
+end vectorization
+
+section parallelization
+
+-- TODO: make like vectorization
 
 variable (G)
 
@@ -62,6 +81,8 @@ noncomputable def parallelization_advantage (adversary : X × X × X → oracle_
 ⟦ (=) tt | parallelization_experiment G adversary ⟧
   - ⟦ (=) tt | parallelization_experiment G (λ _, $ᵗ X) ⟧
 
+end parallelization
+
 end computational_advantages
 
 -- TODO: the algorithmic stuff is kinda weird here?
@@ -71,8 +92,7 @@ class hard_homogenous_space {G X : ℕ → Type}
   [∀ n, decidable_eq $ G n] [∀ n, decidable_eq $ X n]
   [∀ n, algorithmic_homogenous_space (G n) (X n)] :=
 -- (algorithmic : ∀ n, algorithmic_homogenous_space (G n) (X n))
-(vectorization_hard : ∀ (adversary : Π (n : ℕ), X n × X n → oracle_comp uniform_selecting (G n))
-  (poly_time : ∀ n, poly_time_oracle_comp $ adversary n),
+(vectorization_hard : ∀ (adversary : Π (n : ℕ), vectorization_adversary (G n) (X n)),
   negligable (λ n, vectorization_advantage (adversary n)))
 (parallelization_hard : ∀ (adversary : Π (n : ℕ), X n × X n × X n → oracle_comp uniform_selecting (X n))
   (poly_time : ∀ n, poly_time_oracle_comp $ adversary n),
