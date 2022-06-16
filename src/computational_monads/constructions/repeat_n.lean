@@ -44,9 +44,21 @@ sorry
 
 /-- Probability of a vector is the product of probabilities of each element. -/
 @[simp]
-lemma eval_distribution_repeat_n_apply [spec.finite_range]
+lemma eval_distribution_repeat_n_apply [spec.finite_range] [decidable_eq A]
   (oa : oracle_comp spec A) (n : ℕ) (v : vector A n) :
-  ⟦repeat_n oa n⟧ v = (v.map (λ a, ⟦oa⟧ a)).to_list.prod  :=
-sorry
+  ⟦repeat_n oa n⟧ v = (v.map (λ a, ⟦oa⟧ a)).to_list.prod :=
+begin
+  induction n with n hn,
+  {
+    simp only [vector.eq_nil v, repeat_n_apply_zero oa, eval_distribution_return, pmf.pure_apply,
+      if_true, vector.map_nil, vector.to_list_nil, list.prod_nil, eq_self_iff_true],
+  },
+  {
+    rw [repeat_n_apply_succ oa n],
+    refine trans (eval_distribution_bind_bind_apply _ _ _ _) _,
+    simp [hn],
+    sorry,
+  }
+end
 
 end oracle_comp
