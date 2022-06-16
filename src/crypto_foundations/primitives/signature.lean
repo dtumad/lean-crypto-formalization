@@ -97,11 +97,15 @@ begin
     rw eval_distribution_eq_one_iff_support_subset_singleton at h,
     simp [support_completeness_experiment, set.Union_subset_iff,
       eval_prob_eq_one_iff_support_subset, prod.forall] at h,
-    exact λ h', (h pk sk hgen σ hsign h').elim },
+    sorry,
+    --exact λ h', (h pk sk hgen σ hsign h').elim
+  },
   { intro m,
     simp [eval_distribution_eq_one_iff_support_subset_singleton,
       support_completeness_experiment],
-    exact λ pk sk hgen σ hsign, h m pk sk σ hgen hsign }
+    sorry,
+    --exact λ pk sk hgen σ hsign, h m pk sk σ hgen hsign
+  }
 end
 
 end complete

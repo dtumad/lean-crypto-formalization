@@ -1,4 +1,5 @@
 import computational_monads.oracle_comp
+import to_mathlib.general
 
 open oracle_comp oracle_spec
 
@@ -36,25 +37,6 @@ notation `⟦` oa `⟧` := eval_distribution oa
 
 section eval_distribution
 
-lemma support_eval_distribution (oa : oracle_comp spec A) :
-  ⟦oa⟧.support = oa.support :=
-plift.down (eval_dist oa).2
-
-@[simp]
-lemma eval_distribution_ge_zero_iff_mem_support (oa : oracle_comp spec A) (a : A) :
-  0 ≤ ⟦oa⟧ a ↔ a ∈ oa.support :=
-sorry
-
-@[simp]
-lemma eval_distribution_eq_zero_iff_not_mem_support (oa : oracle_comp spec A) (a : A) :
-  ⟦oa⟧ a = 0 ↔ a ∉ oa.support :=
-sorry 
-
-@[simp]
-lemma eval_distribution_eq_one_iff_support_subset_singleton (oa : oracle_comp spec A) (a : A) :
-  ⟦oa⟧ a = 1 ↔ oa.support ⊆ {a} :=
-sorry
-
 @[simp]
 lemma eval_distribution_pure (a : A) :
   ⟦(pure a : oracle_comp spec A)⟧ = pmf.pure a :=
@@ -84,6 +66,31 @@ eval_distribution_bind oa (pure ∘ f)
 lemma eval_distribution_query (i : spec.ι) (t : spec.domain i) :
   ⟦query i t⟧ = pmf.uniform_of_fintype (spec.range i) :=
 rfl
+
+lemma support_eval_distribution (oa : oracle_comp spec A) :
+  ⟦oa⟧.support = oa.support :=
+plift.down (eval_dist oa).2
+
+@[simp]
+lemma eval_distribution_eq_zero_iff_not_mem_support (oa : oracle_comp spec A) (a : A) :
+    ⟦oa⟧ a = 0 ↔ a ∉ oa.support :=
+(pmf.apply_eq_zero_iff ⟦oa⟧ a).trans
+  (iff_of_eq $ congr_arg not (congr_arg (has_mem.mem a) $ support_eval_distribution oa))
+
+@[simp]
+lemma eval_distribution_ne_zero_iff_mem_support (oa : oracle_comp spec A) (a : A) :
+  ⟦oa⟧ a ≠ 0 ↔ a ∈ oa.support :=
+by rw [ne.def, eval_distribution_eq_zero_iff_not_mem_support, set.not_not_mem]
+
+@[simp]
+lemma eval_distribution_eq_one_iff_support_subset_singleton (oa : oracle_comp spec A) (a : A) :
+  ⟦oa⟧ a = 1 ↔ oa.support = {a} :=
+by rw [pmf.apply_eq_one_iff, support_eval_distribution oa]
+
+@[simp]
+lemma eval_distribution_ge_zero_iff_mem_support (oa : oracle_comp spec A) (a : A) :
+  0 < ⟦oa⟧ a ↔ a ∈ oa.support :=
+by rw [pos_iff_ne_zero, eval_distribution_ne_zero_iff_mem_support]
 
 end eval_distribution
 
@@ -141,5 +148,12 @@ end
 lemma eval_prob_query (i : spec.ι) (t : spec.domain i) (event : set $ spec.range i) :
   ⟦ event | query i t ⟧ = fintype.card event / fintype.card (spec.range i) :=
 pmf.to_outer_measure_uniform_of_fintype_apply event
+
+lemma eval_prob_prod_eq (oa : oracle_comp spec (A × A)) :
+  ⟦ λ ⟨a, a'⟩, a = a' | oa ⟧ = ∑' (a₀ : A), ⟦ λ ⟨a, a'⟩, a = a₀ ∧ a' = a₀ | oa⟧ :=
+begin
+  simp,
+  sorry
+end
 
 end eval_prob
