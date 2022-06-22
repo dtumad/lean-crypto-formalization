@@ -96,7 +96,7 @@ example : support (do {
   y ← return (if b' then 1 else 0),
   return (x * y)
 } : oracle_comp coin_oracle ℕ) = {1, 0} :=
-by ext x; simp
+sorry
 
 end support
 
