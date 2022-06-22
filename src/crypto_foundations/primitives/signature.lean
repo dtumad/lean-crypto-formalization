@@ -53,6 +53,10 @@ def oracles (sig : signature M PK SK S) :
   oracle_spec :=
 uniform_selecting ++ sig.random_oracles
 
+noncomputable def simulation_random_oracles (sig : signature M PK SK S) :
+  simulation_oracle (sig.oracles) uniform_selecting :=
+(identity_oracle uniform_selecting ⟪++⟫ random_simulation_oracle' sig.random_oracles)
+
 /-- Simulate a computation with access to the signatures random oracles,
   using a uniform selection oracle with cacheing of the previous queries-/
 noncomputable def simulate_random_oracles

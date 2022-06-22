@@ -64,7 +64,7 @@ noncomputable def hhs_signature (n : ℕ) :
 
 variables {G X M}
 
-namespace signature_of_principal_action_class 
+namespace hhs_signature 
  
 variables [algorithmic_homogenous_space G X] (n : ℕ)
 
@@ -118,7 +118,7 @@ lemma verify_apply {n : ℕ} (x₀ : X) (pk : X) (m : M) (σ : vector (G × bool
   } :=
 rfl
 
-theorem signature_of_principal_action_class_complete :
+theorem hhs_signature_complete :
   (hhs_signature G X M n).complete :=
 begin
   rw signature.complete_iff_signatures_support_subset,
@@ -138,7 +138,7 @@ match index' with
 | (some index) := if h : index < q then some ⟨index, h⟩ else none
 end
 
-def hard_homogenous_space_reduction
+noncomputable def hhs_signature_vectorization_reduction
   (adversary : signature.unforgeable_adversary $ hhs_signature G X M n) :
   vectorization_adversary G X :=
 {
@@ -146,10 +146,15 @@ def hard_homogenous_space_reduction
   -- Then forking the adversary get `c` and `c'` with `c +ᵥ x = c' +ᵥ x'`.
   -- We can then take `c - c'` ad the vectorization
   adv := λ ⟨x, x'⟩, begin
-    sorry
+    refine do {
+      σ ← simulate _ (adversary.adv (x, x')) _,
+      sorry
+    },
+    refine ((signature.simulation_random_oracles _) ∘ₛ (signature.simulate_sign _ (x, x') sorry)),
+    refine (((), (query_log.init _, ())), _),
+    refine ((), (query_log.init _, ())),
   end,
   adv_poly_time := sorry
 }
 
-
-end signature_of_principal_action_class
+end hhs_signature
