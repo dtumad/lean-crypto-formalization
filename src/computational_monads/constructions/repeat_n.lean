@@ -34,16 +34,35 @@ lemma support_repeat_n (oa : oracle_comp spec A) :
   exact λ a ha, false.elim (vector.not_mem_of_length_zero v a ha),
 end
 | (n + 1) := begin
-  rw [repeat_n, support_bind_bind],
+  simp_rw [repeat_n, support_bind_bind, support_pure],
   ext v,
-  simp,
-  sorry,
+  simp only [set.mem_Union, set.mem_singleton_iff, exists_prop, set.mem_set_of_eq],
+  refine ⟨λ h, _, λ h, _⟩,
+  {
+    intros a' ha',
+    obtain ⟨a, ha, as, has, h⟩ := h,
+    rw support_repeat_n n at has,
+    rw h at ha',
+    rw vector.mem_cons_iff a as a' at ha',
+    refine ha'.elim (λ h', _) (λ h', _),
+    refine h'.symm ▸ ha,
+    exact has a' h'
+  },
+  {
+    obtain ⟨a, as, hv⟩ := vector.exists_eq_cons v,
+    refine ⟨a, h a (hv.symm ▸ vector.mem_cons a as), as, _, hv⟩,
+    rw support_repeat_n n,
+    refine λ a' ha', h a' (hv.symm ▸ vector.mem_cons_of_mem a as a' ha'),
+  }
 end
 
 lemma mem_support_of_mem_of_support_repeat_n (oa : oracle_comp spec A) (n : ℕ)
   (v : vector A n) (hv : v ∈ (repeat_n oa n).support) (a : A) (ha : a ∈ v.to_list) :
   a ∈ oa.support :=
-sorry
+begin
+  rw support_repeat_n at hv,
+  exact hv a ha,
+end
 
 open_locale classical
 

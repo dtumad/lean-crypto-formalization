@@ -148,6 +148,8 @@ noncomputable def hhs_signature_vectorization_reduction
   adv := λ ⟨x, x'⟩, begin
     refine do {
       σ ← simulate _ (adversary.adv (x, x')) _,
+      -- TODO: is the way to do this to just always take the `bool` to be `ff`?
+      --  Then we can sign without knowing the secret key?
       sorry
     },
     refine ((signature.simulation_random_oracles _) ∘ₛ (signature.simulate_sign _ (x, x') sorry)),

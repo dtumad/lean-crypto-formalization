@@ -45,17 +45,32 @@ lemma vector.not_mem_of_length_zero {A : Type} (v : vector A 0) (a : A) :
 
 lemma vector.eq_cons_iff {A : Type} {n : ℕ} (v : vector A n.succ)
   (a : A) (as : vector A n) : v = a ::ᵥ as ↔ v.head = a ∧ v.tail = as :=
-begin
-  refine ⟨λ h, _, λ h, _⟩,
-  { rw [h, vector.head_cons, vector.tail_cons],
-    exact ⟨rfl, rfl⟩ },
-  { refine trans (vector.cons_head_tail v).symm _,
-    rw [h.1, h.2] },
-end
+⟨λ h, h.symm ▸ ⟨vector.head_cons a as, vector.tail_cons a as⟩,
+  λ h, trans (vector.cons_head_tail v).symm (by rw [h.1, h.2])⟩
 
 lemma vector.ne_cons_iff {A : Type} {n : ℕ} (v : vector A n.succ)
   (a : A) (as : vector A n) : v ≠ a ::ᵥ as ↔ v.head ≠ a ∨ v.tail ≠ as :=
 by rw [ne.def, vector.eq_cons_iff v a as, not_and_distrib]
+
+lemma vector.mem_cons_iff {A : Type} {n : ℕ} (a : A) (as : vector A n)
+  (a' : A) : a' ∈ (a ::ᵥ as).to_list ↔ a' = a ∨ a' ∈ as.to_list :=
+by rw [vector.to_list_cons, list.mem_cons_iff]
+
+lemma vector.head_mem {A : Type} {n : ℕ} (v : vector A n.succ) :
+  v.head ∈ v.to_list :=
+vector.mem_iff_nth.2 ⟨0, vector.nth_zero v⟩
+
+lemma vector.mem_cons {A : Type} {n : ℕ} (a : A) (as : vector A n) :
+  a ∈ (a ::ᵥ as).to_list :=
+vector.mem_iff_nth.2 ⟨0, vector.nth_cons_zero a as⟩
+
+lemma vector.mem_cons_of_mem {A : Type} {n : ℕ} (a : A) (as : vector A n)
+  (a' : A) (ha' : a' ∈ as.to_list) : a' ∈ (a ::ᵥ as).to_list :=
+(vector.mem_cons_iff a as a').2 (or.inr ha')
+
+lemma vector.exists_eq_cons {A : Type} {n : ℕ} (v : vector A n.succ) :
+  ∃ (a : A) (as : vector A n), v = a ::ᵥ as :=
+⟨v.head, v.tail, (vector.eq_cons_iff v v.head v.tail).2 ⟨rfl, rfl⟩⟩
 
 /-- TODO: generalize from `nnreal`-/
 lemma tsum_tsum_eq_single {α β γ : Type*} [add_comm_monoid γ]
