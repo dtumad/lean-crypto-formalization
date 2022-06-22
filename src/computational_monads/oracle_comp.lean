@@ -6,6 +6,7 @@ variables {A B : Type} {spec spec' : oracle_spec}
 
 open oracle_spec
 -- TODO: a lot of this is pretty outdated notation/documentation wise at this point -/
+-- TODO: `oa` notation over `ca` notation?
 
 /-- Type to represent computations with access so oracles specified by and `oracle_spec` -/
 inductive oracle_comp (spec : oracle_spec) : Type → Type 1
@@ -36,7 +37,8 @@ lemma bind'_eq_bind (ca : oracle_comp spec A) (cb : A → oracle_comp spec B) :
 
 end monad
 
-/-- Constructing an `oracle_comp` implies the existence of some element of the underlying type -/
+/-- Constructing an `oracle_comp` implies the existence of some element of the underlying type.
+  The assumption that the range of the oracles is `inhabited` is the key point for this -/
 def inhabited_base {spec : oracle_spec} :
   Π {A : Type} (oa : oracle_comp spec A), inhabited A
 | _ (pure' A a) := ⟨a⟩
@@ -74,12 +76,11 @@ lemma support_bind' {A B : Type} {spec : oracle_spec}
   (bind' A B ca cb).support = ⋃ a ∈ ca.support, (cb a).support := rfl
 
 @[simp]
-lemma support_bind_bind {A B C : Type} {spec : oracle_spec}
-  (ca : oracle_comp spec A) (cb : A → oracle_comp spec B)
-  (cc : A → B → oracle_comp spec C) :
+lemma support_bind_bind {A B C : Type} {spec : oracle_spec} (ca : oracle_comp spec A)
+  (cb : A → oracle_comp spec B) (cc : A → B → oracle_comp spec C) :
   (do {a ← ca, b ← cb a, cc a b}).support =
-    ⋃ (a : A) (b : B) (ha : a ∈ ca.support) (hb : b ∈ (cb a).support), (cc a b).support :=
-sorry
+    ⋃ a ∈ ca.support, ⋃ b ∈ (cb a).support, (cc a b).support :=
+by simp
 
 @[simp]
 lemma support_query {spec : oracle_spec} (i : spec.ι) (t : spec.domain i) :
@@ -88,7 +89,9 @@ lemma support_query {spec : oracle_spec} (i : spec.ι) (t : spec.domain i) :
 @[simp]
 lemma support_map {spec : oracle_spec} (f : A → B) (oa : oracle_comp spec A) :
   (f <$> oa).support = f '' oa.support :=
-sorry
+calc (f <$> oa).support = ⋃ a ∈ oa.support, {f a} : rfl
+  ... = f '' (⋃ a ∈ oa.support, {a}) : by simp only [set.image_Union, set.image_singleton]
+  ... = f '' oa.support : congr_arg (λ _, f '' _) (set.bUnion_of_singleton oa.support)
 
 example : support (do {
   b ← coin, b' ← coin,
@@ -96,7 +99,7 @@ example : support (do {
   y ← return (if b' then 1 else 0),
   return (x * y)
 } : oracle_comp coin_oracle ℕ) = {1, 0} :=
-sorry
+by simp
 
 end support
 

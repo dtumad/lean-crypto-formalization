@@ -63,10 +63,13 @@ noncomputable instance coe_uniform_selecting_oracles (A : Type) :
   has_coe (oracle_comp uniform_selecting A) (oracle_comp (hhs_signature G X M x₀ n).oracles A) :=
 ⟨λ oa, @has_coe.coe _ _ (coe_append_right uniform_selecting _ A) oa⟩
  
+/-- TODO: must be a better way to make this easy?-/
 @[simp]
 lemma support_coe_uniform_selecting_oracles {A : Type} (oa : oracle_comp uniform_selecting A) :
   support (oa : oracle_comp (hhs_signature G X M x₀ n).oracles A) = oa.support :=
-sorry
+begin
+  sorry
+end
 
 @[simp]
 lemma gen_apply (u : unit) :

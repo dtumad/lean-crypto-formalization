@@ -54,14 +54,4 @@ inductive poly_time_oracle_comp {spec : oracle_spec} :
 
 open poly_time_oracle_comp
 
--- /-- Simulating something polynomial time with polynomial time oracles is still polynomial time-/
--- theorem poly_time_simulate {spec spec' : oracle_spec} {α β : Type}
---   (so : simulation_oracle spec spec') (s : so.S)
---   (hso : ∀ (i : spec.ι), poly_time_oracle_comp $ so.o i) :
---   Π (f : α → oracle_comp spec β) (hf : poly_time_oracle_comp f),
---   poly_time_oracle_comp (λ a, simulate so (f a) s) :=
--- begin
---   sorry
--- end
-
 end poly_time_oracle_comp

@@ -36,12 +36,3 @@ lemma return_bind_equiv {spec : oracle_spec} [spec.finite_range]
   {A B : Type} (a : A) (cb : A → oracle_comp spec B) :
   (return a >>= cb) ≃ₚ cb a :=
 pure'_bind'_equiv a cb
-
-lemma t {spec : oracle_spec} [spec.finite_range]
-  {A : Type} [decidable_eq A] (oa : oracle_comp spec A) (s : unit) :
-  (simulate' (identity_oracle spec) oa s) ≃ₚ oa :=
-begin
-  ext x,
-  simp [simulate'],
-  sorry
-end

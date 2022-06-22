@@ -3,7 +3,7 @@ import computational_monads.distribution_semantics.eval_distribution
 
 import measure_theory.probability_mass_function.monad 
 import to_mathlib.uniform_of_vector
-import to_mathlib.to_mathlib
+import to_mathlib.general
 
 namespace oracle_comp
 

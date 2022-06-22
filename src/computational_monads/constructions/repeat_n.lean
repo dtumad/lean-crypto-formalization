@@ -31,7 +31,7 @@ lemma support_repeat_n (oa : oracle_comp spec A) :
   ext v,
   simp only [repeat_n_apply_zero, support_pure, set.mem_singleton_iff,
     eq_iff_true_of_subsingleton, set.mem_set_of_eq, true_iff],
-  exact λ a ha, false.elim (vector.not_mem_to_list_of_length_zero v a ha),
+  exact λ a ha, false.elim (vector.not_mem_of_length_zero v a ha),
 end
 | (n + 1) := begin
   rw [repeat_n, support_bind_bind],

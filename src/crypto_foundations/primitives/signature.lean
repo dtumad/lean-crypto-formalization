@@ -80,7 +80,7 @@ lemma support_completeness_experiment (sig : signature M PK SK S) (m : M) :
       (hσ : σ ∈ (sig.sign (k.1, k.2, m)).support),
         (sig.verify (k.1, m, σ)).support :=
 begin
-  sorry
+  simp [completeness_experiment],
 end
 
 /-- Honest signer always generates a valid message -/

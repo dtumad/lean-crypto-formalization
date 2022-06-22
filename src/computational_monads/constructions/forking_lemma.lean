@@ -51,10 +51,12 @@ do {
 }
 
 /-- Because of the logging and shared cache, both results of fork make the same query if the result succeeds -/
-lemma cache_same_at (n : fin q) (cache cache' : query_log (T →ₒ U)) (x x' : A)
+lemma cache_input_same_at (n : fin q) (cache cache' : query_log (T →ₒ U)) (x x' : A)
   (h : (some (n, x, cache, x', cache')) ∈ (fork adversary choose_fork).support) :
-  ((cache ()).nth n).map prod.fst = ((cache ()).nth n).map prod.fst :=
-sorry
+  ((cache ()).nth n).map prod.fst = ((cache' ()).nth n).map prod.fst :=
+begin
+  sorry
+end
 
 -- Correctness with respect to `choose_fork`, i.e. `i` and is the result for both calls
 -- For signature will correspond to both signatures being valid
