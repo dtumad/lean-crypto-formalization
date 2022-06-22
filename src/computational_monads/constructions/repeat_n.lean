@@ -42,9 +42,12 @@ lemma mem_support_of_mem_of_support_repeat_n (oa : oracle_comp spec A) (n : ℕ)
   a ∈ oa.support :=
 sorry
 
+open_locale classical
+
+set_option trace.simp_lemmas true
 /-- Probability of a vector is the product of probabilities of each element. -/
 @[simp]
-lemma eval_distribution_repeat_n_apply [spec.finite_range] [decidable_eq A]
+lemma eval_distribution_repeat_n_apply [spec.finite_range]
   (oa : oracle_comp spec A) (n : ℕ) (v : vector A n) :
   ⟦repeat_n oa n⟧ v = (v.map (λ a, ⟦oa⟧ a)).to_list.prod :=
 begin
@@ -57,7 +60,27 @@ begin
     rw [repeat_n_apply_succ oa n],
     refine trans (eval_distribution_bind_bind_apply _ _ _ _) _,
     simp [hn],
-    sorry,
+    refine trans (tsum_tsum_eq_single _ v.head v.tail _) _,
+    {
+      refine λ a as h, _,
+      refine h.elim (λ ha, _) (λ has, _),
+      {
+        sorry,
+      },
+      {
+        sorry
+      }
+
+    },
+    
+    split_ifs,
+    {
+      rw [h, vector.to_list_cons, list.map_cons, list.prod_cons],
+      rw [vector.head_cons, vector.tail_cons],
+    },
+    {
+      exact false.elim (h $ symm $ vector.cons_head_tail v)
+    }
   }
 end
 

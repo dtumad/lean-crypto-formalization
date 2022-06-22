@@ -44,7 +44,7 @@ rfl
 @[simp]
 lemma eval_distribution_pure_apply (a a' : A) :
   ⟦(pure a : oracle_comp spec A)⟧ a' = if a' = a then 1 else 0 :=
-by simpa only [eval_distribution_pure a]
+by convert (pmf.pure_apply a a')
 
 @[simp]
 lemma eval_distribution_return (a : A) :
@@ -69,8 +69,9 @@ by simpa only [eval_distribution_bind]
 @[simp]
 lemma eval_distribution_bind_bind_apply (oa : oracle_comp spec A)
   (ob : A → oracle_comp spec B) (oc : A → B → oracle_comp spec C) (c : C) :
-  ⟦do {a ← oa, b ← ob a, oc a b}⟧ c = ∑' (a : A) (b : B), ⟦oa⟧ a * ⟦ob a⟧ b * ⟦oc a b⟧ c :=
-sorry  
+  ⟦do {a ← oa, b ← ob a, oc a b}⟧ c = ∑' (a : A) (b : B), ⟦oa⟧ a * (⟦ob a⟧ b * ⟦oc a b⟧ c) :=
+(eval_distribution_bind_apply oa _ c).trans
+  (tsum_congr $ λ a, by simp only [eval_distribution_bind_apply, nnreal.tsum_mul_left (⟦oa⟧ a)])
 
 @[simp]
 lemma eval_distribution_pure_bind (a : A) (ob : A → oracle_comp spec B) :
