@@ -5,7 +5,9 @@ open_locale nnreal ennreal classical
 
 lemma pmf.apply_eq_one_iff {A : Type} (p : pmf A) (a : A) :
   p a = 1 ↔ p.support = {a} :=
-sorry
+begin
+  sorry
+end
 
 lemma vector.not_mem_to_list_of_length_zero {A : Type} (v : vector A 0) (a : A) :
   a ∉ v.to_list :=
@@ -14,9 +16,19 @@ begin
   exact id,
 end
 
-#check tsum_ite_eq
+lemma vector.eq_cons_iff {A : Type} {n : ℕ} (v : vector A n.succ)
+  (a : A) (as : vector A n) : v = a ::ᵥ as ↔ v.head = a ∧ v.tail = as :=
+begin
+  refine ⟨λ h, _, λ h, _⟩,
+  { rw [h, vector.head_cons, vector.tail_cons],
+    exact ⟨rfl, rfl⟩ },
+  { refine trans (vector.cons_head_tail v).symm _,
+    rw [h.1, h.2] },
+end
 
-#check tsum_eq_single
+lemma vector.ne_cons_iff {A : Type} {n : ℕ} (v : vector A n.succ)
+  (a : A) (as : vector A n) : v ≠ a ::ᵥ as ↔ v.head ≠ a ∨ v.tail ≠ as :=
+by rw [ne.def, vector.eq_cons_iff v a as, not_and_distrib]
 
 /-- TODO: generalize from `nnreal`-/
 lemma tsum_tsum_eq_single {α β γ : Type*} [add_comm_monoid γ]

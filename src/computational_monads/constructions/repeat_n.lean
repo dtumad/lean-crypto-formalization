@@ -34,7 +34,10 @@ lemma support_repeat_n (oa : oracle_comp spec A) :
   exact λ a ha, false.elim (vector.not_mem_to_list_of_length_zero v a ha),
 end
 | (n + 1) := begin
-  sorry
+  rw [repeat_n, support_bind_bind],
+  ext v,
+  simp,
+  sorry,
 end
 
 lemma mem_support_of_mem_of_support_repeat_n (oa : oracle_comp spec A) (n : ℕ)
@@ -63,16 +66,8 @@ begin
     refine trans (tsum_tsum_eq_single _ v.head v.tail _) _,
     {
       refine λ a as h, _,
-      refine h.elim (λ ha, _) (λ has, _),
-      {
-        sorry,
-      },
-      {
-        sorry
-      }
-
+      simp only [(vector.ne_cons_iff v a as).2 h, if_false],
     },
-    
     split_ifs,
     {
       rw [h, vector.to_list_cons, list.map_cons, list.prod_cons],

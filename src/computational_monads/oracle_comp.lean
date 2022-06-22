@@ -45,7 +45,10 @@ def inhabited_base {spec : oracle_spec} :
 
 section support
 
-/-- Set of possible outputs of the computation, allowing for any possible output of the queries. -/
+/-- Set of possible outputs of the computation, allowing for any possible output of the queries.
+  This will generally correspond to the support of `eval_distribution`,
+    but is slightly more general since it doesn't require a finite range.
+  TODO: maybe we should just generally focuse `support` on `finite_range` case for simplicity -/
 def support {spec : oracle_spec} : Π {A : Type} (oa : oracle_comp spec A), set A
 | _ (pure' A a) := {a}
 | _ (bind' A B ca cb) := ⋃ a ∈ ca.support, (cb a).support
@@ -69,6 +72,14 @@ lemma support_bind {A B : Type} {spec : oracle_spec}
 lemma support_bind' {A B : Type} {spec : oracle_spec}
   (ca : oracle_comp spec A) (cb : A → oracle_comp spec B) :
   (bind' A B ca cb).support = ⋃ a ∈ ca.support, (cb a).support := rfl
+
+@[simp]
+lemma support_bind_bind {A B C : Type} {spec : oracle_spec}
+  (ca : oracle_comp spec A) (cb : A → oracle_comp spec B)
+  (cc : A → B → oracle_comp spec C) :
+  (do {a ← ca, b ← cb a, cc a b}).support =
+    ⋃ (a : A) (b : B) (ha : a ∈ ca.support) (hb : b ∈ (cb a).support), (cc a b).support :=
+sorry
 
 @[simp]
 lemma support_query {spec : oracle_spec} (i : spec.ι) (t : spec.domain i) :
