@@ -16,10 +16,18 @@ def zip_commits_with_hash {n : ℕ} (cs : vector G n) (h : vector bool n) (sk : 
   vector (G × bool) n :=
 vector.zip_with (λ c (b : bool), (if b then c else c + sk, b)) cs h
 
+lemma zip_commits_with_hash_zero (sk : G) :
+  zip_commits_with_hash vector.nil vector.nil sk = vector.nil :=
+rfl
+
 @[reducible, inline]
 def retrieve_commits (x₀ : X) {n : ℕ} (σ : vector (G × bool) n) (pk : X) :
   vector X n :=
 (σ.map (λ ⟨c, b⟩, if b then c +ᵥ pk else c +ᵥ x₀))
+
+lemma retrieve_commits_zero (x₀ : X) (pk : X) :
+  retrieve_commits x₀ (@vector.nil $ G × bool) pk = vector.nil :=
+rfl
 
 variables (G X M)
 
@@ -27,23 +35,25 @@ variables (G X M)
   `n` represents the number of commitments to make, more corresponding to more difficult forgery.
   `x₀` is some arbitrary public base point in `X`, used to compute public keys from secret keys
   TODO: we need some way to declare that the second oracle is a
-    "random oracle" for completeness to even hold. -/
-noncomputable def hhs_signature (x₀ : X) (n : ℕ) :
-  signature M X G (vector (G × bool) n) :=
+    "random oracle" for completeness to even hold.
+    should include `x₀` in the public key, generated randomly uniformly -/
+noncomputable def hhs_signature (n : ℕ) :
+  signature M (X × X) G (vector (G × bool) n) :=
 { random_oracles := ((vector X n × M) →ₒ vector bool n),
   random_oracles_finite_range := singleton_spec.finite_range _ _,
   random_oracles_computable := singleton_spec.computable _ _,
   gen := λ _, do {
-    sk ←$ᵗ G, -- TODO: should be choosing a base point `x₀` at random, include in public key
-    return (sk +ᵥ x₀, sk)
+    x₀ ←$ᵗ X,
+    sk ←$ᵗ G,
+    return ((x₀, sk +ᵥ x₀), sk)
   },
-  sign := λ ⟨pk, sk, m⟩, do {
+  sign := λ ⟨⟨x₀, pk⟩, sk, m⟩, do {
     (cs : vector G n) ← repeat_n ($ᵗ G) n,
     (ys : vector X n) ← return (cs.map (λ c, c +ᵥ pk)),
     (h : vector bool n) ← query (sum.inr ()) (ys, m),
     return (zip_commits_with_hash cs h sk)
   },
-  verify := λ ⟨pk, m, σ⟩, do {
+  verify := λ ⟨⟨x₀, pk⟩, m, σ⟩, do {
     (ys : vector X n) ← return (retrieve_commits x₀ σ pk),
     (h : vector bool n) ← query (sum.inr ()) (ys, m),
     return (h = σ.map prod.snd) 
@@ -56,35 +66,36 @@ variables {G X M}
 
 namespace signature_of_principal_action_class 
  
-variables [algorithmic_homogenous_space G X] (x₀ : X) (n : ℕ)
+variables [algorithmic_homogenous_space G X] (n : ℕ)
 
 /-- We can coerce any uniform selection computation up to one for the oracles of `hhs_signature` -/
 noncomputable instance coe_uniform_selecting_oracles (A : Type) :
-  has_coe (oracle_comp uniform_selecting A) (oracle_comp (hhs_signature G X M x₀ n).oracles A) :=
+  has_coe (oracle_comp uniform_selecting A)
+    (oracle_comp (hhs_signature G X M n).oracles A) :=
 ⟨λ oa, @has_coe.coe _ _ (coe_append_right uniform_selecting _ A) oa⟩
  
 /-- TODO: must be a better way to make this easy?-/
 @[simp]
 lemma support_coe_uniform_selecting_oracles {A : Type} (oa : oracle_comp uniform_selecting A) :
-  support (oa : oracle_comp (hhs_signature G X M x₀ n).oracles A) = oa.support :=
+  support (oa : oracle_comp (hhs_signature G X M n).oracles A) = oa.support :=
 begin
   sorry
 end
 
 @[simp]
 lemma gen_apply (u : unit) :
-  ((hhs_signature G X M x₀ n).gen u) = ↑($ᵗ G) >>= λ sk, return (sk +ᵥ x₀, sk) :=
+  ((hhs_signature G X M n).gen u) = do { x₀ ←$ᵗ X, sk ←$ᵗ G, return ((x₀, sk +ᵥ x₀), sk) } :=
 rfl
 
 lemma support_gen :
-  ((hhs_signature G X M x₀ n).gen ()).support =
-    set.range (λ (sk : G), (sk +ᵥ x₀, sk)) :=
-by simp only [gen_apply, support_bind, support_coe_uniform_selecting_oracles,
-  support_uniform_select_fintype, support_pure, set.Union_true, set.Union_singleton_eq_range]
+  ((hhs_signature G X M n).gen ()).support =
+    ⋃ (x₀ : X) (sk : G), { ((x₀, sk +ᵥ x₀), sk) } :=
+by simp only [gen_apply, support_bind_bind, support_coe_uniform_selecting_oracles,
+  support_uniform_select_fintype, support_pure, set.Union_true]
 
 @[simp]
-lemma sign_apply (pk : X) (sk : G) (m : M) :
-  ((hhs_signature G X M x₀ n).sign (pk, sk, m)) = do {
+lemma sign_apply (x₀ : X) (pk : X) (sk : G) (m : M) :
+  ((hhs_signature G X M n).sign ((x₀, pk), sk, m)) = do {
     (cs : vector G n) ← repeat_n ($ᵗ G) n,
     (ys : vector X n) ← return (cs.map (λ c, c +ᵥ pk)),
     (h : vector bool n) ← query (sum.inr ()) (ys, m),
@@ -93,14 +104,14 @@ lemma sign_apply (pk : X) (sk : G) (m : M) :
 rfl
 
 @[simp]
-lemma support_sign (pk : X) (sk : G) (m : M) :
-  ((hhs_signature G X M x₀ n).sign (pk, sk, m)).support =
+lemma support_sign (x₀ : X) (pk : X) (sk : G) (m : M) :
+  ((hhs_signature G X M n).sign ((x₀, pk), sk, m)).support =
     ⋃ (cs : vector G n) (h : vector bool n), { zip_commits_with_hash cs h sk } :=
 sorry
 
 @[simp]
-lemma verify_apply {n : ℕ} (pk : X) (m : M) (σ : vector (G × bool) n) :
-  ((hhs_signature G X M x₀ n).verify (pk, m, σ)) = do {
+lemma verify_apply {n : ℕ} (x₀ : X) (pk : X) (m : M) (σ : vector (G × bool) n) :
+  ((hhs_signature G X M n).verify ((x₀, pk), m, σ)) = do {
     (ys : vector X n) ← return (retrieve_commits x₀ σ pk),
     (h : vector bool n) ← query (sum.inr ()) (ys, m),
     return (h = σ.map prod.snd) 
@@ -108,10 +119,10 @@ lemma verify_apply {n : ℕ} (pk : X) (m : M) (σ : vector (G × bool) n) :
 rfl
 
 theorem signature_of_principal_action_class_complete :
-  (hhs_signature G X M x₀ n).complete :=
+  (hhs_signature G X M n).complete :=
 begin
   rw signature.complete_iff_signatures_support_subset,
-  intros m pk sk σ hgen hsign,
+  rintros m ⟨x₀, pk⟩ sk σ hgen hsign,
   sorry
 end
 
@@ -128,7 +139,7 @@ match index' with
 end
 
 def hard_homogenous_space_reduction
-  (adversary : signature.unforgeable_adversary $ hhs_signature G X M x₀ n) :
+  (adversary : signature.unforgeable_adversary $ hhs_signature G X M n) :
   vectorization_adversary G X :=
 {
   -- We want to set `pk := x` and `x₀ := x'` (TODO: what we really want is `x₀` in `pk` instead of general parameter).
