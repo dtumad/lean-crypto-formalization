@@ -22,26 +22,29 @@ query n ()
 
 notation `$[0..` n `]` := uniform_fin n
 
-variables (n : ℕ)
-
 @[simp]
-lemma support_uniform_fin :
+lemma support_uniform_fin (n : ℕ) :
   support $[0..n] = ⊤ :=
 support_query n ()
 
 @[simp]
-lemma eval_distribution_uniform_fin :
+lemma mem_support_uniform_fin {n : ℕ} (i : fin $ n + 1) :
+  i ∈ support $[0..n] :=
+(support_uniform_fin n).symm ▸ set.mem_univ i
+
+@[simp]
+lemma eval_distribution_uniform_fin (n : ℕ) :
   ⟦$[0..n]⟧ = pmf.uniform_of_fintype (fin $ n + 1) :=
 rfl
 
 @[simp]
-lemma eval_distribution_uniform_fin_apply (m : fin $ n + 1) :
-  ⟦$[0..n]⟧ m = 1 / (n + 1) :=
-by simp only [eval_distribution_uniform_fin n, pmf.uniform_of_fintype_apply m,
+lemma eval_distribution_uniform_fin_apply {n : ℕ} (i : fin $ n + 1) :
+  ⟦$[0..n]⟧ i = 1 / (n + 1) :=
+by simp only [eval_distribution_uniform_fin n, pmf.uniform_of_fintype_apply i,
   fintype.card_fin (n + 1), nat.cast_add, nat.cast_one, one_div]
 
 @[simp]
-lemma prob_event_uniform_fin (event : set (fin $ n + 1)) :
+lemma prob_event_uniform_fin {n : ℕ} (event : set (fin $ n + 1)) :
   ⟦event | $[0..n]⟧ = (fintype.card event) / (n + 1) :=
 by simp only [uniform_fin, eval_prob_query, uniform_selecting.range_apply,
   fintype.card_fin, nat.cast_add, nat.cast_one]
@@ -60,19 +63,25 @@ notation `$ᵛ` v := uniform_select_vector v
 variables {n : ℕ} (v : vector A (n + 1))
 
 @[simp]
-lemma support_uniform_of_vector :
+lemma support_uniform_select_vector :
   support ($ᵛ v) = v.nth '' ⊤ :=
-begin
-  rw uniform_select_vector,
-  rw support_map,
-  rw support_uniform_fin,
-end
+by rw [uniform_select_vector, support_map, support_uniform_fin]
+
+@[simp]
+lemma mem_support_uniform_select_vector_iff (a : A) :
+  a ∈ ($ᵛ v).support ↔ a ∈ v.to_list :=
+by simp only [vector.mem_iff_nth, support_uniform_select_vector,
+  set.top_eq_univ, set.image_univ, set.mem_range]
 
 @[simp]
 lemma eval_distribution_uniform_select_vector :
   ⟦$ᵛ v⟧ = pmf.uniform_of_vector v :=
 begin
-  sorry
+  refine pmf.ext (λ x, _),
+  rw [uniform_select_vector, eval_distribution_map_apply,
+    pmf.uniform_of_vector_apply, vector.to_list_length v],
+  simp only [eval_distribution_uniform_fin_apply],
+  rw [tsum_ite_eq_vector_nth, one_div, inv_mul_eq_div, nat.cast_add, nat.cast_one],
 end
 
 end uniform_select_vector
@@ -91,9 +100,11 @@ notation `$ˡ` := uniform_select_list
 variables (xs : list A) (h : ¬ xs.empty)
 
 @[simp]
-lemma support_uniform_select_list :
-  support ($ˡ xs h) = {a | a ∈ xs} :=
-sorry
+lemma support_uniform_select_list : Π (xs : list A) (h : ¬ xs.empty),
+  support ($ˡ xs h) = {a | a ∈ xs}
+| [] h := by simpa only [list.empty, coe_sort_tt, not_true] using h
+| (x :: xs) _ := set.ext (λ x', by rw [uniform_select_list,
+    mem_support_uniform_select_vector_iff, vector.to_list_mk, set.mem_set_of])
 
 end uniform_select_list
 
