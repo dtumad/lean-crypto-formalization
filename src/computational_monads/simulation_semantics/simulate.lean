@@ -5,7 +5,8 @@ namespace oracle_comp
 variables {A B : Type} {spec spec' : oracle_spec}
 
 /-- Specifies a way to simulate a set of oracles using another set of oracles. 
-  e.g. using uniform random selection to simulate a hash oracle -/
+  e.g. using uniform random selection to simulate a hash oracle
+  TODO: `default_state` to avoid constantly providing oracles -/
 structure simulation_oracle (spec spec' : oracle_spec) :=
 (S : Type)
 (o (i : spec.ι) : (spec.domain i × S) → oracle_comp spec' (spec.range i × S))

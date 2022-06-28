@@ -85,6 +85,7 @@ lemma support_completeness_experiment (sig : signature M PK SK S) (m : M) :
         (sig.verify (k.1, m, σ)).support :=
 begin
   simp [completeness_experiment],
+  sorry
 end
 
 /-- Honest signer always generates a valid message -/
@@ -118,10 +119,19 @@ section unforgeable
 
 variables [inhabited S] [decidable_eq M] [decidable_eq S]
 
+-- TODO: could use `unforgeable` namespace with `unforgeable.adversary_oracles`?
+@[reducible, inline]
+def signing_oracle (sig : signature M PK SK S) : oracle_spec :=
+(M →ₒ S)
+
+@[reducible, inline]
+def unforgeable_adversary_oracles (sig : signature M PK SK S) : oracle_spec :=
+sig.oracles ++ (signing_oracle sig)
+
 /-- An adversary for the unforgeable signature experiment.
   Note that the adversary only has access to the public key. -/
 structure unforgeable_adversary (sig : signature M PK SK S) :=
-(adv : PK → oracle_comp (sig.oracles ++ (M →ₒ S)) (M × S))
+(adv : PK → oracle_comp (unforgeable_adversary_oracles sig) (M × S))
 (adv_poly_time : poly_time_oracle_comp adv)
 
 /-- When we simulate the adversary, we forward the "coin flip" queries through.

@@ -138,6 +138,23 @@ match index' with
 | (some index) := if h : index < q then some ⟨index, h⟩ else none
 end
 
+-- TODO: this should "look like" a regular signature, since the `b` values are still uniform random coins
+noncomputable def adversary_simulation_oracle (pk x₀ : X) :
+  simulation_oracle ((hhs_signature G X M n).unforgeable_adversary_oracles) uniform_selecting :=
+{
+  S := query_log (hhs_signature G X M n).random_oracles,
+  o := λ i, match i with
+  | (sum.inr ()) := λ ⟨m, log⟩, do {
+    bs ← repeat_n ($ᵗ bool) n, -- pre-select what all the bool results will be
+    cs ← repeat_n ($ᵗ G) n,
+    ys ← return (vector.zip_with (λ (b : bool) c, if b then c +ᵥ pk else c +ᵥ x₀) bs cs),
+    log' ← return (log.log_query () (ys, m) bs),
+    return (vector.zip_with prod.mk cs bs, log')
+  }
+  | (sum.inl i') := λ ⟨t, log⟩, sorry -- TODO: this should run random oracle as usual
+  end
+}
+
 noncomputable def hhs_signature_vectorization_reduction
   (adversary : signature.unforgeable_adversary $ hhs_signature G X M n) :
   vectorization_adversary G X :=
@@ -147,14 +164,10 @@ noncomputable def hhs_signature_vectorization_reduction
   -- We can then take `c - c'` ad the vectorization
   adv := λ ⟨x, x'⟩, begin
     refine do {
-      σ ← simulate _ (adversary.adv (x, x')) _,
-      -- TODO: is the way to do this to just always take the `bool` to be `ff`?
-      --  Then we can sign without knowing the secret key?
+      σ ← simulate (adversary_simulation_oracle n x x') (adversary.adv (x, x')) _,
       sorry
     },
-    refine ((signature.simulation_random_oracles _) ∘ₛ (signature.simulate_sign _ (x, x') sorry)),
-    refine (((), (query_log.init _, ())), _),
-    refine ((), (query_log.init _, ())),
+    refine sorry
   end,
   adv_poly_time := sorry
 }
