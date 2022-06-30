@@ -139,7 +139,7 @@ structure unforgeable_adversary (sig : signature M PK SK S) :=
 def simulate_sign (sig : signature M PK SK S) (pk : PK) (sk : SK) :
   simulation_oracle (sig.oracles ++ (M →ₒ S)) (sig.oracles) :=
 identity_oracle sig.oracles ⟪++⟫
-  (⟪λ _ m, sig.sign (pk, sk, m)⟫ ∘ₛ (logging_simulation_oracle (M →ₒ S)))
+  (⟪λ _ m, sig.sign (pk, sk, m)⟫ ∘ₛ (logging_oracle (M →ₒ S)))
 
 /-- Wrapper function for simulation that hides the "state values" of the stateless oracles. -/
 def simulate_adversary (sig : signature M PK SK S)

@@ -13,11 +13,16 @@ def stateless_simulation_oracle (spec spec' : oracle_spec)
   (o : Π (i : spec.ι), spec.domain i → oracle_comp spec' (spec.range i)) :
   simulation_oracle spec spec' :=
 { S := unit,
+  default_state := (),
   o := λ i ⟨t, _⟩, o i t >>= λ u, return (u, ()) }
 
 notation `⟪` o `⟫` := stateless_simulation_oracle _ _ o
 
 variable (o : Π (i : spec.ι), spec.domain i → oracle_comp spec' (spec.range i))
+
+@[simp]
+lemma default_state_stateless_simulation_oracle :
+  ⟪o⟫.default_state = () := rfl
 
 @[simp]
 lemma stateless_oracle_apply (i : spec.ι) (t : spec.domain i) (s : unit) :
@@ -27,6 +32,10 @@ section identity_oracle
 
 def identity_oracle (spec : oracle_spec) : simulation_oracle spec spec :=
 ⟪ query ⟫
+
+@[simp]
+lemma default_state_identity_oracle :
+  (identity_oracle spec).default_state = () := rfl
 
 @[simp]
 lemma identity_oracle_apply (i : spec.ι) (t : spec.domain i) (s : unit) :

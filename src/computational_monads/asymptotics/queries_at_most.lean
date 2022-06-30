@@ -19,7 +19,8 @@ inductive queries_at_most : Π {A : Type}, oracle_comp spec A → ℕ → Type 1
 /-- Simulation oracle that just counts the number of queries to the oracles -/
 def count_oracle_queries : simulation_oracle spec spec :=
 { S := ℕ,
-  o := λ i ⟨t, n⟩, do { u ← query i t, return ⟨u, n + 1⟩ } }
+  o := λ i ⟨t, n⟩, do { u ← query i t, return ⟨u, n + 1⟩ },
+  default_state := 0 }
 
 /-- Soundness of `queries_at_most` with respect to simulation -/
 theorem queries_at_most_sound (oa : oracle_comp spec A)

@@ -7,9 +7,12 @@ variables {A B : Type} {spec spec' : oracle_spec}
 
 /-- Specifies a way to simulate a set of oracles using another set of oracles. 
   e.g. using uniform random selection to simulate a hash oracle
-  TODO: `default_state` to avoid constantly providing oracles -/
+  
+  `default_state` can be provided as a standard initial state for simulation.
+  Used when calling `default_simulate` or `default_simulate'` -/
 structure simulation_oracle (spec spec' : oracle_spec) :=
 (S : Type)
+(default_state : S)
 (o (i : spec.ι) : (spec.domain i × S) → oracle_comp spec' (spec.range i × S))
 
 variables (so : simulation_oracle spec spec')
@@ -77,5 +80,24 @@ lemma eval_distribution_simulate'_pure [spec'.finite_range] (a : A) (s : so.S) :
 by simp only [pmf.pure_map, simulate'_pure, eval_distribution_map, eval_distribution_return]
 
 end simulate'
+
+section default_simulate
+
+/-- TODO: expand this and use everywhere -/
+@[reducible, inline]
+def default_simulate (so : simulation_oracle spec spec') (oa : oracle_comp spec A) :
+  oracle_comp spec' (A × so.S) :=
+oa.simulate so so.default_state
+
+end default_simulate
+
+section default_simulate'
+
+@[reducible, inline]
+def default_simulate' (so : simulation_oracle spec spec') (oa : oracle_comp spec A) :
+  oracle_comp spec' A :=
+oa.simulate' so so.default_state
+
+end default_simulate'
 
 end oracle_comp

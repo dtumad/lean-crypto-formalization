@@ -72,7 +72,7 @@ variables [algorithmic_homogenous_space G X] (n : ℕ)
 noncomputable instance coe_uniform_selecting_oracles (A : Type) :
   has_coe (oracle_comp uniform_selecting A)
     (oracle_comp (hhs_signature G X M n).oracles A) :=
-⟨λ oa, @has_coe.coe _ _ (coe_append_right uniform_selecting _ A) oa⟩
+⟨λ oa, @has_coe.coe _ _ (coe_append_right A uniform_selecting _) oa⟩
  
 /-- TODO: must be a better way to make this easy?-/
 @[simp]
@@ -143,6 +143,7 @@ noncomputable def adversary_simulation_oracle (pk x₀ : X) :
   simulation_oracle ((hhs_signature G X M n).unforgeable_adversary_oracles) uniform_selecting :=
 {
   S := query_log (hhs_signature G X M n).random_oracles,
+  default_state := query_log.init (hhs_signature G X M n).random_oracles,
   o := λ i, match i with
   | (sum.inr ()) := λ ⟨m, log⟩, do {
     bs ← repeat_n ($ᵗ bool) n, -- pre-select what all the bool results will be
