@@ -7,24 +7,61 @@ variables {A B : Type} {spec spec' : oracle_spec}
 
 section stateless_oracle
 
-def stateless_simulation_oracle (spec spec' : oracle_spec)
+/-- Simulate a computation without making use of the internal state.
+  We use the `unit` type as the state in this case, so all possible states are equal -/
+def stateless_oracle (spec spec' : oracle_spec)
   (o : Π (i : spec.ι), spec.domain i → oracle_comp spec' (spec.range i)) :
   simulation_oracle spec spec' :=
 { S := unit,
   default_state := (),
   o := λ i ⟨t, _⟩, o i t >>= λ u, return (u, ()) }
 
-notation `⟪` o `⟫` := stateless_simulation_oracle _ _ o
+notation `⟪` o `⟫` := stateless_oracle _ _ o
 
 variable (o : Π (i : spec.ι), spec.domain i → oracle_comp spec' (spec.range i))
 
 @[simp]
-lemma default_state_stateless_simulation_oracle :
+lemma S_stateless_oracle :
+  ⟪o⟫.S = unit := rfl
+
+@[simp]
+lemma default_state_stateless_oracle :
   ⟪o⟫.default_state = () := rfl
 
 @[simp]
 lemma stateless_oracle_apply (i : spec.ι) (t : spec.domain i) (s : unit) :
   ⟪o⟫.o i (t, s) = o i t >>= λ u, return (u, ()) := rfl
+
+section simulate
+
+@[simp]
+lemma support_simulate_stateless_oracle_pure (a : A) (s : unit) :
+  (simulate ⟪o⟫ (pure a) s).support = {(a, ())} :=
+by simp [punit_eq s ()]
+
+@[simp]
+lemma support_simulate_stateless_oracle_bind (oa : oracle_comp spec A)
+  (ob : A → oracle_comp spec B) (s : unit) :
+  (simulate ⟪o⟫ (oa >>= ob) s).support =
+    ⋃ (x : A × unit) (hx : x ∈ (simulate ⟪o⟫ oa ()).support),
+      (simulate ⟪o⟫ (ob x.1) x.2).support :=
+begin
+  refine s.rec _,
+  refine (set.ext $ λ y, _),
+  simp,
+  sorry,
+end
+
+@[simp]
+lemma support_simulate_stateless_oracle_query (i : spec.ι) (t : spec.domain i) (s : unit) :
+  (simulate ⟪o⟫ (query i t) s).support = {x | x.1 ∈ (o i t).support} :=
+begin
+  refine s.rec _,
+  simp,
+  sorry,
+end
+
+end simulate
 
 end stateless_oracle
 
@@ -44,6 +81,11 @@ lemma identity_oracle_apply (i : spec.ι) (t : spec.domain i) (s : unit) :
   (identity_oracle spec).o i (t, s) = query i t >>= λ u, return (u, ()) := rfl
 
 section simulate
+
+@[simp]
+lemma support_simulate_identity_oracle_pure (a : A) (s : unit) :
+  (simulate idₛ (pure a : oracle_comp spec A) s).support = {(a, ())} :=
+support_simulate_stateless_oracle_pure _ a s
 
 @[simp]
 lemma support_simulate_identity_oracle (oa : oracle_comp spec A) (s : unit) :

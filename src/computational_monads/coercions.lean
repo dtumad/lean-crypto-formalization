@@ -43,8 +43,7 @@ section coe_append
 
 instance coe_append_right :
   has_coe (oracle_comp spec A) (oracle_comp (spec ++ spec') A) :=
-{ coe := λ oc, oc.simulate' (stateless_simulation_oracle spec (spec ++ spec')
-      (λ i t, let i' : (spec ++ spec').ι := sum.inl i in query i' t)) () }
+{ coe := λ oc, oc.default_simulate' ⟪λ i t, let i' : (spec ++ spec').ι := sum.inl i in query i' t⟫ }
 
 instance coe_append_left :
   has_coe (oracle_comp spec A) (oracle_comp (spec' ++ spec) A) :=

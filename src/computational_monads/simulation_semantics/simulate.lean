@@ -39,6 +39,17 @@ lemma simulate_bind : simulate so (oa >>= ob) s =
 @[simp]
 lemma simulate_query : simulate so (query i t) s = so.o i (t, s) := rfl
 
+lemma support_simulate_pure :
+  (simulate so (pure a) s).support = {(a, s)} :=
+by simp
+
+lemma support_simulate_bind : (simulate so (oa >>= ob) s).support =
+  ⋃ (x : A × so.S) (hx : x ∈ (simulate so oa s).support), (simulate so (ob x.1) x.2).support :=
+by simp
+
+lemma support_simulate_query : (simulate so (query i t) s).support = (so.o i (t, s)).support :=
+by simp
+
 end simulate
 
 section default_simulate
