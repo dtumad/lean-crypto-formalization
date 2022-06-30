@@ -66,7 +66,7 @@ section seeded_oracle
 /-- Use the first element of the `seed` as the query result if inputs match.
   If the query values don't match then throw away the seed as computation has diverged.
   Using this with a log from a previous computation ensures they behave identically. -/
-def seeded_simulation_oracle (spec : oracle_spec) [computable spec] :
+def seeded_oracle (spec : oracle_spec) [computable spec] :
   simulation_oracle spec spec :=
 { S := query_log spec,
   default_state := query_log.init spec,
@@ -76,14 +76,14 @@ def seeded_simulation_oracle (spec : oracle_spec) [computable spec] :
     end }
 
 @[simp]
-lemma default_state_seeded_simulation_oracle (spec : oracle_spec) [spec.computable] :
-  (seeded_simulation_oracle spec).default_state = query_log.init spec := rfl
+lemma default_state_seeded_oracle (spec : oracle_spec) [spec.computable] :
+  (seeded_oracle spec).default_state = query_log.init spec := rfl
 
 end seeded_oracle
 
 section caching_oracle
 
-def caching_simulation_oracle (spec : oracle_spec) [spec.computable] :
+def caching_oracle (spec : oracle_spec) [spec.computable] :
   simulation_oracle spec spec :=
 { S := query_log spec,
   default_state := query_log.init spec,
@@ -93,8 +93,8 @@ def caching_simulation_oracle (spec : oracle_spec) [spec.computable] :
   end }
 
 @[simp]
-lemma default_state_caching_simulation_oracle (spec : oracle_spec) [spec.computable] :
-  (caching_simulation_oracle spec).default_state = query_log.init spec := rfl
+lemma default_state_caching_oracle (spec : oracle_spec) [spec.computable] :
+  (caching_oracle spec).default_state = query_log.init spec := rfl
 
 end caching_oracle
 
@@ -105,7 +105,7 @@ section random_oracle
   but returns the same result to subsequent oracle queries -/
 noncomputable def random_simulation_oracle' (spec : oracle_spec) [spec.computable] [spec.finite_range] :
   simulation_oracle spec uniform_selecting :=
-(random_simulation_oracle spec) ∘ₛ (caching_simulation_oracle spec)
+(random_simulation_oracle spec) ∘ₛ (caching_oracle spec)
 
 
 end random_oracle

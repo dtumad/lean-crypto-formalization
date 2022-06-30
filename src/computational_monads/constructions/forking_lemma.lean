@@ -22,11 +22,11 @@ variables (adversary : oracle_comp (uniform_selecting ++ (T →ₒ U)) A)
   Log the uniform selection oracle and cache the random outputs of the forked oracle -/
 def fork_sim : simulation_oracle (uniform_selecting ++ (T →ₒ U)) uniform_selecting :=
 (logging_oracle uniform_selecting) ⟪++⟫
-  (random_simulation_oracle (T →ₒ U) ∘ₛ (caching_simulation_oracle (T →ₒ U)))
+  (random_simulation_oracle (T →ₒ U) ∘ₛ (caching_oracle (T →ₒ U)))
 
 def fork_sim' : simulation_oracle (uniform_selecting ++ (T →ₒ U)) uniform_selecting :=
-(seeded_simulation_oracle uniform_selecting) ⟪++⟫
-  (random_simulation_oracle (T →ₒ U) ∘ₛ (caching_simulation_oracle (T →ₒ U)))
+(seeded_oracle uniform_selecting) ⟪++⟫
+  (random_simulation_oracle (T →ₒ U) ∘ₛ (caching_oracle (T →ₒ U)))
 
 
 /-- Run computation twice, using the same random information for both,
