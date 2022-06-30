@@ -11,6 +11,8 @@ This file defines the notion of a keyed hash function.
 
 -/
 
+/-- `keygen` takes in a security parameter and outputs a key bundled with the parameter
+  `hash` takes a `hash_key` and a string in the input space to a string in the output space -/
 structure hash_function (K I O : Type) :=
 (keygen : unit → oracle_comp coin_oracle K)
 (hash : K × I → O)
@@ -32,9 +34,6 @@ do{ k ← (h.keygen ()),
 
 end hash_function
 
-/-- `keygen` takes in a security parameter and outputs a key bundled with the parameter
-  `hash` takes a `hash_key` from keygen and a string in the input space to a string in the output space
-  TODO: Use better complexity model and public parameters model for this -/
 def hash_scheme (K I O : ℕ → Type) :=
 Π (sp : ℕ), hash_function (K sp) (I sp) (O sp)
 

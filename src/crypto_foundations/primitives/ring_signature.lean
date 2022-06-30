@@ -96,7 +96,6 @@ The security properties `complete`, `anonomyous`, and `unforgeable` are defined 
 --         (λ k, functor.map (prod.swap ∘ prod.mk () ∘ some) (rs.sign _ ⟨inp.1, k.2, inp.2⟩)),
 -- }
 
--- -- -- TODO: This should be a type alias maybe, in oracle_comp
 -- -- @[derive comp.is_well_formed]
 -- -- def signing_oracle (rs : ring_signature M S PK SK) (n : ℕ)
 -- --   (ks : vector (PK × SK) n) :

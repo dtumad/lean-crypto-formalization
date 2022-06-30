@@ -123,3 +123,17 @@ by rw [pmf.apply_eq_one_iff, support_eval_distribution oa]
 lemma eval_distribution_ge_zero_iff_mem_support (oa : oracle_comp spec A) (a : A) :
   0 < ⟦oa⟧ a ↔ a ∈ oa.support :=
 by rw [pos_iff_ne_zero, eval_distribution_ne_zero_iff_mem_support]
+
+section prod
+
+@[simp]
+lemma eval_distribution_map_prod_fst_return (a : A) (b : B) :
+  prod.fst <$> ⟦(return (a, b) : oracle_comp spec (A × B))⟧ = pmf.pure a :=
+by simp [functor.map]
+
+@[simp]
+lemma eval_distribution_map_prod_snd_return (a : A) (b : B) :
+  prod.snd <$> ⟦(return (a, b) : oracle_comp spec (A × B))⟧ = pmf.pure b :=
+by simp [functor.map]
+
+end prod

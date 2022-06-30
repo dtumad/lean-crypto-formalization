@@ -13,7 +13,6 @@ Signature schemes that don't need this can assume a random oracle like `⊥ → 
 -/
 
 open_locale ennreal nnreal
-
 open oracle_comp oracle_spec
 
 /-- Signature on messages `M`, public and secret keys `PK` and `SK`, signatures of type `S`. 
@@ -38,12 +37,13 @@ structure signature (M PK SK S : Type) :=
 namespace signature
 
 variables {A M PK SK S : Type}
+variables [inhabited S] [decidable_eq M] [decidable_eq S]
 
-instance signature.random_oracles.finite_range (sig : signature M PK SK S) :
+instance random_oracles.finite_range (sig : signature M PK SK S) :
   sig.random_oracles.finite_range :=
 sig.random_oracles_finite_range
 
-instance signature.random_oracles.computable (sig : signature M PK SK S) :
+instance random_oracles.computable (sig : signature M PK SK S) :
   sig.random_oracles.computable :=
 sig.random_oracles_computable
 
@@ -53,17 +53,16 @@ def oracles (sig : signature M PK SK S) :
   oracle_spec :=
 uniform_selecting ++ sig.random_oracles
 
-noncomputable def simulation_random_oracles (sig : signature M PK SK S) :
-  simulation_oracle (sig.oracles) uniform_selecting :=
-(identity_oracle uniform_selecting ⟪++⟫ random_simulation_oracle' sig.random_oracles)
+/-- A signing oracle corresponding to a given signature scheme -/
+@[reducible, inline]
+def signing_oracle_spec (sig : signature M PK SK S) : oracle_spec :=
+(M →ₒ S)
 
-/-- Simulate a computation with access to the signatures random oracles,
-  using a uniform selection oracle with cacheing of the previous queries-/
-noncomputable def simulate_random_oracles
-  {sig : signature M PK SK S} (oa : oracle_comp sig.oracles A) :
-  oracle_comp uniform_selecting A :=
-simulate' (identity_oracle uniform_selecting ⟪++⟫ random_simulation_oracle' sig.random_oracles)
-  oa ((), query_log.init sig.random_oracles, ())
+/-- Simulate a computation with access to a `signing_oracle_spec` on top of standard oracles.
+  The signature is derived by using the provided secret key `sk` -/
+def signing_oracle (sig : signature M PK SK S) (pk : PK) (sk : SK) :
+  simulation_oracle sig.signing_oracle_spec sig.oracles :=
+⟪λ _ m, sig.sign (pk, sk, m)⟫ ∘ₛ (logging_oracle (M →ₒ S))
 
 section complete
 
@@ -71,7 +70,8 @@ section complete
   Random oracles have a shared cached state of previous queries, handled by a call to `simulate'` -/
 noncomputable def completeness_experiment (sig : signature M PK SK S) (m : M) :
   oracle_comp uniform_selecting bool :=
-simulate_random_oracles (do { 
+default_simulate' (idₛ ⟪++⟫ random_oracle sig.random_oracles) 
+(do { 
   (pk, sk) ← sig.gen (),
   σ ← sig.sign (pk, sk, m),
   sig.verify (pk, m, σ) 
@@ -80,10 +80,11 @@ simulate_random_oracles (do {
 @[simp]
 lemma support_completeness_experiment (sig : signature M PK SK S) (m : M) :
   (completeness_experiment sig m).support =
-    ⋃ (k : PK × SK) (hk : k ∈ (sig.gen ()).support) (σ : S)
-      (hσ : σ ∈ (sig.sign (k.1, k.2, m)).support),
+    ⋃ (k : PK × SK) (hk : k ∈ (sig.gen ()).support)
+      (σ : S) (hσ : σ ∈ (sig.sign (k.1, k.2, m)).support),
         (sig.verify (k.1, m, σ)).support :=
 begin
+  rw [completeness_experiment],
   simp [completeness_experiment],
   sorry
 end
@@ -120,33 +121,28 @@ section unforgeable
 variables [inhabited S] [decidable_eq M] [decidable_eq S]
 
 -- TODO: could use `unforgeable` namespace with `unforgeable.adversary_oracles`?
-@[reducible, inline]
-def signing_oracle (sig : signature M PK SK S) : oracle_spec :=
-(M →ₒ S)
 
 @[reducible, inline]
-def unforgeable_adversary_oracles (sig : signature M PK SK S) : oracle_spec :=
-sig.oracles ++ (signing_oracle sig)
+def unforgeable_adversary_oracle_spec (sig : signature M PK SK S) : oracle_spec :=
+sig.oracles ++ (signing_oracle_spec sig)
+
+def unforgeable_adversary_oracle (sig : signature M PK SK S) (pk : PK) (sk : SK) :
+  simulation_oracle sig.unforgeable_adversary_oracle_spec sig.oracles :=
+idₛ ⟪++⟫ signing_oracle sig pk sk
 
 /-- An adversary for the unforgeable signature experiment.
   Note that the adversary only has access to the public key. -/
 structure unforgeable_adversary (sig : signature M PK SK S) :=
-(adv : PK → oracle_comp (unforgeable_adversary_oracles sig) (M × S))
+(adv : PK → oracle_comp (unforgeable_adversary_oracle_spec sig) (M × S))
 (adv_poly_time : poly_time_oracle_comp adv)
-
-/-- When we simulate the adversary, we forward the "coin flip" queries through.
-  When simulating the signing, and then answer the query by using the secret key. -/
-def simulate_sign (sig : signature M PK SK S) (pk : PK) (sk : SK) :
-  simulation_oracle (sig.oracles ++ (M →ₒ S)) (sig.oracles) :=
-identity_oracle sig.oracles ⟪++⟫
-  (⟪λ _ m, sig.sign (pk, sk, m)⟫ ∘ₛ (logging_oracle (M →ₒ S)))
 
 /-- Wrapper function for simulation that hides the "state values" of the stateless oracles. -/
 def simulate_adversary (sig : signature M PK SK S)
   (adversary : unforgeable_adversary sig) (pk : PK) (sk : SK) :
   oracle_comp sig.oracles (M × S × query_log (M →ₒ S)) :=
 do {
-  ((m, s), (), log, ()) ← (default_simulate (simulate_sign sig pk sk) (adversary.adv pk)),
+  ((m, s), (), log, ()) ←
+    (default_simulate (unforgeable_adversary_oracle sig pk sk) (adversary.adv pk)),
   return (m, s, log)
 }
 
@@ -156,7 +152,8 @@ do {
 noncomputable def unforgeable_experiment (sig : signature M PK SK S)
   (adversary : unforgeable_adversary sig) :
   oracle_comp uniform_selecting bool :=
-simulate_random_oracles (do {
+default_simulate' (idₛ ⟪++⟫ random_oracle sig.random_oracles)
+(do {
   (pk, sk) ← sig.gen (),
   (m, σ, log) ← simulate_adversary sig adversary pk sk,
   b ← sig.verify (pk, m, σ),

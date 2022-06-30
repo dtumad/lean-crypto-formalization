@@ -21,6 +21,10 @@ def logging_oracle (spec : oracle_spec) [spec.computable] :
 lemma default_state_logging_oracle (spec : oracle_spec) [spec.computable] :
   (logging_oracle spec).default_state = query_log.init spec := rfl
 
+@[simp]
+lemma logging_oracle_apply [spec.computable] (i : spec.ι) (t : spec.domain i) (log : query_log spec) :
+  (logging_oracle spec).o i (t, log) = query i t >>= λ u, return (u, log.log_query i t u) := rfl
+
 namespace logging_oracle
 
 @[simp]
@@ -35,25 +39,34 @@ lemma simulate_query [spec.computable] (i : spec.ι) (t : spec.domain i) (log : 
 rfl
 
 @[simp]
-lemma simulate_bind [spec.computable] (oa : oracle_comp spec A) (ob : A → oracle_comp spec B) (log : query_log spec) :
+lemma simulate_bind [spec.computable] (oa : oracle_comp spec A)
+  (ob : A → oracle_comp spec B) (log : query_log spec) :
   simulate (logging_oracle _) (oa >>= ob) log =
     (simulate (logging_oracle _) oa log) >>=
       (λ x, simulate (logging_oracle _) (ob x.1) x.2) :=
 rfl
 
 @[simp]
-lemma eval_distribution_simulate' [spec.computable] [spec.finite_range] (oa : oracle_comp spec A) (log : query_log spec) :
+lemma eval_distribution_simulate' [spec.computable] [spec.finite_range]
+  (oa : oracle_comp spec A) (log : query_log spec) :
   ⟦ simulate' (logging_oracle _) oa log ⟧ = ⟦ oa ⟧ :=
 begin
-  induction oa,
+  induction oa with A a A B oa ob hoa hob i t,
   {
     simp [pmf.pure_map],
   },
   {
-    sorry,
+    rw [bind'_eq_bind],
+    rw [eval_distribution_simulate'_bind],
+    rw [eval_distribution_bind], sorry,
   },
   {
-    sorry
+    rw [eval_distribution_simulate'_query],
+    rw [logging_oracle_apply],
+    rw [eval_distribution_bind],
+    rw [pmf.bind_map],
+    simp [pmf.bind_map, functor.map, pmf.bind_pure],
+    refine pmf.bind_pure _,
   }
 end
 
@@ -100,12 +113,14 @@ end caching_oracle
 
 section random_oracle
 
--- TODO: this should be the random oracle naming, other one should be different.
 /-- Oracle that responds uniformly at random to any new queries,
   but returns the same result to subsequent oracle queries -/
-noncomputable def random_simulation_oracle' (spec : oracle_spec) [spec.computable] [spec.finite_range] :
+noncomputable def random_oracle (spec : oracle_spec) [spec.computable] [spec.finite_range] :
   simulation_oracle spec uniform_selecting :=
-(random_simulation_oracle spec) ∘ₛ (caching_oracle spec)
+(uniform_oracle spec) ∘ₛ (caching_oracle spec)
 
+@[simp]
+lemma default_state_random_oracle (spec : oracle_spec) [spec.computable] [spec.finite_range] :
+  (random_oracle spec).default_state = (query_log.init spec, ()) := rfl
 
 end random_oracle

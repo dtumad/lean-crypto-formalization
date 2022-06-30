@@ -140,7 +140,7 @@ end
 
 -- TODO: this should "look like" a regular signature, since the `b` values are still uniform random coins
 noncomputable def adversary_simulation_oracle (pk x₀ : X) :
-  simulation_oracle ((hhs_signature G X M n).unforgeable_adversary_oracles) uniform_selecting :=
+  simulation_oracle ((hhs_signature G X M n).unforgeable_adversary_oracle_spec) uniform_selecting :=
 {
   S := query_log (hhs_signature G X M n).random_oracles,
   default_state := query_log.init (hhs_signature G X M n).random_oracles,

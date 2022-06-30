@@ -2,7 +2,7 @@ import data.fintype.card
 import measure_theory.probability_mass_function.constructions
 import computational_monads.oracle_spec
 
-variables {A B : Type} {spec spec' : oracle_spec}
+variables {A B C : Type} {spec spec' : oracle_spec}
 
 open oracle_spec
 
@@ -29,7 +29,6 @@ instance monad (spec : oracle_spec) : monad (oracle_comp spec) :=
 lemma pure'_eq_pure (spec : oracle_spec) (a : A) :
   (pure' A a : oracle_comp spec A) = pure a := rfl
 
--- TODO: maybe a big refactor to instead tend towards `return`?
 @[simp]
 lemma return_eq_pure (spec : oracle_spec) (a : A) :
   (return a : oracle_comp spec A) = pure a := rfl
@@ -59,41 +58,66 @@ def support {spec : oracle_spec} : Π {A : Type} (oa : oracle_comp spec A), set 
 | _ (query i t) := ⊤
 
 @[simp]
-lemma support_pure {A : Type} (spec : oracle_spec) (a : A) :
+lemma support_pure (spec : oracle_spec) (a : A) :
   (pure a : oracle_comp spec A).support = {a} := rfl
 
-lemma support_pure' {A : Type} (spec : oracle_spec) (a : A) :
+@[simp]
+lemma mem_support_pure_iff (a a' : A) :
+  a' ∈ (pure a : oracle_comp spec A).support ↔ a' = a :=
+set.mem_singleton_iff
+
+lemma support_pure' (spec : oracle_spec) (a : A) :
   (pure' A a : oracle_comp spec A).support = {a} := rfl
 
-lemma support_return {A : Type} (spec : oracle_spec) (a : A) :
+lemma support_return (spec : oracle_spec) (a : A) :
   (return a : oracle_comp spec A).support = {a} := rfl
 
 @[simp]
-lemma support_bind {A B : Type} {spec : oracle_spec}
-  (oa : oracle_comp spec A) (ob : A → oracle_comp spec B) :
+lemma support_bind (oa : oracle_comp spec A) (ob : A → oracle_comp spec B) :
   (oa >>= ob).support = ⋃ a ∈ oa.support, (ob a).support := rfl
 
-lemma support_bind' {A B : Type} {spec : oracle_spec}
-  (oa : oracle_comp spec A) (ob : A → oracle_comp spec B) :
+@[simp]
+lemma mem_support_bind_iff (oa : oracle_comp spec A) (ob : A → oracle_comp spec B) (b : B) :
+  b ∈ (oa >>= ob).support ↔ ∃ a ∈ oa.support, b ∈ (ob a).support :=
+by simp only [support_bind, set.mem_Union]
+
+lemma support_bind' (oa : oracle_comp spec A) (ob : A → oracle_comp spec B) :
   (bind' A B oa ob).support = ⋃ a ∈ oa.support, (ob a).support := rfl
 
 @[simp]
-lemma support_bind_bind {A B C : Type} {spec : oracle_spec} (oa : oracle_comp spec A)
+lemma support_bind_bind (oa : oracle_comp spec A)
   (ob : A → oracle_comp spec B) (oc : A → B → oracle_comp spec C) :
   (do {a ← oa, b ← ob a, oc a b}).support =
     ⋃ a ∈ oa.support, ⋃ b ∈ (ob a).support, (oc a b).support :=
 by simp
 
 @[simp]
-lemma support_query {spec : oracle_spec} (i : spec.ι) (t : spec.domain i) :
-  (query i t : oracle_comp spec (spec.range i)).support = ⊤ := rfl
+lemma mem_support_bind_bind_iff (oa : oracle_comp spec A)
+  (ob : A → oracle_comp spec B) (oc : A → B → oracle_comp spec C) (c : C) :
+  c ∈ (do {a ← oa, b ← ob a, oc a b}).support ↔
+    ∃ a ∈ oa.support, ∃ b ∈ (ob a).support, c ∈ (oc a b).support :=
+by simp only [support_bind_bind, set.mem_Union]
 
 @[simp]
-lemma support_map {spec : oracle_spec} (f : A → B) (oa : oracle_comp spec A) :
+lemma support_query (i : spec.ι) (t : spec.domain i) :
+  (query i t).support = ⊤ := rfl
+
+@[simp]
+lemma mem_support_query (i : spec.ι) (t : spec.domain i) (u : spec.range i) :
+  u ∈ (query i t).support :=
+set.mem_univ u
+
+@[simp]
+lemma support_map (f : A → B) (oa : oracle_comp spec A) :
   (f <$> oa).support = f '' oa.support :=
 calc (f <$> oa).support = ⋃ a ∈ oa.support, {f a} : rfl
   ... = f '' (⋃ a ∈ oa.support, {a}) : by simp only [set.image_Union, set.image_singleton]
   ... = f '' oa.support : congr_arg (λ _, f '' _) (set.bUnion_of_singleton oa.support)
+
+@[simp]
+lemma mem_support_map_iff (f : A → B) (oa : oracle_comp spec A) (b : B) :
+  b ∈ (f <$> oa).support ↔ ∃ a ∈ oa.support, f a = b :=
+by simp only [support_map, set.mem_image, exists_prop]
 
 example : support (do {
   b ← coin, b' ← coin,

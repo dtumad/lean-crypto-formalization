@@ -86,7 +86,6 @@ lemma vector.exists_eq_cons {A : Type} {n : ℕ} (v : vector A n.succ) :
   ∃ (a : A) (as : vector A n), v = a ::ᵥ as :=
 ⟨v.head, v.tail, (vector.eq_cons_iff v v.head v.tail).2 ⟨rfl, rfl⟩⟩
 
-/-- TODO: generalize from `nnreal`-/
 lemma tsum_tsum_eq_single {α β γ : Type*} [add_comm_monoid γ]
   [topological_space γ] [t2_space γ] (f : α → β → γ) (a : α) (b : β)
   (hf : ∀ (a' : α) (b' : β), a ≠ a' ∨ b ≠ b' → f a' b' = 0) :
