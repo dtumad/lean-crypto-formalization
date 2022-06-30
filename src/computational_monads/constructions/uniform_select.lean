@@ -1,5 +1,5 @@
 import computational_monads.oracle_comp
-import computational_monads.distribution_semantics.eval_distribution
+import computational_monads.distribution_semantics.prob_event
 
 import measure_theory.probability_mass_function.monad 
 import to_mathlib.uniform_of_vector

@@ -6,7 +6,7 @@ open oracle_comp oracle_spec
 variables {A : Type} {spec spec' : oracle_spec}
 
 /-- Oracle computations that uniformly make at most a given number of queries.
-  In particular `simulate` will always the `simulation_oracle` at most that many times -/
+  In particular `simulate` will call the `simulation_oracle` at most that many times -/
 inductive queries_at_most : Π {A : Type}, oracle_comp spec A → ℕ → Type 1
 | queries_at_most_sample {A : Type} (a : A) :
     queries_at_most (pure' A a) 0
@@ -24,7 +24,7 @@ def count_oracle_queries : simulation_oracle spec spec :=
 
 /-- Soundness of `queries_at_most` with respect to simulation -/
 theorem queries_at_most_sound (oa : oracle_comp spec A)
-  (x : A × ℕ) (hx : x ∈ (simulate count_oracle_queries oa nat.zero).support)
+  (x : A × ℕ) (hx : x ∈ (default_simulate count_oracle_queries oa).support)
   (n : ℕ) (hn : queries_at_most oa n) : x.2 ≤ n :=
 sorry
 

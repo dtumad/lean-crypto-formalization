@@ -52,8 +52,7 @@ section support
 
 /-- Set of possible outputs of the computation, allowing for any possible output of the queries.
   This will generally correspond to the support of `eval_distribution`,
-    but is slightly more general since it doesn't require a finite range.
-  TODO: maybe we should just generally focuse `support` on `finite_range` case for simplicity -/
+    but is slightly more general since it doesn't require a finite range. -/
 def support {spec : oracle_spec} : Π {A : Type} (oa : oracle_comp spec A), set A
 | _ (pure' A a) := {a}
 | _ (bind' A B oa ob) := ⋃ a ∈ oa.support, (ob a).support

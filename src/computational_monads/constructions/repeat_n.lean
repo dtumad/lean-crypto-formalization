@@ -1,7 +1,7 @@
 import data.vector.basic
 
 import computational_monads.oracle_comp
-import computational_monads.distribution_semantics.eval_distribution
+import computational_monads.distribution_semantics.prob_event
 
 namespace oracle_comp
 

@@ -1,4 +1,4 @@
-import computational_monads.distribution_semantics.eval_distribution
+import computational_monads.distribution_semantics.prob_event
 import computational_monads.simulation_semantics.stateless_oracle
 
 open oracle_comp oracle_spec

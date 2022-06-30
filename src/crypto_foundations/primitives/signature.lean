@@ -146,7 +146,7 @@ def simulate_adversary (sig : signature M PK SK S)
   (adversary : unforgeable_adversary sig) (pk : PK) (sk : SK) :
   oracle_comp sig.oracles (M × S × query_log (M →ₒ S)) :=
 do {
-  ((m, s), (), log, ()) ← (simulate (simulate_sign sig pk sk) (adversary.adv pk) ((), query_log.init _, ())),
+  ((m, s), (), log, ()) ← (default_simulate (simulate_sign sig pk sk) (adversary.adv pk)),
   return (m, s, log)
 }
 
