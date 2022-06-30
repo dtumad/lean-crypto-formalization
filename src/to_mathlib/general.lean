@@ -1,4 +1,4 @@
-import measure_theory.probability_mass_function.basic
+import measure_theory.probability_mass_function.constructions 
 import data.vector.basic
 
 -- Misc. lemmas that should eventually be moved into actual mathlib -
@@ -8,6 +8,7 @@ open_locale nnreal ennreal classical
 lemma finset.to_list_nonempty {A : Type} (s : finset A) (hs : s.nonempty) : ¬ s.to_list.empty :=
 let ⟨x, hx⟩ := hs in
   λ h', list.not_mem_nil x ((list.empty_iff_eq_nil.1 h') ▸ (finset.mem_to_list s).2 hx)
+
 
 lemma pmf.apply_eq_one_iff {A : Type} (p : pmf A) (a : A) :
   p a = 1 ↔ p.support = {a} :=
@@ -38,6 +39,19 @@ begin
     }
   }
 end
+
+example {A B : Type} (p : pmf A) (f : A → B) :
+  f <$> p = p >>= (pure ∘ f) :=
+rfl
+
+@[simp]
+lemma pmf.bind_map {A B C : Type} (p : pmf A) (q : A → pmf B) (f : B → C) :
+  f <$> (p >>= q) = p >>= λ a, (f <$> (q a)) :=
+begin
+  refine pmf.ext (λ c, _),
+  sorry
+end
+
 
 lemma vector.not_mem_of_length_zero {A : Type} (v : vector A 0) (a : A) :
   a ∉ v.to_list :=

@@ -19,7 +19,6 @@ variables (so : simulation_oracle spec spec')
 variables (a : A) (i : spec.ι) (t : spec.domain i)
   (oa : oracle_comp spec A) (ob : A → oracle_comp spec B) (s : so.S)
 
-
 section simulate
 
 /-- Simulate an oracle comp to an oracle comp with a different spec.
@@ -35,47 +34,28 @@ lemma simulate_pure : simulate so (pure a) s = pure (a, s) := rfl
 
 @[simp]
 lemma simulate_bind : simulate so (oa >>= ob) s =
-  (simulate so oa s) >>= (λ x, simulate so (ob x.1) x.2) := rfl
+  simulate so oa s >>= λ x, simulate so (ob x.1) x.2 := rfl
 
 @[simp]
 lemma simulate_query : simulate so (query i t) s = so.o i (t, s) := rfl
 
 end simulate
 
-section simulate'
-
-/-- Get the result of simulation without returning the internal oracle state -/
-@[reducible, inline]
-def simulate' (so : simulation_oracle spec spec') (oa : oracle_comp spec A) (s : so.S) :
-  oracle_comp spec' A :=
-prod.fst <$> oa.simulate so s
-
-@[simp]
-lemma simulate'_pure : simulate' so (pure a) s = prod.fst <$> (pure (a, s)) := rfl
-
-@[simp]
-lemma simulate'_bind : simulate' so (oa >>= ob) s =
-  prod.fst <$> ((simulate so oa s) >>= (λ x, simulate so (ob x.1) x.2)) := rfl
-
-@[simp]
-lemma simulate'_query : simulate' so (query i t) s = prod.fst <$> so.o i (t, s) := rfl
-
-end simulate'
-
 section default_simulate
 
 /-- TODO: expand this and use everywhere -/
 @[reducible, inline]
 def default_simulate (so : simulation_oracle spec spec') (oa : oracle_comp spec A) :
-  oracle_comp spec' (A × so.S) :=
-oa.simulate so so.default_state
+  oracle_comp spec' (A × so.S) := oa.simulate so so.default_state
+
+lemma default_simulate_def : oa.default_simulate so = oa.simulate so so.default_state := rfl 
 
 @[simp]
 lemma default_simulate_pure : default_simulate so (pure a) = pure (a, so.default_state) := rfl
 
 @[simp]
 lemma default_simulate_bind : default_simulate so (oa >>= ob) =
-  (simulate so oa so.default_state) >>= (λ x, simulate so (ob x.1) x.2) := rfl
+  simulate so oa so.default_state >>= λ x, simulate so (ob x.1) x.2 := rfl
 
 @[simp]
 lemma default_simulate_query : default_simulate so (query i t) =
@@ -83,35 +63,101 @@ lemma default_simulate_query : default_simulate so (query i t) =
 
 end default_simulate
 
+section simulate'
+
+/-- Get the result of simulation without returning the internal oracle state -/
+@[reducible, inline]
+def simulate' (so : simulation_oracle spec spec') (oa : oracle_comp spec A) (s : so.S) :
+  oracle_comp spec' A := prod.fst <$> oa.simulate so s
+
+lemma simulate'_def : oa.simulate' so s = prod.fst <$> oa.simulate so s := rfl
+
+@[simp]
+lemma simulate'_pure : simulate' so (pure a) s = prod.fst <$> (pure (a, s)) := rfl
+
+@[simp]
+lemma simulate'_bind : simulate' so (oa >>= ob) s =
+  prod.fst <$> (simulate so oa s >>= λ x, simulate so (ob x.1) x.2) := rfl
+
+@[simp]
+lemma simulate'_query : simulate' so (query i t) s = prod.fst <$> so.o i (t, s) := rfl
+
+end simulate'
+
 section default_simulate'
 
 @[reducible, inline]
 def default_simulate' (so : simulation_oracle spec spec') (oa : oracle_comp spec A) :
-  oracle_comp spec' A :=
-oa.simulate' so so.default_state
+  oracle_comp spec' A := oa.simulate' so so.default_state
+
+lemma default_simulate'_def : oa.default_simulate' so = oa.simulate' so so.default_state := rfl
+
+@[simp]
+lemma default_simulate'_pure : default_simulate' so (pure a) =
+  prod.fst <$> pure (a, so.default_state) := rfl
+
+@[simp]
+lemma default_simulate'_bind : default_simulate' so (oa >>= ob) =
+  prod.fst <$> ((simulate so oa so.default_state) >>= (λ x, simulate so (ob x.1) x.2)) := rfl
+
+@[simp]
+lemma default_simulate'_query : default_simulate' so (query i t) =
+  prod.fst <$>so.o i (t, so.default_state) := rfl
 
 end default_simulate'
 
 section eval_distribution
 
+variable [hspec' : spec'.finite_range]
+include hspec'
+
 @[simp]
-lemma eval_distribution_simulate_pure [spec'.finite_range] :
+lemma eval_distribution_simulate_pure :
   ⟦simulate so (pure a) s⟧ = pmf.pure (a, s) := rfl
 
 @[simp]
-lemma eval_distribution_simulate_bind [spec'.finite_range] :
-  ⟦simulate so (oa >>= ob) s⟧ = ⟦simulate so oa s⟧ >>= (λ x, ⟦simulate so (ob x.1) x.2⟧) :=
+lemma eval_distribution_simulate_bind :
+  ⟦simulate so (oa >>= ob) s⟧ = ⟦simulate so oa s⟧ >>= λ x, ⟦simulate so (ob x.1) x.2⟧ :=
 by rw [simulate_bind, eval_distribution_bind]
 
 @[simp]
-lemma eval_distribution_simulate_query [spec'.finite_range] :
+lemma eval_distribution_simulate_query :
   ⟦simulate so (query i t) s⟧ = ⟦so.o i (t, s)⟧ := rfl
 
 @[simp]
-lemma eval_distribution_simulate'_pure [spec'.finite_range] : 
+lemma eval_distribution_default_simulate_pure :
+  ⟦default_simulate so (pure a)⟧ = pmf.pure (a, so.default_state) := rfl
+
+@[simp]
+lemma eval_distribution_default_simulate_bind :
+  ⟦default_simulate so (oa >>= ob)⟧ =
+    ⟦simulate so oa so.default_state⟧ >>= λ x, ⟦simulate so (ob x.1) x.2⟧ :=
+by rw [default_simulate_bind, eval_distribution_bind]
+
+@[simp]
+lemma eval_distribution_default_simulate_query :
+  ⟦default_simulate so (query i t)⟧ = ⟦so.o i (t, so.default_state)⟧ := rfl
+
+@[simp]
+lemma eval_distribution_simulate'_pure : 
   ⟦simulate' so (pure a) s⟧ = pmf.pure a :=
 by simp [pmf.pure_map]
 
+@[simp]
+lemma eval_distribution_simulate'_bind :
+  ⟦simulate' so (oa >>= ob) s⟧ = ⟦simulate so oa s⟧ >>= λ x, ⟦simulate' so (ob x.1) x.2⟧ :=
+begin
+  simp,
+  refine pmf.bind_map ⟦simulate so oa s⟧ _ prod.fst,
+end
+
+@[simp]
+lemma eval_distribution_simulate'_query :
+  ⟦simulate' so (query i t) s⟧ = prod.fst <$> ⟦simulate so (query i t) s⟧ :=
+begin
+  simp,
+  refl,
+end
 
 end eval_distribution
 
