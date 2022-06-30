@@ -27,29 +27,53 @@ def simulate {spec spec' : oracle_spec} (so : simulation_oracle spec spec') :
 | _ (bind' A B oa ob) state := simulate oa state >>= λ x, simulate (ob x.1) x.2
 | _ (query i t) state := so.o i (t, state)
 
-@[simp]
-lemma simulate_pure (a : A) (s : so.S) :
-  simulate so (pure a) s = pure (a, s) := rfl
+section pure
 
-lemma eval_distribution_simulate_pure [spec'.finite_range] (a : A) (s : so.S) :
+variables (a : A) (s : so.S)
+
+@[simp]
+lemma simulate_pure : simulate so (pure a) s = pure (a, s) := rfl
+
+lemma simulate_pure' : simulate so (pure' A a) s = pure (a, s) := rfl
+
+lemma simulate_return : simulate so (return a) s = pure (a, s) := rfl
+
+@[simp]
+lemma eval_distribution_simulate_pure [spec'.finite_range] :
   ⟦simulate so (pure a) s⟧ = pmf.pure (a, s) := rfl
 
-lemma simulate_pure' (a : A) (s : so.S) :
-  simulate so (pure' A a) s = pure' (A × so.S) (a, s) := rfl
+end pure
 
-lemma simulate_return (a : A) (s : so.S) :
-  simulate so (return a) s = return (a, s) := rfl
+section bind
 
-@[simp]
-lemma simulate_bind (oa : oracle_comp spec A) (ob : A → oracle_comp spec B) (s : so.S) :
-  simulate so (oa >>= ob) s = (simulate so oa s) >>= (λ x, simulate so (ob x.1) x.2) := rfl
-
-lemma simulate_bind' (oa : oracle_comp spec A) (ob : A → oracle_comp spec B) (s : so.S) :
-  simulate so (bind' A B oa ob) s = bind (simulate so oa s) (λ x, simulate so (ob x.1) x.2) := rfl
+variables (oa : oracle_comp spec A) (ob : A → oracle_comp spec B) (s : so.S)
 
 @[simp]
-lemma simulate_query (i : spec.ι) (t : spec.domain i) (s : so.S) :
-  simulate so (query i t) s = so.o i (t, s) := rfl
+lemma simulate_bind : simulate so (oa >>= ob) s =
+  (simulate so oa s) >>= (λ x, simulate so (ob x.1) x.2) := rfl
+
+lemma simulate_bind' : simulate so (bind' A B oa ob) s =
+  (simulate so oa s) >>= (λ x, simulate so (ob x.1) x.2) := rfl
+
+@[simp]
+lemma eval_distribution_simulate_bind [spec'.finite_range] :
+  ⟦simulate so (oa >>= ob) s⟧ = ⟦simulate so oa s⟧ >>= (λ x, ⟦simulate so (ob x.1) x.2⟧) :=
+by rw [simulate_bind, eval_distribution_bind]
+
+end bind
+
+section query
+
+variables (i : spec.ι) (t : spec.domain i) (s : so.S)
+
+@[simp]
+lemma simulate_query : simulate so (query i t) s = so.o i (t, s) := rfl
+
+@[simp]
+lemma eval_distribution_simulate_query [spec'.finite_range] :
+  ⟦simulate so (query i t) s⟧ = ⟦so.o i (t, s)⟧ := rfl
+
+end query
 
 end simulate
 

@@ -5,8 +5,6 @@ import computational_monads.oracle_spec
 variables {A B : Type} {spec spec' : oracle_spec}
 
 open oracle_spec
--- TODO: a lot of this is pretty outdated notation/documentation wise at this point -/
--- TODO: `oa` notation over `ca` notation?
 
 /-- Type to represent computations with access so oracles specified by and `oracle_spec` -/
 inductive oracle_comp (spec : oracle_spec) : Type → Type 1
@@ -31,9 +29,14 @@ instance monad (spec : oracle_spec) : monad (oracle_comp spec) :=
 lemma pure'_eq_pure (spec : oracle_spec) (a : A) :
   (pure' A a : oracle_comp spec A) = pure a := rfl
 
+-- TODO: maybe a big refactor to instead tend towards `return`?
 @[simp]
-lemma bind'_eq_bind (ca : oracle_comp spec A) (cb : A → oracle_comp spec B) :
-  bind' A B ca cb = (ca >>= cb) := rfl
+lemma return_eq_pure (spec : oracle_spec) (a : A) :
+  (return a : oracle_comp spec A) = pure a := rfl
+
+@[simp]
+lemma bind'_eq_bind (oa : oracle_comp spec A) (ob : A → oracle_comp spec B) :
+  bind' A B oa ob = (oa >>= ob) := rfl
 
 end monad
 
@@ -53,7 +56,7 @@ section support
   TODO: maybe we should just generally focuse `support` on `finite_range` case for simplicity -/
 def support {spec : oracle_spec} : Π {A : Type} (oa : oracle_comp spec A), set A
 | _ (pure' A a) := {a}
-| _ (bind' A B ca cb) := ⋃ a ∈ ca.support, (cb a).support
+| _ (bind' A B oa ob) := ⋃ a ∈ oa.support, (ob a).support
 | _ (query i t) := ⊤
 
 @[simp]
@@ -68,18 +71,18 @@ lemma support_return {A : Type} (spec : oracle_spec) (a : A) :
 
 @[simp]
 lemma support_bind {A B : Type} {spec : oracle_spec}
-  (ca : oracle_comp spec A) (cb : A → oracle_comp spec B) :
-  (ca >>= cb).support = ⋃ a ∈ ca.support, (cb a).support := rfl
+  (oa : oracle_comp spec A) (ob : A → oracle_comp spec B) :
+  (oa >>= ob).support = ⋃ a ∈ oa.support, (ob a).support := rfl
 
 lemma support_bind' {A B : Type} {spec : oracle_spec}
-  (ca : oracle_comp spec A) (cb : A → oracle_comp spec B) :
-  (bind' A B ca cb).support = ⋃ a ∈ ca.support, (cb a).support := rfl
+  (oa : oracle_comp spec A) (ob : A → oracle_comp spec B) :
+  (bind' A B oa ob).support = ⋃ a ∈ oa.support, (ob a).support := rfl
 
 @[simp]
-lemma support_bind_bind {A B C : Type} {spec : oracle_spec} (ca : oracle_comp spec A)
-  (cb : A → oracle_comp spec B) (cc : A → B → oracle_comp spec C) :
-  (do {a ← ca, b ← cb a, cc a b}).support =
-    ⋃ a ∈ ca.support, ⋃ b ∈ (cb a).support, (cc a b).support :=
+lemma support_bind_bind {A B C : Type} {spec : oracle_spec} (oa : oracle_comp spec A)
+  (ob : A → oracle_comp spec B) (oc : A → B → oracle_comp spec C) :
+  (do {a ← oa, b ← ob a, oc a b}).support =
+    ⋃ a ∈ oa.support, ⋃ b ∈ (ob a).support, (oc a b).support :=
 by simp
 
 @[simp]
@@ -105,6 +108,8 @@ end support
 
 section decidable
 
+/-- Typeclass for computations that only return values of types with `decidable_eq` instances.
+  In this case we can explicitly calculate the `support` as a `finset` rather than a `set`. -/
 @[class]
 inductive decidable {spec : oracle_spec} : 
   Π {A : Type}, oracle_comp spec A → Type 1
