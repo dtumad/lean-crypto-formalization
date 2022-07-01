@@ -364,14 +364,16 @@ match (log i).nth 0 with
     else (none, query_log.init spec) -- TODO: maybe don't clear everything here?
 end
 
-/-- Remove parts of the cache after the query chosen to fork on
-  TODO: is there any point not just making `n` a `ℕ` ? -/
-def fork_cache [spec.computable] {q : ℕ} (log : query_log spec)
-  (i : spec.ι) (n : option $ fin q) :
-  query_log spec :=
+def drop_at_index [spec.computable] (log : query_log spec)
+  (i : spec.ι) (n : ℕ) : query_log spec :=
+log.map_at_index i (list.drop n)
+
+/-- Remove parts of the cache after the query chosen to fork on -/
+def fork_cache [spec.computable] (log : query_log spec)
+  (i : spec.ι) (n : option ℕ) : query_log spec :=
 match n with
 | none := log -- TODO: this case doesn't really matter but whatever
-| (some m) := log.map_at_index i (list.drop ↑m)
+| (some m) := log.drop_at_index i m
 end
 
 end query_log

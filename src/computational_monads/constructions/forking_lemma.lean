@@ -36,7 +36,7 @@ do {
   -- choose the index of the query to fork on
   i ← return (choose_fork x cache),
   -- remove things in the cache after the forking query
-  forked_cache ← return (cache.fork_cache () i),
+  forked_cache ← return (cache.fork_cache () (i.map coe)),
   -- run again, using the same random choices for first oracle, and forked cache
   ⟨x', ⟨log', ⟨cache', ()⟩⟩⟩ ← (simulate fork_sim' adversary (log.to_seed, (forked_cache, ()))),
   -- check the forking index for the second result

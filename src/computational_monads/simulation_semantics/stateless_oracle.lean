@@ -36,8 +36,7 @@ section simulate
 
 @[simp]
 lemma support_simulate_stateless_oracle_pure (a : A) (s : unit) :
-  (simulate ⟪o⟫ (pure a) s).support = {(a, ())} :=
-by simp [punit_eq s ()]
+  (simulate ⟪o⟫ (pure a) s).support = {(a, ())} := by simp [punit_eq s ()]
 
 @[simp]
 lemma support_simulate_stateless_oracle_bind (oa : oracle_comp spec A)
