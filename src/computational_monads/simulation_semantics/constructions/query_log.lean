@@ -1,4 +1,5 @@
 import computational_monads.oracle_spec
+import to_mathlib.general
 
 /-- Data type representing a log of oracle queries for a given `oracle_spec`.
   Represented as a list of query inputs and outputs, indexed by the indexing set in the spec -/
@@ -6,6 +7,11 @@ def query_log (spec : oracle_spec) : Type :=
   Π (i : spec.ι), list (spec.domain i × spec.range i)
 
 namespace query_log
+
+@[ext]
+lemma ext {spec : oracle_spec} {log log' : query_log spec}
+  (h : ∀ (i : spec.ι), log i = log' i) : log = log' :=
+funext h
 
 variables {spec : oracle_spec} (log : query_log spec)
 
@@ -32,6 +38,7 @@ def log_query (log : query_log spec) (i : spec.ι) (t : spec.domain i) (u : spec
   query_log spec :=
 λ j, if hi : i = j then hi.rec_on ((t, u) :: (log i)) else log j
 
+@[simp]
 lemma log_query_apply (i j : spec.ι) (t : spec.domain i) (u : spec.range i) :
   (log.log_query i t u) j = if hi : i = j then hi.rec_on ((t, u) :: log i) else log j :=
 rfl
@@ -173,14 +180,118 @@ def map_at_index [spec.computable] (log : query_log spec) (i : spec.ι)
   query_log spec :=
 λ j, if hi : i = j then hi.rec_on (f $ log i) else (log j)
 
+variable [spec.computable]
+variables (i j : spec.ι)
+  (f : list (spec.domain i × spec.range i) → list (spec.domain i × spec.range i))
+
 @[simp]
-lemma map_at_index_apply [spec.computable] (log : query_log spec) (i j : spec.ι)
-  (f : list (spec.domain i × spec.range i) → list (spec.domain i × spec.range i)) :
-  log.map_at_index i f j = if hi : i = j
-    then hi.rec_on (f $ log i) else log j :=
+lemma map_at_index_apply : log.map_at_index i f j =
+  if hi : i = j then hi.rec_on (f $ log i) else log j :=
 rfl
 
+lemma map_at_index_apply_of_index_eq (h : i = j) :
+  log.map_at_index i f j = h.rec_on (f $ log i) :=
+by simp only [h, map_at_index_apply, dif_pos]
+
+lemma map_at_index_apply_same_index :
+  log.map_at_index i f i = f (log i) :=
+by simp only [map_at_index_apply, eq_self_iff_true, dite_eq_ite, if_true]
+
+lemma map_at_index_apply_of_index_ne (h : i ≠ j) :
+  log.map_at_index i f j = log j :=
+by simp only [h, not_false_iff, map_at_index_apply, dif_neg]
+
+@[simp]
+lemma map_at_index_init_of_nil_nil (hf : f [] = []) :
+  (init spec).map_at_index i f = init spec :=
+begin
+  refine ext (λ i, _),
+  simp only [hf, map_at_index_apply, init_apply, dite_eq_right_iff],
+  exact (λ h, by {induction h, refl})
+end
+
+@[simp]
+lemma map_at_index_log_query_of_ne (h : i ≠ j) (t : spec.domain j) (u : spec.range j) :
+  (log.log_query j t u).map_at_index i f = (log.map_at_index i f).log_query j t u :=
+begin
+  refine ext (λ k, _),
+  by_cases hi : i = k,
+  { rw [map_at_index_apply_of_index_eq _ i k f hi],
+    by_cases hj : j = k,
+    { exact false.elim (h $ hi.trans hj.symm) },
+    { rw [log_query_apply_of_index_ne _ hj t u, log_query_apply_of_index_ne _ h.symm t u, 
+        map_at_index_apply_of_index_eq log _ _ f hi] } },
+  { rw [map_at_index_apply_of_index_ne _ i k f hi],
+    by_cases hj : j = k,
+    { rw [log_query_apply_of_index_eq log hj t u, log_query_apply_of_index_eq _ hj t u,
+        map_at_index_apply_of_index_ne log i j f h] },
+    { rw [log_query_apply_of_index_ne log hj t u, log_query_apply_of_index_ne _ hj t u,
+        map_at_index_apply_of_index_ne _ i k f hi] } }
+end
+
 end map_at_index
+
+
+section drop_at_index
+
+def drop_at_index [spec.computable] (log : query_log spec)
+  (i : spec.ι) (n : ℕ) : query_log spec :=
+log.map_at_index i (list.drop n)
+
+variables [hspec : spec.computable] (n : ℕ)
+include hspec
+
+@[simp]
+lemma drop_at_index_apply (i j : spec.ι) :
+  (log.drop_at_index i n) j = if i = j then (log j).drop n else log j :=
+begin
+  simp only [drop_at_index, map_at_index_apply],
+  split_ifs,
+  { induction h,
+    exact rfl },
+  { exact rfl }
+end
+
+lemma drop_at_index_apply_of_index_eq {i j : spec.ι} (h : i = j) :
+  (log.drop_at_index i n) j = (log j).drop n :=
+by simp only [h, drop_at_index_apply, eq_self_iff_true, if_true]
+
+@[simp]
+lemma drop_at_index_apply_same_index (i : spec.ι) :
+  (log.drop_at_index i n) i = (log i).drop n :=
+drop_at_index_apply_of_index_eq log n rfl
+
+lemma drop_at_index_apply_of_index_ne {i j : spec.ι} (h : i ≠ j) :
+  (log.drop_at_index i n) j = log j :=
+by simp only [h, drop_at_index_apply, if_false]
+
+@[simp]
+lemma drop_at_index_zero (i : spec.ι) :
+  log.drop_at_index i 0 = log :=
+ext (λ j, by simp only [list.drop, drop_at_index_apply, if_t_t])
+
+@[simp]
+lemma drop_at_index_init (i : spec.ι) :
+  (init spec).drop_at_index i n = init spec :=
+map_at_index_init_of_nil_nil i (list.drop n) (list.drop_nil n)
+
+@[simp]
+lemma drop_at_index_succ_log_query (i j : spec.ι) (t : spec.domain i) (u : spec.range i) :
+  (log.log_query i t u).drop_at_index j (n + 1) = 
+    if i = j then log.drop_at_index j n
+      else (log.drop_at_index j (n + 1)).log_query i t u :=
+begin
+  split_ifs,
+  { refine ext (λ k, _),
+    by_cases hj : j = k,
+    { induction h, induction hj,
+      simp only [list.drop, drop_at_index_apply_same_index, log_query_apply_same_index] },
+    { rw [drop_at_index_apply_of_index_ne _ (n + 1) hj, log_query_apply_of_index_ne log (ne_of_eq_of_ne h hj),
+        drop_at_index_apply_of_index_ne _ n hj] } },
+  { exact map_at_index_log_query_of_ne log j i _ (ne.symm h) t u }
+end
+
+end drop_at_index
 
 section get_index
 
@@ -225,7 +336,7 @@ if_neg hi
 @[simp]
 lemma remove_head_init (spec : oracle_spec) [spec.computable] (i : spec.ι) :
   (init spec).remove_head i = init spec :=
-funext (λ i', if_t_t (i = i') [])
+ext (λ i', if_t_t (i = i') [])
 
 lemma remove_head_log_query (i j : spec.ι)
   (t : spec.domain i) (u : spec.range i) :
@@ -234,12 +345,12 @@ lemma remove_head_log_query (i j : spec.ι)
 begin
   split_ifs with hi,
   { induction hi,
-    refine (funext $ λ k, trans (remove_head_apply _ i k) _),
+    refine (ext $ λ k, trans (remove_head_apply _ i k) _),
     split_ifs with hk,
     { induction hk,
       rw [log_query_apply_same_index log, list.tail_cons] },
     { exact log_query_apply_of_index_ne log hk t u } },
-  { refine (funext $ λ k, _),
+  { refine (ext $ λ k, _),
     simp only [remove_head_apply],
     split_ifs with hj,
     { induction hj,
@@ -248,18 +359,18 @@ begin
         remove_head_apply_of_index_ne _ (ne.symm hi)] } }
 end
 
-lemma remove_head_log_query_apply_of_index_eq {i j : spec.ι} (hi : i = j)
+lemma remove_head_log_query_of_index_eq {i j : spec.ι} (hi : i = j)
   (t : spec.domain i) (u : spec.range i) :
   (log.log_query i t u).remove_head j = log :=
 trans (log.remove_head_log_query i j t u) (if_pos hi)
 
 @[simp]
-lemma remove_head_log_query_apply_of_same_index (i : spec.ι)
+lemma remove_head_log_query_of_same_index (i : spec.ι)
   (t : spec.domain i) (u : spec.range i) :
   (log.log_query i t u).remove_head i = log :=
-log.remove_head_log_query_apply_of_index_eq rfl t u
+log.remove_head_log_query_of_index_eq rfl t u
 
-lemma remove_head_log_query_apply_of_index_ne {i j : spec.ι} (hi : i ≠ j)
+lemma remove_head_log_query_of_index_ne {i j : spec.ι} (hi : i ≠ j)
   (t : spec.domain i) (u : spec.range i) :
   (log.log_query i t u).remove_head j = (log.remove_head j).log_query i t u :=
 trans (log.remove_head_log_query i j t u) (if_neg hi)
@@ -344,7 +455,7 @@ lemma to_seed_log_query [spec.computable] (log : query_log spec)
   (log.log_query i t u).to_seed = λ j, if hi : i = j
     then log.to_seed j ++ [hi.rec_on (t, u)] else log.to_seed j :=
 begin
-  refine funext (λ j, _),
+  refine ext (λ j, _),
   split_ifs,
   { induction h,
     exact trans (congr_arg list.reverse $ log.log_query_apply_same_index i t u)
@@ -363,10 +474,6 @@ match (log i).nth 0 with
 | some ⟨t', u⟩ := if t' = t then (some u, log.remove_head i)
     else (none, query_log.init spec) -- TODO: maybe don't clear everything here?
 end
-
-def drop_at_index [spec.computable] (log : query_log spec)
-  (i : spec.ι) (n : ℕ) : query_log spec :=
-log.map_at_index i (list.drop n)
 
 /-- Remove parts of the cache after the query chosen to fork on -/
 def fork_cache [spec.computable] (log : query_log spec)

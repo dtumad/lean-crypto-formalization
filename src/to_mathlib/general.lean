@@ -9,6 +9,9 @@ lemma finset.to_list_nonempty {A : Type} (s : finset A) (hs : s.nonempty) : ¬ s
 let ⟨x, hx⟩ := hs in
   λ h', list.not_mem_nil x ((list.empty_iff_eq_nil.1 h') ▸ (finset.mem_to_list s).2 hx)
 
+lemma list.drop_succ_cons {A : Type} (as : list A) (a : A) (n : ℕ) :
+  (a :: as).drop (n + 1) = as.drop n :=
+rfl
 
 lemma pmf.apply_eq_one_iff {A : Type} (p : pmf A) (a : A) :
   p a = 1 ↔ p.support = {a} :=

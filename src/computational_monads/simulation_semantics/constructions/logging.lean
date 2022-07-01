@@ -85,7 +85,7 @@ def seeded_oracle (spec : oracle_spec) [computable spec] :
 { S := query_log spec,
   default_state := query_log.init spec,
   o := λ i ⟨t, seed⟩, match seed.lookup_fst i t with
-    | none := functor.map (λ u, (u, query_log.init spec)) (query i t)
+    | none := (λ u, (u, query_log.init spec)) <$> query i t
     | (some u) := return (u, seed.remove_head i)
     end }
 
@@ -96,29 +96,29 @@ lemma default_state_seeded_oracle (spec : oracle_spec) [spec.computable] :
 -- Log and run, run from seed, return original output -> looks like just logging
 lemma seeded_oracle_first_equiv (spec : oracle_spec) [spec.computable] [spec.finite_range]
   (oa : oracle_comp spec A) (i : spec.ι) (choose_fork : A → query_log spec → option ℕ) :
-(do {
+⟦(do {
   ⟨a, log⟩ ← simulate (logging_oracle spec) oa (query_log.init spec),
   seed ← return (log.fork_cache i $ choose_fork a log).to_seed,
   ⟨a', log'⟩ ← simulate (seeded_oracle spec) oa seed,
   return (a, log)
-} : oracle_comp spec (A × query_log spec)) ≃ₚ
-  (simulate (logging_oracle spec) oa (query_log.init spec)) :=
+} : oracle_comp spec (A × query_log spec))⟧ =
+  ⟦(simulate (logging_oracle spec) oa (query_log.init spec))⟧ :=
 sorry
 
 -- Log and run, run from seed, return new output -> looks like just logging
 lemma seeded_oracle_second_equiv (spec : oracle_spec) [spec.computable] [spec.finite_range]
   (oa : oracle_comp spec A) (i : spec.ι) (choose_fork : A → query_log spec → option ℕ) :
-(do {
+⟦(do {
   ⟨a, log⟩ ← simulate (logging_oracle spec) oa (query_log.init spec),
   seed ← return (log.fork_cache i $ choose_fork a log).to_seed,
   ⟨a', log'⟩ ← simulate (seeded_oracle spec) oa (seed),
   return (a', log')
-} : oracle_comp spec (A × query_log spec)) ≃ₚ 
-  (simulate (logging_oracle spec) oa (query_log.init spec)) :=
+} : oracle_comp spec (A × query_log spec))⟧ =  
+  ⟦(simulate (logging_oracle spec) oa (query_log.init spec))⟧ :=
 sorry
 
 -- The log values match up until the point where the log was forked
-lemma log_eq_log_of_mem_support_eval (spec : oracle_spec) [spec.computable] [spec.finite_range]
+lemma seeded_oracle_log_eq_log (spec : oracle_spec) [spec.computable] [spec.finite_range]
   (oa : oracle_comp spec A) (i : spec.ι) (choose_fork : A → query_log spec → option ℕ) :
 (do {
   ⟨a, log⟩ ← simulate (logging_oracle spec) oa (query_log.init spec),
