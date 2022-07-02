@@ -7,6 +7,7 @@ import computational_monads.distribution_semantics.equiv
 open oracle_comp oracle_spec
 
 variables {spec spec' spec'' : oracle_spec} {A B C : Type}
+  (log : query_log spec) (log' : query_log spec')
 
 section logging_oracle
 
@@ -22,54 +23,49 @@ def logging_oracle (spec : oracle_spec) [spec.computable] :
 lemma default_state_logging_oracle (spec : oracle_spec) [spec.computable] :
   (logging_oracle spec).default_state = query_log.init spec := rfl
 
+variable [spec.computable]
+
 @[simp]
-lemma logging_oracle_apply [spec.computable] (i : spec.ι) (t : spec.domain i) (log : query_log spec) :
+lemma logging_oracle_apply (i : spec.ι) (t : spec.domain i) :
   (logging_oracle spec).o i (t, log) = query i t >>= λ u, return (u, log.log_query i t u) := rfl
 
 namespace logging_oracle
 
 @[simp]
-lemma simulate_pure [spec.computable] (a : A) (log : query_log spec) :
+lemma simulate_pure (a : A) :
   simulate (logging_oracle _) (return a) log = return ⟨a, log⟩ :=
 rfl
 
 @[simp]
-lemma simulate_query [spec.computable] (i : spec.ι) (t : spec.domain i) (log : query_log spec) :
+lemma simulate_query (i : spec.ι) (t : spec.domain i) :
   simulate (logging_oracle _) (query i t) log =
     do { u ← query i t, return (u, log.log_query i t u) } :=
 rfl
 
 @[simp]
-lemma simulate_bind [spec.computable] (oa : oracle_comp spec A)
-  (ob : A → oracle_comp spec B) (log : query_log spec) :
+lemma simulate_bind (oa : oracle_comp spec A) (ob : A → oracle_comp spec B) :
   simulate (logging_oracle _) (oa >>= ob) log =
     (simulate (logging_oracle _) oa log) >>=
       (λ x, simulate (logging_oracle _) (ob x.1) x.2) :=
 rfl
 
+section eval_distribution
+
+variable [spec.finite_range]
+
+/-- If you throw out then it looks like the original computation -/
 @[simp]
-lemma eval_distribution_simulate' [spec.computable] [spec.finite_range]
-  (oa : oracle_comp spec A) (log : query_log spec) :
-  ⟦ simulate' (logging_oracle _) oa log ⟧ = ⟦ oa ⟧ :=
-begin
-  induction oa with A a A B oa ob hoa hob i t,
-  {
-    simp [pmf.pure_map],
-  },
-  {
-    rw [bind'_eq_bind],
-    rw [eval_distribution_simulate'_bind],
-    rw [eval_distribution_bind], sorry,
-  },
-  {
-    rw [eval_distribution_simulate'_query],
-    rw [logging_oracle_apply],
-    rw [eval_distribution_bind],
-    rw [pmf.bind_map],
-    simp [pmf.bind_map, functor.map, pmf.bind_pure],
-    refine pmf.bind_pure _,
-  }
-end
+lemma eval_distribution_simulate' (oa : oracle_comp spec A) :
+  ⟦ simulate' (logging_oracle spec) oa log ⟧ = ⟦ oa ⟧ :=
+eval_distribution_simulate'_of_indep_state _ _ _
+  (query_log.log_query) (λ s i t, rfl)
+
+@[simp]
+lemma eval_distribution_default_simulate' (oa : oracle_comp spec A) :
+  ⟦ default_simulate' (logging_oracle spec) oa ⟧ = ⟦ oa ⟧ :=
+eval_distribution_simulate' (query_log.init spec) oa
+
+end eval_distribution
 
 end logging_oracle
 

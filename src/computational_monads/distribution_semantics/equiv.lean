@@ -6,6 +6,8 @@ open oracle_comp oracle_spec
 variables {A B : Type}
 
 -- Equivalence of two computations under distribution semantics
+-- TODO: this is just notational, so we should just be able to use this everywhere?
+--  might be a good amount of refactoring
 notation oa `≃ₚ` oa' := ⟦oa⟧ = ⟦oa'⟧
 
 @[simp]

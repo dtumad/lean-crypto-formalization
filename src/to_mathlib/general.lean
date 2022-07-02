@@ -43,6 +43,10 @@ begin
   }
 end
 
+lemma pmf.bind_ {A B C : Type} (p : pmf A) (q : B → pmf C) (f : A → B) :
+  (p >>= λ x, q (f x)) = (f <$> p) >>= q :=
+sorry
+
 example {A B : Type} (p : pmf A) (f : A → B) :
   f <$> p = p >>= (pure ∘ f) :=
 rfl

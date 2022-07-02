@@ -103,6 +103,8 @@ lemma support_eval_distribution (oa : oracle_comp spec A) :
   ⟦oa⟧.support = oa.support :=
 plift.down (eval_dist oa).2
 
+section support
+
 @[simp]
 lemma eval_distribution_eq_zero_iff_not_mem_support (oa : oracle_comp spec A) (a : A) :
     ⟦oa⟧ a = 0 ↔ a ∉ oa.support :=
@@ -123,6 +125,8 @@ by rw [pmf.apply_eq_one_iff, support_eval_distribution oa]
 lemma eval_distribution_ge_zero_iff_mem_support (oa : oracle_comp spec A) (a : A) :
   0 < ⟦oa⟧ a ↔ a ∈ oa.support :=
 by rw [pos_iff_ne_zero, eval_distribution_ne_zero_iff_mem_support]
+
+end support
 
 section prod
 
