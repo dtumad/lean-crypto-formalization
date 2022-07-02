@@ -69,16 +69,6 @@ lemma eval_distribution_bind_bind_apply (oa : oracle_comp spec A)
   (tsum_congr $ λ a, by simp only [eval_distribution_bind_apply, nnreal.tsum_mul_left (⟦oa⟧ a)])
 
 @[simp]
-lemma eval_distribution_pure_bind (a : A) (ob : A → oracle_comp spec B) :
-  ⟦return a >>= ob⟧ = ⟦ob a⟧ :=
-(eval_distribution_bind (return a) ob).trans (pmf.pure_bind (λ a, ⟦ob a⟧) a)
-
-@[simp]
-lemma eval_distribution_pure_bind_apply (a : A) (ob : A → oracle_comp spec B) (b : B) :
-  ⟦return a >>= ob⟧ b = ⟦ob a⟧ b :=
-by simp only [eval_distribution_pure_bind a ob]
-
-@[simp]
 lemma eval_distribution_map (oa : oracle_comp spec A) (f : A → B) :
   ⟦f <$> oa⟧ = ⟦oa⟧.map f :=
 eval_distribution_bind oa (pure ∘ f)
@@ -98,12 +88,12 @@ lemma eval_distribution_query_apply (i : spec.ι) (t : spec.domain i) (u : spec.
   ⟦query i t⟧ u = 1 / (fintype.card $ spec.range i) :=
 by simp only [eval_distribution_query, pmf.uniform_of_fintype_apply, one_div]
 
+section support
+
 @[simp]
 lemma support_eval_distribution (oa : oracle_comp spec A) :
   ⟦oa⟧.support = oa.support :=
 plift.down (eval_dist oa).2
-
-section support
 
 @[simp]
 lemma eval_distribution_eq_zero_iff_not_mem_support (oa : oracle_comp spec A) (a : A) :
@@ -127,17 +117,3 @@ lemma eval_distribution_ge_zero_iff_mem_support (oa : oracle_comp spec A) (a : A
 by rw [pos_iff_ne_zero, eval_distribution_ne_zero_iff_mem_support]
 
 end support
-
-section prod
-
-@[simp]
-lemma eval_distribution_map_prod_fst_return (a : A) (b : B) :
-  prod.fst <$> ⟦(return (a, b) : oracle_comp spec (A × B))⟧ = pmf.pure a :=
-by simp [functor.map]
-
-@[simp]
-lemma eval_distribution_map_prod_snd_return (a : A) (b : B) :
-  prod.snd <$> ⟦(return (a, b) : oracle_comp spec (A × B))⟧ = pmf.pure b :=
-by simp [functor.map]
-
-end prod

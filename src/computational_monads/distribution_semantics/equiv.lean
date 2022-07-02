@@ -1,40 +1,26 @@
 import computational_monads.distribution_semantics.prob_event
-import computational_monads.simulation_semantics.stateless_oracle
 
 open oracle_comp oracle_spec
 
-variables {A B : Type}
+variables {A B : Type} {spec spec' : oracle_spec}
 
--- Equivalence of two computations under distribution semantics
--- TODO: this is just notational, so we should just be able to use this everywhere?
---  might be a good amount of refactoring
+variable [spec.finite_range]
+
+-- Notation for two computations that are equivalent under `eval_distribution`
 notation oa `≃ₚ` oa' := ⟦oa⟧ = ⟦oa'⟧
 
 @[simp]
-lemma bind'_pure'_equiv {spec : oracle_spec} [spec.finite_range]
-  {A : Type} (ca : oracle_comp spec A) :
-  (bind' A A ca (pure' A)) ≃ₚ ca :=
-begin
-  simp,
-  exact pmf.bind_pure ⟦ca⟧,
-end
+lemma pure_bind_equiv (a : A) (ob : A → oracle_comp spec B) :
+  (pure a >>= ob) ≃ₚ (ob a) :=
+trans (eval_distribution_bind (return a) ob) (pmf.pure_bind (λ a, ⟦ob a⟧) a)
 
 @[simp]
-lemma bind_return_equiv {spec : oracle_spec} [spec.finite_range]
-  {A : Type} (ca : oracle_comp spec A) :
-  (ca >>= return) ≃ₚ ca :=
-bind'_pure'_equiv ca
+lemma bind_pure_equiv (oa : oracle_comp spec A) :
+  (oa >>= pure) ≃ₚ oa :=
+trans (eval_distribution_bind oa pure) (pmf.bind_pure (⟦oa⟧))
 
 @[simp]
-lemma pure'_bind'_equiv {spec : oracle_spec} [spec.finite_range]
-  {A B : Type} (a : A) (cb : A → oracle_comp spec B) :
-  (bind' A B (pure' A a) cb) ≃ₚ cb a :=
-begin
-  simp,
-end
+lemma map_pure_equiv (a : A) (f : A → B) :
+  f <$> (pure a : oracle_comp spec A) ≃ₚ (pure (f a) : oracle_comp spec B) :=
+trans (eval_distribution_map (pure a) f) (pmf.pure_map f a)
 
-@[simp]
-lemma return_bind_equiv {spec : oracle_spec} [spec.finite_range]
-  {A B : Type} (a : A) (cb : A → oracle_comp spec B) :
-  (return a >>= cb) ≃ₚ cb a :=
-pure'_bind'_equiv a cb

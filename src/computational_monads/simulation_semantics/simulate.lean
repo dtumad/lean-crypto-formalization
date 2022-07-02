@@ -1,5 +1,6 @@
 import computational_monads.oracle_comp
 import computational_monads.distribution_semantics.prob_event
+import computational_monads.distribution_semantics.equiv
 
 namespace oracle_comp
 
@@ -143,6 +144,12 @@ by rw [simulate_bind, eval_distribution_bind]
 @[simp]
 lemma eval_distribution_simulate_query :
   ⟦simulate so (query i t) s⟧ = ⟦so.o i (t, s)⟧ := rfl
+
+@[simp]
+lemma simulate_pure_equiv : simulate so (pure a) s ≃ₚ
+  (pure (a, s) : oracle_comp spec' (A × so.S)) :=
+rfl
+
 
 end simulate
 
