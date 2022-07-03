@@ -198,40 +198,10 @@ begin
   simp, refl,
 end
 
--- TODO: clean this up a bunch
-/-- If the state of the oracle is independent of the query output,
-  then dropping the state at the end is equivalent to the original computation. -/
-lemma eval_distribution_simulate'_of_indep_state [spec.finite_range]
-  (state_f : so.S → Π (i : spec.ι), spec.domain i → spec.range i → so.S)
-  (h : ∀ (s : so.S) (i : spec.ι) (t : spec.domain i),
-    ⟦so.o i (t, s)⟧ = ⟦query i t >>= λ u, return (u, state_f s i t u)⟧) :
-  ⟦simulate' so oa s⟧ = ⟦oa⟧ :=
-begin
-  induction oa with A a A B oa ob hoa hob i t generalizing s,
-  {
-    simp [pmf.pure_map],
-  },
-  {
-    rw [bind'_eq_bind],
-    rw [eval_distribution_simulate'_bind],
-    rw [eval_distribution_bind],
-    simp at hob,
-    simp [hob],
-    refine trans (pmf.bind_ ⟦simulate so oa s⟧ (λ a, ⟦ob a⟧) prod.fst) _,
-    congr,
-    refine trans _ (hoa s),
-    rw eval_distribution_simulate',
-  },
-  {
-    -- TODO: this should be simpler after pmf lawful functor stuff
-    rw [eval_distribution_simulate'_query],
-    rw [h],
-    rw [eval_distribution_bind],
-    rw [pmf.bind_map],
-    simp [pmf.bind_map, functor.map, pmf.bind_pure],
-    refine pmf.bind_pure _,
-  }
-end
+@[simp]
+lemma eval_distribution_simulate'_equiv :
+  simulate' so (query i t) s ≃ₚ prod.fst <$> (so.o i (t, s)) :=
+sorry
 
 end simulate'
 

@@ -59,6 +59,10 @@ begin
   sorry
 end
 
+@[simp]
+lemma pmf.pure_map' {A B : Type} (a : A) (f : A → B) :
+  f <$> (pmf.pure a) = pmf.pure (f a) := sorry
+
 
 lemma vector.not_mem_of_length_zero {A : Type} (v : vector A 0) (a : A) :
   a ∉ v.to_list :=

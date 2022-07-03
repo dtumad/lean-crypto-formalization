@@ -4,17 +4,63 @@ import computational_monads.simulation_semantics.simulate
 open oracle_comp oracle_spec
 
 variables {A B : Type} {spec spec' : oracle_spec}
+  (oa : oracle_comp spec A)
+
+
+section tracking_oracle
+
+/-- Oracle where the query result is indepenent of the current oracle state,
+  although the new state may depend upon the previous state.
+  For example a logging oracle that just tracks the input and output of queries. -/
+def tracking_oracle {S : Type} (default_state : S)
+  (o : Π (i : spec.ι), spec.domain i → oracle_comp spec' (spec.range i))
+  (update_state : Π (s : S) (i : spec.ι), spec.domain i → spec.range i → S) :
+  simulation_oracle spec spec' :=
+{ S := S,
+  default_state := default_state,
+  o := λ i ⟨t, s⟩, do { u ← o i t, pure (u, update_state s i t u) } }
+
+notation `⟪` o `|` update_state `,` default_state `⟫` :=
+  tracking_oracle default_state o update_state
+
+variables {S : Type} (default_state : S)
+  (o : Π (i : spec.ι), spec.domain i → oracle_comp spec' (spec.range i))
+  (update_state : Π (s : S) (i : spec.ι), spec.domain i → spec.range i → S)
+
+@[simp]
+lemma default_state_tracking_oracle :
+  (⟪o | update_state, default_state⟫).default_state = default_state := rfl
+
+@[simp]
+lemma tracking_oracle_apply (i : spec.ι) (t : spec.domain i) (s : S) :
+  (⟪o | update_state, default_state⟫).o i (t, s) =
+    do { u ← o i t, pure (u, update_state s i t u) } := rfl
+
+lemma simulate'_tracking_oracle_query_equiv [spec.finite_range]
+  (s : S) : simulate' (⟪query | update_state, default_state⟫) oa s ≃ₚ oa :=
+begin
+  induction oa with A a A B oa ob hoa hob i t generalizing s,
+  { simp only [pure'_eq_pure, simulate'_pure, pure_map_equiv, eval_distribution_return] },
+  { rw [bind'_eq_bind, eval_distribution_simulate'_bind, eval_distribution_bind],
+    simp only [hob],
+    refine trans (pmf.bind_ ⟦simulate _ oa _⟧ (λ a, ⟦ob a⟧) prod.fst) _,
+    congr,
+    exact (eval_distribution_simulate' _ _ _).symm.trans (hoa s) },
+  { rw [eval_distribution_simulate'_equiv, tracking_oracle_apply,
+      fst_map_bind_mk_equiv, map_id_equiv (query i t)], } 
+end
+
+end tracking_oracle
 
 section stateless_oracle
 
 /-- Simulate a computation without making use of the internal state.
-  We use the `unit` type as the state in this case, so all possible states are equal -/
+  We use the `unit` type as the state in this case, so all possible states are equal.
+  Implemented as a `tracking_oracle` where the state isn't actually tracking anything -/
 def stateless_oracle (spec spec' : oracle_spec)
   (o : Π (i : spec.ι), spec.domain i → oracle_comp spec' (spec.range i)) :
   simulation_oracle spec spec' :=
-{ S := unit,
-  default_state := (),
-  o := λ i ⟨t, _⟩, o i t >>= λ u, return (u, ()) }
+⟪o | λ _ _ _ _, (), ()⟫
 
 notation `⟪` o `⟫` := stateless_oracle _ _ o
 
@@ -61,6 +107,16 @@ begin
 end
 
 end simulate
+
+section eval_distribution
+
+lemma simulate_stateless_oracle_query [spec.finite_range] :
+  ⟦simulate' ⟪query⟫ oa ()⟧ = ⟦oa⟧ :=
+begin
+  sorry
+end
+
+end eval_distribution
 
 end stateless_oracle
 

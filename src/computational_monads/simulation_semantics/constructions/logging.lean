@@ -11,13 +11,17 @@ variables {spec spec' spec'' : oracle_spec} {A B C : Type}
 
 section logging_oracle
 
-/-- Extend the state of a simulation oracle to also track the inputs and outputs of queries.
-  The actual oracle calls are forwarded directly to the original oracle. -/
-def logging_oracle (spec : oracle_spec) [spec.computable] : 
+def logging_oracle (spec : oracle_spec) [spec.computable] :
   simulation_oracle spec spec :=
-{ S := query_log spec,
-  default_state := query_log.init spec,
-  o := λ i ⟨t, log⟩, do { u ← query i t, return (u, log.log_query i t u) } }
+⟪ query | query_log.log_query, query_log.init spec ⟫
+
+-- /-- Extend the state of a simulation oracle to also track the inputs and outputs of queries.
+--   The actual oracle calls are forwarded directly to the original oracle. -/
+-- def logging_oracle (spec : oracle_spec) [spec.computable] : 
+--   simulation_oracle spec spec :=
+-- { S := query_log spec,
+--   default_state := query_log.init spec,
+--   o := λ i ⟨t, log⟩, do { u ← query i t, return (u, log.log_query i t u) } }
 
 @[simp]
 lemma default_state_logging_oracle (spec : oracle_spec) [spec.computable] :
@@ -53,17 +57,16 @@ section eval_distribution
 
 variable [spec.finite_range]
 
-/-- If you throw out then it looks like the original computation -/
+/-- If you throw outf final state then it looks like the original computation -/
 @[simp]
-lemma eval_distribution_simulate' (oa : oracle_comp spec A) :
-  ⟦ simulate' (logging_oracle spec) oa log ⟧ = ⟦ oa ⟧ :=
-eval_distribution_simulate'_of_indep_state _ _ _
-  (query_log.log_query) (λ s i t, rfl)
+lemma eval_distribution_simulate'_equiv (oa : oracle_comp spec A) :
+  simulate' (logging_oracle spec) oa log ≃ₚ oa :=
+simulate'_tracking_oracle_query_equiv oa (query_log.init spec) query_log.log_query log
 
 @[simp]
-lemma eval_distribution_default_simulate' (oa : oracle_comp spec A) :
-  ⟦ default_simulate' (logging_oracle spec) oa ⟧ = ⟦ oa ⟧ :=
-eval_distribution_simulate' (query_log.init spec) oa
+lemma eval_distribution_default_simulate'_equiv (oa : oracle_comp spec A) :
+  default_simulate' (logging_oracle spec) oa ≃ₚ oa :=
+eval_distribution_simulate'_equiv (query_log.init spec) oa
 
 end eval_distribution
 
