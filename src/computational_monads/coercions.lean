@@ -27,14 +27,16 @@ noncomputable example : oracle_comp uniform_selecting bool :=
 do {b ← coin, b' ←$ᵗ bool, return (band b b')}
 
 lemma coe_coin_uniform_select_def (oa : oracle_comp coin_oracle A) :
-  (oa : oracle_comp uniform_selecting A) = oa.simulate' ⟪λ _ _, $ᵗ bool⟫ () := rfl
+  (↑oa : oracle_comp uniform_selecting A) = oa.simulate' ⟪λ _ _, $ᵗ bool⟫ () := rfl
 
 @[simp]
-lemma eval_distribution_coe_coin_uniform_select :
+lemma coe_coin_uniform_select_equiv_coin :
   Π {A : Type} (oc : oracle_comp coin_oracle A),
-    ⟦(↑oc : oracle_comp uniform_selecting A)⟧ = ⟦oc⟧
+    (↑oc : oracle_comp uniform_selecting A) ≃ₚ oc
 | _ (pure' A a) := by simp [coe_coin_uniform_select_def, pmf.pure_map]
-| _ (bind' A B oa ob) := sorry
+| _ (bind' A B oa ob) := begin
+  rw [coe_coin_uniform_select_def],
+end
 | _ (query i t) := sorry
 
 end uniform_select

@@ -29,6 +29,16 @@ lemma map_id_equiv (oa : oracle_comp spec A) :
   (λ a, a) <$> oa ≃ₚ oa :=
 sorry
 
+lemma bind_equiv_of_equiv_first (oa oa' : oracle_comp spec A) (ob : A → oracle_comp spec B)
+  (h : oa ≃ₚ oa') : (oa >>= ob) ≃ₚ (oa' >>= ob) :=
+begin
+  sorry
+end
+
+lemma bind_equiv_of_equiv_second (oa : oracle_comp spec A) (ob ob' : A → oracle_comp spec B)
+  (h : ∀ a ∈ oa.support, (ob a) ≃ₚ (ob' a)) : (oa >>= ob) ≃ₚ (oa >>= ob') :=
+sorry
+
 @[simp]
 lemma fst_map_bind_mk_equiv (oa : oracle_comp spec A)
   (f : A → B) (g : A → C) :

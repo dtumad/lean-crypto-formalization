@@ -36,6 +36,7 @@ lemma tracking_oracle_apply (i : spec.ι) (t : spec.domain i) (s : S) :
   (⟪o | update_state, default_state⟫).o i (t, s) =
     do { u ← o i t, pure (u, update_state s i t u) } := rfl
 
+-- TODO: should be able to find some generalization for lemmas looking like this
 lemma simulate'_tracking_oracle_query_equiv [spec.finite_range]
   (s : S) : simulate' (⟪query | update_state, default_state⟫) oa s ≃ₚ oa :=
 begin
@@ -49,6 +50,21 @@ begin
   { rw [eval_distribution_simulate'_equiv, tracking_oracle_apply,
       fst_map_bind_mk_equiv, map_id_equiv (query i t)], } 
 end
+
+-- lemma simulate'_tracking_oracle_equiv_of_oracle_equiv [spec'.finite_range]
+--   (o o' : Π (i : spec.ι), spec.domain i → oracle_comp spec' (spec.range i)) (s : S)
+--   (h : ∀ (i : spec.ι) (t : spec.domain i), o i t ≃ₚ o' i t) :
+--   simulate' ⟪o | update_state, default_state⟫ oa s
+--     ≃ₚ simulate' ⟪o' | update_state, default_state⟫ oa s :=
+-- begin 
+--   induction oa with A a A B oa ob hoa hob i t generalizing s,
+--   {
+--     simp,
+--   },
+--   {
+--     simp [hoa],
+--   }
+-- end
 
 end tracking_oracle
 
@@ -110,10 +126,27 @@ end simulate
 
 section eval_distribution
 
-lemma simulate_stateless_oracle_query [spec.finite_range] :
-  ⟦simulate' ⟪query⟫ oa ()⟧ = ⟦oa⟧ :=
+lemma simulate'_stateless_oracle_query_equiv [spec.finite_range] :
+  simulate' ⟪query⟫ oa () ≃ₚ oa :=
+simulate'_tracking_oracle_query_equiv _ _ _ _
+
+lemma simulate'_stateless_oracle_query_equiv_of_equiv [spec.finite_range] [spec'.finite_range] (s : unit)
+  (ho : ∀ (i : spec.ι) (t : spec.domain i), o i t ≃ₚ query i t) :
+  simulate' ⟪o⟫ oa s ≃ₚ oa :=
 begin
-  sorry
+  -- refine trans _ (simulate'_stateless_oracle_query_equiv oa),
+  induction oa with A a A B oa ob hoa hob i t generalizing s,
+  { simp only [pure'_eq_pure, simulate'_pure, pure_map_equiv, eval_distribution_return] },
+  {
+    rw [bind'_eq_bind, simulate'_bind_equiv, eval_distribution_bind, eval_distribution_bind],
+    simp only [hob],
+    refine trans (pmf.bind_ ⟦simulate ⟪o⟫ oa _⟧ (λ a, ⟦ob a⟧) prod.fst) _,
+    congr,
+    exact (eval_distribution_simulate' _ _ _).symm.trans (hoa s),
+  },
+  { rw [simulate'_query, stateless_oracle_apply, fst_map_bind_mk_equiv,
+      map_id_equiv],
+    exact ho i t }
 end
 
 end eval_distribution
