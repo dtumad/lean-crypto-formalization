@@ -3,9 +3,10 @@ import computational_monads.simulation_semantics.simulate
 
 open oracle_comp oracle_spec
 
-variables {A B : Type} {spec spec' : oracle_spec}
+variables {A B : Type} {spec spec' spec'' : oracle_spec}
   (oa : oracle_comp spec A)
 
+-- TODO: use namespaces to simplify the lemma names
 
 section tracking_oracle
 
@@ -42,29 +43,15 @@ lemma simulate'_tracking_oracle_query_equiv [spec.finite_range]
 begin
   induction oa with A a A B oa ob hoa hob i t generalizing s,
   { simp only [pure'_eq_pure, simulate'_pure, pure_map_equiv, eval_distribution_return] },
-  { rw [bind'_eq_bind, eval_distribution_simulate'_bind, eval_distribution_bind],
-    simp only [hob],
-    refine trans (pmf.bind_ ⟦simulate _ oa _⟧ (λ a, ⟦ob a⟧) prod.fst) _,
-    congr,
-    exact (eval_distribution_simulate' _ _ _).symm.trans (hoa s) },
+  { let so := ⟪query | update_state, default_state⟫,
+    calc simulate' so (oa >>= ob) s
+      ≃ₚ simulate so oa s >>= λ x, simulate' so (ob x.1) x.2 : simulate'_bind_equiv _ oa ob _
+      ... ≃ₚ simulate so oa s >>= λ x, (ob x.1) : bind_equiv_of_equiv_second _ (λ a _, hob a.1 _)
+      ... ≃ₚ simulate' so oa s >>= ob : symm (bind_map_equiv _ prod.fst ob)
+      ... ≃ₚ oa >>= ob : bind_equiv_of_equiv_first ob (hoa _) },
   { rw [eval_distribution_simulate'_equiv, tracking_oracle_apply,
       fst_map_bind_mk_equiv, map_id_equiv (query i t)], } 
 end
-
--- lemma simulate'_tracking_oracle_equiv_of_oracle_equiv [spec'.finite_range]
---   (o o' : Π (i : spec.ι), spec.domain i → oracle_comp spec' (spec.range i)) (s : S)
---   (h : ∀ (i : spec.ι) (t : spec.domain i), o i t ≃ₚ o' i t) :
---   simulate' ⟪o | update_state, default_state⟫ oa s
---     ≃ₚ simulate' ⟪o' | update_state, default_state⟫ oa s :=
--- begin 
---   induction oa with A a A B oa ob hoa hob i t generalizing s,
---   {
---     simp,
---   },
---   {
---     simp [hoa],
---   }
--- end
 
 end tracking_oracle
 
@@ -80,7 +67,8 @@ def stateless_oracle (spec spec' : oracle_spec)
 
 notation `⟪` o `⟫` := stateless_oracle _ _ o
 
-variable (o : Π (i : spec.ι), spec.domain i → oracle_comp spec' (spec.range i))
+variables (o : Π (i : spec.ι), spec.domain i → oracle_comp spec' (spec.range i))
+  (o' : Π (i : spec.ι), spec.domain i → oracle_comp spec'' (spec.range i))
 
 @[simp]
 lemma S_stateless_oracle :
@@ -126,28 +114,44 @@ end simulate
 
 section eval_distribution
 
-lemma simulate'_stateless_oracle_query_equiv [spec.finite_range] :
-  simulate' ⟪query⟫ oa () ≃ₚ oa :=
+lemma simulate_stateless_oracle_equiv_simulate' [spec'.finite_range] (s : unit) :
+  simulate ⟪o⟫ oa s ≃ₚ (simulate' ⟪o⟫ oa s >>= λ a, pure (a, ())) :=
+calc simulate ⟪o⟫ oa s ≃ₚ simulate ⟪o⟫ oa s >>= pure : symm (bind_pure_equiv _)
+  ... ≃ₚ simulate ⟪o⟫ oa s >>= λ x, pure (x.1, x.2) : by simp only [prod.mk.eta]
+  ... ≃ₚ simulate ⟪o⟫ oa s >>= λ x, pure (x.1, ()) :
+    bind_equiv_of_equiv_second _ (λ x _, by simp [punit_eq x.snd ()])
+  ... ≃ₚ simulate' ⟪o⟫ oa s >>= λ a, pure (a, ()) : by rw [simulate', bind_map_equiv]
+
+lemma simulate'_stateless_oracle_equiv_of_oracle_equiv [spec'.finite_range] [spec''.finite_range] 
+  {o : Π (i : spec.ι), spec.domain i → oracle_comp spec' (spec.range i)}
+  {o' : Π (i : spec.ι), spec.domain i → oracle_comp spec'' (spec.range i)}
+  (s : unit) (h : ∀ (i : spec.ι) (t : spec.domain i), o i t ≃ₚ o' i t) :
+  simulate' ⟪o⟫ oa s ≃ₚ simulate' ⟪o'⟫ oa s :=
+begin
+  induction oa with A a A B oa ob hoa hob i t generalizing s,
+  { simp only [pure'_eq_pure, simulate'_pure, pure_map_equiv, eval_distribution_return] },
+  { calc simulate' ⟪o⟫ (oa >>= ob) s
+      ≃ₚ simulate ⟪o⟫ oa s >>= λ x, simulate' ⟪o⟫ (ob x.1) x.2 : simulate'_bind_equiv ⟪o⟫ oa ob _
+      ... ≃ₚ simulate ⟪o'⟫ oa s >>= λ x, simulate' ⟪o'⟫ (ob x.1) x.2 : begin
+        simp [simulate_stateless_oracle_equiv_simulate', hoa],
+        congr,
+        simpa [hob],
+      end
+      ... ≃ₚ simulate' ⟪o'⟫ (oa >>= ob) s : symm (simulate'_bind_equiv ⟪o'⟫ oa ob _) },
+  { simp only [simulate'_query, stateless_oracle_apply, fst_map_bind_mk_equiv, map_id_equiv],
+    exact h i t, }
+end 
+
+lemma simulate'_stateless_oracle_query_equiv [spec.finite_range] (s : unit) :
+  simulate' ⟪query⟫ oa s ≃ₚ oa :=
 simulate'_tracking_oracle_query_equiv _ _ _ _
 
 lemma simulate'_stateless_oracle_query_equiv_of_equiv [spec.finite_range] [spec'.finite_range] (s : unit)
   (ho : ∀ (i : spec.ι) (t : spec.domain i), o i t ≃ₚ query i t) :
   simulate' ⟪o⟫ oa s ≃ₚ oa :=
-begin
-  -- refine trans _ (simulate'_stateless_oracle_query_equiv oa),
-  induction oa with A a A B oa ob hoa hob i t generalizing s,
-  { simp only [pure'_eq_pure, simulate'_pure, pure_map_equiv, eval_distribution_return] },
-  {
-    rw [bind'_eq_bind, simulate'_bind_equiv, eval_distribution_bind, eval_distribution_bind],
-    simp only [hob],
-    refine trans (pmf.bind_ ⟦simulate ⟪o⟫ oa _⟧ (λ a, ⟦ob a⟧) prod.fst) _,
-    congr,
-    exact (eval_distribution_simulate' _ _ _).symm.trans (hoa s),
-  },
-  { rw [simulate'_query, stateless_oracle_apply, fst_map_bind_mk_equiv,
-      map_id_equiv],
-    exact ho i t }
-end
+calc simulate' ⟪o⟫ oa s ≃ₚ simulate' ⟪query⟫ oa s
+    : simulate'_stateless_oracle_equiv_of_oracle_equiv oa s ho
+  ... ≃ₚ oa : simulate'_stateless_oracle_query_equiv oa s
 
 end eval_distribution
 
@@ -169,6 +173,20 @@ lemma identity_oracle_apply (i : spec.ι) (t : spec.domain i) (s : unit) :
   (identity_oracle spec).o i (t, s) = query i t >>= λ u, return (u, ()) := rfl
 
 section simulate
+
+
+@[simp]
+lemma eval_distribution_simulate_identity_oracle [spec.finite_range] 
+  (oa : oracle_comp spec A) (s : unit) :
+  ⟦simulate idₛ oa s⟧ = (λ a, (a, ())) <$> ⟦oa⟧ :=
+begin
+  induction oa,
+  {
+    simp,
+    sorry
+  },
+  sorry, sorry
+end
 
 @[simp]
 lemma support_simulate_identity_oracle_pure (a : A) (s : unit) :
@@ -202,19 +220,6 @@ lemma mem_support_simulate_identity_oracle_iff (oa : oracle_comp spec A) (s : un
 begin
   simp,
   refine iff.rfl,
-end
-
-@[simp]
-lemma eval_distribution_simulate_identity_oracle [spec.finite_range] 
-  (oa : oracle_comp spec A) (s : unit) :
-  ⟦simulate idₛ oa s⟧ = (λ a, (a, ())) <$> ⟦oa⟧ :=
-begin
-  induction oa,
-  {
-    simp,
-    sorry
-  },
-  sorry, sorry
 end
 
 end simulate

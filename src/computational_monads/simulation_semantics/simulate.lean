@@ -201,25 +201,6 @@ begin
   exact pmf.bind_map _ _ _,
 end
 
-lemma simulate'_equiv_of_oracle_equiv (so so' : simulation_oracle spec spec') (s : so.S) (s' : so'.S)
-  (h : ∀ (s : so.S) (s' : so'.S) (i : spec.ι) (t : spec.domain i),
-    prod.fst <$> so.o i (t, s) ≃ₚ prod.fst <$> so'.o i (t, s')) :
-  simulate' so oa s ≃ₚ simulate' so' oa s' :=
-begin
-  induction oa with A a A B oa ob hoa hob i t generalizing s s',
-  { simp },
-  {
-    simp only [bind'_eq_bind, simulate'_bind_equiv],
-    sorry,
-  },
-  { exact h s s' i t }
-end
-
--- lemma simulate'_bind_equiv_of_equiv_second [spec.finite_range]
---   (hob : ∀ a ∈ oa.support, ob a ≃ₚ ob' a) :
---   simulate' so (oa >>= ob) s ≃ₚ simulate' so oa s >>= ob :=
--- sorry
-
 @[simp]
 lemma eval_distribution_simulate'_query :
   ⟦simulate' so (query i t) s⟧ = prod.fst <$> ⟦so.o i (t, s)⟧ :=
