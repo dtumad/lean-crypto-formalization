@@ -9,6 +9,8 @@ variable [spec.finite_range]
 -- Notation for two computations that are equivalent under `eval_distribution`
 notation oa `≃ₚ` oa' := ⟦oa⟧ = ⟦oa'⟧
 
+section bind
+
 @[simp]
 lemma pure_bind_equiv (a : A) (ob : A → oracle_comp spec B) :
   (pure a >>= ob) ≃ₚ (ob a) :=
@@ -24,16 +26,6 @@ lemma bind_map_equiv (oa : oracle_comp spec A) (f : A → B) (ob : B → oracle_
   (f <$> oa) >>= ob ≃ₚ oa >>= (ob ∘ f) :=
 sorry
 
-@[simp]
-lemma pure_map_equiv (a : A) (f : A → B) :
-  f <$> (pure a : oracle_comp spec A) ≃ₚ (pure (f a) : oracle_comp spec B) :=
-trans (eval_distribution_map (pure a) f) (pmf.pure_map f a)
-
-@[simp]
-lemma map_id_equiv (oa : oracle_comp spec A) :
-  (λ a, a) <$> oa ≃ₚ oa :=
-sorry
-
 lemma bind_equiv_of_equiv_first {oa oa' : oracle_comp spec A} (ob : A → oracle_comp spec B)
   (h : oa ≃ₚ oa') : (oa >>= ob) ≃ₚ (oa' >>= ob) :=
 sorry
@@ -41,6 +33,29 @@ sorry
 lemma bind_equiv_of_equiv_second (oa : oracle_comp spec A) {ob ob' : A → oracle_comp spec B}
   (h : ∀ a ∈ oa.support, (ob a) ≃ₚ (ob' a)) : (oa >>= ob) ≃ₚ (oa >>= ob') :=
 sorry
+
+end bind
+
+section map
+
+@[simp]
+lemma pure_map_equiv (a : A) (f : A → B) :
+  f <$> (pure a : oracle_comp spec A) ≃ₚ (pure (f a) : oracle_comp spec B) :=
+trans (eval_distribution_map (pure a) f) (pmf.pure_map f a)
+
+@[simp]
+lemma map_id_equiv (oa : oracle_comp spec A) :
+  id <$> oa ≃ₚ oa :=
+sorry
+
+lemma map_equiv_of_equiv [spec'.finite_range] (oa : oracle_comp spec A) (oa' : oracle_comp spec' A)
+  (f : A → B) (h : oa ≃ₚ oa') :
+  f <$> oa ≃ₚ f <$> oa' :=
+sorry
+
+end map
+
+section prod
 
 @[simp]
 lemma fst_map_bind_mk_equiv (oa : oracle_comp spec A)
@@ -55,3 +70,5 @@ lemma snd_map_bind_mk_equiv (oa : oracle_comp spec A)
   (prod.snd <$> (oa >>= λ a, pure (f a, g a)) : oracle_comp spec C) ≃ₚ
     g <$> oa :=
 sorry  
+
+end prod

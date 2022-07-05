@@ -2,8 +2,7 @@ import computational_monads.simulation_semantics.simulation_oracles
 import computational_monads.constructions.uniform_select
 import computational_monads.asymptotics.queries_at_most
 import computational_monads.distribution_semantics.prob_event
-import computational_monads.simulation_semantics.constructions.logging
-
+import computational_monads.simulation_semantics.constructions.logging.caching_oracle
 
 noncomputable theory
 

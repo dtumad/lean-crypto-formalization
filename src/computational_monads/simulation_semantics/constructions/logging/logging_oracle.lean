@@ -1,7 +1,7 @@
 import computational_monads.constructions.uniform_select
 import computational_monads.simulation_semantics.simulate
 import computational_monads.simulation_semantics.simulation_oracles
-import computational_monads.simulation_semantics.constructions.query_log
+import computational_monads.simulation_semantics.constructions.logging.query_log
 import computational_monads.distribution_semantics.equiv
 
 open oracle_comp oracle_spec
@@ -130,34 +130,3 @@ lemma seeded_oracle_log_eq_log (spec : oracle_spec) [spec.computable] [spec.fini
 sorry
 
 end seeded_oracle
-
-section caching_oracle
-
-def caching_oracle (spec : oracle_spec) [spec.computable] :
-  simulation_oracle spec spec :=
-{ S := query_log spec,
-  default_state := query_log.init spec,
-  o := λ i ⟨t, log⟩, match log.lookup i t with
-  | (some u) := return (u, log) -- Return the cached value if it already exists
-  | none := do { u ← query i t, return (u, log.log_query i t u) }
-  end }
-
-@[simp]
-lemma default_state_caching_oracle (spec : oracle_spec) [spec.computable] :
-  (caching_oracle spec).default_state = query_log.init spec := rfl
-
-end caching_oracle
-
-section random_oracle
-
-/-- Oracle that responds uniformly at random to any new queries,
-  but returns the same result to subsequent oracle queries -/
-noncomputable def random_oracle (spec : oracle_spec) [spec.computable] [spec.finite_range] :
-  simulation_oracle spec uniform_selecting :=
-(uniform_oracle spec) ∘ₛ (caching_oracle spec)
-
-@[simp]
-lemma default_state_random_oracle (spec : oracle_spec) [spec.computable] [spec.finite_range] :
-  (random_oracle spec).default_state = (query_log.init spec, ()) := rfl
-
-end random_oracle

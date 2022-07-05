@@ -41,7 +41,8 @@ lemma coe_coin_uniform_select_equiv_coin :
   exact eval_distribution_uniform_select_fintype bool,
 end
 | _ (query i t) := begin
-  simp [coe_coin_uniform_select_def],
+  erw [coe_coin_uniform_select_def, simulate'_query_equiv, stateless_oracle_apply,
+    fst_map_bind_mk_equiv, map_id_equiv],
   exact eval_distribution_uniform_select_fintype bool,
 end
 

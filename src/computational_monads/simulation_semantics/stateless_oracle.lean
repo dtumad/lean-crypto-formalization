@@ -49,7 +49,7 @@ begin
       ... ≃ₚ simulate so oa s >>= λ x, (ob x.1) : bind_equiv_of_equiv_second _ (λ a _, hob a.1 _)
       ... ≃ₚ simulate' so oa s >>= ob : symm (bind_map_equiv _ prod.fst ob)
       ... ≃ₚ oa >>= ob : bind_equiv_of_equiv_first ob (hoa _) },
-  { rw [eval_distribution_simulate'_equiv, tracking_oracle_apply,
+  { erw [simulate'_query_equiv, tracking_oracle_apply,
       fst_map_bind_mk_equiv, map_id_equiv (query i t)], } 
 end
 
@@ -138,8 +138,8 @@ begin
         simpa [hob],
       end
       ... ≃ₚ simulate' ⟪o'⟫ (oa >>= ob) s : symm (simulate'_bind_equiv ⟪o'⟫ oa ob _) },
-  { simp only [simulate'_query, stateless_oracle_apply, fst_map_bind_mk_equiv, map_id_equiv],
-    exact h i t, }
+  { simp_rw [simulate'_query_equiv, stateless_oracle_apply, fst_map_bind_mk_equiv],
+    exact map_equiv_of_equiv _ _ id (h i t) }
 end 
 
 lemma simulate'_stateless_oracle_query_equiv [spec.finite_range] (s : unit) :
