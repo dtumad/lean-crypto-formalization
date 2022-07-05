@@ -1,4 +1,5 @@
-import computational_monads.simulation_semantics.simulation_oracles
+import computational_monads.simulation_semantics.oracle_append
+import computational_monads.simulation_semantics.oracle_compose
 import computational_monads.constructions.uniform_select
 import computational_monads.asymptotics.queries_at_most
 import computational_monads.distribution_semantics.prob_event

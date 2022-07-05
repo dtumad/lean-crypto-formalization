@@ -1,4 +1,5 @@
 import computational_monads.simulation_semantics.constructions.logging.logging_oracle
+import computational_monads.simulation_semantics.oracle_compose
 
 open oracle_comp oracle_spec
 

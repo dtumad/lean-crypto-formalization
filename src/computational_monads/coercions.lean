@@ -1,5 +1,5 @@
 import computational_monads.constructions.uniform_select
-import computational_monads.simulation_semantics.simulation_oracles
+import computational_monads.simulation_semantics.oracle_append
 
 /-!
 # Coercions Between Computations With Different Oracle Access

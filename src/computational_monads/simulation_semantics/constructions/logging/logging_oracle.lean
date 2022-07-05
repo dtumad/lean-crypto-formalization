@@ -1,6 +1,6 @@
 import computational_monads.constructions.uniform_select
 import computational_monads.simulation_semantics.simulate
-import computational_monads.simulation_semantics.simulation_oracles
+import computational_monads.simulation_semantics.oracle_append
 import computational_monads.simulation_semantics.constructions.logging.query_log
 import computational_monads.distribution_semantics.equiv
 
@@ -14,14 +14,6 @@ section logging_oracle
 def logging_oracle (spec : oracle_spec) [spec.computable] :
   simulation_oracle spec spec :=
 ⟪ query | query_log.log_query, query_log.init spec ⟫
-
--- /-- Extend the state of a simulation oracle to also track the inputs and outputs of queries.
---   The actual oracle calls are forwarded directly to the original oracle. -/
--- def logging_oracle (spec : oracle_spec) [spec.computable] : 
---   simulation_oracle spec spec :=
--- { S := query_log spec,
---   default_state := query_log.init spec,
---   o := λ i ⟨t, log⟩, do { u ← query i t, return (u, log.log_query i t u) } }
 
 @[simp]
 lemma default_state_logging_oracle (spec : oracle_spec) [spec.computable] :
