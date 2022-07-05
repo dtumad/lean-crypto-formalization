@@ -24,10 +24,6 @@ lemma bind_map_equiv (oa : oracle_comp spec A) (f : A → B) (ob : B → oracle_
   (f <$> oa) >>= ob ≃ₚ oa >>= (ob ∘ f) :=
 sorry
 
--- @[simp]
--- lemma map_bind_equiv (oa : oracle_comp spec A) (ob : A → oracle_comp spec B) (f : B → C) :
---   f <$> (oa >>= ob) ≃ₚ oa >>= (f <$> ob)
-
 @[simp]
 lemma pure_map_equiv (a : A) (f : A → B) :
   f <$> (pure a : oracle_comp spec A) ≃ₚ (pure (f a) : oracle_comp spec B) :=
@@ -40,9 +36,7 @@ sorry
 
 lemma bind_equiv_of_equiv_first {oa oa' : oracle_comp spec A} (ob : A → oracle_comp spec B)
   (h : oa ≃ₚ oa') : (oa >>= ob) ≃ₚ (oa' >>= ob) :=
-begin
-  sorry
-end
+sorry
 
 lemma bind_equiv_of_equiv_second (oa : oracle_comp spec A) {ob ob' : A → oracle_comp spec B}
   (h : ∀ a ∈ oa.support, (ob a) ≃ₚ (ob' a)) : (oa >>= ob) ≃ₚ (oa >>= ob') :=

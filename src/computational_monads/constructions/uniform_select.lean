@@ -123,7 +123,8 @@ variables (bag : finset A) (h : bag.nonempty)
 @[simp]
 lemma support_uniform_select_finset :
   support ($ˢ bag h) = ↑bag :=
-sorry
+by simp only [uniform_select_finset, support_uniform_select_list,
+  finset.mem_to_list, finset.set_of_mem]
 
 @[simp]
 lemma eval_distribution_uniform_select_finset :
@@ -147,7 +148,8 @@ variables (A) [fintype A] [nonempty A]
 @[simp]
 lemma support_uniform_select_fintype :
   support ($ᵗ A) = ⊤ :=
-sorry
+by simpa only [uniform_select_fintype, support_uniform_select_finset,
+  set.top_eq_univ, finset.coe_eq_univ]
 
 @[simp]
 lemma eval_distribution_uniform_select_fintype :

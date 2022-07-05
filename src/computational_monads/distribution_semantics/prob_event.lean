@@ -8,28 +8,24 @@ open_locale big_operators nnreal ennreal classical
 variables {A B C : Type} {spec : oracle_spec} [h' : spec.finite_range]
 include h'
 
-noncomputable def eval_prob (oa : oracle_comp spec A) (event : set A) :
+noncomputable def prob_event (oa : oracle_comp spec A) (event : set A) :
   ℝ≥0∞ := ⟦oa⟧.to_outer_measure event
 
-notation `⟦` event `|` oa `⟧` := eval_prob oa event
+notation `⟦` event `|` oa `⟧` := prob_event oa event
 
 /-- Probability that the result of a computation is greater than `5` -/
 noncomputable example (oa : oracle_comp coin_oracle (fin 10)) :
   ℝ≥0∞ := ⟦ (>) 5 | oa ⟧
 
-lemma eval_prob_def (oa : oracle_comp spec A) (event : set A) :
-  ⟦ event | oa ⟧ = ⟦oa⟧.to_outer_measure event :=
-rfl
-
 @[simp]
 lemma eval_prob_eq_zero_iff_disjoint_support (oa : oracle_comp spec A) (event : set A) :
   ⟦ event | oa ⟧ = 0 ↔ disjoint oa.support event :=
-by simp only [eval_prob_def, pmf.to_outer_measure_apply_eq_zero_iff, support_eval_distribution]
+by simp only [prob_event, pmf.to_outer_measure_apply_eq_zero_iff, support_eval_distribution]
 
 @[simp]
 lemma eval_prob_eq_one_iff_support_subset (oa : oracle_comp spec A) (event : set A) :
   ⟦ event | oa ⟧ = 1 ↔ oa.support ⊆ event :=
-by simp only [eval_prob_def, pmf.to_outer_measure_apply_eq_one_iff, support_eval_distribution]
+by simp only [prob_event, pmf.to_outer_measure_apply_eq_one_iff, support_eval_distribution]
 
 @[simp]
 lemma eval_prob_return (a : A) (event : set A) :
@@ -48,7 +44,7 @@ by simp only [ha, eval_prob_return, if_false]
 lemma eval_prob_bind (oa : oracle_comp spec A) (ob : A → oracle_comp spec B) (event : set B) :
   ⟦ event | oa >>= ob ⟧ = ∑' (a : A), ⟦oa⟧ a * ⟦ event | ob a ⟧ :=
 begin
-  simp only [eval_prob, eval_distribution_bind],
+  simp only [prob_event, eval_distribution_bind],
   refine pmf.to_outer_measure_bind_apply ⟦oa⟧ (λ a, ⟦ob a⟧) event,
 end
 

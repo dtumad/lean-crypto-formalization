@@ -64,7 +64,6 @@ The security properties `complete`, `anonomyous`, and `unforgeable` are defined 
 --     ∃ (ks : vector (PK × SK) n) (hks : ∀ (i : fin n), ks.nth i ∈ (rs.gen ()).alg.support)
 --       (σ : S n) (hσ : σ ∈ (rs.sign n ⟨⟨vector.map prod.fst ks, i⟩, (vector.nth ks i).2, m⟩).alg.support),
 --       b = rs.verify n ⟨vector.map prod.fst ks, m, σ⟩ :=
--- sorry
 -- -- by simp [completeness_experiment]
 
 -- /-- A ring signature is complete if for any list if completeness experiment always succeeds `-/
