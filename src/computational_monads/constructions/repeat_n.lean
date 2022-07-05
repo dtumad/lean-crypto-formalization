@@ -8,25 +8,21 @@ namespace oracle_comp
 open oracle_spec
 
 variables {A B : Type} {spec : oracle_spec}
-  (oa : oracle_comp spec A) (n : ℕ)
+  (oa : oracle_comp spec A) (n : ℕ) (a : A) (as : vector A n)
 
 def repeat_n (oa : oracle_comp spec A) : Π (n : ℕ), oracle_comp spec (vector A n)
 | 0 := return vector.nil
 | (n + 1) := do { a ← oa, as ← repeat_n n, return (a ::ᵥ as) }
 
 @[simp]
-lemma repeat_n_apply_zero :
-  repeat_n oa 0 = return vector.nil :=
-rfl
+lemma repeat_n_apply_zero : repeat_n oa 0 = return vector.nil := rfl
 
 @[simp]
-lemma repeat_n_apply_succ :
-  repeat_n oa (n + 1) = do { a ← oa, as ← repeat_n oa n, return (a ::ᵥ as) } :=
-rfl
+lemma repeat_n_apply_succ : repeat_n oa (n + 1) =
+  do { a ← oa, as ← repeat_n oa n, return (a ::ᵥ as) } := rfl
 
 @[simp]
-lemma support_repeat_n (oa : oracle_comp spec A) :
-  Π n, support (repeat_n oa n) = { v | ∀ a ∈ v.to_list, a ∈ oa.support }
+lemma support_repeat_n : Π n, support (repeat_n oa n) = { v | ∀ a ∈ v.to_list, a ∈ oa.support }
 | 0 := begin
   ext v,
   simp only [repeat_n_apply_zero, support_pure, set.mem_singleton_iff,
@@ -56,17 +52,37 @@ end
   }
 end
 
+@[simp]
+lemma mem_support_repeat_n_iff : as ∈ (repeat_n oa n).support ↔
+  ∀ a ∈ as.to_list, a ∈ oa.support := by simp
+
+@[simp]
+lemma support_repeat_n_zero : (repeat_n oa 0).support = ⊤ :=
+set.ext (λ v, by simp)
+
+@[simp]
+lemma mem_support_repeat_n_zero (as : vector A 0) :
+  as ∈ (repeat_n oa 0).support := by simp
+
+@[simp]
+lemma support_repeat_n_succ : (repeat_n oa (n + 1)).support =
+  {v | v.head ∈ oa.support ∧ v.tail ∈ (repeat_n oa n).support} :=
+begin
+  sorry
+end
+
+@[simp]
+lemma mem_support_repeat_n_succ_iff (oa : oracle_comp spec A) (v : vector A (n + 1)) :
+  v ∈ (repeat_n oa (n + 1)).support ↔ v.head ∈ oa.support ∧ v.tail ∈ (repeat_n oa n).support :=
+by { rw [support_repeat_n_succ], exact iff.rfl }
+
 lemma mem_support_of_mem_of_support_repeat_n (oa : oracle_comp spec A) (n : ℕ)
   (v : vector A n) (hv : v ∈ (repeat_n oa n).support) (a : A) (ha : a ∈ v.to_list) :
   a ∈ oa.support :=
-begin
-  rw support_repeat_n at hv,
-  exact hv a ha,
-end
+by { rw support_repeat_n at hv, exact hv a ha } 
 
 open_locale classical
 
-set_option trace.simp_lemmas true
 /-- Probability of a vector is the product of probabilities of each element. -/
 @[simp]
 lemma eval_distribution_repeat_n_apply [spec.finite_range]
