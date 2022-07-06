@@ -62,14 +62,18 @@ begin
         rw this },
       { split_ifs; simp } },
     { have : (a :: as).to_finset \ {a} = as.to_finset := begin
-
-    end,
+        rw [list.to_finset_cons, finset.insert_sdiff_of_mem _ (finset.mem_singleton_self a)],
+        rw [finset.sdiff_singleton_not_mem_eq_self as.to_finset ha],
+      end,
       simp_rw [this],
       congr' 1,
       { refine finset.sum_congr rfl (λ x hx, _),
-        have : list.count x (a :: as) = list.count x as := sorry,
+        have : list.count x (a :: as) = list.count x as :=
+          list.count_cons_of_ne (λ hxa, ha (hxa ▸ hx)) as,
         rw this },
-      { have : list.count a (a :: as) = 1 := sorry,
+      { have : a ∉ as := ha ∘ (list.mem_to_finset.2),
+        have : list.count a (a :: as) = 1 :=
+          by simp [list.count_cons, list.count_eq_zero_of_not_mem this],
         simp [this] } } }
 end
 
@@ -105,9 +109,8 @@ lemma to_measure_uniform_of_vector_apply [measurable_space α] (ht : measurable_
 
 end measure
 
-
-
 end uniform_of_vector
+
 end pmf
 
 lemma tsum_ite_eq_vector_nth_eq_count {n : ℕ} (v : vector α n) (a : α) :
