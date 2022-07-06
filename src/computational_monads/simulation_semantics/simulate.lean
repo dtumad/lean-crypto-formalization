@@ -190,7 +190,7 @@ by simp [pmf.pure_map]
 
 lemma eval_distribution_simulate'_bind :
   ⟦simulate' so (oa >>= ob) s⟧ = ⟦simulate so oa s⟧ >>= λ x, ⟦simulate' so (ob x.1) x.2⟧ :=
-by {simp [simulate'], exact pmf.bind_map ⟦simulate so oa s⟧ _ prod.fst}
+by simp [simulate']
 
 lemma eval_distribution_simulate'_query :
   ⟦simulate' so (query i t) s⟧ = prod.fst <$> ⟦so.o i (t, s)⟧ :=
@@ -206,7 +206,7 @@ lemma simulate'_pure_equiv : simulate' so (pure a) s ≃ₚ
 @[simp]
 lemma simulate'_bind_equiv : simulate' so (oa >>= ob) s ≃ₚ
   simulate so oa s >>= λ x, simulate' so (ob x.1) x.2 :=
-by { simp [simulate'], exact pmf.bind_map _ _ _ }
+by simp [simulate']
 
 @[simp]
 lemma simulate'_query_equiv : simulate' so (query i t) s ≃ₚ

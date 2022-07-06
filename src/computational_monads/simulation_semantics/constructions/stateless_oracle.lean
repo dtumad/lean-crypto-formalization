@@ -46,7 +46,7 @@ begin
   { let so := ⟪query | update_state, default_state⟫,
     calc simulate' so (oa >>= ob) s
       ≃ₚ simulate so oa s >>= λ x, simulate' so (ob x.1) x.2 : simulate'_bind_equiv _ oa ob _
-      ... ≃ₚ simulate so oa s >>= λ x, (ob x.1) : bind_equiv_of_equiv_second _ (λ a _, hob a.1 _)
+      ... ≃ₚ simulate so oa s >>= λ x, (ob x.1) : bind_equiv_of_equiv_second _ (by simp [hob])
       ... ≃ₚ simulate' so oa s >>= ob : symm (bind_map_equiv _ prod.fst ob)
       ... ≃ₚ oa >>= ob : bind_equiv_of_equiv_first ob (hoa _) },
   { erw [simulate'_query_equiv, tracking_oracle_apply,
@@ -118,8 +118,8 @@ lemma simulate_stateless_oracle_equiv_simulate' [spec'.finite_range] (s : unit) 
   simulate ⟪o⟫ oa s ≃ₚ (simulate' ⟪o⟫ oa s >>= λ a, pure (a, ())) :=
 calc simulate ⟪o⟫ oa s ≃ₚ simulate ⟪o⟫ oa s >>= pure : symm (bind_pure_equiv _)
   ... ≃ₚ simulate ⟪o⟫ oa s >>= λ x, pure (x.1, x.2) : by simp only [prod.mk.eta]
-  ... ≃ₚ simulate ⟪o⟫ oa s >>= λ x, pure (x.1, ()) :
-    bind_equiv_of_equiv_second _ (λ x _, by simp [punit_eq x.snd ()])
+  ... ≃ₚ simulate ⟪o⟫ oa s >>= λ x, pure (x.1, ()) : 
+    bind_equiv_of_equiv_second _ (λ x, by simp [punit_eq x.snd ()])
   ... ≃ₚ simulate' ⟪o⟫ oa s >>= λ a, pure (a, ()) : by rw [simulate', bind_map_equiv]
 
 lemma simulate'_stateless_oracle_equiv_of_oracle_equiv [spec'.finite_range] [spec''.finite_range] 
