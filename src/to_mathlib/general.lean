@@ -88,6 +88,7 @@ lemma vector.mem_cons_of_mem {A : Type} {n : ℕ} (a : A) (as : vector A n)
   (a' : A) (ha' : a' ∈ as.to_list) : a' ∈ (a ::ᵥ as).to_list :=
 (vector.mem_cons_iff a as a').2 (or.inr ha')
 
+
 lemma vector.exists_eq_cons {A : Type} {n : ℕ} (v : vector A n.succ) :
   ∃ (a : A) (as : vector A n), v = a ::ᵥ as :=
 ⟨v.head, v.tail, (vector.eq_cons_iff v v.head v.tail).2 ⟨rfl, rfl⟩⟩
@@ -110,4 +111,9 @@ lemma tsum_tsum_eq_single {α β γ : Type*} [add_comm_monoid γ]
   (hf : ∀ (a' : α) (b' : β), a ≠ a' ∨ b ≠ b' → f a' b' = 0) :
   ∑' (a' : α) (b' : β), f a' b' = f a b :=
 (tsum_eq_single a $ λ a' ha', (tsum_eq_single b $ λ b' hb', hf a' b' (or.inl ha'.symm)).trans
-  (hf a' b (or.inl ha'.symm))).trans (tsum_eq_single b (λ b' hb', hf a b' (or.inr hb'.symm)))
+  (hf a' b (or.inl ha'.symm))).trans 
+  begin
+  
+  refine (tsum_eq_single b (λ b' hb', hf a b' (or.inr hb'.symm)))
+
+    end
