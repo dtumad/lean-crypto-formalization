@@ -12,7 +12,7 @@ def oracle_compose (so : simulation_oracle spec spec') (so' : simulation_oracle 
   simulation_oracle spec spec'' :=
 { S := so.S × so'.S,
   default_state := (so.default_state, so'.default_state),
-  o := λ i ⟨t, s, s'⟩, simulate so' (so.o i (t, s)) s' >>= λ ⟨⟨u, s⟩, s'⟩, return (u, s, s') }
+  o := λ i x, simulate so' (so.o i (x.1, x.2.1)) x.2.2 >>= λ u_s, pure (u_s.1.1, u_s.1.2, u_s.2) }
 
 notation so' `∘ₛ` so := oracle_compose so so'
 
@@ -21,5 +21,8 @@ variables (so : simulation_oracle spec spec') (so' : simulation_oracle spec' spe
 @[simp]
 lemma default_state_oracle_compose :
   (so' ∘ₛ so).default_state = (so.default_state, so'.default_state) := rfl
+
+lemma oracle_compose_apply_index (i : spec.ι) (s : so.S × so'.S) : (so' ∘ₛ so).o i =
+  λ x, simulate so' (so.o i (x.1, x.2.1)) x.2.2 >>= λ u_s, pure (u_s.1.1, u_s.1.2, u_s.2) := rfl
 
 end compose
