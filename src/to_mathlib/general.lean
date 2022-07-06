@@ -43,10 +43,6 @@ begin
   }
 end
 
-lemma pmf.bind_ {A B C : Type} (p : pmf A) (q : B → pmf C) (f : A → B) :
-  (p >>= λ x, q (f x)) = (f <$> p) >>= q :=
-sorry
-
 example {A B : Type} (p : pmf A) (f : A → B) :
   f <$> p = p >>= (pure ∘ f) :=
 rfl
@@ -55,7 +51,6 @@ rfl
 lemma pmf.bind_map {A B C : Type} (p : pmf A) (q : A → pmf B) (f : B → C) :
   f <$> (p >>= q) = p >>= λ a, (f <$> (q a)) :=
 begin
-  refine pmf.ext (λ c, _),
   sorry
 end
 
@@ -89,10 +84,6 @@ lemma vector.mem_cons {A : Type} {n : ℕ} (a : A) (as : vector A n) :
   a ∈ (a ::ᵥ as).to_list :=
 vector.mem_iff_nth.2 ⟨0, vector.nth_cons_zero a as⟩
 
-lemma vector.mem_of_mem_tail {A : Type} {n : ℕ} (a : A) (as : vector A n)
-  (ha : a ∈ as.tail.to_list) : a ∈ as.to_list :=
-sorry
-
 lemma vector.mem_cons_of_mem {A : Type} {n : ℕ} (a : A) (as : vector A n)
   (a' : A) (ha' : a' ∈ as.to_list) : a' ∈ (a ::ᵥ as).to_list :=
 (vector.mem_cons_iff a as a').2 (or.inr ha')
@@ -100,6 +91,19 @@ lemma vector.mem_cons_of_mem {A : Type} {n : ℕ} (a : A) (as : vector A n)
 lemma vector.exists_eq_cons {A : Type} {n : ℕ} (v : vector A n.succ) :
   ∃ (a : A) (as : vector A n), v = a ::ᵥ as :=
 ⟨v.head, v.tail, (vector.eq_cons_iff v v.head v.tail).2 ⟨rfl, rfl⟩⟩
+
+
+lemma vector.mem_of_mem_tail {A : Type} {n : ℕ} (a : A) (as : vector A n)
+  (ha : a ∈ as.tail.to_list) : a ∈ as.to_list :=
+begin
+  induction n,
+  { rw [vector.eq_nil as, vector.tail_nil] at ha,
+    refine false.elim ha },
+  { obtain ⟨a', as, h⟩ := vector.exists_eq_cons as,
+    rw [h],
+    refine vector.mem_cons_of_mem a' as _ _,
+    rwa [h, vector.tail_cons] at ha }
+end
 
 lemma tsum_tsum_eq_single {α β γ : Type*} [add_comm_monoid γ]
   [topological_space γ] [t2_space γ] (f : α → β → γ) (a : α) (b : β)
