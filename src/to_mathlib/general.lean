@@ -89,6 +89,10 @@ lemma vector.mem_cons {A : Type} {n : ℕ} (a : A) (as : vector A n) :
   a ∈ (a ::ᵥ as).to_list :=
 vector.mem_iff_nth.2 ⟨0, vector.nth_cons_zero a as⟩
 
+lemma vector.mem_of_mem_tail {A : Type} {n : ℕ} (a : A) (as : vector A n)
+  (ha : a ∈ as.tail.to_list) : a ∈ as.to_list :=
+sorry
+
 lemma vector.mem_cons_of_mem {A : Type} {n : ℕ} (a : A) (as : vector A n)
   (a' : A) (ha' : a' ∈ as.to_list) : a' ∈ (a ::ᵥ as).to_list :=
 (vector.mem_cons_iff a as a').2 (or.inr ha')
