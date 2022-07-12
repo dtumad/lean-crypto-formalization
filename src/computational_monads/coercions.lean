@@ -37,12 +37,12 @@ lemma coe_coin_uniform_select_equiv_coin :
 | _ (pure' A a) := by simp [coe_coin_uniform_select_def, pmf.pure_map]
 | _ (bind' A B oa ob) := begin
   rw [coe_coin_uniform_select_def],
-  refine (simulate'_stateless_oracle_query_equiv_of_equiv _ _ _ _),
+  refine (stateless_oracle.simulate'_query_equiv_of_equiv _ _ _ _),
   intros i t,
   exact eval_distribution_uniform_select_fintype bool,
 end
 | _ (query i t) := begin
-  erw [coe_coin_uniform_select_def, simulate'_query_equiv, stateless_oracle_apply,
+  erw [coe_coin_uniform_select_def, simulate'_query_equiv, stateless_oracle.apply,
     fst_map_bind_mk_equiv, map_id_equiv],
   exact eval_distribution_uniform_select_fintype bool,
 end

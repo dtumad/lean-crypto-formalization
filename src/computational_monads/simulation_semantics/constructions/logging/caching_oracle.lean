@@ -4,9 +4,9 @@ import computational_monads.simulation_semantics.oracle_compose
 
 open oracle_comp oracle_spec
 
-variables {spec spec' spec'' : oracle_spec} {A B C : Type}
-  (log : query_log spec) (log' : query_log spec')
+variables {A B C : Type} {spec spec' spec'' : oracle_spec}
 
+@[simps]
 def caching_oracle (spec : oracle_spec) [spec.computable] :
   simulation_oracle spec spec :=
 { S := query_log spec,
@@ -16,6 +16,18 @@ def caching_oracle (spec : oracle_spec) [spec.computable] :
   | none := do { u ← query i t, return (u, log.log_query i t u) }
   end }
 
-@[simp]
-lemma default_state_caching_oracle (spec : oracle_spec) [spec.computable] :
-  (caching_oracle spec).default_state = query_log.init spec := rfl
+namespace caching_oracle
+
+variables (log : query_log spec) (log' : query_log spec')
+
+section simulate
+
+
+end simulate
+
+section eval_distribution
+
+
+end eval_distribution
+
+end caching_oracle

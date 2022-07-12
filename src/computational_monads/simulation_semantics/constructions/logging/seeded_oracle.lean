@@ -5,12 +5,11 @@ import computational_monads.simulation_semantics.constructions.logging.query_log
 open oracle_comp oracle_spec
 
 variables {spec spec' spec'' : oracle_spec} {A B C : Type}
-  (log : query_log spec) (log' : query_log spec')
-variable [spec.computable]
-
+  
 /-- Use the first element of the `seed` as the query result if inputs match.
   If the query values don't match then throw away the seed as computation has diverged.
   Using this with a log from a previous computation ensures they behave identically. -/
+@[simps]
 def seeded_oracle (spec : oracle_spec) [computable spec] :
   simulation_oracle spec spec :=
 { S := query_log spec,
@@ -20,9 +19,22 @@ def seeded_oracle (spec : oracle_spec) [computable spec] :
     | (some u) := return (u, seed.remove_head i)
     end }
 
-@[simp]
-lemma default_state_seeded_oracle (spec : oracle_spec) [spec.computable] :
-  (seeded_oracle spec).default_state = query_log.init spec := rfl
+namespace seeded_oracle
+
+variables (log : query_log spec) (log' : query_log spec')
+variable [spec.computable]
+
+section simulate
+
+
+end simulate
+
+section eval_distribution
+
+
+end eval_distribution
+
+section equiv
 
 -- Log and run, run from seed, return original output -> looks like just logging
 lemma seeded_oracle_first_equiv [spec.finite_range]
@@ -60,3 +72,7 @@ lemma seeded_oracle_log_eq_log [spec.finite_range]
   ⊆ λ ⟨a, log, log'⟩, log.fork_cache i (choose_fork a log) =
     log'.fork_cache i (choose_fork a log) :=
 sorry
+
+end equiv
+
+end seeded_oracle

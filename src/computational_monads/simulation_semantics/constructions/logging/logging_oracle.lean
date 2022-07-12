@@ -7,19 +7,18 @@ variables {spec spec' spec'' : oracle_spec} {A B C : Type}
   (log : query_log spec) (log' : query_log spec')
 variable [spec.computable]
 
+@[simps]
 def logging_oracle (spec : oracle_spec) [spec.computable] :
   simulation_oracle spec spec :=
 ⟪ query | query_log.log_query, query_log.init spec ⟫
 
-@[simp]
-lemma default_state_logging_oracle (spec : oracle_spec) [spec.computable] :
-  (logging_oracle spec).default_state = query_log.init spec := rfl
+namespace logging_oracle
 
 @[simp]
-lemma logging_oracle_apply (i : spec.ι) (t : spec.domain i) :
+lemma apply (i : spec.ι) (t : spec.domain i) :
   (logging_oracle spec).o i (t, log) = query i t >>= λ u, return (u, log.log_query i t u) := rfl
 
-namespace logging_oracle
+section simulate
 
 @[simp]
 lemma simulate_pure (a : A) :
@@ -39,6 +38,8 @@ lemma simulate_bind (oa : oracle_comp spec A) (ob : A → oracle_comp spec B) :
       (λ x, simulate (logging_oracle _) (ob x.1) x.2) :=
 rfl
 
+end simulate
+
 section eval_distribution
 
 variable [spec.finite_range]
@@ -47,7 +48,7 @@ variable [spec.finite_range]
 @[simp]
 lemma eval_distribution_simulate'_equiv (oa : oracle_comp spec A) :
   simulate' (logging_oracle spec) oa log ≃ₚ oa :=
-simulate'_tracking_oracle_query_equiv oa (query_log.init spec) query_log.log_query log
+tracking_oracle.simulate'_query_equiv oa (query_log.init spec) query_log.log_query log
 
 @[simp]
 lemma eval_distribution_default_simulate'_equiv (oa : oracle_comp spec A) :
