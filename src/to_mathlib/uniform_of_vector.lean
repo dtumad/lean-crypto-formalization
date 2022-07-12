@@ -7,48 +7,17 @@ variables {α : Type} --[decidable_eq α]
 
 open_locale classical big_operators nnreal ennreal
 
--- TODO: most have statements could be broken out probably
-lemma sum_ite_count {α β : Type*} [add_comm_monoid β] [has_one β] [topological_space β] [t2_space β]
-  (p : α → Prop) (l : list α) :
-  (∑ x in l.to_finset, if p x then (l.count x : β) else 0) = l.countp p :=
-begin
-  induction l with a as h,
-  { simp },
-  { rw [list.countp_cons, nat.cast_add, ← h],
-    have : a ∈ (a :: as).to_finset := list.mem_to_finset.2 (list.mem_cons_self a as),
-    rw [finset.sum_eq_sum_diff_singleton_add this _],
-    by_cases ha : a ∈ as.to_finset,
-    { have : (a :: as).to_finset = as.to_finset :=
-        by rw [list.to_finset_cons, finset.insert_eq_of_mem ha],
-      simp_rw [this, finset.sum_eq_sum_diff_singleton_add ha _, add_assoc],
-      congr' 1,
-      { refine finset.sum_congr rfl (λ x hx, _),
-        rw [finset.mem_sdiff, finset.not_mem_singleton, ne.def] at hx,
-        have : list.count x (a :: as) = list.count x as := by simp [hx],
-        rw this },
-      { split_ifs; simp } },
-    { have : (a :: as).to_finset \ {a} = as.to_finset := begin
-        rw [list.to_finset_cons, finset.insert_sdiff_of_mem _ (finset.mem_singleton_self a)],
-        rw [finset.sdiff_singleton_not_mem_eq_self as.to_finset ha],
-      end,
-      simp_rw [this],
-      congr' 1,
-      { refine finset.sum_congr rfl (λ x hx, _),
-        have : list.count x (a :: as) = list.count x as :=
-          list.count_cons_of_ne (λ hxa, ha (hxa ▸ hx)) as,
-        rw this },
-      { have : a ∉ as := ha ∘ (list.mem_to_finset.2),
-        have : list.count a (a :: as) = 1 :=
-          by simp [list.count_cons, list.count_eq_zero_of_not_mem this],
-        simp [this] } } }
-end
-
 lemma sum_fin_succ_eq_sum_fin {A : Type} [add_comm_monoid A] {n : ℕ}
   (f : fin (n + 1) → A) :
   ∑ (i : fin (n + 1)), f i = (∑ (i : fin n), f (i + 1)) + f 0 :=
 begin
   refine trans (finset.sum_eq_sum_diff_singleton_add (finset.mem_univ 0) _) _,
-  rw finset.sum_eq_sum
+  congr' 1,
+  let g : Π (a : fin (n + 1)), a ∈ (finset.univ \ {0} : finset (fin (n + 1))) → fin n :=
+    λ a ha, a.pred (finset.not_mem_singleton.1 (finset.mem_sdiff.1 ha).2),
+  exact finset.sum_bij g (λ _ _, finset.mem_univ _) (λ b _, by simp) (λ i j _ _, fin.pred_inj.1)
+    (λ b _, ⟨b.succ, finset.mem_sdiff.2 ⟨finset.mem_univ b.succ, (finset.not_mem_singleton.2
+      (ne.symm (ne_of_lt $ fin.succ_pos b)))⟩, symm (fin.pred_succ b)⟩),
 end
 
 lemma sum_ite_eq_nth {β : Type} [add_comm_monoid β] [has_one β]
@@ -104,6 +73,42 @@ section measure
 variable (t : set α)
 
 
+-- TODO: most have statements could be broken out probably
+lemma sum_ite_count {α β : Type*} [add_comm_monoid β] [has_one β] [topological_space β] [t2_space β]
+  (p : α → Prop) (l : list α) :
+  (∑ x in l.to_finset, if p x then (l.count x : β) else 0) = l.countp p :=
+begin
+  induction l with a as h,
+  { simp },
+  { rw [list.countp_cons, nat.cast_add, ← h],
+    have : a ∈ (a :: as).to_finset := list.mem_to_finset.2 (list.mem_cons_self a as),
+    rw [finset.sum_eq_sum_diff_singleton_add this _],
+    by_cases ha : a ∈ as.to_finset,
+    { have : (a :: as).to_finset = as.to_finset :=
+        by rw [list.to_finset_cons, finset.insert_eq_of_mem ha],
+      simp_rw [this, finset.sum_eq_sum_diff_singleton_add ha _, add_assoc],
+      congr' 1,
+      { refine finset.sum_congr rfl (λ x hx, _),
+        rw [finset.mem_sdiff, finset.not_mem_singleton, ne.def] at hx,
+        have : list.count x (a :: as) = list.count x as := by simp [hx],
+        rw this },
+      { split_ifs; simp } },
+    { have : (a :: as).to_finset \ {a} = as.to_finset := begin
+        rw [list.to_finset_cons, finset.insert_sdiff_of_mem _ (finset.mem_singleton_self a)],
+        rw [finset.sdiff_singleton_not_mem_eq_self as.to_finset ha],
+      end,
+      simp_rw [this],
+      congr' 1,
+      { refine finset.sum_congr rfl (λ x hx, _),
+        have : list.count x (a :: as) = list.count x as :=
+          list.count_cons_of_ne (λ hxa, ha (hxa ▸ hx)) as,
+        rw this },
+      { have : a ∉ as := ha ∘ (list.mem_to_finset.2),
+        have : list.count a (a :: as) = 1 :=
+          by simp [list.count_cons, list.count_eq_zero_of_not_mem this],
+        simp [this] } } }
+end
+
 lemma tsum_ite_count {α β : Type*} [add_comm_monoid β] [has_one β] [topological_space β] [t2_space β]
   (p : α → Prop) (l : list α) :
   (∑' (x : α), if p x then (l.count x : β) else 0) = l.countp p :=
@@ -114,7 +119,6 @@ calc (∑' (x : α), if p x then l.count x else 0 : β)
     simp [this],
   end
   ... = l.countp p : sum_ite_count p l
-
 
 @[simp]
 lemma to_outer_measure_uniform_of_vector_apply : (uniform_of_vector v).to_outer_measure t =
