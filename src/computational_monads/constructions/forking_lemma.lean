@@ -11,82 +11,96 @@ open oracle_comp oracle_spec
 
 open_locale nnreal ennreal
 
+structure forking_adversary (T U A : Type) [inhabited U]  :=
+(adv : oracle_comp (uniform_selecting ++ (T →ₒ U)) A)
+(q : ℕ)
+(choose_fork : A → query_log (T →ₒ U) → option (fin q))
+
+namespace forking_adversary
+
 variables {T U A : Type} [inhabited U] [fintype U] [decidable_eq T] [decidable_eq U]
+  (adv : forking_adversary T U A)
 
-variables (adversary : oracle_comp (uniform_selecting ++ (T →ₒ U)) A)
-  {q : ℕ} --(hq : queries_at_most adversary q)
-  (choose_fork : A → query_log (T →ₒ U) → option (fin q))
-  -- TODO: this might work better with input as a product type? matches the fork output then
+/-- Simulate the adversary, returning a log of the uniform selecting oracle,
+  along with the final result and final cache for the random oracle -/
+def simulate_with_log (adv : forking_adversary T U A) :
+  oracle_comp uniform_selecting (A × query_log uniform_selecting × query_log (T →ₒ U)) :=
+do { ⟨a, log, cache, ()⟩ ← simulate (logging_oracle _ ⟪++⟫ random_oracle _) adv.adv
+      (query_log.init _, query_log.init _, ()),
+    return (a, log,cache) }
 
-/-- Simulation oracle for forking algorithm.
-  Log the uniform selection oracle and cache the random outputs of the forked oracle -/
-def fork_sim : simulation_oracle (uniform_selecting ++ (T →ₒ U)) uniform_selecting :=
-logging_oracle uniform_selecting ⟪++⟫ random_oracle (T →ₒ U)
+/-- Simulate the adversary, allowing for a seed value to the uniform select oracle,
+  and a preset cache value for the random oracle -/
+def simulate_from_seed (adv : forking_adversary T U A)
+  (seed : query_log uniform_selecting) (cache : query_log (T →ₒ U)) :
+  oracle_comp uniform_selecting (A × query_log (T →ₒ U)) :=
+do { ⟨a, log, cache, ()⟩ ← simulate (seeded_oracle _ ⟪++⟫ random_oracle _) adv.adv (seed, cache, ()),
+  return (a, cache) }
 
-def fork_sim' : simulation_oracle (uniform_selecting ++ (T →ₒ U)) uniform_selecting :=
-seeded_oracle uniform_selecting ⟪++⟫ random_oracle (T →ₒ U)
+/-- Most basic definition of simulation that just returns the result,
+  and the final cache value of the random oracle, without the `uniform_selecting` log -/
+def simulate_basic (adv : forking_adversary T U A) :
+  oracle_comp uniform_selecting (A × query_log (T →ₒ U)) :=
+simulate_from_seed adv (query_log.init _) (query_log.init _)
+
+def accepting_experiment (adv : forking_adversary T U A) :
+  oracle_comp uniform_selecting (option (fin adv.q)) :=
+do { ⟨a, log, cache⟩ ← adv.simulate_with_log,
+  return (adv.choose_fork a cache) }
+
+def advantage (adv : forking_adversary T U A) : ℝ≥0∞ :=
+⟦ λ x, option.is_some x | accepting_experiment adv ⟧
+
+end forking_adversary
+
+variables {T U A : Type} [inhabited U] [fintype U] [decidable_eq T] [decidable_eq U]
+variables {n : ℕ} (adv : forking_adversary T U A) 
 
 /-- Run computation twice, using the same random information for both,
   responding differently to a query specified by `choose_fork`,
   and returning the results if `choose_fork` makes the same choice each time -/
-def fork : oracle_comp uniform_selecting (option $ (fin q) × A × (query_log (T →ₒ U)) × A × (query_log (T →ₒ U))) :=
+def fork : oracle_comp uniform_selecting (option $ (fin adv.q) × A × (query_log (T →ₒ U)) × A × (query_log (T →ₒ U))) :=
 do {
-  -- run the adversary normally, logging the first oracle and caching the second
-  ⟨x, ⟨log, ⟨cache, ()⟩⟩⟩ ← (simulate fork_sim adversary (query_log.init _, (query_log.init _, ()))),
-  -- choose the index of the query to fork on
-  i ← return (choose_fork x cache),
+  ⟨x, ⟨log, cache⟩⟩ ← adv.simulate_with_log,
+  i ← return (adv.choose_fork x cache),
   -- remove things in the cache after the forking query
   forked_cache ← return (cache.fork_cache () (i.map coe)),
   -- run again, using the same random choices for first oracle, and forked cache
-  ⟨x', ⟨log', ⟨cache', ()⟩⟩⟩ ← (simulate fork_sim' adversary (log.to_seed, (forked_cache, ()))),
-  -- check the forking index for the second result
-  i' ← return (choose_fork x' cache'),
+  ⟨x', cache'⟩ ← adv.simulate_from_seed log.to_seed forked_cache,
+  i' ← return (adv.choose_fork x' cache'),
   -- return a value if both runs choose the same cache value and where successful (not `none`)
-  -- TODO: maybe some of this pre-checking should be different?
-  --        wouldn't even need to return an option if we just put this in the success pred?
-  return (if i ≠ none ∧ i = i' then i.map (λ n, (n, x, cache, x', cache')) else none)
+  -- the result will be `none` if indexes don't match or are already `none`
+  return (if i = i' then i.map (λ j, (j, x, cache, x', cache')) else none)
 }
 
-/-- Because of the logging and shared cache, both results of fork make the same query if the result succeeds -/
-lemma cache_input_same_at (n : fin q) (cache cache' : query_log (T →ₒ U)) (x x' : A)
-  (h : (some (n, x, cache, x', cache')) ∈ (fork adversary choose_fork).support) :
-  ((cache ()).nth n).map prod.fst = ((cache' ()).nth n).map prod.fst :=
+/-- Correctness with respect to `choose_fork`, i.e. the chosen fork matches for both outputs -/
+lemma choose_fork_first_eq (i : fin adv.q) (cache cache' : query_log (T →ₒ U)) (x x' : A)
+  (h : (some (i, x, cache, x', cache')) ∈ (fork adv).support) :
+  adv.choose_fork x cache = i :=
+sorry
+
+lemma choose_fork_second_eq (i : fin adv.q) (cache cache' : query_log (T →ₒ U)) (x x' : A)
+  (h : (some (i, x, cache, x', cache')) ∈ (fork adv).support) :
+  adv.choose_fork x' cache' = i :=
+sorry
+
+/-- Because of the logging and shared cache both results of fork
+  make the same query at the point where the fork was chosen -/
+lemma cache_input_same_at_fork (i : fin adv.q) (cache cache' : query_log (T →ₒ U)) (x x' : A)
+  (h : (some (i, x, cache, x', cache')) ∈ (fork adv).support) :
+  query_log.query_input_same_at cache cache' () i :=
 begin
   sorry
 end
 
--- Correctness with respect to `choose_fork`, i.e. `i` and is the result for both calls
--- For signature will correspond to both signatures being valid
-lemma mem_choose_fork (n : fin q) (cache cache' : query_log (T →ₒ U)) (x x' : A)
-  (h : (some (n, x, cache, x', cache')) ∈ (fork adversary choose_fork).support) :
-  choose_fork x cache = n ∧ choose_fork x' cache' = n :=
-sorry
-
-def accepting_experiment : oracle_comp uniform_selecting (option $ fin q) :=
-do {
-  (x, ⟨log, ⟨cache, ()⟩⟩) ← simulate fork_sim (adversary) (query_log.init _, (query_log.init _, ())),
-  return (choose_fork x cache)
-}
-
--- Adversary succeeds wrt the choose_fork function
-def accepting_prob : ℝ≥0∞ := ⟦ coe ∘ option.is_some | accepting_experiment adversary choose_fork ⟧
-
--- query_results are different for the two caches at `n`
-def query_output_diff_at (n : fin q) (cache cache' : query_log (T →ₒ U)) : Prop :=
-  ((cache ()).nth n).map prod.snd ≠ ((cache' ()).nth n).map prod.snd
-
--- forking algorithm succeeds if both `choose_fork` calls return the same success value
---    (captured in `fork` already by the `i ≠ none ∧ i = i'` clause)
--- and also the query results for the `i`th thing in the cache are distinct
-def fork_success : option (fin q × A × query_log (T →ₒ U) × A × query_log (T →ₒ U)) → Prop
+/- forking algorithm succeeds if a forking point is chosen,  -/
+def fork_success : option (fin n × A × query_log (T →ₒ U) × A × query_log (T →ₒ U)) → Prop
 | none := false
-| (some ⟨n, x, cache, x', cache'⟩) :=
-    ((cache ()).nth n).map prod.snd ≠ ((cache' ()).nth n).map prod.snd
+| (some ⟨i, x, cache, x', cache'⟩) := query_log.query_output_diff_at cache cache' () i
 
--- Probability that both adversaries have the same `choose_fork` result, and that the they correspond to distinct query results.
+/-- Probability that 
 -- For signature will correspond to both signatures being on different hash result values
--- Sort of the "meat" of the forking lemma
-lemma prob_fork_success :
-  ⟦ fork_success | fork adversary choose_fork ⟧
-    ≥ (((accepting_prob adversary choose_fork) ^ 2 / q) - (1 / fintype.card U)) :=
+-- Sort of the "meat" of the forking lemma -/
+lemma prob_fork_success : ⟦ fork_success | fork adv ⟧
+  ≥ ((adv.advantage) ^ 2 / adv.q) - (1 / fintype.card U) :=
 sorry

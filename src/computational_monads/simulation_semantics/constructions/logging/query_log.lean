@@ -483,4 +483,14 @@ match n with
 | (some m) := log.drop_at_index i m
 end
 
+def query_input_same_at (cache cache' : query_log spec)
+  (i : spec.ι) (n : ℕ) : Prop :=
+((cache i).nth n).map prod.fst = ((cache i).nth n).map prod.fst
+
+-- query_results are different for the two caches at `n`
+def query_output_diff_at (cache cache' : query_log spec)
+  (i : spec.ι) (n : ℕ) : Prop :=
+((cache i).nth n).map prod.snd ≠ ((cache' i).nth n).map prod.snd
+
+
 end query_log

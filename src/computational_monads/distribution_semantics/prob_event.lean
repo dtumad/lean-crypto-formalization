@@ -8,6 +8,8 @@ open_locale big_operators nnreal ennreal classical
 variables {A B C : Type} {spec : oracle_spec} [h' : spec.finite_range]
 include h'
 
+/-- Probability of a predicate holding after running a particular experiment.
+  Defined in terms of the outer measure associated to the corresponding `pmf` -/
 noncomputable def prob_event (oa : oracle_comp spec A) (event : set A) :
   ℝ≥0∞ := ⟦oa⟧.to_outer_measure event
 

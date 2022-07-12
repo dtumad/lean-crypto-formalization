@@ -78,10 +78,11 @@ lemma eval_distribution_uniform_select_vector :
   ⟦$ᵛ v⟧ = pmf.uniform_of_vector v :=
 begin
   refine pmf.ext (λ x, _),
-  rw [uniform_select_vector, eval_distribution_map_apply,
-    pmf.uniform_of_vector_apply, vector.to_list_length v],
-  simp only [eval_distribution_uniform_fin_apply],
-  rw [tsum_ite_eq_vector_nth, one_div, inv_mul_eq_div, nat.cast_add, nat.cast_one],
+  -- rw [pmf.uniform_of_vector_apply],
+  simp_rw [uniform_select_vector, eval_distribution_map_apply,
+    pmf.uniform_of_vector_apply, eval_distribution_uniform_fin_apply],
+  refine trans (tsum_ite_eq_vector_nth v x (1 / (n + 1))) _,
+  field_simp,
 end
 
 end uniform_select_vector

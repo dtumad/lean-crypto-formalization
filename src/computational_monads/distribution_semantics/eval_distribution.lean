@@ -29,6 +29,7 @@ include h'
 def eval_distribution (oa : oracle_comp spec A) : pmf A :=
 (eval_dist oa).1
 
+-- TODO : maybe ⦃ oa ⦄ is better to avoid double overloading?
 notation `⟦` oa `⟧` := eval_distribution oa
 
 @[simp]
@@ -75,8 +76,8 @@ eval_distribution_bind oa (pure ∘ f)
 
 @[simp]
 lemma eval_distribution_map_apply (oa : oracle_comp spec A) (f : A → B) (b : B) :
-  ⟦f <$> oa⟧ b = ∑' (a : A), if b = f a then ⟦oa⟧ a else 0 :=
-by simp only [eval_distribution_map oa f, pmf.map_apply f ⟦oa⟧]
+  ⟦f <$> oa⟧ b = ∑' (a : A), if f a = b then ⟦oa⟧ a else 0 :=
+by simp only [eval_distribution_map oa f, pmf.map_apply f ⟦oa⟧, @eq_comm B b]
 
 @[simp]
 lemma eval_distribution_query (i : spec.ι) (t : spec.domain i) :

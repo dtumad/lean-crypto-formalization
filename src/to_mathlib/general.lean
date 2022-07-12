@@ -13,52 +13,6 @@ lemma list.drop_succ_cons {A : Type} (as : list A) (a : A) (n : ℕ) :
   (a :: as).drop (n + 1) = as.drop n :=
 rfl
 
-lemma pmf.apply_eq_one_iff {A : Type} (p : pmf A) (a : A) :
-  p a = 1 ↔ p.support = {a} :=
-begin
-  refine ⟨λ h, _, λ h, _⟩,
-  {
-    refine set.eq_of_subset_of_subset _ _,
-    {
-      intros a' ha',
-      rw [set.mem_singleton_iff],
-      rw [pmf.mem_support_iff] at ha',
-      sorry
-    },
-    {
-      intros a' ha',
-      have : a' = a := ha',
-      rw [this, pmf.mem_support_iff],
-      exact λ ha, one_ne_zero (trans h.symm ha),
-    }
-  },
-  {
-    refine le_antisymm _ _,
-    {
-      refine pmf.coe_le_one p a,
-    },
-    {
-      sorry
-    }
-  }
-end
-
-example {A B : Type} (p : pmf A) (f : A → B) :
-  f <$> p = p >>= (pure ∘ f) :=
-rfl
-
-@[simp]
-lemma pmf.bind_map {A B C : Type} (p : pmf A) (q : A → pmf B) (f : B → C) :
-  f <$> (p >>= q) = p >>= λ a, (f <$> (q a)) :=
-begin
-  sorry
-end
-
-@[simp]
-lemma pmf.pure_map' {A B : Type} (a : A) (f : A → B) :
-  f <$> (pmf.pure a) = pmf.pure (f a) := sorry
-
-
 lemma vector.not_mem_of_length_zero {A : Type} (v : vector A 0) (a : A) :
   a ∉ v.to_list :=
 (vector.eq_nil v).symm ▸ id
@@ -106,6 +60,14 @@ begin
     rwa [h, vector.tail_cons] at ha }
 end
 
+
+@[simp]
+lemma nat.cast_tsum {α β : Type*} [add_comm_monoid β] [has_one β] [topological_space β] (f : α → ℕ) :
+  ↑(∑' (a : α), f a) = ∑' (a : α), (f a : β) :=
+begin
+  sorry
+end
+
 lemma tsum_tsum_eq_single {α β γ : Type*} [add_comm_monoid γ]
   [topological_space γ] [t2_space γ] (f : α → β → γ) (a : α) (b : β)
   (hf : ∀ (a' : α) (b' : β), a ≠ a' ∨ b ≠ b' → f a' b' = 0) :
@@ -117,3 +79,59 @@ lemma tsum_tsum_eq_single {α β γ : Type*} [add_comm_monoid γ]
   refine (tsum_eq_single b (λ b' hb', hf a b' (or.inr hb'.symm)))
 
     end
+
+section pmf
+
+lemma pmf.apply_eq_one_iff {A : Type} (p : pmf A) (a : A) :
+  p a = 1 ↔ p.support = {a} :=
+begin
+  refine ⟨λ h, _, λ h, _⟩,
+  {
+    refine set.eq_of_subset_of_subset _ _,
+    {
+      intros a' ha',
+      rw [set.mem_singleton_iff],
+      rw [pmf.mem_support_iff] at ha',
+      sorry
+    },
+    {
+      intros a' ha',
+      have : a' = a := ha',
+      rw [this, pmf.mem_support_iff],
+      exact λ ha, one_ne_zero (trans h.symm ha),
+    }
+  },
+  {
+    refine le_antisymm _ _,
+    {
+      refine pmf.coe_le_one p a,
+    },
+    {
+      sorry
+    }
+  }
+end
+
+@[simp]
+lemma pmf.bind_map' {A B C : Type} (p : pmf A) (q : A → pmf B) (f : B → C) :
+  (p >>= q).map f = p >>= (λ a, (q a).map f) :=
+sorry
+
+@[simp]
+lemma pmf.bind_map {A B C : Type} (p : pmf A) (q : A → pmf B) (f : B → C) :
+  f <$> (p >>= q) = p >>= λ a, (f <$> (q a)) :=
+begin
+  refine (pmf.bind_map' p q f),
+end
+
+@[simp]
+lemma pmf.pure_map' {A B : Type} (a : A) (f : A → B) :
+  f <$> (pmf.pure a) = pmf.pure (f a) := sorry
+
+@[simp]
+lemma pmf.bind_const {A B : Type} (p : pmf A) (q : pmf B) :
+  (p >>= λ _, q) = q :=
+sorry
+
+
+end pmf

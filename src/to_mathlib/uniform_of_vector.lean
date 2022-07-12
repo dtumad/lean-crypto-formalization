@@ -1,4 +1,5 @@
 import measure_theory.probability_mass_function.constructions
+import to_mathlib.general
 
 noncomputable theory
 
@@ -11,35 +12,6 @@ match v with
 | ⟨a :: as, _⟩ := by simp
 end
 
-namespace pmf
-section uniform_of_vector
-
-variables {n : ℕ} (v : vector α (n + 1)) (a : α)
-
-def uniform_of_vector {n : ℕ} (v : vector α (n + 1)) : pmf α :=
-of_multiset (quotient.mk v.to_list) (by simpa only [multiset.quot_mk_to_coe,
-  ne.def, multiset.coe_eq_zero, ← list.empty_iff_eq_nil] using vector.to_list_nonempty v)
-
-@[simp] lemma uniform_of_vector_apply :
-  (uniform_of_vector v) a = (list.count a v.to_list) / (n + 1) :=
-by simp [uniform_of_vector]
-
-@[simp] lemma uniform_of_vector_apply_eq_zero_iff : (uniform_of_vector v) a = 0 ↔ a ∉ v.to_list :=
-by simp [list.count_eq_zero]
-
-@[simp] lemma uniform_of_vector_apply_ne_zero_iff : (uniform_of_vector v) a ≠ 0 ↔ a ∈ v.to_list :=
-by rw [ne.def, uniform_of_vector_apply_eq_zero_iff, not_not]
-
-@[simp] lemma support_uniform_of_vector : (uniform_of_vector v).support = {a | a ∈ v.to_list} :=
-set.ext (λ a, by rw [mem_support_iff, uniform_of_vector_apply_ne_zero_iff, set.mem_set_of_eq])
-
-lemma mem_support_uniform_of_vector_iff :
-  a ∈ (uniform_of_vector v).support ↔ a ∈ v.to_list :=
-by rw [support_uniform_of_vector, set.mem_set_of_eq]
-
-section measure
-
-variable (t : set α)
 
 -- TODO: most have statements could be broken out probably
 lemma sum_ite_count {α β : Type*} [add_comm_monoid β] [has_one β] [topological_space β] [t2_space β]
@@ -88,6 +60,87 @@ calc (∑' (x : α), if p x then l.count x else 0 : β)
   end
   ... = l.countp p : sum_ite_count p l
 
+lemma sum_fin_succ_diff_eq_sum_fin {A : Type} [add_comm_monoid A] {n : ℕ}
+  (f : fin (n + 1) → A) :
+  ∑ i in (finset.univ \ {↑n + 1} : finset (fin $ n + 1)), f i
+    = ∑ (i : fin n), f i :=
+sorry
+
+lemma sum_fin_succ_eq_sum_fin {A : Type} [add_comm_monoid A] {n : ℕ}
+  (f : fin (n + 1) → A) :
+  ∑ (i : fin (n + 1)), f i = (∑ (i : fin n), f i) + f (n + 1) :=
+begin
+  have : (n + 1 : fin (n + 1)) ∈ finset.univ := finset.mem_univ _,
+  refine trans (finset.sum_eq_sum_diff_singleton_add this f) _,
+  refine congr_arg (λ x, x + f (n + 1)) _,
+  exact sum_fin_succ_diff_eq_sum_fin f
+end
+
+lemma sum_ite_eq_nth (a : α) : Π {n : ℕ} (v : vector α n),
+  ∑ i, (if (v.nth i = a) then 1 else 0) = v.to_list.count a
+| 0 ⟨[], h⟩ := by simp [finset.filter_eq_empty_iff]
+| (n + 1) ⟨x :: xs, h⟩ := begin
+  rw [vector.to_list, list.count_cons],
+  split_ifs,
+  {
+    sorry
+  },
+  {
+    sorry
+  }
+end
+
+lemma tsum_ite_eq_nth {n : ℕ} (v : vector α n) (a : α) :
+  ∑' (i : fin n), ite (v.nth i = a) 1 0 = v.to_list.count a :=
+calc ∑' (i : fin n), ite (v.nth i = a) 1 0
+  = ∑ i, if (v.nth i = a) then 1 else 0 : begin
+    sorry
+  end
+  ... = v.to_list.count a : sum_ite_eq_nth a v
+
+lemma tsum_ite_eq_vector_nth {n : ℕ} (v : vector α n) (a : α) (x : ℝ≥0) :
+  ∑' (i : fin n), ite (v.nth i = a) x 0 = x * (v.to_list.count a) :=
+calc ∑' (i : fin n), ite (v.nth i = a) x 0
+  = ∑' (i : fin n), x * (ite (v.nth i = a) 1 0) : tsum_congr (λ i, symm $ mul_boole _ x)
+  ... = x * ∑' (i : fin n), ite (v.nth i = a) 1 0 : nnreal.tsum_mul_left x _
+  ... = x * (v.to_list.count a) : begin
+    refine congr_arg ((*) x) _,
+    refine trans _ (congr_arg coe $ tsum_ite_eq_nth v a),
+    simp only [nat.cast_tsum, nat.cast_ite, nat.cast_one, nat.cast_zero]
+  end
+
+
+
+namespace pmf
+section uniform_of_vector
+
+variables {n : ℕ} (v : vector α (n + 1)) (a : α)
+
+def uniform_of_vector {n : ℕ} (v : vector α (n + 1)) : pmf α :=
+of_multiset (quotient.mk v.to_list) (by simpa only [multiset.quot_mk_to_coe,
+  ne.def, multiset.coe_eq_zero, ← list.empty_iff_eq_nil] using vector.to_list_nonempty v)
+
+@[simp] lemma uniform_of_vector_apply :
+  (uniform_of_vector v) a = (list.count a v.to_list) / (n + 1) :=
+by simp [uniform_of_vector]
+
+@[simp] lemma uniform_of_vector_apply_eq_zero_iff : (uniform_of_vector v) a = 0 ↔ a ∉ v.to_list :=
+by simp [list.count_eq_zero]
+
+@[simp] lemma uniform_of_vector_apply_ne_zero_iff : (uniform_of_vector v) a ≠ 0 ↔ a ∈ v.to_list :=
+by rw [ne.def, uniform_of_vector_apply_eq_zero_iff, not_not]
+
+@[simp] lemma support_uniform_of_vector : (uniform_of_vector v).support = {a | a ∈ v.to_list} :=
+set.ext (λ a, by rw [mem_support_iff, uniform_of_vector_apply_ne_zero_iff, set.mem_set_of_eq])
+
+lemma mem_support_uniform_of_vector_iff :
+  a ∈ (uniform_of_vector v).support ↔ a ∈ v.to_list :=
+by rw [support_uniform_of_vector, set.mem_set_of_eq]
+
+section measure
+
+variable (t : set α)
+
 @[simp]
 lemma to_outer_measure_uniform_of_vector_apply : (uniform_of_vector v).to_outer_measure t =
   (v.to_list.countp (∈ t)) / (n + 1) :=
@@ -112,27 +165,3 @@ end measure
 end uniform_of_vector
 
 end pmf
-
-lemma tsum_ite_eq_vector_nth_eq_count {n : ℕ} (v : vector α n) (a : α) :
-  ∑' (i : fin n), ite (a = v.nth i) 1 0 = v.to_list.count a :=
-begin
-  sorry
-end
-
-@[simp]
-lemma nat.cast_tsum {α β : Type*} [add_comm_monoid β] [has_one β] [topological_space β] (f : α → ℕ) :
-  ↑(∑' (a : α), f a) = ∑' (a : α), (f a : β) :=
-begin
-  sorry
-end
-
-lemma tsum_ite_eq_vector_nth {n : ℕ} (v : vector α n) (a : α) (x : ℝ≥0) :
-  ∑' (i : fin n), ite (a = v.nth i) x 0 = x * (v.to_list.count a) :=
-calc ∑' (i : fin n), ite (a = v.nth i) x 0
-  = ∑' (i : fin n), x * (ite (a = v.nth i) 1 0) : tsum_congr (λ i, symm $ mul_boole _ x)
-  ... = x * ∑' (i : fin n), ite (a = v.nth i) 1 0 : nnreal.tsum_mul_left x _
-  ... = x * (v.to_list.count a) : begin
-    refine congr_arg ((*) x) _,
-    refine trans _ (congr_arg coe $ tsum_ite_eq_vector_nth_eq_count v a),
-    simp only [nat.cast_tsum, nat.cast_ite, nat.cast_one, nat.cast_zero]
-  end
