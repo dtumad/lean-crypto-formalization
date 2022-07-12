@@ -7,12 +7,6 @@ variables {α : Type} --[decidable_eq α]
 
 open_locale classical big_operators nnreal ennreal
 
-lemma vector.to_list_nonempty {n : ℕ} (v : vector α (n + 1)) : ¬ v.to_list.empty :=
-match v with
-| ⟨a :: as, _⟩ := by simp
-end
-
-
 -- TODO: most have statements could be broken out probably
 lemma sum_ite_count {α β : Type*} [add_comm_monoid β] [has_one β] [topological_space β] [t2_space β]
   (p : α → Prop) (l : list α) :
@@ -49,67 +43,35 @@ begin
         simp [this] } } }
 end
 
-lemma tsum_ite_count {α β : Type*} [add_comm_monoid β] [has_one β] [topological_space β] [t2_space β]
-  (p : α → Prop) (l : list α) :
-  (∑' (x : α), if p x then (l.count x : β) else 0) = l.countp p :=
-calc (∑' (x : α), if p x then l.count x else 0 : β)
-  = ∑ x in l.to_finset, if p x then l.count x else 0 : begin
-    refine tsum_eq_sum (λ a ha, _),
-    have : l.count a = 0 := list.count_eq_zero_of_not_mem (λ h, ha (list.mem_to_finset.2 h)),
-    simp [this],
-  end
-  ... = l.countp p : sum_ite_count p l
-
-lemma sum_fin_succ_diff_eq_sum_fin {A : Type} [add_comm_monoid A] {n : ℕ}
-  (f : fin (n + 1) → A) :
-  ∑ i in (finset.univ \ {↑n + 1} : finset (fin $ n + 1)), f i
-    = ∑ (i : fin n), f i :=
-sorry
-
 lemma sum_fin_succ_eq_sum_fin {A : Type} [add_comm_monoid A] {n : ℕ}
   (f : fin (n + 1) → A) :
-  ∑ (i : fin (n + 1)), f i = (∑ (i : fin n), f i) + f (n + 1) :=
+  ∑ (i : fin (n + 1)), f i = (∑ (i : fin n), f (i + 1)) + f 0 :=
 begin
-  have : (n + 1 : fin (n + 1)) ∈ finset.univ := finset.mem_univ _,
-  refine trans (finset.sum_eq_sum_diff_singleton_add this f) _,
-  refine congr_arg (λ x, x + f (n + 1)) _,
-  exact sum_fin_succ_diff_eq_sum_fin f
+  refine trans (finset.sum_eq_sum_diff_singleton_add (finset.mem_univ 0) _) _,
+  rw finset.sum_eq_sum
 end
 
-lemma sum_ite_eq_nth (a : α) : Π {n : ℕ} (v : vector α n),
-  ∑ i, (if (v.nth i = a) then 1 else 0) = v.to_list.count a
-| 0 ⟨[], h⟩ := by simp [finset.filter_eq_empty_iff]
-| (n + 1) ⟨x :: xs, h⟩ := begin
-  rw [vector.to_list, list.count_cons],
-  split_ifs,
-  {
-    sorry
-  },
-  {
-    sorry
-  }
+lemma sum_ite_eq_nth {β : Type} [add_comm_monoid β] [has_one β]
+  (a : α) {n : ℕ} (v : vector α n) :
+  ∑ i, ite (v.nth i = a) (1 : β) 0 = ↑(v.to_list.count a) :=
+begin
+  induction n with n hn,
+  { simp [vector.eq_nil v] },
+  { obtain ⟨x, xs, hxs⟩ := vector.exists_eq_cons v,
+    simp only [hxs, sum_fin_succ_eq_sum_fin, vector.to_list_cons, list.count_cons,
+      vector.nth_cons_zero, @eq_comm _ a, hn xs, fin.coe_eq_cast_succ, fin.coe_succ_eq_succ,
+      vector.nth_cons_succ, nat.cast_ite, nat.cast_succ],
+    split_ifs,
+    { exact rfl },
+    { exact add_zero _ } }
 end
 
-lemma tsum_ite_eq_nth {n : ℕ} (v : vector α n) (a : α) :
-  ∑' (i : fin n), ite (v.nth i = a) 1 0 = v.to_list.count a :=
-calc ∑' (i : fin n), ite (v.nth i = a) 1 0
-  = ∑ i, if (v.nth i = a) then 1 else 0 : begin
-    sorry
-  end
-  ... = v.to_list.count a : sum_ite_eq_nth a v
-
-lemma tsum_ite_eq_vector_nth {n : ℕ} (v : vector α n) (a : α) (x : ℝ≥0) :
-  ∑' (i : fin n), ite (v.nth i = a) x 0 = x * (v.to_list.count a) :=
-calc ∑' (i : fin n), ite (v.nth i = a) x 0
-  = ∑' (i : fin n), x * (ite (v.nth i = a) 1 0) : tsum_congr (λ i, symm $ mul_boole _ x)
-  ... = x * ∑' (i : fin n), ite (v.nth i = a) 1 0 : nnreal.tsum_mul_left x _
-  ... = x * (v.to_list.count a) : begin
-    refine congr_arg ((*) x) _,
-    refine trans _ (congr_arg coe $ tsum_ite_eq_nth v a),
-    simp only [nat.cast_tsum, nat.cast_ite, nat.cast_one, nat.cast_zero]
-  end
-
-
+lemma tsum_ite_eq_vector_nth {β : Type} [add_comm_monoid β] [has_one β] [topological_space β] [t2_space β]
+  {n : ℕ} (v : vector α n) (a : α) :
+  ∑' (i : fin n), ite (v.nth i = a) (1 : β) 0 = ↑(v.to_list.count a) :=
+calc ∑' (i : fin n), ite (v.nth i = a) (1 : β) 0
+  = ∑ (i : fin n), ite (v.nth i = a) (1 : β) 0 : tsum_eq_sum (λ _ hb, (hb $ finset.mem_univ _).elim)
+  ... = (v.to_list.count a) : (sum_ite_eq_nth a v)
 
 namespace pmf
 section uniform_of_vector
@@ -140,6 +102,19 @@ by rw [support_uniform_of_vector, set.mem_set_of_eq]
 section measure
 
 variable (t : set α)
+
+
+lemma tsum_ite_count {α β : Type*} [add_comm_monoid β] [has_one β] [topological_space β] [t2_space β]
+  (p : α → Prop) (l : list α) :
+  (∑' (x : α), if p x then (l.count x : β) else 0) = l.countp p :=
+calc (∑' (x : α), if p x then l.count x else 0 : β)
+  = ∑ x in l.to_finset, if p x then l.count x else 0 : begin
+    refine tsum_eq_sum (λ a ha, _),
+    have : l.count a = 0 := list.count_eq_zero_of_not_mem (λ h, ha (list.mem_to_finset.2 h)),
+    simp [this],
+  end
+  ... = l.countp p : sum_ite_count p l
+
 
 @[simp]
 lemma to_outer_measure_uniform_of_vector_apply : (uniform_of_vector v).to_outer_measure t =
