@@ -1,6 +1,7 @@
 import computational_monads.asymptotics.polynomial_time
 import computational_monads.constructions.forking_lemma
 import data.list.basic
+import computational_monads.simulation_semantics.constructions.identity_oracle
 
 /-!
 # Cryptographic Signature Schemes

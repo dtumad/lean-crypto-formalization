@@ -8,8 +8,6 @@ variables {A B : Type} {spec spec' spec'' : oracle_spec}
 
 -- TODO: use namespaces to simplify the lemma names
 
-section tracking_oracle
-
 -- TODO: should be able to use `simps` everywhere instead of implementing projections
 
 /-- Oracle where the query result is indepenent of the current oracle state,
@@ -46,5 +44,3 @@ begin
   { erw [simulate'_query_equiv, tracking_oracle_o,
       fst_map_bind_mk_equiv, map_id_equiv (query i t)], } 
 end
-
-end tracking_oracle

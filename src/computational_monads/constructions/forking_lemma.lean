@@ -74,9 +74,9 @@ do {
 }
 
 /-- Correctness with respect to `choose_fork`, i.e. the chosen fork matches for both outputs -/
-lemma choose_fork_first_eq (i : fin adv.q) (cache cache' : query_log (T →ₒ U)) (x x' : A)
+lemma choose_fork_eq (i : fin adv.q) (cache cache' : query_log (T →ₒ U)) (x x' : A)
   (h : (some (i, x, cache, x', cache')) ∈ (fork adv).support) :
-  adv.choose_fork x cache = i :=
+  adv.choose_fork x cache = i ∧ adv.choose_fork x' cache' = i :=
 begin
   simp only [fork, support_bind, set.mem_Union, exists_prop, prod.exists, return_eq_pure,
     support_pure_bind, support_pure, set.mem_singleton_iff] at h,
@@ -93,40 +93,20 @@ begin
   obtain ⟨j, hj, hj'⟩ := h,
 
   simp_rw [prod.eq_iff_fst_eq_snd_eq] at hj',
-
-  have hy : x = y := hj'.2.1.symm,
-  have hcache₀ : cache = cache₀ := hj'.2.2.1.symm,
-
-  rw [hy, hcache₀, hj],
-  exact congr_arg option.some hj'.1,
+  rw [← hj'.2.1, ← hj'.2.2.1, ← hj'.2.2.2.1, ← hj'.2.2.2.2, ← this, hj, hj'.1],
+  exact ⟨rfl, rfl⟩,
 end
+
+/-- Correctness with respect to `choose_fork`, i.e. the chosen fork matches for both outputs -/
+lemma choose_fork_first_eq (i : fin adv.q) (cache cache' : query_log (T →ₒ U)) (x x' : A)
+  (h : (some (i, x, cache, x', cache')) ∈ (fork adv).support) :
+  adv.choose_fork x cache = i :=
+(choose_fork_eq adv i cache cache' x x' h).1
 
 lemma choose_fork_second_eq (i : fin adv.q) (cache cache' : query_log (T →ₒ U)) (x x' : A)
   (h : (some (i, x, cache, x', cache')) ∈ (fork adv).support) :
   adv.choose_fork x' cache' = i :=
-begin
-  simp only [fork, support_bind, set.mem_Union, exists_prop, prod.exists, return_eq_pure,
-    support_pure_bind, support_pure, set.mem_singleton_iff] at h,
-  obtain ⟨y, log₀, cache₀, hy, y', cache₀', hy', h⟩ := h,
-  
-  have : adv.choose_fork y cache₀ = adv.choose_fork y' cache₀' := begin
-    by_contradiction h',
-    simp only [h', if_false] at h,
-    exact h
-  end,
-  simp only [this, eq_self_iff_true, if_true] at h,
-
-  rw [eq_comm, option.map_eq_some'] at h,
-  obtain ⟨j, hj, hj'⟩ := h,
-
-  simp_rw [prod.eq_iff_fst_eq_snd_eq] at hj',
-
-  have hy : x' = y' := hj'.2.2.2.1.symm,
-  have hcache₀ : cache' = cache₀' := hj'.2.2.2.2.symm,
-
-  rw [hy, hcache₀, hj],
-  exact congr_arg option.some hj'.1,
-end
+(choose_fork_eq adv i cache cache' x x' h).2
 
 /-- Because of the logging and shared cache both results of fork
   make the same query at the point where the fork was chosen -/
@@ -137,14 +117,12 @@ begin
   sorry
 end
 
-/- forking algorithm succeeds if a forking point is chosen,  -/
+/- forking algorithm succeeds if a forking point is chosen, and the query outputs differ there -/
 def fork_success : option (fin n × A × query_log (T →ₒ U) × A × query_log (T →ₒ U)) → Prop
 | none := false
 | (some ⟨i, x, cache, x', cache'⟩) := query_log.query_output_diff_at cache cache' () i
 
-/-- Probability that 
--- For signature will correspond to both signatures being on different hash result values
--- Sort of the "meat" of the forking lemma -/
+/-- Probability that fork success holds is determined by adversary's initial advantage -/
 lemma prob_fork_success : ⟦ fork_success | fork adv ⟧
   ≥ ((adv.advantage) ^ 2 / adv.q) - (1 / fintype.card U) :=
 sorry

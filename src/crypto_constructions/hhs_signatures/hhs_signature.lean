@@ -131,7 +131,7 @@ end
 def choose_fork {q : ℕ} (x₀ : X) (n : ℕ) (pk : X) (m : M) 
   (σ : vector (G × bool) n) (log : query_log $ ((vector X n × M) →ₒ vector bool n)) : 
   option (fin q) :=
-let index' : option ℕ := log.index_of_input ()
+let index' : option ℕ := log.get_index_of_input ()
   (σ.map (λ ⟨c, b⟩, if b then c +ᵥ pk else c +ᵥ x₀), m) in
 match index' with
 | none := none

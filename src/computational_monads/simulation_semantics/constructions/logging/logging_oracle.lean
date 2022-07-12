@@ -1,7 +1,8 @@
 import computational_monads.constructions.uniform_select
 import computational_monads.simulation_semantics.simulate
 import computational_monads.simulation_semantics.oracle_append
-import computational_monads.simulation_semantics.constructions.logging.query_log
+import computational_monads.simulation_semantics.constructions.logging.query_log.lookup
+import computational_monads.simulation_semantics.constructions.logging.query_log.fork
 import computational_monads.distribution_semantics.equiv
 
 open oracle_comp oracle_spec
