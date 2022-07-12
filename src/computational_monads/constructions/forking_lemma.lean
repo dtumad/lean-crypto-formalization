@@ -77,12 +77,56 @@ do {
 lemma choose_fork_first_eq (i : fin adv.q) (cache cache' : query_log (T →ₒ U)) (x x' : A)
   (h : (some (i, x, cache, x', cache')) ∈ (fork adv).support) :
   adv.choose_fork x cache = i :=
-sorry
+begin
+  simp only [fork, support_bind, set.mem_Union, exists_prop, prod.exists, return_eq_pure,
+    support_pure_bind, support_pure, set.mem_singleton_iff] at h,
+  obtain ⟨y, log₀, cache₀, hy, y', cache₀', hy', h⟩ := h,
+  
+  have : adv.choose_fork y cache₀ = adv.choose_fork y' cache₀' := begin
+    by_contradiction h',
+    simp only [h', if_false] at h,
+    exact h
+  end,
+  simp only [← this, eq_self_iff_true, if_true] at h,
+
+  rw [eq_comm, option.map_eq_some'] at h,
+  obtain ⟨j, hj, hj'⟩ := h,
+
+  simp_rw [prod.eq_iff_fst_eq_snd_eq] at hj',
+
+  have hy : x = y := hj'.2.1.symm,
+  have hcache₀ : cache = cache₀ := hj'.2.2.1.symm,
+
+  rw [hy, hcache₀, hj],
+  exact congr_arg option.some hj'.1,
+end
 
 lemma choose_fork_second_eq (i : fin adv.q) (cache cache' : query_log (T →ₒ U)) (x x' : A)
   (h : (some (i, x, cache, x', cache')) ∈ (fork adv).support) :
   adv.choose_fork x' cache' = i :=
-sorry
+begin
+  simp only [fork, support_bind, set.mem_Union, exists_prop, prod.exists, return_eq_pure,
+    support_pure_bind, support_pure, set.mem_singleton_iff] at h,
+  obtain ⟨y, log₀, cache₀, hy, y', cache₀', hy', h⟩ := h,
+  
+  have : adv.choose_fork y cache₀ = adv.choose_fork y' cache₀' := begin
+    by_contradiction h',
+    simp only [h', if_false] at h,
+    exact h
+  end,
+  simp only [this, eq_self_iff_true, if_true] at h,
+
+  rw [eq_comm, option.map_eq_some'] at h,
+  obtain ⟨j, hj, hj'⟩ := h,
+
+  simp_rw [prod.eq_iff_fst_eq_snd_eq] at hj',
+
+  have hy : x' = y' := hj'.2.2.2.1.symm,
+  have hcache₀ : cache' = cache₀' := hj'.2.2.2.2.symm,
+
+  rw [hy, hcache₀, hj],
+  exact congr_arg option.some hj'.1,
+end
 
 /-- Because of the logging and shared cache both results of fork
   make the same query at the point where the fork was chosen -/
