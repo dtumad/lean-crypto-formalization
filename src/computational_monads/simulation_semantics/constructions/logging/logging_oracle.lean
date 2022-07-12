@@ -3,16 +3,17 @@ import computational_monads.simulation_semantics.constructions.tracking_oracle
 
 open oracle_comp oracle_spec
 
-variables {spec spec' spec'' : oracle_spec} {A B C : Type}
-  (log : query_log spec) (log' : query_log spec')
-variable [spec.computable]
-
+variables {A B C : Type} {spec spec' spec'' : oracle_spec} 
+  
 @[simps]
 def logging_oracle (spec : oracle_spec) [spec.computable] :
   simulation_oracle spec spec :=
 ⟪ query | query_log.log_query, query_log.init spec ⟫
 
 namespace logging_oracle
+
+variables (log : query_log spec) (log' : query_log spec')
+variable [spec.computable]
 
 @[simp]
 lemma apply (i : spec.ι) (t : spec.domain i) :

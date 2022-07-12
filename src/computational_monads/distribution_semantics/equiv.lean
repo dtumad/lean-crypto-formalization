@@ -81,13 +81,15 @@ trans (eval_distribution_map (pure a) f) (pmf.pure_map f a)
 
 @[simp]
 lemma bind_map_equiv (ob : B → oracle_comp spec C) : (f <$> oa) >>= ob ≃ₚ oa >>= (ob ∘ f) :=
-sorry
+begin
+  sorry
+end
 
 @[simp]
 lemma map_bind_equiv (f : B → C) : f <$> (oa >>= ob) ≃ₚ oa >>= ((<$>) f) ∘ ob :=
 begin
   simp [eval_distribution_map, eval_distribution_bind, functor.map, pmf.bind_bind],
-  exact (pmf.bind_map ⦃oa⦄ _ _),
+  exact (pmf.map_bind ⦃oa⦄ _ _),
 end
 
 @[simp]

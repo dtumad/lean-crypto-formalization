@@ -113,25 +113,24 @@ begin
 end
 
 @[simp]
-lemma pmf.bind_map' {A B C : Type} (p : pmf A) (q : A → pmf B) (f : B → C) :
+lemma pmf.map_bind' {A B C : Type} (p : pmf A) (q : A → pmf B) (f : B → C) :
   (p >>= q).map f = p >>= (λ a, (q a).map f) :=
 sorry
 
 @[simp]
-lemma pmf.bind_map {A B C : Type} (p : pmf A) (q : A → pmf B) (f : B → C) :
+lemma pmf.map_bind {A B C : Type} (p : pmf A) (q : A → pmf B) (f : B → C) :
   f <$> (p >>= q) = p >>= λ a, (f <$> (q a)) :=
 begin
-  refine (pmf.bind_map' p q f),
+  refine (pmf.map_bind' p q f),
 end
-
-@[simp]
-lemma pmf.pure_map' {A B : Type} (a : A) (f : A → B) :
-  f <$> (pmf.pure a) = pmf.pure (f a) := sorry
 
 @[simp]
 lemma pmf.bind_const {A B : Type} (p : pmf A) (q : pmf B) :
   (p >>= λ _, q) = q :=
-sorry
+begin
+  ext x,
+  simp [has_bind.bind, (nnreal.tsum_mul_right _ (q x))]
+end
 
 
 end pmf
