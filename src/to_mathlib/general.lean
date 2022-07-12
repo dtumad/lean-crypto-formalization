@@ -5,7 +5,6 @@ import data.vector.basic
 
 open_locale nnreal ennreal classical big_operators
 
-
 lemma vector.to_list_nonempty {α : Type} {n : ℕ} (v : vector α (n + 1)) : ¬ v.to_list.empty :=
 match v with
 | ⟨a :: as, _⟩ := by simp
@@ -65,18 +64,6 @@ begin
     refine vector.mem_cons_of_mem a' as _ _,
     rwa [h, vector.tail_cons] at ha }
 end
-
-lemma tsum_tsum_eq_single {α β γ : Type*} [add_comm_monoid γ]
-  [topological_space γ] [t2_space γ] (f : α → β → γ) (a : α) (b : β)
-  (hf : ∀ (a' : α) (b' : β), a ≠ a' ∨ b ≠ b' → f a' b' = 0) :
-  ∑' (a' : α) (b' : β), f a' b' = f a b :=
-(tsum_eq_single a $ λ a' ha', (tsum_eq_single b $ λ b' hb', hf a' b' (or.inl ha'.symm)).trans
-  (hf a' b (or.inl ha'.symm))).trans 
-  begin
-  
-  refine (tsum_eq_single b (λ b' hb', hf a b' (or.inr hb'.symm)))
-
-    end
 
 section pmf
 
