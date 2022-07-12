@@ -10,25 +10,25 @@ variable [spec.finite_range]
 variable [spec'.finite_range]
 
 -- Notation for two computations that are equivalent under `eval_distribution`
-notation oa `≃ₚ` oa' := ⟦oa⟧ = ⟦oa'⟧
+notation oa `≃ₚ` oa' := ⦃oa⦄ = ⦃oa'⦄
 
 lemma support_eq_of_equiv {oa : oracle_comp spec A} {oa' : oracle_comp spec' A}
   (h : oa ≃ₚ oa') : oa.support = oa'.support :=
 by simp_rw [← support_eval_distribution, h]
 
 lemma prob_event_eq_of_equiv {oa : oracle_comp spec A} {oa' : oracle_comp spec' A}
-  (h : oa ≃ₚ oa') (event : set A) : ⟦event | oa⟧ = ⟦event | oa'⟧ :=
+  (h : oa ≃ₚ oa') (event : set A) : ⦃event | oa⦄ = ⦃event | oa'⦄ :=
 by simp_rw [prob_event, h]
 
 section bind
 
 @[simp]
 lemma pure_bind_equiv (a : A) : (pure a >>= ob) ≃ₚ (ob a) :=
-trans (eval_distribution_bind (return a) ob) (pmf.pure_bind (λ a, ⟦ob a⟧) a)
+trans (eval_distribution_bind (return a) ob) (pmf.pure_bind (λ a, ⦃ob a⦄) a)
 
 @[simp]
 lemma prob_event_pure_bind (a : A) (event : set B) :
-  ⟦event | pure a >>= ob⟧ = ⟦event | ob a⟧ :=
+  ⦃event | pure a >>= ob⦄ = ⦃event | ob a⦄ :=
 prob_event_eq_of_equiv (pure_bind_equiv ob a) event
 
 @[simp]
@@ -41,11 +41,11 @@ support_eq_of_equiv (pure_bind_equiv ob a)
 
 @[simp]
 lemma bind_pure_equiv : (oa >>= pure) ≃ₚ oa :=
-trans (eval_distribution_bind oa pure) (pmf.bind_pure (⟦oa⟧))
+trans (eval_distribution_bind oa pure) (pmf.bind_pure (⦃oa⦄))
 
 @[simp]
 lemma prob_event_bind_pure (event : set A) :
-  ⟦event | oa >>= pure ⟧ = ⟦event | oa⟧ :=
+  ⦃event | oa >>= pure ⦄ = ⦃event | oa⦄ :=
 prob_event_eq_of_equiv (bind_pure_equiv oa) event
 
 
@@ -60,7 +60,7 @@ by simp_rw [eval_distribution_bind, h]
 @[simp]
 lemma bind_equiv_of_first_unused (oa : oracle_comp spec A) (ob : oracle_comp spec B) :
   oa >>= (λ _, ob) ≃ₚ ob :=
-(eval_distribution_bind oa _).trans (pmf.bind_const ⟦oa⟧ ⟦ob⟧)
+(eval_distribution_bind oa _).trans (pmf.bind_const ⦃oa⦄ ⦃ob⦄)
 
 @[simp]
 lemma bind_bind_equiv_of_second_unused (oa : oracle_comp spec A) (ob : A → oracle_comp spec B)
@@ -87,7 +87,7 @@ sorry
 lemma map_bind_equiv (f : B → C) : f <$> (oa >>= ob) ≃ₚ oa >>= ((<$>) f) ∘ ob :=
 begin
   simp [eval_distribution_map, eval_distribution_bind, functor.map, pmf.bind_bind],
-  exact (pmf.bind_map ⟦oa⟧ _ _),
+  exact (pmf.bind_map ⦃oa⦄ _ _),
 end
 
 @[simp]

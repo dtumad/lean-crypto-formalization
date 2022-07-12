@@ -1,7 +1,11 @@
-import computational_monads.asymptotics.polynomial_time
-import computational_monads.constructions.forking_lemma
 import data.list.basic
+
+import computational_monads.simulation_semantics.oracle_append
+import computational_monads.simulation_semantics.oracle_compose
+import computational_monads.simulation_semantics.constructions.logging.logging_oracle
+import computational_monads.simulation_semantics.constructions.logging.random_oracle
 import computational_monads.simulation_semantics.constructions.identity_oracle
+import computational_monads.asymptotics.polynomial_time
 
 /-!
 # Cryptographic Signature Schemes
@@ -92,7 +96,7 @@ end
 
 /-- Honest signer always generates a valid message -/
 def complete (sig : signature M PK SK S) :=
-∀ (m : M), ⟦ completeness_experiment sig m ⟧ tt = 1
+∀ (m : M), ⦃ completeness_experiment sig m ⦄ tt = 1
 
 lemma complete_iff_signatures_support_subset (sig : signature M PK SK S) :
   sig.complete ↔ ∀ (m : M) (pk : PK) (sk : SK) (σ : S),
@@ -165,7 +169,7 @@ default_simulate' (idₛ ⟪++⟫ random_oracle sig.random_oracles)
   TODO: maybe this doesn't need an independent definition -/
 noncomputable def unforgeable_advantage (sig : signature M PK SK S)
   (adversary : unforgeable_adversary sig) : ℝ≥0∞ :=
-⟦ (= tt) | unforgeable_experiment sig adversary ⟧
+⦃ (= tt) | unforgeable_experiment sig adversary ⦄
 
 end unforgeable
 

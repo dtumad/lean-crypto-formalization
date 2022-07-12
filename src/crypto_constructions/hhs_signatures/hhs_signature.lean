@@ -1,7 +1,11 @@
+import data.vector.zip
+
 import crypto_foundations.primitives.signature
 import crypto_foundations.hardness_assumptions.hard_homogeneous_space
+
+import computational_monads.coercions
 import computational_monads.constructions.repeat_n
-import data.vector.zip
+import computational_monads.simulation_semantics.constructions.logging.query_log.lookup
 
 open oracle_comp oracle_spec
 

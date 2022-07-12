@@ -1,9 +1,8 @@
-import computational_monads.simulation_semantics.oracle_append
-import computational_monads.simulation_semantics.oracle_compose
-import computational_monads.constructions.uniform_select
-import computational_monads.asymptotics.queries_at_most
 import computational_monads.distribution_semantics.prob_event
+import computational_monads.simulation_semantics.oracle_append
 import computational_monads.simulation_semantics.constructions.logging.caching_oracle
+import computational_monads.simulation_semantics.constructions.logging.random_oracle
+import computational_monads.simulation_semantics.constructions.logging.seeded_oracle
 
 noncomputable theory
 
@@ -49,7 +48,7 @@ do { ⟨a, log, cache⟩ ← adv.simulate_with_log,
   return (adv.choose_fork a cache) }
 
 def advantage (adv : forking_adversary T U A) : ℝ≥0∞ :=
-⟦ λ x, option.is_some x | accepting_experiment adv ⟧
+⦃ λ x, option.is_some x | accepting_experiment adv ⦄
 
 end forking_adversary
 
@@ -123,6 +122,6 @@ def fork_success : option (fin n × A × query_log (T →ₒ U) × A × query_lo
 | (some ⟨i, x, cache, x', cache'⟩) := query_log.query_output_diff_at cache cache' () i
 
 /-- Probability that fork success holds is determined by adversary's initial advantage -/
-lemma prob_fork_success : ⟦ fork_success | fork adv ⟧
+lemma prob_fork_success : ⦃ fork_success | fork adv ⦄
   ≥ ((adv.advantage) ^ 2 / adv.q) - (1 / fintype.card U) :=
 sorry

@@ -1,4 +1,3 @@
-import computational_monads.constructions.uniform_select
 import computational_monads.simulation_semantics.simulate
 
 open oracle_comp oracle_spec

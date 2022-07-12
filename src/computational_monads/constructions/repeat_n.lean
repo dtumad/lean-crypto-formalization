@@ -1,7 +1,5 @@
 import data.vector.basic
 
-import computational_monads.oracle_comp
-import computational_monads.distribution_semantics.prob_event
 import computational_monads.distribution_semantics.equiv
 
 namespace oracle_comp
@@ -105,7 +103,7 @@ variable [spec.finite_range]
 /-- Probability of a vector is the product of probabilities of each element. -/
 @[simp]
 lemma eval_distribution_repeat_n_apply :
-  ⟦repeat_n oa n⟧ as = (as.map (λ a, ⟦oa⟧ a)).to_list.prod :=
+  ⦃repeat_n oa n⦄ as = (as.map (λ a, ⦃oa⦄ a)).to_list.prod :=
 begin
   induction n with n hn,
   { simp only [vector.eq_nil as, repeat_n_apply_zero oa, eval_distribution_return, pmf.pure_apply,

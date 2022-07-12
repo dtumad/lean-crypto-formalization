@@ -57,8 +57,8 @@ do{ x₁ ←$ᵗ X, x₂ ←$ᵗ X,
 /-- Vectorization advantage of an adversary in the vectorization experiment. -/
 noncomputable def vectorization_advantage (adversary : vectorization_adversary G X) :
   ℝ≥0∞ :=
-⟦ (=) tt | vectorization_experiment adversary ⟧
-  - ⟦ (=) tt | vectorization_experiment (naive_adversary G X) ⟧
+⦃ (=) tt | vectorization_experiment adversary ⦄
+  - ⦃ (=) tt | vectorization_experiment (naive_adversary G X) ⦄
 
 end vectorization
 
@@ -78,8 +78,8 @@ do{ x₁ ←$ᵗ X, x₂ ←$ᵗ X, x₃ ←$ᵗ X,
 /-- Parallelization advantage of an adversary in parallelization experiment -/
 noncomputable def parallelization_advantage (adversary : X × X × X → oracle_comp uniform_selecting X) :
   ℝ≥0∞ :=
-⟦ (=) tt | parallelization_experiment G adversary ⟧
-  - ⟦ (=) tt | parallelization_experiment G (λ _, $ᵗ X) ⟧
+⦃ (=) tt | parallelization_experiment G adversary ⦄
+  - ⦃ (=) tt | parallelization_experiment G (λ _, $ᵗ X) ⦄
 
 end parallelization
 

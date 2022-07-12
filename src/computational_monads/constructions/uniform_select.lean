@@ -1,9 +1,6 @@
-import computational_monads.oracle_comp
-import computational_monads.distribution_semantics.prob_event
+import computational_monads.distribution_semantics.equiv
 
-import measure_theory.probability_mass_function.monad 
 import to_mathlib.uniform_of_vector
-import to_mathlib.general
 
 namespace oracle_comp
 
@@ -34,18 +31,18 @@ lemma mem_support_uniform_fin {n : ℕ} (i : fin $ n + 1) :
 
 @[simp]
 lemma eval_distribution_uniform_fin (n : ℕ) :
-  ⟦$[0..n]⟧ = pmf.uniform_of_fintype (fin $ n + 1) :=
+  ⦃$[0..n]⦄ = pmf.uniform_of_fintype (fin $ n + 1) :=
 rfl
 
 @[simp]
 lemma eval_distribution_uniform_fin_apply {n : ℕ} (i : fin $ n + 1) :
-  ⟦$[0..n]⟧ i = 1 / (n + 1) :=
+  ⦃$[0..n]⦄ i = 1 / (n + 1) :=
 by simp only [eval_distribution_uniform_fin n, pmf.uniform_of_fintype_apply i,
   fintype.card_fin (n + 1), nat.cast_add, nat.cast_one, one_div]
 
 @[simp]
 lemma prob_event_uniform_fin {n : ℕ} (event : set (fin $ n + 1)) :
-  ⟦event | $[0..n]⟧ = (fintype.card event) / (n + 1) :=
+  ⦃event | $[0..n]⦄ = (fintype.card event) / (n + 1) :=
 by simp only [uniform_fin, eval_prob_query, uniform_selecting.range_apply,
   fintype.card_fin, nat.cast_add, nat.cast_one]
 
@@ -75,7 +72,7 @@ by simp only [vector.mem_iff_nth, support_uniform_select_vector,
 
 @[simp]
 lemma eval_distribution_uniform_select_vector :
-  ⟦$ᵛ v⟧ = pmf.uniform_of_vector v :=
+  ⦃$ᵛ v⦄ = pmf.uniform_of_vector v :=
 begin
   refine pmf.ext (λ x, _),
   -- rw [pmf.uniform_of_vector_apply],
@@ -129,7 +126,7 @@ by simp only [uniform_select_finset, support_uniform_select_list,
 
 @[simp]
 lemma eval_distribution_uniform_select_finset :
-  ⟦$ˢ bag h⟧ = pmf.uniform_of_finset bag h :=
+  ⦃$ˢ bag h⦄ = pmf.uniform_of_finset bag h :=
 sorry
 
 end uniform_select_finset
@@ -154,7 +151,7 @@ by simpa only [uniform_select_fintype, support_uniform_select_finset,
 
 @[simp]
 lemma eval_distribution_uniform_select_fintype :
-  ⟦$ᵗ A⟧ = pmf.uniform_of_fintype A :=
+  ⦃$ᵗ A⦄ = pmf.uniform_of_fintype A :=
 sorry
 
 end uniform_select_fintype

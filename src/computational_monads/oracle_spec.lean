@@ -1,4 +1,3 @@
-import data.sum.basic
 import data.fintype.basic
 
 /-- Specification of the various oracles available to a computation.

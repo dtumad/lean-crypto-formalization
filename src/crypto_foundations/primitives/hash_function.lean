@@ -1,5 +1,4 @@
 import computational_monads.distribution_semantics.prob_event
-import computational_monads.oracle_spec
 import computational_monads.asymptotics.polynomial_time
 
 open oracle_comp oracle_spec
@@ -49,6 +48,6 @@ structure collision_finding_adversary (H : hash_scheme K I O) :=
 
 def collision_resistant (H : hash_scheme K I O) : Prop :=
 ∀ (A : collision_finding_adversary H),
-negligable (λ sp, ⟦(H sp).collision_finding_experiment (A.adv sp)⟧ tt)
+negligable (λ sp, ⦃(H sp).collision_finding_experiment (A.adv sp)⦄ tt)
 
 end hash_scheme

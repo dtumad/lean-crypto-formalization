@@ -1,4 +1,5 @@
 import computational_monads.simulation_semantics.constructions.stateless_oracle
+import computational_monads.constructions.uniform_select
 
 open oracle_comp oracle_spec
 

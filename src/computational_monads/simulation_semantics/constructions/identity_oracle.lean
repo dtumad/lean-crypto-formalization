@@ -24,7 +24,7 @@ section simulate
 @[simp]
 lemma eval_distribution_simulate_identity_oracle [spec.finite_range] 
   (oa : oracle_comp spec A) (s : unit) :
-  ⟦simulate idₛ oa s⟧ = (λ a, (a, ())) <$> ⟦oa⟧ :=
+  ⦃simulate idₛ oa s⦄ = (λ a, (a, ())) <$> ⦃oa⦄ :=
 begin
   induction oa,
   {
