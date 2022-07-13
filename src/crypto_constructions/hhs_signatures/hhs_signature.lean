@@ -9,9 +9,9 @@ import computational_monads.simulation_semantics.constructions.logging.query_log
 
 open oracle_comp oracle_spec
 
-variables {G X M : Type} [fintype G] [fintype X] [inhabited X] [inhabited G]
+variables {G X M : Type} [fintype G] [fintype X]
   [decidable_eq G] [decidable_eq X] [decidable_eq M]
-  [add_group G] [add_action G X] [algorithmic_homogenous_space G X]
+  [add_group G] [algorithmic_homogenous_space G X]
 
 /-- Function used in signing to combine the random commitments with the resulting hash,
   using the provided secret key to prove that the secret key corresponds to the public key -/
@@ -73,14 +73,15 @@ namespace hhs_signature
 variables [algorithmic_homogenous_space G X] (n : ℕ)
 
 /-- We can coerce any uniform selection computation up to one for the oracles of `hhs_signature` -/
-noncomputable instance coe_uniform_selecting_oracles (A : Type) :
+noncomputable instance coe_uniform_selecting_oracles [inhabited G] (A : Type) :
   has_coe (oracle_comp uniform_selecting A)
     (oracle_comp (hhs_signature G X M n).oracles A) :=
 ⟨λ oa, @has_coe.coe _ _ (coe_append_right A uniform_selecting _) oa⟩
  
 /-- TODO: must be a better way to make this easy?-/
 @[simp]
-lemma support_coe_uniform_selecting_oracles {A : Type} (oa : oracle_comp uniform_selecting A) :
+lemma support_coe_uniform_selecting_oracles [inhabited G] {A : Type}
+  (oa : oracle_comp uniform_selecting A) :
   support (oa : oracle_comp (hhs_signature G X M n).oracles A) = oa.support :=
 begin
   sorry
@@ -91,11 +92,11 @@ lemma gen_apply (u : unit) :
   ((hhs_signature G X M n).gen u) = do { x₀ ←$ᵗ X, sk ←$ᵗ G, return ((x₀, sk +ᵥ x₀), sk) } :=
 rfl
 
-lemma support_gen :
-  ((hhs_signature G X M n).gen ()).support =
-    ⋃ (x₀ : X) (sk : G), { ((x₀, sk +ᵥ x₀), sk) } :=
-by simp only [gen_apply, support_bind_bind, support_coe_uniform_selecting_oracles,
-  support_uniform_select_fintype, support_pure, set.Union_true]
+-- lemma support_gen :
+--   ((hhs_signature G X M n).gen ()).support =
+--     ⋃ (x₀ : X) (sk : G), { ((x₀, sk +ᵥ x₀), sk) } :=
+-- by simp only [gen_apply, support_bind_bind, support_coe_uniform_selecting_oracles,
+--   support_uniform_select_fintype, support_pure, set.Union_true]
 
 @[simp]
 lemma sign_apply (x₀ : X) (pk : X) (sk : G) (m : M) :
@@ -122,7 +123,7 @@ lemma verify_apply {n : ℕ} (x₀ : X) (pk : X) (m : M) (σ : vector (G × bool
   } :=
 rfl
 
-theorem hhs_signature_complete :
+theorem hhs_signature_complete [inhabited G] :
   (hhs_signature G X M n).complete :=
 begin
   rw signature.complete_iff_signatures_support_subset,
@@ -143,7 +144,7 @@ match index' with
 end
 
 -- TODO: this should "look like" a regular signature, since the `b` values are still uniform random coins
-noncomputable def adversary_simulation_oracle (pk x₀ : X) :
+noncomputable def adversary_simulation_oracle [inhabited G] (pk x₀ : X) :
   simulation_oracle ((hhs_signature G X M n).unforgeable_adversary_oracle_spec) uniform_selecting :=
 {
   S := query_log (hhs_signature G X M n).random_oracles,
@@ -160,9 +161,9 @@ noncomputable def adversary_simulation_oracle (pk x₀ : X) :
   end
 }
 
-noncomputable def hhs_signature_vectorization_reduction
+noncomputable def hhs_signature_vectorization_reduction [inhabited G]
   (adversary : signature.unforgeable_adversary $ hhs_signature G X M n) :
-  vectorization_adversary G X :=
+  vectorization.adversary G X :=
 {
   -- We want to set `pk := x` and `x₀ := x'` (TODO: what we really want is `x₀` in `pk` instead of general parameter).
   -- Then forking the adversary get `c` and `c'` with `c +ᵥ x = c' +ᵥ x'`.

@@ -1,5 +1,6 @@
 import measure_theory.probability_mass_function.constructions
 import to_mathlib.general
+import algebra.big_operators
 
 noncomputable theory
 
