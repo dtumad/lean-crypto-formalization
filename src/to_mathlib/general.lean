@@ -47,11 +47,9 @@ lemma vector.mem_cons_of_mem {A : Type} {n : ℕ} (a : A) (as : vector A n)
   (a' : A) (ha' : a' ∈ as.to_list) : a' ∈ (a ::ᵥ as).to_list :=
 (vector.mem_cons_iff a as a').2 (or.inr ha')
 
-
 lemma vector.exists_eq_cons {A : Type} {n : ℕ} (v : vector A n.succ) :
   ∃ (a : A) (as : vector A n), v = a ::ᵥ as :=
 ⟨v.head, v.tail, (vector.eq_cons_iff v v.head v.tail).2 ⟨rfl, rfl⟩⟩
-
 
 lemma vector.mem_of_mem_tail {A : Type} {n : ℕ} (a : A) (as : vector A n)
   (ha : a ∈ as.tail.to_list) : a ∈ as.to_list :=

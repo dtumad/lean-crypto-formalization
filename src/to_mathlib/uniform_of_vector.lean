@@ -1,25 +1,12 @@
 import measure_theory.probability_mass_function.constructions
 import to_mathlib.general
-import algebra.big_operators
+import algebra.big_operators.fin
 
 noncomputable theory
 
 variables {α : Type} --[decidable_eq α]
 
 open_locale classical big_operators nnreal ennreal
-
-lemma sum_fin_succ_eq_sum_fin_add {A : Type} [add_comm_monoid A] {n : ℕ}
-  (f : fin (n + 1) → A) :
-  ∑ (i : fin (n + 1)), f i = (∑ (i : fin n), f (i + 1)) + f 0 :=
-begin
-  refine trans (finset.sum_eq_sum_diff_singleton_add (finset.mem_univ 0) _) _,
-  congr' 1,
-  let g : Π (a : fin (n + 1)), a ∈ (finset.univ \ {0} : finset (fin (n + 1))) → fin n :=
-    λ a ha, a.pred (finset.not_mem_singleton.1 (finset.mem_sdiff.1 ha).2),
-  exact finset.sum_bij g (λ _ _, finset.mem_univ _) (λ b _, by simp) (λ i j _ _, fin.pred_inj.1)
-    (λ b _, ⟨b.succ, finset.mem_sdiff.2 ⟨finset.mem_univ b.succ, (finset.not_mem_singleton.2
-      (ne.symm (ne_of_lt $ fin.succ_pos b)))⟩, symm (fin.pred_succ b)⟩),
-end
 
 lemma sum_ite_eq_nth {β : Type} [add_comm_monoid_with_one β] 
   (a : α) {n : ℕ} (v : vector α n) :
@@ -28,14 +15,14 @@ begin
   induction n with n hn,
   { simp [vector.eq_nil v] },
   { obtain ⟨x, xs, hxs⟩ := vector.exists_eq_cons v,
-    suffices : (list.count a xs.to_list : β) + ite (x = a) 1 0 =
+    suffices : ite (x = a) 1 0 + (list.count a xs.to_list : β) =
       ite (x = a) ((list.count a xs.to_list) + 1) (list.count a xs.to_list),
-    by simpa only [hxs, sum_fin_succ_eq_sum_fin_add, vector.to_list_cons, list.count_cons,
+    by simpa only [hxs, fin.sum_univ_succ, vector.to_list_cons, list.count_cons,
       vector.nth_cons_zero, @eq_comm _ a, hn xs, fin.coe_eq_cast_succ, fin.coe_succ_eq_succ,
       vector.nth_cons_succ, nat.cast_ite, nat.cast_succ] using this,
     split_ifs,
-    { exact rfl },
-    { exact add_zero _ } }
+    { exact add_comm _ _ },
+    { exact zero_add _ } }
 end
 
 lemma tsum_ite_eq_vector_nth {β : Type} [add_comm_monoid_with_one β] [topological_space β] [t2_space β]

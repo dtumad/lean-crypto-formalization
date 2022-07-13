@@ -24,7 +24,7 @@ section bind
 
 @[simp]
 lemma pure_bind_equiv (a : A) : (pure a >>= ob) ≃ₚ (ob a) :=
-trans (eval_distribution_bind (return a) ob) (pmf.pure_bind (λ a, ⦃ob a⦄) a)
+trans (eval_distribution_bind (return a) ob) (pmf.pure_bind a (λ a, ⦃ob a⦄))
 
 @[simp]
 lemma prob_event_pure_bind (a : A) (event : set B) :
