@@ -45,7 +45,7 @@ end
   },
   {
     obtain ⟨a, as, hv⟩ := vector.exists_eq_cons v,
-    refine ⟨a, h a (hv.symm ▸ vector.mem_cons a as), as, _, hv⟩,
+    refine ⟨a, h a (hv.symm ▸ (vector.mem_cons_self a as)), as, _, hv⟩,
     rw support_repeat_n n,
     refine λ a' ha', h a' (hv.symm ▸ vector.mem_cons_of_mem a as a' ha'),
   }
@@ -70,7 +70,7 @@ begin
   obtain ⟨a, as', h'⟩ := vector.exists_eq_cons as,
   refine ⟨λ h, _, λ h, _⟩,
   { rw [h', set.mem_set_of_eq, vector.head_cons, vector.tail_cons],
-    refine ⟨h a (h'.symm ▸ (vector.mem_cons a as')), _⟩,
+    refine ⟨h a (h'.symm ▸ (vector.mem_cons_self a as')), _⟩,
     rw [mem_support_repeat_n_iff],
     refine λ a' ha', h a' (h'.symm ▸ (vector.mem_cons_of_mem a as' a' ha')) },
   { rw [set.mem_set_of_eq, h', vector.head_cons, vector.tail_cons, mem_support_repeat_n_iff] at h,

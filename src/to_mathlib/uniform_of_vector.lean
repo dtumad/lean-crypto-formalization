@@ -7,7 +7,7 @@ variables {α : Type} --[decidable_eq α]
 
 open_locale classical big_operators nnreal ennreal
 
-lemma sum_fin_succ_eq_sum_fin {A : Type} [add_comm_monoid A] {n : ℕ}
+lemma sum_fin_succ_eq_sum_fin_add {A : Type} [add_comm_monoid A] {n : ℕ}
   (f : fin (n + 1) → A) :
   ∑ (i : fin (n + 1)), f i = (∑ (i : fin n), f (i + 1)) + f 0 :=
 begin
@@ -20,22 +20,24 @@ begin
       (ne.symm (ne_of_lt $ fin.succ_pos b)))⟩, symm (fin.pred_succ b)⟩),
 end
 
-lemma sum_ite_eq_nth {β : Type} [add_comm_monoid β] [has_one β]
+lemma sum_ite_eq_nth {β : Type} [add_comm_monoid_with_one β] 
   (a : α) {n : ℕ} (v : vector α n) :
   ∑ i, ite (v.nth i = a) (1 : β) 0 = ↑(v.to_list.count a) :=
 begin
   induction n with n hn,
   { simp [vector.eq_nil v] },
   { obtain ⟨x, xs, hxs⟩ := vector.exists_eq_cons v,
-    simp only [hxs, sum_fin_succ_eq_sum_fin, vector.to_list_cons, list.count_cons,
+    suffices : (list.count a xs.to_list : β) + ite (x = a) 1 0 =
+      ite (x = a) ((list.count a xs.to_list) + 1) (list.count a xs.to_list),
+    by simpa only [hxs, sum_fin_succ_eq_sum_fin_add, vector.to_list_cons, list.count_cons,
       vector.nth_cons_zero, @eq_comm _ a, hn xs, fin.coe_eq_cast_succ, fin.coe_succ_eq_succ,
-      vector.nth_cons_succ, nat.cast_ite, nat.cast_succ],
+      vector.nth_cons_succ, nat.cast_ite, nat.cast_succ] using this,
     split_ifs,
     { exact rfl },
     { exact add_zero _ } }
 end
 
-lemma tsum_ite_eq_vector_nth {β : Type} [add_comm_monoid β] [has_one β] [topological_space β] [t2_space β]
+lemma tsum_ite_eq_vector_nth {β : Type} [add_comm_monoid_with_one β] [topological_space β] [t2_space β]
   {n : ℕ} (v : vector α n) (a : α) :
   ∑' (i : fin n), ite (v.nth i = a) (1 : β) 0 = ↑(v.to_list.count a) :=
 calc ∑' (i : fin n), ite (v.nth i = a) (1 : β) 0
@@ -74,7 +76,7 @@ variable (t : set α)
 
 
 -- TODO: most have statements could be broken out probably
-lemma sum_ite_count {α β : Type*} [add_comm_monoid β] [has_one β] [topological_space β] [t2_space β]
+lemma sum_ite_count {α β : Type*} [add_comm_monoid_with_one β] [topological_space β] [t2_space β]
   (p : α → Prop) (l : list α) :
   (∑ x in l.to_finset, if p x then (l.count x : β) else 0) = l.countp p :=
 begin
@@ -109,7 +111,7 @@ begin
         simp [this] } } }
 end
 
-lemma tsum_ite_count {α β : Type*} [add_comm_monoid β] [has_one β] [topological_space β] [t2_space β]
+lemma tsum_ite_count {α β : Type*} [add_comm_monoid_with_one β] [topological_space β] [t2_space β]
   (p : α → Prop) (l : list α) :
   (∑' (x : α), if p x then (l.count x : β) else 0) = l.countp p :=
 calc (∑' (x : α), if p x then l.count x else 0 : β)

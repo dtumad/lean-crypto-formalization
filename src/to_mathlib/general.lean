@@ -39,7 +39,7 @@ lemma vector.head_mem {A : Type} {n : ℕ} (v : vector A n.succ) :
   v.head ∈ v.to_list :=
 vector.mem_iff_nth.2 ⟨0, vector.nth_zero v⟩
 
-lemma vector.mem_cons {A : Type} {n : ℕ} (a : A) (as : vector A n) :
+lemma vector.mem_cons_self {A : Type} {n : ℕ} (a : A) (as : vector A n) :
   a ∈ (a ::ᵥ as).to_list :=
 vector.mem_iff_nth.2 ⟨0, vector.nth_cons_zero a as⟩
 
@@ -94,10 +94,6 @@ begin
 end
 
 end apply_eq_one
-
-lemma tsum_eq_sum_univ {α β : Type} [fintype α] [add_comm_monoid β] [topological_space β] [t2_space β]
-  (f : α → β) : ∑' x, f x = ∑ x, f x :=
-tsum_eq_sum (λ a ha, (ha $ finset.mem_univ a).elim)
 
 @[simp]
 lemma pmf.map_bind' {A B C : Type} (p : pmf A) (q : A → pmf B) (f : B → C) :
