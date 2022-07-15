@@ -16,26 +16,12 @@ namespace identity_oracle
 lemma identity_oracle_apply (i : spec.ι) (t : spec.domain i) (s : unit) :
   (identity_oracle spec).o i (t, s) = query i t >>= λ u, return (u, ()) := rfl
 
-section simulate
+section support
 
-
-@[simp]
-lemma eval_distribution_simulate_identity_oracle [spec.finite_range] 
-  (oa : oracle_comp spec A) (s : unit) :
-  ⦃simulate idₛ oa s⦄ = (λ a, (a, ())) <$> ⦃oa⦄ :=
-begin
-  induction oa,
-  {
-    simp,
-    sorry
-  },
-  sorry, sorry
-end
-
-@[simp]
-lemma support_simulate_identity_oracle_pure (a : A) (s : unit) :
-  (simulate idₛ (pure a : oracle_comp spec A) s).support = {(a, ())} :=
-stateless_oracle.support_simulate_pure _ a s
+-- @[simp]
+-- lemma support_simulate_identity_oracle_pure (a : A) (s : unit) :
+--   (simulate idₛ (pure a : oracle_comp spec A) s).support = {(a, ())} :=
+-- stateless_oracle.support_simulate_pure _ a s
 
 @[simp]
 lemma support_simulate_identity_oracle (oa : oracle_comp spec A) (s : unit) :
@@ -77,10 +63,52 @@ begin
   refine ⟨λ h, h.rec_on (λ _ h, h), λ h, ⟨(), h⟩⟩,
 end
 
-end simulate
+end support
+
 
 section eval_distribution
 
+variable [spec.finite_range]
+
+@[simp]
+lemma identity_oracle_apply_equiv (i : spec.ι) (t : spec.domain i) (s : unit) :
+  (identity_oracle spec).o i (t, s) ≃ₚ (λ u, (u, ())) <$> query i t :=
+sorry
+
+@[simp]
+lemma simulate_identity_oracle_equiv (oa : oracle_comp spec A) (s : unit) :
+  simulate idₛ oa s ≃ₚ (λ a, (a, ())) <$> oa :=
+begin
+  rw [punit_eq s ()],
+  induction oa with A a  A B oa ob hoa hob  i t,
+  {
+    refine (simulate_pure_equiv idₛ _ ()).trans (map_pure_equiv _ a).symm,    
+  },
+  {
+
+    refine (simulate_bind_equiv idₛ oa ob ()).trans _,
+    refine trans _ (map_bind_equiv _ _ _).symm,
+    refine trans (bind_equiv_of_equiv_first _ hoa) _,
+    rw [bind_map_equiv],
+    refine bind_equiv_of_equiv_second oa (λ a, _),
+    rw [function.comp_apply],
+    exact hob a,
+  },
+  {
+    refine (simulate_query_equiv idₛ i t ()).trans (identity_oracle_apply_equiv i t ()),
+  }
+end
+
+@[simp]
+lemma simulate'_identity_oracle_equiv (oa : oracle_comp spec A) (s : unit) :
+  (simulate' idₛ oa s) ≃ₚ oa :=
+begin
+  rw [simulate'_equiv_fst_map_simulate],
+  refine trans (map_equiv_of_equiv _ (simulate_identity_oracle_equiv oa s)) _,
+  rw [map_map_equiv],
+  refine map_equiv_of_eq_id oa _ _,
+  simp,
+end
 
 
 end eval_distribution

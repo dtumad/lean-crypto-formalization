@@ -73,7 +73,7 @@ lemma simulate'_equiv_of_oracle_equiv [spec'.finite_range] [spec''.finite_range]
   simulate' ⟪o⟫ oa s ≃ₚ simulate' ⟪o'⟫ oa s :=
 begin
   induction oa with A a A B oa ob hoa hob i t generalizing s,
-  { simp only [pure'_eq_pure, simulate'_pure, pure_map_equiv, eval_distribution_return] },
+  { simp only [pure'_eq_pure, simulate'_pure, map_pure_equiv, eval_distribution_return] },
   { calc simulate' ⟪o⟫ (oa >>= ob) s
       ≃ₚ simulate ⟪o⟫ oa s >>= λ x, simulate' ⟪o⟫ (ob x.1) x.2 : simulate'_bind_equiv ⟪o⟫ oa ob _
       ... ≃ₚ simulate ⟪o'⟫ oa s >>= λ x, simulate' ⟪o'⟫ (ob x.1) x.2 : begin
@@ -83,7 +83,7 @@ begin
       end
       ... ≃ₚ simulate' ⟪o'⟫ (oa >>= ob) s : symm (simulate'_bind_equiv ⟪o'⟫ oa ob _) },
   { simp_rw [simulate'_query_equiv, stateless_oracle.apply, fst_map_bind_mk_equiv],
-    exact map_equiv_of_equiv _ _ id (h i t) }
+    exact map_equiv_of_equiv _ (h i t), }
 end 
 
 lemma simulate'_query_equiv [spec.finite_range] (s : unit) :

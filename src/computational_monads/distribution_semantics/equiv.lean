@@ -31,10 +31,6 @@ lemma prob_event_pure_bind (a : A) (event : set B) :
   ⦃event | pure a >>= ob⦄ = ⦃event | ob a⦄ :=
 prob_event_eq_of_equiv (pure_bind_equiv ob a) event
 
-@[simp]
-lemma support_pure_bind (a : A) :
-  (pure a >>= ob).support = (ob a).support :=
-support_eq_of_equiv (pure_bind_equiv ob a)
 
 ------
 
@@ -75,7 +71,7 @@ section map
 variables (f : A → B)
 
 @[simp]
-lemma pure_map_equiv (a : A) : f <$> (pure a : oracle_comp spec A) ≃ₚ
+lemma map_pure_equiv (a : A) : f <$> (pure a : oracle_comp spec A) ≃ₚ
   (pure (f a) : oracle_comp spec B) :=
 trans (eval_distribution_map (pure a) f) (pmf.pure_map f a)
 
@@ -86,7 +82,7 @@ begin
 end
 
 @[simp]
-lemma map_bind_equiv (f : B → C) : f <$> (oa >>= ob) ≃ₚ oa >>= ((<$>) f) ∘ ob :=
+lemma map_bind_equiv (f : B → C) : f <$> (oa >>= ob) ≃ₚ oa >>= λ a, f <$> (ob a) :=
 begin
   simp [eval_distribution_map, eval_distribution_bind, functor.map, pmf.bind_bind],
   exact (pmf.map_bind ⦃oa⦄ _ _),
@@ -96,8 +92,19 @@ end
 lemma map_id_equiv : id <$> oa ≃ₚ oa :=
 by {simp [functor.map], exact pmf.bind_pure _} 
 
-lemma map_equiv_of_equiv (h : oa ≃ₚ oa') : f <$> oa ≃ₚ f <$> oa' :=
+lemma map_equiv_of_equiv {oa : oracle_comp spec A} {oa' : oracle_comp spec' A}
+  (h : oa ≃ₚ oa') : f <$> oa ≃ₚ f <$> oa' :=
 by rw [eval_distribution_map, eval_distribution_map, h]
+
+@[simp]
+lemma map_map_equiv (oa : oracle_comp spec A) (f : A → B) (g : B → C) :
+  g <$> (f <$> oa) ≃ₚ (g ∘ f) <$> oa :=
+sorry
+
+@[simp]
+lemma map_equiv_of_eq_id (oa : oracle_comp spec A) (f : A → A) (h : ∀ a, f a = a) :
+  f <$> oa ≃ₚ oa :=
+sorry
 
 end map
 

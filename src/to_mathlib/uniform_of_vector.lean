@@ -4,7 +4,7 @@ import algebra.big_operators.fin
 
 noncomputable theory
 
-variables {α : Type} --[decidable_eq α]
+variables {α β : Type} --[decidable_eq α]
 
 open_locale classical big_operators nnreal ennreal
 
@@ -62,10 +62,46 @@ section measure
 
 variable (t : set α)
 
+lemma sum_filter_count_eq_countp (p : α → Prop) (l : list α) :
+  ∑ x in l.to_finset.filter p, l.count x = l.countp p :=
+begin
+  induction l with a as h,
+  { simp },
+  { rw [list.to_finset_cons],
+    by_cases ha : a ∈ as.to_finset,
+    { rw [finset.insert_eq_of_mem ha, list.countp_cons],
+      calc ∑ x in as.to_finset.filter p, (a :: as).count x
+        = ∑ x in as.to_finset.filter p, (as.count x + ite (a = x) (ite (p a) 1 0) 0) :
+          begin
+            refine finset.sum_congr rfl (λ x hx, _),
+            split_ifs with hax hpa,
+            { simp [hax] },
+            { exact false.elim (hpa $ hax.symm ▸ (finset.mem_filter.1 hx).2) },
+            { simp [ne.symm hax] }
+          end
+        ... = list.countp p as + ite (p a) 1 0 : by simp_rw [finset.sum_add_distrib, h,
+          finset.sum_ite_eq, finset.mem_filter, ← ite_and, and_assoc, and_self, ha, true_and] },
+    { calc ∑ x in (insert a as.to_finset).filter p, (a :: as).count x
+        = (ite (p a) ((a :: as).count a) 0) + ∑ x in as.to_finset.filter p, (a :: as).count x :
+          begin
+            rw [finset.filter_insert],
+            split_ifs with hpa,
+            { exact finset.sum_insert (λ h, ha (finset.mem_filter.1 h).1) },
+            { exact (zero_add _).symm }
+          end
+        ... = (ite (p a) 1 0) + ∑ x in as.to_finset.filter p, as.count x : begin
+          congr' 1,
+          { have : a ∉ as := ha ∘ list.mem_to_finset.2,
+            simp [list.count_eq_zero_of_not_mem this] },
+          { refine finset.sum_congr rfl (λ x hx, _),
+            have : x ≠ a := λ hxa, ha (hxa ▸ (finset.mem_filter.1 hx).1),
+            simp [this] }
+        end
+        ... = (a :: as).countp p : by rw [h, list.countp_cons, add_comm] } }
+end
 
 -- TODO: most have statements could be broken out probably
-lemma sum_ite_count {α β : Type*} [add_comm_monoid_with_one β] [topological_space β] [t2_space β]
-  (p : α → Prop) (l : list α) :
+lemma sum_ite_count [add_comm_monoid_with_one β] (p : α → Prop) (l : list α) :
   (∑ x in l.to_finset, if p x then (l.count x : β) else 0) = l.countp p :=
 begin
   induction l with a as h,
@@ -99,7 +135,7 @@ begin
         simp [this] } } }
 end
 
-lemma tsum_ite_count {α β : Type*} [add_comm_monoid_with_one β] [topological_space β] [t2_space β]
+lemma tsum_ite_count {α β : Type} [add_comm_monoid_with_one β] [topological_space β] [t2_space β]
   (p : α → Prop) (l : list α) :
   (∑' (x : α), if p x then (l.count x : β) else 0) = l.countp p :=
 calc (∑' (x : α), if p x then l.count x else 0 : β)
@@ -121,7 +157,7 @@ calc (uniform_of_vector v).to_outer_measure t
   ... = (∑' (x : α), t.indicator (λ a, v.to_list.count a) x) / (n + 1) :
     by simp only [div_eq_mul_inv, ennreal.tsum_mul_right]
   ... = (v.to_list.countp (∈ t)) / (n + 1) :
-    congr_arg (λ (r : ℝ≥0∞), r / (n + 1)) (tsum_ite_count (∈ t) v.to_list)
+    congr_arg (λ (r : ℝ≥0∞), r / (n + 1)) sorry --(tsum_ite_count (∈ t) v.to_list)
 
 @[simp]
 lemma to_measure_uniform_of_vector_apply [measurable_space α] (ht : measurable_set t) :
