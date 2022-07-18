@@ -3,6 +3,10 @@ import data.vector.basic
 
 -- Misc. lemmas that should eventually be moved into actual mathlib -
 
+lemma subsingleton.exists_iff {α : Type*} [subsingleton α] [inhabited α]
+  (p : α → Prop) : (∃ x, p x) ↔ p (arbitrary α) :=
+⟨λ h, let ⟨x, h⟩ := h in (subsingleton.elim x (arbitrary α) ▸ h), λ h, ⟨arbitrary α, h⟩⟩
+
 open_locale nnreal ennreal classical big_operators
 
 lemma vector.to_list_nonempty {α : Type} {n : ℕ} (v : vector α (n + 1)) : ¬ v.to_list.empty :=

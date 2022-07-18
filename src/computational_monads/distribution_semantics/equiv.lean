@@ -44,6 +44,8 @@ lemma prob_event_bind_pure (event : set A) :
   ⦃event | oa >>= pure ⦄ = ⦃event | oa⦄ :=
 prob_event_eq_of_equiv (bind_pure_equiv oa) event
 
+lemma bind_equiv_of_equiv_of_equiv {oa oa' : oracle_comp spec A} {ob ob' : A → oracle_comp spec B}
+  (h : oa ≃ₚ oa') (h' :∀ a, (ob a) ≃ₚ (ob' a)) : (oa >>= ob) ≃ₚ (oa' >>= ob') := sorry
 
 lemma bind_equiv_of_equiv_first {oa oa' : oracle_comp spec A} (ob : A → oracle_comp spec B)
   (h : oa ≃ₚ oa') : (oa >>= ob) ≃ₚ (oa' >>= ob) :=

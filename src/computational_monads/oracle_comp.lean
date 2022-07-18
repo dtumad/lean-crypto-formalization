@@ -37,6 +37,21 @@ lemma bind'_eq_bind (oa : oracle_comp spec α) (ob : α → oracle_comp spec β)
 
 end monad
 
+/-- Slightly nicer induction priciple, avoiding use of `bind'` and `pure'`.
+  Use as induction principle with `induction oa using oracle_comp.induction_on` -/
+@[elab_as_eliminator] def induction_on {C : Π {α : Type}, oracle_comp spec α → Sort*}
+  {α : Type} (oa : oracle_comp spec α)
+  (h_pure : ∀ {α : Type} (a : α), C (pure a))
+  (h_bind : ∀ {α β : Type} {oa : oracle_comp spec α} {ob : α → oracle_comp spec β},
+    C oa → (∀ a, C (ob a)) → C (oa >>= ob) )
+  (h_query : ∀ i t, C (query i t)) : C oa :=
+begin
+  induction oa with A a A B oa ob hoa hob i t,
+  { exact h_pure _ },
+  { exact h_bind hoa hob },
+  { exact h_query i t }
+end
+
 /-- Constructing an `oracle_comp` implies the existence of some element of the underlying type.
   The assumption that the range of the oracles is `inhabited` is the key point for this -/
 def inhabited_base {spec : oracle_spec} :

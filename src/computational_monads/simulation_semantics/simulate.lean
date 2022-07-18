@@ -4,7 +4,7 @@ import computational_monads.distribution_semantics.equiv
 
 namespace oracle_comp
 
-variables {A B C : Type} {spec spec' : oracle_spec}
+variables {A B C : Type} {spec spec' spec'' : oracle_spec}
 
 /-- Specifies a way to simulate a set of oracles using another set of oracles. 
   e.g. using uniform random selection to simulate a hash oracle
@@ -16,7 +16,7 @@ structure simulation_oracle (spec spec' : oracle_spec) :=
 (default_state : S)
 (o (i : spec.ι) : (spec.domain i × S) → oracle_comp spec' (spec.range i × S))
 
-variables (so : simulation_oracle spec spec')
+variables (so : simulation_oracle spec spec') (so' : simulation_oracle spec spec'')
 variables (a : A) (i : spec.ι) (t : spec.domain i)
   (oa oa' : oracle_comp spec A) (ob ob' : A → oracle_comp spec B) (s : so.S)
 
@@ -44,7 +44,7 @@ lemma support_simulate_pure : (simulate so (pure a) s).support = {(a, s)} :=
 by simp
 
 lemma support_simulate_bind : (simulate so (oa >>= ob) s).support =
-  ⋃ (x : A × so.S) (hx : x ∈ (simulate so oa s).support), (simulate so (ob x.1) x.2).support :=
+  ⋃ x ∈ (simulate so oa s).support, (simulate so (ob $ prod.fst x) x.2).support :=
 by simp
 
 lemma support_simulate_query : (simulate so (query i t) s).support = (so.o i (t, s)).support :=
@@ -86,7 +86,8 @@ lemma simulate'_pure : simulate' so (pure a) s = prod.fst <$> (pure (a, s)) := r
 
 @[simp]
 lemma simulate'_bind : simulate' so (oa >>= ob) s =
-  prod.fst <$> (simulate so oa s >>= λ x, simulate so (ob x.1) x.2) := rfl
+  (simulate so oa s >>= λ x, simulate' so (ob x.1) x.2) :=
+sorry
 
 @[simp]
 lemma simulate'_query : simulate' so (query i t) s = prod.fst <$> so.o i (t, s) := rfl
@@ -95,6 +96,17 @@ lemma simulate'_query : simulate' so (query i t) s = prod.fst <$> so.o i (t, s) 
 lemma support_simulate' : (simulate' so oa s).support =
   prod.fst '' (simulate so oa s).support :=
 by simp [simulate']
+
+lemma support_simulate'_pure (a : A) : (simulate' so (pure a) s).support = {a} :=
+by simp
+
+lemma support_simulate'_bind : (simulate' so (oa >>= ob) s).support =
+  ⋃ x ∈ (simulate so oa s).support, (simulate' so (ob $ prod.fst x) x.snd).support :=
+by simp
+
+lemma support_simulate'_query : (simulate' so (query i t) s).support =
+  prod.fst '' (so.o i (t, s)).support :=
+by simp
 
 end simulate'
 
@@ -201,7 +213,7 @@ lemma simulate'_equiv_fst_map_simulate :
 
 @[simp]
 lemma simulate'_pure_equiv : simulate' so (pure a) s ≃ₚ
-  (pure a : oracle_comp spec' A) := by simp only [simulate'_pure, pure_map_equiv]
+  (pure a : oracle_comp spec' A) := by simp only [simulate'_pure, map_pure_equiv]
 
 @[simp]
 lemma simulate'_bind_equiv : simulate' so (oa >>= ob) s ≃ₚ

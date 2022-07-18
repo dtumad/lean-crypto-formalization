@@ -12,105 +12,105 @@ notation `idₛ` := identity_oracle _
 
 namespace identity_oracle
 
+section instances
+
+instance S_subsinglton : subsingleton (identity_oracle spec).S :=
+by simpa [identity_oracle_S] using punit.subsingleton
+
+instance S_inhabited : inhabited (identity_oracle spec).S :=
+by simpa [identity_oracle_S] using punit.inhabited
+
+end instances
+
 @[simp]
-lemma identity_oracle_apply (i : spec.ι) (t : spec.domain i) (s : unit) :
+lemma apply (i : spec.ι) (t : spec.domain i) (s : unit) :
   (identity_oracle spec).o i (t, s) = query i t >>= λ u, return (u, ()) := rfl
 
 section support
 
--- @[simp]
--- lemma support_simulate_identity_oracle_pure (a : A) (s : unit) :
---   (simulate idₛ (pure a : oracle_comp spec A) s).support = {(a, ())} :=
--- stateless_oracle.support_simulate_pure _ a s
+@[simp]
+lemma support_apply (i : spec.ι) (t : spec.domain i) (s : unit) :
+  ((identity_oracle spec).o i (t, s)).support = { u | u.1 ∈ (query i t).support } :=
+begin
+  simp only [apply, support_bind, support_pure, set.Union_true,
+    set.Union_singleton_eq_range, support_query, set.top_eq_univ, set.mem_univ, set.set_of_true],
+  exact set.eq_univ_of_forall (λ x, set.mem_range.2
+    ⟨x.1, prod.eq_iff_fst_eq_snd_eq.2 ⟨rfl, punit_eq () x.snd⟩⟩),
+end
 
 @[simp]
-lemma support_simulate_identity_oracle (oa : oracle_comp spec A) (s : unit) :
+theorem support_simulate (oa : oracle_comp spec A) (s : unit) :
   (simulate idₛ oa s).support = {x | x.1 ∈ oa.support} :=
 begin
-  induction oa with A a A B oa ob hoa hob i t,
-  {
-    ext x,
-    simp [prod.eq_iff_fst_eq_snd_eq, punit_eq x.snd s],
-  },
-  {
-    ext x,
-    simp [hoa, hob],
-    sorry,
-  },
-  {
-    ext x,
-    induction x with x_fst x_snd,
-    simp,
-    refine punit_eq () x_snd,
-  }
-end
-
-lemma mem_support_simulate_identity_oracle_iff (oa : oracle_comp spec A) (s : unit) (x : A × unit) :
-  x ∈ (simulate idₛ oa s).support ↔ x.1 ∈ oa.support :=
-begin
-  simp,
-  refine iff.rfl,
+  induction oa with A a A B oa ob hoa hob i t generalizing s,
+  { ext x,
+    simp [prod.eq_iff_fst_eq_snd_eq, punit_eq x.snd (), punit_eq () s] },
+  { ext x,    
+    simp only [hoa, hob, subsingleton.exists_iff, bind'_eq_bind, simulate_bind, support_bind, set.mem_set_of_eq, set.mem_Union,
+      prod.exists] },
+  { rw [simulate_query, support_apply] }
 end
 
 @[simp]
-lemma support_simulate'_identity_oracle (oa : oracle_comp spec A) (s : unit) :
+lemma mem_support_simulate_iff (oa : oracle_comp spec A) (s : unit) (x : A × unit) :
+  x ∈ (simulate idₛ oa s).support ↔ x.1 ∈ oa.support :=
+by simpa
+
+@[simp]
+lemma support_simulate' (oa : oracle_comp spec A) (s : unit) :
   (simulate' idₛ oa s).support = oa.support :=
 begin
-  rw [support_simulate', support_simulate_identity_oracle],
   ext x,
-  simp only [set.mem_image, set.mem_set_of_eq,
-    prod.exists, exists_and_distrib_right, exists_eq_right],
-  refine ⟨λ h, h.rec_on (λ _ h, h), λ h, ⟨(), h⟩⟩,
+  simp only [support_simulate', support_simulate, set.mem_image, set.mem_set_of_eq,
+    subsingleton.exists_iff, prod.exists, exists_and_distrib_right, exists_eq_right],
 end
 
 end support
 
-
-section eval_distribution
+section equiv
 
 variable [spec.finite_range]
 
 @[simp]
-lemma identity_oracle_apply_equiv (i : spec.ι) (t : spec.domain i) (s : unit) :
+lemma apply_equiv (i : spec.ι) (t : spec.domain i) (s : unit) :
   (identity_oracle spec).o i (t, s) ≃ₚ (λ u, (u, ())) <$> query i t :=
-sorry
+rfl
 
 @[simp]
-lemma simulate_identity_oracle_equiv (oa : oracle_comp spec A) (s : unit) :
+theorem simulate_equiv (oa : oracle_comp spec A) (s : unit) :
   simulate idₛ oa s ≃ₚ (λ a, (a, ())) <$> oa :=
 begin
-  rw [punit_eq s ()],
-  induction oa with A a  A B oa ob hoa hob  i t,
-  {
-    refine (simulate_pure_equiv idₛ _ ()).trans (map_pure_equiv _ a).symm,    
-  },
-  {
-
-    refine (simulate_bind_equiv idₛ oa ob ()).trans _,
-    refine trans _ (map_bind_equiv _ _ _).symm,
-    refine trans (bind_equiv_of_equiv_first _ hoa) _,
-    rw [bind_map_equiv],
-    refine bind_equiv_of_equiv_second oa (λ a, _),
-    rw [function.comp_apply],
-    exact hob a,
-  },
-  {
-    refine (simulate_query_equiv idₛ i t ()).trans (identity_oracle_apply_equiv i t ()),
-  }
+  induction oa with A a A B oa ob hoa hob i t generalizing s,
+  { simp [punit_eq s ()] },
+  { exact trans (simulate_bind_equiv idₛ oa ob s) (trans (bind_equiv_of_equiv_of_equiv
+      (hoa s) (λ x, hob x.fst x.snd)) (by simp)) },
+  { exact (simulate_query_equiv idₛ i t ()).trans (apply_equiv i t ()) }
 end
+
+lemma default_simulate_equiv (oa : oracle_comp spec A) (s : unit) :
+  default_simulate idₛ oa ≃ₚ (λ a, (a, ())) <$> oa :=
+simulate_equiv oa ()
 
 @[simp]
 lemma simulate'_identity_oracle_equiv (oa : oracle_comp spec A) (s : unit) :
   (simulate' idₛ oa s) ≃ₚ oa :=
-begin
-  rw [simulate'_equiv_fst_map_simulate],
-  refine trans (map_equiv_of_equiv _ (simulate_identity_oracle_equiv oa s)) _,
-  rw [map_map_equiv],
-  refine map_equiv_of_eq_id oa _ _,
-  simp,
-end
+calc simulate' idₛ oa s ≃ₚ prod.fst <$> simulate idₛ oa s : rfl
+  ... ≃ₚ prod.fst <$> (λ a, (a, ())) <$> oa : (map_equiv_of_equiv _ (simulate_equiv oa s))
+  ... ≃ₚ (prod.fst ∘ λ a, (a, ())) <$> oa : map_map_equiv oa _ _
+  ... ≃ₚ oa : map_equiv_of_eq_id _ _ (by simp)
+
+lemma default_simulate'_equiv (oa : oracle_comp spec A) (s : unit) :
+  default_simulate' idₛ oa ≃ₚ oa :=
+simulate'_identity_oracle_equiv oa ()
+
+end equiv
+
+section prob_event
 
 
-end eval_distribution
+
+end prob_event
+
+
 
 end identity_oracle
