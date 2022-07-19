@@ -3,7 +3,11 @@ import data.vector.basic
 
 -- Misc. lemmas that should eventually be moved into actual mathlib -
 
-lemma subsingleton.exists_iff {α : Type*} [subsingleton α] [inhabited α]
+lemma forall_iff_of_subsingleton_of_inhabited {α : Type*} [subsingleton α] [inhabited α]
+  (p : α → Prop) : (∀ x, p x) ↔ p (arbitrary α) :=
+⟨λ h, h $ arbitrary α, λ h, (λ x, subsingleton.elim (arbitrary α) x ▸ h)⟩
+
+lemma exists_iff_of_subsingleton_of_inhabited {α : Type*} [subsingleton α] [inhabited α]
   (p : α → Prop) : (∃ x, p x) ↔ p (arbitrary α) :=
 ⟨λ h, let ⟨x, h⟩ := h in (subsingleton.elim x (arbitrary α) ▸ h), λ h, ⟨arbitrary α, h⟩⟩
 
