@@ -50,30 +50,34 @@ by simp
 lemma support_simulate_query : (simulate so (query i t) s).support = (so.o i (t, s)).support :=
 by simp
 
+section eval_distribution
+
+variable [spec'.finite_range]
+
+lemma eval_distribution_simulate_pure :
+  ⦃simulate so (pure a) s⦄ = pmf.pure (a, s) := rfl
+
+lemma eval_distribution_simulate_bind :
+  ⦃simulate so (oa >>= ob) s⦄ = ⦃simulate so oa s⦄ >>= λ x, ⦃simulate so (ob x.1) x.2⦄ :=
+by rw [simulate_bind, eval_distribution_bind]
+
+lemma eval_distribution_simulate_query :
+  ⦃simulate so (query i t) s⦄ = ⦃so.o i (t, s)⦄ := rfl
+
+@[simp]
+lemma simulate_pure_equiv : (simulate so (pure a) s) ≃ₚ
+  (pure (a, s) : oracle_comp spec' (A × so.S)) := rfl
+
+@[simp]
+lemma simulate_bind_equiv : (simulate so (oa >>= ob) s) ≃ₚ
+  (simulate so oa s) >>= λ x, simulate so (ob x.1) x.2 := rfl
+
+@[simp]
+lemma simulate_query_equiv : (simulate so (query i t) s) ≃ₚ so.o i (t, s) := rfl
+
+end eval_distribution
+
 end simulate
-
-section default_simulate
-
-/-- TODO: expand this and use everywhere -/
-def default_simulate (so : simulation_oracle spec spec') (oa : oracle_comp spec A) :
-  oracle_comp spec' (A × so.S) := oa.simulate so so.default_state
-
-@[simp]
-lemma default_simulate_pure : default_simulate so (pure a) = pure (a, so.default_state) := rfl
-
-@[simp]
-lemma default_simulate_bind : default_simulate so (oa >>= ob) =
-  simulate so oa so.default_state >>= λ x, simulate so (ob x.1) x.2 := rfl
-
-@[simp]
-lemma default_simulate_query : default_simulate so (query i t) =
-  so.o i (t, so.default_state) := rfl
-
-@[simp]
-lemma support_default_simulate : (default_simulate so oa).support =
-  (simulate so oa so.default_state).support := rfl
-
-end default_simulate
 
 section simulate'
 
@@ -108,91 +112,9 @@ lemma support_simulate'_query : (simulate' so (query i t) s).support =
   prod.fst '' (so.o i (t, s)).support :=
 by simp
 
-end simulate'
-
-section default_simulate'
-
-def default_simulate' (so : simulation_oracle spec spec') (oa : oracle_comp spec A) :
-  oracle_comp spec' A := oa.simulate' so so.default_state
-
-@[simp]
-lemma default_simulate'_pure : default_simulate' so (pure a) =
-  prod.fst <$> pure (a, so.default_state) := rfl
-
-@[simp]
-lemma default_simulate'_bind : default_simulate' so (oa >>= ob) =
-  prod.fst <$> ((simulate so oa so.default_state) >>= (λ x, simulate so (ob x.1) x.2)) := rfl
-
-@[simp]
-lemma default_simulate'_query : default_simulate' so (query i t) =
-  prod.fst <$>so.o i (t, so.default_state) := rfl
-
-@[simp]
-lemma support_default_simulate' : (default_simulate' so oa).support =
-  (simulate' so oa so.default_state).support := rfl
-
-end default_simulate'
-
 section eval_distribution
 
-variable [hspec' : spec'.finite_range]
-include hspec'
-
-section simulate
-
-lemma eval_distribution_simulate_pure :
-  ⦃simulate so (pure a) s⦄ = pmf.pure (a, s) := rfl
-
-lemma eval_distribution_simulate_bind :
-  ⦃simulate so (oa >>= ob) s⦄ = ⦃simulate so oa s⦄ >>= λ x, ⦃simulate so (ob x.1) x.2⦄ :=
-by rw [simulate_bind, eval_distribution_bind]
-
-lemma eval_distribution_simulate_query :
-  ⦃simulate so (query i t) s⦄ = ⦃so.o i (t, s)⦄ := rfl
-
-@[simp]
-lemma simulate_pure_equiv : (simulate so (pure a) s) ≃ₚ
-  (pure (a, s) : oracle_comp spec' (A × so.S)) := rfl
-
-@[simp]
-lemma simulate_bind_equiv : (simulate so (oa >>= ob) s) ≃ₚ
-  (simulate so oa s) >>= λ x, simulate so (ob x.1) x.2 := rfl
-
-@[simp]
-lemma simulate_query_equiv : (simulate so (query i t) s) ≃ₚ so.o i (t, s) := rfl
-
-end simulate
-
-section default_simulate
-
-lemma eval_distribution_default_simulate_pure :
-  ⦃default_simulate so (pure a)⦄ = pmf.pure (a, so.default_state) :=
-eval_distribution_simulate_pure so a so.default_state
-
-lemma eval_distribution_default_simulate_bind :
-  ⦃default_simulate so (oa >>= ob)⦄ =
-    ⦃simulate so oa so.default_state⦄ >>= λ x, ⦃simulate so (ob x.1) x.2⦄ :=
-eval_distribution_simulate_bind so oa ob so.default_state
-
-lemma eval_distribution_default_simulate_query :
-  ⦃default_simulate so (query i t)⦄ = ⦃so.o i (t, so.default_state)⦄ :=
-eval_distribution_simulate_query so i t so.default_state
-
-@[simp]
-lemma default_simulate_pure_equiv : default_simulate so (pure a) ≃ₚ
-  (pure (a, so.default_state) : oracle_comp spec' (A × so.S)) := rfl
-
-@[simp]
-lemma default_simulate_bind_equiv : default_simulate so (oa >>= ob) ≃ₚ
-  default_simulate so oa >>= λ x, simulate so (ob x.1) x.2 := rfl
-
-@[simp]
-lemma default_simulate_query_equiv : default_simulate so (query i t) ≃ₚ
-  so.o i (t, so.default_state) := rfl
-
-end default_simulate
-
-section simulate'
+variable [spec'.finite_range]
 
 lemma eval_distribution_simulate' : ⦃simulate' so oa s⦄ = prod.fst <$> ⦃simulate so oa s⦄ :=
 eval_distribution_map _ prod.fst
@@ -224,38 +146,8 @@ by simp [simulate']
 lemma simulate'_query_equiv : simulate' so (query i t) s ≃ₚ
   prod.fst <$> (so.o i (t, s)) := rfl
 
-end simulate'
-
-section default_simulate'
-
-lemma eval_distribution_default_simulate'_pure : ⦃default_simulate' so (pure a)⦄ =
-  pmf.pure a := eval_distribution_simulate'_pure so a so.default_state
-
-lemma eval_distribution_default_simulate'_bind : ⦃default_simulate' so (oa >>= ob)⦄ =
-  ⦃default_simulate so oa⦄ >>= λ x, ⦃simulate' so (ob x.1) x.2⦄ :=
-eval_distribution_simulate'_bind so oa ob so.default_state
-
-lemma eval_distribution_default_simulate'_query : ⦃default_simulate' so (query i t)⦄ =
-  prod.fst <$> ⦃simulate so (query i t) so.default_state⦄ :=
-eval_distribution_simulate'_query so i t so.default_state
-
-@[simp]
-lemma default_simulate'_pure_equiv : default_simulate' so (pure a) ≃ₚ
-  (pure a : oracle_comp spec' A) :=
-simulate'_pure_equiv so a so.default_state
-
-@[simp]
-lemma default_simulate'_bind_equiv : default_simulate' so (oa >>= ob) ≃ₚ
-  (default_simulate so oa) >>= λ x, simulate' so (ob x.1) x.2 :=
-simulate'_bind_equiv so oa ob so.default_state
-
-@[simp]
-lemma default_simulate'_query_equiv : default_simulate' so (query i t) ≃ₚ
-  prod.fst <$> (so.o i (t, so.default_state)) :=
-simulate'_query_equiv so i t so.default_state
-
-end default_simulate'
-
 end eval_distribution
+
+end simulate'
 
 end oracle_comp

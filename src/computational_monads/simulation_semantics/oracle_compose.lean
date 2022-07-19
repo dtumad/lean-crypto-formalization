@@ -1,4 +1,4 @@
-import computational_monads.simulation_semantics.simulate
+import computational_monads.simulation_semantics.default_simulate
 
 open oracle_comp oracle_spec
 
