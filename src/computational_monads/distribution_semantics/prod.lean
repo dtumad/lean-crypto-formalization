@@ -20,7 +20,7 @@ end eval_distribution
 
 section prob_event
 
-lemma eval_prob_prod_eq (oa : oracle_comp spec (α × α)) :
+lemma prob_event_prod_eq (oa : oracle_comp spec (α × α)) :
   ⦃λ ⟨a, a'⟩, a = a' | oa⦄ = ∑' (a₀ : α), ⦃λ ⟨a, a'⟩, a = a₀ ∧ a' = a₀ | oa⦄ :=
 sorry
 

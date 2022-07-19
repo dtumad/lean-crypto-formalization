@@ -2,9 +2,7 @@ import measure_theory.probability_mass_function.constructions
 import to_mathlib.general
 import algebra.big_operators.fin
 
-noncomputable theory
-
-variables {α β : Type} --[decidable_eq α]
+variables {α β : Type}
 
 open_locale classical big_operators nnreal ennreal
 
@@ -37,7 +35,7 @@ section uniform_of_vector
 
 variables {n : ℕ} (v : vector α (n + 1)) (a : α)
 
-def uniform_of_vector {n : ℕ} (v : vector α (n + 1)) : pmf α :=
+noncomputable def uniform_of_vector {n : ℕ} (v : vector α (n + 1)) : pmf α :=
 of_multiset (quotient.mk v.to_list) (by simpa only [multiset.quot_mk_to_coe,
   ne.def, multiset.coe_eq_zero, ← list.empty_iff_eq_nil] using vector.to_list_nonempty v)
 

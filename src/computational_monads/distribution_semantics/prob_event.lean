@@ -1,15 +1,14 @@
-import computational_monads.distribution_semantics.eval_distribution
+import computational_monads.distribution_semantics.equiv
 import probability.independence
-
--- noncomputable theory
 
 namespace distribution_semantics
 
 open oracle_comp
 open_locale big_operators nnreal ennreal
 
-variables {α β γ : Type} {spec : oracle_spec} 
+variables {α β γ : Type} {spec spec' : oracle_spec} 
 variable [spec.finite_range]
+variable [spec'.finite_range]
 
 /-- Probability of a predicate holding after running a particular experiment.
   Defined in terms of the outer measure associated to the corresponding `pmf`.
@@ -34,47 +33,51 @@ lemma prob_event_eq_to_outer_measure_apply : ⦃ e | oa ⦄ = ⦃oa⦄.to_outer_
   ⦃oa⦄ e (measurable_space.measurable_set_top)
 
 @[simp]
-lemma eval_prob_eq_zero_iff_disjoint_support : ⦃ e | oa ⦄ = 0 ↔ disjoint oa.support e :=
+lemma prob_event_eq_zero_iff_disjoint_support : ⦃ e | oa ⦄ = 0 ↔ disjoint oa.support e :=
 by simp only [prob_event_eq_to_outer_measure_apply,
   pmf.to_outer_measure_apply_eq_zero_iff, support_eval_distribution]
 
 @[simp]
-lemma eval_prob_eq_one_iff_support_subset : ⦃ e | oa ⦄ = 1 ↔ oa.support ⊆ e :=
+lemma prob_event_eq_one_iff_support_subset : ⦃ e | oa ⦄ = 1 ↔ oa.support ⊆ e :=
 by simp only [prob_event_eq_to_outer_measure_apply,
   pmf.to_outer_measure_apply_eq_one_iff, support_eval_distribution]
 
+lemma prob_event_eq_of_equiv {oa : oracle_comp spec α} {oa' : oracle_comp spec' α}
+  (h : oa ≃ₚ oa') (e : set α) : ⦃e | oa⦄ = ⦃e | oa'⦄ :=
+by simp_rw [prob_event, h]
+
 @[simp]
-lemma eval_prob_return [decidable_pred e] :
+lemma prob_event_return [decidable_pred e] :
   ⦃ e | (return a : oracle_comp spec α) ⦄ = if a ∈ e then 1 else 0 :=
 (trans (prob_event_eq_to_outer_measure_apply _ e) $
   (pmf.to_outer_measure_pure_apply a e).trans (by congr))
 
-lemma eval_prob_return_of_true [decidable_pred e] (ha : a ∈ e) :
+lemma prob_event_return_of_true [decidable_pred e] (ha : a ∈ e) :
   ⦃ e | (return a : oracle_comp spec α) ⦄ = 1 :=
-by simp only [ha, eval_prob_return, if_true]
+by simp only [ha, prob_event_return, if_true]
 
-lemma eval_prob_return_of_false [decidable_pred e] (ha : a ∉ e) :
+lemma prob_event_return_of_false [decidable_pred e] (ha : a ∉ e) :
   ⦃ e | (return a : oracle_comp spec α) ⦄ = 0 :=
-by simp only [ha, eval_prob_return, if_false]
+by simp only [ha, prob_event_return, if_false]
 
 @[simp]
-lemma eval_prob_bind : ⦃ e'' | oa >>= ob ⦄ = ∑' (a : α), ⦃oa⦄ a * ⦃ e'' | ob a ⦄ :=
+lemma prob_event_bind : ⦃ e'' | oa >>= ob ⦄ = ∑' (a : α), ⦃oa⦄ a * ⦃ e'' | ob a ⦄ :=
 begin
   simp only [prob_event, eval_distribution_bind, prob_event_eq_to_outer_measure_apply],
   exact pmf.to_outer_measure_bind_apply ⦃oa⦄ (λ a, ⦃ob a⦄) e'',
 end
 
 @[simp]
-lemma eval_prob_pure_bind [decidable_eq α] :
-  ⦃ e'' | return a >>= ob ⦄ = ⦃ e'' | ob a ⦄ :=
-begin
-  simp only [eval_prob_bind, eval_distribution_return, pmf.pure_apply],
-  refine trans (tsum_congr $ λ a', _) (tsum_ite_eq a ⦃ e'' | ob a⦄),
-  split_ifs with h; simp [h],
-end
+lemma prob_event_pure_bind : ⦃e'' | pure a >>= ob⦄ = ⦃e'' | ob a⦄ :=
+prob_event_eq_of_equiv (pure_bind_equiv ob a) e''
 
 @[simp]
-lemma eval_prob_query (i : spec.ι) (t : spec.domain i) (e : set $ spec.range i)
+lemma prob_event_bind_pure :
+  ⦃e | oa >>= pure ⦄ = ⦃e | oa⦄ :=
+prob_event_eq_of_equiv (bind_pure_equiv oa) e
+
+@[simp]
+lemma prob_event_query (i : spec.ι) (t : spec.domain i) (e : set $ spec.range i)
   [decidable_pred e] : ⦃ e | query i t ⦄ = fintype.card e / fintype.card (spec.range i) :=
 trans (prob_event_eq_to_outer_measure_apply _ e)
   ((pmf.to_outer_measure_uniform_of_fintype_apply e).trans (by congr))

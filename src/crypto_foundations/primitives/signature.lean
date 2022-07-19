@@ -107,7 +107,7 @@ begin
   { specialize h m,
     rw distribution_semantics.eval_distribution_eq_one_iff_support_subset_singleton at h,
     simp [support_completeness_experiment, set.Union_subset_iff,
-      eval_prob_eq_one_iff_support_subset, prod.forall] at h,
+      prob_event_eq_one_iff_support_subset, prod.forall] at h,
     sorry,
     --exact λ h', (h pk sk hgen σ hsign h').elim
   },

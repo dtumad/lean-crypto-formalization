@@ -1,4 +1,4 @@
-import computational_monads.distribution_semantics.prob_event
+import computational_monads.distribution_semantics.eval_distribution
 /-!
 # Equivalence Between Computations in Terms of Distribution Semantics
 
@@ -25,10 +25,6 @@ lemma support_eq_of_equiv {oa : oracle_comp spec A} {oa' : oracle_comp spec' A}
   (h : oa ≃ₚ oa') : oa.support = oa'.support :=
 by simp_rw [← support_eval_distribution, h]
 
-lemma prob_event_eq_of_equiv {oa : oracle_comp spec A} {oa' : oracle_comp spec' A}
-  (h : oa ≃ₚ oa') (event : set A) : ⦃event | oa⦄ = ⦃event | oa'⦄ :=
-by simp_rw [prob_event, h]
-
 section bind
 
 @[simp]
@@ -36,18 +32,8 @@ lemma pure_bind_equiv (a : A) : (pure a >>= ob) ≃ₚ (ob a) :=
 (eval_distribution_bind (return a) ob).trans (pmf.pure_bind a (λ a, ⦃ob a⦄))
 
 @[simp]
-lemma prob_event_pure_bind (a : A) (event : set B) :
-  ⦃event | pure a >>= ob⦄ = ⦃event | ob a⦄ :=
-prob_event_eq_of_equiv (pure_bind_equiv ob a) event
-
-@[simp]
 lemma bind_pure_equiv : (oa >>= pure) ≃ₚ oa :=
 trans (eval_distribution_bind oa pure) (pmf.bind_pure (⦃oa⦄))
-
-@[simp]
-lemma prob_event_bind_pure (event : set A) :
-  ⦃event | oa >>= pure ⦄ = ⦃event | oa⦄ :=
-prob_event_eq_of_equiv (bind_pure_equiv oa) event
 
 lemma bind_equiv_of_equiv_of_equiv {oa oa' : oracle_comp spec A} {ob ob' : A → oracle_comp spec B}
   (h : oa ≃ₚ oa') (h' :∀ a, (ob a) ≃ₚ (ob' a)) : (oa >>= ob) ≃ₚ (oa' >>= ob') := sorry
