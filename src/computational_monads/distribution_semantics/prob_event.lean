@@ -76,27 +76,16 @@ lemma eval_prob_query (i : spec.ι) (t : spec.domain i) (event : set $ spec.rang
   ⦃ event | query i t ⦄ = fintype.card event / fintype.card (spec.range i) :=
 trans (prob_event_eq_to_outer_measure_apply _ event) (pmf.to_outer_measure_uniform_of_fintype_apply event)
 
-lemma eval_prob_prod_eq (oa : oracle_comp spec (A × A)) :
-  ⦃ λ ⟨a, a'⟩, a = a' | oa ⦄ = ∑' (a₀ : A), ⦃ λ ⟨a, a'⟩, a = a₀ ∧ a' = a₀ | oa⦄ :=
-begin
-  simp,
-  sorry
-end
+section indep_events
 
-section indep_event
-
-/-- Two collections are independent if 
+/-- Two collections of sets are independent if any two sets have intersection
+  of probaility equal to the product of the individual probability.
   Independence is defined using a measure with `measurable_space` `⊤`.
   Further lemmas are written to be independent of this. -/
 def indep_events (oa : oracle_comp spec A) (events events' : set (set A)) : Prop :=
 @probability_theory.indep_sets A ⊤ events events' (@pmf.to_measure A ⊤ ⦃oa⦄)
 
-/-- T-/
-def indep_event (oa : oracle_comp spec A) (event event' : set A) : Prop :=
-indep_events oa {event} {event'}
-
-variables (oa : oracle_comp spec A)
-  (events events' : set (set A)) (e e' : set A)
+variables (oa : oracle_comp spec A) (events events' : set (set A)) (e e' : set A)
 
 lemma indep_events_iff : indep_events oa events events' ↔ ∀ e e', e ∈ events → e' ∈ events' →
   ⦃ e ∩ e' | oa ⦄ = ⦃ e | oa ⦄ * ⦃ e' | oa ⦄ :=
@@ -106,14 +95,25 @@ lemma prob_event_inter_eq_mul_of_indep_events (h : indep_events oa events events
   (he : e ∈ events) (he' : e' ∈ events') : ⦃ e ∩ e' | oa ⦄ = ⦃ e | oa ⦄ * ⦃ e' | oa ⦄ :=
 h e e' he he'
 
+end indep_events
+
+section indep_event
+
+/-- To events are independent if the prob of the intersection equals product of individual probs.
+  Equivalent to `indep_events` with singleton collections of sets-/
+def indep_event (oa : oracle_comp spec A) (e e' : set A) : Prop :=
+indep_events oa {e} {e'}
+
+variables (oa : oracle_comp spec A) (e e' : set A)
+
+lemma indep_event_iff_indep_events : indep_event oa e e' ↔ indep_events oa {e} {e'} :=
+iff.rfl
+
 lemma indep_event_iff : indep_event oa e e' ↔ ⦃ e ∩ e' | oa ⦄ = ⦃ e | oa ⦄ * ⦃ e' | oa ⦄ :=
-sorry
+by convert probability_theory.indep_sets_singleton_iff
 
 lemma prob_event_inter_eq_mul_of_indep_event (h : indep_event oa e e') :
   ⦃ e ∩ e' | oa ⦄ = ⦃ e | oa ⦄ * ⦃ e' | oa ⦄ :=
-prob_event_inter_eq_mul_of_indep_events oa {e} {e'} e e' h
-  (set.mem_singleton _) (set.mem_singleton _)
-
-
+(indep_event_iff oa e e').1 h
 
 end indep_event

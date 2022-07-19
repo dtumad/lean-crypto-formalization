@@ -14,11 +14,8 @@ namespace identity_oracle
 
 section instances
 
-instance S_subsinglton : subsingleton (identity_oracle spec).S :=
-by simpa [identity_oracle_S] using punit.subsingleton
-
-instance S_inhabited : inhabited (identity_oracle spec).S :=
-by simpa [identity_oracle_S] using punit.inhabited
+instance S_unique : unique (identity_oracle spec).S :=
+punit.unique
 
 end instances
 
@@ -46,7 +43,7 @@ begin
   { ext x,
     simp [prod.eq_iff_fst_eq_snd_eq, punit_eq x.snd (), punit_eq () s] },
   { ext x,    
-    simp only [hoa, hob, subsingleton.exists_iff, bind'_eq_bind, simulate_bind, support_bind, set.mem_set_of_eq, set.mem_Union,
+    simp only [hoa, hob, unique.exists_iff, bind'_eq_bind, simulate_bind, support_bind, set.mem_set_of_eq, set.mem_Union,
       prod.exists] },
   { rw [simulate_query, support_apply] }
 end
@@ -62,7 +59,7 @@ lemma support_simulate' (oa : oracle_comp spec A) (s : unit) :
 begin
   ext x,
   simp only [support_simulate', support_simulate, set.mem_image, set.mem_set_of_eq,
-    subsingleton.exists_iff, prod.exists, exists_and_distrib_right, exists_eq_right],
+    unique.exists_iff, prod.exists, exists_and_distrib_right, exists_eq_right],
 end
 
 end support
