@@ -4,13 +4,16 @@ import computational_monads.support
 
 /-!
 # Distribution Semantics for Oracle Computations`
-  TODO: Could put all these files into like a `distribution_semantics` namespace
+
+Big-step semantics for `oracle_comp`, associating a probability distribution to a computation.
+The resulting type is given by a `pmf`, the mathlib def of a probability mass function.
+
 -/
 
-noncomputable theory
+namespace distribution_semantics
 
 open oracle_comp oracle_spec
-open_locale big_operators nnreal ennreal classical
+open_locale big_operators nnreal ennreal
 
 /- Big step semantics for a computation with finite range oracles
   The result of queries is assumed to be uniform over the oracle's codomain,
@@ -33,7 +36,7 @@ private noncomputable def eval_dist {spec : oracle_spec} [h' : spec.finite_range
 variables {α β γ : Type} {spec : oracle_spec}
 variable [spec.finite_range]
 
-def eval_distribution (oa : oracle_comp spec α) : pmf α :=
+noncomputable def eval_distribution (oa : oracle_comp spec α) : pmf α :=
 (eval_dist oa).1
 
 notation `⦃` oa `⦄` := eval_distribution oa
@@ -44,7 +47,7 @@ lemma eval_distribution_pure (a : α) :
 rfl
 
 @[simp]
-lemma eval_distribution_pure_apply (a a' : α) :
+lemma eval_distribution_pure_apply [decidable_eq α] (a a' : α) :
   ⦃(pure a : oracle_comp spec α)⦄ a' = if a' = a then 1 else 0 :=
 by convert (pmf.pure_apply a a')
 
@@ -54,7 +57,7 @@ lemma eval_distribution_return (a : α) :
 rfl
 
 @[simp]
-lemma eval_distribution_return_apply (a a' : α) :
+lemma eval_distribution_return_apply [decidable_eq α] (a a' : α) :
   ⦃(return a : oracle_comp spec α)⦄ a' = if a' = a then 1 else 0 :=
 eval_distribution_pure_apply a a'
 
@@ -81,7 +84,7 @@ lemma eval_distribution_map (oa : oracle_comp spec α) (f : α → β) :
 eval_distribution_bind oa (pure ∘ f)
 
 @[simp]
-lemma eval_distribution_map_apply (oa : oracle_comp spec α) (f : α → β) (b : β) :
+lemma eval_distribution_map_apply [decidable_eq β] (oa : oracle_comp spec α) (f : α → β) (b : β) :
   ⦃f <$> oa⦄ b = ∑' (a : α), if f a = b then ⦃oa⦄ a else 0 :=
 by simp only [eval_distribution_map oa f, pmf.map_apply f ⦃oa⦄, @eq_comm β b]
 
@@ -124,3 +127,5 @@ lemma eval_distribution_ge_zero_iff_mem_support (oa : oracle_comp spec α) (a : 
 by rw [pos_iff_ne_zero, eval_distribution_ne_zero_iff_mem_support]
 
 end support
+
+end distribution_semantics

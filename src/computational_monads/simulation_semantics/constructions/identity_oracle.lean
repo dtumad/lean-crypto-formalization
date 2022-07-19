@@ -66,6 +66,8 @@ end support
 
 section equiv
 
+open distribution_semantics
+
 variable [spec.finite_range]
 
 @[simp]

@@ -29,6 +29,10 @@ lemma mem_support_uniform_fin {n : ℕ} (i : fin $ n + 1) :
   i ∈ support $[0..n] :=
 (support_uniform_fin n).symm ▸ set.mem_univ i
 
+section distribution_semantics
+
+open distribution_semantics
+
 @[simp]
 lemma eval_distribution_uniform_fin (n : ℕ) :
   ⦃$[0..n]⦄ = pmf.uniform_of_fintype (fin $ n + 1) :=
@@ -45,6 +49,8 @@ lemma prob_event_uniform_fin {n : ℕ} (event : set (fin $ n + 1)) :
   ⦃event | $[0..n]⦄ = (fintype.card event) / (n + 1) :=
 by simp only [uniform_fin, eval_prob_query, uniform_selecting.range_apply,
   fintype.card_fin, nat.cast_add, nat.cast_one]
+
+end distribution_semantics
 
 end uniform_fin
 
@@ -70,6 +76,10 @@ lemma mem_support_uniform_select_vector_iff (a : A) :
 by simp only [vector.mem_iff_nth, support_uniform_select_vector,
   set.top_eq_univ, set.image_univ, set.mem_range]
 
+section distribution_semantics
+
+open distribution_semantics
+
 @[simp]
 lemma eval_distribution_uniform_select_vector :
   ⦃$ᵛ v⦄ = pmf.uniform_of_vector v :=
@@ -82,6 +92,8 @@ begin
     ... = (∑' (a : fin (n + 1)), ite (v.nth a = x) 1 0) / (n + 1) : by rw [nnreal.tsum_mul_right, div_eq_mul_inv]
     ... = (v.to_list.count x) / (n + 1) : by simp [tsum_ite_eq_vector_nth v x]
 end
+
+end distribution_semantics
 
 end uniform_select_vector
 

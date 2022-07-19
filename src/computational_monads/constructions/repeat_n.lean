@@ -98,6 +98,8 @@ by { rw support_repeat_n at hv, exact hv a ha }
 
 section eval_distribution
 
+open distribution_semantics
+
 variable [spec.finite_range]
 
 /-- Probability of a vector is the product of probabilities of each element. -/

@@ -1,6 +1,15 @@
 import computational_monads.distribution_semantics.prob_event
+/-!
+# Equivalence Between Computations in Terms of Distribution Semantics
 
-open oracle_comp oracle_spec
+Introduces the notation `oa ≃ₚ oa'` for two computations with the same associated distribution.
+
+Also general lemmas about computations that are equivalent in terms of distribution.
+It is often simpler to work with this than distributions directly, particularly because the
+  original computations have an induction principle that a general `pmf` doesn't have.
+-/
+
+namespace distribution_semantics
 
 variables {A B C : Type} {spec spec' : oracle_spec}
   (oa : oracle_comp spec A) (ob : A → oracle_comp spec B)
@@ -30,10 +39,6 @@ lemma pure_bind_equiv (a : A) : (pure a >>= ob) ≃ₚ (ob a) :=
 lemma prob_event_pure_bind (a : A) (event : set B) :
   ⦃event | pure a >>= ob⦄ = ⦃event | ob a⦄ :=
 prob_event_eq_of_equiv (pure_bind_equiv ob a) event
-
-
-------
-
 
 @[simp]
 lemma bind_pure_equiv : (oa >>= pure) ≃ₚ oa :=
@@ -127,3 +132,5 @@ lemma snd_map_bind_mk_equiv :
 by { simp [pmf.map], refl }
 
 end prod
+
+end distribution_semantics

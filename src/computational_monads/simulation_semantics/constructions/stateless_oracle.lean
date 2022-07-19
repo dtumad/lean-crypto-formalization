@@ -79,6 +79,8 @@ end simulate
 
 section eval_distribution
 
+open distribution_semantics
+
 lemma simulate_equiv_simulate' [spec'.finite_range] (s : unit) :
   simulate ⟪o⟫ oa s ≃ₚ (simulate' ⟪o⟫ oa s >>= λ a, pure (a, ())) :=
 calc simulate ⟪o⟫ oa s ≃ₚ simulate ⟪o⟫ oa s >>= pure : symm (bind_pure_equiv _)
@@ -124,6 +126,8 @@ end stateless_oracle
 
 -- More lemmas we can prove with the definition of the stateless oracle
 namespace tracking_oracle
+
+open distribution_semantics
 
 variables {S S' : Type} (o o' : Π (i : spec.ι), spec.domain i → oracle_comp spec' (spec.range i))
   (update_state update_state': Π (s : S) (i : spec.ι), spec.domain i → spec.range i → S)

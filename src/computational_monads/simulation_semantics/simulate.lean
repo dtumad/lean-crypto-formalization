@@ -52,6 +52,8 @@ by simp
 
 section eval_distribution
 
+open distribution_semantics
+
 variable [spec'.finite_range]
 
 lemma eval_distribution_simulate_pure :
@@ -113,6 +115,8 @@ lemma support_simulate'_query : (simulate' so (query i t) s).support =
 by simp
 
 section eval_distribution
+
+open distribution_semantics
 
 variable [spec'.finite_range]
 

@@ -77,6 +77,8 @@ end simulate
 
 section eval_distribution
 
+open distribution_semantics
+
 variable [spec.finite_range]
 
 -- TODO: should be able to find some generalization for lemmas looking like this

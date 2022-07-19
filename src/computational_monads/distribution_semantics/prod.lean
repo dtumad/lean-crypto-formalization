@@ -5,7 +5,7 @@ import computational_monads.distribution_semantics.prob_event
 
   -/
 
-namespace oracle_comp
+namespace distribution_semantics
 
 variables {spec spec' : oracle_spec} {α β γ : Type}
 variable [spec.finite_range]
@@ -50,4 +50,4 @@ sorry
 
 end indep_event
 
-end oracle_comp
+end distribution_semantics

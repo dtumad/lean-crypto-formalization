@@ -18,7 +18,7 @@ Signature schemes that don't need this can assume a random oracle like `⊥ → 
 -/
 
 open_locale ennreal nnreal
-open oracle_comp oracle_spec
+open oracle_comp oracle_spec distribution_semantics
 
 /-- Signature on messages `M`, public and secret keys `PK` and `SK`, signatures of type `S`. 
   We model the algorithms as having access to a uniform selection oracle,
@@ -105,7 +105,7 @@ lemma complete_iff_signatures_support_subset (sig : signature M PK SK S) :
 begin
   refine ⟨λ h m pk sk σ hgen hsign, _, λ h, _⟩,
   { specialize h m,
-    rw eval_distribution_eq_one_iff_support_subset_singleton at h,
+    rw distribution_semantics.eval_distribution_eq_one_iff_support_subset_singleton at h,
     simp [support_completeness_experiment, set.Union_subset_iff,
       eval_prob_eq_one_iff_support_subset, prod.forall] at h,
     sorry,

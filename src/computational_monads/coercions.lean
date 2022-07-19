@@ -30,6 +30,7 @@ do {b ← coin, b' ←$ᵗ bool, return (band b b')}
 lemma coe_coin_uniform_select_def (oa : oracle_comp coin_oracle A) :
   (↑oa : oracle_comp uniform_selecting A) = oa.simulate' ⟪λ _ _, $ᵗ bool⟫ () := rfl
 
+/-- Coercing to a `uniform_selecting` oracle doesn't change the underlying distribution -/
 @[simp]
 lemma coe_coin_uniform_select_equiv_coin :
   Π {A : Type} (oc : oracle_comp coin_oracle A),
@@ -43,7 +44,7 @@ lemma coe_coin_uniform_select_equiv_coin :
 end
 | _ (query i t) := begin
   erw [coe_coin_uniform_select_def, simulate'_query_equiv, stateless_oracle.apply,
-    fst_map_bind_mk_equiv, map_id_equiv],
+    distribution_semantics.fst_map_bind_mk_equiv, distribution_semantics.map_id_equiv],
   exact eval_distribution_uniform_select_fintype bool,
 end
 
