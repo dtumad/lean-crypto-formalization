@@ -72,6 +72,8 @@ do {
   return (if i = i' then i.map (λ j, (j, x, cache, x', cache')) else none)
 }
 
+section choose_fork
+
 /-- Correctness with respect to `choose_fork`, i.e. the chosen fork matches for both outputs -/
 lemma choose_fork_eq (i : fin adv.q) (cache cache' : query_log (T →ₒ U)) (x x' : A)
   (h : (some (i, x, cache, x', cache')) ∈ (fork adv).support) :
@@ -107,14 +109,22 @@ lemma choose_fork_second_eq (i : fin adv.q) (cache cache' : query_log (T →ₒ 
   adv.choose_fork x' cache' = i :=
 (choose_fork_eq adv i cache cache' x x' h).2
 
+end choose_fork
+
+section cache_input
+
 /-- Because of the logging and shared cache both results of fork
   make the same query at the point where the fork was chosen -/
-lemma cache_input_same_at_fork (i : fin adv.q) (cache cache' : query_log (T →ₒ U)) (x x' : A)
+theorem cache_input_same_at_fork (i : fin adv.q) (cache cache' : query_log (T →ₒ U)) (x x' : A)
   (h : (some (i, x, cache, x', cache')) ∈ (fork adv).support) :
   query_log.query_input_same_at cache cache' () i :=
 begin
   sorry
 end
+
+end cache_input
+
+section fork_success
 
 /- forking algorithm succeeds if a forking point is chosen, and the query outputs differ there -/
 def fork_success : option (fin n × A × query_log (T →ₒ U) × A × query_log (T →ₒ U)) → Prop
@@ -122,6 +132,13 @@ def fork_success : option (fin n × A × query_log (T →ₒ U) × A × query_lo
 | (some ⟨i, x, cache, x', cache'⟩) := query_log.query_output_diff_at cache cache' () i
 
 /-- Probability that fork success holds is determined by adversary's initial advantage -/
-lemma prob_fork_success : ⦃ fork_success | fork adv ⦄
+theorem prob_fork_success : ⦃ fork_success | fork adv ⦄
   ≥ ((adv.advantage) ^ 2 / adv.q) - (1 / fintype.card U) :=
-sorry
+calc ⦃ fork_success | fork adv ⦄ 
+  = ⦃
+    
+   ⦄ : sorry
+  ... ≥ ((adv.advantage) ^ 2 / adv.q) - (1 / fintype.card U) : sorry
+
+
+end fork_success
