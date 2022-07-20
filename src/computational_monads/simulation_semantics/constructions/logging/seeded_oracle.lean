@@ -15,7 +15,7 @@ def seeded_oracle (spec : oracle_spec) [computable spec] :
 { S := query_log spec,
   default_state := query_log.init spec,
   o := λ i ⟨t, seed⟩, match seed.lookup_fst i t with
-    | none := (λ u, (u, query_log.init spec)) <$> query i t
+    | none := (λ u, (u, query_log.init spec)) <$> query i t -- Once the seed is empty, just keep it empty going forward
     | (some u) := return (u, seed.remove_head i)
     end }
 

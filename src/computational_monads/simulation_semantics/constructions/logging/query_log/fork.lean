@@ -11,7 +11,7 @@ section fork_cache
 def fork_cache [spec.computable] (log : query_log spec)
   (i : spec.ι) (n : option ℕ) : query_log spec :=
 match n with
-| none := log -- TODO: this case doesn't really matter but whatever
+| none := query_log.init spec -- TODO: this case doesn't really matter but whatever
 | (some m) := log.drop_at_index i m
 end
 
