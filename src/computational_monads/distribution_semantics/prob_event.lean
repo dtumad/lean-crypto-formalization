@@ -32,6 +32,10 @@ lemma prob_event_eq_to_outer_measure_apply : ⦃ e | oa ⦄ = ⦃oa⦄.to_outer_
 @pmf.to_measure_apply_eq_to_outer_measure_apply α ⊤
   ⦃oa⦄ e (measurable_space.measurable_set_top)
 
+lemma prob_event_eq_tsum [decidable_pred e] : ⦃e | oa⦄ = ∑' x, ite (x ∈ e) (⦃oa⦄ x) 0 :=
+by simp only [prob_event_eq_to_outer_measure_apply,
+  pmf.to_outer_measure_apply, set.indicator_apply]
+
 @[simp]
 lemma prob_event_eq_zero_iff_disjoint_support : ⦃ e | oa ⦄ = 0 ↔ disjoint oa.support e :=
 by simp only [prob_event_eq_to_outer_measure_apply,
