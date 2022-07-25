@@ -1,4 +1,5 @@
 import computational_monads.distribution_semantics.prod
+import computational_monads.distribution_semantics.option
 import computational_monads.simulation_semantics.oracle_append
 import computational_monads.simulation_semantics.constructions.logging.caching_oracle
 import computational_monads.simulation_semantics.constructions.logging.random_oracle
@@ -44,6 +45,10 @@ prod.fst <$> adv.sim_from_seed (query_log.init _) (query_log.init _)
 def advantage (adv : forking_adversary T U A) : ℝ≥0∞ :=
 ⦃ λ x, option.is_some x | sim_choose_fork adv ⦄
 
+lemma advantage_eq_tsum (adv : forking_adversary T U A) :
+  adv.advantage = ∑' (i : fin adv.q), ⦃sim_choose_fork adv⦄ (some i) :=
+distribution_semantics.prob_event_is_some $ sim_choose_fork adv
+
 end forking_adversary
 
 variables {T U A : Type} [inhabited U] [fintype U] [decidable_eq T] [decidable_eq U]
@@ -64,6 +69,11 @@ do {
   -- also return the side outputs and the random oracle cache for both runs
   return ⟨if i = i' then i else none, x, cache, x', cache'⟩
 }
+
+/-- TODO: Is this quite right? -/
+lemma eval_distribution_fst_map_fork_apply (i : option $ fin adv.q) :
+  ⦃prod.fst <$> fork adv⦄ i = ⦃adv.sim_choose_fork ×ₘ adv.sim_choose_fork⦄ (i, i) :=
+sorry
 
 section choose_fork
 
@@ -121,30 +131,38 @@ end cache_input
 
 section fork_success
 
+lemma prob_fork_eq_some : ⦃ λ out, out.1.is_some | fork adv ⦄ ≥ (adv.advantage ^ 2) / adv.q :=
+calc ⦃ λ out, out.1.is_some | fork adv ⦄
+  = ⦃ coe ∘ option.is_some | prod.fst <$> fork adv⦄ :
+    symm ((distribution_semantics.prob_event_map _ _ _))
+  ... = ∑' (j : fin adv.q), ↑(⦃prod.fst <$> fork adv⦄ (some j)) :
+    (distribution_semantics.prob_event_is_some $ prod.fst <$> fork adv)
+  ... = ∑' (j : fin adv.q), ↑(⦃adv.sim_choose_fork ×ₘ adv.sim_choose_fork⦄ (some j, some j)) :
+    tsum_congr (λ j, congr_arg coe $ eval_distribution_fst_map_fork_apply adv (some j))
+  ... = ∑' (j : fin adv.q), ↑(⦃adv.sim_choose_fork⦄ (some j)) ^ 2 :
+    by simp only [distribution_semantics.eval_distribution_prod_apply, pow_two, ennreal.coe_mul]
+  ... ≥ (∑' (j : fin adv.q), ⦃adv.sim_choose_fork⦄ (some j)) ^ 2 / adv.q :
+    le_of_eq_of_le (by rw [fintype.card_fin]) (tsum_pow_two_ge_pow_two_tsum _)
+  ... = (adv.advantage ^ 2) / adv.q :
+    by rw forking_adversary.advantage_eq_tsum adv
+
 /- forking algorithm succeeds if a forking point is chosen, and the query outputs differ there -/
 def fork_success : option (fin n) × A × query_log (T →ₒ U) × A × query_log (T →ₒ U) → Prop
 | ⟨none, _, _, _, _⟩ := false
 | ⟨some i, x, cache, x', cache'⟩ := query_log.query_output_diff_at cache cache' () i
 
-lemma prob_eq_some : ⦃ λ out, out.1.is_some | fork adv ⦄ ≥ (adv.advantage ^ 2) / adv.q :=
-calc ⦃ λ out, out.1.is_some | fork adv ⦄
-  = ⦃ coe ∘ option.is_some | prod.fst <$> fork adv⦄ :
-    sorry
-  ... = ∑' (j : fin adv.q), ⦃prod.fst <$> fork adv⦄ (some j) :
-    sorry
-  ... = ∑' (j : fin adv.q), ⦃adv.sim_choose_fork ×ₘ adv.sim_choose_fork⦄ (some j, some j) :
-    sorry
-  ... ≥ ∑' (j : fin adv.q), (⦃adv.sim_choose_fork⦄ (some j)) ^ 2 :
-    sorry
-  ... ≥ (∑' (j : fin adv.q), ⦃adv.sim_choose_fork⦄ (some j)) ^ 2 / adv.q :
-    sorry
-  ... ≥ (adv.advantage ^ 2) / adv.q : sorry
-
 /-- Probability that fork success holds is determined by adversary's initial advantage -/
 theorem prob_fork_success : ⦃ fork_success | fork adv ⦄
   ≥ ((adv.advantage) ^ 2 / adv.q) - (1 / fintype.card U) :=
-calc ⦃ fork_success | fork adv ⦄
-  ≥ ⦃ λ out, out.1.is_some | fork adv ⦄ - (1 / fintype.card U) : sorry
-  ... ≥ ((adv.advantage) ^ 2 / adv.q) - (1 / fintype.card U) : sorry
+calc ⦃fork_success | fork adv⦄
+  ≥ (⦃λ out, out.1.is_some | fork adv⦄) * (1 - 1 / fintype.card U) : begin
+    sorry
+  end
+  ... ≥ ⦃λ out, out.1.is_some | fork adv⦄ - (1 / fintype.card U) : begin
+    -- rw [ennreal.mul_sub _, mul_one],
+    sorry,
+  end
+  ... ≥ ((adv.advantage) ^ 2 / adv.q) - (1 / fintype.card U) :
+    tsub_le_tsub (prob_fork_eq_some adv) le_rfl
 
 end fork_success

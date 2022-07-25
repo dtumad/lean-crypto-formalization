@@ -5,10 +5,16 @@ import data.vector.basic
 # Misc Lemmas That Ideally Should Port to Mathlib
 -/
 
+open_locale nnreal ennreal classical big_operators
+
+
 instance set.diagonal.decidable_pred {α : Type*} [h : decidable_eq α] :
   decidable_pred (set.diagonal α) := λ x, h x.1 x.2
 
-open_locale nnreal ennreal classical big_operators
+lemma tsum_pow_two_ge_pow_two_tsum {α : Type*} [fintype α] [topological_space ℝ≥0∞]
+  (f : α → ℝ≥0∞) :
+  ∑' (a : α), (f a) ^ 2 ≥ (∑' (a : α), f a) ^ 2 / fintype.card α :=
+sorry
 
 lemma vector.to_list_nonempty {α : Type} {n : ℕ} (v : vector α (n + 1)) : ¬ v.to_list.empty :=
 match v with

@@ -86,6 +86,11 @@ lemma prob_event_query (i : spec.ι) (t : spec.domain i) (e : set $ spec.range i
 trans (prob_event_eq_to_outer_measure_apply _ e)
   ((pmf.to_outer_measure_uniform_of_fintype_apply e).trans (by congr))
 
+@[simp]
+lemma prob_event_map (f : α → β) (e : set β) :
+  ⦃e | f <$> oa⦄ = ⦃e ∘ f | oa⦄ :=
+sorry
+
 section indep_events
 
 /-- Two collections of sets are independent if any two sets have intersection
