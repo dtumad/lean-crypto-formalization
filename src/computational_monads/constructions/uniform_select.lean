@@ -1,4 +1,4 @@
-import computational_monads.distribution_semantics.equiv
+import computational_monads.distribution_semantics.prob_event
 
 import to_mathlib.uniform_of_vector
 
@@ -46,7 +46,7 @@ by simp only [eval_distribution_uniform_fin n, pmf.uniform_of_fintype_apply i,
 
 @[simp]
 lemma prob_event_uniform_fin {n : ℕ} (event : set (fin $ n + 1)) :
-  ⦃event | $[0..n]⦄ = (fintype.card event) / (n + 1) :=
+  ⦃event | ($[0..n])⦄ = (fintype.card event) / (n + 1) :=
 by simp only [uniform_fin, prob_event_query, uniform_selecting.range_apply,
   fintype.card_fin, nat.cast_add, nat.cast_one]
 
