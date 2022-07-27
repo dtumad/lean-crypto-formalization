@@ -1,19 +1,10 @@
-import analysis.asymptotics.superpolynomial_decay
-import computability.tm_computable
 import to_mathlib.poly_time
 
-import computational_monads.oracle_comp
 import computational_monads.distribution_semantics.equiv
 
 universes u v w
 
 section negligable
-
-/-- `superpolynomial_decay` is a more general definition for more general spaces.
-  This definition is meant to provide a cleaner API for cryptography proofs -/
-def negligable {α : Type*} [topological_space α] [comm_semiring α]
-  (f : ℕ → α) : Prop := 
-asymptotics.superpolynomial_decay filter.at_top coe f
 
 end negligable
 
@@ -31,6 +22,7 @@ inductive poly_time_oracle_comp {spec : oracle_spec} :
     poly_time_oracle_comp (λ a, bind' β γ (f a) (g a))
 | poly_time_query {α : Type} (i : spec.ι) (f : α → spec.domain i) (hf : poly_time f) :
     poly_time_oracle_comp (λ a, query i (f a))
+-- For computations associated to a distribution, suffices to show there is a poly time implementation
 | poly_time_ext [spec.finite_range] [spec.computable]
     {α β : Type} (f g : α → oracle_comp spec β)
     (h : ∀ a, f a ≃ₚ g a) (hf : poly_time_oracle_comp g) :

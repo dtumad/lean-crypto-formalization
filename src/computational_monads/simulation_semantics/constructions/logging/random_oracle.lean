@@ -1,6 +1,5 @@
 import computational_monads.simulation_semantics.constructions.logging.caching_oracle
 import computational_monads.simulation_semantics.constructions.uniform_oracle
-import computational_monads.simulation_semantics.oracle_compose
 
 open oracle_comp oracle_spec
 

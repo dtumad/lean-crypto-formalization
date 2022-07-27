@@ -1,5 +1,6 @@
 import computational_monads.distribution_semantics.prob_event
 import computational_monads.asymptotics.polynomial_time
+import computational_monads.asymptotics.negligable
 
 open oracle_comp oracle_spec
 
