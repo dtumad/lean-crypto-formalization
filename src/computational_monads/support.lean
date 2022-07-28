@@ -66,8 +66,7 @@ lemma mem_support_query (i : spec.ι) (t : spec.domain i) (u : spec.range i) :
 set.mem_univ u
 
 /-- If the range of `spec` is a `fintype` then the support is a finite set -/
-theorem support_finite [h : ∀ i, fintype (spec.range i)]
-  (oa : oracle_comp spec α) : oa.support.finite :=
+theorem support_finite [spec.finite_range] (oa : oracle_comp spec α) : oa.support.finite :=
 begin
   induction oa with A a A B oa ob hoa hob i t,
   { simp },

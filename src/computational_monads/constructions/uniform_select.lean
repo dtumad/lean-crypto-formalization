@@ -140,7 +140,10 @@ by simp only [uniform_select_finset, support_uniform_select_list,
 @[simp]
 lemma eval_distribution_uniform_select_finset :
   ⦃$ˢ bag h⦄ = pmf.uniform_of_finset bag h :=
-sorry
+begin
+  simp [uniform_select_finset],
+  sorry,
+end
 
 end uniform_select_finset
 

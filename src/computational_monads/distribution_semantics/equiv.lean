@@ -35,9 +35,6 @@ lemma pure_bind_equiv (a : A) : (pure a >>= ob) ≃ₚ (ob a) :=
 lemma bind_pure_equiv : (oa >>= pure) ≃ₚ oa :=
 trans (eval_distribution_bind oa pure) (pmf.bind_pure (⦃oa⦄))
 
-lemma bind_equiv_of_equiv_of_equiv {oa oa' : oracle_comp spec A} {ob ob' : A → oracle_comp spec B}
-  (h : oa ≃ₚ oa') (h' :∀ a, (ob a) ≃ₚ (ob' a)) : (oa >>= ob) ≃ₚ (oa' >>= ob') := sorry
-
 lemma bind_equiv_of_equiv_first {oa oa' : oracle_comp spec A} (ob : A → oracle_comp spec B)
   (h : oa ≃ₚ oa') : (oa >>= ob) ≃ₚ (oa' >>= ob) :=
 by simp_rw [eval_distribution_bind, h]
@@ -45,6 +42,11 @@ by simp_rw [eval_distribution_bind, h]
 lemma bind_equiv_of_equiv_second (oa : oracle_comp spec A) {ob ob' : A → oracle_comp spec B}
   (h : ∀ a, (ob a) ≃ₚ (ob' a)) : (oa >>= ob) ≃ₚ (oa >>= ob') :=
 by simp_rw [eval_distribution_bind, h]
+
+lemma bind_equiv_of_equiv_of_equiv {oa oa' : oracle_comp spec A} {ob ob' : A → oracle_comp spec B}
+  (h : oa ≃ₚ oa') (h' :∀ a, (ob a) ≃ₚ (ob' a)) : (oa >>= ob) ≃ₚ (oa' >>= ob') :=
+calc oa >>= ob ≃ₚ oa' >>= ob : bind_equiv_of_equiv_first ob h
+  ... ≃ₚ oa' >>= ob' : bind_equiv_of_equiv_second oa' h'
 
 @[simp]
 lemma bind_equiv_of_first_unused (oa : oracle_comp spec A) (ob : oracle_comp spec B) :
@@ -97,7 +99,12 @@ sorry
 @[simp]
 lemma map_equiv_of_eq_id (oa : oracle_comp spec A) (f : A → A) (h : ∀ a, f a = a) :
   f <$> oa ≃ₚ oa :=
-sorry
+begin
+  refine pmf.ext (λ a, _),
+  rw [eval_distribution_map, pmf.map_apply],
+  refine trans (tsum_eq_single a $ λ a' ha', _) (by simp [h]),
+  simp [h a', ne.symm ha']
+end
 
 end map
 

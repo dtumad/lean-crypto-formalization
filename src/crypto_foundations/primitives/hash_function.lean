@@ -47,6 +47,8 @@ structure collision_finding_adversary (H : hash_scheme K I O) :=
 (adv : Π (sp : ℕ), K sp → oracle_comp coin_oracle ((I sp) × (I sp)))
 (adv_poly_time : ∀ sp, poly_time_oracle_comp $ adv sp)
 
+/-- Collision resistant if all polynomial time adversaries have neglibable chance
+  of winning the `collision_finding_experiment` as the security parameter increases -/
 def collision_resistant (H : hash_scheme K I O) : Prop :=
 ∀ (A : collision_finding_adversary H),
 negligable (λ sp, ⦃(H sp).collision_finding_experiment (A.adv sp)⦄ tt)
