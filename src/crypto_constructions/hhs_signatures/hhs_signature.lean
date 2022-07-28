@@ -9,7 +9,9 @@ import computational_monads.simulation_semantics.constructions.logging.query_log
 
 open oracle_comp oracle_spec
 
-variables {G X M : Type} [fintype G] [fintype X]
+section commits
+
+variables {G X M : Type} [fintype G] [fintype X] [inhabited G]
   [decidable_eq G] [decidable_eq X] [decidable_eq M]
   [add_group G] [algorithmic_homogenous_space G X]
 
@@ -33,17 +35,26 @@ lemma retrieve_commits_zero (x₀ : X) (pk : X) :
   retrieve_commits x₀ (@vector.nil $ G × bool) pk = vector.nil :=
 rfl
 
-variables (G X M)
+end commits
+
+-- variables (G X M)
 
 /-- Signature derived from a hard homogenous space, based on the diffie helmann case.
   `n` represents the number of commitments to make, more corresponding to more difficult forgery.
   `x₀` is some arbitrary public base point in `X`, used to compute public keys from secret keys
   TODO: we need some way to declare that the second oracle is a
-    "random oracle" for completeness to even hold.
+    "random oracle" for completeness to even hold. M (X × X) G (vector (G × bool) n)
     should include `x₀` in the public key, generated randomly uniformly -/
-noncomputable def hhs_signature (n : ℕ) :
-  signature M (X × X) G (vector (G × bool) n) :=
-{ random_oracles := ((vector X n × M) →ₒ vector bool n),
+noncomputable def hhs_signature (G X M : Type) [fintype G] [fintype X] [inhabited G]
+  [decidable_eq G] [decidable_eq X] [decidable_eq M]
+  [add_group G] [algorithmic_homogenous_space G X]
+  (n : ℕ) :
+  signature :=
+{ M := M, PK := X × X, SK := G, S := vector (G × bool) n,
+  decidable_eq_M := by apply_instance,
+  decidable_eq_S := by apply_instance,
+  inhabited_S := by apply_instance,
+  random_oracles := ((vector X n × M) →ₒ vector bool n),
   random_oracles_finite_range := singleton_spec.finite_range _ _,
   random_oracles_computable := singleton_spec.computable _ _,
   gen := λ _, do {
@@ -66,17 +77,21 @@ noncomputable def hhs_signature (n : ℕ) :
   sign_poly_time := sorry,
   verify_poly_time := sorry }
 
-variables {G X M}
+-- variables {G X M}
 
 namespace hhs_signature 
- 
-variables [algorithmic_homogenous_space G X] (n : ℕ)
 
-/-- We can coerce any uniform selection computation up to one for the oracles of `hhs_signature` -/
-noncomputable instance coe_uniform_selecting_oracles [inhabited G] (A : Type) :
-  has_coe (oracle_comp uniform_selecting A)
-    (oracle_comp (hhs_signature G X M n).oracles A) :=
-⟨λ oa, @has_coe.coe _ _ (coe_append_right A uniform_selecting _) oa⟩
+variables {G X M : Type} [fintype G] [fintype X] [inhabited G]
+  [decidable_eq G] [decidable_eq X] [decidable_eq M]
+  [add_group G] [algorithmic_homogenous_space G X]
+ 
+variables (n : ℕ)
+
+-- We can coerce any uniform selection computation up to one for the oracles of `hhs_signature` -/
+-- noncomputable instance coe_uniform_selecting_oracles [inhabited G] (A : Type) :
+--   has_coe (oracle_comp uniform_selecting A)
+--     (oracle_comp (hhs_signature G X M n).oracles A) :=
+-- ⟨λ oa, @has_coe.coe _ _ (coe_append_right A uniform_selecting _) oa⟩
  
 /-- TODO: must be a better way to make this easy?-/
 @[simp]
