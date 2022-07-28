@@ -71,7 +71,8 @@ def signing_oracle (sig : signature M PK SK S) (pk : PK) (sk : SK) :
 section complete
 
 /-- Generate a key, sign on the given message, and return the result of verify on the signature.
-  Random oracles have a shared cached state of previous queries, handled by a call to `simulate'` -/
+  Random oracles have a shared cache for the entire computation,
+  and the uniform selection oracle just forwards its query on. -/
 noncomputable def completeness_experiment (sig : signature M PK SK S) (m : M) :
   oracle_comp uniform_selecting bool :=
 default_simulate' (idₛ ⟪++⟫ random_oracle sig.random_oracles) 
@@ -93,7 +94,9 @@ begin
   sorry
 end
 
-/-- Honest signer always generates a valid message -/
+/-- Signature is complete if for any possible message, the generated signature is valid,
+  i.e. the output of `sign` always returns true when `verify` is called.
+  TODO: A more general version could allow for a negligable failure probability. -/
 def complete (sig : signature M PK SK S) :=
 ∀ (m : M), ⦃ completeness_experiment sig m ⦄ tt = 1
 
@@ -126,10 +129,13 @@ variables [inhabited S] [decidable_eq M] [decidable_eq S]
 
 -- TODO: could use `unforgeable` namespace with `unforgeable.adversary_oracles`?
 
-@[reducible, inline]
+/-- The adversary for the signing experiment has access to both the signature scheme's oracles,
+  and a signing oracle that will be simulated with the hidden secret key. -/
+@[reducible, inline, derive computable]
 def unforgeable_adversary_oracle_spec (sig : signature M PK SK S) : oracle_spec :=
 sig.oracles ++ (signing_oracle_spec sig)
 
+/-- Oracle for unforgeable experiment uses the public and S-/
 def unforgeable_adversary_oracle (sig : signature M PK SK S) (pk : PK) (sk : SK) :
   simulation_oracle sig.unforgeable_adversary_oracle_spec sig.oracles :=
 idₛ ⟪++⟫ signing_oracle sig pk sk
@@ -174,7 +180,7 @@ end unforgeable
 
 end signature
 
-/-- signature algorithms indexed by a security parameter -/
+/-- signature scheme is a set of signature algorithms indexed by a security parameter -/
 def signature_scheme (M PK SK S : ℕ → Type) :=
 Π (sp : ℕ), signature (M sp) (PK sp) (SK sp) (S sp)
 
@@ -185,8 +191,12 @@ open signature
 variables {M PK SK S : ℕ → Type}
   [∀ sp, inhabited $ S sp] [∀ sp, decidable_eq $ M sp] [∀ sp, decidable_eq $ S sp]
 
-/-- Polynomial time adversary has negligible advantage in
-  `unforgeable_experiment` as security parameter grows -/
+/-- Scheme is complete if it is complete for each security parameter -/
+def complete (sig_scheme : signature_scheme M PK SK S) : Prop :=
+∀ (sp : ℕ), (sig_scheme sp).complete
+
+/-- Signature scheme is unforgeable if any polynomial time adversary has negligible advantage in
+  `unforgeable_experiment` as the security parameter grows -/
 def unforgeable (sig_scheme : signature_scheme M PK SK S) : Prop :=
 ∀ (adversary : Π (sp : ℕ), unforgeable_adversary $ sig_scheme sp),
   negligable (λ sp, unforgeable_advantage (sig_scheme sp) (adversary sp))
