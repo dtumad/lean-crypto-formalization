@@ -1,5 +1,7 @@
 import measure_theory.probability_mass_function.constructions 
 import data.vector.basic
+import analysis.convex.function
+import analysis.convex.specific_functions
 
 /-! 
 # Misc Lemmas That Ideally Should Port to Mathlib
@@ -11,10 +13,33 @@ open_locale nnreal ennreal classical big_operators
 instance set.diagonal.decidable_pred {α : Type*} [h : decidable_eq α] :
   decidable_pred (set.diagonal α) := λ x, h x.1 x.2
 
+lemma pow_two_sum_div_le_sum_pow_two {α : Type*} (s : finset α) (f : α → ℝ≥0) :
+  (∑ x in s, f x) ^ 2 / s.card ≤ ∑ x in s, (f x) ^ 2 :=
+begin
+  by_cases hs : s = ∅,
+  { simp only [hs, finset.sum_empty, finset.card_empty, nat.cast_zero, div_zero] },
+  { have hs' : (s.card : ℝ) ≠ 0 := (nat.cast_ne_zero.2 $ λ h, hs (finset.card_eq_zero.1 h)),
+    have hs'' : 0 < (s.card : ℝ) := nat.cast_pos.2 (finset.card_pos.2 $ finset.nonempty_of_ne_empty hs),
+    suffices : (∑ x in s, (f x : ℝ) / s.card) ^ 2 ≤ ∑ x in s, ((f x : ℝ) ^ 2 / s.card),
+    { rw [← finset.sum_div, ← finset.sum_div, div_pow, pow_two (s.card : ℝ),
+        ← div_div, div_le_iff hs'', div_mul, div_self hs', div_one] at this,
+      simpa [← nnreal.coe_le_coe, nnreal.coe_div, nnreal.coe_nat_cast,
+        nnreal.coe_sum, nnreal.coe_pow, nnreal.coe_sum] using this },
+    have := @convex_on.map_sum_le ℝ ℝ ℝ _ _ _ _ _ _ _ 
+      (set.Ici 0) (λ x, x ^ 2) s (λ _, 1 / s.card) (coe ∘ f) _ _ _ _,
+    { simpa [inv_mul_eq_div] using this },
+    { exact convex_on_pow 2 },
+    { simp only [one_div, inv_nonneg, nat.cast_nonneg, implies_true_iff] },
+    { simpa only [one_div, finset.sum_const, nsmul_eq_mul] using mul_inv_cancel hs' },
+    { refine λ i hi, set.mem_Ici.2 _, exact (nnreal.coe_nonneg _) } }
+end
+
 lemma tsum_pow_two_ge_pow_two_tsum {α : Type*} [fintype α] [topological_space ℝ≥0∞]
   (f : α → ℝ≥0∞) :
-  ∑' (a : α), (f a) ^ 2 ≥ (∑' (a : α), f a) ^ 2 / fintype.card α :=
-sorry
+  (∑' (a : α), f a) ^ 2 / fintype.card α ≤ ∑' (a : α), (f a) ^ 2 :=
+begin
+  sorry
+end
 
 lemma vector.to_list_nonempty {α : Type} {n : ℕ} (v : vector α (n + 1)) : ¬ v.to_list.empty :=
 match v with
@@ -107,7 +132,11 @@ end apply_eq_one
 @[simp]
 lemma pmf.map_bind' {A B C : Type} (p : pmf A) (q : A → pmf B) (f : B → C) :
   (p >>= q).map f = p >>= (λ a, (q a).map f) :=
-sorry
+begin
+  erw [pmf.map, pmf.bind_bind],
+  refine congr_arg _ (funext $ λ a, _),
+  rw pmf.bind_pure_comp,
+end
 
 @[simp]
 lemma pmf.map_bind {A B C : Type} (p : pmf A) (q : A → pmf B) (f : B → C) :
