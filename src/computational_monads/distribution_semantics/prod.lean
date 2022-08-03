@@ -59,16 +59,15 @@ calc ⦃e ×ˢ e' | oa ×ₘ ob⦄
   ... = ⦃e | oa⦄ * ⦃e' | ob⦄ : by simp only [prob_event_eq_tsum]
 
 lemma prob_event_diagonal [hα : decidable_eq α] (oa : oracle_comp spec (α × α)) :
-  ⦃set.diagonal α | oa⦄ = ∑' (a₀ : α), ⦃{(a₀, a₀)} | oa⦄ :=
-begin
-  simp_rw [prob_event_eq_tsum],
-  rw [ennreal.tsum_comm],
-  refine tsum_congr (λ x, x.rec_on $ λ a a', _),
-  refine trans _ (symm (tsum_eq_single a $ λ x hx, ite_eq_right_iff.2
-    (λ hxa, false.elim $ hx (prod.eq_iff_fst_eq_snd_eq.1 hxa).1.symm))),
-  simp_rw [set.mem_diagonal_iff, set.mem_singleton_iff,
-    prod.eq_iff_fst_eq_snd_eq, eq_self_iff_true, true_and, @eq_comm α a a'],
-end
+  ⦃set.diagonal α | oa⦄ = ∑' (a : α), ⦃oa⦄ (a, a) :=
+calc ⦃set.diagonal α | oa⦄ = ∑' (x : α × α), ite (x ∈ set.diagonal α) (⦃oa⦄ x) 0 :
+    prob_event_eq_tsum oa (set.diagonal α)
+  ... = ∑' (a a' : α), ite (a = a') (⦃oa⦄ (a, a')) 0 :
+    tsum_prod' ennreal.summable (λ _, ennreal.summable)
+  ... = ∑' (a a' : α), ite (a = a') (⦃oa⦄ (a, a)) 0 :
+    tsum_congr (λ a, tsum_congr (λ a', by by_cases h : a = a'; simp only [h, if_false]))
+  ... = ∑' (a a' : α), ite (a' = a) (⦃oa⦄ (a, a)) 0 : by simp_rw [@eq_comm]
+  ... = ∑' (a : α), ⦃oa⦄ (a, a) : tsum_congr (λ a, tsum_ite_eq _ _) 
 
 end prob_event
 
