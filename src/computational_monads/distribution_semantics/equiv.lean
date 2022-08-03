@@ -14,7 +14,6 @@ namespace distribution_semantics
 variables {A B C : Type} {spec spec' : oracle_spec}
   (oa : oracle_comp spec A) (ob : A → oracle_comp spec B)
   (oa' : oracle_comp spec' A) (ob' : A → oracle_comp spec' B)
-
 variable [spec.finite_range]
 variable [spec'.finite_range]
 
