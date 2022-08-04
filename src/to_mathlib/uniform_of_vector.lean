@@ -43,9 +43,13 @@ pmf.of_multiset (quotient.mk l) (multiset.quot_mk_ne_zero l h)
 
 variables (l : list α) (h : ¬ l.empty)
 
+@[simp]
 lemma support_uniform_of_list : (uniform_of_list l h).support = {x | x ∈ l} :=
 trans (pmf.support_of_multiset _) (set.ext $ λ x, by simp only [multiset.quot_mk_to_coe,
   finset.mem_coe, multiset.mem_to_finset, multiset.mem_coe, set.mem_set_of_eq])
+
+lemma mem_support_uniform_of_list_iff (a : α) : a ∈ (uniform_of_list l h).support ↔ a ∈ l :=
+by simp only [support_uniform_of_list, set.mem_set_of_eq]
 
 lemma uniform_of_list_apply (a : α) : uniform_of_list l h a = l.count a / l.length :=
 begin 
@@ -53,11 +57,38 @@ begin
   simp_rw [multiset.quot_mk_to_coe, multiset.coe_count, multiset.coe_card],
 end
 
+section measure
+
+-- TODO: should be simple after updating to the new mathlib PRs
+@[simp]
+lemma to_outer_measure_uniform_of_list_apply (t : set α) :
+  (uniform_of_list l h).to_outer_measure t = l.countp t / l.length :=
+begin
+  refine trans (pmf.to_outer_measure_of_multiset_apply _ t) _,
+  rw [multiset.quot_mk_to_coe, multiset.coe_card],
+  congr,
+  sorry
+end
+
+end measure
+
 end uniform_select_list
+
+section uniform_of_vector'
 
 -- TODO: this is a better definition and makes lists more natural
 noncomputable def uniform_of_vector' {n : ℕ} (v : vector α (n + 1)) : pmf α :=
 uniform_of_list v.1 (vector.to_list_nonempty v)
+
+variables {n : ℕ} (v : vector α (n + 1))
+
+lemma support_uniform_of_vector' : (uniform_of_vector' v).support = {x | x ∈ v.to_list} :=
+support_uniform_of_list v.1 (vector.to_list_nonempty v)
+
+lemma uniform_of_vector'_apply (a : α) : uniform_of_vector' v a = v.to_list.count a / v.length :=
+(uniform_of_list_apply v.1 _ a).trans (congr_arg (λ x, _ / x) (congr_arg coe v.length_coe))
+
+end uniform_of_vector'
 
 section uniform_of_vector
 
