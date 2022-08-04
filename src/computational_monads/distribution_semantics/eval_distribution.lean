@@ -1,4 +1,5 @@
 import to_mathlib.general
+import probability.probability_mass_function.uniform
 import computational_monads.support
 
 /-!

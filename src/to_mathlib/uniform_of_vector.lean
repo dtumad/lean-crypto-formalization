@@ -1,4 +1,4 @@
-import measure_theory.probability_mass_function.constructions
+import probability.probability_mass_function.uniform
 import to_mathlib.general
 import algebra.big_operators.fin
 

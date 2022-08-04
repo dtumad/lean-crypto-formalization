@@ -38,7 +38,7 @@ end
     obtain ⟨a, ha, as, has, h⟩ := h,
     rw support_repeat_n n at has,
     rw h at ha',
-    rw vector.mem_cons_iff a as a' at ha',
+    rw vector.mem_cons_iff a a' as at ha',
     refine ha'.elim (λ h', _) (λ h', _),
     refine h'.symm ▸ ha,
     exact has a' h'
@@ -47,7 +47,7 @@ end
     obtain ⟨a, as, hv⟩ := vector.exists_eq_cons v,
     refine ⟨a, h a (hv.symm ▸ (vector.mem_cons_self a as)), as, _, hv⟩,
     rw support_repeat_n n,
-    refine λ a' ha', h a' (hv.symm ▸ vector.mem_cons_of_mem a as a' ha'),
+    refine λ a' ha', h a' (hv.symm ▸ vector.mem_cons_of_mem a a' as ha'),
   }
 end
 
@@ -72,7 +72,7 @@ begin
   { rw [h', set.mem_set_of_eq, vector.head_cons, vector.tail_cons],
     refine ⟨h a (h'.symm ▸ (vector.mem_cons_self a as')), _⟩,
     rw [mem_support_repeat_n_iff],
-    refine λ a' ha', h a' (h'.symm ▸ (vector.mem_cons_of_mem a as' a' ha')) },
+    refine λ a' ha', h a' (h'.symm ▸ (vector.mem_cons_of_mem a a' as' ha')) },
   { rw [set.mem_set_of_eq, h', vector.head_cons, vector.tail_cons, mem_support_repeat_n_iff] at h,
     refine λ a' ha', _,
     rw [h', vector.mem_cons_iff] at ha',
@@ -114,9 +114,9 @@ begin
     simp [hn],
     refine trans (tsum_tsum_eq_single _ as.head as.tail _ _) _,
     { refine λ a h, _,
-      simp only [(vector.ne_cons_iff as a as.tail).2 (or.inl $ ne.symm h), if_false] },
+      simp only [(vector.ne_cons_iff a as as.tail).2 (or.inl $ ne.symm h), if_false] },
     { refine λ a as' h, _,
-      simp only [(vector.ne_cons_iff as a as').2 (or.inr $ ne.symm h), if_false] },
+      simp only [(vector.ne_cons_iff a as as').2 (or.inr $ ne.symm h), if_false] },
     { split_ifs,
       { rw [h, vector.to_list_cons, list.map_cons, list.prod_cons],
         rw [vector.head_cons, vector.tail_cons] },
