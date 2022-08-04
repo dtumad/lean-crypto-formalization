@@ -90,14 +90,10 @@ end query
 
 section map
 
--- @[simp]
--- lemma prob_event_map (f : α → β) (e : set β) :
---   ⦃e | f <$> oa⦄ = ⦃e ∘ f | oa⦄ :=
--- begin
---   simp_rw [prob_event_eq_to_outer_measure_apply],
---   simp_rw [functor.map, bind'_eq_bind],
---   simp_rw [bind_pure],
--- end
+@[simp]
+lemma prob_event_map (f : α → β) (e : set β) :
+  ⦃e | f <$> oa⦄ = ⦃f ⁻¹' e | oa⦄ :=
+by simp [prob_event_eq_to_outer_measure_apply]
 
 end map
 

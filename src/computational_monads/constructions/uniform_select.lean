@@ -7,7 +7,7 @@ namespace oracle_comp
 open oracle_spec
 open_locale classical
 
-variables {A : Type}
+variables {α A : Type}
 
 section uniform_fin
 
@@ -116,6 +116,10 @@ lemma support_uniform_select_list : Π (xs : list A) (h : ¬ xs.empty),
 | [] h := by simpa only [list.empty, coe_sort_tt, not_true] using h
 | (x :: xs) _ := set.ext (λ x', by rw [uniform_select_list,
     mem_support_uniform_select_vector_iff, vector.to_list_mk, set.mem_set_of])
+
+lemma eval_distribution_uniform_select_list (xs : list α) (h : ¬ xs.empty) :
+  ⦃$ˡ xs h⦄ = pmf.uniform_select_list xs h :=
+sorry
 
 end uniform_select_list
 

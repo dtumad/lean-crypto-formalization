@@ -6,6 +6,10 @@ variables {α β : Type}
 
 open_locale classical big_operators nnreal ennreal
 
+lemma multiset.quot_mk_ne_zero (l : list α) (h : ¬ l.empty) :
+  (l : multiset α) ≠ 0 :=
+λ hl, (h $ list.empty_iff_eq_nil.2 ((multiset.coe_eq_zero l).1 hl))
+
 lemma sum_ite_eq_nth {β : Type} [add_comm_monoid_with_one β] 
   (a : α) {n : ℕ} (v : vector α n) :
   ∑ i, ite (v.nth i = a) (1 : β) 0 = ↑(v.to_list.count a) :=
@@ -31,6 +35,30 @@ calc ∑' (i : fin n), ite (v.nth i = a) (1 : β) 0
   ... = (v.to_list.count a) : (sum_ite_eq_nth a v)
 
 namespace pmf
+
+section uniform_select_list
+
+noncomputable def uniform_of_list (l : list α) (h : ¬ l.empty) : pmf α :=
+pmf.of_multiset (quotient.mk l) (multiset.quot_mk_ne_zero l h)
+
+variables (l : list α) (h : ¬ l.empty)
+
+lemma support_uniform_of_list : (uniform_of_list l h).support = {x | x ∈ l} :=
+trans (pmf.support_of_multiset _) (set.ext $ λ x, by simp only [multiset.quot_mk_to_coe,
+  finset.mem_coe, multiset.mem_to_finset, multiset.mem_coe, set.mem_set_of_eq])
+
+lemma uniform_of_list_apply (a : α) : uniform_of_list l h a = l.count a / l.length :=
+begin 
+  refine trans (pmf.of_multiset_apply _ a) _,
+  simp_rw [multiset.quot_mk_to_coe, multiset.coe_count, multiset.coe_card],
+end
+
+end uniform_select_list
+
+-- TODO: this is a better definition and makes lists more natural
+noncomputable def uniform_of_vector' {n : ℕ} (v : vector α (n + 1)) : pmf α :=
+uniform_of_list v.1 (vector.to_list_nonempty v)
+
 section uniform_of_vector
 
 variables {n : ℕ} (v : vector α (n + 1)) (a : α)
@@ -147,15 +175,15 @@ calc (∑' (x : α), if p x then l.count x else 0 : β)
 @[simp]
 lemma to_outer_measure_uniform_of_vector_apply : (uniform_of_vector v).to_outer_measure t =
   (v.to_list.countp (∈ t)) / (n + 1) :=
-calc (uniform_of_vector v).to_outer_measure t
-  = ∑' (x : α), t.indicator (λ a, (v.to_list.count a) / (n + 1)) x :
-    by simp [to_outer_measure_apply, set.indicator_apply]
-  ... = ∑' (x : α), (t.indicator (λ a, v.to_list.count a) x) / (n + 1) :
-    by simp only [div_eq_mul_inv, set.indicator_mul_left]
-  ... = (∑' (x : α), t.indicator (λ a, v.to_list.count a) x) / (n + 1) :
-    by simp only [div_eq_mul_inv, ennreal.tsum_mul_right]
-  ... = (v.to_list.countp (∈ t)) / (n + 1) :
-    congr_arg (λ (r : ℝ≥0∞), r / (n + 1)) sorry --(tsum_ite_count (∈ t) v.to_list)
+begin
+  refine trans (pmf.to_outer_measure_of_multiset_apply _ _) _,
+  simp only [multiset.quot_mk_to_coe, multiset.coe_filter, multiset.coe_count, multiset.coe_card,
+    vector.to_list_length, nat.cast_add, nat.cast_one],
+  refine congr_arg (λ x, x / ((n : ℝ≥0∞) + 1)) ((tsum_congr (λ a, _)).trans (tsum_ite_count _ _)),
+  split_ifs with ha,
+  { exact congr_arg coe (list.count_filter ha) },
+  { exact nat.cast_eq_zero.2 (list.count_eq_zero.2 (λ h, ha $ (list.mem_filter.1 h).2)) }
+end
 
 @[simp]
 lemma to_measure_uniform_of_vector_apply [measurable_space α] (ht : measurable_set t) :
@@ -166,5 +194,7 @@ lemma to_measure_uniform_of_vector_apply [measurable_space α] (ht : measurable_
 end measure
 
 end uniform_of_vector
+
+
 
 end pmf
