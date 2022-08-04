@@ -118,7 +118,7 @@ lemma support_uniform_select_list : Π (xs : list A) (h : ¬ xs.empty),
     mem_support_uniform_select_vector_iff, vector.to_list_mk, set.mem_set_of])
 
 lemma eval_distribution_uniform_select_list (xs : list α) (h : ¬ xs.empty) :
-  ⦃$ˡ xs h⦄ = pmf.uniform_select_list xs h :=
+  ⦃$ˡ xs h⦄ = pmf.uniform_of_list xs h :=
 sorry
 
 end uniform_select_list

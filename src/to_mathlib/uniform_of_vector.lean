@@ -6,37 +6,9 @@ variables {α β : Type}
 
 open_locale classical big_operators nnreal ennreal
 
-lemma multiset.quot_mk_ne_zero (l : list α) (h : ¬ l.empty) :
-  (l : multiset α) ≠ 0 :=
-λ hl, (h $ list.empty_iff_eq_nil.2 ((multiset.coe_eq_zero l).1 hl))
-
-lemma sum_ite_eq_nth {β : Type} [add_comm_monoid_with_one β] 
-  (a : α) {n : ℕ} (v : vector α n) :
-  ∑ i, ite (v.nth i = a) (1 : β) 0 = ↑(v.to_list.count a) :=
-begin
-  induction n with n hn,
-  { simp [vector.eq_nil v] },
-  { obtain ⟨x, xs, hxs⟩ := vector.exists_eq_cons v,
-    suffices : ite (x = a) 1 0 + (list.count a xs.to_list : β) =
-      ite (x = a) ((list.count a xs.to_list) + 1) (list.count a xs.to_list),
-    by simpa only [hxs, fin.sum_univ_succ, vector.to_list_cons, list.count_cons,
-      vector.nth_cons_zero, @eq_comm _ a, hn xs, fin.coe_eq_cast_succ, fin.coe_succ_eq_succ,
-      vector.nth_cons_succ, nat.cast_ite, nat.cast_succ] using this,
-    split_ifs,
-    { exact add_comm _ _ },
-    { exact zero_add _ } }
-end
-
-lemma tsum_ite_eq_vector_nth {β : Type} [add_comm_monoid_with_one β] [topological_space β] [t2_space β]
-  {n : ℕ} (v : vector α n) (a : α) :
-  ∑' (i : fin n), ite (v.nth i = a) (1 : β) 0 = ↑(v.to_list.count a) :=
-calc ∑' (i : fin n), ite (v.nth i = a) (1 : β) 0
-  = ∑ (i : fin n), ite (v.nth i = a) (1 : β) 0 : tsum_eq_sum (λ _ hb, (hb $ finset.mem_univ _).elim)
-  ... = (v.to_list.count a) : (sum_ite_eq_nth a v)
-
 namespace pmf
 
-section uniform_select_list
+section uniform_of_list
 
 noncomputable def uniform_of_list (l : list α) (h : ¬ l.empty) : pmf α :=
 pmf.of_multiset (quotient.mk l) (multiset.quot_mk_ne_zero l h)
@@ -57,6 +29,9 @@ begin
   simp_rw [multiset.quot_mk_to_coe, multiset.coe_count, multiset.coe_card],
 end
 
+lemma uniform_of_list_apply_of_not_mem (a : α) (ha : a ∉ l) : uniform_of_list l h a = 0 :=
+(pmf.apply_eq_zero_iff _ a).2 (mt (mem_support_uniform_of_list_iff l h a).1 ha)
+
 section measure
 
 -- TODO: should be simple after updating to the new mathlib PRs
@@ -70,9 +45,15 @@ begin
   sorry
 end
 
+@[simp]
+lemma to_measure_uniform_of_list_apply (t : set α) [measurable_space α] (ht : measurable_set t) :
+  (uniform_of_list l h).to_measure t = l.countp t / l.length :=
+(to_measure_apply_eq_to_outer_measure_apply _ t ht).trans
+  (to_outer_measure_uniform_of_list_apply l h t)
+
 end measure
 
-end uniform_select_list
+end uniform_of_list
 
 section uniform_of_vector'
 
@@ -85,10 +66,38 @@ variables {n : ℕ} (v : vector α (n + 1))
 lemma support_uniform_of_vector' : (uniform_of_vector' v).support = {x | x ∈ v.to_list} :=
 support_uniform_of_list v.1 (vector.to_list_nonempty v)
 
-lemma uniform_of_vector'_apply (a : α) : uniform_of_vector' v a = v.to_list.count a / v.length :=
+lemma uniform_of_vector'_apply (a : α) : uniform_of_vector' v a = v.to_list.count a / ↑(n + 1) :=
 (uniform_of_list_apply v.1 _ a).trans (congr_arg (λ x, _ / x) (congr_arg coe v.length_coe))
 
+section measure
+
+@[simp]
+lemma to_outer_measure_uniform_of_vector'_apply (t : set α) :
+  (uniform_of_vector' v).to_outer_measure t = v.to_list.countp t / ↑(n + 1) :=
+(to_outer_measure_uniform_of_list_apply v.1 _ t).trans
+  (congr_arg (λ x, _ / x) (congr_arg coe v.length_coe))
+
+@[simp]
+lemma to_measure_uniform_of_vector'_apply (t : set α) [measurable_space α] (ht : measurable_set t) :
+  (uniform_of_vector' v).to_measure t = v.to_list.countp t / ↑(n + 1) :=
+(to_measure_apply_eq_to_outer_measure_apply _ t ht).trans
+  (to_outer_measure_uniform_of_vector'_apply v t)
+
+end measure
+
 end uniform_of_vector'
+
+
+
+
+
+
+
+
+
+
+
+
 
 section uniform_of_vector
 
@@ -226,6 +235,28 @@ end measure
 
 end uniform_of_vector
 
-
-
 end pmf
+
+lemma sum_ite_eq_nth {β : Type} [add_comm_monoid_with_one β] 
+  (a : α) {n : ℕ} (v : vector α n) :
+  ∑ i, ite (v.nth i = a) (1 : β) 0 = ↑(v.to_list.count a) :=
+begin
+  induction n with n hn,
+  { simp [vector.eq_nil v] },
+  { obtain ⟨x, xs, hxs⟩ := vector.exists_eq_cons v,
+    suffices : ite (x = a) 1 0 + (list.count a xs.to_list : β) =
+      ite (x = a) ((list.count a xs.to_list) + 1) (list.count a xs.to_list),
+    by simpa only [hxs, fin.sum_univ_succ, vector.to_list_cons, list.count_cons,
+      vector.nth_cons_zero, @eq_comm _ a, hn xs, fin.coe_eq_cast_succ, fin.coe_succ_eq_succ,
+      vector.nth_cons_succ, nat.cast_ite, nat.cast_succ] using this,
+    split_ifs,
+    { exact add_comm _ _ },
+    { exact zero_add _ } }
+end
+
+lemma tsum_ite_eq_vector_nth {β : Type} [add_comm_monoid_with_one β] [topological_space β] [t2_space β]
+  {n : ℕ} (v : vector α n) (a : α) :
+  ∑' (i : fin n), ite (v.nth i = a) (1 : β) 0 = ↑(v.to_list.count a) :=
+calc ∑' (i : fin n), ite (v.nth i = a) (1 : β) 0
+  = ∑ (i : fin n), ite (v.nth i = a) (1 : β) 0 : tsum_eq_sum (λ _ hb, (hb $ finset.mem_univ _).elim)
+  ... = (v.to_list.count a) : (sum_ite_eq_nth a v)

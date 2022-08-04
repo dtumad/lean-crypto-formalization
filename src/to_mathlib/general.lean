@@ -9,6 +9,11 @@ variables {α β γ : Type*}
 # Misc Lemmas That Ideally Should Port to Mathlib
 -/
 
+lemma multiset.quot_mk_ne_zero (l : list α) (h : ¬ l.empty) :
+  (l : multiset α) ≠ 0 :=
+mt ((list.empty_iff_eq_nil).2 ∘ (multiset.coe_eq_zero l).1) h
+
+
 open_locale nnreal ennreal classical big_operators
 
 instance set.diagonal.decidable_pred [h : decidable_eq α] :
