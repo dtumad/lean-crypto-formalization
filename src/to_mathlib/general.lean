@@ -17,8 +17,11 @@ mt ((list.empty_iff_eq_nil).2 ∘ (multiset.coe_eq_zero l).1) h
 
 open_locale nnreal ennreal classical big_operators
 
-instance set.diagonal.decidable_pred [h : decidable_eq α] :
-  decidable_pred (set.diagonal α) := λ x, h x.1 x.2
+-- instance set.diagonal.decidable_pred [h : decidable_eq α] :
+--   decidable_pred (set.diagonal α) := λ x, h x.1 x.2
+
+instance set.diagonal.mem_decidable [h : decidable_eq α] (x : α × α) :
+  decidable (x ∈ set.diagonal α) := h x.1 x.2
 
 lemma real.pow_two_sum_div_le_sum_pow_two (s : finset α) (f : α → ℝ) (hf : ∀ a, 0 ≤ f a) :
   (∑ x in s, f x) ^ 2 / s.card ≤ ∑ x in s, (f x) ^ 2 :=
