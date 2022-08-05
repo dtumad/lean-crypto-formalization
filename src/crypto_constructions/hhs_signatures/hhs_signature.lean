@@ -191,7 +191,7 @@ noncomputable def hhs_signature_vectorization_reduction [inhabited G]
     },
     refine sorry
   end,
-  adv_poly_time := sorry
+  -- adv_poly_time := 
 }
 
 end hhs_signature

@@ -37,7 +37,7 @@ namespace vectorization
 
 structure adversary (G X : Type) : Type 1 :=
 (adv : X × X → oracle_comp uniform_selecting G)
-(adv_poly_time : poly_time_oracle_comp adv)
+-- (adv_poly_time : poly_time_oracle_comp adv)
 
 section naive_adversary
 
@@ -45,7 +45,8 @@ variables (G X)
 
 noncomputable def naive_adversary : adversary G X :=
 { adv := λ _, $ᵗ G,
-  adv_poly_time := sorry }
+  -- adv_poly_time :=
+  }
 
 end naive_adversary
 
@@ -73,7 +74,7 @@ variables (G X)
 
 noncomputable def naive_adversary : adversary G X :=
 { adv := λ _, $ᵗ X,
-  -- adv_poly_time := sorry
+  -- adv_poly_time :=
   }
 
 end naive_adversary
