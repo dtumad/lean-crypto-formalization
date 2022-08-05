@@ -73,9 +73,10 @@ noncomputable def hhs_signature (G X M : Type) [fintype G] [fintype X] [inhabite
     (h : vector bool n) ← query (sum.inr ()) (ys, m),
     return (h = σ.map prod.snd) 
   },
-  gen_poly_time := sorry,
-  sign_poly_time := sorry,
-  verify_poly_time := sorry }
+  -- gen_poly_time := ,
+  -- sign_poly_time := ,
+  -- verify_poly_time :=  
+}
 
 -- variables {G X M}
 

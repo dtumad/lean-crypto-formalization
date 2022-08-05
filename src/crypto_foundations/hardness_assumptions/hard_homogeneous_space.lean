@@ -65,7 +65,7 @@ namespace parallelization
 
 structure adversary (G X : Type) :=
 (adv : X × X × X → oracle_comp uniform_selecting X)
-(adv_poly_time : poly_time_oracle_comp adv)
+-- (adv_poly_time : poly_time_oracle_comp adv)
 
 section naive_adversary
 
@@ -73,7 +73,8 @@ variables (G X)
 
 noncomputable def naive_adversary : adversary G X :=
 { adv := λ _, $ᵗ X,
-  adv_poly_time := sorry }
+  -- adv_poly_time := sorry
+  }
 
 end naive_adversary
 

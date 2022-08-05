@@ -41,9 +41,9 @@ structure signature :=
 (sign : PK × SK × M → oracle_comp (uniform_selecting ++ random_oracles) S)
 (verify : PK × M × S → oracle_comp (uniform_selecting ++ random_oracles) bool)
 -- Requirement that all the algorithms have polynomial time complexity.
-(gen_poly_time : poly_time_oracle_comp gen)
-(sign_poly_time : poly_time_oracle_comp sign)
-(verify_poly_time : poly_time_oracle_comp verify)
+-- (gen_poly_time : poly_time_oracle_comp gen)
+-- (sign_poly_time : poly_time_oracle_comp sign)
+-- (verify_poly_time : poly_time_oracle_comp verify)
 
 namespace signature
 
@@ -158,7 +158,7 @@ idₛ ⟪++⟫ signing_oracle sig pk sk
   Note that the adversary only has access to the public key. -/
 structure unforgeable_adversary (sig : signature) :=
 (adv : sig.PK → oracle_comp (unforgeable_adversary_oracle_spec sig) (sig.M × sig.S))
-(adv_poly_time : poly_time_oracle_comp adv)
+-- (adv_poly_time : poly_time_oracle_comp adv)
 
 /-- Wrapper function for simulation that hides the "state values" of the stateless oracles. -/
 def simulate_adversary (sig : signature)
