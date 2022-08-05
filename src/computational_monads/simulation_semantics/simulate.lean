@@ -92,8 +92,7 @@ lemma simulate'_pure : simulate' so (pure a) s = prod.fst <$> (pure (a, s)) := r
 
 @[simp]
 lemma simulate'_bind : simulate' so (oa >>= ob) s =
-  (simulate so oa s >>= λ x, simulate' so (ob x.1) x.2) :=
-sorry
+  prod.fst <$> (simulate so oa s >>= λ x, simulate so (ob x.1) x.2) := rfl
 
 @[simp]
 lemma simulate'_query : simulate' so (query i t) s = prod.fst <$> so.o i (t, s) := rfl
@@ -101,14 +100,14 @@ lemma simulate'_query : simulate' so (query i t) s = prod.fst <$> so.o i (t, s) 
 @[simp]
 lemma support_simulate' : (simulate' so oa s).support =
   prod.fst '' (simulate so oa s).support :=
-by simp [simulate']
+by simp only [simulate', support_map]
 
 lemma support_simulate'_pure (a : A) : (simulate' so (pure a) s).support = {a} :=
-by simp
+by simp only [simulate'_pure, support_map, support_pure, set.image_singleton]
 
 lemma support_simulate'_bind : (simulate' so (oa >>= ob) s).support =
   ⋃ x ∈ (simulate so oa s).support, (simulate' so (ob $ prod.fst x) x.snd).support :=
-by simp
+by simp only [set.image_Union, simulate'_bind, support_map, support_bind, support_simulate']
 
 lemma support_simulate'_query : (simulate' so (query i t) s).support =
   prod.fst '' (so.o i (t, s)).support :=

@@ -142,7 +142,7 @@ begin
   { simp },
   { let so := ⟪o|update_state, default_state⟫,
     calc simulate' so (oa >>= ob) s
-      ≃ₚ (simulate so oa s) >>= (λ x, simulate' so (ob x.1) x.2) : by rw [simulate'_bind]
+      ≃ₚ (simulate so oa s) >>= (λ x, simulate' so (ob x.1) x.2) : simulate'_bind_equiv so oa ob s
       ... ≃ₚ (simulate so oa s) >>= (λ x, simulate' ⟪o⟫ (ob x.1) ()) :
         bind_equiv_of_equiv_second _ (λ a, (hob a.1 a.2))
       ... ≃ₚ (simulate' so oa s) >>= (λ x, simulate' ⟪o⟫ (ob x) ()) : by erw [bind_map_equiv]
@@ -151,7 +151,7 @@ begin
       ... ≃ₚ (simulate ⟪o⟫ oa ()) >>= (λ x, simulate' ⟪o⟫ (ob x.1) ()) : by erw [bind_map_equiv]
       ... ≃ₚ (simulate ⟪o⟫ oa ()) >>= (λ x, simulate' ⟪o⟫ (ob x.1) x.2) :
         by { congr, ext x, rw [punit_eq () x.2] }
-      ... ≃ₚ simulate' ⟪o⟫ (oa >>= ob) () : by rw [simulate'_bind] },
+      ... ≃ₚ simulate' ⟪o⟫ (oa >>= ob) () : by rw [simulate'_bind_equiv] },
     { simp_rw [simulate'_query_equiv, apply, stateless_oracle.apply, map_bind_equiv],
       refine bind_equiv_of_equiv_second (o i t) _,
       simp only [map_pure_equiv, eq_self_iff_true, forall_const] }
