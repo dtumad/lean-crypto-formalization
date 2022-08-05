@@ -25,15 +25,15 @@ section prob_event
 
 variables (oa : oracle_comp spec (option α)) (e : set (option α))
 
-lemma prob_event_option (e : set (option α)) : ⦃ e | oa ⦄ =
-  ⦃{a | a ∈ e ∧ option.is_none a} | oa ⦄ + ⦃{ a | a ∈ e ∧ option.is_some a } | oa ⦄ :=
+lemma prob_event_option (e : set (option α)) :
+  ⦃e | oa⦄ = ⦃{ x ∈ e | x.is_some } | oa ⦄ + ⦃{ x ∈ e | x.is_some } | oa ⦄ :=
 sorry
 
 lemma prob_event_is_none : ⦃coe ∘ option.is_none | oa ⦄ = ⦃oa⦄ none :=
-sorry
+prob_event_eq_eval_distribution_of_disjoint_sdiff_support oa _ rfl
+  (set.disjoint_iff_forall_ne.2 (λ x hx, false.elim $ hx.2 (option.is_none_iff_eq_none.1 hx.1)))
 
-lemma prob_event_is_some : ⦃coe ∘ option.is_some | oa⦄ =
-  ∑' (a : α), ⦃oa⦄ (some a) :=
+lemma prob_event_is_some : ⦃coe ∘ option.is_some | oa⦄ = ∑' (a : α), ⦃oa⦄ (some a) :=
 sorry
 
 end prob_event

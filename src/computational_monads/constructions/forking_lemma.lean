@@ -8,7 +8,7 @@ noncomputable theory
 
 open oracle_comp oracle_spec
 
-open_locale nnreal ennreal
+open_locale nnreal ennreal big_operators
 
 structure forking_adversary (T U A : Type) [inhabited U]  :=
 (adv : oracle_comp (uniform_selecting ++ (T →ₒ U)) A)
@@ -47,6 +47,10 @@ def advantage (adv : forking_adversary T U A) : ℝ≥0∞ :=
 lemma advantage_eq_tsum (adv : forking_adversary T U A) :
   adv.advantage = ∑' (i : fin adv.q), ⦃sim_choose_fork adv⦄ (some i) :=
 distribution_semantics.prob_event_is_some $ sim_choose_fork adv
+
+lemma advantage_eq_sum (adv : forking_adversary T U A) :
+  adv.advantage = ∑ i, ⦃sim_choose_fork adv⦄ (some i) :=
+trans (advantage_eq_tsum adv) (tsum_fintype _)
 
 end forking_adversary
 
@@ -130,6 +134,8 @@ end cache_input
 
 section fork_success
 
+#check tsum_fintype
+
 lemma prob_fork_eq_some : ⦃ λ out, out.1.is_some | fork adv ⦄ ≥ (adv.advantage ^ 2) / adv.q :=
 calc ⦃ λ out, out.1.is_some | fork adv ⦄
   = ⦃ coe ∘ option.is_some | prod.fst <$> fork adv⦄ :
@@ -140,10 +146,13 @@ calc ⦃ λ out, out.1.is_some | fork adv ⦄
     tsum_congr (λ j, congr_arg coe $ eval_distribution_fst_map_fork_apply adv (some j))
   ... = ∑' (j : fin adv.q), ↑(⦃adv.sim_choose_fork⦄ (some j)) ^ 2 :
     by simp only [distribution_semantics.eval_distribution_prod_apply, pow_two, ennreal.coe_mul]
-  ... ≥ (∑' (j : fin adv.q), ⦃adv.sim_choose_fork⦄ (some j)) ^ 2 / adv.q :
-    le_of_eq_of_le (by rw [fintype.card_fin]) (tsum_pow_two_ge_pow_two_tsum _)
+  ... = ∑ j, ↑(⦃adv.sim_choose_fork⦄ (some j)) ^ 2 :
+    tsum_fintype _
+  ... ≥ (∑ j, ⦃adv.sim_choose_fork⦄ (some j)) ^ 2 / adv.q :
+    sorry
+    -- le_of_eq_of_le (by rw [fintype.card_fin]) (sum_pow_two_ge_pow_two_sum _)
   ... = (adv.advantage ^ 2) / adv.q :
-    by rw forking_adversary.advantage_eq_tsum adv
+    by rw forking_adversary.advantage_eq_sum adv
 
 /- forking algorithm succeeds if a forking point is chosen, and the query outputs differ there -/
 def fork_success : option (fin n) × A × query_log (T →ₒ U) × A × query_log (T →ₒ U) → Prop

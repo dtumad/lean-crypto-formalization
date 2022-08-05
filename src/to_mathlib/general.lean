@@ -6,6 +6,8 @@ import analysis.convex.specific_functions
 
 variables {α β γ : Type*}
 
+open_locale measure_theory
+
 /-! 
 # Misc Lemmas That Ideally Should Port to Mathlib
 -/
@@ -14,11 +16,14 @@ lemma multiset.quot_mk_ne_zero (l : list α) (h : ¬ l.empty) :
   (l : multiset α) ≠ 0 :=
 mt ((list.empty_iff_eq_nil).2 ∘ (multiset.coe_eq_zero l).1) h
 
-
 open_locale nnreal ennreal classical big_operators
 
--- instance set.diagonal.decidable_pred [h : decidable_eq α] :
---   decidable_pred (set.diagonal α) := λ x, h x.1 x.2
+lemma pmf.measurable_set_to_outer_measure_caratheodory (p : pmf α) (s : set α) :
+  measurable_set[p.to_outer_measure.caratheodory] s :=
+begin
+  convert measurable_space.measurable_set_top,
+  exact (pmf.to_outer_measure_caratheodory p),
+end
 
 instance set.diagonal.mem_decidable [h : decidable_eq α] (x : α × α) :
   decidable (x ∈ set.diagonal α) := h x.1 x.2
@@ -44,13 +49,6 @@ lemma nnreal.pow_two_sum_div_le_sum_pow_two (s : finset α) (f : α → ℝ≥0)
   (∑ x in s, f x) ^ 2 / s.card ≤ ∑ x in s, (f x) ^ 2 :=
 by simpa [← nnreal.coe_le_coe, nnreal.coe_sum] using
   real.pow_two_sum_div_le_sum_pow_two s (coe ∘ f) (λ _, nnreal.coe_nonneg _)
-
-lemma tsum_pow_two_ge_pow_two_tsum [fintype α] [topological_space ℝ≥0∞]
-  (f : α → ℝ≥0∞) :
-  (∑' (a : α), f a) ^ 2 / fintype.card α ≤ ∑' (a : α), (f a) ^ 2 :=
-begin
-  sorry
-end
 
 lemma vector.to_list_nonempty {n : ℕ} (v : vector α (n + 1)) : ¬ v.to_list.empty :=
 match v with

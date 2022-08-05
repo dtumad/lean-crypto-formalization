@@ -7,7 +7,7 @@ namespace distribution_semantics
 open oracle_comp
 open_locale big_operators nnreal ennreal
 
-variables {α β γ : Type} {spec spec' : oracle_spec} 
+variables {α β γ ι : Type} {spec spec' : oracle_spec} 
 variable [spec.finite_range]
 variable [spec'.finite_range]
 
@@ -15,8 +15,8 @@ variable [spec'.finite_range]
   Defined in terms of the outer measure associated to the corresponding `pmf`.
 
   The initial definition uses a `measure` to access more general lemmas,
-    but is equal to the `outer_measure` (see `prob_event_eq_to_outer_measure_apply`)
-  TODO : renaming -/
+    but is equal to the `outer_measure` (see `prob_event_eq_to_outer_measure_apply`). -/
+
 noncomputable def prob_event {α : Type} (oa : oracle_comp spec α) (event : set α) : ℝ≥0∞ :=
 @pmf.to_measure α ⊤ ⦃oa⦄ event
 
@@ -126,6 +126,40 @@ by simp only [prob_event_eq_to_outer_measure_apply,
   pmf.to_outer_measure_apply_eq_one_iff, support_eval_distribution]
 
 end support
+
+lemma prob_event_eq_eval_distribution_of_disjoint_sdiff_support [decidable_pred e] {a : α}
+  (ha : a ∈ e) (h : disjoint (e \ {a}) oa.support) : ⦃e | oa⦄ = ⦃oa⦄ a :=
+begin
+  refine (prob_event_eq_tsum oa e).trans ((tsum_eq_single a $ λ a' ha', _).trans (if_pos ha)),
+  split_ifs with hae,
+  { exact ennreal.coe_eq_zero.2 (eval_distribution_eq_zero_of_not_mem_support
+      (set.disjoint_left.1 h $ set.mem_diff_of_mem hae ha')) },
+  { exact rfl }
+end
+
+lemma prob_event_Union_eq_of_pairwise_disjoint (es : ℕ → set α) (h : pairwise (disjoint on es)) :
+  ⦃⋃ i, es i | oa⦄ = ∑' i, ⦃es i | oa⦄ :=
+begin
+  rw [prob_event_eq_to_outer_measure_apply],
+  refine (measure_theory.outer_measure.Union_eq_of_caratheodory _
+    (λ n, pmf.measurable_set_to_outer_measure_caratheodory _ (es n)) h).trans
+      (tsum_congr (λ n, symm $ prob_event_eq_to_outer_measure_apply oa (es n))),
+end
+
+lemma prob_event_union_eq_of_disjoint [decidable_pred e] [decidable_pred e']
+  (h : disjoint e e') : ⦃e ∪ e' | oa⦄ = ⦃e | oa⦄ + ⦃e' | oa⦄ :=
+begin
+  simp_rw [prob_event_eq_tsum],
+  refine trans (tsum_congr (λ a, _)) (tsum_add ennreal.summable ennreal.summable),
+  by_cases ha : a ∈ e ∪ e',
+  { by_cases ha' : a ∈ e,
+    { have : a ∉ e' := set.disjoint_left.1 h ha',
+      simp_rw [ha, ha', this, if_true, if_false, add_zero] },
+    { have : a ∈ e' := set.mem_union.elim ha (false.elim ∘ ha') id,
+      simp_rw [ha, ha', this, if_true, if_false, zero_add] }
+  },
+  { simp_rw [ha, ha ∘ (set.mem_union_left _), ha ∘ (set.mem_union_right _), if_false, zero_add] }
+end
 
 -- TODO: seperate `indep` file?
 section indep_events

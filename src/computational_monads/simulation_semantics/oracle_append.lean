@@ -8,6 +8,7 @@ variables {spec spec' spec'' : oracle_spec} {A B C : Type}
 
 section oracle_append
 
+-- TODO: `simulation_oracle.append`
 def oracle_append (so : simulation_oracle spec spec'')
   (so' : simulation_oracle spec' spec'') :
   simulation_oracle (spec ++ spec') spec'' :=
