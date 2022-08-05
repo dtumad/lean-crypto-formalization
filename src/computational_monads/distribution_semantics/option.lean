@@ -25,8 +25,8 @@ section prob_event
 
 variables (oa : oracle_comp spec (option α)) (e : set (option α))
 
-lemma prob_event_option (e : set (option α)) :
-  ⦃e | oa⦄ = ⦃{ x ∈ e | x.is_some } | oa ⦄ + ⦃{ x ∈ e | x.is_some } | oa ⦄ :=
+lemma prob_event_option [decidable_pred e] (e : set (option α)) :
+  ⦃e | oa⦄ = ⦃{x ∈ e | x.is_none} | oa ⦄ + ⦃{x ∈ e | x.is_some} | oa ⦄ :=
 sorry
 
 lemma prob_event_is_none : ⦃coe ∘ option.is_none | oa ⦄ = ⦃oa⦄ none :=

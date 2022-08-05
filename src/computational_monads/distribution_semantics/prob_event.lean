@@ -146,7 +146,7 @@ begin
       (tsum_congr (λ n, symm $ prob_event_eq_to_outer_measure_apply oa (es n))),
 end
 
-lemma prob_event_union_eq_of_disjoint [decidable_pred e] [decidable_pred e']
+lemma prob_event_union_eq_of_disjoint {e e' : set α} [decidable_pred e] [decidable_pred e']
   (h : disjoint e e') : ⦃e ∪ e' | oa⦄ = ⦃e | oa⦄ + ⦃e' | oa⦄ :=
 begin
   simp_rw [prob_event_eq_tsum],

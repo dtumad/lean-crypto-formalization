@@ -42,11 +42,41 @@ lemma oracle_append_apply_inr : (so ++ₛ so').o (sum.inr i') (t', s) =
 
 section simulate
 
-variable [spec''.finite_range]
-
-lemma simulate_oracle_append_pure : simulate (so ++ₛ so') (pure a) s ≃ₚ
-  (pure (a, s) : oracle_comp spec'' _) := rfl
+lemma simulate_oracle_append_pure : simulate (so ++ₛ so') (pure a) s = (pure (a, s)) := rfl
 
 end simulate
+
+section simulate'
+
+section distribution_semantics
+
+variable [spec''.finite_range]
+
+lemma simulate'_oracle_append_pure_equiv : simulate' (so ++ₛ so') (pure a) s ≃ₚ
+  (pure a : oracle_comp spec'' _) := by simp
+
+end distribution_semantics
+
+end simulate'
+
+section default_simulate
+
+lemma default_simulate_oracle_append_pure : default_simulate (so ++ₛ so') (pure a) =
+  (pure (a, (so.default_state, so'.default_state))) := rfl
+
+end default_simulate
+
+section default_simulate'
+
+section distribution_semantics
+
+variable [spec''.finite_range]
+
+lemma default_simulate'_oracle_append_pure_equiv : default_simulate' (so ++ₛ so') (pure a) ≃ₚ
+  (pure a : oracle_comp spec'' _) := by simp
+
+end distribution_semantics
+
+end default_simulate'
 
 end oracle_append
