@@ -1,6 +1,6 @@
 import to_mathlib.general
 import probability.probability_mass_function.uniform
-import computational_monads.support
+import computational_monads.fin_support
 
 /-!
 # Distribution Semantics for Oracle Computations`
@@ -86,20 +86,6 @@ lemma eval_distribution_bind_bind_apply (oa : oracle_comp spec α)
 
 end bind
 
-section map
-
-@[simp]
-lemma eval_distribution_map (oa : oracle_comp spec α) (f : α → β) :
-  ⦃f <$> oa⦄ = ⦃oa⦄.map f :=
-eval_distribution_bind oa (pure ∘ f)
-
-@[simp]
-lemma eval_distribution_map_apply [decidable_eq β] (oa : oracle_comp spec α) (f : α → β) (b : β) :
-  ⦃f <$> oa⦄ b = ∑' (a : α), if f a = b then ⦃oa⦄ a else 0 :=
-by simp only [eval_distribution_map oa f, pmf.map_apply f ⦃oa⦄, @eq_comm β b]
-
-end map
-
 section query
 
 @[simp]
@@ -114,12 +100,29 @@ by simp only [eval_distribution_query, pmf.uniform_of_fintype_apply, one_div]
 
 end query
 
+section map
+
+@[simp]
+lemma eval_distribution_map (oa : oracle_comp spec α) (f : α → β) :
+  ⦃f <$> oa⦄ = ⦃oa⦄.map f :=
+eval_distribution_bind oa (pure ∘ f)
+
+@[simp]
+lemma eval_distribution_map_apply [decidable_eq β] (oa : oracle_comp spec α) (f : α → β) (b : β) :
+  ⦃f <$> oa⦄ b = ∑' (a : α), if f a = b then ⦃oa⦄ a else 0 :=
+by simp only [eval_distribution_map oa f, pmf.map_apply f ⦃oa⦄, @eq_comm β b]
+
+end map
+
 section support
 
 @[simp]
-lemma support_eval_distribution (oa : oracle_comp spec α) :
-  ⦃oa⦄.support = oa.support :=
+lemma support_eval_distribution (oa : oracle_comp spec α) : ⦃oa⦄.support = oa.support :=
 plift.down (eval_dist oa).2
+
+lemma support_eval_distribution_eq_fin_support [spec.computable] (oa : oracle_comp spec α)
+  [decidable oa] : ⦃oa⦄.support = oa.fin_support :=
+sorry
 
 @[simp]
 lemma eval_distribution_eq_zero_iff_not_mem_support (oa : oracle_comp spec α) (a : α) :
@@ -140,6 +143,7 @@ lemma eval_distribution_ne_zero_of_not_mem_support {oa : oracle_comp spec α} (a
   (h : a ∈ oa.support) : ⦃oa⦄ a ≠ 0 :=
 (eval_distribution_ne_zero_iff_mem_support oa a).2 h
 
+@[simp]
 lemma eval_distribution_eq_one_iff_support_eq_singleton (oa : oracle_comp spec α) (a : α) :
   ⦃oa⦄ a = 1 ↔ oa.support = {a} :=
 by rw [pmf.apply_eq_one_iff, support_eval_distribution oa]
