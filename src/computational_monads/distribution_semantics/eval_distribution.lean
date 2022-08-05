@@ -122,7 +122,7 @@ plift.down (eval_dist oa).2
 
 lemma support_eval_distribution_eq_fin_support [spec.computable] (oa : oracle_comp spec α)
   [decidable oa] : ⦃oa⦄.support = oa.fin_support :=
-sorry
+(support_eval_distribution oa).trans (support_eq_fin_support oa)
 
 @[simp]
 lemma eval_distribution_eq_zero_iff_not_mem_support (oa : oracle_comp spec α) (a : α) :
