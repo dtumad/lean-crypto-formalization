@@ -18,33 +18,33 @@ def oracle_append (so : simulation_oracle spec spec'')
     (λ i, λ x, do { u_s' ← so.o i ⟨x.1, x.2.1⟩, pure (u_s'.1, u_s'.2, x.2.2) })
     (λ i, λ x, do { u_s' ← so'.o i ⟨x.1, x.2.2⟩, pure (u_s'.1, x.2.1, u_s'.2) }) }
 
-notation so `⟪++⟫` so' := oracle_append so so'
+notation so `++ₛ` so' := oracle_append so so'
 
 variables (so : simulation_oracle spec spec'') (so' : simulation_oracle spec' spec'')
   (i : spec.ι) (i' : spec'.ι) (t : spec.domain i) (t' : spec'.domain i')
   (s : so.S × so'.S)
 
 @[simp]
-lemma default_state_oracle_append : (so ⟪++⟫ so').default_state =
+lemma default_state_oracle_append : (so ++ₛ so').default_state =
   (so.default_state, so'.default_state) := rfl
 
-lemma oracle_append_apply_index (i : spec.ι ⊕ spec'.ι) : (so ⟪++⟫ so').o i = sum.rec_on i
+lemma oracle_append_apply_index (i : spec.ι ⊕ spec'.ι) : (so ++ₛ so').o i = sum.rec_on i
   (λ i, λ x, do { u_s' ← so.o i ⟨x.1, x.2.1⟩, pure (u_s'.1, u_s'.2, x.2.2) })
   (λ i, λ x, do { u_s' ← so'.o i ⟨x.1, x.2.2⟩, pure (u_s'.1, x.2.1, u_s'.2) }) := rfl
 
 @[simp]
-lemma oracle_append_apply_inl : (so ⟪++⟫ so').o (sum.inl i) (t, s) =
+lemma oracle_append_apply_inl : (so ++ₛ so').o (sum.inl i) (t, s) =
   do { u_s' ← so.o i ⟨t, s.1⟩, pure (u_s'.1, u_s'.2, s.2) } := rfl
 
 @[simp]
-lemma oracle_append_apply_inr : (so ⟪++⟫ so').o (sum.inr i') (t', s) =
+lemma oracle_append_apply_inr : (so ++ₛ so').o (sum.inr i') (t', s) =
   do { u_s' ← so'.o i' ⟨t', s.2⟩, pure (u_s'.1, s.1, u_s'.2)} := rfl
 
 section simulate
 
 variable [spec''.finite_range]
 
-lemma simulate_oracle_append_pure : simulate (so ⟪++⟫ so') (pure a) s ≃ₚ
+lemma simulate_oracle_append_pure : simulate (so ++ₛ so') (pure a) s ≃ₚ
   (pure (a, s) : oracle_comp spec'' _) := rfl
 
 end simulate

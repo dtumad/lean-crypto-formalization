@@ -24,7 +24,7 @@ variables {T U A : Type} [inhabited U] [fintype U] [decidable_eq T] [decidable_e
   along with the final result and final cache for the random oracle -/
 def sim_with_log (adv : forking_adversary T U A) :
   oracle_comp uniform_selecting (option (fin adv.q) × A × query_log uniform_selecting × query_log (T →ₒ U)) :=
-do { ⟨x, log, cache, ()⟩ ← default_simulate (logging_oracle _ ⟪++⟫ random_oracle _) adv.adv,
+do { ⟨x, log, cache, ()⟩ ← default_simulate (logging_oracle _ ++ₛ random_oracle _) adv.adv,
     return (adv.choose_fork x cache, x, log, cache) }
 
 /-- Simulate the adversary, allowing for a seed value to the uniform select oracle,
@@ -32,7 +32,7 @@ do { ⟨x, log, cache, ()⟩ ← default_simulate (logging_oracle _ ⟪++⟫ ran
 def sim_from_seed (adv : forking_adversary T U A)
   (seed : query_log uniform_selecting) (cache : query_log (T →ₒ U)) :
   oracle_comp uniform_selecting (option (fin adv.q) × A × query_log (T →ₒ U)) :=
-do { ⟨x, log, cache, ()⟩ ← simulate (seeded_oracle _ ⟪++⟫ random_oracle _) adv.adv (seed, cache, ()),
+do { ⟨x, log, cache, ()⟩ ← simulate (seeded_oracle _ ++ₛ random_oracle _) adv.adv (seed, cache, ()),
   return (adv.choose_fork x cache, x, cache) }
 
 /-- Just simulate to get the resulting `choose_fork` value.

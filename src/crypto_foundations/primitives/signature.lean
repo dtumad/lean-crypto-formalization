@@ -89,7 +89,7 @@ section complete
   and the uniform selection oracle just forwards its query on. -/
 noncomputable def completeness_experiment (sig : signature) (m : sig.M) :
   oracle_comp uniform_selecting bool :=
-default_simulate' (idₛ ⟪++⟫ random_oracle sig.random_oracles) 
+default_simulate' (idₛ ++ₛ random_oracle sig.random_oracles) 
 (do { 
   (pk, sk) ← sig.gen (),
   σ ← sig.sign (pk, sk, m),
@@ -104,6 +104,7 @@ lemma support_completeness_experiment (sig : signature) (m : sig.M) :
         (sig.verify (k.1, m, σ)).support :=
 begin
   rw [completeness_experiment],
+  rw [support_default_simulate'],
   simp [completeness_experiment],
   sorry
 end
@@ -152,7 +153,7 @@ sig.oracles ++ (signing_oracle_spec sig)
 /-- Oracle for unforgeable experiment uses the public and S-/
 def unforgeable_adversary_oracle (sig : signature) (pk : sig.PK) (sk : sig.SK) :
   simulation_oracle sig.unforgeable_adversary_oracle_spec sig.oracles :=
-idₛ ⟪++⟫ signing_oracle sig pk sk
+idₛ ++ₛ signing_oracle sig pk sk
 
 /-- An adversary for the unforgeable signature experiment.
   Note that the adversary only has access to the public key. -/
@@ -176,7 +177,7 @@ do {
 noncomputable def unforgeable_experiment (sig : signature)
   (adversary : unforgeable_adversary sig) :
   oracle_comp uniform_selecting bool :=
-default_simulate' (idₛ ⟪++⟫ random_oracle sig.random_oracles)
+default_simulate' (idₛ ++ₛ random_oracle sig.random_oracles)
 (do {
   (pk, sk) ← sig.gen (),
   (m, σ, log) ← simulate_adversary sig adversary pk sk,
