@@ -70,16 +70,13 @@ end
 
 end support
 
-section simulate
-
-
-end simulate
-
-section eval_distribution
+section distribution_semantics
 
 open distribution_semantics
 
 variable [spec.finite_range]
+
+section equiv
 
 -- TODO: should be able to find some generalization for lemmas looking like this
 lemma simulate'_query_equiv_self (s : S) :
@@ -97,6 +94,12 @@ begin
       fst_map_bind_mk_equiv, map_id_equiv (query i t)], } 
 end
 
-end eval_distribution
+end equiv
+
+section prob_event
+
+end prob_event
+
+end distribution_semantics
 
 end tracking_oracle

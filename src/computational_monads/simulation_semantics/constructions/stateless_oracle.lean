@@ -2,7 +2,7 @@ import computational_monads.simulation_semantics.constructions.tracking_oracle
 
 open oracle_comp oracle_spec
 
-variables {A B : Type} {spec spec' spec'' : oracle_spec}
+variables {α β : Type} {spec spec' spec'' : oracle_spec}
 
 /-- Simulate a computation without making use of the internal state.
   We use the `unit` type as the state in this case, so all possible states are equal.
@@ -17,26 +17,26 @@ notation `⟪` o `⟫` := stateless_oracle _ _ o
 
 namespace stateless_oracle
 
-variables (oa : oracle_comp spec A)
-
-variables (o : Π (i : spec.ι), spec.domain i → oracle_comp spec' (spec.range i))
+variables (oa : oracle_comp spec α)
+  (o : Π (i : spec.ι), spec.domain i → oracle_comp spec' (spec.range i))
   (o' : Π (i : spec.ι), spec.domain i → oracle_comp spec'' (spec.range i))
+
+instance S_unique : unique ⟪o⟫.S := punit.unique
 
 @[simp]
 lemma apply (i : spec.ι) (t : spec.domain i) (s : unit) :
   ⟪o⟫.o i (t, s) = o i t >>= λ u, return (u, ()) := rfl
 
-section simulate
+section support
 
 @[simp]
-lemma support_simulate_pure (a : A) (s : unit) :
+lemma support_simulate_pure (a : α) (s : unit) :
   (simulate ⟪o⟫ (pure a) s).support = {(a, ())} := by simp [punit_eq s ()]
 
 @[simp]
-lemma support_simulate_bind (oa : oracle_comp spec A)
-  (ob : A → oracle_comp spec B) (s : unit) :
+lemma support_simulate_bind (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) (s : unit) :
   (simulate ⟪o⟫ (oa >>= ob) s).support =
-    ⋃ (x : A) (hx : (x, ()) ∈ (simulate ⟪o⟫ oa ()).support),
+    ⋃ (x : α) (hx : (x, ()) ∈ (simulate ⟪o⟫ oa ()).support),
       (simulate ⟪o⟫ (ob x) ()).support :=
 begin
   refine s.rec _,
@@ -75,9 +75,11 @@ end
 --   }
 -- end
 
-end simulate
+end support
 
-section eval_distribution
+section distribution_semantics
+
+section equiv
 
 open distribution_semantics
 
@@ -120,18 +122,25 @@ calc simulate' ⟪o⟫ oa s ≃ₚ simulate' ⟪query⟫ oa s
     : simulate'_equiv_of_oracle_equiv oa s ho
   ... ≃ₚ oa : simulate'_query_equiv oa s
 
-end eval_distribution
+end equiv
+
+section prob_event
+
+
+end prob_event
+
+end distribution_semantics
 
 end stateless_oracle
 
--- More lemmas we can prove with the definition of the stateless oracle
+-- More lemmas we can prove about `tracking_oracle` with the definition of the `stateless_oracle`
 namespace tracking_oracle
 
 open distribution_semantics
 
 variables {S S' : Type} (o o' : Π (i : spec.ι), spec.domain i → oracle_comp spec' (spec.range i))
   (update_state update_state': Π (s : S) (i : spec.ι), spec.domain i → spec.range i → S)
-  (default_state default_state' s s' : S) (oa : oracle_comp spec A)
+  (default_state default_state' s s' : S) (oa : oracle_comp spec α)
 
 /-- The first output of a tracking oracle is equivalent to using just the stateless oracle -/
 theorem simulate'_equiv_stateless_oracle [spec'.finite_range] :
