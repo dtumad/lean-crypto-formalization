@@ -19,6 +19,7 @@ variables {α β : Type} {spec spec' spec'' : oracle_spec}
 def identity_oracle (spec : oracle_spec) : simulation_oracle spec spec :=
 ⟪ query ⟫
 
+-- TODO: should the notation take the `oracle_spec` as an arg?
 notation `idₛ` := identity_oracle _
 
 namespace identity_oracle

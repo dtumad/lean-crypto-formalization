@@ -4,6 +4,7 @@ open oracle_comp oracle_spec
 
 variables {spec spec' spec'' : oracle_spec} {A B C : Type}
 
+-- TODO: namespace version
 section compose
 
 def oracle_compose (so : simulation_oracle spec spec') (so' : simulation_oracle spec' spec'') :
@@ -22,5 +23,15 @@ lemma default_state_oracle_compose :
 
 lemma oracle_compose_apply_index (i : spec.ι) (s : so.S × so'.S) : (so' ∘ₛ so).o i =
   λ x, simulate so' (so.o i (x.1, x.2.1)) x.2.2 >>= λ u_s, pure (u_s.1.1, u_s.1.2, u_s.2) := rfl
+
+theorem simulate_oracle_compose_eq_simulate_simulate (oa : oracle_comp spec A) (s : so.S × so'.S) :
+  simulate' (so' ∘ₛ so) oa s = simulate' so' (simulate' so oa s.1) s.2 :=
+sorry
+
+-- When returning the state as well can only make a statement in terms of equiv
+theorem other [spec''.finite_range] (oa : oracle_comp spec A) (s : so.S × so'.S) :
+  simulate (so' ∘ₛ so) oa s ≃ₚ
+    do { ⟨⟨a, s⟩, s'⟩ ← (simulate so' (simulate so oa s.1) s.2), pure (a, s, s') } :=
+sorry
 
 end compose

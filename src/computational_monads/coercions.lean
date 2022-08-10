@@ -1,6 +1,7 @@
 import computational_monads.constructions.uniform_select
 import computational_monads.simulation_semantics.oracle_append
 import computational_monads.simulation_semantics.constructions.stateless_oracle
+import computational_monads.simulation_semantics.constructions.identity_oracle
 
 /-!
 # Coercions Between Computations With Different Oracle Access
@@ -14,6 +15,7 @@ This allows a computation to be written by composing computations using fewer or
 
 open oracle_comp oracle_spec
 
+-- TODO: α β γ
 variables (A B : Type) (spec spec' spec'' spec''' : oracle_spec)
   (coe_spec coe_spec' coe_spec'' coe_spec''' : oracle_spec)
 
@@ -55,6 +57,12 @@ section coe_append
 instance coe_append_right :
   has_coe (oracle_comp spec A) (oracle_comp (spec ++ spec') A) :=
 { coe := λ oc, oc.default_simulate' ⟪λ i t, let i' : (spec ++ spec').ι := sum.inl i in query i' t⟫ }
+
+lemma simulate_coe_append_right (oa : oracle_comp spec A) (so : simulation_oracle spec spec')
+  (s : so.S × unit) :
+  (simulate' (so +++ₛ (identity_oracle spec'')) (↑oa : oracle_comp (spec ++ spec'') A) s) =
+    ↑(simulate' so oa s.1) :=
+sorry
 
 instance coe_append_left :
   has_coe (oracle_comp spec A) (oracle_comp (spec' ++ spec) A) :=

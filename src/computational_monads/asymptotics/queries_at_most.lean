@@ -22,7 +22,7 @@ inductive queries_at_most : Π {α : Type}, oracle_comp spec α → ℕ → Type
 
 /-- Soundness of `queries_at_most` with respect to simulation -/
 theorem queries_at_most_sound (oa : oracle_comp spec α) (x : α × ℕ)
-  (hx : x ∈ (default_simulate counting_oracle oa).support)
+  (hx : x ∈ (default_simulate (counting_oracle spec) oa).support)
   (n : ℕ) (hn : queries_at_most oa n) : x.2 ≤ n :=
 begin
   sorry

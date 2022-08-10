@@ -45,8 +45,8 @@ begin
   refine ⟨λ h, let ⟨x₁, h, h'⟩ := h in h'.1.symm ▸ ⟨h, h'.2⟩, λ h, ⟨x.1, ⟨h.1, rfl, h.2⟩⟩⟩,
 end
 
-/-- The first output is independent of any of the tracking state -/
-lemma support_simulate'_eq_of_eq (oa : oracle_comp spec A) (s : S) :
+/-- The support of `simulate'` is independing of the tracking oracle -/
+lemma support_simulate'_eq (oa : oracle_comp spec A) (s : S) :
   (simulate' ⟪o | update_state, default_state⟫ oa s).support =
     (simulate' ⟪o | update_state', default_state'⟫ oa s).support :=
 begin
@@ -62,7 +62,7 @@ begin
       sorry,
     },
     {
-      sorry,
+      sorry, 
     }
   },
   sorry,

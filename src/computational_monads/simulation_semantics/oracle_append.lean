@@ -2,11 +2,22 @@ import computational_monads.simulation_semantics.default_simulate
 
 open oracle_comp oracle_spec
 
-variables {spec spec' spec'' : oracle_spec} {A B C : Type}
+variables {spec spec' spec'' spec''' : oracle_spec} {A B C : Type}
   (a : A) (oa : oracle_comp (spec' ++ spec'') A)
   (ob : A → oracle_comp (spec' ++ spec'') B)
 
 section oracle_append
+
+def oracle_append' (so : simulation_oracle spec spec'')
+  (so' : simulation_oracle spec' spec''') :
+  simulation_oracle (spec ++ spec') (spec'' ++ spec''') :=
+{
+  S := so.S × so'.S,
+  default_state := (so.default_state, so'.default_state),
+  o := sorry
+}
+
+notation so `+++ₛ` so' := oracle_append' so so'
 
 -- TODO: `simulation_oracle.append`
 def oracle_append (so : simulation_oracle spec spec'')
@@ -19,6 +30,12 @@ def oracle_append (so : simulation_oracle spec spec'')
     (λ i, λ x, do { u_s' ← so'.o i ⟨x.1, x.2.2⟩, pure (u_s'.1, x.2.1, u_s'.2) }) }
 
 notation so `++ₛ` so' := oracle_append so so'
+
+-- Reduce some of the appended oracles independently, and others into a single
+example (so : simulation_oracle spec spec') (so' : simulation_oracle spec' spec')
+  (so'' : simulation_oracle spec'' spec''') :
+  simulation_oracle ((spec ++ spec') ++ spec'') (spec' ++ spec''') :=
+(so ++ₛ so') +++ₛ so''
 
 variables (so : simulation_oracle spec spec'') (so' : simulation_oracle spec' spec'')
   (i : spec.ι) (i' : spec'.ι) (t : spec.domain i) (t' : spec'.domain i')

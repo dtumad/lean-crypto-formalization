@@ -136,11 +136,23 @@ end stateless_oracle
 -- More lemmas we can prove about `tracking_oracle` with the definition of the `stateless_oracle`
 namespace tracking_oracle
 
-open distribution_semantics
-
 variables {S S' : Type} (o o' : Π (i : spec.ι), spec.domain i → oracle_comp spec' (spec.range i))
   (update_state update_state': Π (s : S) (i : spec.ι), spec.domain i → spec.range i → S)
   (default_state default_state' s s' : S) (oa : oracle_comp spec α)
+
+section support
+
+lemma support_simulate' :
+  support (simulate' ⟪o | update_state, default_state⟫ oa s) = support (simulate' ⟪o⟫ oa ()) :=
+begin
+  sorry
+end
+
+end support
+
+section distribution_semantics
+
+open distribution_semantics
 
 /-- The first output of a tracking oracle is equivalent to using just the stateless oracle -/
 theorem simulate'_equiv_stateless_oracle [spec'.finite_range] :
@@ -161,9 +173,9 @@ begin
       ... ≃ₚ (simulate ⟪o⟫ oa ()) >>= (λ x, simulate' ⟪o⟫ (ob x.1) x.2) :
         by { congr, ext x, rw [punit_eq () x.2] }
       ... ≃ₚ simulate' ⟪o⟫ (oa >>= ob) () : by rw [simulate'_bind_equiv] },
-    { simp_rw [simulate'_query_equiv, apply, stateless_oracle.apply, map_bind_equiv],
-      refine bind_equiv_of_equiv_second (o i t) _,
-      simp only [map_pure_equiv, eq_self_iff_true, forall_const] }
+  { simp_rw [simulate'_query_equiv, apply, stateless_oracle.apply, map_bind_equiv],
+    refine bind_equiv_of_equiv_second (o i t) _,
+    simp only [map_pure_equiv, eq_self_iff_true, forall_const] }
 end
 
 /-- The first ouptput of a tracking oracle is indepenedent of the actual tracking functions -/
@@ -175,5 +187,7 @@ calc simulate' ⟪o | update_state, default_state⟫ oa s
   ... ≃ₚ simulate' ⟪o'⟫ oa () : stateless_oracle.simulate'_equiv_of_oracle_equiv oa () h
   ... ≃ₚ simulate' ⟪o' | update_state', default_state'⟫ oa s' :
     symm (simulate'_equiv_stateless_oracle o' update_state' default_state' _ _)
+
+end distribution_semantics
 
 end tracking_oracle
