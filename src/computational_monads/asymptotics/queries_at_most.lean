@@ -1,4 +1,3 @@
-import computational_monads.simulation_semantics.default_simulate
 import computational_monads.simulation_semantics.constructions.counting_oracle
 import data.polynomial
 

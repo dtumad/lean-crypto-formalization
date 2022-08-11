@@ -28,7 +28,9 @@ lemma default_simulate_query : default_simulate so (query i t) =
 lemma support_default_simulate : (default_simulate so oa).support =
   (simulate so oa so.default_state).support := rfl
 
-section eval_distribution
+section distribution_semantics
+
+open distribution_semantics
 
 variable [spec'.finite_range]
 
@@ -57,7 +59,7 @@ lemma default_simulate_bind_equiv : default_simulate so (oa >>= ob) ≃ₚ
 lemma default_simulate_query_equiv : default_simulate so (query i t) ≃ₚ
   so.o i (t, so.default_state) := rfl
 
-end eval_distribution
+end distribution_semantics
 
 end default_simulate
 
@@ -82,7 +84,9 @@ lemma default_simulate'_query : default_simulate' so (query i t) =
 lemma support_default_simulate' : (default_simulate' so oa).support =
   (simulate' so oa so.default_state).support := rfl
 
-section eval_distribution
+section distribution_semantics
+
+open distribution_semantics
 
 variable [spec'.finite_range]
 
@@ -112,7 +116,7 @@ lemma default_simulate'_query_equiv : default_simulate' so (query i t) ≃ₚ
   prod.fst <$> (so.o i (t, so.default_state)) :=
 simulate'_query_equiv so i t so.default_state
 
-end eval_distribution
+end distribution_semantics
 
 end default_simulate'
 

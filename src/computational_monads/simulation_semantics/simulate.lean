@@ -1,6 +1,4 @@
-import computational_monads.oracle_comp
 import computational_monads.distribution_semantics.prob_event
-import computational_monads.distribution_semantics.equiv
 
 namespace oracle_comp
 
@@ -51,7 +49,7 @@ by simp
 lemma support_simulate_query : (simulate so (query i t) s).support = (so.o i (t, s)).support :=
 by simp
 
-section eval_distribution
+section distribution_semantics
 
 open distribution_semantics
 
@@ -78,7 +76,7 @@ lemma simulate_bind_equiv : (simulate so (oa >>= ob) s) ≃ₚ
 @[simp]
 lemma simulate_query_equiv : (simulate so (query i t) s) ≃ₚ so.o i (t, s) := rfl
 
-end eval_distribution
+end distribution_semantics
 
 end simulate
 
@@ -114,7 +112,7 @@ lemma support_simulate'_query : (simulate' so (query i t) s).support =
   prod.fst '' (so.o i (t, s)).support :=
 by simp
 
-section eval_distribution
+section distribution_semantics
 
 open distribution_semantics
 
@@ -163,7 +161,7 @@ lemma simulate'_equiv_of_equiv [spec.finite_range] {oa oa' : oracle_comp spec A}
   simulate' so oa s ≃ₚ simulate' so oa' s :=
 sorry
 
-end eval_distribution
+end distribution_semantics
 
 end simulate'
 

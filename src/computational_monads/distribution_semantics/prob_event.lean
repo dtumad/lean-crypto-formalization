@@ -1,5 +1,4 @@
 import computational_monads.distribution_semantics.equiv
-import computational_monads.fin_support
 import probability.independence
 
 namespace distribution_semantics

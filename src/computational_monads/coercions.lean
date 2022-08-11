@@ -1,6 +1,5 @@
 import computational_monads.constructions.uniform_select
 import computational_monads.simulation_semantics.oracle_append
-import computational_monads.simulation_semantics.constructions.stateless_oracle
 import computational_monads.simulation_semantics.constructions.identity_oracle
 
 /-!
