@@ -4,6 +4,7 @@ import computational_monads.distribution_semantics.equiv
 
 namespace oracle_comp
 
+-- TODO: α β γ
 variables {A B C : Type} {spec spec' spec'' : oracle_spec}
 
 /-- Specifies a way to simulate a set of oracles using another set of oracles. 
@@ -148,6 +149,19 @@ by simp [simulate']
 @[simp]
 lemma simulate'_query_equiv : simulate' so (query i t) s ≃ₚ
   prod.fst <$> (so.o i (t, s)) := rfl
+
+-- TODO: other versions
+lemma simulate'_map_equiv (f : A → B) : simulate' so (f <$> oa) s ≃ₚ f <$> simulate' so oa s :=
+begin
+  refine trans (simulate'_bind_equiv _ _ _ s) _,
+  simp_rw [simulate', map_map_equiv, function.comp_app, pure'_eq_pure, simulate_pure],
+  exact bind_equiv_of_equiv_second _ (λ x, map_pure_equiv _ _),  
+end
+
+-- TODO: other versions of this
+lemma simulate'_equiv_of_equiv [spec.finite_range] {oa oa' : oracle_comp spec A} (h : oa ≃ₚ oa') :
+  simulate' so oa s ≃ₚ simulate' so oa' s :=
+sorry
 
 end eval_distribution
 

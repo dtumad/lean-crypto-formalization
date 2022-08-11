@@ -13,7 +13,7 @@ The main coercions are for the append operation on `oracle_spec`,
 This allows a computation to be written by composing computations using fewer oracles.
 -/
 
-open oracle_comp oracle_spec
+open oracle_comp oracle_spec distribution_semantics
 
 -- TODO: α β γ
 variables (A B : Type) (spec spec' spec'' spec''' : oracle_spec)
@@ -46,7 +46,7 @@ lemma coe_coin_uniform_select_equiv_coin :
 end
 | _ (query i t) := begin
   erw [coe_coin_uniform_select_def, simulate'_query_equiv, stateless_oracle.apply,
-    distribution_semantics.fst_map_bind_mk_equiv, distribution_semantics.map_id_equiv],
+    fst_map_bind_mk_equiv, map_id_equiv],
   exact eval_distribution_uniform_select_fintype bool,
 end
 
@@ -54,15 +54,52 @@ end uniform_select
 
 section coe_append
 
+/-- Coerce a computation to one with access to another oracle on the right,
+  forwarding the old queries to the left side of the combined set of oracles -/
 instance coe_append_right :
   has_coe (oracle_comp spec A) (oracle_comp (spec ++ spec') A) :=
-{ coe := λ oc, oc.default_simulate' ⟪λ i t, let i' : (spec ++ spec').ι := sum.inl i in query i' t⟫ }
+{ coe := default_simulate' ⟪λ i t, let i' : (spec ++ spec').ι := sum.inl i in query i' t⟫ }
 
-lemma simulate_coe_append_right (oa : oracle_comp spec A) (so : simulation_oracle spec spec')
-  (s : so.S × unit) :
-  (simulate' (so +++ₛ (identity_oracle spec'')) (↑oa : oracle_comp (spec ++ spec'') A) s) =
-    ↑(simulate' so oa s.1) :=
+-- TODO: other versions of this
+lemma coe_append_right_def (oa : oracle_comp spec A) : (↑oa : oracle_comp (spec ++ spec') A) =
+  oa.default_simulate' ⟪λ i t, let i' : (spec ++ spec').ι := sum.inl i in query i' t⟫ := rfl
+
+lemma coe_append_right_pure_equiv [spec.finite_range] [spec'.finite_range] (a : A) :
+  (↑(pure a : oracle_comp spec A) : oracle_comp (spec ++ spec') A)
+    ≃ₚ (pure a : oracle_comp (spec ++ spec') A) :=
+default_simulate'_pure_equiv _ a
+
+lemma simulate_coe_append_right_equiv [spec''.finite_range] (oa : oracle_comp spec A)
+  (so : simulation_oracle spec spec'') (so' : simulation_oracle spec' spec'') (s : so.S × so'.S) :
+  simulate (so ++ₛ so') ↑oa s ≃ₚ do { ⟨a, s'⟩ ← simulate so oa s.1, pure (a, s', s.2) } :=
 sorry
+
+lemma simulate'_coe_append_right_equiv [spec.finite_range] [spec'.finite_range] [spec''.finite_range]
+  (oa : oracle_comp spec A)
+  (so : simulation_oracle spec spec'') (so' : simulation_oracle spec' spec'') (s : so.S × so'.S) :
+  simulate' (so ++ₛ so') ↑oa s ≃ₚ simulate' so oa s.1 :=
+begin
+  induction oa with A a A B oa ob i t,
+  {
+    
+    simp only [pure'_eq_pure, simulate'_pure, map_pure_equiv, eval_distribution_return],
+    refine trans (simulate'_map_equiv _ _ _ _) _,
+    rw [simulate_pure, simulate'_pure, map_map_pure_equiv],
+    refl,
+  },
+  {
+    sorry,
+  },
+  {
+    sorry,
+  }
+end
+
+-- lemma simulate_coe_append_right (oa : oracle_comp spec A) (so : simulation_oracle spec spec')
+--   (s : so.S × unit) :
+--   (simulate' (so +++ₛ (identity_oracle spec'')) (↑oa : oracle_comp (spec ++ spec'') A) s) =
+--     ↑(simulate' so oa s.1) :=
+-- sorry
 
 instance coe_append_left :
   has_coe (oracle_comp spec A) (oracle_comp (spec' ++ spec) A) :=
@@ -113,10 +150,9 @@ end⟫ ()⟩
 
 section examples
 
+-- This set of examples serves as sort of a "unit test" for the coercions above
 variable [h : ∀ A, has_coe (oracle_comp coe_spec A) (oracle_comp coe_spec' A)]
 include h
-
--- This set of examples serves as sort of a "unit test" for the coercions above
 
 -- coerce a single `coin_oracle` and then append extra oracles
 example (oa : oracle_comp coe_spec A) :
@@ -156,4 +192,24 @@ end coe_append
 
 /-- coercion makes it possible to mix computations on individual oracles -/
 noncomputable example {spec : oracle_spec} : oracle_comp (uniform_selecting ++ spec) bool := 
-do { n ←$[0..10], if n = 0 then return ff else coin }
+do { n ←$[0..10], if n ≤ 3 then return ff else coin }
+
+section coe_simulation_oracle
+
+/-- Use a coercion on the resulting type of a simulation to coerce the simulation oracle itself.
+  This allows for greater flexibility when specifying the simulation oracle when
+    both the initial and final `oracle_spec` are some appended set of oracles -/
+instance {spec spec' spec'' : oracle_spec}
+  [∀ α, has_coe (oracle_comp spec' α) (oracle_comp spec'' α)] :
+  has_coe (simulation_oracle spec spec') (simulation_oracle spec spec'') :=
+{ coe := λ so, { S := so.S, default_state := so.default_state, o := λ i x, ↑(so.o i x) } }
+
+example (so : simulation_oracle spec spec') :
+  simulation_oracle spec (spec ++ spec' ++ spec'') := ↑so
+
+/-- Can use coercions to seperately simulate both sides of appended oracle specs -/
+example (so : simulation_oracle spec spec'') (so' : simulation_oracle spec' spec''') :
+  simulation_oracle (spec ++ spec') (spec'' ++ spec''') :=
+↑so ++ₛ ↑so'
+
+end coe_simulation_oracle

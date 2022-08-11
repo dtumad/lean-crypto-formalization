@@ -95,6 +95,10 @@ lemma map_map_equiv (oa : oracle_comp spec A) (f : A → B) (g : B → C) :
   g <$> (f <$> oa) ≃ₚ (g ∘ f) <$> oa :=
 sorry
 
+lemma map_map_pure_equiv (a : A) (f : A → B) (g : B → C) :
+  g <$> (f <$> (pure a : oracle_comp spec A)) ≃ₚ (pure (g (f a)) : oracle_comp spec C) :=
+sorry
+
 @[simp]
 lemma map_equiv_of_eq_id (oa : oracle_comp spec A) (f : A → A) (h : ∀ a, f a = a) :
   f <$> oa ≃ₚ oa :=
