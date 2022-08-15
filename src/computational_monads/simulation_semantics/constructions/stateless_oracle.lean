@@ -29,9 +29,26 @@ lemma apply (i : spec.ι) (t : spec.domain i) (s : unit) :
 
 section support
 
+lemma support_simulate_eq_preimage (oa : oracle_comp spec α) (s : unit) :
+  (oa.simulate ⟪o⟫ s).support = prod.fst ⁻¹' (oa.default_simulate' ⟪o⟫).support :=
+begin
+  rw [default_simulate', punit_eq ⟪o⟫.default_state s, simulate', support_map],
+  refine (set.preimage_image_eq _ prod.fst_injective).symm
+end
+
+lemma mem_support_simulate_iff (oa : oracle_comp spec α) (s : unit) (x : α × unit) :
+  x ∈ (oa.simulate ⟪o⟫ s).support ↔ x.1 ∈ (oa.default_simulate' ⟪o⟫).support :=
+by rw [support_simulate_eq_preimage, set.mem_preimage]
+
+section pure
+
 @[simp]
 lemma support_simulate_pure (a : α) (s : unit) :
   (simulate ⟪o⟫ (pure a) s).support = {(a, ())} := by simp [punit_eq s ()]
+
+end pure
+
+section bind
 
 @[simp]
 lemma support_simulate_bind (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) (s : unit) :
@@ -39,11 +56,27 @@ lemma support_simulate_bind (oa : oracle_comp spec α) (ob : α → oracle_comp 
     ⋃ (x : α) (hx : (x, ()) ∈ (simulate ⟪o⟫ oa ()).support),
       (simulate ⟪o⟫ (ob x) ()).support :=
 begin
-  refine s.rec _,
-  refine (set.ext $ λ y, _),
-  simp,
-  sorry,
+  rw [support_simulate_eq_preimage],
+  sorry
 end
+
+-- rw set.preimage_image_eq,
+
+-- TODO: full API
+@[simp]
+lemma support_default_simulate'_bind (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) :
+  (default_simulate' ⟪o⟫ (oa >>= ob)).support =
+    ⋃ a ∈ (default_simulate' ⟪o⟫ oa).support, (default_simulate' ⟪o⟫ (ob a)).support :=
+begin
+  rw [default_simulate', simulate', support_map],
+  rw [support_simulate_eq_preimage, support_default_simulate'_bind],
+  simp [set.preimage_image_eq _ prod.fst_injective, set.image_Union],
+  sorry
+end
+
+end bind
+
+section query
 
 @[simp]
 lemma support_simulate_query (i : spec.ι) (t : spec.domain i) (s : unit) :
@@ -54,26 +87,12 @@ begin
   sorry,
 end
 
--- /-- The first output is independent of any of the tracking state -/
--- lemma support_simulate'_eq_of_eq {S : Type} (oa : oracle_comp spec A) (s : S)
---   (update_state : Π (s : S) (i : spec.ι), spec.domain i → spec.range i → S) (default_state s) :
---   (simulate' ⟪o | update_state, default_state⟫ oa s).support =
---     (simulate' ⟪o⟫ oa ()).support :=
--- begin
---   induction oa using oracle_comp.induction_on with a A A B oa ob hoa hob i t generalizing s,
---   { simp },
---   {
---     ext x,
---     simp only [support_simulate'_bind],
---     simp [support_simulate'_bind, hoa, hob],
---     refine ⟨λ h, _, λ h, _⟩,
---     {
---       obtain ⟨s, a, s', ⟨has, hx⟩⟩ := h,
---       refine ⟨s, a, s', ⟨_, _⟩⟩,
---       specialize hoa s,
---     }
---   }
--- end
+@[simp]
+lemma support_default_simulate'_query (i : spec.ι) (t : spec.domain i) :
+  (default_simulate' ⟪o⟫ (query i t)).support = (o i t).support :=
+sorry
+
+end query
 
 end support
 
@@ -142,8 +161,9 @@ variables {S S' : Type} (o o' : Π (i : spec.ι), spec.domain i → oracle_comp 
 
 section support
 
-lemma support_simulate' :
-  support (simulate' ⟪o | update_state, default_state⟫ oa s) = support (simulate' ⟪o⟫ oa ()) :=
+/-- The first output with a tracking oracle is independent of any of the tracking state -/
+lemma support_simulate'_eq_support_simulate'_stateless_oracle :
+  (simulate' ⟪o | update_state, default_state⟫ oa s).support = (simulate' ⟪o⟫ oa ()).support :=
 begin
   sorry
 end

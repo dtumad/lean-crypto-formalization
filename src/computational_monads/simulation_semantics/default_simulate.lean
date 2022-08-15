@@ -74,7 +74,7 @@ lemma default_simulate'_pure : default_simulate' so (pure a) =
 
 @[simp]
 lemma default_simulate'_bind : default_simulate' so (oa >>= ob) =
-  prod.fst <$> ((simulate so oa so.default_state) >>= (λ x, simulate so (ob x.1) x.2)) := rfl
+  prod.fst <$> ((default_simulate so oa) >>= (λ x, simulate so (ob x.1) x.2)) := rfl
 
 @[simp]
 lemma default_simulate'_query : default_simulate' so (query i t) =
@@ -83,6 +83,10 @@ lemma default_simulate'_query : default_simulate' so (query i t) =
 @[simp]
 lemma support_default_simulate' : (default_simulate' so oa).support =
   (simulate' so oa so.default_state).support := rfl
+
+lemma support_default_simulate'_bind : (default_simulate' so (oa >>= ob)).support =
+  ⋃ a ∈ (default_simulate so oa).support, (simulate' so (ob $ prod.fst a) a.2).support :=
+by simp [set.image_Union]
 
 section distribution_semantics
 

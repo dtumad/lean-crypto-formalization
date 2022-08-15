@@ -20,7 +20,7 @@ To match this we adopt both conventions in general, and use a standard ordering 
 In particular we start with the basic finite oracles: `coin_oracle ++ uniform_selecting ++ ...`
 -/
 
-open oracle_comp oracle_spec distribution_semantics
+open oracle_comp oracle_spec distribution_semantics 
 
 variables (spec spec' spec'' spec''' : oracle_spec)
   (coe_spec coe_spec' coe_spec'' coe_spec''' : oracle_spec) {α : Type}
@@ -63,13 +63,27 @@ section coe_append_right
 
 /-- Coerce a computation to one with access to another oracle on the right,
   forwarding the old queries to the left side of the combined set of oracles -/
-@[priority std.priority.default-10]
+@[priority std.priority.default-50]
 instance coe_append_right (α) : has_coe (oracle_comp spec α) (oracle_comp (spec ++ spec') α) :=
 { coe := default_simulate' ⟪λ i, let i' : (spec ++ spec').ι := sum.inl i in query i'⟫ }
 
 -- TODO: other versions of this
 lemma coe_append_right_def (oa : oracle_comp spec α) : (↑oa : oracle_comp (spec ++ spec') α) =
   oa.default_simulate' ⟪λ i t, let i' : (spec ++ spec').ι := sum.inl i in query i' t⟫ := rfl
+
+@[simp]
+lemma support_coe_append_right (oa : oracle_comp spec α) :
+  (↑oa : oracle_comp (spec ++ spec') α).support = oa.support :=
+begin
+  induction oa with α a α β oa ob hoa hob i t,
+  { simp only [coe_append_right_def, pure'_eq_pure,
+      default_simulate'_pure, support_map, support_pure, set.image_singleton] },
+  { simp_rw [coe_append_right_def] at hoa hob,
+    simp_rw [bind'_eq_bind, support_bind, coe_append_right_def,
+      stateless_oracle.support_default_simulate'_bind, hoa, hob] },
+  { rw [coe_append_right_def, stateless_oracle.support_default_simulate'_query,
+      support_query, support_query] }
+end
 
 section distribution_semantics
 
@@ -104,23 +118,22 @@ section coe_append_left
 
 /-- Coerce a computation to one with access to another oracle on the left,
   forwarding the old queries to the left side of the combined set of oracles -/
-@[priority std.priority.default-10]
+@[priority std.priority.default-50]
 instance coe_append_left (α) : has_coe (oracle_comp spec α) (oracle_comp (spec' ++ spec) α) :=
 { coe := default_simulate' ⟪λ i, let i' : (spec' ++ spec).ι := sum.inr i in query i'⟫ }
 
 end coe_append_left
 
+section coe_append_right_of_coe
 
-
+/-- Coerce an oracle and then append to the right. Already sort of exists,
+  but the instance priorities don't work without explicitly having this. -/
+@[priority std.priority.default]
 instance coe_append_right_of_coe (α) [has_coe (oracle_comp coe_spec α) (oracle_comp coe_spec' α)] :
   has_coe (oracle_comp coe_spec α) (oracle_comp (coe_spec' ++ spec) α) :=
 { coe := λ oa, ↑oa }
 
--- instance coe_append_left_of_coe [has_coe (oracle_comp coe_spec α) (oracle_comp coe_spec' α)] :
---   has_coe (oracle_comp coe_spec α) (oracle_comp (spec'' ++ coe_spec') α) :=
--- { coe := coe }
-
-
+end coe_append_right_of_coe
 
 section coe_right_side_append
 
@@ -151,7 +164,7 @@ end coe_left_side_append
 section coe_append_assoc
 
 /-- Coerce towards a standardized append ordering (matching the `infixl` declaration for `++`) -/
-@[priority std.priority.default+10]
+@[priority std.priority.default+50]
 instance coe_append_assoc (α) :
   has_coe (oracle_comp (spec ++ (spec' ++ spec'')) α) (oracle_comp (spec ++ spec' ++ spec'') α) :=
 ⟨λ oc, oc.simulate' ⟪λ i, match i with 
@@ -199,6 +212,40 @@ example (oa : oracle_comp (spec ++ (coe_spec ++ spec')) α) :
   oracle_comp (spec ++ coe_spec' ++ spec') α := ↑oa
 example (oa : oracle_comp (coe_spec ++ (spec ++ spec')) α) :
   oracle_comp (coe_spec' ++ spec ++ spec') α := ↑oa
+
+-- coerce two oracles up to four oracles
+example (oa : oracle_comp (spec ++ spec') α) :
+  oracle_comp (spec ++ spec' ++ spec'' ++ spec''') α := ↑oa
+example (oa : oracle_comp (spec ++ spec'') α) :
+  oracle_comp (spec ++ spec' ++ spec'' ++ spec''') α := ↑oa
+example (oa : oracle_comp (spec ++ spec''') α) :
+  oracle_comp (spec ++ spec' ++ spec'' ++ spec''') α := ↑oa
+example (oa : oracle_comp (spec' ++ spec'') α) :
+  oracle_comp (spec ++ spec' ++ spec'' ++ spec''') α := ↑oa
+example (oa : oracle_comp (spec' ++ spec''') α) :
+  oracle_comp (spec ++ spec' ++ spec'' ++ spec''') α := ↑oa
+example (oa : oracle_comp (spec'' ++ spec''') α) :
+  oracle_comp (spec ++ spec' ++ spec'' ++ spec''') α := ↑oa
+
+-- coerce threee oracles up to four oracles
+example (oa : oracle_comp (spec ++ spec' ++ spec'') α) :
+  oracle_comp (spec ++ spec' ++ spec'' ++ spec''') α := ↑oa
+example (oa : oracle_comp (spec ++ spec' ++ spec''') α) :
+  oracle_comp (spec ++ spec' ++ spec'' ++ spec''') α := ↑oa
+example (oa : oracle_comp (spec ++ spec'' ++ spec''') α) :
+  oracle_comp (spec ++ spec' ++ spec'' ++ spec''') α := ↑oa
+example (oa : oracle_comp (spec' ++ spec'' ++ spec''') α) :
+  oracle_comp (spec ++ spec' ++ spec'' ++ spec''') α := ↑oa
+
+-- four oracles with associativity and internal coercion
+example (oa : oracle_comp ((coe_spec ++ spec') ++ (spec'' ++ spec''')) α) :
+  oracle_comp (coe_spec' ++ spec' ++ spec'' ++ spec''') α := ↑oa
+example (oa : oracle_comp ((spec ++ spec') ++ (coe_spec ++ spec''')) α) :
+  oracle_comp (spec ++ spec' ++ coe_spec' ++ spec''') α := ↑oa
+example (oa : oracle_comp ((spec ++ coe_spec) ++ (spec'' ++ spec''')) α) :
+  oracle_comp (spec ++ coe_spec' ++ spec'' ++ spec''') α := ↑oa
+example (oa : oracle_comp ((spec ++ spec') ++ (spec'' ++ coe_spec')) α) :
+  oracle_comp (spec ++ spec' ++ spec'' ++ coe_spec') α := ↑oa
 
 /-- coercion makes it possible to mix computations on individual oracles -/
 noncomputable example {spec : oracle_spec} : oracle_comp (uniform_selecting ++ spec) bool := 
