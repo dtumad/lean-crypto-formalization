@@ -6,6 +6,7 @@ import computational_monads.simulation_semantics.constructions.logging.seeded_or
 
 noncomputable theory
 
+-- TODO: a bunch of random namespace stuff is wierd here
 open oracle_comp oracle_spec
 
 open_locale nnreal ennreal big_operators
@@ -134,8 +135,7 @@ end cache_input
 
 section fork_success
 
-#check tsum_fintype
-
+-- TODO: reverse to standard `≤` notation
 lemma prob_fork_eq_some : ⦃ λ out, out.1.is_some | fork adv ⦄ ≥ (adv.advantage ^ 2) / adv.q :=
 calc ⦃ λ out, out.1.is_some | fork adv ⦄
   = ⦃ coe ∘ option.is_some | prod.fst <$> fork adv⦄ :
@@ -149,8 +149,7 @@ calc ⦃ λ out, out.1.is_some | fork adv ⦄
   ... = ∑ j, ↑(⦃adv.sim_choose_fork⦄ (some j)) ^ 2 :
     tsum_fintype _
   ... ≥ (∑ j, ⦃adv.sim_choose_fork⦄ (some j)) ^ 2 / adv.q :
-    sorry
-    -- le_of_eq_of_le (by rw [fintype.card_fin]) (sum_pow_two_ge_pow_two_sum _)
+    le_of_eq_of_le (by rw [finset.card_fin, pow_one]) (ennreal.pow_sum_div_card_le_sum_pow _ _ 1)
   ... = (adv.advantage ^ 2) / adv.q :
     by rw forking_adversary.advantage_eq_sum adv
 
@@ -164,11 +163,13 @@ theorem prob_fork_success : ⦃ fork_success | fork adv ⦄
   ≥ ((adv.advantage) ^ 2 / adv.q) - (1 / fintype.card U) :=
 calc ⦃fork_success | fork adv⦄
   ≥ (⦃λ out, out.1.is_some | fork adv⦄) * (1 - 1 / fintype.card U) : begin
+    -- TODO: this is just an independence statement of the `is_some` and `query_output_diff_at`
+    -- Slight complication in that the output diff is only well defined if a `some` index is output
     sorry
   end
   ... ≥ ⦃λ out, out.1.is_some | fork adv⦄ - (1 / fintype.card U) : begin
-    -- rw [ennreal.mul_sub _, mul_one],
-    sorry,
+    rw [ennreal.mul_sub sorry, mul_one, mul_div, mul_one, ge_iff_le],
+    sorry
   end
   ... ≥ ((adv.advantage) ^ 2 / adv.q) - (1 / fintype.card U) :
     tsub_le_tsub (prob_fork_eq_some adv) le_rfl
