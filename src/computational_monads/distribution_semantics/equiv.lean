@@ -1,4 +1,6 @@
 import computational_monads.distribution_semantics.eval_distribution
+import to_mathlib.pmf_stuff
+
 /-!
 # Equivalence Between Computations in Terms of Distribution Semantics
 
@@ -72,14 +74,16 @@ trans (eval_distribution_map (pure a) f) (pmf.pure_map f a)
 @[simp]
 lemma bind_map_equiv (ob : B → oracle_comp spec C) : (f <$> oa) >>= ob ≃ₚ oa >>= (ob ∘ f) :=
 begin
-  sorry
+  simp only [eval_distribution_bind, eval_distribution_map, function.comp_app],
+  refine ⦃oa⦄.bind_map f (λ b, ⦃ob b⦄)
 end
 
 @[simp]
 lemma map_bind_equiv (f : B → C) : f <$> (oa >>= ob) ≃ₚ oa >>= λ a, f <$> (ob a) :=
 begin
-  simp [eval_distribution_map, eval_distribution_bind, functor.map, pmf.bind_bind],
-  exact (pmf.map_bind ⦃oa⦄ _ _),
+  simp only [eval_distribution_bind, functor.map, oracle_comp.bind'_eq_bind,
+    function.comp_app, oracle_comp.pure'_eq_pure, eval_distribution_return],
+  exact ⦃oa⦄.map_bind (λ b, ⦃ob b⦄) f,
 end
 
 @[simp]

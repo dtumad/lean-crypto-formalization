@@ -1,4 +1,5 @@
 import computational_monads.distribution_semantics.prob_event
+import data.set.prod
 
 /-! 
 # Distributions Corresponding to Computations in Product Types
@@ -45,16 +46,15 @@ lemma prob_event_set_prod_eq_mul [decidable_eq α] [decidable_eq β]
   (e : set α) (e' : set β) [decidable_pred e] [decidable_pred e'] :
   ⦃e ×ˢ e' | oa ×ₘ ob⦄ = ⦃e | oa⦄ * ⦃e' | ob⦄ :=
 calc ⦃e ×ˢ e' | oa ×ₘ ob⦄
-  = ∑' (x : α × β), if (x ∈ e ×ˢ e') then ⦃oa⦄ x.1 * ⦃ob⦄ x.2 else 0 : begin
+  = ∑' (x : α × β), ite (x ∈ e ×ˢ e') (⦃oa⦄ x.1 * ⦃ob⦄ x.2) 0 : begin
     refine trans (prob_event_eq_tsum _ _) (tsum_congr (λ x, x.rec $ λ a b, _)),
     simp only [set.mem_prod, eval_distribution_prod_apply, ← ennreal.coe_mul],
   end
-  ... = (∑' a, if a ∈ e then ⦃oa⦄ a else 0) * (∑' b, if b ∈ e' then ⦃ob⦄ b else 0) :
+  ... = (∑' a, ite (a ∈ e) (⦃oa⦄ a) 0) * (∑' b, ite (b ∈ e') (⦃ob⦄ b) 0) :
   begin
     simp_rw [← ennreal.tsum_mul_right, ← ennreal.tsum_mul_left,
       tsum_prod' ennreal.summable (λ _, ennreal.summable)],
-    refine tsum_congr (λ a, tsum_congr (λ b, _)),
-    erw [ite_and, ite_mul, mul_ite, zero_mul, mul_zero],
+    exact tsum_congr (λ a, tsum_congr (λ b, trans (by congr) (ite_and_mul_zero _ _ _ _))),
   end
   ... = ⦃e | oa⦄ * ⦃e' | ob⦄ : by simp only [prob_event_eq_tsum]
 

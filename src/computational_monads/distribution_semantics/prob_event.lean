@@ -1,5 +1,6 @@
 import computational_monads.distribution_semantics.equiv
 import probability.independence
+import to_mathlib.pmf_stuff
 
 namespace distribution_semantics
 
