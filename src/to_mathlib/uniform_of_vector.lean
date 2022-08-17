@@ -1,6 +1,10 @@
 import probability.probability_mass_function.uniform
-import to_mathlib.general
+import to_mathlib.pmf_stuff
 import algebra.big_operators.fin
+
+/-!
+# Uniform constructions on pmf
+-/
 
 variables {α β : Type}
 

@@ -4,29 +4,16 @@ import data.vector.mem
 import analysis.convex.function
 import analysis.convex.specific_functions
 
-variables {α β γ : Type*}
-
-open_locale measure_theory
-
 /-! 
 # Misc Lemmas That Ideally Should Port to Mathlib
 -/
 
-lemma multiset.quot_mk_ne_zero (l : list α) (h : ¬ l.empty) :
-  (l : multiset α) ≠ 0 :=
-mt ((list.empty_iff_eq_nil).2 ∘ (multiset.coe_eq_zero l).1) h
+open_locale measure_theory nnreal ennreal classical big_operators
 
-open_locale nnreal ennreal classical big_operators
+variables {α β γ : Type*}
 
-lemma pmf.measurable_set_to_outer_measure_caratheodory (p : pmf α) (s : set α) :
-  measurable_set[p.to_outer_measure.caratheodory] s :=
-begin
-  convert measurable_space.measurable_set_top,
-  exact (pmf.to_outer_measure_caratheodory p),
-end
-
-instance set.diagonal.mem_decidable [h : decidable_eq α] (x : α × α) :
-  decidable (x ∈ set.diagonal α) := h x.1 x.2
+lemma multiset.quot_mk_ne_zero (l : list α) (hl : ¬ l.empty) : ↑l ≠ (0 : multiset α) :=
+mt ((list.empty_iff_eq_nil).2 ∘ (multiset.coe_eq_zero l).1) hl
 
 lemma real.pow_sum_div_card_le_sum_pow (s : finset α) (f : α → ℝ) (hf : ∀ a, 0 ≤ f a) (n : ℕ) :
   (∑ x in s, f x) ^ (n + 1) / s.card ^ n ≤ ∑ x in s, (f x) ^ (n + 1) :=

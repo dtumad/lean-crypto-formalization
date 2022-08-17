@@ -1,5 +1,9 @@
 import computability.tm_computable
 
+/-!
+# Polynomial time stuff to eventually port to mathlib
+-/
+
 section poly_time
 
 open turing computability
@@ -7,7 +11,7 @@ open turing computability
 /-- A function is computable in polynomial time if there is a polynomial time implementation.
   In particular this definition is extensional, so the definition of the function isn't important,
   as long as there is a Turing machine implementing the same input/output behaviour. -/
-def poly_time {α β : Type} (f : α → β) :=
+def poly_time {α β : Type*} (f : α → β) :=
 Σ (ea : fin_encoding α) (eb : fin_encoding β),
   tm2_computable_in_poly_time ea eb f
 
