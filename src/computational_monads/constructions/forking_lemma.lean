@@ -42,7 +42,7 @@ def sim_choose_fork (adv : forking_adversary T U A) :
   oracle_comp uniform_selecting (option (fin adv.q)) :=
 prod.fst <$> adv.sim_from_seed (query_log.init _) (query_log.init _) 
 
-def advantage (adv : forking_adversary T U A) : ℝ≥0∞ :=
+def advantage (adv : forking_adversary T U A) : ℝ≥0 :=
 ⦃ λ x, option.is_some x | sim_choose_fork adv ⦄
 
 lemma advantage_eq_tsum (adv : forking_adversary T U A) :
@@ -140,16 +140,16 @@ lemma prob_fork_eq_some : ⦃ λ out, out.1.is_some | fork adv ⦄ ≥ (adv.adva
 calc ⦃ λ out, out.1.is_some | fork adv ⦄
   = ⦃ coe ∘ option.is_some | prod.fst <$> fork adv⦄ :
     symm ((distribution_semantics.prob_event_map _ _ _))
-  ... = ∑' (j : fin adv.q), ↑(⦃prod.fst <$> fork adv⦄ (some j)) :
+  ... = ∑' (j : fin adv.q), (⦃prod.fst <$> fork adv⦄ (some j)) :
     (distribution_semantics.prob_event_is_some $ prod.fst <$> fork adv)
-  ... = ∑' (j : fin adv.q), ↑(⦃adv.sim_choose_fork ×ₘ adv.sim_choose_fork⦄ (some j, some j)) :
-    tsum_congr (λ j, congr_arg coe $ eval_distribution_fst_map_fork_apply adv (some j))
-  ... = ∑' (j : fin adv.q), ↑(⦃adv.sim_choose_fork⦄ (some j)) ^ 2 :
+  ... = ∑' (j : fin adv.q), (⦃adv.sim_choose_fork ×ₘ adv.sim_choose_fork⦄ (some j, some j)) :
+    sorry --tsum_congr (λ j, congr_arg coe $ eval_distribution_fst_map_fork_apply adv (some j))
+  ... = ∑' (j : fin adv.q), (⦃adv.sim_choose_fork⦄ (some j)) ^ 2 :
     by simp only [distribution_semantics.eval_distribution_prod_apply, pow_two, ennreal.coe_mul]
-  ... = ∑ j, ↑(⦃adv.sim_choose_fork⦄ (some j)) ^ 2 :
+  ... = ∑ j, (⦃adv.sim_choose_fork⦄ (some j)) ^ 2 :
     tsum_fintype _
   ... ≥ (∑ j, ⦃adv.sim_choose_fork⦄ (some j)) ^ 2 / adv.q :
-    le_of_eq_of_le (by rw [finset.card_fin, pow_one]) (ennreal.pow_sum_div_card_le_sum_pow _ _ 1)
+    sorry --le_of_eq_of_le (by rw [finset.card_fin, pow_one]) (ennreal.pow_sum_div_card_le_sum_pow _ _ 1)
   ... = (adv.advantage ^ 2) / adv.q :
     by rw forking_adversary.advantage_eq_sum adv
 
@@ -168,7 +168,7 @@ calc ⦃fork_success | fork adv⦄
     sorry
   end
   ... ≥ ⦃λ out, out.1.is_some | fork adv⦄ - (1 / fintype.card U) : begin
-    rw [ennreal.mul_sub sorry, mul_one, mul_div, mul_one, ge_iff_le],
+    -- rw [ennreal.mul_sub sorry, mul_one, mul_div, mul_one, ge_iff_le],
     sorry
   end
   ... ≥ ((adv.advantage) ^ 2 / adv.q) - (1 / fintype.card U) :
