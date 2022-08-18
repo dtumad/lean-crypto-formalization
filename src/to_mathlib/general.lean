@@ -10,31 +10,26 @@ import analysis.convex.specific_functions
 
 open_locale measure_theory nnreal ennreal classical big_operators
 
-variables {α β γ : Type*}
+variables {α β γ : Type*} {n : ℕ}
 
+-- TODO: PR opened for this
 section list_like
 
 lemma multiset.quot_mk_ne_zero (l : list α) (hl : ¬ l.empty) : ↑l ≠ (0 : multiset α) :=
 mt ((list.empty_iff_eq_nil).2 ∘ (multiset.coe_eq_zero l).1) hl
 
-lemma vector.to_list_nonempty {n : ℕ} (v : vector α (n + 1)) : ¬ v.to_list.empty :=
-match v with
-| ⟨a :: as, _⟩ := by simp
-end
+@[simp] lemma vector.empty_to_list_eq_ff (v : vector α (n + 1)) : v.to_list.empty = ff :=
+match v with | ⟨a :: as, _⟩ := rfl end
+
+@[simp] lemma vector.to_list_nonempty (v : vector α (n + 1)) : ¬ v.to_list.empty :=
+by simp only [vector.empty_to_list_eq_ff, coe_sort_ff, not_false_iff]
 
 lemma finset.to_list_nonempty {A : Type} (s : finset A) (hs : s.nonempty) : ¬ s.to_list.empty :=
-let ⟨x, hx⟩ := hs in
-  λ h', list.not_mem_nil x ((list.empty_iff_eq_nil.1 h') ▸ (finset.mem_to_list s).2 hx)
-
-lemma list.drop_succ_cons {A : Type} (as : list A) (a : A) (n : ℕ) :
-  (a :: as).drop (n + 1) = as.drop n :=
-rfl
-
-lemma vector.not_mem_of_length_zero {A : Type} (v : vector A 0) (a : A) :
-  a ∉ v.to_list :=
-(vector.eq_nil v).symm ▸ id
+let ⟨x, hx⟩ := hs in λ h', list.not_mem_nil x (list.empty_iff_eq_nil.1 h' ▸ s.mem_to_list.2 hx)
 
 end list_like
+
+section sums
 
 lemma real.pow_sum_div_card_le_sum_pow (s : finset α) (f : α → ℝ) (hf : ∀ a, 0 ≤ f a) (n : ℕ) :
   (∑ x in s, f x) ^ (n + 1) / s.card ^ n ≤ ∑ x in s, (f x) ^ (n + 1) :=
@@ -65,6 +60,9 @@ begin
   sorry
 end
 
+end sums
+
+-- NOTE: PR opened for this stuff
 section prod
 
 lemma set.not_mem_prod {α β : Type} {s : set α} {t : set β} {x : α × β} :
