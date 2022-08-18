@@ -20,6 +20,12 @@ variable [spec'.finite_range]
 noncomputable def prob_event {α : Type} (oa : oracle_comp spec α) (event : set α) : ℝ≥0∞ :=
 @pmf.to_measure α ⊤ ⦃oa⦄ event
 
+noncomputable def prob_event' {α : Type} (oa : oracle_comp spec α) (event : set α) : ℝ≥0 :=
+begin
+  refine ennreal.to_nnreal (prob_event oa event),
+  -- refine (prob_event oa event)
+end
+
 notation `⦃` event `|` oa `⦄` := prob_event oa event
 
 /-- Probability that the result of a computation is greater than `5` -/
