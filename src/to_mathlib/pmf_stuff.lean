@@ -64,3 +64,8 @@ lemma pmf.apply_le_one {α : Type*} (p : pmf α) (a : α) : p a ≤ 1 :=
 begin
   sorry
 end
+
+lemma pmf.to_measure_apply_eq_iff_to_outer_measure_apply_eq {α : Type*} [measurable_space α]
+  (p : pmf α) (x : ℝ≥0∞) (s : set α) (hs : measurable_set s) :
+  p.to_measure s = x ↔ p.to_outer_measure s = x :=
+by rw [p.to_measure_apply_eq_to_outer_measure_apply s hs]

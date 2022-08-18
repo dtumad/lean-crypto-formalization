@@ -121,3 +121,8 @@ lemma ennreal.ite_to_nnreal (p : Prop) (x y : ℝ≥0∞) :
 
 lemma nat.cast_to_nnreal (n : ℕ) : (n : ℝ≥0∞).to_nnreal = (n : ℝ≥0) :=
 sorry
+
+lemma ennreal.to_nnreal_eq_one_iff (x : ℝ≥0∞) : x.to_nnreal = 1 ↔ x = 1 :=
+begin
+  sorry
+end

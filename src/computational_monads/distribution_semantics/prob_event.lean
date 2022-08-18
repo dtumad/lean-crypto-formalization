@@ -189,15 +189,24 @@ lemma prob_event_eq_sum_fin_support [spec.computable] [decidable_pred e] [oa.dec
 
 @[simp]
 lemma prob_event_eq_zero_iff_disjoint_support : ⦃e | oa⦄ = 0 ↔ disjoint oa.support e :=
-sorry
--- by simp only [prob_event_eq_to_outer_measure_apply,
---   pmf.to_outer_measure_apply_eq_zero_iff, support_eval_distribution]
+begin
+  refine (ennreal.to_nnreal_eq_zero_iff _).trans _,
+  simp only [pmf.to_measure_apply_ne_top, or_false],
+  refine (@pmf.to_measure_apply_eq_iff_to_outer_measure_apply_eq
+    α ⊤ ⦃oa⦄ 0 e measurable_space.measurable_set_top).trans _,
+  rw [← support_eval_distribution],
+  exact (⦃oa⦄.to_outer_measure_apply_eq_zero_iff e),
+end
 
 @[simp]
 lemma prob_event_eq_one_iff_support_subset : ⦃e | oa⦄ = 1 ↔ oa.support ⊆ e :=
-sorry
--- by simp only [prob_event_eq_to_outer_measure_apply,
---   pmf.to_outer_measure_apply_eq_one_iff, support_eval_distribution]
+begin
+  refine (ennreal.to_nnreal_eq_one_iff _).trans _,
+  refine (@pmf.to_measure_apply_eq_iff_to_outer_measure_apply_eq
+    α ⊤ ⦃oa⦄ 1 e measurable_space.measurable_set_top).trans _,
+  rw [← support_eval_distribution],
+  exact (⦃oa⦄.to_outer_measure_apply_eq_one_iff e),
+end
 
 end support
 
@@ -250,13 +259,17 @@ def indep_events (oa : oracle_comp spec α) (events events' : set (set α)) : Pr
 
 variables (events events' : set (set α))
 
-lemma indep_events_iff : indep_events oa events events' ↔ ∀ e e', e ∈ events → e' ∈ events' →
-  ⦃e ∩ e' | oa⦄ = ⦃e | oa⦄ * ⦃e' | oa⦄ :=
-sorry --iff.rfl
+lemma indep_events_iff : indep_events oa events events' ↔
+  ∀ e e', e ∈ events → e' ∈ events' → ⦃e ∩ e' | oa⦄ = ⦃e | oa⦄ * ⦃e' | oa⦄ :=
+begin
+  rw [indep_events, probability_theory.indep_sets],
+  sorry
+end
+
 
 lemma prob_event_inter_eq_mul_of_indep_events (h : indep_events oa events events')
   (he : e ∈ events) (he' : e' ∈ events') : ⦃ e ∩ e' | oa ⦄ = ⦃ e | oa ⦄ * ⦃ e' | oa ⦄ :=
-sorry --h e e' he he'
+(indep_events_iff oa events events').1 h e e' he he'
 
 end indep_events
 
