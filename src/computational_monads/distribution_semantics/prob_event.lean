@@ -71,18 +71,29 @@ by simp_rw [prob_event, h]
 lemma prob_event_eq_iff_to_outer_measure_apply_eq {oa : oracle_comp spec α} (e e' : set α) :
   ⦃e | oa⦄ = ⦃e' | oa⦄ ↔ ⦃oa⦄.to_outer_measure e = ⦃oa⦄.to_outer_measure e' :=
 begin
-  
+  simp_rw [prob_event_eq_to_nnreal_to_outer_measure_apply],
+  rw [ennreal.to_nnreal_eq_to_nnreal_iff']; apply pmf.to_outer_measure_apply_ne_top,
 end
 
 lemma prob_event_eq_mul_iff_to_outer_measure_apply_eq {oa : oracle_comp spec α} (e e' e'' : set α) :
   ⦃e | oa⦄ = ⦃e' | oa⦄ * ⦃e'' | oa⦄ ↔
     ⦃oa⦄.to_outer_measure e = (⦃oa⦄.to_outer_measure e') * (⦃oa⦄.to_outer_measure e'') :=
-sorry
+begin
+  simp_rw [prob_event_eq_to_nnreal_to_outer_measure_apply],
+  rw [← ennreal.to_nnreal_mul, ennreal.to_nnreal_eq_to_nnreal_iff'],
+  { exact pmf.to_outer_measure_apply_ne_top ⦃oa⦄ e },
+  { refine ennreal.mul_ne_top _ _; apply pmf.to_outer_measure_apply_ne_top }
+end
 
 lemma prob_event_eq_mul_iff_to_measure_apply_eq {oa : oracle_comp spec α} (e e' e'' : set α) :
   ⦃e | oa⦄ = ⦃e' | oa⦄ * ⦃e'' | oa⦄ ↔
     @pmf.to_measure α ⊤ ⦃oa⦄ e = (@pmf.to_measure α ⊤ ⦃oa⦄ e') * (@pmf.to_measure α ⊤ ⦃oa⦄ e'') :=
-sorry
+begin
+  rw [prob_event_eq_mul_iff_to_outer_measure_apply_eq,
+    pmf.to_measure_apply_eq_to_outer_measure_apply, pmf.to_measure_apply_eq_to_outer_measure_apply,
+      pmf.to_measure_apply_eq_to_outer_measure_apply];
+  exact measurable_space.measurable_set_top,
+end
 
 section pure
 

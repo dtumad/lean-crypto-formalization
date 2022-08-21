@@ -78,6 +78,8 @@ end prod
 
 section ennreal
 
+#check ennreal.to_nnreal_eq_zero_iff
+
 lemma ennreal.to_nnreal_eq_one_iff (x : ℝ≥0∞) : x.to_nnreal = 1 ↔ x = 1 :=
 begin
   refine ⟨λ h, _, congr_arg _⟩,
@@ -92,5 +94,19 @@ calc (∑' x, (f x)).to_nnreal
   = (∑' x, (f x).to_nnreal : ℝ≥0∞).to_nnreal :
     congr_arg ennreal.to_nnreal (tsum_congr $ λ x, (ennreal.coe_to_nnreal (hf x)).symm)
   ... = ∑' x, (f x).to_nnreal : by rw [nnreal.tsum_eq_to_nnreal_tsum]
+
+lemma ennreal.to_nnreal_eq_to_nnreal_iff (x y : ℝ≥0∞) :
+  x.to_nnreal = y.to_nnreal ↔ x = y ∨ (x = 0 ∧ y = ⊤) ∨ (x = ⊤ ∧ y = 0) :=
+begin
+  cases x,
+  { simp only [@eq_comm ℝ≥0 0 y.to_nnreal, @eq_comm ℝ≥0∞ _ y, ennreal.to_nnreal_eq_zero_iff,
+      ennreal.none_eq_top, ennreal.top_to_nnreal, ennreal.top_ne_zero, false_and, eq_self_iff_true,
+        true_and, false_or, or_comm (y = ⊤)] },
+  { cases y; simp }
+end
+
+lemma ennreal.to_nnreal_eq_to_nnreal_iff' (x y : ℝ≥0∞) (hx : x ≠ ⊤) (hy : y ≠ ⊤) :
+  x.to_nnreal = y.to_nnreal ↔ x = y :=
+by simp only [ennreal.to_nnreal_eq_to_nnreal_iff x y, hx, hy, and_false, false_and, or_false]
 
 end ennreal
