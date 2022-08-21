@@ -77,6 +77,11 @@ lemma prob_event_eq_mul_iff_to_outer_measure_apply_eq {oa : oracle_comp spec α}
     ⦃oa⦄.to_outer_measure e = (⦃oa⦄.to_outer_measure e') * (⦃oa⦄.to_outer_measure e'') :=
 sorry
 
+lemma prob_event_eq_mul_iff_to_measure_apply_eq {oa : oracle_comp spec α} (e e' e'' : set α) :
+  ⦃e | oa⦄ = ⦃e' | oa⦄ * ⦃e'' | oa⦄ ↔
+    @pmf.to_measure α ⊤ ⦃oa⦄ e = (@pmf.to_measure α ⊤ ⦃oa⦄ e') * (@pmf.to_measure α ⊤ ⦃oa⦄ e'') :=
+sorry
+
 section pure
 
 lemma prob_event_pure_eq_indicator :
@@ -110,38 +115,14 @@ section bind
 @[simp]
 lemma prob_event_bind : ⦃e'' | oa >>= ob⦄ = ∑' (a : α), ⦃oa⦄ a * ⦃e'' | ob a⦄ :=
 calc ⦃e'' | oa >>= ob⦄
-  = ∑' (b : β), e''.indicator ⦃oa >>= ob⦄ b : begin
-    apply prob_event_eq_tsum_indicator,
-  end
-  ... = ∑' (b : β) (a : α), ⦃oa⦄ a * (e''.indicator ⦃ob a⦄ b) : begin
-    refine tsum_congr (λ b, _),
-    by_cases hb : b ∈ e'',
-    {
-      simp only [set.indicator_of_mem hb, eval_distribution_bind_apply],
-    },
-    {
-      simp only [set.indicator_of_not_mem hb, mul_zero, tsum_zero]
-    }
-  end
-  ... = ∑' (a : α) (b : β), ⦃oa⦄ a * (e''.indicator ⦃ob a⦄ b) : begin
-    refine tsum_comm' sorry sorry _,
-    {
-      refine λ b, _,
-      
-      refine nnreal.summable_of_le _ (⦃oa⦄.summable_coe),
-      refine (λ a, _),
-      refine le_of_le_of_eq (mul_le_mul le_rfl _ zero_le' zero_le') (mul_one _),
-      refine set.indicator_apply_le (λ _, _),
-      refine pmf.apply_le_one ⦃ob a⦄ b,
-    }
-  end
-  ... = ∑' (a : α), ⦃oa⦄ a * ∑' (b : β), (e''.indicator ⇑⦃ob a⦄ b) : begin
-    refine tsum_congr (λ a, _),
-    rw [← nnreal.tsum_mul_left],
-  end
-  ... = ∑' (a : α), ⦃oa⦄ a * ⦃e'' | ob a⦄ : begin
-    simp_rw [prob_event_eq_tsum_indicator],
-  end
+  = (⦃oa >>= ob⦄.to_outer_measure e'').to_nnreal :
+    prob_event_eq_to_nnreal_to_outer_measure_apply _ _
+  ... = (∑' (a : α), ↑(⦃oa⦄ a) * (⦃ob a⦄.to_outer_measure e'')).to_nnreal : congr_arg
+    ennreal.to_nnreal (by erw [eval_distribution_bind, pmf.to_outer_measure_bind_apply])
+  ... = ∑' (a : α), (↑(⦃oa⦄ a) * (⦃ob a⦄.to_outer_measure e'')).to_nnreal :
+    ennreal.to_nnreal_tsum_eq ennreal.summable
+  ... = ∑' (a : α), ⦃oa⦄ a * ⦃e'' | ob a⦄ : tsum_congr (λ a, by rw [ennreal.to_nnreal_mul,
+    ennreal.to_nnreal_coe, prob_event_eq_to_nnreal_to_outer_measure_apply])
 
 @[simp]
 lemma prob_event_pure_bind : ⦃e'' | pure a >>= ob⦄ = ⦃e'' | ob a⦄ :=
@@ -273,6 +254,10 @@ def indep_events (oa : oracle_comp spec α) (events events' : set (set α)) : Pr
 
 variables (events events' : set (set α))
 
+lemma indep_events_iff_indep_sets (oa : oracle_comp spec α) (es es' : set (set α)) :
+  indep_events oa es es' ↔ @probability_theory.indep_sets α ⊤ es es' (@pmf.to_measure α ⊤ ⦃oa⦄) :=
+iff.rfl
+
 lemma indep_events_iff : indep_events oa events events' ↔
   ∀ e e', e ∈ events → e' ∈ events' → ⦃e ∩ e' | oa⦄ = ⦃e | oa⦄ * ⦃e' | oa⦄ :=
 by simp only [indep_events, probability_theory.indep_sets,
@@ -295,8 +280,14 @@ indep_events oa {e} {e'}
 lemma indep_event_iff_indep_events : indep_event oa e e' ↔ indep_events oa {e} {e'} :=
 iff.rfl
 
-lemma indep_event_iff : indep_event oa e e' ↔ ⦃ e ∩ e' | oa ⦄ = ⦃ e | oa ⦄ * ⦃ e' | oa ⦄ :=
-sorry -- (probability_theory.indep_sets_singleton_iff)
+lemma indep_event_iff_indep_set : indep_event oa e e' ↔
+  @probability_theory.indep_set α ⊤ e e' (@pmf.to_measure α ⊤ ⦃oa⦄) :=
+by rw [indep_event_iff_indep_events, indep_events_iff_indep_sets,
+  probability_theory.indep_set_iff_indep_sets_singleton]; apply measurable_space.measurable_set_top
+
+lemma indep_event_iff : indep_event oa e e' ↔ ⦃e ∩ e' | oa⦄ = ⦃ e | oa ⦄ * ⦃ e' | oa ⦄ :=
+by rw [indep_event_iff_indep_set, probability_theory.indep_set_iff_measure_inter_eq_mul,
+  prob_event_eq_mul_iff_to_measure_apply_eq]; apply measurable_space.measurable_set_top
 
 lemma prob_event_inter_eq_mul_of_indep_event (h : indep_event oa e e') :
   ⦃ e ∩ e' | oa ⦄ = ⦃ e | oa ⦄ * ⦃ e' | oa ⦄ :=
