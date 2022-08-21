@@ -70,7 +70,9 @@ by simp_rw [prob_event, h]
 
 lemma prob_event_eq_iff_to_outer_measure_apply_eq {oa : oracle_comp spec α} (e e' : set α) :
   ⦃e | oa⦄ = ⦃e' | oa⦄ ↔ ⦃oa⦄.to_outer_measure e = ⦃oa⦄.to_outer_measure e' :=
-sorry
+begin
+  
+end
 
 lemma prob_event_eq_mul_iff_to_outer_measure_apply_eq {oa : oracle_comp spec α} (e e' e'' : set α) :
   ⦃e | oa⦄ = ⦃e' | oa⦄ * ⦃e'' | oa⦄ ↔
@@ -120,7 +122,16 @@ calc ⦃e'' | oa >>= ob⦄
   ... = (∑' (a : α), ↑(⦃oa⦄ a) * (⦃ob a⦄.to_outer_measure e'')).to_nnreal : congr_arg
     ennreal.to_nnreal (by erw [eval_distribution_bind, pmf.to_outer_measure_bind_apply])
   ... = ∑' (a : α), (↑(⦃oa⦄ a) * (⦃ob a⦄.to_outer_measure e'')).to_nnreal :
-    ennreal.to_nnreal_tsum_eq ennreal.summable
+    ennreal.to_nnreal_tsum_eq begin
+      refine λ x, _,
+      refine ennreal.mul_ne_top _ _,
+      {
+        refine ennreal.coe_ne_top,
+      },
+      {
+        refine pmf.to_outer_measure_apply_ne_top _ _,
+      }
+    end
   ... = ∑' (a : α), ⦃oa⦄ a * ⦃e'' | ob a⦄ : tsum_congr (λ a, by rw [ennreal.to_nnreal_mul,
     ennreal.to_nnreal_coe, prob_event_eq_to_nnreal_to_outer_measure_apply])
 
@@ -144,7 +155,7 @@ begin
   refine trans (prob_event_eq_to_nnreal_to_outer_measure_apply _ e) _,
   rw [eval_distribution_query],
   rw [pmf.to_outer_measure_uniform_of_fintype_apply],
-  simp_rw [ennreal.to_nnreal_div, nat.cast_to_nnreal],
+  simp_rw [ennreal.to_nnreal_div, ennreal.to_nnreal_nat],
   congr,
 end
 
@@ -219,7 +230,11 @@ begin
   refine trans (prob_event_eq_to_nnreal_to_outer_measure_apply _ _) _,
   refine trans (congr_arg ennreal.to_nnreal $ 
       pmf.to_outer_measure_apply_Union ⦃oa⦄ h) _,
-  refine trans (ennreal.to_nnreal_tsum_eq $ ⦃oa⦄.summable_to_outer_measure_apply es h) _,
+
+  refine trans (ennreal.to_nnreal_tsum_eq $ begin
+    refine λ x, _,
+    refine pmf.to_outer_measure_apply_ne_top _ _,
+  end) _,
   refine tsum_congr (λ n, congr_arg ennreal.to_nnreal $ symm _),
   refine @pmf.to_measure_apply_eq_to_outer_measure_apply α ⊤ ⦃oa⦄ (es n)
     measurable_space.measurable_set_top,

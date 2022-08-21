@@ -78,28 +78,19 @@ end prod
 
 section ennreal
 
-lemma ennreal.ite_to_nnreal (p : Prop) (x y : ℝ≥0∞) :
-  (ite p x y).to_nnreal = ite p x.to_nnreal y.to_nnreal :=
-by split_ifs; refl 
-
-lemma nat.cast_to_nnreal (n : ℕ) : (n : ℝ≥0∞).to_nnreal = (n : ℝ≥0) :=
-sorry
-
 lemma ennreal.to_nnreal_eq_one_iff (x : ℝ≥0∞) : x.to_nnreal = 1 ↔ x = 1 :=
 begin
-  sorry
+  refine ⟨λ h, _, congr_arg _⟩,
+  cases x,
+  { exact false.elim (zero_ne_one $ ennreal.top_to_nnreal.symm.trans h) },
+  { exact congr_arg _ h }
 end
 
-lemma ennreal.to_nnreal_tsum_le {α : Type*} (f : α → ℝ≥0∞) :
-  (∑' x, (f x)).to_nnreal ≤ ∑' x, (f x).to_nnreal :=
-begin
-  sorry
-end
-
-lemma ennreal.to_nnreal_tsum_eq {α : Type*} {f : α → ℝ≥0∞} (hf : summable f) :
+lemma ennreal.to_nnreal_tsum_eq {α : Type*} {f : α → ℝ≥0∞} (hf : ∀ x, f x ≠ ⊤) :
   (∑' x, (f x)).to_nnreal = ∑' x, (f x).to_nnreal :=
-begin
-  sorry
-end
+calc (∑' x, (f x)).to_nnreal
+  = (∑' x, (f x).to_nnreal : ℝ≥0∞).to_nnreal :
+    congr_arg ennreal.to_nnreal (tsum_congr $ λ x, (ennreal.coe_to_nnreal (hf x)).symm)
+  ... = ∑' x, (f x).to_nnreal : by rw [nnreal.tsum_eq_to_nnreal_tsum]
 
 end ennreal

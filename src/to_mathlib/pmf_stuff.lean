@@ -40,11 +40,11 @@ lemma pmf.to_measure_apply_ne_top {α : Type*} [measurable_space α] (p : pmf α
   p.to_measure s ≠ ⊤ := measure_theory.measure_ne_top p.to_measure s
 
 -- TODO: measurable??
-lemma pmf.to_outer_measure_apply_ne_top {α : Type*} [measurable_space α] (p : pmf α) (s : set α) :
+lemma pmf.to_outer_measure_apply_ne_top {α : Type*} (p : pmf α) (s : set α) :
   p.to_outer_measure s ≠ ⊤ :=
 begin
-  refine λ h, (p.to_measure_apply_ne_top s) (le_antisymm le_top $
-    le_trans (le_of_eq h.symm) (pmf.to_outer_measure_apply_le_to_measure_apply p s)),
+  refine λ h, (@pmf.to_measure_apply_ne_top α ⊤ p s) (le_antisymm le_top $
+    le_trans (le_of_eq h.symm) (@pmf.to_outer_measure_apply_le_to_measure_apply α ⊤ p s)),
 end
 
 lemma pmf.indicator_summable {α : Type*} (p : pmf α) (s : set α)
