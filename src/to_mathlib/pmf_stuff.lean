@@ -39,6 +39,7 @@ pmf.bind_const p q
 lemma pmf.to_measure_apply_ne_top {α : Type*} [measurable_space α] (p : pmf α) (s : set α) :
   p.to_measure s ≠ ⊤ := measure_theory.measure_ne_top p.to_measure s
 
+-- TODO: measurable??
 lemma pmf.to_outer_measure_apply_ne_top {α : Type*} [measurable_space α] (p : pmf α) (s : set α) :
   p.to_outer_measure s ≠ ⊤ :=
 begin
@@ -46,15 +47,7 @@ begin
     le_trans (le_of_eq h.symm) (pmf.to_outer_measure_apply_le_to_measure_apply p s)),
 end
 
-#check nnreal.indicator_summable
-
-lemma ennreal.indicator_summable (α : Type*) (f : α → ℝ≥0∞) (hf : summable f) (s : set α) :
-  summable (s.indicator f) :=
-begin
-  refine ennreal.summable, 
-end
-
-lemma pmf.indicator_summable {α : Type*} [measurable_space α] (p : pmf α) (s : set α)
+lemma pmf.indicator_summable {α : Type*} (p : pmf α) (s : set α)
   : summable (s.indicator p) :=
 begin
   sorry
@@ -79,3 +72,9 @@ lemma pmf.to_outer_measure_apply_Union {α : Type*} (p : pmf α) {f : ℕ → se
   (h : pairwise (disjoint on f)) : p.to_outer_measure (⋃ n, f n) = ∑' n, p.to_outer_measure (f n) :=
 measure_theory.outer_measure.Union_eq_of_caratheodory _
   (λ n, pmf.measurable_set_to_outer_measure_caratheodory _ (f n)) h
+
+lemma pmf.summable_to_outer_measure_apply {α : Type*} (p : pmf α) (f : ℕ → set α) (hf : pairwise (disjoint on f)) :
+  summable (λ x, p.to_outer_measure (f x)) :=
+begin
+  sorry
+end

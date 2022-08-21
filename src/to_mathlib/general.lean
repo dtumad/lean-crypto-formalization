@@ -110,14 +110,9 @@ end
 
 end prod
 
-lemma coe_ite {α β : Type*} [has_coe α β] (x y : α) (p : Prop) [decidable p] :
-  (↑(ite p x y) : β) = ite p (x : β) (y : β) :=
-begin
-  sorry
-end
-
 lemma ennreal.ite_to_nnreal (p : Prop) (x y : ℝ≥0∞) :
-  (ite p x y).to_nnreal = ite p x.to_nnreal y.to_nnreal := sorry
+  (ite p x y).to_nnreal = ite p x.to_nnreal y.to_nnreal :=
+by split_ifs; refl 
 
 lemma nat.cast_to_nnreal (n : ℕ) : (n : ℝ≥0∞).to_nnreal = (n : ℝ≥0) :=
 sorry

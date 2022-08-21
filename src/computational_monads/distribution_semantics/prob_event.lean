@@ -68,13 +68,23 @@ lemma prob_event_eq_of_equiv {oa : oracle_comp spec α} {oa' : oracle_comp spec'
   (h : oa ≃ₚ oa') (e : set α) : ⦃e | oa⦄ = ⦃e | oa'⦄ :=
 by simp_rw [prob_event, h]
 
+lemma prob_event_eq_iff_to_outer_measure_apply_eq {oa : oracle_comp spec α} (e e' : set α) :
+  ⦃e | oa⦄ = ⦃e' | oa⦄ ↔ ⦃oa⦄.to_outer_measure e = ⦃oa⦄.to_outer_measure e' :=
+sorry
+
+lemma prob_event_eq_mul_iff_to_outer_measure_apply_eq {oa : oracle_comp spec α} (e e' e'' : set α) :
+  ⦃e | oa⦄ = ⦃e' | oa⦄ * ⦃e'' | oa⦄ ↔
+    ⦃oa⦄.to_outer_measure e = (⦃oa⦄.to_outer_measure e') * (⦃oa⦄.to_outer_measure e'') :=
+sorry
+
 section pure
 
-lemma prob_event_pure_eq_indicator : ⦃e | (pure a : oracle_comp spec α)⦄ = e.indicator (λ _, (1 : ℝ≥0)) a :=
+lemma prob_event_pure_eq_indicator :
+  ⦃e | (pure a : oracle_comp spec α)⦄ = e.indicator (λ _, (1 : ℝ≥0)) a :=
 begin
   refine trans (prob_event_eq_to_nnreal_to_outer_measure_apply _ e) _,
   refine trans (congr_arg ennreal.to_nnreal $ pmf.to_outer_measure_pure_apply a e) _,
-  refine (ennreal.ite_to_nnreal _ _ _),
+  split_ifs with h; simp [h],
 end
 
 @[simp]
@@ -85,13 +95,13 @@ begin
   split_ifs with ha; simp [ha],
 end
 
-lemma prob_event_pure_of_true [decidable_pred (∈ e)] (ha : a ∈ e) :
+lemma prob_event_pure_of_true (ha : a ∈ e) :
   ⦃ e | (pure a : oracle_comp spec α) ⦄ = 1 :=
-by simp only [ha, prob_event_pure, if_true]
+by simp only [ha, prob_event_pure_eq_indicator, set.indicator_of_mem]
 
-lemma prob_event_pure_of_false [decidable_pred (∈ e)] (ha : a ∉ e) :
+lemma prob_event_pure_of_false (ha : a ∉ e) :
   ⦃ e | (pure a : oracle_comp spec α) ⦄ = 0 :=
-by simp only [ha, prob_event_pure, if_false]
+by simp only [ha, prob_event_pure_eq_indicator, set.indicator_of_not_mem, not_false_iff]
 
 end pure
 
@@ -222,13 +232,13 @@ begin
   { exact rfl }
 end
 
-lemma prob_event_Union_eq_of_pairwise_disjoint (es : ℕ → set α) (h : pairwise (disjoint on es))
-  (hes : summable (λ n, ⦃oa⦄.to_outer_measure (es n))) : ⦃⋃ i, es i | oa⦄ = ∑' i, ⦃es i | oa⦄ :=
+lemma prob_event_Union_eq_of_pairwise_disjoint (es : ℕ → set α) (h : pairwise (disjoint on es)) :
+  ⦃⋃ i, es i | oa⦄ = ∑' i, ⦃es i | oa⦄ :=
 begin
   refine trans (prob_event_eq_to_nnreal_to_outer_measure_apply _ _) _,
   refine trans (congr_arg ennreal.to_nnreal $ 
       pmf.to_outer_measure_apply_Union ⦃oa⦄ h) _,
-  refine trans (ennreal.to_nnreal_tsum_eq hes) _,
+  refine trans (ennreal.to_nnreal_tsum_eq $ ⦃oa⦄.summable_to_outer_measure_apply es h) _,
   refine tsum_congr (λ n, congr_arg ennreal.to_nnreal $ symm _),
   refine @pmf.to_measure_apply_eq_to_outer_measure_apply α ⊤ ⦃oa⦄ (es n)
     measurable_space.measurable_set_top,
@@ -236,19 +246,20 @@ end
 
 lemma prob_event_union_eq_of_disjoint {e e' : set α} [decidable_pred e] [decidable_pred e']
   (h : disjoint e e') : ⦃e ∪ e' | oa⦄ = ⦃e | oa⦄ + ⦃e' | oa⦄ :=
-sorry
--- begin
---   simp_rw [prob_event_eq_tsum],
---   refine trans (tsum_congr (λ a, _)) (tsum_add ennreal.summable ennreal.summable),
---   by_cases ha : a ∈ e ∪ e',
---   { by_cases ha' : a ∈ e,
---     { have : a ∉ e' := set.disjoint_left.1 h ha',
---       simp_rw [ha, ha', this, if_true, if_false, add_zero] },
---     { have : a ∈ e' := set.mem_union.elim ha (false.elim ∘ ha') id,
---       simp_rw [ha, ha', this, if_true, if_false, zero_add] }
---   },
---   { simp_rw [ha, ha ∘ (set.mem_union_left _), ha ∘ (set.mem_union_right _), if_false, zero_add] }
--- end
+begin
+  simp_rw [prob_event_eq_tsum_indicator],
+  refine trans (tsum_congr (λ a, _))
+    (tsum_add (⦃oa⦄.indicator_summable e) (⦃oa⦄.indicator_summable e')),
+  by_cases ha : a ∈ e ∪ e',
+  { by_cases ha' : a ∈ e,
+    { have : a ∉ e' := set.disjoint_left.1 h ha',
+      simp only [ha, ha', this, set.indicator_of_mem, set.indicator_of_not_mem,
+        not_false_iff, add_zero]},
+    { have : a ∈ e' := set.mem_union.elim ha (false.elim ∘ ha') id,
+      simp only [ha, ha', this, set.indicator_of_mem, set.indicator_of_not_mem, not_false_iff, zero_add]} },
+  { rw [set.indicator_of_not_mem ha, set.indicator_of_not_mem (ha ∘ (set.mem_union_left _)),
+      set.indicator_of_not_mem (ha ∘ (set.mem_union_right _)), zero_add] }
+end
 
 -- TODO: seperate `indep` file?
 section indep_events
@@ -264,11 +275,9 @@ variables (events events' : set (set α))
 
 lemma indep_events_iff : indep_events oa events events' ↔
   ∀ e e', e ∈ events → e' ∈ events' → ⦃e ∩ e' | oa⦄ = ⦃e | oa⦄ * ⦃e' | oa⦄ :=
-begin
-  rw [indep_events, probability_theory.indep_sets],
-  sorry
-end
-
+by simp only [indep_events, probability_theory.indep_sets,
+  prob_event_eq_mul_iff_to_outer_measure_apply_eq, @pmf.to_measure_apply_eq_to_outer_measure_apply
+    α ⊤ ⦃oa⦄ _ measurable_space.measurable_set_top]
 
 lemma prob_event_inter_eq_mul_of_indep_events (h : indep_events oa events events')
   (he : e ∈ events) (he' : e' ∈ events') : ⦃ e ∩ e' | oa ⦄ = ⦃ e | oa ⦄ * ⦃ e' | oa ⦄ :=
@@ -287,7 +296,7 @@ lemma indep_event_iff_indep_events : indep_event oa e e' ↔ indep_events oa {e}
 iff.rfl
 
 lemma indep_event_iff : indep_event oa e e' ↔ ⦃ e ∩ e' | oa ⦄ = ⦃ e | oa ⦄ * ⦃ e' | oa ⦄ :=
-sorry -- by convert probability_theory.indep_sets_singleton_iff
+sorry -- (probability_theory.indep_sets_singleton_iff)
 
 lemma prob_event_inter_eq_mul_of_indep_event (h : indep_event oa e e') :
   ⦃ e ∩ e' | oa ⦄ = ⦃ e | oa ⦄ * ⦃ e' | oa ⦄ :=
