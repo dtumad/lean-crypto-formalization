@@ -225,34 +225,14 @@ end
 lemma prob_event_Union_eq_of_pairwise_disjoint (es : ℕ → set α) (h : pairwise (disjoint on es))
   (hes : summable (λ n, ⦃oa⦄.to_outer_measure (es n))) : ⦃⋃ i, es i | oa⦄ = ∑' i, ⦃es i | oa⦄ :=
 begin
-  rw [prob_event_eq_to_nnreal_to_outer_measure_apply],
+  refine trans (prob_event_eq_to_nnreal_to_outer_measure_apply _ _) _,
   refine trans (congr_arg ennreal.to_nnreal $ 
-      measure_theory.outer_measure.Union_eq_of_caratheodory _
-  (λ n, pmf.measurable_set_to_outer_measure_caratheodory _ (es n)) h) _,
-  refine trans (ennreal.tsum_to_nnre)
-  
-
-  -- refine trans (congr_arg ennreal.to_nnreal $ ⦃oa⦄.to_outer_measure_apply_Union h) _,
-  -- refine trans (ennreal.to_nnreal_tsum_eq _ _) _,
-
-  -- refine congr_arg ennreal.to_nnreal
-  --   (@measure_theory..to_measure.m_Union)
-  -- rw [pmf.to_outer_measure_apply_Union],
-  -- simp only [set.indicator_Union_apply],
-  
-  -- rw [measure_theory.measure.m_Union],
-  -- rw [measure_theory.f_Union],
-  -- refine ennreal.to_nnreal_tsu
-  -- refine (measure_theory.outer_measure.Union_eq_of_caratheodory _ _).trans _,
-    -- (λ n, pmf.measurable_set_to_outer_measure_caratheodory _ (es n)) h).trans _,
-      -- (tsum_congr (λ n, symm $ prob_event_eq_to_outer_measure_apply oa (es n))),
+      pmf.to_outer_measure_apply_Union ⦃oa⦄ h) _,
+  refine trans (ennreal.to_nnreal_tsum_eq hes) _,
+  refine tsum_congr (λ n, congr_arg ennreal.to_nnreal $ symm _),
+  refine @pmf.to_measure_apply_eq_to_outer_measure_apply α ⊤ ⦃oa⦄ (es n)
+    measurable_space.measurable_set_top,
 end
--- begin
---   rw [prob_event_eq_to_outer_measure_apply],
---   refine (measure_theory.outer_measure.Union_eq_of_caratheodory _
---     (λ n, pmf.measurable_set_to_outer_measure_caratheodory _ (es n)) h).trans
---       (tsum_congr (λ n, symm $ prob_event_eq_to_outer_measure_apply oa (es n))),
--- end
 
 lemma prob_event_union_eq_of_disjoint {e e' : set α} [decidable_pred e] [decidable_pred e']
   (h : disjoint e e') : ⦃e ∪ e' | oa⦄ = ⦃e | oa⦄ + ⦃e' | oa⦄ :=
