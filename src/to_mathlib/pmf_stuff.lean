@@ -69,3 +69,13 @@ lemma pmf.to_measure_apply_eq_iff_to_outer_measure_apply_eq {α : Type*} [measur
   (p : pmf α) (x : ℝ≥0∞) (s : set α) (hs : measurable_set s) :
   p.to_measure s = x ↔ p.to_outer_measure s = x :=
 by rw [p.to_measure_apply_eq_to_outer_measure_apply s hs]
+
+lemma pmf.to_measure_apply_Union {α : Type*} [measurable_space α] (p : pmf α)
+  {f : ℕ → set α} (hf : ∀ n, measurable_set (f n)) (h : pairwise (disjoint on f)) :
+  p.to_measure (⋃ n, f n) = ∑' n, p.to_measure (f n) :=
+p.to_measure.m_Union hf h
+
+lemma pmf.to_outer_measure_apply_Union {α : Type*} (p : pmf α) {f : ℕ → set α}
+  (h : pairwise (disjoint on f)) : p.to_outer_measure (⋃ n, f n) = ∑' n, p.to_outer_measure (f n) :=
+measure_theory.outer_measure.Union_eq_of_caratheodory _
+  (λ n, pmf.measurable_set_to_outer_measure_caratheodory _ (f n)) h

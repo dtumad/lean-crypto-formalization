@@ -32,14 +32,13 @@ noncomputable example (oa : oracle_comp oracle_spec.coin_oracle (fin 10)) :
 variables (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) (a a' : α)
   (e e' : set α) (e'' : set β)
 
-lemma prob_event_eq_of_equiv {oa : oracle_comp spec α} {oa' : oracle_comp spec' α}
-  (h : oa ≃ₚ oa') (e : set α) : ⦃e | oa⦄ = ⦃e | oa'⦄ :=
-by simp_rw [prob_event, h]
-
 lemma prob_event_eq_to_nnreal_to_outer_measure_apply :
   ⦃e | oa⦄ = (⦃oa⦄.to_outer_measure e).to_nnreal :=
 congr_arg ennreal.to_nnreal (@pmf.to_measure_apply_eq_to_outer_measure_apply
   α ⊤ _ e (measurable_space.measurable_set_top))
+
+lemma prob_event_eq_to_nnreal_to_measure_apply :
+  ⦃e | oa⦄ = (@pmf.to_measure α ⊤ ⦃oa⦄ e).to_nnreal := rfl
 
 lemma coe_prob_event_eq_to_outer_measure_apply : (⦃e | oa⦄ : ℝ≥0∞) = ⦃oa⦄.to_outer_measure e :=
 (ennreal.coe_to_nnreal $ @pmf.to_measure_apply_ne_top α ⊤ ⦃oa⦄ e).trans
@@ -60,11 +59,14 @@ end
 /-- Probability of an event in terms of a decidable `ite` sum-/
 lemma prob_event_eq_tsum [decidable_pred (∈ e)] : ⦃e | oa⦄ = ∑' x, if x ∈ e then ⦃oa⦄ x else 0 :=
 begin
-  refine (prob_event_eq_tsum_indicator oa e).trans _,
-  refine tsum_congr (λ x, _),
+  refine (prob_event_eq_tsum_indicator oa e).trans (tsum_congr $ λ x, _),
   rw [set.indicator],
   split_ifs; refl,
 end
+
+lemma prob_event_eq_of_equiv {oa : oracle_comp spec α} {oa' : oracle_comp spec' α}
+  (h : oa ≃ₚ oa') (e : set α) : ⦃e | oa⦄ = ⦃e | oa'⦄ :=
+by simp_rw [prob_event, h]
 
 section pure
 
@@ -212,18 +214,39 @@ end support
 
 lemma prob_event_eq_eval_distribution_of_disjoint_sdiff_support [decidable_pred e] {a : α}
   (ha : a ∈ e) (h : disjoint (e \ {a}) oa.support) : ⦃e | oa⦄ = ⦃oa⦄ a :=
-sorry
--- begin
---   refine (prob_event_eq_tsum oa e).trans ((tsum_eq_single a $ λ a' ha', _).trans (if_pos ha)),
---   split_ifs with hae,
---   { exact ennreal.coe_eq_zero.2 (eval_distribution_eq_zero_of_not_mem_support
---       (set.disjoint_left.1 h $ set.mem_diff_of_mem hae ha')) },
---   { exact rfl }
--- end
+begin
+  refine (prob_event_eq_tsum oa e).trans ((tsum_eq_single a $ λ a' ha', _).trans (if_pos ha)),
+  split_ifs with hae,
+  { exact (eval_distribution_eq_zero_of_not_mem_support
+      (set.disjoint_left.1 h $ set.mem_diff_of_mem hae ha')) },
+  { exact rfl }
+end
 
-lemma prob_event_Union_eq_of_pairwise_disjoint (es : ℕ → set α) (h : pairwise (disjoint on es)) :
-  ⦃⋃ i, es i | oa⦄ = ∑' i, ⦃es i | oa⦄ :=
-sorry
+lemma prob_event_Union_eq_of_pairwise_disjoint (es : ℕ → set α) (h : pairwise (disjoint on es))
+  (hes : summable (λ n, ⦃oa⦄.to_outer_measure (es n))) : ⦃⋃ i, es i | oa⦄ = ∑' i, ⦃es i | oa⦄ :=
+begin
+  rw [prob_event_eq_to_nnreal_to_outer_measure_apply],
+  refine trans (congr_arg ennreal.to_nnreal $ 
+      measure_theory.outer_measure.Union_eq_of_caratheodory _
+  (λ n, pmf.measurable_set_to_outer_measure_caratheodory _ (es n)) h) _,
+  refine trans (ennreal.tsum_to_nnre)
+  
+
+  -- refine trans (congr_arg ennreal.to_nnreal $ ⦃oa⦄.to_outer_measure_apply_Union h) _,
+  -- refine trans (ennreal.to_nnreal_tsum_eq _ _) _,
+
+  -- refine congr_arg ennreal.to_nnreal
+  --   (@measure_theory..to_measure.m_Union)
+  -- rw [pmf.to_outer_measure_apply_Union],
+  -- simp only [set.indicator_Union_apply],
+  
+  -- rw [measure_theory.measure.m_Union],
+  -- rw [measure_theory.f_Union],
+  -- refine ennreal.to_nnreal_tsu
+  -- refine (measure_theory.outer_measure.Union_eq_of_caratheodory _ _).trans _,
+    -- (λ n, pmf.measurable_set_to_outer_measure_caratheodory _ (es n)) h).trans _,
+      -- (tsum_congr (λ n, symm $ prob_event_eq_to_outer_measure_apply oa (es n))),
+end
 -- begin
 --   rw [prob_event_eq_to_outer_measure_apply],
 --   refine (measure_theory.outer_measure.Union_eq_of_caratheodory _

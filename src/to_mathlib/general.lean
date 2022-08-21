@@ -126,3 +126,15 @@ lemma ennreal.to_nnreal_eq_one_iff (x : ℝ≥0∞) : x.to_nnreal = 1 ↔ x = 1 
 begin
   sorry
 end
+
+lemma ennreal.to_nnreal_tsum_le {α : Type*} (f : α → ℝ≥0∞) :
+  (∑' x, (f x)).to_nnreal ≤ ∑' x, (f x).to_nnreal :=
+begin
+  sorry
+end
+
+lemma ennreal.to_nnreal_tsum_eq {α : Type*} {f : α → ℝ≥0∞} (hf : summable f) :
+  (∑' x, (f x)).to_nnreal = ∑' x, (f x).to_nnreal :=
+begin
+  sorry
+end
