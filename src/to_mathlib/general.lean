@@ -57,25 +57,6 @@ by simpa [← nnreal.coe_le_coe, nnreal.coe_sum] using
 
 end sums
 
--- NOTE: PR opened for this stuff
-section prod
-
-lemma set.not_mem_prod {α β : Type} {s : set α} {t : set β} {x : α × β} :
-  x ∉ s ×ˢ t ↔ x.1 ∉ s ∨ x.2 ∉ t :=
-not_and_distrib
-
-instance set.decidable_mem_prod {α β : Type} (s : set α) (t : set β)
-  [hs : decidable_pred s] [ht : decidable_pred t] (x : α × β) : decidable (x ∈ s ×ˢ t) :=
-match hs x.1 with
-| is_true ha := match ht x.2 with
-  | is_true hb := is_true (set.mem_prod.2 ⟨ha, hb⟩)
-  | is_false hb := is_false (set.not_mem_prod.2 $ or.inr hb)
-  end
-| is_false ha := is_false (set.not_mem_prod.2 $ or.inl ha)
-end
-
-end prod
-
 section ennreal
 
 lemma ennreal.to_nnreal_eq_one_iff (x : ℝ≥0∞) : x.to_nnreal = 1 ↔ x = 1 :=
