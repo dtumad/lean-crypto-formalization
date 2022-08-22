@@ -12,6 +12,11 @@ open_locale measure_theory nnreal ennreal classical big_operators
 
 variables {α β γ : Type*} {n : ℕ}
 
+lemma tsum_eq_sum_univ {α β : Type*} [fintype α] [topological_space β]
+  [add_comm_monoid β] [t2_space β] (f : α → β) :
+  ∑' (x : α), f x = ∑ x, f x :=
+tsum_eq_sum (λ b hb, false.elim (hb $ finset.mem_univ b))
+
 -- TODO: PR opened for this
 section list_like
 

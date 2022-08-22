@@ -82,17 +82,9 @@ open distribution_semantics
 
 @[simp]
 lemma eval_distribution_uniform_select_vector :
-  ⦃$ᵛ v⦄ = pmf.uniform_of_vector' v :=
-sorry
--- begin
---   refine pmf.ext (λ x, _),
---   simp_rw [uniform_select_vector, pmf.uniform_of_vector_apply, eval_distribution_map_apply],
---   calc ∑' (a : fin (n + 1)), ite (v.nth a = x) (⦃$[0..n]⦄ a) 0
---     = ∑' (a : fin (n + 1)), ite (v.nth a = x) (1 / (n + 1)) 0 : by simp
---     ... = ∑' (a : fin (n + 1)), (ite (v.nth a = x) 1 0) * (n + 1)⁻¹ : by simp
---     ... = (∑' (a : fin (n + 1)), ite (v.nth a = x) 1 0) / (n + 1) : by rw [nnreal.tsum_mul_right, div_eq_mul_inv]
---     ... = (v.to_list.count x) / (n + 1) : by simp [tsum_ite_eq_vector_nth v x]
--- end
+  ⦃$ᵛ v⦄ = pmf.uniform_of_vector v :=
+by simp only [uniform_select_vector, pmf.uniform_of_vector_eq_nth_map_uniform_of_fintype,
+  eval_distribution_map, eval_distribution_uniform_fin]
 
 end distribution_semantics
 
