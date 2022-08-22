@@ -78,8 +78,6 @@ end prod
 
 section ennreal
 
-#check ennreal.to_nnreal_eq_zero_iff
-
 lemma ennreal.to_nnreal_eq_one_iff (x : ℝ≥0∞) : x.to_nnreal = 1 ↔ x = 1 :=
 begin
   refine ⟨λ h, _, congr_arg _⟩,
