@@ -20,10 +20,7 @@ pmf.monad_map_eq_map f (p.bind q) ▸ map_bind _
 
 lemma pmf.bind_map {A B C : Type} (p : pmf A) (f : A → B) (q : B → pmf C) :
   (p.map f).bind q = p.bind (q ∘ f) :=
-begin
-  ext x,
-  sorry
-end
+sorry
 
 @[simp]
 lemma pmf.bind_const {A B : Type} (p : pmf A) (q : pmf B) :
@@ -43,14 +40,10 @@ end
 
 lemma pmf.indicator_summable {α : Type*} (p : pmf α) (s : set α)
   : summable (s.indicator p) :=
-begin
-  sorry
-end
+nnreal.summable_of_le (set.indicator_le_self s p) p.summable_coe
 
 lemma pmf.apply_le_one {α : Type*} (p : pmf α) (a : α) : p a ≤ 1 :=
-begin
-  sorry
-end
+p.coe_le_one a
 
 lemma pmf.to_measure_apply_eq_iff_to_outer_measure_apply_eq {α : Type*} [measurable_space α]
   (p : pmf α) (x : ℝ≥0∞) (s : set α) (hs : measurable_set s) :
