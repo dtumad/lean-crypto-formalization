@@ -17,7 +17,28 @@ lemma tsum_eq_sum_univ {α β : Type*} [fintype α] [topological_space β]
   ∑' (x : α), f x = ∑ x, f x :=
 tsum_eq_sum (λ b hb, false.elim (hb $ finset.mem_univ b))
 
--- TODO: PR opened for this
+lemma option.set_eq_union_is_none_is_some {α : Type*} (s : set (option α)) :
+  s = {x ∈ s | x.is_none} ∪ {x ∈ s | x.is_some} :=
+begin
+  refine set.ext (λ x, ⟨λ hx, _, λ hx, _⟩),
+  { cases x with x;
+    simp only [hx, set.mem_union_eq, set.mem_sep_eq, option.is_none_some,
+      option.is_none_none, coe_sort_ff, and_false, true_and, option.is_some_some,
+        coe_sort_tt, and_self, false_or, true_or, or_false] },
+  { exact or.rec_on hx (λ hx', hx'.1) (λ hx', hx'.1) }
+end
+
+lemma option.disjoint_is_none_is_some {α : Type*} (s : set (option α)) :
+  disjoint {x ∈ s | option.is_none x} {x ∈ s | option.is_some x} :=
+begin
+  refine le_of_eq (set.eq_empty_of_forall_not_mem $ option.rec _ _),
+  { exact λ hx, by simpa only [set.mem_sep_eq, option.is_some_none,
+      coe_sort_ff, and_false] using hx.right },
+  { refine λ hx, by simp only [set.inf_eq_inter, set.mem_inter_eq, set.mem_sep_eq,
+    option.is_none_some, coe_sort_ff, and_false, false_and, not_false_iff] }
+end
+
+-- NOTE: PR opened for this
 section list_like
 
 lemma multiset.quot_mk_ne_zero (l : list α) (hl : ¬ l.empty) : ↑l ≠ (0 : multiset α) :=
@@ -92,5 +113,35 @@ end
 lemma ennreal.to_nnreal_eq_to_nnreal_iff' (x y : ℝ≥0∞) (hx : x ≠ ⊤) (hy : y ≠ ⊤) :
   x.to_nnreal = y.to_nnreal ↔ x = y :=
 by simp only [ennreal.to_nnreal_eq_to_nnreal_iff x y, hx, hy, and_false, false_and, or_false]
+
+lemma nnreal.tsum_ite_eq_extract [decidable_eq β] {f : β → ℝ≥0} (hf : summable f) (b : β) :
+  ∑' x, f x = f b + ∑' x, ite (x = b) 0 (f x) :=
+calc ∑' x, f x
+  = ∑' x, ((ite (x = b) (f x) 0) + (ite (x = b) 0 (f x))) :
+    tsum_congr (λ n, by split_ifs; simp only [zero_add, add_zero])
+  ... = ∑' x, ite (x = b) (f x) 0 + ∑' x, ite (x = b) 0 (f x) :
+    by refine tsum_add (nnreal.summable_of_le (λ b', _) hf) (nnreal.summable_of_le (λ b', _) hf);
+      split_ifs; simp only [le_rfl, zero_le']
+  ... = (ite (b = b) (f b) 0) + ∑' x, ite (x = b) 0 (f x) :
+    by { congr, exact (tsum_eq_single b (λ b' hb', if_neg hb')) }
+  ... = f b + ∑' x, ite (x = b) 0 (f x) :
+    by { congr, exact (if_pos rfl) }
+
+lemma nnreal.tsum_option [decidable_eq α] {f : option α → ℝ≥0} (hf : summable f) :
+  tsum f = f none + ∑' (a : α), f (some a) :=
+calc ∑' (x : option α), f x
+  = f none + ∑' (x : option α), ite (x = none) 0 (f x) : nnreal.tsum_ite_eq_extract hf none
+  ... = f none + ∑' (a : α), f (some a) : begin
+    refine congr_arg (λ x, f none + x) (tsum_eq_tsum_of_ne_zero_bij (λ a, some a.1) _ _ _),
+    { simp only [subtype.val_eq_coe, imp_self, set_coe.forall, implies_true_iff] },
+    { simp only [function.support_subset_iff, ne.def, ite_eq_left_iff, not_forall, exists_prop,
+        set.mem_range, set_coe.exists, function.mem_support, and_imp],
+      intros x hx hfx,
+      cases x with a,
+      { exact false.elim (hx rfl) },
+      { exact ⟨a, hfx, rfl⟩ } },
+    { simp only [subtype.val_eq_coe, if_false, eq_self_iff_true, implies_true_iff] }
+  end
+
 
 end ennreal

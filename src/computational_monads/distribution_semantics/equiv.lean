@@ -97,11 +97,14 @@ by rw [eval_distribution_map, eval_distribution_map, h]
 @[simp]
 lemma map_map_equiv (oa : oracle_comp spec A) (f : A → B) (g : B → C) :
   g <$> (f <$> oa) ≃ₚ (g ∘ f) <$> oa :=
-sorry
+calc ⦃g <$> (f <$> oa)⦄
+  = pmf.map g (pmf.map f ⦃oa⦄) : by simp_rw [eval_distribution_map]
+  ... = pmf.map (g ∘ f) ⦃oa⦄ : pmf.map_comp f ⦃oa⦄ g
+  ... = ⦃(g ∘ f) <$> oa⦄ : symm (eval_distribution_map oa $ g ∘ f)
 
 lemma map_map_pure_equiv (a : A) (f : A → B) (g : B → C) :
   g <$> (f <$> (pure a : oracle_comp spec A)) ≃ₚ (pure (g (f a)) : oracle_comp spec C) :=
-sorry
+by rw [map_map_equiv, map_pure_equiv]
 
 @[simp]
 lemma map_equiv_of_eq_id (oa : oracle_comp spec A) (f : A → A) (h : ∀ a, f a = a) :
