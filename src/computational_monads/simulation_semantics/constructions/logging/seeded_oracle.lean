@@ -2,6 +2,21 @@ import computational_monads.simulation_semantics.constructions.logging.logging_o
 import computational_monads.simulation_semantics.constructions.logging.query_log.lookup
 import computational_monads.simulation_semantics.constructions.logging.query_log.fork
 
+/-!
+# Seeded Simulation Oracle
+
+This file constructs a simulation oracle that allows for a set of predetermined query responses.
+The oracle takes a `query_log` as an initial state, and uses the internal values
+  to respond to queries, and then forwards any additional queries back to the original oracle.
+Note that if any query fails to find a seed value, the entire `query_log` is discarded,
+  regardless of if further values exist for oracles of different indices.
+
+This can more generally be thought of as a form of small-step semantics for `oracle_comp`,
+  evaluating the computation using the provided value, eventually reducing to a single value,
+  unless it runs out of "gas", leading to only a partial evaluation.
+
+-/
+
 open oracle_comp oracle_spec
 
 variables {spec spec' spec'' : oracle_spec} {A B C : Type}
@@ -15,7 +30,8 @@ def seeded_oracle (spec : oracle_spec) [computable spec] :
 { S := query_log spec,
   default_state := query_log.init spec,
   o := λ i ⟨t, seed⟩, match seed.lookup_fst i t with
-    | none := (λ u, (u, query_log.init spec)) <$> query i t -- Once the seed is empty, just keep it empty going forward
+    -- Once the seed is empty, just keep it empty going forward
+    | none := (λ u, (u, query_log.init spec)) <$> query i t
     | (some u) := return (u, seed.remove_head i)
     end }
 

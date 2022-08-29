@@ -72,7 +72,7 @@ def oracles (sig : signature) : oracle_spec :=
 uniform_selecting ++ sig.random_oracles
 
 /-- A signing oracle corresponding to a given signature scheme -/
-@[reducible, inline]
+@[reducible, inline, derive computable]
 def signing_oracle_spec (sig : signature) [inhabited sig.S] : oracle_spec :=
 (sig.M →ₒ sig.S)
 
@@ -90,11 +90,7 @@ section complete
 noncomputable def completeness_experiment (sig : signature) (m : sig.M) :
   oracle_comp uniform_selecting bool :=
 default_simulate' (idₛ ++ₛ random_oracle sig.random_oracles) 
-(do { 
-  (pk, sk) ← sig.gen (),
-  σ ← sig.sign (pk, sk, m),
-  sig.verify (pk, m, σ) 
-})
+  (do { (pk, sk) ← sig.gen (), σ ← sig.sign (pk, sk, m), sig.verify (pk, m, σ) })
 
 @[simp]
 lemma support_completeness_experiment (sig : signature) (m : sig.M) :
@@ -105,7 +101,6 @@ lemma support_completeness_experiment (sig : signature) (m : sig.M) :
 begin
   rw [completeness_experiment],
   rw [support_default_simulate'],
-  simp [completeness_experiment],
   sorry
 end
 
@@ -123,24 +118,20 @@ begin
   refine ⟨λ h m pk sk σ hgen hsign, _, λ h, _⟩,
   { specialize h m,
     rw distribution_semantics.eval_distribution_eq_one_iff_support_subset_singleton at h,
-    simp [support_completeness_experiment, set.Union_subset_iff,
+    simp only [support_completeness_experiment, set.Union_subset_iff,
       prob_event_eq_one_iff_support_subset, prod.forall] at h,
     sorry,
-    --exact λ h', (h pk sk hgen σ hsign h').elim
   },
   { intro m,
-    simp [eval_distribution_eq_one_iff_support_subset_singleton,
+    simp only [eval_distribution_eq_one_iff_support_subset_singleton,
       support_completeness_experiment],
     sorry,
-    --exact λ pk sk hgen σ hsign, h m pk sk σ hgen hsign
   }
 end
 
 end complete
 
 section unforgeable
-
--- variables [inhabited S] [decidable_eq M] [decidable_eq S]
 
 -- TODO: could use `unforgeable` namespace with `unforgeable.adversary_oracles`?
 

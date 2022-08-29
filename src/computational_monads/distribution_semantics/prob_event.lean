@@ -2,6 +2,16 @@ import computational_monads.distribution_semantics.equiv
 import probability.independence
 import to_mathlib.pmf_stuff
 
+/-!
+# Probability of Events
+
+This file defines the probability of some event holding after running a computation.
+The definition is in terms of the `measure` associated to the `pmf` given by `eval_distribution`.
+
+This definition is equivalent to one in terms of summations, in particular an infinite `tsum`.
+If the support is decidable, we can instead give an expression in terms of `finset.sum`
+-/
+
 namespace distribution_semantics
 
 open oracle_comp
@@ -12,13 +22,9 @@ variable [spec.finite_range]
 variable [spec'.finite_range]
 
 /-- Probability of a predicate holding after running a particular experiment.
-  Defined in terms of the outer measure associated to the corresponding `pmf`.
-
-  The initial definition uses a `measure` to access more general lemmas,
-    but is equal to the `outer_measure` (see `prob_event_eq_to_outer_measure_apply`). -/
-
--- noncomputable def prob_event {α : Type} (oa : oracle_comp spec α) (event : set α) : ℝ≥0∞ :=
--- @pmf.to_measure α ⊤ ⦃oa⦄ event
+Defined in terms of the outer measure associated to the corresponding `pmf`.
+The initial definition uses a `measure` to access more general lemmas,
+  but is equal to the `outer_measure` (see `prob_event_eq_to_outer_measure_apply`). -/
 
 noncomputable def prob_event {α : Type} (oa : oracle_comp spec α) (event : set α) : ℝ≥0 :=
 ennreal.to_nnreal (@pmf.to_measure α ⊤ ⦃oa⦄ event)

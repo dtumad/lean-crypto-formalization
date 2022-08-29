@@ -8,8 +8,6 @@ import computational_monads.fin_support
 Big-step semantics for `oracle_comp`, associating a probability distribution to a computation.
 The resulting type is given by a `pmf`, the mathlib def of a probability mass function.
 
-We adopt classical logic for the
-
 -/
 
 namespace distribution_semantics
