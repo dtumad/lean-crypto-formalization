@@ -1,12 +1,25 @@
 import computational_monads.simulation_semantics.default_simulate
 
+/-!
+# Tracking Simulation Oracle
+
+This file defines a constructor for simulation oracles that use the internal state
+for the purpose of tracking some value, in a way that doesn't affect the actual query result.
+For example a logging oracle just tracks the queries, without actually affecting the return value.
+
+The definition is in terms of a query function that responds to queries,
+and an indepdent update_state function that controls the internal state.
+In many cases this definition will be composed with an oracle with result depending on the state,
+but this construction allows seperation of the components that affect state independently.
+-/
+
 open oracle_comp oracle_spec
 
 variables {A B : Type} {spec spec' spec'' : oracle_spec}
 
 /-- Oracle where the query result is indepenent of the current oracle state,
-  although the new state may depend upon the previous state.
-  For example a logging oracle that just tracks the input and output of queries. -/
+although the new state may depend upon the previous state.
+For example a logging oracle that just tracks the input and output of queries. -/
 @[simps]
 def tracking_oracle {spec : oracle_spec} {S : Type} (default_state : S)
   (o : Π (i : spec.ι), spec.domain i → oracle_comp spec' (spec.range i))
@@ -46,9 +59,9 @@ begin
 end
 
 /-- The support of `simulate'` is independing of the tracking oracle -/
-lemma support_simulate' (oa : oracle_comp spec A) (s : S) :
+lemma support_simulate' (oa : oracle_comp spec A) (s s' : S) :
   (simulate' ⟪o | update_state, default_state⟫ oa s).support =
-    (simulate' ⟪o | update_state', default_state'⟫ oa s).support :=
+    (simulate' ⟪o | update_state', default_state'⟫ oa s').support :=
 begin
   induction oa using oracle_comp.induction_on with a A A B oa ob hoa hob i t generalizing s,
   { simp },
@@ -58,8 +71,7 @@ begin
     simp [support_simulate'_bind, hoa, hob],
     refine ⟨λ h, _, λ h, _⟩,
     {
-      obtain ⟨s, a, s', ⟨has, hx⟩⟩ := h,
-      sorry,
+      sorry
     },
     {
       sorry, 
@@ -67,6 +79,11 @@ begin
   },
   sorry,
 end
+
+lemma support_default_simulate' (oa : oracle_comp spec A) :
+  (default_simulate' ⟪o | update_state, default_state⟫ oa).support =
+    (default_simulate' ⟪o | update_state', default_state'⟫ oa).support :=
+support_simulate' o update_state update_state' default_state default_state' oa _ _
 
 end support
 
