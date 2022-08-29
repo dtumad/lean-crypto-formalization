@@ -28,7 +28,7 @@ variables {S : Type}
   (update_state update_state' : Π (s : S) (i : spec.ι), spec.domain i → spec.range i → S)
   (default_state default_state' : S)
 
-lemma apply (i : spec.ι) (t : spec.domain i) (s : S) :
+lemma apply_eq (i : spec.ι) (t : spec.domain i) (s : S) :
   ⟪o | update_state, default_state⟫.o i (t, s) =
     do { u ← o i t, pure (u, update_state s i t u) } := rfl
 
@@ -40,13 +40,13 @@ lemma support_apply (i : spec.ι) (t : spec.domain i) (s : S) :
     = { u | u.1 ∈ (o i t).support ∧ u.2 = update_state s i t u.1 } :=
 begin
   ext x,
-  simp only [apply, support_bind, support_pure, set.mem_Union,
+  simp only [apply_eq, support_bind, support_pure, set.mem_Union,
     set.mem_singleton_iff, exists_prop, set.mem_set_of_eq, prod.eq_iff_fst_eq_snd_eq],
   refine ⟨λ h, let ⟨x₁, h, h'⟩ := h in h'.1.symm ▸ ⟨h, h'.2⟩, λ h, ⟨x.1, ⟨h.1, rfl, h.2⟩⟩⟩,
 end
 
 /-- The support of `simulate'` is independing of the tracking oracle -/
-lemma support_simulate'_eq (oa : oracle_comp spec A) (s : S) :
+lemma support_simulate' (oa : oracle_comp spec A) (s : S) :
   (simulate' ⟪o | update_state, default_state⟫ oa s).support =
     (simulate' ⟪o | update_state', default_state'⟫ oa s).support :=
 begin

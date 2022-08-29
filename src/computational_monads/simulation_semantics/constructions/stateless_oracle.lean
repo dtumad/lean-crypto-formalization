@@ -24,11 +24,24 @@ variables (oa : oracle_comp spec α)
 instance S_unique : unique ⟪o⟫.S := punit.unique
 
 @[simp]
-lemma apply (i : spec.ι) (t : spec.domain i) (s : unit) :
+lemma apply_eq (i : spec.ι) (t : spec.domain i) (s : unit) :
   ⟪o⟫.o i (t, s) = o i t >>= λ u, return (u, ()) := rfl
 
 section support
 
+@[simp]
+lemma support_apply (i : spec.ι) (t : spec.domain i) (s : unit) :
+  (⟪o⟫.o i (t, s)).support = prod.fst ⁻¹' (o i t).support :=
+set.ext (λ _, by simp only [prod.eq_iff_fst_eq_snd_eq, apply_eq, support_bind, support_pure,
+  set.mem_Union, set.mem_singleton_iff, eq_iff_true_of_subsingleton, and_true, exists_prop,
+  exists_eq_right', set.mem_preimage])
+
+lemma mem_support_apply_iff (i : spec.ι) (t : spec.domain i) (s s' : unit) (u : spec.range i) :
+  (u, s') ∈ (⟪o⟫.o i (t, s)).support ↔ u ∈ (o i t).support :=
+by simp only [apply_eq, support_bind, support_pure, set.mem_Union, set.mem_singleton_iff,
+  prod.mk.inj_iff, eq_iff_true_of_subsingleton, and_true, exists_prop, exists_eq_right']
+
+@[simp]
 lemma support_simulate_eq_preimage (oa : oracle_comp spec α) (s : unit) :
   (oa.simulate ⟪o⟫ s).support = prod.fst ⁻¹' (oa.default_simulate' ⟪o⟫).support :=
 begin
@@ -36,9 +49,30 @@ begin
   refine (set.preimage_image_eq _ prod.fst_injective).symm
 end
 
+@[simp]
 lemma mem_support_simulate_iff (oa : oracle_comp spec α) (s : unit) (x : α × unit) :
   x ∈ (oa.simulate ⟪o⟫ s).support ↔ x.1 ∈ (oa.default_simulate' ⟪o⟫).support :=
 by rw [support_simulate_eq_preimage, set.mem_preimage]
+
+@[simp]
+lemma support_default_simulate_eq_preimage (oa : oracle_comp spec α) :
+  (oa.default_simulate ⟪o⟫).support = prod.fst ⁻¹' (oa.default_simulate' ⟪o⟫).support :=
+support_simulate_eq_preimage o oa ()
+
+@[simp]
+lemma mem_support_default_simulate_iff (oa : oracle_comp spec α) (x : α × unit) :
+  x ∈ (oa.default_simulate ⟪o⟫).support ↔ x.1 ∈ (oa.default_simulate' ⟪o⟫).support :=
+mem_support_simulate_iff o oa () x
+
+@[simp]
+lemma support_simulate' (oa : oracle_comp spec α) (s : unit) :
+  (oa.simulate' ⟪o⟫ s).support = (oa.default_simulate' ⟪o⟫).support :=
+congr_arg _ (congr_arg _ (punit_eq _ _))
+
+@[simp]
+lemma mem_support_simulate'_iff (oa : oracle_comp spec α) (s : unit) (x : α) :
+  x ∈ (oa.simulate' ⟪o⟫ s).support ↔ x ∈ (oa.default_simulate' ⟪o⟫).support :=
+by rw [support_simulate']
 
 section pure
 
@@ -126,7 +160,7 @@ begin
         simpa [hob],
       end
       ... ≃ₚ simulate' ⟪o'⟫ (oa >>= ob) s : symm (simulate'_bind_equiv ⟪o'⟫ oa ob _) },
-  { simp_rw [simulate'_query_equiv, stateless_oracle.apply, fst_map_bind_mk_equiv],
+  { simp_rw [simulate'_query_equiv, stateless_oracle.apply_eq, fst_map_bind_mk_equiv],
     exact map_equiv_of_equiv _ (h i t), }
 end 
 
@@ -193,7 +227,7 @@ begin
       ... ≃ₚ (simulate ⟪o⟫ oa ()) >>= (λ x, simulate' ⟪o⟫ (ob x.1) x.2) :
         by { congr, ext x, rw [punit_eq () x.2] }
       ... ≃ₚ simulate' ⟪o⟫ (oa >>= ob) () : by rw [simulate'_bind_equiv] },
-  { simp_rw [simulate'_query_equiv, apply, stateless_oracle.apply, map_bind_equiv],
+  { simp_rw [simulate'_query_equiv, apply_eq, stateless_oracle.apply_eq, map_bind_equiv],
     refine bind_equiv_of_equiv_second (o i t) _,
     simp only [map_pure_equiv, eq_self_iff_true, forall_const] }
 end

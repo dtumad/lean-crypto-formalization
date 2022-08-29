@@ -3,6 +3,8 @@ import computational_monads.distribution_semantics.prob_event
 namespace oracle_comp
 
 -- TODO: α β γ
+
+-- TODO: ∈ / mem versions of lemmas
 variables {A B C : Type} {spec spec' spec'' : oracle_spec}
 
 /-- Specifies a way to simulate a set of oracles using another set of oracles. 
