@@ -12,6 +12,7 @@ open_locale classical big_operators nnreal ennreal
 
 namespace pmf
 
+-- NOTE: PR opened for this?
 section uniform_of_list
 
 noncomputable def uniform_of_list (l : list α) (h : ¬ l.empty) : pmf α :=

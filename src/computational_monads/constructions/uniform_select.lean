@@ -9,6 +9,8 @@ open_locale classical
 
 variables {α A : Type}
 
+-- TODO: Use namespaces for all this stuff
+
 section uniform_fin
 
 /-- Randomly choose a natural `n : ℕ` by querying the uniform selection oracle.

@@ -38,22 +38,17 @@ end commits
 
 /-- Signature derived from a hard homogenous space, based on the diffie helmann case.
   `n` represents the number of commitments to make, more corresponding to more difficult forgery.
-  `x₀` is some arbitrary public base point in `X`, used to compute public keys from secret keys
-  TODO: we need some way to declare that the second oracle is a
-    "random oracle" for completeness to even hold. M (X × X) G (vector (G × bool) n)
-    should include `x₀` in the public key, generated randomly uniformly -/
+  `x₀` is some arbitrary public base point in `X`, used to compute public keys from secret keys -/
 noncomputable def hhs_signature (G X M : Type) [fintype G] [fintype X] [inhabited G]
-  [decidable_eq G] [decidable_eq X] [decidable_eq M]
-  [add_group G] [algorithmic_homogenous_space G X]
-  (n : ℕ) :
-  signature :=
-{ M := M, PK := X × X, SK := G, S := vector (G × bool) n,
+  [decidable_eq G] [decidable_eq X] [decidable_eq M] [add_group G]
+  [algorithmic_homogenous_space G X] : signature_scheme :=
+λ n, { M := M, PK := X × X, SK := G, S := vector (G × bool) n,
   decidable_eq_M := by apply_instance,
   decidable_eq_S := by apply_instance,
   inhabited_S := by apply_instance,
-  random_oracles := ((vector X n × M) →ₒ vector bool n),
-  random_oracles_finite_range := singleton_spec.finite_range _ _,
-  random_oracles_computable := singleton_spec.computable _ _,
+  random_oracle_spec := ((vector X n × M) →ₒ vector bool n),
+  random_oracle_spec_finite_range := singleton_spec.finite_range _ _,
+  random_oracle_spec_computable := singleton_spec.computable _ _,
   gen := λ _, do {
     x₀ ←$ᵗ X,
     sk ←$ᵗ G,
@@ -70,32 +65,19 @@ noncomputable def hhs_signature (G X M : Type) [fintype G] [fintype X] [inhabite
     (h : vector bool n) ← query (sum.inr ()) (ys, m),
     return (h = σ.map prod.snd) 
   },
-  -- gen_poly_time := ,
-  -- sign_poly_time := ,
-  -- verify_poly_time :=  
 }
-
--- variables {G X M}
 
 namespace hhs_signature 
 
 variables {G X M : Type} [fintype G] [fintype X] [inhabited G]
   [decidable_eq G] [decidable_eq X] [decidable_eq M]
-  [add_group G] [algorithmic_homogenous_space G X]
- 
-variables (n : ℕ)
-
--- We can coerce any uniform selection computation up to one for the oracles of `hhs_signature` -/
--- noncomputable instance coe_uniform_selecting_oracles [inhabited G] (A : Type) :
---   has_coe (oracle_comp uniform_selecting A)
---     (oracle_comp (hhs_signature G X M n).oracles A) :=
--- ⟨λ oa, @has_coe.coe _ _ (coe_append_right A uniform_selecting _) oa⟩
+  [add_group G] [algorithmic_homogenous_space G X] (n : ℕ)
  
 /-- TODO: must be a better way to make this easy?-/
 @[simp]
 lemma support_coe_uniform_selecting_oracles [inhabited G] {A : Type}
   (oa : oracle_comp uniform_selecting A) :
-  support (oa : oracle_comp (hhs_signature G X M n).oracles A) = oa.support :=
+  support (↑oa : oracle_comp (hhs_signature G X M n).base_oracle_spec A) = oa.support :=
 begin
   sorry
 end
@@ -105,11 +87,10 @@ lemma gen_apply (u : unit) :
   ((hhs_signature G X M n).gen u) = do { x₀ ←$ᵗ X, sk ←$ᵗ G, return ((x₀, sk +ᵥ x₀), sk) } :=
 rfl
 
--- lemma support_gen :
---   ((hhs_signature G X M n).gen ()).support =
---     ⋃ (x₀ : X) (sk : G), { ((x₀, sk +ᵥ x₀), sk) } :=
--- by simp only [gen_apply, support_bind_bind, support_coe_uniform_selecting_oracles,
---   support_uniform_select_fintype, support_pure, set.Union_true]
+lemma support_gen : ((hhs_signature G X M n).gen ()).support =
+  ⋃ (x₀ : X) (sk : G), { ((x₀, sk +ᵥ x₀), sk) } :=
+by simp only [gen_apply, support_bind_bind, support_coe_uniform_selecting_oracles,
+  support_uniform_select_fintype, support_pure, set.Union_true]
 
 @[simp]
 lemma sign_apply (x₀ : X) (pk : X) (sk : G) (m : M) :
@@ -160,8 +141,8 @@ end
 noncomputable def adversary_simulation_oracle [inhabited G] (pk x₀ : X) :
   simulation_oracle ((hhs_signature G X M n).unforgeable_adversary_oracle_spec) uniform_selecting :=
 {
-  S := query_log (hhs_signature G X M n).random_oracles,
-  default_state := query_log.init (hhs_signature G X M n).random_oracles,
+  S := query_log (hhs_signature G X M n).random_oracle_spec,
+  default_state := query_log.init (hhs_signature G X M n).random_oracle_spec,
   o := λ i, match i with
   | (sum.inr ()) := λ ⟨m, log⟩, do {
     bs ← repeat_n ($ᵗ bool) n, -- pre-select what all the bool results will be
