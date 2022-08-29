@@ -75,6 +75,7 @@ begin
     {
       obtain ⟨a, ⟨s, h⟩, ⟨s', h'⟩⟩ := h,
       refine ⟨a, _⟩,
+      sorry
     },
     {
       sorry, 
