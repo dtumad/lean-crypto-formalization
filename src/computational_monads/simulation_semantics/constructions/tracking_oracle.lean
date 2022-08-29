@@ -58,7 +58,8 @@ begin
   refine ⟨λ h, let ⟨x₁, h, h'⟩ := h in h'.1.symm ▸ ⟨h, h'.2⟩, λ h, ⟨x.1, ⟨h.1, rfl, h.2⟩⟩⟩,
 end
 
-/-- The support of `simulate'` is independing of the tracking oracle -/
+/-- The support of `simulate'` is independing of the tracking oracle 
+  TODO: I think this makes more sense using `stateless_oracle` stuff?-/
 lemma support_simulate' (oa : oracle_comp spec A) (s s' : S) :
   (simulate' ⟪o | update_state, default_state⟫ oa s).support =
     (simulate' ⟪o | update_state', default_state'⟫ oa s').support :=
@@ -66,12 +67,14 @@ begin
   induction oa using oracle_comp.induction_on with a A A B oa ob hoa hob i t generalizing s,
   { simp },
   {
+
     ext x,
     simp only [support_simulate'_bind],
     simp [support_simulate'_bind, hoa, hob],
     refine ⟨λ h, _, λ h, _⟩,
     {
-      sorry
+      obtain ⟨a, ⟨s, h⟩, ⟨s', h'⟩⟩ := h,
+      refine ⟨a, _⟩,
     },
     {
       sorry, 

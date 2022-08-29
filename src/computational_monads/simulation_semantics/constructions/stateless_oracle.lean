@@ -104,8 +104,7 @@ lemma support_default_simulate'_bind (oa : oracle_comp spec α) (ob : α → ora
 begin
   rw [default_simulate', simulate', support_map],
   rw [support_simulate_eq_preimage, support_default_simulate'_bind],
-  simp [set.preimage_image_eq _ prod.fst_injective, set.image_Union],
-  sorry
+  sorry,
 end
 
 end bind
