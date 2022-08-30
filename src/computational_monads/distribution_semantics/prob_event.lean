@@ -137,7 +137,7 @@ calc ⦃e'' | oa >>= ob⦄
   ... = (∑' (a : α), ↑(⦃oa⦄ a) * (⦃ob a⦄.to_outer_measure e'')).to_nnreal : congr_arg
     ennreal.to_nnreal (by erw [eval_distribution_bind, pmf.to_outer_measure_bind_apply])
   ... = ∑' (a : α), (↑(⦃oa⦄ a) * (⦃ob a⦄.to_outer_measure e'')).to_nnreal :
-    ennreal.to_nnreal_tsum_eq begin
+    ennreal.to_nnreal_tsum_eq_of_ne_top begin
       refine λ x, _,
       refine ennreal.mul_ne_top _ _,
       {
@@ -246,9 +246,8 @@ begin
   refine trans (congr_arg ennreal.to_nnreal $ 
       pmf.to_outer_measure_apply_Union ⦃oa⦄ h) _,
 
-  refine trans (ennreal.to_nnreal_tsum_eq $ begin
-    refine λ x, _,
-    refine pmf.to_outer_measure_apply_ne_top _ _,
+  refine trans (ennreal.to_nnreal_tsum_eq_of_ne_top begin
+    refine λ x, pmf.to_outer_measure_apply_ne_top _ _,
   end) _,
   refine tsum_congr (λ n, congr_arg ennreal.to_nnreal $ symm _),
   refine @pmf.to_measure_apply_eq_to_outer_measure_apply α ⊤ ⦃oa⦄ (es n)

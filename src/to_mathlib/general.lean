@@ -120,14 +120,16 @@ by rw [ennreal.to_real, nnreal.coe_eq_one, ennreal.to_nnreal_eq_one_iff]
 
 section tsum
 
+namespace ennreal
+
 lemma to_nnreal_tsum_eq {α : Type*} (f : α → ℝ≥0∞) :
   (∑' x, f x).to_nnreal = if ∃ x, f x = ⊤ then 0 else ∑' x, (f x).to_nnreal :=
 begin
   split_ifs with hf,
-  { exact (ennreal.to_nnreal_eq_zero_iff _).2 (or.inr (ennreal.tsum_eq_top_of_eq_top hf)) },
+  { exact (to_nnreal_eq_zero_iff _).2 (or.inr (ennreal.tsum_eq_top_of_eq_top hf)) },
   { rw [nnreal.tsum_eq_to_nnreal_tsum],
     have : ∀ x, f x ≠ ⊤ := not_exists.1 hf,
-    exact congr_arg ennreal.to_nnreal (tsum_congr $ λ x, (ennreal.coe_to_nnreal (this x)).symm) }
+    exact congr_arg ennreal.to_nnreal (tsum_congr $ λ x, (coe_to_nnreal (this x)).symm) }
 end
 
 lemma to_real_tsum_eq {α : Type*} (f : α → ℝ≥0∞) :
@@ -145,7 +147,7 @@ lemma to_real_tsum_eq_of_ne_top {α : Type*} {f : α → ℝ≥0∞} (hf : ∀ x
   (∑' x, f x).to_real = ∑' x, (f x).to_real :=
 by simp_rw [ennreal.to_real, to_nnreal_tsum_eq_of_ne_top hf, nnreal.coe_tsum]
 
-
+end ennreal
 
 
 /-- Version of `tsum_ite_eq_extract` for `nnreal` rather than `topological_add_group`. -/
