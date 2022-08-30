@@ -85,6 +85,28 @@ end sums
 
 section ennreal
 
+lemma ennreal.to_nnreal_eq_to_nnreal_iff (x y : ℝ≥0∞) :
+  x.to_nnreal = y.to_nnreal ↔ x = y ∨ (x = 0 ∧ y = ⊤) ∨ (x = ⊤ ∧ y = 0) :=
+begin
+  cases x,
+  { simp only [@eq_comm ℝ≥0 _ y.to_nnreal, @eq_comm ℝ≥0∞ _ y, ennreal.to_nnreal_eq_zero_iff,
+      ennreal.none_eq_top, ennreal.top_to_nnreal, ennreal.top_ne_zero, false_and, eq_self_iff_true,
+        true_and, false_or, or_comm (y = ⊤)] },
+  { cases y; simp }
+end
+
+lemma ennreal.to_real_eq_to_real_iff (x y : ℝ≥0∞) :
+  x.to_real = y.to_real ↔ x = y ∨ (x = 0 ∧ y = ⊤) ∨ (x = ⊤ ∧ y = 0) :=
+by simp only [ennreal.to_real, nnreal.coe_eq, ennreal.to_nnreal_eq_to_nnreal_iff]
+
+lemma ennreal.to_nnreal_eq_to_nnreal_iff' {x y : ℝ≥0∞} (hx : x ≠ ⊤) (hy : y ≠ ⊤) :
+  x.to_nnreal = y.to_nnreal ↔ x = y :=
+by simp only [ennreal.to_nnreal_eq_to_nnreal_iff x y, hx, hy, and_false, false_and, or_false]
+
+lemma ennreal.to_real_eq_to_real_iff' {x y : ℝ≥0∞} (hx : x ≠ ⊤) (hy : y ≠ ⊤) :
+  x.to_real = y.to_real ↔ x = y :=
+by simp only [ennreal.to_real, nnreal.coe_eq, ennreal.to_nnreal_eq_to_nnreal_iff' hx hy]
+
 lemma ennreal.to_nnreal_eq_one_iff (x : ℝ≥0∞) : x.to_nnreal = 1 ↔ x = 1 :=
 begin
   refine ⟨λ h, _, congr_arg _⟩,
@@ -93,27 +115,40 @@ begin
   { exact congr_arg _ h }
 end
 
-lemma ennreal.to_nnreal_tsum_eq {α : Type*} {f : α → ℝ≥0∞} (hf : ∀ x, f x ≠ ⊤) :
-  (∑' x, (f x)).to_nnreal = ∑' x, (f x).to_nnreal :=
-calc (∑' x, (f x)).to_nnreal
-  = (∑' x, (f x).to_nnreal : ℝ≥0∞).to_nnreal :
-    congr_arg ennreal.to_nnreal (tsum_congr $ λ x, (ennreal.coe_to_nnreal (hf x)).symm)
-  ... = ∑' x, (f x).to_nnreal : by rw [nnreal.tsum_eq_to_nnreal_tsum]
+lemma ennreal.to_real_eq_one_iff (x : ℝ≥0∞) : x.to_real = 1 ↔ x = 1 :=
+by rw [ennreal.to_real, nnreal.coe_eq_one, ennreal.to_nnreal_eq_one_iff]
 
-lemma ennreal.to_nnreal_eq_to_nnreal_iff (x y : ℝ≥0∞) :
-  x.to_nnreal = y.to_nnreal ↔ x = y ∨ (x = 0 ∧ y = ⊤) ∨ (x = ⊤ ∧ y = 0) :=
+section tsum
+
+lemma to_nnreal_tsum_eq {α : Type*} (f : α → ℝ≥0∞) :
+  (∑' x, f x).to_nnreal = if ∃ x, f x = ⊤ then 0 else ∑' x, (f x).to_nnreal :=
 begin
-  cases x,
-  { simp only [@eq_comm ℝ≥0 0 y.to_nnreal, @eq_comm ℝ≥0∞ _ y, ennreal.to_nnreal_eq_zero_iff,
-      ennreal.none_eq_top, ennreal.top_to_nnreal, ennreal.top_ne_zero, false_and, eq_self_iff_true,
-        true_and, false_or, or_comm (y = ⊤)] },
-  { cases y; simp }
+  split_ifs with hf,
+  { exact (ennreal.to_nnreal_eq_zero_iff _).2 (or.inr (ennreal.tsum_eq_top_of_eq_top hf)) },
+  { rw [nnreal.tsum_eq_to_nnreal_tsum],
+    have : ∀ x, f x ≠ ⊤ := not_exists.1 hf,
+    exact congr_arg ennreal.to_nnreal (tsum_congr $ λ x, (ennreal.coe_to_nnreal (this x)).symm) }
 end
 
-lemma ennreal.to_nnreal_eq_to_nnreal_iff' (x y : ℝ≥0∞) (hx : x ≠ ⊤) (hy : y ≠ ⊤) :
-  x.to_nnreal = y.to_nnreal ↔ x = y :=
-by simp only [ennreal.to_nnreal_eq_to_nnreal_iff x y, hx, hy, and_false, false_and, or_false]
+lemma to_real_tsum_eq {α : Type*} (f : α → ℝ≥0∞) :
+  (∑' x, f x).to_real = if ∃ x, f x = ⊤ then 0 else ∑' x, (f x).to_real :=
+calc (∑' x, f x).to_real = ↑((∑' x, f x).to_nnreal) : rfl
+  ... = ↑(ite (∃ x, f x = ⊤) 0 (∑' x, (f x).to_nnreal)) : congr_arg coe (to_nnreal_tsum_eq f)
+  ... = ite (∃ x, f x = ⊤) 0 ↑(∑' x, (f x).to_nnreal) : by rw [apply_ite coe, nonneg.coe_zero]
+  ... = ite (∃ x, f x = ⊤) 0 (∑' x, (f x).to_real) : congr_arg _ nnreal.coe_tsum
 
+lemma to_nnreal_tsum_eq_of_ne_top {α : Type*} {f : α → ℝ≥0∞} (hf : ∀ x, f x ≠ ⊤) :
+  (∑' x, f x).to_nnreal = ∑' x, (f x).to_nnreal :=
+(to_nnreal_tsum_eq f).trans (if_neg (not_exists.2 hf))
+
+lemma to_real_tsum_eq_of_ne_top {α : Type*} {f : α → ℝ≥0∞} (hf : ∀ x, f x ≠ ⊤) :
+  (∑' x, f x).to_real = ∑' x, (f x).to_real :=
+by simp_rw [ennreal.to_real, to_nnreal_tsum_eq_of_ne_top hf, nnreal.coe_tsum]
+
+
+
+
+/-- Version of `tsum_ite_eq_extract` for `nnreal` rather than `topological_add_group`. -/
 lemma nnreal.tsum_ite_eq_extract [decidable_eq β] {f : β → ℝ≥0} (hf : summable f) (b : β) :
   ∑' x, f x = f b + ∑' x, ite (x = b) 0 (f x) :=
 calc ∑' x, f x
@@ -141,7 +176,8 @@ calc ∑' (x : option α), f x
       { exact false.elim (hx rfl) },
       { exact ⟨a, hfx, rfl⟩ } },
     { simp only [subtype.val_eq_coe, if_false, eq_self_iff_true, implies_true_iff] }
-  end
+end
 
+end tsum
 
 end ennreal

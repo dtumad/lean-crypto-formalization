@@ -76,10 +76,8 @@ by simp_rw [prob_event, h]
 
 lemma prob_event_eq_iff_to_outer_measure_apply_eq {oa : oracle_comp spec α} (e e' : set α) :
   ⦃e | oa⦄ = ⦃e' | oa⦄ ↔ ⦃oa⦄.to_outer_measure e = ⦃oa⦄.to_outer_measure e' :=
-begin
-  simp_rw [prob_event_eq_to_nnreal_to_outer_measure_apply],
-  rw [ennreal.to_nnreal_eq_to_nnreal_iff']; apply pmf.to_outer_measure_apply_ne_top,
-end
+by simp_rw [prob_event_eq_to_nnreal_to_outer_measure_apply, ennreal.to_nnreal_eq_to_nnreal_iff,
+  pmf.to_outer_measure_apply_ne_top, and_false, false_and, or_false]
 
 lemma prob_event_eq_mul_iff_to_outer_measure_apply_eq {oa : oracle_comp spec α} (e e' e'' : set α) :
   ⦃e | oa⦄ = ⦃e' | oa⦄ * ⦃e'' | oa⦄ ↔
