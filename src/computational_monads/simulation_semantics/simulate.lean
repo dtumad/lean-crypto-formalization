@@ -143,6 +143,33 @@ begin
   refine mem_support_of_mem_support_simulate so oa s hy,
 end
 
+/-- If the first output of an oracle can take on any value (although the state might not),
+  then the first value of simulation has the same support as the original computation.
+  For example simulation with the identity oracle `idₛ` doesn't change the support -/
+theorem support_simulate'_eq_support (h : ∀ i t s, prod.fst '' (so.o i (t, s)).support = ⊤) :
+  (simulate' so oa s).support = oa.support :=
+begin
+  refine set.eq_of_subset_of_subset (support_simulate'_subset_support so oa s) (λ x hx, _),
+  induction oa with α a α β oa ob hoa hob i t generalizing s,
+  { simpa only [pure'_eq_pure, simulate'_pure, support_map,
+      support_pure, set.image_singleton] using hx },
+  {
+    simp only [bind'_eq_bind, support_simulate'_bind, support_bind, set.mem_Union] at hx ⊢,
+    obtain ⟨a, ha, hx⟩ := hx,
+    specialize hoa a ha s,
+    rw [support_simulate', set.mem_image] at hoa,
+    obtain ⟨⟨a', s'⟩, ha', ha''⟩ := hoa,
+    refine ⟨(a', s'), ha', hob a' x _ s'⟩,
+    rw ← ha'' at hx,
+    exact hx,
+  },
+  { simp only [support_simulate'_query, set.mem_image],
+    specialize h i t s,
+    have : x ∈ prod.fst '' (so.o i (t, s)).support := h.symm ▸ set.mem_univ _,
+    rw [set.mem_image] at this,
+    exact this }
+end
+
 end support
 
 section distribution_semantics
