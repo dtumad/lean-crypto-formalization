@@ -150,11 +150,10 @@ theorem support_simulate'_eq_support (h : ∀ i t s, prod.fst '' (so.o i (t, s))
   (simulate' so oa s).support = oa.support :=
 begin
   refine set.eq_of_subset_of_subset (support_simulate'_subset_support so oa s) (λ x hx, _),
-  induction oa with α a α β oa ob hoa hob i t generalizing s,
-  { simpa only [pure'_eq_pure, simulate'_pure, support_map,
-      support_pure, set.image_singleton] using hx },
+  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t generalizing s,
+  { simpa only [simulate'_pure, support_map, support_pure, set.image_singleton] using hx },
   {
-    simp only [bind'_eq_bind, support_simulate'_bind, support_bind, set.mem_Union] at hx ⊢,
+    simp only [support_simulate'_bind, support_bind, set.mem_Union] at hx ⊢,
     obtain ⟨a, ha, hx⟩ := hx,
     specialize hoa a ha s,
     rw [support_simulate', set.mem_image] at hoa,

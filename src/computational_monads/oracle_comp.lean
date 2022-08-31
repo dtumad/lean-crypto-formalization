@@ -10,6 +10,8 @@ inductive oracle_comp (spec : oracle_spec) : Type → Type 1
 | bind' (α β : Type) (oa : oracle_comp α) (ob : α → oracle_comp β) : oracle_comp β
 | query (i : spec.ι) (t : spec.domain i) : oracle_comp (spec.range i)
 
+#check vector.induction_on
+
 -- TODO TODO: should write a more natural induction principal for `return, >>=, query`??
 -- TODO: should make `return` the standard over `pure`
 
@@ -26,6 +28,14 @@ section monad
 instance monad (spec : oracle_spec) : monad (oracle_comp spec) :=
 { pure := oracle_comp.pure', bind := oracle_comp.bind' }
 
+-- @[simp]
+-- lemma pure'_eq_return (spec : oracle_spec) (a : α) :
+--   (pure' α a : oracle_comp spec α) = return a := rfl
+
+-- @[simp]
+-- lemma pure_eq_return (spec : oracle_spec) (a : α) :
+--   (pure a : oracle_comp spec α) = return a := rfl
+
 @[simp]
 lemma pure'_eq_pure (spec : oracle_spec) (a : α) :
   (pure' α a : oracle_comp spec α) = pure a := rfl
@@ -37,6 +47,19 @@ lemma return_eq_pure (spec : oracle_spec) (a : α) :
 @[simp]
 lemma bind'_eq_bind (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) :
   bind' α β oa ob = (oa >>= ob) := rfl
+
+#check vector.induction_on
+
+
+-- @[elab_as_eliminator] def induction_on (p : Π {α : Type}, oracle_comp spec α → Sort*)
+--   (oa : oracle_comp spec α) (h_pure : ∀ {α : Type} (a : α), p (pure a))
+--   (h_bind : ∀ {α β : Type} (oa : oracle_comp spec α) (ob : α → oracle_comp spec β)
+--     (hoa : p oa) (hob : ∀ (a : α), p (ob a)), p (oa >>= ob))
+--   (h_query : ∀ (i : spec.ι) (t : spec.domain i), p (query i t)) :
+--   p oa :=
+-- begin
+--   sorry
+-- end
 
 end monad
 
@@ -54,6 +77,9 @@ begin
   { exact h_bind hoa hob },
   { exact h_query i t }
 end
+
+/-- Check that the induction principal works properly -/
+example (oa : oracle_comp spec α) : true := by induction oa using oracle_comp.induction_on; trivial
 
 /-- Constructing an `oracle_comp` implies the existence of some element of the underlying type.
   The assumption that the range of the oracles is `inhabited` is the key point for this -/
