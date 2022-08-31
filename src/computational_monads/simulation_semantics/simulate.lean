@@ -5,7 +5,7 @@ namespace oracle_comp
 -- TODO: α β γ
 
 -- TODO: ∈ / mem versions of lemmas
-variables {A B C : Type} {spec spec' spec'' : oracle_spec}
+variables {A B C : Type} {α β γ : Type} {spec spec' spec'' : oracle_spec}
 
 /-- Specifies a way to simulate a set of oracles using another set of oracles. 
   e.g. using uniform random selection to simulate a hash oracle
@@ -41,15 +41,34 @@ lemma simulate_bind : simulate so (oa >>= ob) s =
 @[simp]
 lemma simulate_query : simulate so (query i t) s = so.o i (t, s) := rfl
 
+section support
+
 lemma support_simulate_pure : (simulate so (pure a) s).support = {(a, s)} :=
-by simp
+by simp only [simulate_pure, support_pure]
 
 lemma support_simulate_bind : (simulate so (oa >>= ob) s).support =
   ⋃ x ∈ (simulate so oa s).support, (simulate so (ob $ prod.fst x) x.2).support :=
-by simp
+by simp only [simulate_bind, support_bind]
 
-lemma support_simulate_query : (simulate so (query i t) s).support = (so.o i (t, s)).support :=
-by simp
+lemma support_simulate_query : (simulate so (query i t) s).support = (so.o i (t, s)).support := rfl
+
+/-- Since `support` assumes any possible query result, `simulate` will never reduce the support -/
+theorem support_simulate_subset_support : (simulate so oa s).support ⊆ {x | x.1 ∈ oa.support} :=
+begin
+  induction oa with α a α β oa ob hoa hob i t generalizing s,
+  { simp only [pure'_eq_pure, simulate_pure, support_pure, set.mem_singleton_iff,
+      set.singleton_subset_iff, set.mem_set_of_eq] },
+  { rw [bind'_eq_bind, support_simulate_bind],
+    refine set.Union_subset (λ x, set.Union_subset (λ hx, _)),
+    simp only [support_bind, set.mem_Union, exists_prop],
+    refine λ b hb, ⟨x.1, hoa s hx, hob x.1 x.2 hb⟩ },
+  { simp only [support_query, set.top_eq_univ, set.mem_univ, set.set_of_true, set.subset_univ] }
+end
+
+lemma mem_support_of_mem_support_simulate {x : A × so.S} (hx : x ∈ (simulate so oa s).support) :
+  x.1 ∈ oa.support := support_simulate_subset_support so oa s hx
+
+end support
 
 section distribution_semantics
 
@@ -98,6 +117,8 @@ lemma simulate'_bind : simulate' so (oa >>= ob) s =
 @[simp]
 lemma simulate'_query : simulate' so (query i t) s = prod.fst <$> so.o i (t, s) := rfl
 
+section support
+
 @[simp]
 lemma support_simulate' : (simulate' so oa s).support =
   prod.fst '' (simulate so oa s).support :=
@@ -113,6 +134,16 @@ by simp only [set.image_Union, simulate'_bind, support_map, support_bind, suppor
 lemma support_simulate'_query : (simulate' so (query i t) s).support =
   prod.fst '' (so.o i (t, s)).support :=
 by simp
+
+lemma support_simulate'_subset_support : (simulate' so oa s).support ⊆ oa.support :=
+begin
+  rw [support_simulate'],
+  refine λ x hx, _,
+  obtain ⟨y, hy, rfl⟩ := (set.mem_image prod.fst _ _).1 hx,
+  refine mem_support_of_mem_support_simulate so oa s hy,
+end
+
+end support
 
 section distribution_semantics
 

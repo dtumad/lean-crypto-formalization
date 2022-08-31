@@ -149,7 +149,6 @@ by simp_rw [ennreal.to_real, to_nnreal_tsum_eq_of_ne_top hf, nnreal.coe_tsum]
 
 end ennreal
 
-
 /-- Version of `tsum_ite_eq_extract` for `nnreal` rather than `topological_add_group`. -/
 lemma nnreal.tsum_ite_eq_extract [decidable_eq β] {f : β → ℝ≥0} (hf : summable f) (b : β) :
   ∑' x, f x = f b + ∑' x, ite (x = b) 0 (f x) :=

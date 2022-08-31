@@ -2,7 +2,7 @@ import computational_monads.simulation_semantics.default_simulate
 
 open oracle_comp oracle_spec
 
-variables {spec spec' spec'' spec''' : oracle_spec} {A B C : Type}
+variables {spec spec' spec'' spec''' : oracle_spec} {A B C : Type} {α β γ : Type}
   (a : A) (oa : oracle_comp (spec' ++ spec'') A)
   (ob : A → oracle_comp (spec' ++ spec'') B)
 
@@ -52,12 +52,77 @@ lemma oracle_append_apply_index (i : spec.ι ⊕ spec'.ι) : (so ++ₛ so').o i 
 
 @[simp]
 lemma oracle_append_apply_inl : (so ++ₛ so').o (sum.inl i) (t, s) =
-  do { u_s' ← so.o i ⟨t, s.1⟩, pure (u_s'.1, u_s'.2, s.2) } := rfl
+  do { u_s' ← so.o i (t, s.1), pure (u_s'.1, u_s'.2, s.2) } := rfl
 
 @[simp]
 lemma oracle_append_apply_inr : (so ++ₛ so').o (sum.inr i') (t', s) =
-  do { u_s' ← so'.o i' ⟨t', s.2⟩, pure (u_s'.1, s.1, u_s'.2)} := rfl
+  do { u_s' ← so'.o i' (t', s.2), pure (u_s'.1, s.1, u_s'.2)} := rfl
 
+section support
+
+lemma support_oracle_append_apply_inl : ((so ++ₛ so').o (sum.inl i) (t, s)).support =
+  {x | (x.1, x.2.1) ∈ (so.o i (t, s.1)).support ∧ x.2.2 = s.2} :=
+begin
+  ext x,
+  simp only [oracle_append_apply_inl, support_bind, support_pure, set.mem_Union,
+    set.mem_singleton_iff, exists_prop, prod.exists, set.mem_set_of_eq],
+  refine ⟨λ h, _, λ h, _⟩,
+  { obtain ⟨u, s', hu, hx⟩ := h,
+    simpa only [hx, eq_self_iff_true, and_true] using hu },
+  { refine ⟨x.1, x.2.1, _⟩,
+    simp only [← h.2, h.1, true_and, prod.mk.eta] }
+end
+
+lemma support_oracle_append_apply_inr : ((so ++ₛ so').o (sum.inr i') (t', s)).support =
+  {x | (x.1, x.2.2) ∈ (so'.o i' (t', s.2)).support ∧ x.2.1 = s.1} :=
+begin
+  ext x,
+  simp only [oracle_append_apply_inr, support_bind, support_pure, set.mem_Union,
+    set.mem_singleton_iff, exists_prop, prod.exists, set.mem_set_of_eq],
+  refine ⟨λ h, _, λ h, _⟩,
+  { obtain ⟨u, s', hu, hx⟩ := h,
+    simpa only [hx, eq_self_iff_true, and_true] using hu },
+  { refine ⟨x.1, x.2.2, _⟩,
+    simp only [← h.2, h.1, true_and, prod.mk.eta] }
+end
+
+-- GOALS:
+-- simulate' prop holds on both oracles -> holds on appended oracle
+-- state prop holds on first oracles -> holds for first state value
+-- state prop holds on second oracle -> holds for second state value
+
+lemma spec_thing (e : set A) (oa : oracle_comp (spec ++ spec') A) (s : so.S × so'.S)
+  (hp : ∀ (oa : oracle_comp spec A) s, (simulate' so oa s).support ⊆ e)
+  (hq : ∀ (oa : oracle_comp spec' A) s, (simulate' so' oa s).support ⊆ e) :
+  (simulate' (so ++ₛ so') oa s).support ⊆ e :=
+begin
+  induction oa with α a α β oa ob hoa hob i t,
+  { simpa only [pure'_eq_pure, support_simulate'_pure] using hp (pure a) s.1 },
+  {
+    sorry,
+  },
+  {
+    -- rw [support_simulate'_query],
+    induction i with i i,
+    {
+      specialize hp (query i t) s.1,
+      rw [support_simulate'_query] at ⊢ hp,
+      rw [support_oracle_append_apply_inl],
+      refine trans _ hp,
+      refine λ u hu, _,
+      simp at hu ⊢,
+      obtain ⟨⟨s, s'⟩, hu⟩ := hu,
+      refine ⟨s, hu.1⟩,
+    },
+    sorry
+  }
+end
+
+end support
+
+
+
+-- TODO: organize
 section simulate
 
 lemma simulate_oracle_append_pure : simulate (so ++ₛ so') (pure a) s = (pure (a, s)) := rfl

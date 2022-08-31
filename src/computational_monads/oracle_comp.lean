@@ -10,6 +10,9 @@ inductive oracle_comp (spec : oracle_spec) : Type → Type 1
 | bind' (α β : Type) (oa : oracle_comp α) (ob : α → oracle_comp β) : oracle_comp β
 | query (i : spec.ι) (t : spec.domain i) : oracle_comp (spec.range i)
 
+-- TODO TODO: should write a more natural induction principal for `return, >>=, query`??
+-- TODO: should make `return` the standard over `pure`
+
 namespace oracle_comp
 
 /-- Probabalistic computation is represented as access to α coin-flipping oracle -/
