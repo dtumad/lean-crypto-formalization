@@ -69,6 +69,10 @@ def default_simulate' (so : simulation_oracle spec spec') (oa : oracle_comp spec
   oracle_comp spec' A := oa.simulate' so so.default_state
 
 @[simp]
+lemma default_simulate'_return : default_simulate' so (return a) =
+  prod.fst <$> return (a, so.default_state) := rfl
+
+@[simp]
 lemma default_simulate'_pure : default_simulate' so (pure a) =
   prod.fst <$> pure (a, so.default_state) := rfl
 

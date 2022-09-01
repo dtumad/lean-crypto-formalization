@@ -323,10 +323,12 @@ lemma simulate'_map_equiv (f : α → β) : simulate' so (f <$> oa) s ≃ₚ f <
 by simp only [simulate_map_equiv, eval_distribution_map, pmf.map_comp,
   prod.map_fst', simulate'_equiv_fst_map_simulate]
 
--- TODO: other versions of this
-lemma simulate'_equiv_of_equiv [spec.finite_range] {oa oa' : oracle_comp spec α} (h : oa ≃ₚ oa') :
-  simulate' so oa s ≃ₚ simulate' so oa' s :=
-sorry
+-- -- TODO: other versions of this
+-- lemma simulate'_equiv_of_equiv [spec.finite_range] {oa oa' : oracle_comp spec α} (h : oa ≃ₚ oa') :
+--   simulate' so oa s ≃ₚ simulate' so oa' s :=
+-- begin
+  
+-- end
 
 end distribution_semantics
 

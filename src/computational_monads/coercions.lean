@@ -75,14 +75,14 @@ lemma coe_append_right_def (oa : oracle_comp spec α) : (↑oa : oracle_comp (sp
 lemma support_coe_append_right (oa : oracle_comp spec α) :
   (↑oa : oracle_comp (spec ++ spec') α).support = oa.support :=
 begin
-  induction oa with α a α β oa ob hoa hob i t,
-  { simp only [coe_append_right_def, pure'_eq_pure,
-      default_simulate'_pure, support_map, support_pure, set.image_singleton] },
+  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t,
+  { simp only [coe_append_right_def, default_simulate'_return, support_map,
+      support_return, set.image_singleton], },
   { simp_rw [coe_append_right_def] at hoa hob,
-    simp_rw [bind'_eq_bind, support_bind, coe_append_right_def,
+    simp_rw [support_bind, coe_append_right_def,
       stateless_oracle.support_default_simulate'_bind, hoa, hob] },
   { rw [coe_append_right_def, stateless_oracle.support_default_simulate'_query,
-      support_query, support_query] }
+      support_query, support_query] },
 end
 
 section distribution_semantics
@@ -99,8 +99,7 @@ lemma simulate'_coe_append_right_equiv [spec.finite_range] [spec'.finite_range]
   simulate' (so ++ₛ so') ↑oa s ≃ₚ simulate' so oa s.1 :=
 begin
   induction oa with α a α β oa ob i t,
-  { rw [pure'_eq_pure, simulate'_pure, map_pure_equiv, simulate'_equiv_of_equiv _ _
-      (coe_append_right_pure_equiv spec spec' a), simulate'_pure_equiv] },
+  { sorry },
   { sorry },
   { sorry }
 end
