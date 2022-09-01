@@ -263,7 +263,7 @@ lemma eval_distribution_simulate' : ⦃simulate' so oa s⦄ = prod.fst <$> ⦃si
 eval_distribution_map _ prod.fst
 
 lemma eval_distribution_simulate'_return : ⦃simulate' so (return a) s⦄ = pmf.pure a :=
-by simp only [simulate'_return, map_pure_equiv, eval_distribution_return]
+by simp only [simulate'_return, map_return_equiv, eval_distribution_return]
 
 lemma eval_distribution_simulate'_pure' : ⦃simulate' so (pure' α a) s⦄ = pmf.pure a :=
 eval_distribution_simulate'_return so a s
@@ -296,7 +296,7 @@ lemma simulate'_equiv_fst_map_simulate :
   simulate' so oa s ≃ₚ prod.fst <$> simulate so oa s := rfl
 
 lemma simulate'_return_equiv : simulate' so (return a) s ≃ₚ
-  (return a : oracle_comp spec' α) := by simp only [simulate'_return, map_pure_equiv]
+  (return a : oracle_comp spec' α) := by simp only [simulate'_return, map_return_equiv]
 
 lemma simulate'_pure'_equiv : simulate' so (pure' α a) s ≃ₚ
   (return a : oracle_comp spec' α) := simulate'_return_equiv so a s

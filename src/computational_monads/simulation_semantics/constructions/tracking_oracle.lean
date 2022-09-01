@@ -103,16 +103,17 @@ section equiv
 lemma simulate'_query_equiv_self (s : S) :
   simulate' (⟪query | update_state, default_state⟫) oa s ≃ₚ oa :=
 begin
-  induction oa with A a A B oa ob hoa hob i t generalizing s,
-  { simp only [pure'_eq_pure, simulate'_pure, map_pure_equiv, eval_distribution_return] },
-  { let so := ⟪query | update_state, default_state⟫,
-    calc simulate' so (oa >>= ob) s
-      ≃ₚ simulate so oa s >>= λ x, simulate' so (ob x.1) x.2 : simulate'_bind_equiv _ oa ob _
-      ... ≃ₚ simulate so oa s >>= λ x, (ob x.1) : bind_equiv_of_equiv_second _ (by simp [hob])
-      ... ≃ₚ simulate' so oa s >>= ob : symm (bind_map_equiv _ prod.fst ob)
-      ... ≃ₚ oa >>= ob : bind_equiv_of_equiv_first ob (hoa _) },
-  { erw [simulate'_query_equiv, tracking_oracle_o,
-      fst_map_bind_mk_equiv, map_id_equiv (query i t)], } 
+  sorry,
+  -- induction oa with A a A B oa ob hoa hob i t generalizing s,
+  -- { simp only [pure'_eq_pure, simulate'_pure, map_pure_equiv, eval_distribution_return] },
+  -- { let so := ⟪query | update_state, default_state⟫,
+  --   calc simulate' so (oa >>= ob) s
+  --     ≃ₚ simulate so oa s >>= λ x, simulate' so (ob x.1) x.2 : simulate'_bind_equiv _ oa ob _
+  --     ... ≃ₚ simulate so oa s >>= λ x, (ob x.1) : bind_equiv_of_equiv_second _ (by simp [hob])
+  --     ... ≃ₚ simulate' so oa s >>= ob : symm (bind_map_equiv _ prod.fst ob)
+  --     ... ≃ₚ oa >>= ob : bind_equiv_of_equiv_first ob (hoa _) },
+  -- { erw [simulate'_query_equiv, tracking_oracle_o,
+  --     fst_map_bind_mk_equiv, map_id_equiv (query i t)], } 
 end
 
 end equiv

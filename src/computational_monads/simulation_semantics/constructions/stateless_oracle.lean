@@ -149,18 +149,19 @@ lemma simulate'_equiv_of_oracle_equiv [spec'.finite_range] [spec''.finite_range]
   (s : unit) (h : ∀ (i : spec.ι) (t : spec.domain i), o i t ≃ₚ o' i t) :
   simulate' ⟪o⟫ oa s ≃ₚ simulate' ⟪o'⟫ oa s :=
 begin
-  induction oa with A a A B oa ob hoa hob i t generalizing s,
-  { simp only [pure'_eq_pure, simulate'_pure, map_pure_equiv, eval_distribution_return] },
-  { calc simulate' ⟪o⟫ (oa >>= ob) s
-      ≃ₚ simulate ⟪o⟫ oa s >>= λ x, simulate' ⟪o⟫ (ob x.1) x.2 : simulate'_bind_equiv ⟪o⟫ oa ob _
-      ... ≃ₚ simulate ⟪o'⟫ oa s >>= λ x, simulate' ⟪o'⟫ (ob x.1) x.2 : begin
-        simp [simulate_equiv_simulate', hoa],
-        congr,
-        simpa [hob],
-      end
-      ... ≃ₚ simulate' ⟪o'⟫ (oa >>= ob) s : symm (simulate'_bind_equiv ⟪o'⟫ oa ob _) },
-  { simp_rw [simulate'_query_equiv, stateless_oracle.apply_eq, fst_map_bind_mk_equiv],
-    exact map_equiv_of_equiv _ (h i t), }
+  induction oa using oracle_comp.induction_on with A a A B oa ob hoa hob i t generalizing s,
+  sorry, sorry, sorry
+  -- { simp only [simulate'_return, map_return_equiv, eval_distribution_return] },
+  -- { calc simulate' ⟪o⟫ (oa >>= ob) s
+  --     ≃ₚ simulate ⟪o⟫ oa s >>= λ x, simulate' ⟪o⟫ (ob x.1) x.2 : simulate'_bind_equiv ⟪o⟫ oa ob _
+  --     ... ≃ₚ simulate ⟪o'⟫ oa s >>= λ x, simulate' ⟪o'⟫ (ob x.1) x.2 : begin
+  --       simp [simulate_equiv_simulate', hoa],
+  --       -- congr,
+  --       simpa [hob],
+  --     end
+  --     ... ≃ₚ simulate' ⟪o'⟫ (oa >>= ob) s : symm (simulate'_bind_equiv ⟪o'⟫ oa ob _) },
+  -- { simp_rw [simulate'_query_equiv, stateless_oracle.apply_eq, fst_map_bind_mk_equiv],
+  --   exact map_equiv_of_equiv _ (h i t), },
 end 
 
 lemma simulate'_query_equiv [spec.finite_range] (s : unit) :
@@ -212,23 +213,24 @@ theorem simulate'_equiv_stateless_oracle [spec'.finite_range] :
   simulate' ⟪o | update_state, default_state⟫ oa s ≃ₚ
     simulate' ⟪o⟫ oa () :=
 begin
-  induction oa using oracle_comp.induction_on with a A A B oa ob hoa hob i t generalizing s,
-  { simp },
-  { let so := ⟪o|update_state, default_state⟫,
-    calc simulate' so (oa >>= ob) s
-      ≃ₚ (simulate so oa s) >>= (λ x, simulate' so (ob x.1) x.2) : simulate'_bind_equiv so oa ob s
-      ... ≃ₚ (simulate so oa s) >>= (λ x, simulate' ⟪o⟫ (ob x.1) ()) :
-        bind_equiv_of_equiv_second _ (λ a, (hob a.1 a.2))
-      ... ≃ₚ (simulate' so oa s) >>= (λ x, simulate' ⟪o⟫ (ob x) ()) : by erw [bind_map_equiv]
-      ... ≃ₚ (simulate' ⟪o⟫ oa ()) >>= (λ x, simulate' ⟪o⟫ (ob x) ()) :
-        bind_equiv_of_equiv_first _ (hoa _)
-      ... ≃ₚ (simulate ⟪o⟫ oa ()) >>= (λ x, simulate' ⟪o⟫ (ob x.1) ()) : by erw [bind_map_equiv]
-      ... ≃ₚ (simulate ⟪o⟫ oa ()) >>= (λ x, simulate' ⟪o⟫ (ob x.1) x.2) :
-        by { congr, ext x, rw [punit_eq () x.2] }
-      ... ≃ₚ simulate' ⟪o⟫ (oa >>= ob) () : by rw [simulate'_bind_equiv] },
-  { simp_rw [simulate'_query_equiv, apply_eq, stateless_oracle.apply_eq, map_bind_equiv],
-    refine bind_equiv_of_equiv_second (o i t) _,
-    simp only [map_pure_equiv, eq_self_iff_true, forall_const] }
+  sorry
+  -- induction oa using oracle_comp.induction_on with a A A B oa ob hoa hob i t generalizing s,
+  -- { simp },
+  -- { let so := ⟪o|update_state, default_state⟫,
+  --   calc simulate' so (oa >>= ob) s
+  --     ≃ₚ (simulate so oa s) >>= (λ x, simulate' so (ob x.1) x.2) : simulate'_bind_equiv so oa ob s
+  --     ... ≃ₚ (simulate so oa s) >>= (λ x, simulate' ⟪o⟫ (ob x.1) ()) :
+  --       bind_equiv_of_equiv_second _ (λ a, (hob a.1 a.2))
+  --     ... ≃ₚ (simulate' so oa s) >>= (λ x, simulate' ⟪o⟫ (ob x) ()) : by erw [bind_map_equiv]
+  --     ... ≃ₚ (simulate' ⟪o⟫ oa ()) >>= (λ x, simulate' ⟪o⟫ (ob x) ()) :
+  --       bind_equiv_of_equiv_first _ (hoa _)
+  --     ... ≃ₚ (simulate ⟪o⟫ oa ()) >>= (λ x, simulate' ⟪o⟫ (ob x.1) ()) : by erw [bind_map_equiv]
+  --     ... ≃ₚ (simulate ⟪o⟫ oa ()) >>= (λ x, simulate' ⟪o⟫ (ob x.1) x.2) :
+  --       by { congr, ext x, rw [punit_eq () x.2] }
+  --     ... ≃ₚ simulate' ⟪o⟫ (oa >>= ob) () : by rw [simulate'_bind_equiv] },
+  -- { simp_rw [simulate'_query_equiv, apply_eq, stateless_oracle.apply_eq, map_bind_equiv],
+  --   refine bind_equiv_of_equiv_second (o i t) _,
+  --   simp only [map_pure_equiv, eq_self_iff_true, forall_const] }
 end
 
 /-- The first ouptput of a tracking oracle is indepenedent of the actual tracking functions -/

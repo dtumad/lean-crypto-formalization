@@ -67,8 +67,8 @@ section map
 variables (f : A → B)
 
 @[simp]
-lemma map_pure_equiv (a : A) : f <$> (pure a : oracle_comp spec A) ≃ₚ
-  (pure (f a) : oracle_comp spec B) :=
+lemma map_return_equiv (a : A) : f <$> (pure a : oracle_comp spec A) ≃ₚ
+  (return (f a) : oracle_comp spec B) :=
 trans (eval_distribution_map (pure a) f) (pmf.pure_map f a)
 
 @[simp]
@@ -102,9 +102,9 @@ calc ⦃g <$> (f <$> oa)⦄
   ... = pmf.map (g ∘ f) ⦃oa⦄ : pmf.map_comp f ⦃oa⦄ g
   ... = ⦃(g ∘ f) <$> oa⦄ : symm (eval_distribution_map oa $ g ∘ f)
 
-lemma map_map_pure_equiv (a : A) (f : A → B) (g : B → C) :
-  g <$> (f <$> (pure a : oracle_comp spec A)) ≃ₚ (pure (g (f a)) : oracle_comp spec C) :=
-by rw [map_map_equiv, map_pure_equiv]
+lemma map_map_return_equiv (a : A) (f : A → B) (g : B → C) :
+  g <$> (f <$> (return a : oracle_comp spec A)) ≃ₚ (pure (g (f a)) : oracle_comp spec C) :=
+by rw [map_map_equiv, map_return_equiv]
 
 @[simp]
 lemma map_equiv_of_eq_id (oa : oracle_comp spec A) (f : A → A) (h : ∀ a, f a = a) :
