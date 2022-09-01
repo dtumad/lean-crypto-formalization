@@ -11,7 +11,7 @@ The resulting `fin_set` is equal to `oracle_comp.support` when coerced to a `set
 
 This requires a number of decidability hypotheses for the computation itself.
 To this end we introduce a type class `oracle_comp.decidable` for computations
-  with decidable equality for any `pure` type constructor.
+  with decidable equality for any `return` type constructor.
 The need for `decidable_eq` arises from the need to use `finset.bUnion` for the `bind` operation.
 
 We also require a `computable` and `finite_range` instance for the `oracle_spec` itself.
@@ -51,31 +51,21 @@ def decidable_eq_of_decidable' : Π {α : Type} {oa : oracle_comp spec α}
 def decidable_eq_of_decidable (oa : oracle_comp spec α) [h : oa.decidable] :
   decidable_eq α := decidable_eq_of_decidable' h
 
-section pure
+variables [h : decidable_eq α] (a : α) (oa : oracle_comp spec α) (ob : α → oracle_comp spec β)
+  [hoa : oa.decidable] [hob : ∀ a, (ob a).decidable]
 
-variables [h : decidable_eq α] (a : α)
+instance decidable_return : decidable (return a : oracle_comp spec α) := decidable_pure' α a h
 
 instance decidable_pure' : decidable (pure' α a : oracle_comp spec α) := decidable_pure' α a h
 
 instance decidable_pure : decidable (pure a : oracle_comp spec α) := decidable_pure' α a h
 
-instance decidable_return : decidable (return a : oracle_comp spec α) := decidable_pure' α a h
-
-end pure
-
-section bind
-
-variables (oa : oracle_comp spec α) (ob : α → oracle_comp spec β)
-  [hoa : oa.decidable] [hob : ∀ a, (ob a).decidable]
+instance decidable_bind : decidable (bind oa ob) := decidable_bind' α β oa ob hoa hob
 
 instance decidable_bind' : decidable (bind' α β oa ob) := decidable_bind' α β oa ob hoa hob
 
-instance decidable_bind : decidable (bind oa ob) := decidable_bind' α β oa ob hoa hob
-
 instance decidable_map [h : decidable_eq β] (f : α → β) : decidable (f <$> oa) :=
 decidable_bind' α β oa _ hoa (λ a, decidable_pure' β _ h)
-
-end bind
 
 instance decidable_query (i : spec.ι) (t : spec.domain i) : decidable (query i t) :=
 decidable_query i t
@@ -88,7 +78,7 @@ end decidable
 example : decidable (do {
   b ← coin, b' ← coin,
   x ← return (b && b'),
-  y ← pure' bool (b || b'),
+  y ← return (b || b'),
   return (if x then 1 else if y then 2 else 3)
 }) := by apply_instance
 

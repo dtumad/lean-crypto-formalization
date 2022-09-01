@@ -15,14 +15,9 @@ namespace oracle_comp
 
 open oracle_spec
 
-variables {α β γ : Type}
+variables {α β γ : Type} {spec spec' : oracle_spec}
 
 section support
-
-variables {spec : oracle_spec} (a a' : α)
-  (oa : oracle_comp spec α) (ob : α → oracle_comp spec β)
-
--- #check set.finite
 
 /-- Set of possible outputs of the computation, allowing for any possible output of the queries.
   This will generally correspond to the support of `eval_distribution`,
@@ -32,24 +27,28 @@ def support {spec : oracle_spec} : Π {α : Type} (oa : oracle_comp spec α), se
 | _ (bind' α β oa ob) := ⋃ α ∈ oa.support, (ob α).support
 | _ (query i t) := ⊤
 
-section pure
+section return
 
 @[simp]
-lemma support_pure (spec : oracle_spec) (a : α) :
-  (pure a : oracle_comp spec α).support = {a} := rfl
+lemma support_return (spec : oracle_spec) (a : α) :
+  (return a : oracle_comp spec α).support = {a} := rfl
 
-@[simp]
-lemma mem_support_pure_iff (a a' : α) :
-  a' ∈ (pure a : oracle_comp spec α).support ↔ a' = a :=
-set.mem_singleton_iff
+lemma mem_support_return_iff (spec : oracle_spec) (a a' : α) :
+  a' ∈ (return a : oracle_comp spec α).support ↔ a' = a := set.mem_singleton_iff
 
 lemma support_pure' (spec : oracle_spec) (a : α) :
   (pure' α a : oracle_comp spec α).support = {a} := rfl
 
-lemma support_return (spec : oracle_spec) (a : α) :
-  (return a : oracle_comp spec α).support = {a} := rfl
+lemma mem_support_pure'_iff (spec : oracle_spec) (a a' : α) :
+  a' ∈ (pure' α a : oracle_comp spec α).support ↔ a' = a := set.mem_singleton_iff
 
-end pure
+lemma support_pure (spec : oracle_spec) (a : α) :
+  (pure a : oracle_comp spec α).support = {a} := rfl
+
+lemma mem_support_pure_iff (a a' : α) :
+  a' ∈ (pure a : oracle_comp spec α).support ↔ a' = a := set.mem_singleton_iff
+
+end return
 
 section bind
 
@@ -57,7 +56,6 @@ section bind
 lemma support_bind (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) :
   (oa >>= ob).support = ⋃ α ∈ oa.support, (ob α).support := rfl
 
-@[simp]
 lemma mem_support_bind_iff (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) (β : β) :
   β ∈ (oa >>= ob).support ↔ ∃ α ∈ oa.support, β ∈ (ob α).support :=
 by simp only [support_bind, set.mem_Union]
@@ -65,21 +63,28 @@ by simp only [support_bind, set.mem_Union]
 lemma support_bind' (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) :
   (bind' α β oa ob).support = ⋃ α ∈ oa.support, (ob α).support := rfl
 
-@[simp]
+lemma mem_support_bind'_iff (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) (b : β) :
+  b ∈ (bind' α β oa ob).support ↔ ∃ a ∈ oa.support, b ∈ (ob a).support :=
+by simp only [bind'_eq_bind, support_bind, set.mem_Union]
+
 lemma support_bind_bind (oa : oracle_comp spec α)
   (ob : α → oracle_comp spec β) (oc : α → β → oracle_comp spec γ) :
   (do {α ← oa, β ← ob α, oc α β}).support =
     ⋃ α ∈ oa.support, ⋃ β ∈ (ob α).support, (oc α β).support :=
-by simp
+by simp only [support_bind]
 
-@[simp]
 lemma mem_support_bind_bind_iff (oa : oracle_comp spec α)
   (ob : α → oracle_comp spec β) (oc : α → β → oracle_comp spec γ) (c : γ) :
-  c ∈ (do {α ← oa, β ← ob α, oc α β}).support ↔
-    ∃ α ∈ oa.support, ∃ β ∈ (ob α).support, c ∈ (oc α β).support :=
+  c ∈ (do {a ← oa, b ← ob a, oc a b}).support ↔
+    ∃ a ∈ oa.support, ∃ b ∈ (ob a).support, c ∈ (oc a b).support :=
 by simp only [support_bind_bind, set.mem_Union]
 
-lemma support_pure_bind : (pure a >>= ob).support = (ob a).support :=
+lemma support_pure_bind (a : α) (ob : α → oracle_comp spec β) :
+  (return a >>= ob).support = (ob a).support :=
+by simp only [support_bind, mem_support_pure_iff, set.Union_Union_eq_left]
+
+lemma mem_support_pure_bind_iff (a : α) (ob : α → oracle_comp spec β) (b : β) :
+  b ∈ (return a >>= ob).support ↔ b ∈ (ob a).support :=
 by simp only [support_bind, mem_support_pure_iff, set.Union_Union_eq_left]
 
 end bind
@@ -90,7 +95,6 @@ section query
 lemma support_query (i : spec.ι) (t : spec.domain i) :
   (query i t).support = ⊤ := rfl
 
-@[simp]
 lemma mem_support_query (i : spec.ι) (t : spec.domain i) (u : spec.range i) :
   u ∈ (query i t).support :=
 set.mem_univ u
@@ -101,18 +105,18 @@ end query
 theorem support_finite [spec.finite_range] (oa : oracle_comp spec α) : oa.support.finite :=
 begin
   induction oa with A a A B oa ob hoa hob i t,
-  { simp only [pure'_eq_pure, support_pure, set.finite_singleton] },
-  { simpa using set.finite.bind hoa (λ a _, hob a) },
-  { simpa using set.finite_univ }
+  { exact set.finite_singleton a },
+  { exact hoa.bind (λ a _, hob a)},
+  { exact set.finite_univ }
 end
 
 theorem support_nonempty (oa : oracle_comp spec α) : oa.support.nonempty :=
 begin
   induction oa with A a A B oa ob hoa hob i t,
-  { simp only [pure'_eq_pure, support_pure, set.singleton_nonempty]},
+  { exact set.singleton_nonempty a },
   { simp only [bind'_eq_bind, support_bind, set.nonempty_bUnion, exists_prop],
     exact let ⟨a, ha⟩ := hoa in ⟨a, ha, hob a⟩ },
-  { simp only [support_query, set.top_eq_univ, set.univ_nonempty]}
+  { simp only [support_query, set.top_eq_univ, set.univ_nonempty] }
 end
 
 section map

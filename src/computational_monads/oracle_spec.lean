@@ -35,9 +35,6 @@ instance computable.domain_decidable_eq' [spec.computable] (i : spec.ι) :
 instance computable.range_decidable_eq' [spec.computable] (i : spec.ι) :
   decidable_eq (spec.range i) := computable.range_decidable_eq i
 
--- instance computable.range_inhabited' [spec.computable] (i : spec.ι) :
---   inhabited (spec.range i) := computable.range_inhabited i
-
 /-- Class of `oracle_spec` for which uniform random oracles are well defined -/
 class finite_range (spec : oracle_spec) :=
 (range_fintype (i : spec.ι) : fintype $ spec.range i)

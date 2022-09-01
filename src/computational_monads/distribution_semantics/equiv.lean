@@ -82,7 +82,7 @@ end
 lemma map_bind_equiv (f : B → C) : f <$> (oa >>= ob) ≃ₚ oa >>= λ a, f <$> (ob a) :=
 begin
   simp only [eval_distribution_bind, functor.map, oracle_comp.bind'_eq_bind,
-    function.comp_app, oracle_comp.pure'_eq_pure, eval_distribution_return],
+    function.comp_app, eval_distribution_return],
   exact ⦃oa⦄.map_bind (λ b, ⦃ob b⦄) f,
 end
 
