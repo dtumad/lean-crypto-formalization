@@ -2,22 +2,29 @@ import computational_monads.simulation_semantics.simulate
 
 namespace oracle_comp
 
-variables {A B C : Type} {spec spec' spec'' : oracle_spec}
+variables {α β γ : Type} {spec spec' spec'' : oracle_spec}
   (so : simulation_oracle spec spec') (so' : simulation_oracle spec spec'')
-  (a : A) (i : spec.ι) (t : spec.domain i)
-  (oa oa' : oracle_comp spec A) (ob ob' : A → oracle_comp spec B) (s : so.S)
+  (a : α) (i : spec.ι) (t : spec.domain i)
+  (oa oa' : oracle_comp spec α) (ob ob' : α → oracle_comp spec β) (f : α → β)
 
 section default_simulate
 
 /-- TODO: expand this and use everywhere -/
-def default_simulate (so : simulation_oracle spec spec') (oa : oracle_comp spec A) :
-  oracle_comp spec' (A × so.S) := oa.simulate so so.default_state
+def default_simulate (so : simulation_oracle spec spec') (oa : oracle_comp spec α) :
+  oracle_comp spec' (α × so.S) := oa.simulate so so.default_state
 
 @[simp]
+lemma default_simulate_return : default_simulate so (return a) = pure (a, so.default_state) := rfl
+
+lemma default_simulate_pure' : default_simulate so (pure' α a) = pure (a, so.default_state) := rfl
+
 lemma default_simulate_pure : default_simulate so (pure a) = pure (a, so.default_state) := rfl
 
 @[simp]
 lemma default_simulate_bind : default_simulate so (oa >>= ob) =
+  simulate so oa so.default_state >>= λ x, simulate so (ob x.1) x.2 := rfl
+
+lemma default_simulate_bind' : default_simulate so (bind' α β oa ob) =
   simulate so oa so.default_state >>= λ x, simulate so (ob x.1) x.2 := rfl
 
 @[simp]
@@ -25,8 +32,39 @@ lemma default_simulate_query : default_simulate so (query i t) =
   so.o i (t, so.default_state) := rfl
 
 @[simp]
+lemma default_simulate_map : default_simulate so (f <$> oa) =
+  simulate so oa so.default_state >>= return ∘ prod.map f id := rfl
+
+section support
+
+@[simp]
 lemma support_default_simulate : (default_simulate so oa).support =
   (simulate so oa so.default_state).support := rfl
+
+lemma support_default_simulate_return : (default_simulate so (return a)).support =
+  {(a, so.default_state)} := rfl
+
+lemma support_default_simulate_pure' : (default_simulate so (pure' α a)).support =
+  {(a, so.default_state)} := rfl
+
+lemma support_default_simulate_pure : (default_simulate so (pure a)).support =
+  {(a, so.default_state)} := rfl
+
+lemma support_default_simulate_bind : (default_simulate so (oa >>= ob)).support =
+  ⋃ x ∈ (default_simulate so oa).support, (simulate so (ob $ prod.fst x) x.2).support := rfl
+
+lemma support_default_simulate_bind' : (default_simulate so (bind' α β oa ob)).support =
+  ⋃ x ∈ (default_simulate so oa).support, (simulate so (ob $ prod.fst x) x.2).support := rfl
+
+lemma support_default_simulate_query : (default_simulate so (query i t)).support =
+  (so.o i (t, so.default_state)).support := rfl
+
+@[simp]
+lemma support_default_simulate_map : (default_simulate so (f <$> oa)).support =
+  prod.map f id '' (default_simulate so oa).support :=
+support_simulate_map so oa so.default_state f
+
+end support
 
 section distribution_semantics
 
@@ -49,7 +87,7 @@ eval_distribution_simulate_query so i t so.default_state
 
 @[simp]
 lemma default_simulate_pure_equiv : default_simulate so (pure a) ≃ₚ
-  (pure (a, so.default_state) : oracle_comp spec' (A × so.S)) := rfl
+  (pure (a, so.default_state) : oracle_comp spec' (α × so.S)) := rfl
 
 @[simp]
 lemma default_simulate_bind_equiv : default_simulate so (oa >>= ob) ≃ₚ
@@ -65,8 +103,8 @@ end default_simulate
 
 section default_simulate'
 
-def default_simulate' (so : simulation_oracle spec spec') (oa : oracle_comp spec A) :
-  oracle_comp spec' A := oa.simulate' so so.default_state
+def default_simulate' (so : simulation_oracle spec spec') (oa : oracle_comp spec α) :
+  oracle_comp spec' α := oa.simulate' so so.default_state
 
 @[simp]
 lemma default_simulate'_return : default_simulate' so (return a) =
@@ -111,7 +149,7 @@ eval_distribution_simulate'_query so i t so.default_state
 
 @[simp]
 lemma default_simulate'_pure_equiv : default_simulate' so (pure a) ≃ₚ
-  (pure a : oracle_comp spec' A) :=
+  (pure a : oracle_comp spec' α) :=
 simulate'_pure_equiv so a so.default_state
 
 @[simp]

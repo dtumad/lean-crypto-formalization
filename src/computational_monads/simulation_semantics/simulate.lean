@@ -49,8 +49,7 @@ lemma simulate_bind' : simulate so (bind' α β oa ob) s =
 lemma simulate_query : simulate so (query i t) s = so.o i (t, s) := rfl
 
 @[simp]
-lemma simulate_map : simulate so (f <$> oa) s =
-  simulate so oa s >>= return ∘ prod.map f id := rfl
+lemma simulate_map : simulate so (f <$> oa) s = simulate so oa s >>= return ∘ prod.map f id := rfl
 
 section support
 
@@ -322,13 +321,6 @@ lemma simulate'_query_equiv : simulate' so (query i t) s ≃ₚ
 lemma simulate'_map_equiv (f : α → β) : simulate' so (f <$> oa) s ≃ₚ f <$> simulate' so oa s :=
 by simp only [simulate_map_equiv, eval_distribution_map, pmf.map_comp,
   prod.map_fst', simulate'_equiv_fst_map_simulate]
-
--- -- TODO: other versions of this
--- lemma simulate'_equiv_of_equiv [spec.finite_range] {oa oa' : oracle_comp spec α} (h : oa ≃ₚ oa') :
---   simulate' so oa s ≃ₚ simulate' so oa' s :=
--- begin
-  
--- end
 
 end distribution_semantics
 
