@@ -85,8 +85,10 @@ set.ext (λ x, by simp only [@eq_comm, simulate_map, support_bind, support_retur
   set.mem_Union, set.mem_singleton_iff, exists_prop, set.mem_image])
 
 /-- Since `support` assumes any possible query result, `simulate` will never reduce the support -/
-theorem support_simulate_subset_support : (simulate so oa s).support ⊆ {x | x.1 ∈ oa.support} :=
+@[simp]
+theorem support_simulate_subset_support : (simulate so oa s).support ⊆ prod.fst ⁻¹' oa.support :=
 begin
+  rw [set.preimage],
   induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t generalizing s,
   { simp only [simulate_return, support_return, set.mem_singleton_iff,
       set.singleton_subset_iff, set.mem_set_of_eq] },
@@ -96,6 +98,10 @@ begin
     refine λ b hb, ⟨x.1, hoa s hx, hob x.1 x.2 hb⟩ },
   { simp only [support_query, set.top_eq_univ, set.mem_univ, set.set_of_true, set.subset_univ] }
 end
+
+@[simp]
+lemma support_simulate_subset_support' : (simulate so oa s).support ⊆ {x | x.1 ∈ oa.support} :=
+support_simulate_subset_support so oa s
 
 lemma mem_support_of_mem_support_simulate {x : α × so.S} (hx : x ∈ (simulate so oa s).support) :
   x.1 ∈ oa.support := support_simulate_subset_support so oa s hx
@@ -229,6 +235,14 @@ begin
   refine (support_simulate' so oa s).symm ▸ λ x hx, _,
   obtain ⟨y, hy, rfl⟩ := (set.mem_image prod.fst _ _).1 hx,
   exact mem_support_of_mem_support_simulate so oa s hy,
+end
+
+lemma mem_support_of_mem_support_simulate' {x : α} (hx : x ∈ (simulate' so oa s).support) :
+  x ∈ oa.support :=
+begin
+  rw [support_simulate', set.mem_image] at hx,
+  obtain ⟨⟨a, s⟩, h, h'⟩ := hx,
+  exact h' ▸ mem_support_of_mem_support_simulate so oa _ h,
 end
 
 /-- If the first output of an oracle can take on any value (although the state might not),
