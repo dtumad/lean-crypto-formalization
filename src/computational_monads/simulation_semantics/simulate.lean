@@ -1,10 +1,21 @@
 import computational_monads.distribution_semantics.prob_event
 
+/-!
+# Oracle Simulation Semantics
+
+Defines the notion of simulating a computation by defining the outputs of oracle query.
+A method of simulation is given by `simulation_oracle`, which contains an internal state
+  as well as a function to return a value and update the state given a query to the oracle.
+
+It also contains a `default_state`, specifying the value to use for the default oracle state.
+For example a logging query would use an empty log as the default state.
+
+We define `simulate'` to be simulation followed by discarding the state.
+This is useful for things like a random oracle, where the final result isn't relevant in general.
+-/
+
 namespace oracle_comp
 
--- TODO: α β γ
-
--- TODO: ∈ / mem versions of lemmas
 variables {α β γ : Type} {spec spec' spec'' : oracle_spec}
 
 /-- Specifies a way to simulate a set of oracles using another set of oracles. 
@@ -222,29 +233,22 @@ end
 
 /-- If the first output of an oracle can take on any value (although the state might not),
   then the first value of simulation has the same support as the original computation.
-  For example simulation with the identity oracle `idₛ` doesn't change the support
-  TODO: cleanup -/
+For example simulation with the identity oracle `idₛ` doesn't change the support -/
 theorem support_simulate'_eq_support (h : ∀ i t s, prod.fst '' (so.o i (t, s)).support = ⊤) :
   (simulate' so oa s).support = oa.support :=
 begin
   refine set.eq_of_subset_of_subset (support_simulate'_subset_support so oa s) (λ x hx, _),
   induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t generalizing s,
   { simpa only [simulate'_return, support_map, support_return, set.image_singleton] using hx },
-  {
-    simp only [support_simulate'_bind, support_bind, set.mem_Union] at hx ⊢,
+  { simp only [support_simulate'_bind, support_bind, set.mem_Union] at hx ⊢,
     obtain ⟨a, ha, hx⟩ := hx,
     specialize hoa a ha s,
     rw [support_simulate', set.mem_image] at hoa,
     obtain ⟨⟨a', s'⟩, ha', ha''⟩ := hoa,
-    refine ⟨(a', s'), ha', hob a' x _ s'⟩,
-    rw ← ha'' at hx,
-    exact hx,
-  },
+    exact ⟨(a', s'), ha', hob a' x (let this : a = a' := ha''.symm in this ▸ hx) s'⟩ },
   { simp only [support_simulate'_query, set.mem_image],
-    specialize h i t s,
-    have : x ∈ prod.fst '' (so.o i (t, s)).support := h.symm ▸ set.mem_univ _,
-    rw [set.mem_image] at this,
-    exact this }
+    have : x ∈ prod.fst '' (so.o i (t, s)).support := (h i t s).symm ▸ set.mem_univ _,
+    exact (set.mem_image _ _ _).1 this }
 end
 
 end support
@@ -290,6 +294,8 @@ by simp_rw [eval_distribution_simulate', eval_distribution_simulate_map,
 
 end eval_distribution
 
+section equiv
+
 @[simp]
 lemma simulate'_equiv_fst_map_simulate :
   simulate' so oa s ≃ₚ prod.fst <$> simulate so oa s := rfl
@@ -321,6 +327,8 @@ lemma simulate'_query_equiv : simulate' so (query i t) s ≃ₚ
 lemma simulate'_map_equiv (f : α → β) : simulate' so (f <$> oa) s ≃ₚ f <$> simulate' so oa s :=
 by simp only [simulate_map_equiv, eval_distribution_map, pmf.map_comp,
   prod.map_fst', simulate'_equiv_fst_map_simulate]
+
+end equiv
 
 end distribution_semantics
 
