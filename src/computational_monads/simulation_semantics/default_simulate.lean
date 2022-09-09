@@ -9,29 +9,26 @@ variables {α β γ : Type} {spec spec' spec'' : oracle_spec}
 
 section default_simulate
 
-/-- TODO: expand this and use everywhere -/
 def default_simulate (so : simulation_oracle spec spec') (oa : oracle_comp spec α) :
   oracle_comp spec' (α × so.S) := oa.simulate so so.default_state
 
-@[simp]
+lemma default_simulate_def : default_simulate so oa = simulate so oa so.default_state := rfl
+
 lemma default_simulate_return : default_simulate so (return a) = pure (a, so.default_state) := rfl
 
 lemma default_simulate_pure' : default_simulate so (pure' α a) = pure (a, so.default_state) := rfl
 
 lemma default_simulate_pure : default_simulate so (pure a) = pure (a, so.default_state) := rfl
 
-@[simp]
 lemma default_simulate_bind : default_simulate so (oa >>= ob) =
   simulate so oa so.default_state >>= λ x, simulate so (ob x.1) x.2 := rfl
 
 lemma default_simulate_bind' : default_simulate so (bind' α β oa ob) =
   simulate so oa so.default_state >>= λ x, simulate so (ob x.1) x.2 := rfl
 
-@[simp]
 lemma default_simulate_query : default_simulate so (query i t) =
   so.o i (t, so.default_state) := rfl
 
-@[simp]
 lemma default_simulate_map : default_simulate so (f <$> oa) =
   simulate so oa so.default_state >>= return ∘ prod.map f id := rfl
 
@@ -65,10 +62,6 @@ lemma support_default_simulate_map : (default_simulate so (f <$> oa)).support =
 
 lemma support_default_simulate_subset_support :
   (default_simulate so oa).support ⊆ prod.fst ⁻¹' oa.support :=
-support_simulate_subset_support so oa so.default_state
-
-lemma support_default_simulate_subset_support' :
-  (default_simulate so oa).support ⊆ {x | x.1 ∈ oa.support} :=
 support_simulate_subset_support so oa so.default_state
 
 lemma mem_support_of_mem_support_default_simulate {x : α × so.S}
@@ -110,16 +103,14 @@ lemma eval_distribution_default_simulate_query :
   ⦃default_simulate so (query i t)⦄ = ⦃so.o i (t, so.default_state)⦄ :=
 eval_distribution_simulate_query so i t so.default_state
 
-@[simp]
 lemma eval_distribution_default_simulate_map :
   ⦃default_simulate so (f <$> oa)⦄ = ⦃simulate so oa so.default_state⦄.map (prod.map f id) :=
-by rw [default_simulate, eval_distribution_simulate_map]
+by simp only [eval_distribution_default_simulate, eval_distribution_simulate_map]
 
 end eval_distribution
 
 section equiv
 
-@[simp]
 lemma default_simulate_equiv : default_simulate so oa ≃ₚ simulate so oa so.default_state := rfl
 
 lemma default_simulate_return_equiv : default_simulate so (return a) ≃ₚ
@@ -140,9 +131,9 @@ lemma default_simulate_bind'_equiv : default_simulate so (bind' α β oa ob) ≃
 lemma default_simulate_query_equiv : default_simulate so (query i t) ≃ₚ
   so.o i (t, so.default_state) := rfl
 
-@[simp]
 lemma default_simulate_map_equiv : default_simulate so (f <$> oa) ≃ₚ
-  prod.map f id <$> simulate so oa so.default_state := rfl
+  prod.map f id <$> simulate so oa so.default_state :=
+by simp only [default_simulate_equiv, simulate_map_equiv]
 
 end equiv
 
@@ -155,7 +146,9 @@ section default_simulate'
 def default_simulate' (so : simulation_oracle spec spec') (oa : oracle_comp spec α) :
   oracle_comp spec' α := oa.simulate' so so.default_state
 
-@[simp]
+lemma default_simulate'_def : (default_simulate' so oa) =
+  prod.fst <$> simulate so oa so.default_state := rfl
+
 lemma default_simulate'_return : default_simulate' so (return a) =
   prod.fst <$> return (a, so.default_state) := rfl
 
@@ -165,14 +158,12 @@ lemma default_simulate'_pure' : default_simulate' so (pure' α a) =
 lemma default_simulate'_pure : default_simulate' so (pure a) =
   prod.fst <$> pure (a, so.default_state) := rfl
 
-@[simp]
 lemma default_simulate'_bind : default_simulate' so (oa >>= ob) =
   prod.fst <$> (default_simulate so oa >>= λ x, simulate so (ob x.1) x.2) := rfl
 
 lemma default_simulate'_bind' : default_simulate' so (bind' α β oa ob) =
   prod.fst <$> (default_simulate so oa >>= λ x, simulate so (ob x.1) x.2) := rfl
 
-@[simp]
 lemma default_simulate'_query : default_simulate' so (query i t) =
   prod.fst <$>so.o i (t, so.default_state) := rfl
 
@@ -198,7 +189,6 @@ by simp [set.image_Union]
 lemma support_default_simulate'_query : (default_simulate' so (query i t)).support =
   prod.fst '' (so.o i (t, so.default_state)).support := support_simulate'_query so i t _
 
-@[simp]
 lemma support_default_simulate'_map : (default_simulate' so (f <$> oa)).support =
   f '' (simulate' so oa so.default_state).support :=
 support_simulate'_map so oa so.default_state f
@@ -211,7 +201,7 @@ lemma mem_support_of_mem_support_default_simulate' {x : α}
 mem_support_of_mem_support_simulate' so oa so.default_state hx
 
 /-- If the first output of an oracle can take on any value (although the state might not),
-  then the first value of simulation has the same support as the original computation.
+then the first value of simulation has the same support as the original computation.
 For example simulation with the identity oracle `idₛ` doesn't change the support -/
 theorem support_default_simulate'_eq_support
   (h : ∀ i t s, prod.fst '' (so.o i (t, s)).support = ⊤) :
@@ -229,8 +219,12 @@ variable [spec'.finite_range]
 section eval_distribution
 
 @[simp]
+lemma eval_distribution_default_simulate' : ⦃default_simulate' so oa⦄ =
+  ⦃simulate' so oa so.default_state⦄ :=
+by simp only [default_simulate'_def, eval_distribution_map, eval_distribution_simulate']
+
 lemma eval_distribution_default_simulate'_return : ⦃default_simulate' so (return a)⦄ =
-  pmf.pure a := eval_distribution_simulate'_pure so a so.default_state
+  pmf.pure a := eval_distribution_simulate'_return so a _
 
 lemma eval_distribution_default_simulate'_pure' : ⦃default_simulate' so (pure' α a)⦄ =
   pmf.pure a := eval_distribution_simulate'_pure so a so.default_state
@@ -246,9 +240,8 @@ lemma eval_distribution_default_simulate'_bind' : ⦃default_simulate' so (bind'
   ⦃default_simulate so oa⦄ >>= λ x, ⦃simulate' so (ob x.1) x.2⦄ :=
 eval_distribution_simulate'_bind so oa ob so.default_state
 
-@[simp]
 lemma eval_distribution_default_simulate'_query : ⦃default_simulate' so (query i t)⦄ =
-  prod.fst <$> ⦃simulate so (query i t) so.default_state⦄ :=
+  ⦃so.o i (t, so.default_state)⦄.map prod.fst :=
 eval_distribution_simulate'_query so i t so.default_state
 
 lemma eval_distribution_default_simulate'_map : ⦃default_simulate' so (f <$> oa)⦄ =
@@ -259,8 +252,11 @@ end eval_distribution
 
 section equiv
 
+lemma default_simulate'_equiv : default_simulate' so oa ≃ₚ simulate' so oa so.default_state := rfl
+
 lemma default_simulate'_return_equiv : default_simulate' so (return a) ≃ₚ
-  (pure a : oracle_comp spec' α) := simulate'_pure_equiv so a so.default_state
+  (pure a : oracle_comp spec' α) := 
+simulate'_pure_equiv so a so.default_state
 
 lemma default_simulate'_pure'_equiv : default_simulate' so (pure' α a) ≃ₚ
   (pure a : oracle_comp spec' α) := simulate'_pure_equiv so a so.default_state
@@ -279,6 +275,7 @@ simulate'_bind_equiv so oa ob so.default_state
 lemma default_simulate'_query_equiv : default_simulate' so (query i t) ≃ₚ
   prod.fst <$> (so.o i (t, so.default_state)) := simulate'_query_equiv so i t so.default_state
 
+@[simp]
 lemma default_simulate'_map_equiv : default_simulate' so (f <$> oa) ≃ₚ
   f <$> simulate' so oa so.default_state := simulate'_map_equiv so oa _ f
 
