@@ -11,13 +11,11 @@ It is often simpler to work with this than distributions directly, particularly 
   original computations have an induction principle that a general `pmf` doesn't have.
 -/
 
-namespace distribution_semantics
-
 variables {A B C : Type} {spec spec' : oracle_spec}
-  (oa : oracle_comp spec A) (ob : A → oracle_comp spec B)
-  (oa' : oracle_comp spec' A) (ob' : A → oracle_comp spec' B)
 variable [spec.finite_range]
 variable [spec'.finite_range]
+
+namespace distribution_semantics
 
 -- Notation for two computations that are equivalent under `eval_distribution`
 notation oa `≃ₚ` oa' := ⦃oa⦄ = ⦃oa'⦄
@@ -25,6 +23,12 @@ notation oa `≃ₚ` oa' := ⦃oa⦄ = ⦃oa'⦄
 lemma support_eq_of_equiv {oa : oracle_comp spec A} {oa' : oracle_comp spec' A}
   (h : oa ≃ₚ oa') : oa.support = oa'.support :=
 by simp_rw [← support_eval_distribution, h]
+
+lemma congr_equiv {oa oa' : oracle_comp spec A} (h : oa = oa') : oa ≃ₚ oa' :=
+congr_arg eval_distribution h
+
+variables  (oa : oracle_comp spec A) (oa' : oracle_comp spec' A)
+  (ob : A → oracle_comp spec B) (ob' : A → oracle_comp spec' B)
 
 section bind
 
@@ -88,7 +92,7 @@ end
 
 @[simp]
 lemma map_id_equiv : id <$> oa ≃ₚ oa :=
-by {simp [functor.map], exact pmf.bind_pure _} 
+(eval_distribution_bind oa _).trans (pmf.bind_pure ⦃oa⦄)
 
 lemma map_equiv_of_equiv {oa : oracle_comp spec A} {oa' : oracle_comp spec' A}
   (h : oa ≃ₚ oa') : f <$> oa ≃ₚ f <$> oa' :=
@@ -106,16 +110,6 @@ lemma map_map_return_equiv (a : A) (f : A → B) (g : B → C) :
   g <$> (f <$> (return a : oracle_comp spec A)) ≃ₚ (pure (g (f a)) : oracle_comp spec C) :=
 by rw [map_map_equiv, map_return_equiv]
 
-@[simp]
-lemma map_equiv_of_eq_id (oa : oracle_comp spec A) (f : A → A) (h : ∀ a, f a = a) :
-  f <$> oa ≃ₚ oa :=
-begin
-  refine pmf.ext (λ a, _),
-  rw [eval_distribution_map, pmf.map_apply],
-  refine trans (tsum_eq_single a $ λ a' ha', _) (by simp [h]),
-  simp [h a', ne.symm ha']
-end
-
 end map
 
 section prod
@@ -124,15 +118,15 @@ variables (f : A → B) (g : A → C)
 
 @[simp]
 lemma fst_map_bind_mk_equiv :
-  (prod.fst <$> (oa >>= λ a, pure (f a, g a)) : oracle_comp spec B) ≃ₚ
-    f <$> oa :=
-by { simp [pmf.map], refl }
+  (prod.fst <$> (oa >>= λ a, pure (f a, g a)) : oracle_comp spec B) ≃ₚ f <$> oa :=
+by simp only [functor.map, oracle_comp.bind'_eq_bind, eval_distribution_bind,
+  eval_distribution_return, pmf.bind_bind, pmf.pure_bind]
 
 @[simp]
 lemma snd_map_bind_mk_equiv :
-  (prod.snd <$> (oa >>= λ a, pure (f a, g a)) : oracle_comp spec C) ≃ₚ
-    g <$> oa :=
-by { simp [pmf.map], refl }
+  (prod.snd <$> (oa >>= λ a, pure (f a, g a)) : oracle_comp spec C) ≃ₚ g <$> oa :=
+by simp only [functor.map, oracle_comp.bind'_eq_bind, eval_distribution_bind,
+  eval_distribution_return, pmf.bind_bind, pmf.pure_bind]
 
 end prod
 

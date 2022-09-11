@@ -9,7 +9,8 @@ import data.set.prod
 variables {spec spec' : oracle_spec} {α β γ : Type}
 variable [spec.finite_range]
 
-/-- TODO: Is this a useful thing to be using? -/
+/-- TODO: Is this a useful thing to be using?
+  TODO: put in oracle_comp constructions -/
 def oracle_prod (oa : oracle_comp spec α) (ob : oracle_comp spec β) :
   oracle_comp spec (α × β) := do {a ← oa, b ← ob, pure (a, b)}
 
@@ -25,7 +26,10 @@ lemma eval_distribution_prod_apply [decidable_eq α] [decidable_eq β]
   ⦃oa ×ₘ ob⦄ (a, b) = ⦃oa⦄ a * ⦃ob⦄ b :=
 calc ⦃oa ×ₘ ob⦄ (a, b)
   = ∑' (x : α), ⦃oa⦄ x * ∑' (y : β), ⦃ob⦄ y * (if (a, b) = (x, y) then 1 else 0) :
-    by simp_rw [oracle_prod, eval_distribution_bind_apply, eval_distribution_pure_apply]
+  begin
+    sorry,
+  end
+    -- by simp_rw [oracle_prod, eval_distribution_bind_apply, eval_distribution_pure_apply]
   ... = ∑' (x : α) (y : β), (⦃oa⦄ x * ⦃ob⦄ y) * (if (a, b) = (x, y) then 1 else 0) :
     by simp_rw [← nnreal.tsum_mul_left, mul_assoc]
   ... = (⦃oa⦄ a * ⦃ob⦄ b) * (if (a, b) = (a, b) then 1 else 0) : begin

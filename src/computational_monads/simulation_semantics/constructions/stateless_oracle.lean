@@ -29,19 +29,16 @@ lemma apply_eq (i : spec.ι) (t : spec.domain i) (s : unit) :
 
 section support
 
-@[simp]
 lemma support_apply (i : spec.ι) (t : spec.domain i) (s : unit) :
   (⟪o⟫.o i (t, s)).support = prod.fst ⁻¹' (o i t).support :=
-set.ext (λ _, by simp only [prod.eq_iff_fst_eq_snd_eq, apply_eq, support_bind, support_pure,
-  set.mem_Union, set.mem_singleton_iff, eq_iff_true_of_subsingleton, and_true, exists_prop,
-  exists_eq_right', set.mem_preimage])
+by simp only [apply_eq, support_bind_prod_mk_fst_of_subsingleton]
 
 lemma mem_support_apply_iff (i : spec.ι) (t : spec.domain i) (s s' : unit) (u : spec.range i) :
   (u, s') ∈ (⟪o⟫.o i (t, s)).support ↔ u ∈ (o i t).support :=
 by simp only [apply_eq, support_bind, support_pure, set.mem_Union, set.mem_singleton_iff,
   prod.mk.inj_iff, eq_iff_true_of_subsingleton, and_true, exists_prop, exists_eq_right']
 
-@[simp]
+-- @[simp]
 lemma support_simulate_eq_preimage (oa : oracle_comp spec α) (s : unit) :
   (oa.simulate ⟪o⟫ s).support = prod.fst ⁻¹' (oa.default_simulate' ⟪o⟫).support :=
 begin
@@ -76,9 +73,9 @@ by rw [support_simulate']
 
 section pure
 
-@[simp]
 lemma support_simulate_pure (a : α) (s : unit) :
-  (simulate ⟪o⟫ (pure a) s).support = {(a, ())} := by simp [punit_eq s ()]
+  (simulate ⟪o⟫ (pure a) s).support = {(a, ())} := 
+by {induction s, refl}
 
 end pure
 

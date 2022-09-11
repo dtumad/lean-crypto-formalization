@@ -47,7 +47,8 @@ theorem support_simulate : (simulate idₛ oa s).support = {x | x.1 ∈ oa.suppo
 begin
   induction oa with A a A B oa ob hoa hob i t generalizing s,
   { ext x,
-    simp [prod.eq_iff_fst_eq_snd_eq, punit_eq x.snd (), punit_eq () s] },
+    simp [prod.eq_iff_fst_eq_snd_eq, support_simulate_return,
+      punit_eq x.snd (), punit_eq () s] },
   { ext x,    
     simp only [hoa, hob, unique.exists_iff, bind'_eq_bind, simulate_bind, support_bind,
       set.mem_set_of_eq, set.mem_Union, prod.exists] },
@@ -100,7 +101,7 @@ lemma simulate'_equiv : (simulate' idₛ oa s) ≃ₚ oa :=
 calc simulate' idₛ oa s ≃ₚ prod.fst <$> simulate idₛ oa s : rfl
   ... ≃ₚ prod.fst <$> (λ a, (a, ())) <$> oa : (map_equiv_of_equiv _ (simulate_equiv oa s))
   ... ≃ₚ (prod.fst ∘ λ a, (a, ())) <$> oa : map_map_equiv oa _ _
-  ... ≃ₚ oa : map_equiv_of_eq_id _ _ (by simp)
+  ... ≃ₚ oa : map_id_equiv oa
 
 lemma default_simulate'_equiv : default_simulate' idₛ oa ≃ₚ oa :=
 simulate'_equiv oa ()

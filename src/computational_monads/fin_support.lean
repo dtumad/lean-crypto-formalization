@@ -112,22 +112,55 @@ lemma mem_fin_support'_iff_mem_support : Π {α : Type} (oa : oracle_comp spec �
 | _ _ (decidable_query i t) u :=
     by simp [support, fin_support']
 
-lemma mem_fin_support_iff_mem_support (oa : oracle_comp spec α) [hoa : oa.decidable]
-  (a : α) : a ∈ oa.fin_support ↔ a ∈ oa.support :=
+variables (oa : oracle_comp spec α) (ob : α → oracle_comp spec β)
+  (a a' : α) (b b' : β) (i : spec.ι) (t : spec'.ι)
+
+lemma mem_fin_support_iff_mem_support [hoa : oa.decidable] (a : α) :
+  a ∈ oa.fin_support ↔ a ∈ oa.support :=
 mem_fin_support'_iff_mem_support oa hoa a
 
 /-- Correctness of `fin_support` with respect to `support`, i.e. the two are equal as `set`s -/
-theorem support_eq_fin_support (oa : oracle_comp spec α) [oa.decidable] :
-  oa.support = oa.fin_support :=
-set.ext (λ a, (mem_fin_support_iff_mem_support oa a).symm)
+theorem coe_fin_support_eq_support [oa.decidable] : ↑oa.fin_support = oa.support :=
+set.ext (λ a, (mem_fin_support_iff_mem_support oa a))
 
-lemma support_subset_fin_support (oa : oracle_comp spec α) [decidable oa] :
-  oa.support ⊆ oa.fin_support :=
-by rw [support_eq_fin_support oa]
+lemma support_subset_fin_support [decidable oa] : oa.support ⊆ ↑oa.fin_support :=
+by rw [coe_fin_support_eq_support oa]
 
-lemma fin_support_subset_support (oa : oracle_comp spec α) [decidable oa] :
-  ↑oa.fin_support ⊆ oa.support :=
-by rw [support_eq_fin_support oa]
+lemma fin_support_subset_support [decidable oa] : ↑oa.fin_support ⊆ oa.support :=
+by rw [coe_fin_support_eq_support oa]
+
+section return
+
+variable [decidable_eq α]
+
+@[simp]
+lemma fin_support_return : (return a : oracle_comp spec α).fin_support = {a} := rfl
+
+lemma mem_fin_support_return_iff : a' ∈ (return a : oracle_comp spec α).fin_support ↔ a' = a :=
+finset.mem_singleton
+
+lemma fin_support_pure' : (pure' α a : oracle_comp spec α).fin_support = {a} := rfl
+
+lemma mem_fin_support_pure'_iff : a' ∈ (pure' α a : oracle_comp spec α).fin_support ↔ a' = a :=
+finset.mem_singleton
+
+lemma fin_support_pure : (pure a : oracle_comp spec α).fin_support = {a} := rfl
+
+lemma mem_fin_support_pure_iff : a' ∈ (pure a : oracle_comp spec α).fin_support ↔ a' = a :=
+finset.mem_singleton
+
+end return
+
+section bind
+
+variable [oa.decidable]
+variable [∀ a, (ob a).decidable]
+
+-- lemma fin_support_bind : (oa >>= ob).fin_support =
+--   finset.bUnion oa.fin_support (λ a, (ob a).fin_support)
+
+
+end bind
 
 end fin_support
 
