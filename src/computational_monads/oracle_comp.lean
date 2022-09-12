@@ -37,6 +37,8 @@ lemma pure_eq_return (spec : oracle_spec) (a : α) :
 lemma bind'_eq_bind (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) :
   bind' α β oa ob = (oa >>= ob) := rfl
 
+lemma map_eq_bind (oa : oracle_comp spec α) (f : α → β) : f <$> oa = oa >>= return ∘ f := rfl
+
 end monad
 
 /-- Slightly nicer induction priciple, avoiding use of `bind'` and `pure'`.

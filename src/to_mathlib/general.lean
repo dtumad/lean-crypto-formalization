@@ -8,9 +8,35 @@ import analysis.convex.specific_functions
 # Misc Lemmas That Ideally Should Port to Mathlib
 -/
 
+
 open_locale measure_theory nnreal ennreal classical big_operators
 
 variables {α β γ : Type*} {n : ℕ}
+
+section count_to_list
+
+lemma finset.count_to_list_eq_one_iff (s : finset α) (a : α) : s.to_list.count a = 1 ↔ a ∈ s :=
+trans ⟨λ h, (by_contra (λ h', zero_ne_one $ (list.count_eq_zero_of_not_mem h').symm.trans h)),
+  list.count_eq_one_of_mem s.nodup_to_list⟩ finset.mem_to_list
+
+lemma finset.count_to_list_eq_zero_iff (s : finset α) (a : α) : s.to_list.count a = 0 ↔ a ∉ s :=
+by rw [list.count_eq_zero, finset.mem_to_list]
+
+lemma finset.count_to_list_insert_self (s : finset α) (a : α) : (insert a s).to_list.count a = 1 :=
+((insert a s).count_to_list_eq_one_iff a).2 (s.mem_insert_self a)
+
+lemma finset.count_to_list_le_one (s : finset α) (a : α) :
+  s.to_list.count a ≤ 1 :=
+begin
+  by_cases h : a ∈ s,
+  { exact le_of_eq ((s.count_to_list_eq_one_iff a).2 h) },
+  { exact le_of_eq_of_le ((s.count_to_list_eq_zero_iff a).2 h) zero_le_one }
+end
+
+end count_to_list
+
+
+
 
 lemma tsum_eq_sum_univ {α β : Type*} [fintype α] [topological_space β]
   [add_comm_monoid β] [t2_space β] (f : α → β) :

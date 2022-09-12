@@ -75,42 +75,6 @@ end
 -- state prop holds on first oracles -> holds for first state value
 -- state prop holds on second oracle -> holds for second state value
 
-
-
--- lemma spec_thing (e : set A) (oa : oracle_comp (spec ++ spec') A) (s : so.S × so'.S)
---   (hp : ∀ (oa : oracle_comp spec A) s, (simulate' so oa s).support ⊆ e)
---   (hq : ∀ (oa : oracle_comp spec' A) s, (simulate' so' oa s).support ⊆ e) :
---   (simulate' (so ++ₛ so') oa s).support ⊆ e :=
--- begin
---   induction oa with α a α β oa ob hoa hob i t generalizing s,
---   { simpa only [pure'_eq_pure, support_simulate'_pure] using hp (pure a) s.1 },
---   {
---     rw [bind'_eq_bind, support_simulate'_bind],
---     specialize hoa (prod.fst '' (simulate (so++ₛ so') oa s).support) begin
---       intros oa' s',
---       rw ← support_simulate',
---     end sorry,
---     refine set.Union_subset (λ u_s, set.Union_subset (λ hu, _)),
---     specialize hob u_s.1 e,
---     refine hob hp hq u_s.2,
---   },
---   {
---     -- rw [support_simulate'_query],
---     induction i with i i,
---     {
---       specialize hp (query i t) s.1,
---       rw [support_simulate'_query] at ⊢ hp,
---       rw [support_oracle_append_apply_inl],
---       refine trans _ hp,
---       refine λ u hu, _,
---       simp at hu ⊢,
---       obtain ⟨⟨s, s'⟩, hu⟩ := hu,
---       refine ⟨s, hu.1⟩,
---     },
---     sorry
---   }
--- end
-
 end support
 
 section fin_support

@@ -20,7 +20,13 @@ pmf.monad_map_eq_map f (p.bind q) ▸ map_bind _
 
 lemma pmf.bind_map {A B C : Type} (p : pmf A) (f : A → B) (q : B → pmf C) :
   (p.map f).bind q = p.bind (q ∘ f) :=
-sorry
+begin
+  rw [pmf.map],
+  rw [pmf.bind_bind],
+  refine congr_arg _ _,
+  refine funext (λ a, _),
+  rw pmf.pure_bind,
+end
 
 @[simp]
 lemma pmf.bind_const {A B : Type} (p : pmf A) (q : pmf B) :
@@ -59,9 +65,3 @@ lemma pmf.to_outer_measure_apply_Union {α : Type*} (p : pmf α) {f : ℕ → se
   (h : pairwise (disjoint on f)) : p.to_outer_measure (⋃ n, f n) = ∑' n, p.to_outer_measure (f n) :=
 measure_theory.outer_measure.Union_eq_of_caratheodory _
   (λ n, pmf.measurable_set_to_outer_measure_caratheodory _ (f n)) h
-
-lemma pmf.summable_to_outer_measure_apply {α : Type*} (p : pmf α) (f : ℕ → set α) (hf : pairwise (disjoint on f)) :
-  summable (λ x, p.to_outer_measure (f x)) :=
-begin
-  sorry
-end

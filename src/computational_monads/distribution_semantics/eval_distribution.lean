@@ -174,4 +174,9 @@ lemma eval_distribution_pos_of_mem_support {oa : oracle_comp spec α} {a : α}
 
 end support
 
+section fin_support
+
+
+end fin_support
+
 end distribution_semantics

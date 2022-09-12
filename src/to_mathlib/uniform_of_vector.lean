@@ -28,6 +28,7 @@ trans (pmf.support_of_multiset _) (set.ext $ λ x, by simp only [multiset.quot_m
 lemma mem_support_uniform_of_list_iff (a : α) : a ∈ (uniform_of_list l h).support ↔ a ∈ l :=
 by simp only [support_uniform_of_list, set.mem_set_of_eq]
 
+@[simp]
 lemma uniform_of_list_apply (a : α) : uniform_of_list l h a = l.count a / l.length :=
 begin 
   refine trans (pmf.of_multiset_apply _ a) _,
@@ -80,6 +81,13 @@ lemma to_measure_uniform_of_list_apply (t : set α) [measurable_space α] (ht : 
   (to_outer_measure_uniform_of_list_apply l h t)
 
 end measure
+
+lemma uniform_of_finset_eq_uniform_of_list_to_list (s : finset α) (h : s.nonempty) :
+  uniform_of_finset s h = uniform_of_list s.to_list (finset.nonempty.not_empty_to_list h) :=
+begin
+  ext x,
+  simp,
+end
 
 end uniform_of_list
 
