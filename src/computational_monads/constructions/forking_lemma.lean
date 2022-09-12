@@ -1,4 +1,4 @@
-import computational_monads.distribution_semantics.prod
+import computational_monads.constructions.prod
 import computational_monads.distribution_semantics.option
 import computational_monads.simulation_semantics.oracle_append
 import computational_monads.simulation_semantics.constructions.logging.random_oracle
@@ -145,7 +145,7 @@ calc ⦃ λ out, out.1.is_some | fork adv ⦄
   ... = ∑' (j : fin adv.q), (⦃adv.sim_choose_fork ×ₘ adv.sim_choose_fork⦄ (some j, some j)) :
     sorry --tsum_congr (λ j, congr_arg coe $ eval_distribution_fst_map_fork_apply adv (some j))
   ... = ∑' (j : fin adv.q), (⦃adv.sim_choose_fork⦄ (some j)) ^ 2 :
-    by simp only [distribution_semantics.eval_distribution_prod_apply, pow_two, ennreal.coe_mul]
+    by simp only [eval_distribution_prod_apply, pow_two, ennreal.coe_mul]
   ... = ∑ j, (⦃adv.sim_choose_fork⦄ (some j)) ^ 2 :
     tsum_fintype _
   ... ≥ (∑ j, ⦃adv.sim_choose_fork⦄ (some j)) ^ 2 / adv.q :
