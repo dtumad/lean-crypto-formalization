@@ -16,7 +16,7 @@ namespace pmf
 section uniform_of_list
 
 noncomputable def uniform_of_list (l : list α) (h : ¬ l.empty) : pmf α :=
-pmf.of_multiset (quotient.mk l) (multiset.quot_mk_ne_zero l h)
+pmf.of_multiset (quotient.mk l) (λ hl, h ((multiset.coe_eq_zero_iff_empty l).1 hl))
 
 variables (l : list α) (h : ¬ l.empty)
 
@@ -87,13 +87,13 @@ section uniform_of_vector
 
 -- TODO: this is a better definition and makes lists more natural
 noncomputable def uniform_of_vector {n : ℕ} (v : vector α (n + 1)) : pmf α :=
-uniform_of_list v.1 (vector.to_list_nonempty v)
+uniform_of_list v.1 (vector.not_empty_to_list v)
 
 variables {n : ℕ} (v : vector α (n + 1))
 
 @[simp]
 lemma support_uniform_of_vector : (uniform_of_vector v).support = {x | x ∈ v.to_list} :=
-support_uniform_of_list v.1 (vector.to_list_nonempty v)
+support_uniform_of_list v.1 (vector.not_empty_to_list v)
 
 @[simp]
 lemma uniform_of_vector_apply (a : α) : uniform_of_vector v a = v.to_list.count a / ↑(n + 1) :=

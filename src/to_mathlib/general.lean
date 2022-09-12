@@ -38,17 +38,6 @@ begin
     option.is_none_some, coe_sort_ff, and_false, false_and, not_false_iff] }
 end
 
--- NOTE: PR opened for this
-section list_like
-
-lemma multiset.quot_mk_ne_zero (l : list α) (hl : ¬ l.empty) : ↑l ≠ (0 : multiset α) :=
-mt ((list.empty_iff_eq_nil).2 ∘ (multiset.coe_eq_zero l).1) hl
-
-@[simp] lemma vector.to_list_nonempty (v : vector α (n + 1)) : ¬ v.to_list.empty :=
-by simp only [vector.empty_to_list_eq_ff, coe_sort_ff, not_false_iff]
-
-end list_like
-
 -- NOTE: Pull request opened for this
 section sums
 
