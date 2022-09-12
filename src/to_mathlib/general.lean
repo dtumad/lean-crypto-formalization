@@ -44,14 +44,8 @@ section list_like
 lemma multiset.quot_mk_ne_zero (l : list α) (hl : ¬ l.empty) : ↑l ≠ (0 : multiset α) :=
 mt ((list.empty_iff_eq_nil).2 ∘ (multiset.coe_eq_zero l).1) hl
 
-@[simp] lemma vector.empty_to_list_eq_ff (v : vector α (n + 1)) : v.to_list.empty = ff :=
-match v with | ⟨a :: as, _⟩ := rfl end
-
 @[simp] lemma vector.to_list_nonempty (v : vector α (n + 1)) : ¬ v.to_list.empty :=
 by simp only [vector.empty_to_list_eq_ff, coe_sort_ff, not_false_iff]
-
-lemma finset.to_list_nonempty {A : Type} (s : finset A) (hs : s.nonempty) : ¬ s.to_list.empty :=
-let ⟨x, hx⟩ := hs in λ h', list.not_mem_nil x (list.empty_iff_eq_nil.1 h' ▸ s.mem_to_list.2 hx)
 
 end list_like
 

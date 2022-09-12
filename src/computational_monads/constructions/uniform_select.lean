@@ -124,7 +124,7 @@ section uniform_select_finset
   Note this conversion is noncomputable, this conversion uses the axiom of choice. -/
 noncomputable def uniform_select_finset (bag : finset A) (h : bag.nonempty) :
   oracle_comp uniform_selecting A := 
-uniform_select_list (bag.to_list) (finset.to_list_nonempty bag h)
+uniform_select_list (bag.to_list) (finset.nonempty.not_empty_to_list h)
 
 notation `$ˢ` := uniform_select_finset
 
