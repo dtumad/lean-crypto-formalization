@@ -6,20 +6,8 @@ variables {spec spec' spec'' spec''' : oracle_spec} {A B C : Type} {α β γ : T
   (a : A) (oa : oracle_comp (spec' ++ spec'') A)
   (ob : A → oracle_comp (spec' ++ spec'') B)
 
-section oracle_append
+namespace simulation_oracle
 
--- def oracle_append' (so : simulation_oracle spec spec'')
---   (so' : simulation_oracle spec' spec''') :
---   simulation_oracle (spec ++ spec') (spec'' ++ spec''') :=
--- {
---   S := so.S × so'.S,
---   default_state := (so.default_state, so'.default_state),
---   o := sorry
--- }
-
--- notation so `+++ₛ` so' := oracle_append' so so'
-
--- TODO: `simulation_oracle.append`
 def oracle_append (so : simulation_oracle spec spec'')
   (so' : simulation_oracle spec' spec'') :
   simulation_oracle (spec ++ spec') spec'' :=
@@ -31,12 +19,6 @@ def oracle_append (so : simulation_oracle spec spec'')
 
 -- TODO: should be infix?
 notation so `++ₛ` so' := oracle_append so so'
-
--- -- Reduce some of the appended oracles independently, and others into a single
--- example (so : simulation_oracle spec spec') (so' : simulation_oracle spec' spec')
---   (so'' : simulation_oracle spec'' spec''') :
---   simulation_oracle ((spec ++ spec') ++ spec'') (spec' ++ spec''') :=
--- (so ++ₛ so') +++ₛ so''
 
 variables (so : simulation_oracle spec spec'') (so' : simulation_oracle spec' spec'')
   (i : spec.ι) (i' : spec'.ι) (t : spec.domain i) (t' : spec'.domain i')
@@ -57,6 +39,8 @@ lemma oracle_append_apply_inl : (so ++ₛ so').o (sum.inl i) (t, s) =
 @[simp]
 lemma oracle_append_apply_inr : (so ++ₛ so').o (sum.inr i') (t', s) =
   do { u_s' ← so'.o i' (t', s.2), pure (u_s'.1, s.1, u_s'.2)} := rfl
+
+lemma simulate_oracle_append_pure : simulate (so ++ₛ so') (pure a) s = (pure (a, s)) := rfl
 
 section support
 
@@ -129,46 +113,46 @@ end
 
 end support
 
+section fin_support
 
+end fin_support
 
 -- TODO: organize
-section simulate
-
-lemma simulate_oracle_append_pure : simulate (so ++ₛ so') (pure a) s = (pure (a, s)) := rfl
-
-end simulate
-
-section simulate'
-
 section distribution_semantics
 
+open distribution_semantics
+
 variable [spec''.finite_range]
+
+section eval_distribution
+
+end eval_distribution
+
+section equiv
 
 lemma simulate'_oracle_append_pure_equiv : simulate' (so ++ₛ so') (pure a) s ≃ₚ
   (pure a : oracle_comp spec'' _) := by simp
 
-end distribution_semantics
-
-end simulate'
-
-section default_simulate
-
 lemma default_simulate_oracle_append_pure : default_simulate (so ++ₛ so') (pure a) =
   (pure (a, (so.default_state, so'.default_state))) := rfl
-
-end default_simulate
-
-section default_simulate'
-
-section distribution_semantics
-
-variable [spec''.finite_range]
 
 lemma default_simulate'_oracle_append_pure_equiv : default_simulate' (so ++ₛ so') (pure a) ≃ₚ
   (pure a : oracle_comp spec'' _) := by simp
 
+end equiv
+
+section prob_event
+
+end prob_event
+
+section indep_events
+
+end indep_events
+
+section indep_event
+
+end indep_event
+
 end distribution_semantics
 
-end default_simulate'
-
-end oracle_append
+end simulation_oracle

@@ -4,8 +4,7 @@ open oracle_comp oracle_spec
 
 variables {spec spec' spec'' : oracle_spec} {A B C : Type}
 
--- TODO: namespace version
-section compose
+namespace simulation_oracle
 
 def oracle_compose (so : simulation_oracle spec spec') (so' : simulation_oracle spec' spec'') :
   simulation_oracle spec spec'' :=
@@ -34,4 +33,38 @@ theorem other [spec''.finite_range] (oa : oracle_comp spec A) (s : so.S × so'.S
     do { ⟨⟨a, s⟩, s'⟩ ← (simulate so' (simulate so oa s.1) s.2), pure (a, s, s') } :=
 sorry
 
-end compose
+section support
+
+end support
+
+section fin_support
+
+end fin_support
+
+section distribution_semantics
+
+open distribution_semantics
+
+section eval_distribution
+
+end eval_distribution
+
+section equiv
+
+end equiv
+
+section prob_event
+
+end prob_event
+
+section indep_events
+
+end indep_events
+
+section indep_event
+
+end indep_event
+
+end distribution_semantics
+
+end simulation_oracle
