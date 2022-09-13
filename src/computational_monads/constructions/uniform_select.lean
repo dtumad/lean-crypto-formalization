@@ -25,8 +25,7 @@ section support
 lemma support_uniform_fin (n : ℕ) : support $[0..n] = ⊤ :=
 support_query n ()
 
-@[simp]
-lemma mem_support_uniform_fin_iff {n : ℕ} (i : fin $ n + 1) : i ∈ support $[0..n] :=
+lemma mem_support_uniform_fin {n : ℕ} (i : fin $ n + 1) : i ∈ support $[0..n] :=
 (support_uniform_fin n).symm ▸ set.mem_univ i
 
 end support
@@ -35,7 +34,10 @@ section fin_support
 
 @[simp]
 lemma fin_support_uniform_fin (n : ℕ) : fin_support $[0..n] = ⊤ :=
-fin_support_query
+fin_support_query n ()
+
+lemma mem_fin_support_uniform_fin {n : ℕ} (i : fin $ n + 1) : i ∈ fin_support $[0..n] :=
+(fin_support_uniform_fin i) ▸ finset.mem_univ i
 
 end fin_support
 

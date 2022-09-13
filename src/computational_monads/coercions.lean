@@ -16,8 +16,11 @@ The coercions are ordered very specifically using priority attributes,
 In particular, can coerce to any set of appended oracles assuming that:
 1. The target oracle list is fully left associated, which is the same associativity as `++`.
 2. The subset of original oracles in the target is in the same order.
+
 To match this we adopt both conventions in general, and use a standard ordering for all oracles.
-In particular we start with the basic finite oracles: `coin_oracle ++ uniform_selecting ++ ...`
+In particular we start with the basic finite oracles: `coin_oracle ++ uniform_selecting ++ ...`,
+  and then add additional oracles further in the list. This standard ordering allows most coercions
+  between oracles to happen automatically
 -/
 
 open oracle_comp oracle_spec distribution_semantics 
