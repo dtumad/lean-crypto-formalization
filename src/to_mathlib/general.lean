@@ -13,6 +13,10 @@ open_locale measure_theory nnreal ennreal classical big_operators
 
 variables {α β γ : Type*} {n : ℕ}
 
+@[simp]
+lemma singleton_eq_top_of_subsingleton {α : Type*} [subsingleton α] (x : α) :
+  ({x} : set α) = ⊤ := set.ext (λ y, by simp)
+
 section count_to_list
 
 lemma finset.count_to_list_eq_one_iff (s : finset α) (a : α) : s.to_list.count a = 1 ↔ a ∈ s :=

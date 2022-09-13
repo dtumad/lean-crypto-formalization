@@ -6,25 +6,37 @@ namespace oracle_comp
 
 open oracle_spec
 
-variables {A B : Type} {spec : oracle_spec}
-  (oa : oracle_comp spec A) {n : ℕ} (a : A) (as : vector A n)
+variables {α : Type} {spec : oracle_spec}
+  (oa : oracle_comp spec α) {n : ℕ} (a : α) (as : vector α n)
 
-def repeat_n (oa : oracle_comp spec A) : Π (n : ℕ), oracle_comp spec (vector A n)
+def repeat_n (oa : oracle_comp spec α) : Π (n : ℕ), oracle_comp spec (vector α n)
 | 0 := return vector.nil
 | (n + 1) := do { a ← oa, as ← repeat_n n, return (a ::ᵥ as) }
 
 @[simp]
-lemma repeat_n_apply_zero : repeat_n oa 0 = return vector.nil := rfl
+lemma repeat_n_zero : repeat_n oa 0 = return vector.nil := rfl
 
 @[simp]
-lemma repeat_n_apply_succ : repeat_n oa (n + 1) =
+lemma repeat_n_succ : repeat_n oa (n + 1) =
   do { a ← oa, as ← repeat_n oa n, return (a ::ᵥ as) } := rfl
+
+instance repeat_n.decidable [spec.computable] [hoa : oa.decidable] : (repeat_n oa n).decidable :=
+begin
+  induction n with n hn,
+  { exact oracle_comp.decidable_return vector.nil },
+  { haveI : decidable (repeat_n oa n) := hn,
+    haveI : decidable_eq α := decidable_eq_of_decidable oa,
+    rw [repeat_n_succ],
+    apply_instance }
+end
+
+section support
 
 @[simp]
 lemma support_repeat_n : Π n, support (repeat_n oa n) = { v | ∀ a ∈ v.to_list, a ∈ oa.support }
 | 0 := begin
   ext v,
-  simp only [repeat_n_apply_zero, support_pure, set.mem_singleton_iff,
+  simp only [repeat_n_zero, support_pure, set.mem_singleton_iff,
     eq_iff_true_of_subsingleton, set.mem_set_of_eq, true_iff],
   exact λ a ha, false.elim (v.not_mem_zero a ha),
 end
@@ -51,16 +63,14 @@ end
   }
 end
 
-@[simp]
 lemma mem_support_repeat_n_iff : as ∈ (repeat_n oa n).support ↔
-  ∀ a ∈ as.to_list, a ∈ oa.support := by simp
+  ∀ a ∈ as.to_list, a ∈ oa.support := by simp only [support_repeat_n, set.mem_set_of_eq]
 
-@[simp]
-lemma support_repeat_n_zero : (repeat_n oa 0).support = ⊤ := set.ext (λ v, by simp)
+lemma support_repeat_n_zero : (repeat_n oa 0).support = ⊤ :=
+by simp only [repeat_n_zero, support_return, singleton_eq_top_of_subsingleton]
 
-@[simp]
-lemma mem_support_repeat_n_zero (as : vector A 0) :
-  as ∈ (repeat_n oa 0).support := by simp
+lemma mem_support_repeat_n_zero (as : vector α 0) : as ∈ (repeat_n oa 0).support :=
+by simp only [repeat_n_zero, support_return, singleton_eq_top_of_subsingleton]
 
 @[simp]
 lemma support_repeat_n_succ : (repeat_n oa (n + 1)).support =
@@ -82,25 +92,28 @@ begin
 end
 
 @[simp]
-lemma mem_support_repeat_n_succ_iff (as : vector A (n + 1)) : as ∈ (repeat_n oa (n + 1)).support ↔
+lemma mem_support_repeat_n_succ_iff (as : vector α (n + 1)) : as ∈ (repeat_n oa (n + 1)).support ↔
   as.head ∈ oa.support ∧ as.tail ∈ (repeat_n oa n).support :=
-by { rw [support_repeat_n_succ], exact iff.rfl }
+by simp only [support_repeat_n_succ, set.mem_set_of_eq]
 
 @[simp]
 lemma cons_mem_support_repeat_n_succ_iff : (a ::ᵥ as) ∈ (repeat_n oa (n + 1)).support ↔
   a ∈ oa.support ∧ as ∈ (repeat_n oa n).support :=
 by rw [mem_support_repeat_n_succ_iff oa (a ::ᵥ as), vector.head_cons, vector.tail_cons]
 
-lemma mem_support_of_mem_of_support_repeat_n (oa : oracle_comp spec A) (n : ℕ)
-  (v : vector A n) (hv : v ∈ (repeat_n oa n).support) (a : A) (ha : a ∈ v.to_list) :
-  a ∈ oa.support :=
+lemma mem_support_of_mem_of_support_repeat_n (n : ℕ) (as : vector α n)
+  (hv : as ∈ (repeat_n oa n).support) (a : α) (ha : a ∈ as.to_list) : a ∈ oa.support :=
 by { rw support_repeat_n at hv, exact hv a ha } 
 
-section eval_distribution
+end support
+
+section distribution_semantics
 
 open distribution_semantics
 
 variable [spec.finite_range]
+
+section eval_distribution
 
 /-- Probability of a vector is the product of probabilities of each element. -/
 @[simp]
@@ -108,7 +121,7 @@ lemma eval_distribution_repeat_n_apply :
   ⦃repeat_n oa n⦄ as = (as.map (λ a, ⦃oa⦄ a)).to_list.prod :=
 begin
   induction n with n hn,
-  { simp only [vector.eq_nil as, repeat_n_apply_zero oa, eval_distribution_return, pmf.pure_apply,
+  { simp only [vector.eq_nil as, repeat_n_zero oa, eval_distribution_return, pmf.pure_apply,
       if_true, vector.map_nil, vector.to_list_nil, list.prod_nil, eq_self_iff_true] },
   { refine trans (eval_distribution_bind_bind_apply _ _ _ _) _,
     simp [hn],
@@ -124,5 +137,23 @@ begin
 end
 
 end eval_distribution
+
+section equiv
+
+end equiv
+
+section prob_event
+
+end prob_event
+
+section indep_events
+
+end indep_events
+
+section indep_event
+
+end indep_event
+
+end distribution_semantics
 
 end oracle_comp

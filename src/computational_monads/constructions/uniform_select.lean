@@ -33,8 +33,7 @@ end support
 section fin_support
 
 @[simp]
-lemma fin_support_uniform_fin (n : ℕ) : fin_support $[0..n] = ⊤ :=
-fin_support_query n ()
+lemma fin_support_uniform_fin (n : ℕ) : fin_support $[0..n] = ⊤ := fin_support_query n ()
 
 lemma mem_fin_support_uniform_fin {n : ℕ} (i : fin $ n + 1) : i ∈ fin_support $[0..n] :=
 (fin_support_uniform_fin i) ▸ finset.mem_univ i

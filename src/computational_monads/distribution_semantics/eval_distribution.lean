@@ -1,6 +1,6 @@
 import to_mathlib.general
 import probability.probability_mass_function.uniform
-import computational_monads.fin_support
+import computational_monads.support.fin_support
 
 /-!
 # Distribution Semantics for Oracle Computations`
