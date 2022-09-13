@@ -22,15 +22,28 @@ trans ⟨λ h, (by_contra (λ h', zero_ne_one $ (list.count_eq_zero_of_not_mem h
 lemma finset.count_to_list_eq_zero_iff (s : finset α) (a : α) : s.to_list.count a = 0 ↔ a ∉ s :=
 by rw [list.count_eq_zero, finset.mem_to_list]
 
-lemma finset.count_to_list_insert_self (s : finset α) (a : α) : (insert a s).to_list.count a = 1 :=
-((insert a s).count_to_list_eq_one_iff a).2 (s.mem_insert_self a)
+lemma finset.count_to_list (s : finset α) (a : α) : s.to_list.count a = if a ∈ s then 1 else 0 :=
+by split_ifs; simpa only [finset.count_to_list_eq_one_iff, finset.count_to_list_eq_zero_iff]
 
 lemma finset.count_to_list_le_one (s : finset α) (a : α) :
   s.to_list.count a ≤ 1 :=
+by by_cases h : a ∈ s; simp only [finset.count_to_list, h, if_true, if_false, zero_le_one]
+
+lemma finset.count_to_list_empty (a : α) : (∅ : finset α).to_list.count a = 0 :=
+by rw [finset.to_list_empty, list.count_nil]
+
+lemma finset.count_to_list_insert (s : finset α) (a a' : α) :
+  (insert a' s).to_list.count a = if a = a' then 1 else s.to_list.count a :=
 begin
-  by_cases h : a ∈ s,
-  { exact le_of_eq ((s.count_to_list_eq_one_iff a).2 h) },
-  { exact le_of_eq_of_le ((s.count_to_list_eq_zero_iff a).2 h) zero_le_one }
+  split_ifs with h,
+  { exact h ▸ (((insert a s).count_to_list_eq_one_iff a).2 (s.mem_insert_self a)) },
+  { by_cases ha : a ∈ s,
+    { have ha' : a ∈ (insert a' s) := finset.mem_insert_of_mem ha,
+      calc list.count a (insert a' s).to_list = 1 : (finset.count_to_list_eq_one_iff _ _).2 ha'
+        ... = list.count a s.to_list : ((finset.count_to_list_eq_one_iff _ _).2 ha).symm },
+    { have ha' : a ∉ (insert a' s) := λ h', ((finset.mem_insert).1 h').rec h ha,
+      calc list.count a (insert a' s).to_list = 0 : (finset.count_to_list_eq_zero_iff _ _).2 ha'
+        ... = list.count a s.to_list : ((finset.count_to_list_eq_zero_iff _ _).2 ha).symm } }
 end
 
 end count_to_list

@@ -12,7 +12,7 @@ open_locale classical big_operators nnreal ennreal
 
 namespace pmf
 
--- NOTE: PR opened for this?
+-- NOTE: PR opened for this
 section uniform_of_list
 
 noncomputable def uniform_of_list (l : list α) (h : ¬ l.empty) : pmf α :=
@@ -82,11 +82,13 @@ lemma to_measure_uniform_of_list_apply (t : set α) [measurable_space α] (ht : 
 
 end measure
 
+-- NOTE : NOT IN PR
 lemma uniform_of_finset_eq_uniform_of_list_to_list (s : finset α) (h : s.nonempty) :
   uniform_of_finset s h = uniform_of_list s.to_list (finset.nonempty.not_empty_to_list h) :=
 begin
   ext x,
-  simp,
+  simp only [finset.count_to_list, div_eq_mul_inv, uniform_of_finset_apply, uniform_of_list_apply,
+    nat.cast_ite, nat.cast_one, nat.cast_zero, finset.length_to_list, boole_mul],
 end
 
 end uniform_of_list
