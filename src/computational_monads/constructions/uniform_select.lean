@@ -13,6 +13,7 @@ section uniform_fin
 
 /-- Randomly choose a natural `n : ℕ` by querying the uniform selection oracle.
   We implicitly use a `succ` call for the resulting type since `fin 0` is unihabited as a type -/
+@[derive decidable]
 def uniform_fin (n : ℕ) : oracle_comp uniform_selecting (fin $ n + 1) :=
 query n ()
 
@@ -25,12 +26,16 @@ lemma support_uniform_fin (n : ℕ) : support $[0..n] = ⊤ :=
 support_query n ()
 
 @[simp]
-lemma mem_support_uniform_fin {n : ℕ} (i : fin $ n + 1) : i ∈ support $[0..n] :=
+lemma mem_support_uniform_fin_iff {n : ℕ} (i : fin $ n + 1) : i ∈ support $[0..n] :=
 (support_uniform_fin n).symm ▸ set.mem_univ i
 
 end support
 
 section fin_support
+
+@[simp]
+lemma fin_support_uniform_fin (n : ℕ) : fin_support $[0..n] = ⊤ :=
+fin_support_query
 
 end fin_support
 

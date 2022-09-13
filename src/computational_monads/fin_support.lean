@@ -21,9 +21,9 @@ Without the `finite_range` instance, the support may be infinite,
 
 namespace oracle_comp
 
-open oracle_spec
+variables {α β γ : Type} {spec : oracle_spec}
 
-variables {α β γ : Type} {spec spec' : oracle_spec}
+open oracle_spec
 
 section decidable
 
@@ -37,10 +37,8 @@ class inductive decidable : Π {α : Type}, oracle_comp spec α → Type 1
 
 open decidable
 
-variable [spec.computable]
-
 /-- Version of `decidable_eq_of_decidable` taking an explicit `decidable` argument -/
-def decidable_eq_of_decidable' : Π {α : Type} {oa : oracle_comp spec α}
+def decidable_eq_of_decidable' [spec.computable] : Π {α : Type} {oa : oracle_comp spec α}
   (h : decidable oa), decidable_eq α
 | _ _ (decidable_pure' α a h) := h
 | _ _ (decidable_bind' α β oa ob hoa hob) := decidable_eq_of_decidable' (hob (inhabited_base oa).1)
@@ -48,27 +46,29 @@ def decidable_eq_of_decidable' : Π {α : Type} {oa : oracle_comp spec α}
 
 /-- Given a `decidable` instance on an `oracle_comp`, we can extract a
   `decidable_eq` instance on the resutlt type of the computation -/
-def decidable_eq_of_decidable (oa : oracle_comp spec α) [h : oa.decidable] :
+def decidable_eq_of_decidable [spec.computable] (oa : oracle_comp spec α) [h : oa.decidable] :
   decidable_eq α := decidable_eq_of_decidable' h
 
-variables [h : decidable_eq α] (a : α) (oa : oracle_comp spec α) (ob : α → oracle_comp spec β)
-  [hoa : oa.decidable] [hob : ∀ a, (ob a).decidable]
+instance decidable_return [h : decidable_eq α] (a : α) :
+  decidable (return a : oracle_comp spec α) := decidable_pure' α a h
 
-instance decidable_return : decidable (return a : oracle_comp spec α) := decidable_pure' α a h
+instance decidable_pure' [h : decidable_eq α] (a : α) :
+  decidable (pure' α a : oracle_comp spec α) := decidable_pure' α a h
 
-instance decidable_pure' : decidable (pure' α a : oracle_comp spec α) := decidable_pure' α a h
+instance decidable_pure [h : decidable_eq α] (a : α) :
+  decidable (pure a : oracle_comp spec α) := decidable_pure' α a h
 
-instance decidable_pure : decidable (pure a : oracle_comp spec α) := decidable_pure' α a h
+instance decidable_bind (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) [h : decidable oa]
+  [h' : ∀ a, decidable (ob a)] : decidable (oa >>= ob) := decidable_bind' α β oa ob h h'
 
-instance decidable_bind : decidable (bind oa ob) := decidable_bind' α β oa ob hoa hob
+instance decidable_bind' (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) [h : decidable oa]
+  [h' : ∀ a, decidable (ob a)] : decidable (bind' α β oa ob) := decidable_bind' α β oa ob h h'
 
-instance decidable_bind' : decidable (bind' α β oa ob) := decidable_bind' α β oa ob hoa hob
+instance decidable_map [h : decidable_eq β] (oa : oracle_comp spec α) [h' : oa.decidable]
+  (f : α → β) : decidable (f <$> oa) := decidable_bind' α β oa _ h' (λ a, decidable_pure' β _ h)
 
-instance decidable_map [h : decidable_eq β] (f : α → β) : decidable (f <$> oa) :=
-decidable_bind' α β oa _ hoa (λ a, decidable_pure' β _ h)
-
-instance decidable_query (i : spec.ι) (t : spec.domain i) : decidable (query i t) :=
-decidable_query i t
+instance decidable_query (i : spec.ι) (t : spec.domain i) :
+  decidable (query i t) := decidable_query i t
 
 instance decidable_coin : decidable coin := decidable_query _ _
 
@@ -86,6 +86,8 @@ section fin_support
 
 open decidable
 
+variables (oa  : oracle_comp spec α) (ob  : α → oracle_comp spec β) (f  : α → β)
+  (a a' : α) (b b' : β) (i : spec.ι) (t : spec.domain i) (u : spec.range i)
 variables [h : spec.computable] [h' : spec.finite_range]
 include h h'
 
@@ -103,6 +105,8 @@ def fin_support' : Π {α : Type} (oa : oracle_comp spec α), oa.decidable → f
 def fin_support (oa : oracle_comp spec α) [hoa : oa.decidable] : finset α :=
 oa.fin_support' hoa
 
+lemma fin_support_def [hoa : oa.decidable] : oa.fin_support = oa.fin_support' hoa := rfl
+
 lemma mem_fin_support'_iff_mem_support : Π {α : Type} (oa : oracle_comp spec α)
   (hoa : decidable oa) (a : α), a ∈ (fin_support' oa hoa) ↔ a ∈ oa.support
 | _ _ (decidable_pure' α a h) α' :=
@@ -112,16 +116,17 @@ lemma mem_fin_support'_iff_mem_support : Π {α : Type} (oa : oracle_comp spec �
 | _ _ (decidable_query i t) u :=
     by simp [support, fin_support']
 
-variables (oa : oracle_comp spec α) (ob : α → oracle_comp spec β)
-  (a a' : α) (b b' : β) (i : spec.ι) (t : spec'.ι)
-
 lemma mem_fin_support_iff_mem_support [hoa : oa.decidable] (a : α) :
-  a ∈ oa.fin_support ↔ a ∈ oa.support :=
-mem_fin_support'_iff_mem_support oa hoa a
+  a ∈ oa.fin_support ↔ a ∈ oa.support := mem_fin_support'_iff_mem_support oa hoa a
 
 /-- Correctness of `fin_support` with respect to `support`, i.e. the two are equal as `set`s -/
-theorem coe_fin_support_eq_support [oa.decidable] : ↑oa.fin_support = oa.support :=
+@[simp]
+theorem coe_fin_support_eq_support [decidable oa] : ↑oa.fin_support = oa.support :=
 set.ext (λ a, (mem_fin_support_iff_mem_support oa a))
+
+lemma fin_support_eq_iff_support_eq_coe [decidable oa] (s : finset α) :
+  oa.fin_support = s ↔ oa.support = ↑s :=
+by rw [← coe_fin_support_eq_support, finset.coe_inj]
 
 lemma support_subset_fin_support [decidable oa] : oa.support ⊆ ↑oa.fin_support :=
 by rw [coe_fin_support_eq_support oa]
@@ -139,6 +144,7 @@ lemma fin_support_return : (return a : oracle_comp spec α).fin_support = {a} :=
 lemma mem_fin_support_return_iff : a' ∈ (return a : oracle_comp spec α).fin_support ↔ a' = a :=
 finset.mem_singleton
 
+@[simp] -- Need a `simp` tag here because of weird instance issues
 lemma fin_support_pure' : (pure' α a : oracle_comp spec α).fin_support = {a} := rfl
 
 lemma mem_fin_support_pure'_iff : a' ∈ (pure' α a : oracle_comp spec α).fin_support ↔ a' = a :=
@@ -153,14 +159,52 @@ end return
 
 section bind
 
-variable [oa.decidable]
-variable [∀ a, (ob a).decidable]
+variables [hoa : oa.decidable] [hob : ∀ a, (ob a).decidable]
+include hoa hob
 
--- lemma fin_support_bind : (oa >>= ob).fin_support =
---   finset.bUnion oa.fin_support (λ a, (ob a).fin_support)
+@[simp]
+lemma fin_support_bind : (oa >>= ob).fin_support = @finset.bUnion α β
+  (decidable_eq_of_decidable (oa >>= ob)) oa.fin_support (λ a, (ob a).fin_support) :=
+by simp only [fin_support_eq_iff_support_eq_coe, support_bind,
+  finset.coe_bUnion, coe_fin_support_eq_support]
 
+lemma mem_fin_support_bind_iff : b ∈ (oa >>= ob).fin_support ↔
+  ∃ a ∈ oa.fin_support, b ∈ (ob a).fin_support :=
+by rw [fin_support_bind, finset.mem_bUnion]
+
+@[simp] -- Again the type class issues require `simp` tags here that seem unneeded
+lemma fin_support_bind' : (bind' α β oa ob).fin_support = @finset.bUnion α β
+  (decidable_eq_of_decidable (bind' α β oa ob)) oa.fin_support (λ a, (ob a).fin_support) :=
+fin_support_bind oa ob
+
+lemma mem_fin_support_bind'_iff : b ∈ (bind' α β oa ob).fin_support ↔
+  ∃ a ∈ oa.fin_support, b ∈ (ob a).fin_support :=
+mem_fin_support_bind_iff oa ob b 
 
 end bind
+
+section query
+
+@[simp]
+lemma fin_support_query : (query i t).fin_support = ⊤ := rfl
+
+lemma mem_fin_support_query : u ∈ (query i t).fin_support := finset.mem_univ u
+
+end query
+
+section map
+
+variables [decidable_eq β] [decidable oa]
+
+@[simp]
+lemma fin_support_map : (f <$> oa).fin_support = oa.fin_support.image f :=
+by rw [fin_support_eq_iff_support_eq_coe, finset.coe_image,
+  support_map, coe_fin_support_eq_support]
+
+lemma mem_fin_support_map_iff : b ∈ (f <$> oa).fin_support ↔ ∃ a ∈ oa.fin_support, f a = b :=
+by rw [fin_support_map, finset.mem_image]
+
+end map
 
 end fin_support
 
