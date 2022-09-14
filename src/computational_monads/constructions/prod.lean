@@ -1,7 +1,8 @@
-import computational_monads.distribution_semantics.prob_event
+import computational_monads.distribution_semantics.independence
 
 variables {α β γ : Type} {spec spec' : oracle_spec}
 
+-- TODO: `prod` -> `oracle_prod`
 def oracle_comp.prod (oa : oracle_comp spec α) (ob : oracle_comp spec β) :
   oracle_comp spec (α × β) := do {a ← oa, b ← ob, pure (a, b)}
 
