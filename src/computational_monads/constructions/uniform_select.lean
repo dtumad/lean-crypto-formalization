@@ -2,6 +2,20 @@ import computational_monads.distribution_semantics.prob_event
 
 import to_mathlib.uniform_of_vector
 
+/-!
+# Computations Uniformly Drawing From Data Structures
+
+This file defines different uniform computations derived from a `uniform_selecting` oracle.
+The base construction is `uniform_fin`, suggestively denoted `$[0..n]`.
+From this we build corresponding computations for `vector`, `list`, `finset`, and `fintype`,
+  using the notations `$ᵛ`, `$ˡ`, `$ˢ`, and `$ᵗ` respectively.
+
+Note that the `list` and `finset` versions require explicit proofs of being nonempty,
+  so using `vector` and `fintype` is preferable when this is possible.
+
+TODO: maybe this much sectioning isn't needed for these 'simple' computations.
+-/
+
 namespace oracle_comp
 
 variables {α β γ : Type}
@@ -19,13 +33,14 @@ query n ()
 
 notation `$[0..` n `]` := uniform_fin n
 
+variables (n : ℕ) {m : ℕ} (i : fin $ m + 1)
+
 section support
 
 @[simp]
-lemma support_uniform_fin (n : ℕ) : support $[0..n] = ⊤ :=
-support_query n ()
+lemma support_uniform_fin : support $[0..n] = ⊤ := support_query n ()
 
-lemma mem_support_uniform_fin {n : ℕ} (i : fin $ n + 1) : i ∈ support $[0..n] :=
+lemma mem_support_uniform_fin : i ∈ support $[0..m] :=
 (support_uniform_fin n).symm ▸ set.mem_univ i
 
 end support
@@ -33,9 +48,9 @@ end support
 section fin_support
 
 @[simp]
-lemma fin_support_uniform_fin (n : ℕ) : fin_support $[0..n] = ⊤ := fin_support_query n ()
+lemma fin_support_uniform_fin : fin_support $[0..n] = ⊤ := fin_support_query n ()
 
-lemma mem_fin_support_uniform_fin {n : ℕ} (i : fin $ n + 1) : i ∈ fin_support $[0..n] :=
+lemma mem_fin_support_uniform_fin : i ∈ fin_support $[0..m] :=
 (fin_support_uniform_fin i) ▸ finset.mem_univ i
 
 end fin_support
@@ -47,20 +62,19 @@ open distribution_semantics
 section eval_distribution
 
 @[simp]
-lemma eval_distribution_uniform_fin (n : ℕ) : ⦃$[0..n]⦄ = pmf.uniform_of_fintype (fin $ n + 1) :=
-rfl
+lemma eval_distribution_uniform_fin : ⦃$[0..n]⦄ = pmf.uniform_of_fintype (fin $ n + 1) := rfl
 
 @[simp]
-lemma eval_distribution_uniform_fin_apply {n : ℕ} (i : fin $ n + 1) : ⦃$[0..n]⦄ i = 1 / (n + 1) :=
-by simp only [eval_distribution_uniform_fin n, pmf.uniform_of_fintype_apply i,
-  fintype.card_fin (n + 1), nat.cast_add, nat.cast_one, one_div]
+lemma eval_distribution_uniform_fin_apply : ⦃$[0..m]⦄ i = 1 / (m + 1) :=
+by simp only [eval_distribution_uniform_fin m, pmf.uniform_of_fintype_apply i,
+  fintype.card_fin (m + 1), nat.cast_add, nat.cast_one, one_div]
 
 end eval_distribution
 
 section prob_event
 
 @[simp]
-lemma prob_event_uniform_fin {n : ℕ} (event : set (fin $ n + 1)) :
+lemma prob_event_uniform_fin (event : set (fin $ n + 1)) :
   ⦃event | ($[0..n])⦄ = (fintype.card event) / (n + 1) :=
 by simp only [uniform_fin, prob_event_query, uniform_selecting.range_apply,
   fintype.card_fin, nat.cast_add, nat.cast_one]
@@ -83,27 +97,40 @@ section uniform_select_vector
 
 /-- Randomly select an element of a vector by using `uniform_of_fin`.
   Again we need to use `succ` for the vectors type to avoid sampling an empty vector -/
+@[derive decidable]
 def uniform_select_vector {n : ℕ} (v : vector α (n + 1)) : oracle_comp uniform_selecting α :=
 v.nth <$> $[0..n]
 
 notation `$ᵛ` v := uniform_select_vector v
 
-variables {n : ℕ} (v : vector α (n + 1))
+variables {n : ℕ} (v : vector α (n + 1)) (a : α)
 
 section support
 
 @[simp]
-lemma support_uniform_select_vector : support ($ᵛ v) = v.nth '' ⊤ :=
-by rw [uniform_select_vector, support_map, support_uniform_fin]
+lemma support_uniform_select_vector : ($ᵛ v).support = {a | a ∈ v.to_list} :=
+(support_map v.nth $[0..n]).trans (set.ext (λ a, by simp only [vector.mem_iff_nth,
+  support_uniform_fin, set.top_eq_univ, set.image_univ, set.mem_range, set.mem_set_of_eq]))
 
-@[simp]
-lemma mem_support_uniform_select_vector_iff (a : α) : a ∈ ($ᵛ v).support ↔ a ∈ v.to_list :=
-by simp only [vector.mem_iff_nth, support_uniform_select_vector,
-  set.top_eq_univ, set.image_univ, set.mem_range]
+lemma mem_support_uniform_select_vector_iff : a ∈ ($ᵛ v).support ↔ a ∈ v.to_list :=
+by simp only [support_uniform_select_vector, set.mem_set_of_eq]
 
 end support
 
 section fin_support
+
+@[simp]
+lemma fin_support_uniform_select_vector : ($ᵛ v).fin_support = finset.image v.nth finset.univ :=
+begin
+  rw [fin_support_eq_iff_support_eq_coe, finset.coe_image, support_uniform_select_vector],
+  exact set.ext (λ a, by simp only [vector.mem_iff_nth, set.mem_set_of_eq,
+    finset.coe_univ, set.image_univ, set.mem_range]), 
+end
+
+@[simp]
+lemma mem_fin_support_uniform_select_vector_iff : a ∈ ($ᵛ v).fin_support ↔ a ∈ v.to_list :=
+by simp only [fin_support_uniform_select_vector, vector.mem_iff_nth,
+  finset.mem_image, finset.mem_univ, exists_true_left]
 
 end fin_support
 
@@ -117,6 +144,9 @@ section eval_distribution
 lemma eval_distribution_uniform_select_vector : ⦃$ᵛ v⦄ = pmf.uniform_of_vector v :=
 by simp only [uniform_select_vector, pmf.uniform_of_vector_eq_nth_map_uniform_of_fintype,
   eval_distribution_map, eval_distribution_uniform_fin]
+
+lemma eval_distribution_uniform_select_vector_apply : ⦃$ᵛ v⦄ a = v.to_list.count a / ↑(n + 1) :=
+by rw [eval_distribution_uniform_select_vector, pmf.uniform_of_vector_apply]
 
 end eval_distribution
 
@@ -150,18 +180,38 @@ lemma uniform_select_list_nil (h : ¬ ([] : list α).empty) (oa : oracle_comp un
 lemma uniform_select_list_cons (h : ¬ (x :: xs).empty) :
   $ˡ (x :: xs) h = uniform_select_vector ⟨x :: xs, list.length_cons x xs⟩ := rfl
 
+noncomputable instance uniform_select_list.decidable : ($ˡ xs h).decidable :=
+begin
+  induction xs with x xs,
+  { exact false.elim (h rfl) },
+  { exact uniform_select_vector.decidable _ }
+end
+
 section support
 
 @[simp]
-lemma support_uniform_select_list : Π (xs : list α) (h : ¬ xs.empty),
-  support ($ˡ xs h) = {a | a ∈ xs}
-| [] h := by simpa only [list.empty, coe_sort_tt, not_true] using h
-| (x :: xs) _ := set.ext (λ x', by rw [uniform_select_list,
-    mem_support_uniform_select_vector_iff, vector.to_list_mk, set.mem_set_of])
+lemma support_uniform_select_list : ($ˡ xs h).support = {a | a ∈ xs} :=
+begin
+  induction xs with x xs,
+  { simpa only [list.empty, coe_sort_tt, not_true] using h },
+  { exact set.ext (λ x', by rw [uniform_select_list,
+      mem_support_uniform_select_vector_iff, vector.to_list_mk, set.mem_set_of]) }
+end
+
+lemma mem_support_uniform_select_list_iff : x ∈ ($ˡ xs h).support ↔ x ∈ xs :=
+by simp only [oracle_comp.support_uniform_select_list, set.mem_set_of_eq]
 
 end support
 
 section fin_support
+
+@[simp]
+lemma fin_support_uniform_select_list : ($ˡ xs h).fin_support = list.to_finset xs :=
+(fin_support_eq_iff_support_eq_coe _ _).2 (set.ext $ λ x, by simp only [finset.mem_coe,
+  support_uniform_select_list, set.mem_set_of_eq, list.mem_to_finset])
+
+lemma mem_fin_support_uniform_select_list_iff : x ∈ ($ˡ xs h).fin_support ↔ x ∈ xs :=
+by simp only [fin_support_uniform_select_list, list.mem_to_finset]
 
 end fin_support
 
@@ -174,13 +224,12 @@ section eval_distribution
 lemma eval_distribution_uniform_select_list_nil (h : ¬ ([] : list α).empty) (p : pmf α) :
   ⦃$ˡ [] h⦄ = p := false.elim (h rfl)
 
-lemma eval_distribution_uniform_select_list : Π (xs : list α) (h : ¬ xs.empty),
-  ⦃$ˡ xs h⦄ = pmf.uniform_of_list xs h
-| [] h := eval_distribution_uniform_select_list_nil h _
-| (x :: xs) h := begin
-  rw [uniform_select_list_cons, eval_distribution_uniform_select_vector],
-  rw [pmf.uniform_of_vector],
-  refl,
+@[simp]
+lemma eval_distribution_uniform_select_list : ⦃$ˡ xs h⦄ = pmf.uniform_of_list xs h :=
+begin
+  induction xs with x xs,
+  { exact eval_distribution_uniform_select_list_nil h _ },
+  { simpa only [uniform_select_list_cons, eval_distribution_uniform_select_vector] }
 end
 
 end eval_distribution
