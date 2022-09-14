@@ -107,6 +107,10 @@ by { rw support_repeat_n at hv, exact hv a ha }
 
 end support
 
+section fin_support
+
+end fin_support
+
 section distribution_semantics
 
 open distribution_semantics
