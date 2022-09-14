@@ -43,23 +43,17 @@ lemma support_uniform_fin : support $[0..n] = ⊤ := support_query n ()
 lemma mem_support_uniform_fin : i ∈ support $[0..m] :=
 (support_uniform_fin n).symm ▸ set.mem_univ i
 
-end support
-
-section fin_support
-
 @[simp]
 lemma fin_support_uniform_fin : fin_support $[0..n] = ⊤ := fin_support_query n ()
 
 lemma mem_fin_support_uniform_fin : i ∈ fin_support $[0..m] :=
 (fin_support_uniform_fin i) ▸ finset.mem_univ i
 
-end fin_support
+end support
 
 section distribution_semantics
 
 open distribution_semantics
-
-section eval_distribution
 
 @[simp]
 lemma eval_distribution_uniform_fin : ⦃$[0..n]⦄ = pmf.uniform_of_fintype (fin $ n + 1) := rfl
@@ -69,25 +63,11 @@ lemma eval_distribution_uniform_fin_apply : ⦃$[0..m]⦄ i = 1 / (m + 1) :=
 by simp only [eval_distribution_uniform_fin m, pmf.uniform_of_fintype_apply i,
   fintype.card_fin (m + 1), nat.cast_add, nat.cast_one, one_div]
 
-end eval_distribution
-
-section prob_event
-
 @[simp]
 lemma prob_event_uniform_fin (event : set (fin $ n + 1)) :
   ⦃event | ($[0..n])⦄ = (fintype.card event) / (n + 1) :=
 by simp only [uniform_fin, prob_event_query, uniform_selecting.range_apply,
   fintype.card_fin, nat.cast_add, nat.cast_one]
-
-end prob_event
-
-section indep_events
-
-end indep_events
-
-section indep_event
-
-end indep_event
 
 end distribution_semantics
 
@@ -115,10 +95,6 @@ lemma support_uniform_select_vector : ($ᵛ v).support = {a | a ∈ v.to_list} :
 lemma mem_support_uniform_select_vector_iff : a ∈ ($ᵛ v).support ↔ a ∈ v.to_list :=
 by simp only [support_uniform_select_vector, set.mem_set_of_eq]
 
-end support
-
-section fin_support
-
 @[simp]
 lemma fin_support_uniform_select_vector : ($ᵛ v).fin_support = finset.image v.nth finset.univ :=
 begin
@@ -132,13 +108,11 @@ lemma mem_fin_support_uniform_select_vector_iff : a ∈ ($ᵛ v).fin_support ↔
 by simp only [fin_support_uniform_select_vector, vector.mem_iff_nth,
   finset.mem_image, finset.mem_univ, exists_true_left]
 
-end fin_support
+end support
 
 section distribution_semantics
 
 open distribution_semantics
-
-section eval_distribution
 
 @[simp]
 lemma eval_distribution_uniform_select_vector : ⦃$ᵛ v⦄ = pmf.uniform_of_vector v :=
@@ -147,16 +121,6 @@ by simp only [uniform_select_vector, pmf.uniform_of_vector_eq_nth_map_uniform_of
 
 lemma eval_distribution_uniform_select_vector_apply : ⦃$ᵛ v⦄ a = v.to_list.count a / ↑(n + 1) :=
 by rw [eval_distribution_uniform_select_vector, pmf.uniform_of_vector_apply]
-
-end eval_distribution
-
-section prob_event
-
-end prob_event
-
-section indep_events
-
-end indep_events
 
 end distribution_semantics
 
@@ -201,10 +165,6 @@ end
 lemma mem_support_uniform_select_list_iff : x ∈ ($ˡ xs h).support ↔ x ∈ xs :=
 by simp only [oracle_comp.support_uniform_select_list, set.mem_set_of_eq]
 
-end support
-
-section fin_support
-
 @[simp]
 lemma fin_support_uniform_select_list : ($ˡ xs h).fin_support = list.to_finset xs :=
 (fin_support_eq_iff_support_eq_coe _ _).2 (set.ext $ λ x, by simp only [finset.mem_coe,
@@ -213,13 +173,11 @@ lemma fin_support_uniform_select_list : ($ˡ xs h).fin_support = list.to_finset 
 lemma mem_fin_support_uniform_select_list_iff : x ∈ ($ˡ xs h).fin_support ↔ x ∈ xs :=
 by simp only [fin_support_uniform_select_list, list.mem_to_finset]
 
-end fin_support
+end support
 
 section distribution_semantics
 
 open distribution_semantics
-
-section eval_distribution
 
 lemma eval_distribution_uniform_select_list_nil (h : ¬ ([] : list α).empty) (p : pmf α) :
   ⦃$ˡ [] h⦄ = p := false.elim (h rfl)
@@ -231,20 +189,6 @@ begin
   { exact eval_distribution_uniform_select_list_nil h _ },
   { simpa only [uniform_select_list_cons, eval_distribution_uniform_select_vector] }
 end
-
-end eval_distribution
-
-section prob_event
-
-end prob_event
-
-section indep_events
-
-end indep_events
-
-section indep_event
-
-end indep_event
 
 end distribution_semantics 
 
@@ -275,15 +219,9 @@ by simp only [uniform_select_finset, support_uniform_select_list,
 
 end support
 
-section fin_support
-
-end fin_support
-
 section distribution_semantics
 
 open distribution_semantics
-
-section eval_distribution
 
 @[simp]
 lemma eval_distribution_uniform_select_finset :
@@ -293,20 +231,6 @@ begin
   rw eval_distribution_uniform_select_list,
   rw pmf.uniform_of_finset_eq_uniform_of_list_to_list,
 end
-
-end eval_distribution
-
-section prob_event
-
-end prob_event
-
-section indep_events
-
-end indep_events
-
-section indep_event
-
-end indep_event
 
 end distribution_semantics
 
@@ -334,34 +258,14 @@ by simpa only [uniform_select_fintype, support_uniform_select_finset,
 
 end support
 
-section fin_support
-
-end fin_support
-
 section distribution_semantics
 
 open distribution_semantics
-
-section eval_distribution
 
 @[simp]
 lemma eval_distribution_uniform_select_fintype :
   ⦃$ᵗ α⦄ = pmf.uniform_of_fintype α :=
 sorry
-
-end eval_distribution
-
-section prob_event
-
-end prob_event
-
-section indep_events
-
-end indep_events
-
-section indep_event
-
-end indep_event
 
 end distribution_semantics
 
