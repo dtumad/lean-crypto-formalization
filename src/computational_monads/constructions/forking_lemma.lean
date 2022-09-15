@@ -106,7 +106,6 @@ begin
   -- exact ⟨rfl, rfl⟩,
 end
 
-/-- Correctness with respect to `choose_fork`, i.e. the chosen fork matches for both outputs -/
 lemma choose_fork_first_eq (i : fin adv.q) (cache cache' : query_log (T →ₒ U)) (x x' : A)
   (h : (some i, x, cache, x', cache') ∈ (fork adv).support) :
   adv.choose_fork x cache = i :=
@@ -143,16 +142,15 @@ calc ⦃ λ out, out.1.is_some | fork adv ⦄
   ... = ∑' (j : fin adv.q), (⦃prod.fst <$> fork adv⦄ (some j)) :
     (distribution_semantics.prob_event_is_some $ prod.fst <$> fork adv)
   ... = ∑' (j : fin adv.q), (⦃adv.sim_choose_fork ×ₘ adv.sim_choose_fork⦄ (some j, some j)) :
-    sorry --tsum_congr (λ j, congr_arg coe $ eval_distribution_fst_map_fork_apply adv (some j))
+    tsum_congr (λ j, eval_distribution_fst_map_fork_apply _ _)
   ... = ∑' (j : fin adv.q), (⦃adv.sim_choose_fork⦄ (some j)) ^ 2 :
     by simp only [eval_distribution_prod_apply, pow_two, ennreal.coe_mul]
   ... = ∑ j, (⦃adv.sim_choose_fork⦄ (some j)) ^ 2 :
     tsum_fintype _
+  ... ≥ (∑ j, ⦃adv.sim_choose_fork⦄ (some j)) ^ 2 / (finset.univ : finset $ fin adv.q).card ^ 1 :
+    nnreal.pow_sum_div_card_le_sum_pow ⊤ (λ j, ⦃adv.sim_choose_fork⦄ (some j)) 1
   ... ≥ (∑ j, ⦃adv.sim_choose_fork⦄ (some j)) ^ 2 / adv.q :
-    begin
-      
-      have := nnreal.pwo ⊤ (λ j, ⦃adv.sim_choose_fork⦄ (some j)) 2,
-    end
+    by simp only [finset.card_fin, pow_one, ge_iff_le]
   ... = (adv.advantage ^ 2) / adv.q :
     by rw forking_adversary.advantage_eq_sum adv
 

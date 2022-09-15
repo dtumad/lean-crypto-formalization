@@ -12,8 +12,6 @@ From this we build corresponding computations for `vector`, `list`, `finset`, an
 
 Note that the `list` and `finset` versions require explicit proofs of being nonempty,
   so using `vector` and `fintype` is preferable when this is possible.
-
-TODO: maybe this much sectioning isn't needed for these 'simple' computations.
 -/
 
 namespace oracle_comp
@@ -21,7 +19,7 @@ namespace oracle_comp
 variables {α β γ : Type}
 
 open oracle_spec
-open_locale classical
+open_locale classical nnreal ennreal
 
 section uniform_fin
 
@@ -60,7 +58,7 @@ lemma eval_distribution_uniform_fin : ⦃$[0..n]⦄ = pmf.uniform_of_fintype (fi
 
 @[simp]
 lemma eval_distribution_uniform_fin_apply : ⦃$[0..m]⦄ i = 1 / (m + 1) :=
-by simp only [eval_distribution_uniform_fin m, pmf.uniform_of_fintype_apply i,
+by rw [eval_distribution_uniform_fin m, pmf.uniform_of_fintype_apply i,
   fintype.card_fin (m + 1), nat.cast_add, nat.cast_one, one_div]
 
 @[simp]
@@ -116,11 +114,18 @@ open distribution_semantics
 
 @[simp]
 lemma eval_distribution_uniform_select_vector : ⦃$ᵛ v⦄ = pmf.uniform_of_vector v :=
-by simp only [uniform_select_vector, pmf.uniform_of_vector_eq_nth_map_uniform_of_fintype,
+by rw [uniform_select_vector, pmf.uniform_of_vector_eq_nth_map_uniform_of_fintype,
   eval_distribution_map, eval_distribution_uniform_fin]
 
 lemma eval_distribution_uniform_select_vector_apply : ⦃$ᵛ v⦄ a = v.to_list.count a / ↑(n + 1) :=
 by rw [eval_distribution_uniform_select_vector, pmf.uniform_of_vector_apply]
+
+@[simp]
+lemma prob_event_uniform_select_vector (event : set α) :
+  ⦃event | $ᵛ v⦄ = (v.to_list.countp event) / (n + 1) :=
+by simp only [prob_event_eq_to_nnreal_to_outer_measure_apply, ennreal.to_nnreal_div,
+  eval_distribution_uniform_select_vector, pmf.to_outer_measure_uniform_of_vector_apply,
+  ← nat.cast_succ, ennreal.to_nnreal_nat]
 
 end distribution_semantics
 
@@ -163,7 +168,7 @@ begin
 end
 
 lemma mem_support_uniform_select_list_iff : x ∈ ($ˡ xs h).support ↔ x ∈ xs :=
-by simp only [oracle_comp.support_uniform_select_list, set.mem_set_of_eq]
+by rw [oracle_comp.support_uniform_select_list, set.mem_set_of_eq]
 
 @[simp]
 lemma fin_support_uniform_select_list : ($ˡ xs h).fin_support = list.to_finset xs :=
@@ -171,7 +176,7 @@ lemma fin_support_uniform_select_list : ($ˡ xs h).fin_support = list.to_finset 
   support_uniform_select_list, set.mem_set_of_eq, list.mem_to_finset])
 
 lemma mem_fin_support_uniform_select_list_iff : x ∈ ($ˡ xs h).fin_support ↔ x ∈ xs :=
-by simp only [fin_support_uniform_select_list, list.mem_to_finset]
+by rw [fin_support_uniform_select_list, list.mem_to_finset]
 
 end support
 
@@ -190,6 +195,13 @@ begin
   { simpa only [uniform_select_list_cons, eval_distribution_uniform_select_vector] }
 end
 
+@[simp]
+lemma prob_event_uniform_select_list (event : set α) :
+  ⦃event | $ˡ xs h⦄ = xs.countp event / xs.length :=
+by simp only [prob_event_eq_to_nnreal_to_outer_measure_apply, ennreal.to_nnreal_div,
+  pmf.to_outer_measure_uniform_of_list_apply, ennreal.to_nnreal_nat,
+  eval_distribution_uniform_select_list]
+
 end distribution_semantics 
 
 end uniform_select_list
@@ -198,13 +210,14 @@ section uniform_select_finset
 
 /-- We can sample randomly from a `finset` by converting to a list and then sampling that.
   Note this conversion is noncomputable, this conversion uses the axiom of choice. -/
+@[derive decidable]
 noncomputable def uniform_select_finset (bag : finset α) (h : bag.nonempty) :
   oracle_comp uniform_selecting α := 
 uniform_select_list bag.to_list (finset.nonempty.not_empty_to_list h)
 
 notation `$ˢ` := uniform_select_finset
 
-variables (bag : finset α) (h : bag.nonempty)
+variables (bag : finset α) (h : bag.nonempty) (a : α)
 
 lemma uniform_select_finset_empty (h : (∅ : finset α).nonempty)
   (oa : oracle_comp uniform_selecting α) : $ˢ ∅ h = oa :=
@@ -213,9 +226,19 @@ false.elim (finset.nonempty.ne_empty h rfl)
 section support
 
 @[simp]
-lemma support_uniform_select_finset : support ($ˢ bag h) = ↑bag :=
+lemma support_uniform_select_finset : ($ˢ bag h).support = ↑bag :=
 by simp only [uniform_select_finset, support_uniform_select_list,
   finset.mem_to_list, finset.set_of_mem]
+
+lemma mem_support_uniform_select_finset_iff : a ∈ ($ˢ bag h).support ↔ a ∈ bag :=
+by rw [support_uniform_select_finset, finset.mem_coe]
+
+@[simp]
+lemma fin_support_uniform_select_finset : ($ˢ bag h).fin_support = bag :=
+by rw [fin_support_eq_iff_support_eq_coe, support_uniform_select_finset]
+
+lemma mem_fin_support_uniform_select_finset_iff : a ∈ ($ˢ bag h).fin_support ↔ a ∈ bag :=
+by rw [fin_support_uniform_select_finset]
 
 end support
 
@@ -224,13 +247,20 @@ section distribution_semantics
 open distribution_semantics
 
 @[simp]
-lemma eval_distribution_uniform_select_finset :
-  ⦃$ˢ bag h⦄ = pmf.uniform_of_finset bag h :=
-begin
-  rw uniform_select_finset,
-  rw eval_distribution_uniform_select_list,
-  rw pmf.uniform_of_finset_eq_uniform_of_list_to_list,
-end
+lemma eval_distribution_uniform_select_finset : ⦃$ˢ bag h⦄ = pmf.uniform_of_finset bag h :=
+by rw [uniform_select_finset, eval_distribution_uniform_select_list,
+  pmf.uniform_of_finset_eq_uniform_of_list_to_list]
+
+lemma eval_distribution_uniform_select_finset_apply :
+  ⦃$ˢ bag h⦄ a = if a ∈ bag then bag.card⁻¹ else 0 :=
+by rw [eval_distribution_uniform_select_finset, pmf.uniform_of_finset_apply]
+
+@[simp]
+lemma prob_event_uniform_select_finset (event : set α) :
+  ⦃event | $ˢ bag h⦄ = (bag.filter (∈ event)).card / bag.card :=
+by simp only [prob_event_eq_to_nnreal_to_outer_measure_apply, ennreal.to_nnreal_div,
+  ennreal.to_nnreal_nat, eval_distribution_uniform_select_finset,
+  pmf.to_outer_measure_uniform_of_finset_apply]
 
 end distribution_semantics
 
@@ -240,21 +270,32 @@ section uniform_select_fintype
 
 /-- We can select randomly from a fintyp by using the `finset` corresponding to the `fintype`.
   Again we need to use axiom of choice so this operation is noncomputable. -/
+@[derive decidable]
 noncomputable def uniform_select_fintype (α : Type) [fintype α] [nonempty α] :
   oracle_comp uniform_selecting α :=
-uniform_select_finset ⊤ finset.univ_nonempty
+uniform_select_finset finset.univ finset.univ_nonempty
 
 notation `$ᵗ` := uniform_select_fintype
 
-variables (α) [fintype α] [nonempty α]
+variables (α) [fintype α] [nonempty α] (a : α)
 
 section support
 
 @[simp]
-lemma support_uniform_select_fintype :
-  support ($ᵗ α) = ⊤ :=
-by simpa only [uniform_select_fintype, support_uniform_select_finset,
+lemma support_uniform_select_fintype : ($ᵗ α).support = ⊤ :=
+by rw [uniform_select_fintype, support_uniform_select_finset,
   set.top_eq_univ, finset.coe_eq_univ]
+
+lemma mem_support_uniform_select_fintype : a ∈ ($ᵗ α).support :=
+by simp only [support_uniform_select_fintype]
+
+@[simp]
+lemma fin_support_uniform_select_fintype : ($ᵗ α).fin_support = finset.univ :=
+by rw [fin_support_eq_iff_support_eq_coe, support_uniform_select_fintype,
+  set.top_eq_univ, finset.coe_univ]
+
+lemma mem_fin_support_uniform_select_fintype : a ∈ ($ᵗ α).fin_support :=
+by simp only [fin_support_uniform_select_fintype, finset.mem_univ]
 
 end support
 
@@ -263,9 +304,18 @@ section distribution_semantics
 open distribution_semantics
 
 @[simp]
-lemma eval_distribution_uniform_select_fintype :
-  ⦃$ᵗ α⦄ = pmf.uniform_of_fintype α :=
-sorry
+lemma eval_distribution_uniform_select_fintype : ⦃$ᵗ α⦄ = pmf.uniform_of_fintype α :=
+by rw [uniform_select_fintype, eval_distribution_uniform_select_finset, pmf.uniform_of_fintype]
+
+lemma eval_distribution_uniform_select_fintype_apply : ⦃$ᵗ α⦄ a = (fintype.card α)⁻¹ :=
+by rw [eval_distribution_uniform_select_fintype, pmf.uniform_of_fintype_apply]
+
+@[simp]
+lemma prob_event_uniform_select_fintype_apply (event : set α) :
+  ⦃event | $ᵗ α⦄ = fintype.card event / fintype.card α :=
+by simp only [prob_event_eq_to_nnreal_to_outer_measure_apply, ennreal.to_nnreal_div,
+  ennreal.to_nnreal_nat, eval_distribution_uniform_select_fintype,
+  pmf.to_outer_measure_uniform_of_fintype_apply]
 
 end distribution_semantics
 

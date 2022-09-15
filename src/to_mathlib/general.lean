@@ -21,6 +21,9 @@ lemma finset.count_to_list [decidable_eq α] (s : finset α) (a : α) :
   s.to_list.count a = if a ∈ s then 1 else 0 :=
 by simp only [list.count_eq_of_nodup s.nodup_to_list, finset.mem_to_list]
 
+-- TODO: maybe unneeded
+section option
+
 lemma option.set_eq_union_is_none_is_some {α : Type*} (s : set (option α)) :
   s = {x ∈ s | x.is_none} ∪ {x ∈ s | x.is_some} :=
 begin
@@ -42,33 +45,7 @@ begin
     option.is_none_some, coe_sort_ff, and_false, false_and, not_false_iff] }
 end
 
--- NOTE: Pull request opened for this
-section sums
-
--- lemma real.pow_sum_div_card_le_sum_pow (s : finset α) (f : α → ℝ) (hf : ∀ a, 0 ≤ f a) (n : ℕ) :
---   (∑ x in s, f x) ^ (n + 1) / s.card ^ n ≤ ∑ x in s, (f x) ^ (n + 1) :=
--- begin
---   by_cases hs : s = ∅,
---   { simp only [hs, finset.sum_empty, zero_pow', ne.def, nat.succ_ne_zero, not_false_iff, zero_div] },
---   { have hs₀ : s.card ≠ 0 := hs ∘ finset.card_eq_zero.1,
---     have hs' : (s.card : ℝ) ≠ 0 := (nat.cast_ne_zero.2 hs₀),
---     have hs'' : 0 < (s.card : ℝ) := nat.cast_pos.2 (nat.pos_of_ne_zero hs₀),
---     suffices : (∑ x in s, f x / s.card) ^ (n + 1) ≤ ∑ x in s, (f x ^ (n + 1) / s.card),
---     by rwa [← finset.sum_div, ← finset.sum_div, div_pow, pow_succ' (s.card : ℝ),
---         ← div_div, div_le_iff hs'', div_mul, div_self hs', div_one] at this,
---     have := @convex_on.map_sum_le ℝ ℝ ℝ _ _ _ _ _ _ _ (set.Ici 0) (λ x, x ^ (n + 1)) s
---       (λ _, 1 / s.card) (coe ∘ f) (convex_on_pow (n + 1)) _ _ (λ i hi, set.mem_Ici.2 (hf i)),
---     { simpa only [inv_mul_eq_div, one_div, algebra.id.smul_eq_mul] using this },
---     { simp only [one_div, inv_nonneg, nat.cast_nonneg, implies_true_iff] },
---     { simpa only [one_div, finset.sum_const, nsmul_eq_mul] using mul_inv_cancel hs' }}
--- end
-
--- lemma nnreal.pow_sum_div_card_le_sum_pow (s : finset α) (f : α → ℝ≥0) (n : ℕ) :
---   (∑ x in s, f x) ^ (n + 1) / s.card ^ n ≤ ∑ x in s, (f x) ^ (n + 1) :=
--- by simpa [← nnreal.coe_le_coe, nnreal.coe_sum] using
---   real.pow_sum_div_card_le_sum_pow s (coe ∘ f) (λ _, nnreal.coe_nonneg _) n
-
-end sums
+end option
 
 section ennreal
 
@@ -141,8 +118,7 @@ end ennreal
 /-- Version of `tsum_ite_eq_extract` for `nnreal` rather than `topological_add_group`. -/
 lemma nnreal.tsum_ite_eq_extract [decidable_eq β] {f : β → ℝ≥0} (hf : summable f) (b : β) :
   ∑' x, f x = f b + ∑' x, ite (x = b) 0 (f x) :=
-calc ∑' x, f x
-  = ∑' x, ((ite (x = b) (f x) 0) + (ite (x = b) 0 (f x))) :
+calc ∑' x, f x = ∑' x, ((ite (x = b) (f x) 0) + (ite (x = b) 0 (f x))) :
     tsum_congr (λ n, by split_ifs; simp only [zero_add, add_zero])
   ... = ∑' x, ite (x = b) (f x) 0 + ∑' x, ite (x = b) 0 (f x) :
     by refine tsum_add (nnreal.summable_of_le (λ b', _) hf) (nnreal.summable_of_le (λ b', _) hf);
