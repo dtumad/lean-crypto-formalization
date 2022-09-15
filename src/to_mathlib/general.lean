@@ -9,7 +9,7 @@ import analysis.convex.specific_functions
 -/
 
 
-open_locale measure_theory nnreal ennreal classical big_operators
+open_locale measure_theory nnreal ennreal big_operators
 
 variables {α β γ : Type*} {n : ℕ}
 
@@ -19,36 +19,46 @@ lemma singleton_eq_top_of_subsingleton {α : Type*} [subsingleton α] (x : α) :
 
 section count_to_list
 
-lemma finset.count_to_list_eq_one_iff (s : finset α) (a : α) : s.to_list.count a = 1 ↔ a ∈ s :=
-trans ⟨λ h, (by_contra (λ h', zero_ne_one $ (list.count_eq_zero_of_not_mem h').symm.trans h)),
-  list.count_eq_one_of_mem s.nodup_to_list⟩ finset.mem_to_list
-
-lemma finset.count_to_list_eq_zero_iff (s : finset α) (a : α) : s.to_list.count a = 0 ↔ a ∉ s :=
-by rw [list.count_eq_zero, finset.mem_to_list]
+variable [decidable_eq α]
 
 lemma finset.count_to_list (s : finset α) (a : α) : s.to_list.count a = if a ∈ s then 1 else 0 :=
-by split_ifs; simpa only [finset.count_to_list_eq_one_iff, finset.count_to_list_eq_zero_iff]
+by simp only [list.count_eq_of_nodup s.nodup_to_list, finset.mem_to_list]
 
-lemma finset.count_to_list_le_one (s : finset α) (a : α) :
-  s.to_list.count a ≤ 1 :=
-by by_cases h : a ∈ s; simp only [finset.count_to_list, h, if_true, if_false, zero_le_one]
 
-lemma finset.count_to_list_empty (a : α) : (∅ : finset α).to_list.count a = 0 :=
-by rw [finset.to_list_empty, list.count_nil]
+lemma list.count_le_of_nodup (l : list α) (h : l.nodup) (a : α) : l.count a ≤ 1 := sorry
 
-lemma finset.count_to_list_insert (s : finset α) (a a' : α) :
-  (insert a' s).to_list.count a = if a = a' then 1 else s.to_list.count a :=
-begin
-  split_ifs with h,
-  { exact h ▸ (((insert a s).count_to_list_eq_one_iff a).2 (s.mem_insert_self a)) },
-  { by_cases ha : a ∈ s,
-    { have ha' : a ∈ (insert a' s) := finset.mem_insert_of_mem ha,
-      calc list.count a (insert a' s).to_list = 1 : (finset.count_to_list_eq_one_iff _ _).2 ha'
-        ... = list.count a s.to_list : ((finset.count_to_list_eq_one_iff _ _).2 ha).symm },
-    { have ha' : a ∉ (insert a' s) := λ h', ((finset.mem_insert).1 h').rec h ha,
-      calc list.count a (insert a' s).to_list = 0 : (finset.count_to_list_eq_zero_iff _ _).2 ha'
-        ... = list.count a s.to_list : ((finset.count_to_list_eq_zero_iff _ _).2 ha).symm } }
-end
+-- lemma finset.count_to_list_eq_one_iff (s : finset α) (a : α) : s.to_list.count a = 1 ↔ a ∈ s :=
+-- trans ⟨λ h, (by_contra (λ h', zero_ne_one $ (list.count_eq_zero_of_not_mem h').symm.trans h)),
+--   list.count_eq_one_of_mem s.nodup_to_list⟩ finset.mem_to_list
+
+-- lemma finset.count_to_list_eq_zero_iff (s : finset α) (a : α) : s.to_list.count a = 0 ↔ a ∉ s :=
+-- by rw [list.count_eq_zero, finset.mem_to_list]
+
+
+-- lemma finset.count_to_list_le_one (s : finset α) (a : α) :
+--   s.to_list.count a ≤ 1 :=
+-- by by_cases h : a ∈ s; simp only [finset.count_to_list, h, if_true, if_false, zero_le_one]
+
+-- lemma finset.count_to_list_empty (a : α) : (∅ : finset α).to_list.count a = 0 :=
+-- by rw [finset.to_list_empty, list.count_nil]
+
+-- lemma finset.count_to_list_insert (s : finset α) (a a' : α) :
+--   (insert a' s).to_list.count a = if a = a' then 1 else s.to_list.count a :=
+-- begin
+--   rw [list.count_eq_of_nodup (finset.nodup_to_list _)
+--   ],
+--   simp,
+
+--   -- split_ifs with h,
+--   -- { exact h ▸ (((insert a s).count_to_list_eq_one_iff a).2 (s.mem_insert_self a)) },
+--   -- { by_cases ha : a ∈ s,
+--   --   { have ha' : a ∈ (insert a' s) := finset.mem_insert_of_mem ha,
+--   --     calc list.count a (insert a' s).to_list = 1 : (finset.count_to_list_eq_one_iff _ _).2 ha'
+--   --       ... = list.count a s.to_list : ((finset.count_to_list_eq_one_iff _ _).2 ha).symm },
+--   --   { have ha' : a ∉ (insert a' s) := λ h', ((finset.mem_insert).1 h').rec h ha,
+--   --     calc list.count a (insert a' s).to_list = 0 : (finset.count_to_list_eq_zero_iff _ _).2 ha'
+--   --       ... = list.count a s.to_list : ((finset.count_to_list_eq_zero_iff _ _).2 ha).symm } }
+-- end
 
 end count_to_list
 
@@ -147,6 +157,8 @@ by rw [ennreal.to_real, nnreal.coe_eq_one, ennreal.to_nnreal_eq_one_iff]
 section tsum
 
 namespace ennreal
+
+open_locale classical
 
 lemma to_nnreal_tsum_eq {α : Type*} (f : α → ℝ≥0∞) :
   (∑' x, f x).to_nnreal = if ∃ x, f x = ⊤ then 0 else ∑' x, (f x).to_nnreal :=
