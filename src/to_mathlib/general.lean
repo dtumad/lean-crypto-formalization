@@ -8,67 +8,18 @@ import analysis.convex.specific_functions
 # Misc Lemmas That Ideally Should Port to Mathlib
 -/
 
-
 open_locale measure_theory nnreal ennreal big_operators
 
 variables {α β γ : Type*} {n : ℕ}
 
 @[simp]
-lemma singleton_eq_top_of_subsingleton {α : Type*} [subsingleton α] (x : α) :
-  ({x} : set α) = ⊤ := set.ext (λ y, by simp)
+lemma singleton_eq_top_of_subsingleton {α : Type*} [subsingleton α] (x : α) : ({x} : set α) = ⊤ :=
+set.ext (λ y, by simp only [set.mem_singleton_iff,
+  eq_iff_true_of_subsingleton, set.top_eq_univ, set.mem_univ])
 
-section count_to_list
-
-variable [decidable_eq α]
-
-lemma finset.count_to_list (s : finset α) (a : α) : s.to_list.count a = if a ∈ s then 1 else 0 :=
+lemma finset.count_to_list [decidable_eq α] (s : finset α) (a : α) :
+  s.to_list.count a = if a ∈ s then 1 else 0 :=
 by simp only [list.count_eq_of_nodup s.nodup_to_list, finset.mem_to_list]
-
-
-lemma list.count_le_of_nodup (l : list α) (h : l.nodup) (a : α) : l.count a ≤ 1 := sorry
-
--- lemma finset.count_to_list_eq_one_iff (s : finset α) (a : α) : s.to_list.count a = 1 ↔ a ∈ s :=
--- trans ⟨λ h, (by_contra (λ h', zero_ne_one $ (list.count_eq_zero_of_not_mem h').symm.trans h)),
---   list.count_eq_one_of_mem s.nodup_to_list⟩ finset.mem_to_list
-
--- lemma finset.count_to_list_eq_zero_iff (s : finset α) (a : α) : s.to_list.count a = 0 ↔ a ∉ s :=
--- by rw [list.count_eq_zero, finset.mem_to_list]
-
-
--- lemma finset.count_to_list_le_one (s : finset α) (a : α) :
---   s.to_list.count a ≤ 1 :=
--- by by_cases h : a ∈ s; simp only [finset.count_to_list, h, if_true, if_false, zero_le_one]
-
--- lemma finset.count_to_list_empty (a : α) : (∅ : finset α).to_list.count a = 0 :=
--- by rw [finset.to_list_empty, list.count_nil]
-
--- lemma finset.count_to_list_insert (s : finset α) (a a' : α) :
---   (insert a' s).to_list.count a = if a = a' then 1 else s.to_list.count a :=
--- begin
---   rw [list.count_eq_of_nodup (finset.nodup_to_list _)
---   ],
---   simp,
-
---   -- split_ifs with h,
---   -- { exact h ▸ (((insert a s).count_to_list_eq_one_iff a).2 (s.mem_insert_self a)) },
---   -- { by_cases ha : a ∈ s,
---   --   { have ha' : a ∈ (insert a' s) := finset.mem_insert_of_mem ha,
---   --     calc list.count a (insert a' s).to_list = 1 : (finset.count_to_list_eq_one_iff _ _).2 ha'
---   --       ... = list.count a s.to_list : ((finset.count_to_list_eq_one_iff _ _).2 ha).symm },
---   --   { have ha' : a ∉ (insert a' s) := λ h', ((finset.mem_insert).1 h').rec h ha,
---   --     calc list.count a (insert a' s).to_list = 0 : (finset.count_to_list_eq_zero_iff _ _).2 ha'
---   --       ... = list.count a s.to_list : ((finset.count_to_list_eq_zero_iff _ _).2 ha).symm } }
--- end
-
-end count_to_list
-
-
-
-
-lemma tsum_eq_sum_univ {α β : Type*} [fintype α] [topological_space β]
-  [add_comm_monoid β] [t2_space β] (f : α → β) :
-  ∑' (x : α), f x = ∑ x, f x :=
-tsum_eq_sum (λ b hb, false.elim (hb $ finset.mem_univ b))
 
 lemma option.set_eq_union_is_none_is_some {α : Type*} (s : set (option α)) :
   s = {x ∈ s | x.is_none} ∪ {x ∈ s | x.is_some} :=
@@ -94,28 +45,28 @@ end
 -- NOTE: Pull request opened for this
 section sums
 
-lemma real.pow_sum_div_card_le_sum_pow (s : finset α) (f : α → ℝ) (hf : ∀ a, 0 ≤ f a) (n : ℕ) :
-  (∑ x in s, f x) ^ (n + 1) / s.card ^ n ≤ ∑ x in s, (f x) ^ (n + 1) :=
-begin
-  by_cases hs : s = ∅,
-  { simp only [hs, finset.sum_empty, zero_pow', ne.def, nat.succ_ne_zero, not_false_iff, zero_div] },
-  { have hs₀ : s.card ≠ 0 := hs ∘ finset.card_eq_zero.1,
-    have hs' : (s.card : ℝ) ≠ 0 := (nat.cast_ne_zero.2 hs₀),
-    have hs'' : 0 < (s.card : ℝ) := nat.cast_pos.2 (nat.pos_of_ne_zero hs₀),
-    suffices : (∑ x in s, f x / s.card) ^ (n + 1) ≤ ∑ x in s, (f x ^ (n + 1) / s.card),
-    by rwa [← finset.sum_div, ← finset.sum_div, div_pow, pow_succ' (s.card : ℝ),
-        ← div_div, div_le_iff hs'', div_mul, div_self hs', div_one] at this,
-    have := @convex_on.map_sum_le ℝ ℝ ℝ _ _ _ _ _ _ _ (set.Ici 0) (λ x, x ^ (n + 1)) s
-      (λ _, 1 / s.card) (coe ∘ f) (convex_on_pow (n + 1)) _ _ (λ i hi, set.mem_Ici.2 (hf i)),
-    { simpa only [inv_mul_eq_div, one_div, algebra.id.smul_eq_mul] using this },
-    { simp only [one_div, inv_nonneg, nat.cast_nonneg, implies_true_iff] },
-    { simpa only [one_div, finset.sum_const, nsmul_eq_mul] using mul_inv_cancel hs' }}
-end
+-- lemma real.pow_sum_div_card_le_sum_pow (s : finset α) (f : α → ℝ) (hf : ∀ a, 0 ≤ f a) (n : ℕ) :
+--   (∑ x in s, f x) ^ (n + 1) / s.card ^ n ≤ ∑ x in s, (f x) ^ (n + 1) :=
+-- begin
+--   by_cases hs : s = ∅,
+--   { simp only [hs, finset.sum_empty, zero_pow', ne.def, nat.succ_ne_zero, not_false_iff, zero_div] },
+--   { have hs₀ : s.card ≠ 0 := hs ∘ finset.card_eq_zero.1,
+--     have hs' : (s.card : ℝ) ≠ 0 := (nat.cast_ne_zero.2 hs₀),
+--     have hs'' : 0 < (s.card : ℝ) := nat.cast_pos.2 (nat.pos_of_ne_zero hs₀),
+--     suffices : (∑ x in s, f x / s.card) ^ (n + 1) ≤ ∑ x in s, (f x ^ (n + 1) / s.card),
+--     by rwa [← finset.sum_div, ← finset.sum_div, div_pow, pow_succ' (s.card : ℝ),
+--         ← div_div, div_le_iff hs'', div_mul, div_self hs', div_one] at this,
+--     have := @convex_on.map_sum_le ℝ ℝ ℝ _ _ _ _ _ _ _ (set.Ici 0) (λ x, x ^ (n + 1)) s
+--       (λ _, 1 / s.card) (coe ∘ f) (convex_on_pow (n + 1)) _ _ (λ i hi, set.mem_Ici.2 (hf i)),
+--     { simpa only [inv_mul_eq_div, one_div, algebra.id.smul_eq_mul] using this },
+--     { simp only [one_div, inv_nonneg, nat.cast_nonneg, implies_true_iff] },
+--     { simpa only [one_div, finset.sum_const, nsmul_eq_mul] using mul_inv_cancel hs' }}
+-- end
 
-lemma nnreal.pow_sum_div_card_le_sum_pow (s : finset α) (f : α → ℝ≥0) (n : ℕ) :
-  (∑ x in s, f x) ^ (n + 1) / s.card ^ n ≤ ∑ x in s, (f x) ^ (n + 1) :=
-by simpa [← nnreal.coe_le_coe, nnreal.coe_sum] using
-  real.pow_sum_div_card_le_sum_pow s (coe ∘ f) (λ _, nnreal.coe_nonneg _) n
+-- lemma nnreal.pow_sum_div_card_le_sum_pow (s : finset α) (f : α → ℝ≥0) (n : ℕ) :
+--   (∑ x in s, f x) ^ (n + 1) / s.card ^ n ≤ ∑ x in s, (f x) ^ (n + 1) :=
+-- by simpa [← nnreal.coe_le_coe, nnreal.coe_sum] using
+--   real.pow_sum_div_card_le_sum_pow s (coe ∘ f) (λ _, nnreal.coe_nonneg _) n
 
 end sums
 

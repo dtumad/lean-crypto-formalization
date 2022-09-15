@@ -149,7 +149,10 @@ calc ⦃ λ out, out.1.is_some | fork adv ⦄
   ... = ∑ j, (⦃adv.sim_choose_fork⦄ (some j)) ^ 2 :
     tsum_fintype _
   ... ≥ (∑ j, ⦃adv.sim_choose_fork⦄ (some j)) ^ 2 / adv.q :
-    sorry --le_of_eq_of_le (by rw [finset.card_fin, pow_one]) (ennreal.pow_sum_div_card_le_sum_pow _ _ 1)
+    begin
+      
+      have := nnreal.pwo ⊤ (λ j, ⦃adv.sim_choose_fork⦄ (some j)) 2,
+    end
   ... = (adv.advantage ^ 2) / adv.q :
     by rw forking_adversary.advantage_eq_sum adv
 

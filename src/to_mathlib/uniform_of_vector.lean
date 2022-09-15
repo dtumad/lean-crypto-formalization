@@ -114,7 +114,7 @@ lemma uniform_of_vector_eq_nth_map_uniform_of_fintype :
 begin
   refine pmf.ext (λ x, _),
   simp only [uniform_of_vector_apply, nat.cast_add, nat.cast_one, map_apply,
-    uniform_of_fintype_apply, fintype.card_fin, tsum_eq_sum_univ],
+    uniform_of_fintype_apply, fintype.card_fin, tsum_fintype],
   calc ↑(list.count x v.to_list) / (n + 1 : ℝ≥0)
     = ↑(list.count x v.to_list) / ↑(n + 1) : by rw [nat.cast_add, nat.cast_one]
     ... = ↑(finset.univ.filter $ λ i, x = v.nth i).card / ↑(n + 1) : congr_arg
