@@ -17,7 +17,7 @@ variables {α β : Type} {spec spec' spec'' : oracle_spec}
 
 @[simps]
 def identity_oracle (spec : oracle_spec) : simulation_oracle spec spec :=
-⟪ query ⟫
+⟪query⟫
 
 -- TODO: should the notation take the `oracle_spec` as an arg?
 notation `idₛ` := identity_oracle _
@@ -34,7 +34,7 @@ section support
 
 @[simp]
 lemma support_apply (i : spec.ι) (t : spec.domain i) :
-  ((idₛ).o i (t, s)).support = { u | u.1 ∈ (query i t).support } :=
+  ((idₛ).o i (t, s)).support = {u | u.1 ∈ (query i t).support} :=
 begin
   simp only [apply, support_bind, support_pure, set.Union_true,
     set.Union_singleton_eq_range, support_query, set.top_eq_univ, set.mem_univ, set.set_of_true],

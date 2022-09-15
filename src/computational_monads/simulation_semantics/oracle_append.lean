@@ -20,6 +20,12 @@ def oracle_append (so : simulation_oracle spec spec'')
 -- TODO: should be infix?
 notation so `++ₛ` so' := oracle_append so so'
 
+-- TODO: namespace
+
+@[inline, reducible]
+def oracle_append.mk_S {so : simulation_oracle spec spec''} {so' : simulation_oracle spec' spec''}
+  (s : so.S) (s' : so'.S) : (so ++ₛ so').S := (s, s')
+
 variables (so : simulation_oracle spec spec'') (so' : simulation_oracle spec' spec'')
   (i : spec.ι) (i' : spec'.ι) (t : spec.domain i) (t' : spec'.domain i')
   (s : so.S × so'.S)

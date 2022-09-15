@@ -14,9 +14,13 @@ noncomputable def random_oracle (spec : oracle_spec) [spec.computable] [spec.fin
 
 namespace random_oracle
 
-variables (log : query_log spec) (log' : query_log spec')
 variable [spec.computable]
 variable [spec.finite_range]
+
+@[inline, reducible]
+def mk_S (log : query_log spec) : (random_oracle spec).S := (log, ())
+
+variables (log : query_log spec) (log' : query_log spec')
 
 /-- The support of apply is things where the log doesn't change on things previously queried,
   and the log has the new query if it was previously queried -/
