@@ -133,8 +133,7 @@ end
 /-- Signature is complete if for any possible message, the generated signature is valid,
   i.e. the output of `sign` always returns true when `verify` is called.
   note that this definition doesn't allow for negligable failure of signing -/
-def complete (sig : signature) :=
-∀ (m : sig.M), ⦃completeness_experiment sig m⦄ tt = 1
+def complete (sig : signature) := ∀ (m : sig.M), ⦃completeness_experiment sig m⦄ tt = 1
 
 -- TODO: fix like above
 lemma complete_iff_signatures_support_subset (sig : signature) :
