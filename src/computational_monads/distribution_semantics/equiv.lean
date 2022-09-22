@@ -17,6 +17,8 @@ variable [spec'.finite_range]
 
 namespace distribution_semantics
 
+open oracle_comp oracle_spec
+
 -- Notation for two computations that are equivalent under `eval_distribution`
 notation oa `≃ₚ` oa' := ⦃oa⦄ = ⦃oa'⦄
 
@@ -32,11 +34,9 @@ variables  (oa : oracle_comp spec α) (oa' : oracle_comp spec' α)
 
 section bind
 
-@[simp]
 lemma pure_bind_equiv (a : α) : (pure a >>= ob) ≃ₚ (ob a) :=
 (eval_distribution_bind (return a) ob).trans (pmf.pure_bind a (λ a, ⦃ob a⦄))
 
-@[simp]
 lemma bind_pure_equiv : (oa >>= pure) ≃ₚ oa :=
 trans (eval_distribution_bind oa pure) (pmf.bind_pure (⦃oa⦄))
 
@@ -53,16 +53,14 @@ lemma bind_equiv_of_equiv_of_equiv {oa oa' : oracle_comp spec α} {ob ob' : α �
 calc oa >>= ob ≃ₚ oa' >>= ob : bind_equiv_of_equiv_first ob h
   ... ≃ₚ oa' >>= ob' : bind_equiv_of_equiv_second oa' h'
 
-@[simp]
-lemma bind_equiv_of_first_unused (oa : oracle_comp spec α) (ob : oracle_comp spec β) :
+lemma bind_const_equiv (oa : oracle_comp spec α) (ob : oracle_comp spec β) :
   oa >>= (λ _, ob) ≃ₚ ob :=
 (eval_distribution_bind oa _).trans (pmf.bind_const ⦃oa⦄ ⦃ob⦄)
 
-@[simp]
-lemma bind_bind_equiv_of_second_unused (oa : oracle_comp spec α) (ob : α → oracle_comp spec β)
+lemma bind_bind_const_equiv (oa : oracle_comp spec α) (ob : α → oracle_comp spec β)
   (oc : α → oracle_comp spec γ) :
   (oa >>= λ a, (ob a >>= λ b, oc a)) ≃ₚ oa >>= oc :=
-bind_equiv_of_equiv_second oa (λ a, bind_equiv_of_first_unused (ob a) _)
+bind_equiv_of_equiv_second oa (λ a, bind_const_equiv (ob a) _)
 
 end bind
 
@@ -111,6 +109,16 @@ lemma map_map_return_equiv (a : α) (f : α → β) (g : β → γ) :
 by rw [map_map_equiv, map_return_equiv]
 
 end map
+
+/-- Equivalence should be able to erase most unneeded variables using `simp` lemmas.
+  Combined with other equivalences can prove many basic things automatically -/
+example (n : ℕ) (oa oa' : oracle_comp coin_oracle ℕ):
+do { _ ← oa, x ← return 0, y ← return 1, z ← return 2,
+  n ← return (x * y), m ← return (n * z),
+  b ← coin, _ ← oa, b' ← coin, _ ← oa',
+  v ← return (if b then n else m, if b' then m else n),
+  return (if b ∧ b' then 0 else v.1 + v.2)
+} ≃ₚ (return 0 : oracle_comp spec ℕ) := by simp
 
 section prod
 
