@@ -35,85 +35,15 @@ private noncomputable def eval_dist {spec : oracle_spec} [h' : spec.finite_range
 | _ (query i t) := ⟨pmf.uniform_of_fintype (spec.range i),
       plift.up ((pmf.support_uniform_of_fintype (spec.range i)))⟩
 
-variables {α β γ : Type} {spec spec' : oracle_spec}
-  (oa oa' : oracle_comp spec α) (ob ob' : α → oracle_comp spec β)
-  (a a' : α) (b b' : β) (i : spec.ι) (t : spec.domain i)
+variables {α β γ : Type} {spec spec' : oracle_spec} (oa oa' : oracle_comp spec α)
+  (ob ob' : α → oracle_comp spec β) (oc oc' : α → β → oracle_comp spec γ)
+  (a a' : α) (b b' : β) (c c' : γ) (i : spec.ι) (t : spec.domain i)
 variable [spec.finite_range]
 
 noncomputable def eval_distribution (oa : oracle_comp spec α) : pmf α :=
 (eval_dist oa).1
 
 notation `⦃` oa `⦄` := eval_distribution oa
-
-section return
-
-@[simp]
-lemma eval_distribution_return : ⦃(return a : oracle_comp spec α)⦄ = pmf.pure a := rfl
-
-lemma eval_distribution_return_apply : ⦃(return a : oracle_comp spec α)⦄ a' =
-  if a' = a then 1 else 0 := rfl
-
-lemma eval_distribution_pure' : ⦃(pure' α a : oracle_comp spec α)⦄ = pmf.pure a := rfl
-
-lemma eval_distribution_pure'_apply : ⦃(pure' α a : oracle_comp spec α)⦄ a' =
-  if a' = a then 1 else 0 := rfl
-
-lemma eval_distribution_pure : ⦃(pure a : oracle_comp spec α)⦄ = pmf.pure a := rfl
-
-lemma eval_distribution_pure_apply : ⦃(pure a : oracle_comp spec α)⦄ a' =
-  if a' = a then 1 else 0 := rfl
-
-end return
-
-section bind
-
-@[simp]
-lemma eval_distribution_bind : ⦃oa >>= ob⦄ = ⦃oa⦄.bind (λ a, ⦃ob a⦄) :=
-by simp only [← bind'_eq_bind, eval_distribution, eval_dist]
-
-lemma eval_distribution_bind_apply : ⦃oa >>= ob⦄ b = ∑' (a : α), ⦃oa⦄ a * ⦃ob a⦄ b :=
-by simpa only [eval_distribution_bind]
-
-lemma eval_distribution_bind' : ⦃bind' α β oa ob⦄ = ⦃oa⦄.bind (λ a, ⦃ob a⦄) :=
-eval_distribution_bind oa ob
-
-lemma eval_distribution_bind'_apply : ⦃oa >>= ob⦄ b = ∑' (a : α), ⦃oa⦄ a * ⦃ob a⦄ b :=
-eval_distribution_bind_apply oa ob b
-
-@[simp]
-lemma eval_distribution_bind_bind_apply (oa : oracle_comp spec α)
-  (ob : α → oracle_comp spec β) (oc : α → β → oracle_comp spec γ) (c : γ) :
-  ⦃do {a ← oa, b ← ob a, oc a b}⦄ c = ∑' (a : α) (b : β), ⦃oa⦄ a * (⦃ob a⦄ b * ⦃oc a b⦄ c) :=
-(eval_distribution_bind_apply oa _ c).trans
-  (tsum_congr $ λ a, by simp only [eval_distribution_bind_apply, nnreal.tsum_mul_left (⦃oa⦄ a)])
-
-end bind
-
-section query
-
-@[simp]
-lemma eval_distribution_query (i : spec.ι) (t : spec.domain i) :
-  ⦃query i t⦄ = pmf.uniform_of_fintype (spec.range i) :=
-rfl
-
-lemma eval_distribution_query_apply (i : spec.ι) (t : spec.domain i) (u : spec.range i) :
-  ⦃query i t⦄ u = 1 / (fintype.card $ spec.range i) :=
-by simp only [eval_distribution_query, pmf.uniform_of_fintype_apply, one_div]
-
-end query
-
-section map
-
-@[simp]
-lemma eval_distribution_map (oa : oracle_comp spec α) (f : α → β) :
-  ⦃f <$> oa⦄ = ⦃oa⦄.map f :=
-eval_distribution_bind oa (pure ∘ f)
-
-lemma eval_distribution_map_apply [decidable_eq β] (oa : oracle_comp spec α) (f : α → β) (b : β) :
-  ⦃f <$> oa⦄ b = ∑' (a : α), if b = f a then ⦃oa⦄ a else 0 :=
-by simp only [eval_distribution_map oa f, pmf.map_apply f ⦃oa⦄, @eq_comm β b]
-
-end map
 
 section support
 
@@ -175,6 +105,115 @@ lemma eval_distribution_pos_of_mem_support {oa : oracle_comp spec α} {a : α}
 end support
 
 section fin_support
+
+
+end fin_support
+
+section return
+
+@[simp]
+lemma eval_distribution_return : ⦃(return a : oracle_comp spec α)⦄ = pmf.pure a := rfl
+
+lemma eval_distribution_return_apply : ⦃(return a : oracle_comp spec α)⦄ a' =
+  if a' = a then 1 else 0 := rfl
+
+lemma eval_distribution_pure' : ⦃(pure' α a : oracle_comp spec α)⦄ = pmf.pure a := rfl
+
+lemma eval_distribution_pure'_apply : ⦃(pure' α a : oracle_comp spec α)⦄ a' =
+  if a' = a then 1 else 0 := rfl
+
+lemma eval_distribution_pure : ⦃(pure a : oracle_comp spec α)⦄ = pmf.pure a := rfl
+
+lemma eval_distribution_pure_apply : ⦃(pure a : oracle_comp spec α)⦄ a' =
+  if a' = a then 1 else 0 := rfl
+
+end return
+
+section bind
+
+@[simp]
+lemma eval_distribution_bind : ⦃oa >>= ob⦄ = ⦃oa⦄.bind (λ a, ⦃ob a⦄) :=
+by simp only [← bind'_eq_bind, eval_distribution, eval_dist]
+
+lemma eval_distribution_bind_apply : ⦃oa >>= ob⦄ b = ∑' (a : α), ⦃oa⦄ a * ⦃ob a⦄ b :=
+by simpa only [eval_distribution_bind]
+
+lemma eval_distribution_bind_apply' [spec.computable] [oa.decidable] :
+  ⦃oa >>= ob⦄ b = ∑ a in oa.fin_support, ⦃oa⦄ a * ⦃ob a⦄ b :=
+begin
+  refine (eval_distribution_bind_apply oa ob b).trans (tsum_eq_sum $ λ b hb, _),
+  rw [mem_fin_support_iff_mem_support, ← eval_distribution_eq_zero_iff_not_mem_support] at hb,
+  rw [hb, zero_mul],
+end
+
+lemma eval_distribution_bind' : ⦃bind' α β oa ob⦄ = ⦃oa⦄.bind (λ a, ⦃ob a⦄) :=
+eval_distribution_bind oa ob
+
+lemma eval_distribution_bind'_apply : ⦃bind' α β oa ob⦄ b = ∑' (a : α), ⦃oa⦄ a * ⦃ob a⦄ b :=
+eval_distribution_bind_apply oa ob b
+
+lemma eval_distribution_bind'_apply' [spec.computable] [oa.decidable] :
+  ⦃bind' α β oa ob⦄ b = ∑ a in oa.fin_support, ⦃oa⦄ a * ⦃ob a⦄ b :=
+eval_distribution_bind_apply' oa ob b
+
+@[simp]
+lemma eval_distribution_bind_bind_apply :
+  ⦃do {a ← oa, b ← ob a, oc a b}⦄ c = ∑' (a : α) (b : β), ⦃oa⦄ a * (⦃ob a⦄ b * ⦃oc a b⦄ c) :=
+(eval_distribution_bind_apply oa _ c).trans
+  (tsum_congr $ λ a, by simp only [eval_distribution_bind_apply, nnreal.tsum_mul_left (⦃oa⦄ a)])
+
+lemma eval_distribution_bind_bind_apply' [spec.computable] [oa.decidable] [∀ a, (ob a).decidable] :
+  ⦃do {a ← oa, b ← ob a, oc a b}⦄ c =
+    ∑ a in oa.fin_support, ∑ b in (ob a).fin_support, ⦃oa⦄ a * (⦃ob a⦄ b * ⦃oc a b⦄ c) :=
+(eval_distribution_bind_apply' oa _ c).trans
+  (finset.sum_congr rfl $ λ a ha, by simp only [eval_distribution_bind_apply', finset.mul_sum])
+
+end bind
+
+section query
+
+@[simp]
+lemma eval_distribution_query (i : spec.ι) (t : spec.domain i) :
+  ⦃query i t⦄ = pmf.uniform_of_fintype (spec.range i) :=
+rfl
+
+lemma eval_distribution_query_apply (i : spec.ι) (t : spec.domain i) (u : spec.range i) :
+  ⦃query i t⦄ u = 1 / (fintype.card $ spec.range i) :=
+by simp only [eval_distribution_query, pmf.uniform_of_fintype_apply, one_div]
+
+end query
+
+section map
+
+@[simp]
+lemma eval_distribution_map (f : α → β) :
+  ⦃f <$> oa⦄ = ⦃oa⦄.map f :=
+eval_distribution_bind oa (pure ∘ f)
+
+lemma eval_distribution_map_apply [decidable_eq β] (oa : oracle_comp spec α) (f : α → β) (b : β) :
+  ⦃f <$> oa⦄ b = ∑' (a : α), if b = f a then ⦃oa⦄ a else 0 :=
+by simp only [eval_distribution_map oa f, pmf.map_apply f ⦃oa⦄, @eq_comm β b]
+
+lemma eval_distribution_map_apply' [spec.computable] [decidable_eq β] [oa.decidable]
+  (f : α → β) (b : β) : ⦃f <$> oa⦄ b = ∑ a in oa.fin_support, if b = f a then ⦃oa⦄ a else 0 :=
+begin
+  refine (eval_distribution_map_apply oa f b).trans _,
+  refine tsum_eq_sum (λ b hb, _),
+  split_ifs,
+  {
+    refine eval_distribution_eq_zero_of_not_mem_support _,
+    rwa mem_fin_support_iff_mem_support at hb,
+  },
+  {
+    exact rfl,
+  }
+end
+
+end map
+
+
+section fin_support
+
 
 
 end fin_support
