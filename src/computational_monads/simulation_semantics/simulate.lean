@@ -44,39 +44,40 @@ def simulate {spec spec' : oracle_spec} (so : simulation_oracle spec spec') :
 | _ (bind' A B oa ob) state := simulate oa state >>= λ x, simulate (ob x.1) x.2
 | _ (query i t) state := so.o i (t, state)
 
+@[simp]
 lemma simulate_return : simulate so (return a) s = return (a, s) := rfl
 
 lemma simulate_pure' : simulate so (pure' α a) s = return (a, s) := rfl
 
 lemma simulate_pure : simulate so (pure a) s = return (a, s) := rfl
 
+@[simp]
 lemma simulate_bind : simulate so (oa >>= ob) s =
   simulate so oa s >>= λ x, simulate so (ob x.1) x.2 := rfl
 
 lemma simulate_bind' : simulate so (bind' α β oa ob) s =
   simulate so oa s >>= λ x, simulate so (ob x.1) x.2 := rfl
 
+@[simp]
 lemma simulate_query : simulate so (query i t) s = so.o i (t, s) := rfl
 
+@[simp]
 lemma simulate_map : simulate so (f <$> oa) s = simulate so oa s >>= return ∘ prod.map f id := rfl
 
 section support
 
-@[simp]
 lemma support_simulate_return : (simulate so (return a) s).support = {(a, s)} := rfl
 
 lemma support_simulate_pure' : (simulate so (pure' α a) s).support = {(a, s)} := rfl
 
 lemma support_simulate_pure : (simulate so (pure a) s).support = {(a, s)} := rfl
 
-@[simp]
 lemma support_simulate_bind : (simulate so (oa >>= ob) s).support =
   ⋃ x ∈ (simulate so oa s).support, (simulate so (ob $ prod.fst x) x.2).support := rfl
 
 lemma support_simulate_bind' : (simulate so (bind' α β oa ob) s).support =
   ⋃ x ∈ (simulate so oa s).support, (simulate so (ob $ prod.fst x) x.2).support := rfl
 
-@[simp]
 lemma support_simulate_query : (simulate so (query i t) s).support = (so.o i (t, s)).support := rfl
 
 @[simp]
@@ -112,7 +113,6 @@ variable [spec'.finite_range]
 
 section eval_dist
 
-@[simp]
 lemma eval_dist_simulate_return : ⦃simulate so (return a) s⦄ = pmf.pure (a, s) := rfl
 
 lemma eval_dist_simulate_pure' : ⦃simulate so (pure' α a) s⦄ = pmf.pure (a, s) := rfl
@@ -128,7 +128,6 @@ lemma eval_dist_simulate_bind' :
   ⦃simulate so (bind' α β oa ob) s⦄ = ⦃simulate so oa s⦄ >>= λ x, ⦃simulate so (ob x.1) x.2⦄ :=
 eval_dist_simulate_bind so oa ob s
 
-@[simp]
 lemma eval_dist_simulate_query : ⦃simulate so (query i t) s⦄ = ⦃so.o i (t, s)⦄ := rfl
 
 @[simp]
@@ -164,6 +163,7 @@ end equiv
 
 section prob_event
 
+
 end prob_event
 
 end distribution_semantics
@@ -178,20 +178,24 @@ def simulate' (so : simulation_oracle spec spec') (oa : oracle_comp spec α) (s 
 
 lemma simulate'_def : simulate' so oa s = prod.fst <$> oa.simulate so s := rfl
 
+@[simp]
 lemma simulate'_return : simulate' so (return a) s = prod.fst <$> (return (a, s)) := rfl
 
 lemma simulate'_pure' : simulate' so (pure' α a) s = prod.fst <$> (return (a, s)) := rfl
 
 lemma simulate'_pure : simulate' so (pure a) s = prod.fst <$> (return (a, s)) := rfl
 
+@[simp]
 lemma simulate'_bind : simulate' so (oa >>= ob) s =
   prod.fst <$> (simulate so oa s >>= λ x, simulate so (ob x.1) x.2) := rfl
 
 lemma simulate'_bind' : simulate' so (bind' α β oa ob) s =
   prod.fst <$> (simulate so oa s >>= λ x, simulate so (ob x.1) x.2) := rfl
 
+@[simp]
 lemma simulate'_query : simulate' so (query i t) s = prod.fst <$> so.o i (t, s) := rfl
 
+@[simp]
 lemma simulate'_map : simulate' so (f <$> oa) s =
   simulate so oa s >>= return ∘ prod.map f id >>= return ∘ prod.fst := rfl
 
@@ -240,7 +244,8 @@ lemma mem_support_of_mem_support_simulate' {x : α} (hx : x ∈ (simulate' so oa
 
 /-- If the first output of an oracle can take on any value (although the state might not),
 then the first value of simulation has the same support as the original computation.
-For example simulation with the identity oracle `idₛ` doesn't change the support -/
+For example simulation with the identity oracle `idₛ` doesn't change the support,
+  and this also holds for something like a logging oracle that just records queries -/
 theorem support_simulate'_eq_support (h : ∀ i t s, prod.fst '' (so.o i (t, s)).support = ⊤) :
   (simulate' so oa s).support = oa.support :=
 begin
@@ -272,7 +277,6 @@ section eval_dist
 lemma eval_dist_simulate' : ⦃simulate' so oa s⦄ = ⦃simulate so oa s⦄.map prod.fst :=
 eval_dist_map _ prod.fst
 
-@[simp]
 lemma eval_dist_simulate'_return : ⦃simulate' so (return a) s⦄ = pmf.pure a :=
 by simp only [simulate'_return, map_return_equiv, eval_dist_return]
 

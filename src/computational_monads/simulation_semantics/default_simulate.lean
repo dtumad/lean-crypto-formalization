@@ -2,6 +2,8 @@ import computational_monads.simulation_semantics.simulate
 
 namespace oracle_comp
 
+-- TODO: clean up `simp` lemmas even more
+
 variables {α β γ : Type} {spec spec' spec'' : oracle_spec}
   (so : simulation_oracle spec spec') (so' : simulation_oracle spec spec'')
   (a : α) (i : spec.ι) (t : spec.domain i)

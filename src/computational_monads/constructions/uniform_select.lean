@@ -281,6 +281,7 @@ variables (α) [fintype α] [nonempty α] (a : α)
 
 section support
 
+-- TODO: this isn't working properly with `simp`
 @[simp]
 lemma support_uniform_select_fintype : ($ᵗ α).support = ⊤ :=
 by rw [uniform_select_fintype, support_uniform_select_finset,

@@ -6,6 +6,7 @@ import computational_monads.simulation_semantics.constructions.identity_oracle
 # Coercions Between Computations With Different Oracle Access
 
 This file provides a number of `has_coe` instances for different `oracle_comp` computations.
+This is a very powerful tool when defining computations in terms of simpler versions.
 
 The main coercions are for the append operation on `oracle_spec`,
   allowing an increase the number of oracles in a number of ways.
@@ -28,7 +29,7 @@ open oracle_comp oracle_spec distribution_semantics
 variables (spec spec' spec'' spec''' : oracle_spec)
   (coe_spec coe_spec' coe_spec'' coe_spec''' : oracle_spec) {α : Type}
 
-section uniform_select
+section coin
 
 /-- coerce a coin flip into a uniform random selection of a `bool` -/
 noncomputable instance coe_coin_uniform_select (α) :
@@ -40,6 +41,28 @@ do {b ← coin, b' ←$ᵗ bool, return (band b b')}
 
 lemma coe_coin_uniform_select_def (oa : oracle_comp coin_oracle α) :
   (↑oa : oracle_comp uniform_selecting α) = oa.default_simulate' ⟪λ _ _, $ᵗ bool⟫ := rfl
+
+lemma support_coe_coin_uniform_select (oa : oracle_comp coin_oracle α) :
+  (↑oa : oracle_comp uniform_selecting α).support = oa.support :=
+begin
+  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t,
+  { simp only [coe_coin_uniform_select_def, support_default_simulate', simulate'_return,
+      support_map, support_return, set.image_singleton] },
+  {
+    simp only [coe_coin_uniform_select_def],
+    -- TODO: rest should follow from a lemma up simulation' support with bind
+    rw [support_default_simulate'_bind, support_bind],
+
+
+    sorry
+  },
+  { simp only [coe_coin_uniform_select_def, support_uniform_select_fintype bool,
+      stateless_oracle.support_default_simulate'_query, support_query] }
+end
+
+section distribution_semantics
+
+open distribution_semantics
 
 /-- Coercing to a `uniform_selecting` oracle doesn't change the underlying distribution -/
 @[simp]
@@ -58,7 +81,9 @@ end
   exact eval_dist_uniform_select_fintype bool,
 end
 
-end uniform_select
+end distribution_semantics
+
+end coin
 
 section coe_append
 
