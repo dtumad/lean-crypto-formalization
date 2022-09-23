@@ -81,10 +81,8 @@ variables {n : ℕ} (adv : forking_adversary T U A)
 def fork : oracle_comp uniform_selecting
   ((option (fin adv.q)) × A × (query_log (T →ₒ U)) × A × (query_log (T →ₒ U))) :=
 do {
-  -- Run the adversary for the first time, logging coins and caching random oracles
+  -- run the adversary for the first time, logging coins and caching random oracles
   ⟨i, x, log, cache⟩ ← adv.sim_with_log,
-  -- -- remove things in the cache after the query we intend to fork on
-  -- forked_cache ← return (cache.fork_cache () (i.map coe)),
   -- run again, using the same random choices for first oracle, and newly forked cache
   ⟨i', x', cache'⟩ ← adv.sim_from_seed log.to_seed (cache.fork_cache () (i.map coe)),
   -- return no forking index unless `fork_cache` gives equal values for both runs.
@@ -92,21 +90,14 @@ do {
   return ⟨if i = i' then i else none, x, cache, x', cache'⟩
 }
 
+/-- Definition without the match functions used in the original definition -/
 lemma fork_def : fork adv = do {o ← adv.sim_with_log,
   o' ← adv.sim_from_seed o.2.2.1.to_seed ((o.2.2.2.fork_cache () (o.1.map coe))),
   return (if o.1 = o'.1 then o.1 else none, o.2.1, o.2.2.2, o'.2.1, o'.2.2)} :=
 begin
   unfold fork,
-  congr,
-  ext o,
-  rcases o with ⟨i, x, log, cache⟩,
-  rw [fork._match_2],
-  congr,
-  -- ext forked_cache,
-  -- congr,
-  ext o',
-  rcases o' with ⟨i', x', cache'⟩,
-  rw [fork._match_1],
+  congr, ext o, rcases o with ⟨i, x, log, cache⟩, rw [fork._match_2],
+  congr, ext o', rcases o' with ⟨i', x', cache'⟩, rw [fork._match_1],
 end
 
 section distribution_semantics
@@ -136,14 +127,14 @@ begin
           simp only [option.map_some', eq_self_iff_true, if_true, eval_dist_return, pmf.pure_apply, mul_one],
         }
       },
-      sorry, sorry,
+      sorry, apply_instance,
     },
-    sorry, sorry,
+    sorry, apply_instance,
   },
   {
     sorry,
   },
-  sorry,
+  apply_instance,
 end
 
 end distribution_semantics

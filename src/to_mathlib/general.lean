@@ -95,7 +95,12 @@ lemma tsum_prod_eq_tsum_fst {α β γ : Type*} [add_comm_monoid α] [topological
   {f : β × γ → α} (c : γ) (h : ∀ c' ≠ c, ∀ b, f (b, c') = 0) :
   ∑' (x : β × γ), f x = ∑' (b : β), f (b, c) :=
 begin
-  sorry,
+  refine tsum_eq_tsum_of_ne_zero_bij (λ b, (b.1, c)) (λ x x' hx, _) (λ x hx, _) (λ x, rfl),
+  { simpa only [eq_self_iff_true, and_true, prod.eq_iff_fst_eq_snd_eq] using hx },
+  { cases x with b c',
+    have hc : c' = c := by_contra (λ hc, hx $ h c' hc b),
+    refine ⟨⟨b, by rwa [function.mem_support, ← hc]⟩, _⟩,
+    simp only [prod.mk.inj_iff, eq_self_iff_true, true_and, hc] }
 end
 
 namespace ennreal
