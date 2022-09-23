@@ -145,7 +145,7 @@ lemma complete_iff_signatures_support_subset (sig : signature) :
       (simulate sig.base_oracle (sig.sign (pk, sk, m)) (sig.base_oracle_mk_S log)).support →
     (simulate' sig.base_oracle (sig.verify (pk, m, σ)) (sig.base_oracle_mk_S log)).support = {tt} :=
 begin
-  simp_rw [complete, eval_distribution_eq_one_iff_support_eq_singleton,
+  simp_rw [complete, eval_dist_eq_one_iff_support_eq_singleton,
     support_completeness_experiment], sorry,
 end
 

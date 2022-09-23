@@ -50,12 +50,12 @@ lemma coe_coin_uniform_select_equiv_coin : Π {α : Type} (oc : oracle_comp coin
   rw [coe_coin_uniform_select_def],
   refine (stateless_oracle.simulate'_query_equiv_of_equiv _ _ _ _),
   intros i t,
-  exact eval_distribution_uniform_select_fintype bool,
+  exact eval_dist_uniform_select_fintype bool,
 end
 | _ (query i t) := begin
   erw [coe_coin_uniform_select_def, simulate'_query_equiv, stateless_oracle.apply_eq,
     fst_map_bind_mk_equiv, map_id_equiv],
-  exact eval_distribution_uniform_select_fintype bool,
+  exact eval_dist_uniform_select_fintype bool,
 end
 
 end uniform_select

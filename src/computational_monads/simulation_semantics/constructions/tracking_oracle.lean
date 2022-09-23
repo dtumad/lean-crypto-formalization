@@ -105,7 +105,7 @@ lemma simulate'_query_equiv_self (s : S) :
 begin
   sorry,
   -- induction oa with A a A B oa ob hoa hob i t generalizing s,
-  -- { simp only [pure'_eq_pure, simulate'_pure, map_pure_equiv, eval_distribution_return] },
+  -- { simp only [pure'_eq_pure, simulate'_pure, map_pure_equiv, eval_dist_return] },
   -- { let so := ⟪query | update_state, default_state⟫,
   --   calc simulate' so (oa >>= ob) s
   --     ≃ₚ simulate so oa s >>= λ x, simulate' so (ob x.1) x.2 : simulate'_bind_equiv _ oa ob _

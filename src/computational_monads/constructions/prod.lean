@@ -30,10 +30,10 @@ open distribution_semantics
 
 variable [spec.finite_range]
 
-section eval_distribution
+section eval_dist
 
 @[simp]
-lemma eval_distribution_prod_apply [decidable_eq α] [decidable_eq β]
+lemma eval_dist_prod_apply [decidable_eq α] [decidable_eq β]
   (oa : oracle_comp spec α) (ob : oracle_comp spec β) (a : α) (b : β) :
   ⦃oa ×ₘ ob⦄ (a, b) = ⦃oa⦄ a * ⦃ob⦄ b :=
 calc ⦃oa ×ₘ ob⦄ (a, b)
@@ -41,7 +41,7 @@ calc ⦃oa ×ₘ ob⦄ (a, b)
   begin
     sorry,
   end
-    -- by simp_rw [oracle_prod, eval_distribution_bind_apply, eval_distribution_pure_apply]
+    -- by simp_rw [oracle_prod, eval_dist_bind_apply, eval_dist_pure_apply]
   ... = ∑' (x : α) (y : β), (⦃oa⦄ x * ⦃ob⦄ y) * (if (a, b) = (x, y) then 1 else 0) :
     by simp_rw [← nnreal.tsum_mul_left, mul_assoc]
   ... = (⦃oa⦄ a * ⦃ob⦄ b) * (if (a, b) = (a, b) then 1 else 0) : begin
@@ -53,7 +53,7 @@ calc ⦃oa ×ₘ ob⦄ (a, b)
   end
   ... = ⦃oa⦄ a * ⦃ob⦄ b : by simp only [eq_self_iff_true, if_true, mul_one]
 
-end eval_distribution
+end eval_dist
 
 section prob_event
 
@@ -64,7 +64,7 @@ lemma prob_event_set_prod_eq_mul [decidable_eq α] [decidable_eq β]
 calc ⦃e ×ˢ e' | oa ×ₘ ob⦄
   = ∑' (x : α × β), ite (x ∈ e ×ˢ e') (⦃oa⦄ x.1 * ⦃ob⦄ x.2) 0 : begin
     refine trans (prob_event_eq_tsum _ _) (tsum_congr (λ x, x.rec $ λ a b, _)),
-    simp only [set.mem_prod, eval_distribution_prod_apply, ← ennreal.coe_mul],
+    simp only [set.mem_prod, eval_dist_prod_apply, ← ennreal.coe_mul],
   end
   ... = (∑' a, ite (a ∈ e) (⦃oa⦄ a) 0) * (∑' b, ite (b ∈ e') (⦃ob⦄ b) 0) :
   begin

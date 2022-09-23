@@ -117,17 +117,17 @@ open distribution_semantics
 
 variable [spec.finite_range]
 
-section eval_distribution
+section eval_dist
 
 /-- Probability of a vector is the product of probabilities of each element. -/
 @[simp]
-lemma eval_distribution_repeat_n_apply :
+lemma eval_dist_repeat_n_apply :
   ⦃repeat_n oa n⦄ as = (as.map (λ a, ⦃oa⦄ a)).to_list.prod :=
 begin
   induction n with n hn,
-  { simp only [vector.eq_nil as, repeat_n_zero oa, eval_distribution_return, pmf.pure_apply,
+  { simp only [vector.eq_nil as, repeat_n_zero oa, eval_dist_return, pmf.pure_apply,
       if_true, vector.map_nil, vector.to_list_nil, list.prod_nil, eq_self_iff_true] },
-  { refine trans (eval_distribution_bind_bind_apply _ _ _ _) _,
+  { refine trans (eval_dist_bind_bind_apply _ _ _ _) _,
     simp [hn],
     refine trans (tsum_tsum_eq_single _ as.head as.tail _ _) _,
     { refine λ a h, _,
@@ -140,7 +140,7 @@ begin
       { exact false.elim (h $ symm $ vector.cons_head_tail as) } } }
 end
 
-end eval_distribution
+end eval_dist
 
 section equiv
 

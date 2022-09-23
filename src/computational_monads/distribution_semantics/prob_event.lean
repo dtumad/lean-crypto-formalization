@@ -6,7 +6,7 @@ import to_mathlib.pmf_stuff
 # Probability of Events
 
 This file defines the probability of some event holding after running a computation.
-The definition is in terms of the `measure` associated to the `pmf` given by `eval_distribution`.
+The definition is in terms of the `measure` associated to the `pmf` given by `eval_dist`.
 
 This definition is equivalent to one in terms of summations, in particular an infinite `tsum`.
 If the support is decidable, we can instead give an expression in terms of `finset.sum`
@@ -134,7 +134,7 @@ calc ⦃e'' | oa >>= ob⦄
   = (⦃oa >>= ob⦄.to_outer_measure e'').to_nnreal :
     prob_event_eq_to_nnreal_to_outer_measure_apply _ _
   ... = (∑' (a : α), ↑(⦃oa⦄ a) * (⦃ob a⦄.to_outer_measure e'')).to_nnreal : congr_arg
-    ennreal.to_nnreal (by erw [eval_distribution_bind, pmf.to_outer_measure_bind_apply])
+    ennreal.to_nnreal (by erw [eval_dist_bind, pmf.to_outer_measure_bind_apply])
   ... = ∑' (a : α), (↑(⦃oa⦄ a) * (⦃ob a⦄.to_outer_measure e'')).to_nnreal :
     ennreal.to_nnreal_tsum_eq_of_ne_top begin
       refine λ x, _,
@@ -167,7 +167,7 @@ lemma prob_event_query (i : spec.ι) (t : spec.domain i) (e : set $ spec.range i
   [decidable_pred e] : ⦃ e | query i t ⦄ = fintype.card e / fintype.card (spec.range i) :=
 begin
   refine trans (prob_event_eq_to_nnreal_to_outer_measure_apply _ e) _,
-  rw [eval_distribution_query],
+  rw [eval_dist_query],
   rw [pmf.to_outer_measure_uniform_of_fintype_apply],
   simp_rw [ennreal.to_nnreal_div, ennreal.to_nnreal_nat],
   congr,
@@ -181,7 +181,7 @@ section map
 lemma prob_event_map (f : α → β) (e : set β) :
   ⦃e | f <$> oa⦄ = ⦃f ⁻¹' e | oa⦄ :=
 by simp only [prob_event_eq_to_nnreal_to_outer_measure_apply,
-  eval_distribution_map, pmf.to_outer_measure_map_apply]
+  eval_dist_map, pmf.to_outer_measure_map_apply]
 
 end map
 
@@ -194,7 +194,7 @@ theorem prob_event_eq_sum_of_support_subset {oa : oracle_comp spec α} [decidabl
   ⦃e | oa⦄ = ∑ x in s, if x ∈ e then ⦃oa⦄ x else 0 :=
 begin
   refine trans (prob_event_eq_tsum oa e) (tsum_eq_sum (λ a ha, _)),
-  have : ⦃oa⦄ a = 0 := eval_distribution_eq_zero_of_not_mem_support (λ h, ha (hs h)),
+  have : ⦃oa⦄ a = 0 := eval_dist_eq_zero_of_not_mem_support (λ h, ha (hs h)),
   simp only [this, ennreal.coe_zero, if_t_t],
 end
 
@@ -209,7 +209,7 @@ begin
   simp only [pmf.to_measure_apply_ne_top, or_false],
   refine (@pmf.to_measure_apply_eq_iff_to_outer_measure_apply_eq
     α ⊤ ⦃oa⦄ 0 e measurable_space.measurable_set_top).trans _,
-  rw [← support_eval_distribution],
+  rw [← support_eval_dist],
   exact (⦃oa⦄.to_outer_measure_apply_eq_zero_iff e),
 end
 
@@ -219,18 +219,18 @@ begin
   refine (ennreal.to_nnreal_eq_one_iff _).trans _,
   refine (@pmf.to_measure_apply_eq_iff_to_outer_measure_apply_eq
     α ⊤ ⦃oa⦄ 1 e measurable_space.measurable_set_top).trans _,
-  rw [← support_eval_distribution],
+  rw [← support_eval_dist],
   exact (⦃oa⦄.to_outer_measure_apply_eq_one_iff e),
 end
 
 end support
 
-lemma prob_event_eq_eval_distribution_of_disjoint_sdiff_support [decidable_pred e] {a : α}
+lemma prob_event_eq_eval_dist_of_disjoint_sdiff_support [decidable_pred e] {a : α}
   (ha : a ∈ e) (h : disjoint (e \ {a}) oa.support) : ⦃e | oa⦄ = ⦃oa⦄ a :=
 begin
   refine (prob_event_eq_tsum oa e).trans ((tsum_eq_single a $ λ a' ha', _).trans (if_pos ha)),
   split_ifs with hae,
-  { exact (eval_distribution_eq_zero_of_not_mem_support
+  { exact (eval_dist_eq_zero_of_not_mem_support
       (set.disjoint_left.1 h $ set.mem_diff_of_mem hae ha')) },
   { exact rfl }
 end

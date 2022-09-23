@@ -41,21 +41,21 @@ rfl
 
 end simulate
 
-section eval_distribution
+section eval_dist
 
 variable [spec.finite_range]
 
 /-- If you throw outf final state then it looks like the original computation -/
 @[simp]
-lemma eval_distribution_simulate'_equiv (oa : oracle_comp spec A) :
+lemma eval_dist_simulate'_equiv (oa : oracle_comp spec A) :
   simulate' (logging_oracle spec) oa log ≃ₚ oa :=
 tracking_oracle.simulate'_query_equiv_self oa query_log.log_query _ log
 
 @[simp]
-lemma eval_distribution_default_simulate'_equiv (oa : oracle_comp spec A) :
+lemma eval_dist_default_simulate'_equiv (oa : oracle_comp spec A) :
   default_simulate' (logging_oracle spec) oa ≃ₚ oa :=
-eval_distribution_simulate'_equiv (query_log.init spec) oa
+eval_dist_simulate'_equiv (query_log.init spec) oa
 
-end eval_distribution
+end eval_dist
 
 end logging_oracle

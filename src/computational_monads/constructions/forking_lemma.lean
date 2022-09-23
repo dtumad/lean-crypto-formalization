@@ -75,7 +75,7 @@ do {
 }
 
 /-- TODO: Is this quite right? -/
-lemma eval_distribution_fst_map_fork_apply (i : option $ fin adv.q) :
+lemma eval_dist_fst_map_fork_apply (i : option $ fin adv.q) :
   ⦃prod.fst <$> fork adv⦄ i = ⦃adv.sim_choose_fork ×ₘ adv.sim_choose_fork⦄ (i, i) :=
 sorry
 
@@ -142,9 +142,9 @@ calc ⦃ λ out, out.1.is_some | fork adv ⦄
   ... = ∑' (j : fin adv.q), (⦃prod.fst <$> fork adv⦄ (some j)) :
     (distribution_semantics.prob_event_is_some $ prod.fst <$> fork adv)
   ... = ∑' (j : fin adv.q), (⦃adv.sim_choose_fork ×ₘ adv.sim_choose_fork⦄ (some j, some j)) :
-    tsum_congr (λ j, eval_distribution_fst_map_fork_apply _ _)
+    tsum_congr (λ j, eval_dist_fst_map_fork_apply _ _)
   ... = ∑' (j : fin adv.q), (⦃adv.sim_choose_fork⦄ (some j)) ^ 2 :
-    by simp only [eval_distribution_prod_apply, pow_two, ennreal.coe_mul]
+    by simp only [eval_dist_prod_apply, pow_two, ennreal.coe_mul]
   ... = ∑ j, (⦃adv.sim_choose_fork⦄ (some j)) ^ 2 :
     tsum_fintype _
   ... ≥ (∑ j, ⦃adv.sim_choose_fork⦄ (some j)) ^ 2 / (finset.univ : finset $ fin adv.q).card ^ 1 :

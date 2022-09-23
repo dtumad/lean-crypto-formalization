@@ -35,9 +35,9 @@ section distribution_semantics
 
 open distribution_semantics
 
-section eval_distribution
+section eval_dist
 
-end eval_distribution
+end eval_dist
 
 section equiv
 

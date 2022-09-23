@@ -11,10 +11,10 @@ namespace distribution_semantics
 variables {α β γ : Type} {spec spec' : oracle_spec}
 variable [spec.finite_range]
 
-section eval_distribution
+section eval_dist
 
 
-end eval_distribution
+end eval_dist
 
 section equiv
 
@@ -30,7 +30,7 @@ lemma prob_event_option [decidable_eq α] (e : set (option α)) :
 (prob_event_eq_tsum_indicator oa e).trans (nnreal.tsum_option (pmf.indicator_summable ⦃oa⦄ e))
 
 lemma prob_event_is_none : ⦃λ x, x.is_none | oa ⦄ = ⦃oa⦄ none :=
-prob_event_eq_eval_distribution_of_disjoint_sdiff_support oa _ rfl
+prob_event_eq_eval_dist_of_disjoint_sdiff_support oa _ rfl
   (set.disjoint_iff_forall_ne.2 (λ x hx, false.elim $ hx.2 (option.is_none_iff_eq_none.1 hx.1)))
 
 lemma prob_event_is_some [decidable_eq α] : ⦃λ x, x.is_some | oa⦄ = ∑' (a : α), ⦃oa⦄ (some a) :=

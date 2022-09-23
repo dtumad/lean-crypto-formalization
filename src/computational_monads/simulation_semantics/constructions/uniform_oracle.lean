@@ -30,9 +30,9 @@ by simp only [set.eq_univ_iff_forall, apply_eq, support_bind, support_uniform_se
 
 
 
-section eval_distribution
+section eval_dist
 
 
-end eval_distribution
+end eval_dist
 
 end uniform_oracle

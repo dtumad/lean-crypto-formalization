@@ -25,9 +25,9 @@ section simulate
 
 end simulate
 
-section eval_distribution
+section eval_dist
 
 
-end eval_distribution
+end eval_dist
 
 end caching_oracle

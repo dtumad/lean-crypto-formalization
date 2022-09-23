@@ -7,7 +7,7 @@ import computational_monads.oracle_comp
 
 This file defines the support of an `oracle_comp`, a `set` of possible outputs of the computation.
   We assume that oracle queries could return any possible value in their range.
-This aligns with `pmf.support` for the distribution semantics of `oracle_comp.eval_distribution`
+This aligns with `pmf.support` for the distribution semantics of `oracle_comp.eval_dist`
 
 -/
 
@@ -20,7 +20,7 @@ variables {α β γ : Type} {spec spec' : oracle_spec}
 section support
 
 /-- Set of possible outputs of the computation, allowing for any possible output of the queries.
-  This will generally correspond to the support of `eval_distribution`,
+  This will generally correspond to the support of `eval_dist`,
     but is slightly more general since it doesn't require α finite range. -/
 def support {spec : oracle_spec} : Π {α : Type} (oa : oracle_comp spec α), set α
 | _ (pure' α a) := {a}

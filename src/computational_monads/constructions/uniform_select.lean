@@ -54,11 +54,11 @@ section distribution_semantics
 open distribution_semantics
 
 @[simp]
-lemma eval_distribution_uniform_fin : ⦃$[0..n]⦄ = pmf.uniform_of_fintype (fin $ n + 1) := rfl
+lemma eval_dist_uniform_fin : ⦃$[0..n]⦄ = pmf.uniform_of_fintype (fin $ n + 1) := rfl
 
 @[simp]
-lemma eval_distribution_uniform_fin_apply : ⦃$[0..m]⦄ i = 1 / (m + 1) :=
-by rw [eval_distribution_uniform_fin m, pmf.uniform_of_fintype_apply i,
+lemma eval_dist_uniform_fin_apply : ⦃$[0..m]⦄ i = 1 / (m + 1) :=
+by rw [eval_dist_uniform_fin m, pmf.uniform_of_fintype_apply i,
   fintype.card_fin (m + 1), nat.cast_add, nat.cast_one, one_div]
 
 @[simp]
@@ -113,18 +113,18 @@ section distribution_semantics
 open distribution_semantics
 
 @[simp]
-lemma eval_distribution_uniform_select_vector : ⦃$ᵛ v⦄ = pmf.uniform_of_vector v :=
+lemma eval_dist_uniform_select_vector : ⦃$ᵛ v⦄ = pmf.uniform_of_vector v :=
 by rw [uniform_select_vector, pmf.uniform_of_vector_eq_nth_map_uniform_of_fintype,
-  eval_distribution_map, eval_distribution_uniform_fin]
+  eval_dist_map, eval_dist_uniform_fin]
 
-lemma eval_distribution_uniform_select_vector_apply : ⦃$ᵛ v⦄ a = v.to_list.count a / ↑(n + 1) :=
-by rw [eval_distribution_uniform_select_vector, pmf.uniform_of_vector_apply]
+lemma eval_dist_uniform_select_vector_apply : ⦃$ᵛ v⦄ a = v.to_list.count a / ↑(n + 1) :=
+by rw [eval_dist_uniform_select_vector, pmf.uniform_of_vector_apply]
 
 @[simp]
 lemma prob_event_uniform_select_vector (event : set α) :
   ⦃event | $ᵛ v⦄ = (v.to_list.countp event) / (n + 1) :=
 by simp only [prob_event_eq_to_nnreal_to_outer_measure_apply, ennreal.to_nnreal_div,
-  eval_distribution_uniform_select_vector, pmf.to_outer_measure_uniform_of_vector_apply,
+  eval_dist_uniform_select_vector, pmf.to_outer_measure_uniform_of_vector_apply,
   ← nat.cast_succ, ennreal.to_nnreal_nat]
 
 end distribution_semantics
@@ -184,15 +184,15 @@ section distribution_semantics
 
 open distribution_semantics
 
-lemma eval_distribution_uniform_select_list_nil (h : ¬ ([] : list α).empty) (p : pmf α) :
+lemma eval_dist_uniform_select_list_nil (h : ¬ ([] : list α).empty) (p : pmf α) :
   ⦃$ˡ [] h⦄ = p := false.elim (h rfl)
 
 @[simp]
-lemma eval_distribution_uniform_select_list : ⦃$ˡ xs h⦄ = pmf.uniform_of_list xs h :=
+lemma eval_dist_uniform_select_list : ⦃$ˡ xs h⦄ = pmf.uniform_of_list xs h :=
 begin
   induction xs with x xs,
-  { exact eval_distribution_uniform_select_list_nil h _ },
-  { simpa only [uniform_select_list_cons, eval_distribution_uniform_select_vector] }
+  { exact eval_dist_uniform_select_list_nil h _ },
+  { simpa only [uniform_select_list_cons, eval_dist_uniform_select_vector] }
 end
 
 @[simp]
@@ -200,7 +200,7 @@ lemma prob_event_uniform_select_list (event : set α) :
   ⦃event | $ˡ xs h⦄ = xs.countp event / xs.length :=
 by simp only [prob_event_eq_to_nnreal_to_outer_measure_apply, ennreal.to_nnreal_div,
   pmf.to_outer_measure_uniform_of_list_apply, ennreal.to_nnreal_nat,
-  eval_distribution_uniform_select_list]
+  eval_dist_uniform_select_list]
 
 end distribution_semantics 
 
@@ -247,19 +247,19 @@ section distribution_semantics
 open distribution_semantics
 
 @[simp]
-lemma eval_distribution_uniform_select_finset : ⦃$ˢ bag h⦄ = pmf.uniform_of_finset bag h :=
-by rw [uniform_select_finset, eval_distribution_uniform_select_list,
+lemma eval_dist_uniform_select_finset : ⦃$ˢ bag h⦄ = pmf.uniform_of_finset bag h :=
+by rw [uniform_select_finset, eval_dist_uniform_select_list,
   pmf.uniform_of_finset_eq_uniform_of_list_to_list]
 
-lemma eval_distribution_uniform_select_finset_apply :
+lemma eval_dist_uniform_select_finset_apply :
   ⦃$ˢ bag h⦄ a = if a ∈ bag then bag.card⁻¹ else 0 :=
-by rw [eval_distribution_uniform_select_finset, pmf.uniform_of_finset_apply]
+by rw [eval_dist_uniform_select_finset, pmf.uniform_of_finset_apply]
 
 @[simp]
 lemma prob_event_uniform_select_finset (event : set α) :
   ⦃event | $ˢ bag h⦄ = (bag.filter (∈ event)).card / bag.card :=
 by simp only [prob_event_eq_to_nnreal_to_outer_measure_apply, ennreal.to_nnreal_div,
-  ennreal.to_nnreal_nat, eval_distribution_uniform_select_finset,
+  ennreal.to_nnreal_nat, eval_dist_uniform_select_finset,
   pmf.to_outer_measure_uniform_of_finset_apply]
 
 end distribution_semantics
@@ -304,17 +304,17 @@ section distribution_semantics
 open distribution_semantics
 
 @[simp]
-lemma eval_distribution_uniform_select_fintype : ⦃$ᵗ α⦄ = pmf.uniform_of_fintype α :=
-by rw [uniform_select_fintype, eval_distribution_uniform_select_finset, pmf.uniform_of_fintype]
+lemma eval_dist_uniform_select_fintype : ⦃$ᵗ α⦄ = pmf.uniform_of_fintype α :=
+by rw [uniform_select_fintype, eval_dist_uniform_select_finset, pmf.uniform_of_fintype]
 
-lemma eval_distribution_uniform_select_fintype_apply : ⦃$ᵗ α⦄ a = (fintype.card α)⁻¹ :=
-by rw [eval_distribution_uniform_select_fintype, pmf.uniform_of_fintype_apply]
+lemma eval_dist_uniform_select_fintype_apply : ⦃$ᵗ α⦄ a = (fintype.card α)⁻¹ :=
+by rw [eval_dist_uniform_select_fintype, pmf.uniform_of_fintype_apply]
 
 @[simp]
 lemma prob_event_uniform_select_fintype_apply (event : set α) :
   ⦃event | $ᵗ α⦄ = fintype.card event / fintype.card α :=
 by simp only [prob_event_eq_to_nnreal_to_outer_measure_apply, ennreal.to_nnreal_div,
-  ennreal.to_nnreal_nat, eval_distribution_uniform_select_fintype,
+  ennreal.to_nnreal_nat, eval_dist_uniform_select_fintype,
   pmf.to_outer_measure_uniform_of_fintype_apply]
 
 end distribution_semantics

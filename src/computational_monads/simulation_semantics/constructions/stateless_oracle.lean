@@ -148,7 +148,7 @@ lemma simulate'_equiv_of_oracle_equiv [spec'.finite_range] [spec''.finite_range]
 begin
   induction oa using oracle_comp.induction_on with A a A B oa ob hoa hob i t generalizing s,
   sorry, sorry, sorry
-  -- { simp only [simulate'_return, map_return_equiv, eval_distribution_return] },
+  -- { simp only [simulate'_return, map_return_equiv, eval_dist_return] },
   -- { calc simulate' ⟪o⟫ (oa >>= ob) s
   --     ≃ₚ simulate ⟪o⟫ oa s >>= λ x, simulate' ⟪o⟫ (ob x.1) x.2 : simulate'_bind_equiv ⟪o⟫ oa ob _
   --     ... ≃ₚ simulate ⟪o'⟫ oa s >>= λ x, simulate' ⟪o'⟫ (ob x.1) x.2 : begin
