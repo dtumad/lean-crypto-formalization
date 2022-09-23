@@ -84,6 +84,20 @@ by rw [ennreal.to_real, nnreal.coe_eq_one, ennreal.to_nnreal_eq_one_iff]
 
 section tsum
 
+lemma tsum_prod_eq_tsum_snd {α β γ : Type*} [add_comm_monoid α] [topological_space α] [t2_space α]
+  {f : β × γ → α} (b : β) (h : ∀ b' ≠ b, ∀ c, f (b', c) = 0) :
+  ∑' (x : β × γ), f x = ∑' (c : γ), f (b, c) :=
+begin
+  sorry,
+end
+
+lemma tsum_prod_eq_tsum_fst {α β γ : Type*} [add_comm_monoid α] [topological_space α] [t2_space α]
+  {f : β × γ → α} (c : γ) (h : ∀ c' ≠ c, ∀ b, f (b, c') = 0) :
+  ∑' (x : β × γ), f x = ∑' (b : β), f (b, c) :=
+begin
+  sorry,
+end
+
 namespace ennreal
 
 open_locale classical

@@ -4,13 +4,16 @@ variables {α β γ : Type} {spec spec' : oracle_spec}
 
 -- TODO: `prod` -> `oracle_prod`
 def oracle_comp.prod (oa : oracle_comp spec α) (ob : oracle_comp spec β) :
-  oracle_comp spec (α × β) := do {a ← oa, b ← ob, pure (a, b)}
+  oracle_comp spec (α × β) := do {a ← oa, b ← ob, return (a, b)}
 
 infixl `×ₘ` : 100 := oracle_comp.prod
 
 namespace oracle_comp
 
 open oracle_spec
+
+lemma prod_def (oa : oracle_comp spec α) (ob : oracle_comp spec β) :
+  oa ×ₘ ob = do {a ← oa, b ← ob, return (a, b)} := rfl
 
 section support
 
@@ -33,31 +36,26 @@ variable [spec.finite_range]
 section eval_dist
 
 @[simp]
-lemma eval_dist_prod_apply [decidable_eq α] [decidable_eq β]
+lemma eval_dist_prod_apply --[decidable_eq α] [decidable_eq β]
   (oa : oracle_comp spec α) (ob : oracle_comp spec β) (a : α) (b : β) :
   ⦃oa ×ₘ ob⦄ (a, b) = ⦃oa⦄ a * ⦃ob⦄ b :=
-calc ⦃oa ×ₘ ob⦄ (a, b)
-  = ∑' (x : α), ⦃oa⦄ x * ∑' (y : β), ⦃ob⦄ y * (if (a, b) = (x, y) then 1 else 0) :
-  begin
-    sorry,
-  end
-    -- by simp_rw [oracle_prod, eval_dist_bind_apply, eval_dist_pure_apply]
-  ... = ∑' (x : α) (y : β), (⦃oa⦄ x * ⦃ob⦄ y) * (if (a, b) = (x, y) then 1 else 0) :
-    by simp_rw [← nnreal.tsum_mul_left, mul_assoc]
-  ... = (⦃oa⦄ a * ⦃ob⦄ b) * (if (a, b) = (a, b) then 1 else 0) : begin
-    refine tsum_tsum_eq_single _ a b (λ a' ha', _) (λ a' b' hb', _),
-    { have : (a, b) ≠ (a', b) := λ h, ha' (prod.eq_iff_fst_eq_snd_eq.1 h).1.symm,
-      simp [this] },
-    { have : (a, b) ≠ (a', b') := λ h, hb' (prod.eq_iff_fst_eq_snd_eq.1 h).2.symm,
-      simp [this] }
-  end
-  ... = ⦃oa⦄ a * ⦃ob⦄ b : by simp only [eq_self_iff_true, if_true, mul_one]
+calc ⦃oa ×ₘ ob⦄ (a, b) = ∑' (x : α) (y : β), (⦃oa⦄ x * ⦃ob⦄ y) * (⦃return (x, y)⦄ (a, b)) :
+    by simp_rw [prod_def, eval_dist_bind_bind_apply]
+  ... = (⦃oa⦄ a * ⦃ob⦄ b) * (⦃(return (a, b) : oracle_comp spec _)⦄ (a, b)) :
+    begin
+      refine tsum_tsum_eq_single _ a b (λ a' ha', _) (λ a' b' hb', _),
+      { have : (a, b) ≠ (a', b) := λ h, ha' (prod.eq_iff_fst_eq_snd_eq.1 h).1.symm,
+        simp only [eval_dist_return_apply_of_ne this, if_false, mul_zero]},
+      { have : (a, b) ≠ (a', b') := λ h, hb' (prod.eq_iff_fst_eq_snd_eq.1 h).2.symm,
+        simp only [eval_dist_return_apply_of_ne this, if_false, mul_zero]}
+    end
+  ... = ⦃oa⦄ a * ⦃ob⦄ b : by rw [eval_dist_return_apply_self, mul_one]
 
 end eval_dist
 
 section prob_event
 
-lemma prob_event_set_prod_eq_mul [decidable_eq α] [decidable_eq β]
+lemma prob_event_set_prod_eq_mul
   (oa : oracle_comp spec α) (ob : oracle_comp spec β)
   (e : set α) (e' : set β) [decidable_pred e] [decidable_pred e'] :
   ⦃e ×ˢ e' | oa ×ₘ ob⦄ = ⦃e | oa⦄ * ⦃e' | ob⦄ :=

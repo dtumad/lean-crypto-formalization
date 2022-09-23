@@ -21,12 +21,19 @@ namespace forking_adversary
 variables {T U A : Type} [inhabited U] [fintype U] [decidable_eq T] [decidable_eq U]
   (adv : forking_adversary T U A)
 
+section sim_with_log
+
 /-- Simulate the adversary, returning a log of the uniform selecting oracle,
   along with the final result and final cache for the random oracle -/
+-- @[derive decidable]
 def sim_with_log (adv : forking_adversary T U A) :
   oracle_comp uniform_selecting (option (fin adv.q) × A × query_log uniform_selecting × query_log (T →ₒ U)) :=
 do { ⟨x, log, cache, ()⟩ ← default_simulate (logging_oracle _ ++ₛ random_oracle _) adv.adv,
     return (adv.choose_fork x cache, x, log, cache) }
+
+end sim_with_log
+
+section sim_from_seed
 
 /-- Simulate the adversary, allowing for a seed value to the uniform select oracle,
   and a preset cache value for the random oracle -/
@@ -36,11 +43,19 @@ def sim_from_seed (adv : forking_adversary T U A)
 do { ⟨x, log, cache, ()⟩ ← simulate (seeded_oracle _ ++ₛ random_oracle _) adv.adv (seed, cache, ()),
   return (adv.choose_fork x cache, x, cache) }
 
+end sim_from_seed
+
+section sim_choose_fork
+
 /-- Just simulate to get the resulting `choose_fork` value.
   Implemented as running `simulate_with_log` and throwing out the resulting log and cache -/
 def sim_choose_fork (adv : forking_adversary T U A) :
   oracle_comp uniform_selecting (option (fin adv.q)) :=
-prod.fst <$> adv.sim_from_seed (query_log.init _) (query_log.init _) 
+prod.fst <$> adv.sim_from_seed (query_log.init _) (query_log.init _)
+
+end sim_choose_fork
+
+section advantage
 
 def advantage (adv : forking_adversary T U A) : ℝ≥0 :=
 ⦃ λ x, option.is_some x | sim_choose_fork adv ⦄
@@ -53,6 +68,8 @@ lemma advantage_eq_sum (adv : forking_adversary T U A) :
   adv.advantage = ∑ i, ⦃sim_choose_fork adv⦄ (some i) :=
 trans (advantage_eq_tsum adv) (tsum_fintype _)
 
+end advantage
+
 end forking_adversary
 
 variables {T U A : Type} [inhabited U] [fintype U] [decidable_eq T] [decidable_eq U]
@@ -61,23 +78,103 @@ variables {n : ℕ} (adv : forking_adversary T U A)
 /-- Run computation twice, using the same random information for both,
   responding differently to a query specified by `choose_fork`,
   and returning the results if `choose_fork` makes the same choice each time -/
-def fork : oracle_comp uniform_selecting ((option (fin adv.q)) × A × (query_log (T →ₒ U)) × A × (query_log (T →ₒ U))) :=
+def fork : oracle_comp uniform_selecting
+  ((option (fin adv.q)) × A × (query_log (T →ₒ U)) × A × (query_log (T →ₒ U))) :=
 do {
-  -- TODO: I think we want to bundle the next two parts into a single definition above
+  -- Run the adversary for the first time, logging coins and caching random oracles
   ⟨i, x, log, cache⟩ ← adv.sim_with_log,
-  -- remove things in the cache after the query we intend to fork on
-  forked_cache ← return (cache.fork_cache () (i.map coe)),
+  -- -- remove things in the cache after the query we intend to fork on
+  -- forked_cache ← return (cache.fork_cache () (i.map coe)),
   -- run again, using the same random choices for first oracle, and newly forked cache
-  ⟨i', x', cache'⟩ ← adv.sim_from_seed log.to_seed forked_cache,
+  ⟨i', x', cache'⟩ ← adv.sim_from_seed log.to_seed (cache.fork_cache () (i.map coe)),
   -- return no forking index unless `fork_cache` gives equal values for both runs.
   -- also return the side outputs and the random oracle cache for both runs
   return ⟨if i = i' then i else none, x, cache, x', cache'⟩
 }
 
-/-- TODO: Is this quite right? -/
+lemma fork_def : fork adv = do {o ← adv.sim_with_log,
+  o' ← adv.sim_from_seed o.2.2.1.to_seed ((o.2.2.2.fork_cache () (o.1.map coe))),
+  return (if o.1 = o'.1 then o.1 else none, o.2.1, o.2.2.2, o'.2.1, o'.2.2)} :=
+begin
+  unfold fork,
+  congr,
+  ext o,
+  rcases o with ⟨i, x, log, cache⟩,
+  rw [fork._match_2],
+  congr,
+  -- ext forked_cache,
+  -- congr,
+  ext o',
+  rcases o' with ⟨i', x', cache'⟩,
+  rw [fork._match_1],
+end
+
+section distribution_semantics
+
+open distribution_semantics
+
+lemma eval_dist_fork_apply_some (i : (fin adv.q)) (x x' : A) (cache cache' : query_log (T →ₒ U)) :
+  ⦃fork adv⦄ (some i, x, cache, x', cache') =
+    ∑' (log : query_log uniform_selecting), ⦃adv.sim_with_log⦄ (some i, x, log, cache)
+      * ⦃adv.sim_from_seed log.to_seed (cache.fork_cache () (some i))⦄ (some i, x', cache') :=
+begin
+  rw [fork_def],
+  rw [eval_dist_bind_bind_apply],
+  rw [tsum_prod_eq_tsum_snd (some i)],
+  {
+    rw [tsum_prod_eq_tsum_snd x],
+    {
+      rw [tsum_prod_eq_tsum_fst cache],
+      {
+        refine tsum_congr (λ log, _),
+        refine trans (tsum_eq_single (some i, x', cache') _) _,
+        {
+          rintros ⟨j, y, cache''⟩ h,
+          refine mul_eq_zero_of_right _ _, sorry,
+        },
+        {
+          simp only [option.map_some', eq_self_iff_true, if_true, eval_dist_return, pmf.pure_apply, mul_one],
+        }
+      },
+      sorry, sorry,
+    },
+    sorry, sorry,
+  },
+  {
+    sorry,
+  },
+  sorry,
+end
+
+end distribution_semantics
+
+-- lemma fork_def : fork adv =
+-- do {o ← adv.sim_with_log, forked_cache ← return (o.2.2.2.fork_cache () (o.1.map coe)),
+--   o' ← adv.sim_from_seed o.2.2.1.to_seed forked_cache,
+--   return (if o.1 = o'.1 then o.1 else none, o.2.1, o.2.2.2, o'.2.1, o'.2.2)} :=
+-- begin
+--   unfold fork,
+--   congr,
+--   ext o,
+--   rcases o with ⟨i, x, log, cache⟩,
+--   rw [fork._match_2],
+--   congr,
+--   ext forked_cache,
+--   congr,
+--   ext o',
+--   rcases o' with ⟨i', x', cache'⟩,
+--   rw [fork._match_1],
+-- end
+
+/-- TODO: Is this quite right?
+  The probability of returning a given index is the independent value of getting it from both -/
 lemma eval_dist_fst_map_fork_apply (i : option $ fin adv.q) :
-  ⦃prod.fst <$> fork adv⦄ i = ⦃adv.sim_choose_fork ×ₘ adv.sim_choose_fork⦄ (i, i) :=
-sorry
+  ⦃prod.fst <$> fork adv⦄ i = ⦃adv.sim_choose_fork⦄ i ^ 2 :=
+calc ⦃prod.fst <$> fork adv⦄ i
+  = ⦃adv.sim_choose_fork ×ₘ adv.sim_choose_fork⦄ (i, i) : begin
+    sorry
+  end
+  ... = ⦃adv.sim_choose_fork⦄ i ^ 2 : sorry
 
 section choose_fork
 
@@ -141,10 +238,11 @@ calc ⦃ λ out, out.1.is_some | fork adv ⦄
     symm ((distribution_semantics.prob_event_map _ _ _))
   ... = ∑' (j : fin adv.q), (⦃prod.fst <$> fork adv⦄ (some j)) :
     (distribution_semantics.prob_event_is_some $ prod.fst <$> fork adv)
-  ... = ∑' (j : fin adv.q), (⦃adv.sim_choose_fork ×ₘ adv.sim_choose_fork⦄ (some j, some j)) :
-    tsum_congr (λ j, eval_dist_fst_map_fork_apply _ _)
+  -- ... = ∑' (j : fin adv.q), (⦃adv.sim_choose_fork ×ₘ adv.sim_choose_fork⦄ (some j, some j)) :
+  --   tsum_congr (λ j, eval_dist_fst_map_fork_apply _ _)
   ... = ∑' (j : fin adv.q), (⦃adv.sim_choose_fork⦄ (some j)) ^ 2 :
-    by simp only [eval_dist_prod_apply, pow_two, ennreal.coe_mul]
+    tsum_congr (λ j, eval_dist_fst_map_fork_apply _ _)
+    --by simp only [eval_dist_prod_apply, pow_two, ennreal.coe_mul]
   ... = ∑ j, (⦃adv.sim_choose_fork⦄ (some j)) ^ 2 :
     tsum_fintype _
   ... ≥ (∑ j, ⦃adv.sim_choose_fork⦄ (some j)) ^ 2 / (finset.univ : finset $ fin adv.q).card ^ 1 :

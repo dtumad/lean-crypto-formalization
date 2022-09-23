@@ -149,6 +149,11 @@ lemma eval_dist_return : ⦃(return a : oracle_comp spec α)⦄ = pmf.pure a := 
 lemma eval_dist_return_apply : ⦃(return a : oracle_comp spec α)⦄ a' =
   if a' = a then 1 else 0 := rfl
 
+lemma eval_dist_return_apply_self : ⦃(return a : oracle_comp spec α)⦄ a = 1 := sorry
+
+lemma eval_dist_return_apply_of_ne {a a' : α} (h : a' ≠ a) :
+  ⦃(return a : oracle_comp spec α)⦄ a' = 0 := sorry
+
 lemma eval_dist_pure' : ⦃(pure' α a : oracle_comp spec α)⦄ = pmf.pure a := rfl
 
 lemma eval_dist_pure'_apply : ⦃(pure' α a : oracle_comp spec α)⦄ a' =
@@ -173,6 +178,20 @@ by simp only [← bind'_eq_bind, eval_dist, eval_dist']
 lemma eval_dist_bind_apply : ⦃oa >>= ob⦄ b = ∑' (a : α), ⦃oa⦄ a * ⦃ob a⦄ b :=
 by simpa only [eval_dist_bind]
 
+lemma eval_dist_bind_apply_eq_to_nnreal :
+  ⦃oa >>= ob⦄ b = ennreal.to_nnreal (∑' (a : α), ↑(⦃oa⦄ a * ⦃ob a⦄ b)) :=
+begin
+  rw [eval_dist_bind_apply, ennreal.tsum_to_nnreal_eq],
+  {
+    refine tsum_congr (λ a, symm _),
+    refine ennreal.to_nnreal_coe,
+  },
+  {
+    refine (λ a, _),
+    refine ennreal.coe_ne_top,
+  }
+end
+
 lemma eval_dist_bind_apply' [spec.computable] [oa.decidable] :
   ⦃oa >>= ob⦄ b = ∑ a in oa.fin_support, ⦃oa⦄ a * ⦃ob a⦄ b :=
 (eval_dist_bind_apply oa ob b).trans (tsum_eq_sum $ λ a ha,
@@ -189,16 +208,20 @@ lemma eval_dist_bind'_apply' [spec.computable] [oa.decidable] :
 eval_dist_bind_apply' oa ob b
 
 @[simp]
-lemma eval_dist_bind_bind_apply :
-  ⦃do {a ← oa, b ← ob a, oc a b}⦄ c = ∑' (a : α) (b : β), ⦃oa⦄ a * (⦃ob a⦄ b * ⦃oc a b⦄ c) :=
-(eval_dist_bind_apply oa _ c).trans
-  (tsum_congr $ λ a, by simp only [eval_dist_bind_apply, nnreal.tsum_mul_left (⦃oa⦄ a)])
+lemma eval_dist_bind_bind_apply : ⦃do {a ← oa, b ← ob a, oc a b}⦄ c
+  = ∑' (a : α) (b : β), ⦃oa⦄ a * ⦃ob a⦄ b * ⦃oc a b⦄ c :=
+(eval_dist_bind_apply oa _ c).trans (tsum_congr $ λ a,
+  by simp only [eval_dist_bind_apply, nnreal.tsum_mul_left (⦃oa⦄ a), mul_assoc])
+
+lemma eval_dist_bind_bind_apply_eq_to_nnreal : ⦃do {a ← oa, b ← ob a, oc a b}⦄ c
+  = ennreal.to_nnreal (∑' (a : α) (b : β), ↑(⦃oa⦄ a * ⦃ob a⦄ b * ⦃oc a b⦄ c)) :=
+sorry
 
 lemma eval_dist_bind_bind_apply' [spec.computable] [oa.decidable] [∀ a, (ob a).decidable] :
   ⦃do {a ← oa, b ← ob a, oc a b}⦄ c =
-    ∑ a in oa.fin_support, ∑ b in (ob a).fin_support, ⦃oa⦄ a * (⦃ob a⦄ b * ⦃oc a b⦄ c) :=
-(eval_dist_bind_apply' oa _ c).trans
-  (finset.sum_congr rfl $ λ a ha, by simp only [eval_dist_bind_apply', finset.mul_sum])
+    ∑ a in oa.fin_support, ∑ b in (ob a).fin_support, ⦃oa⦄ a * ⦃ob a⦄ b * ⦃oc a b⦄ c :=
+(eval_dist_bind_apply' oa _ c).trans (finset.sum_congr rfl $ λ a ha,
+  by simp only [eval_dist_bind_apply', finset.mul_sum, mul_assoc])
 
 end bind
 
