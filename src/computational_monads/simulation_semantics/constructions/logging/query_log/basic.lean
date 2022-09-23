@@ -1,87 +1,72 @@
 import computational_monads.oracle_spec
 import to_mathlib.general
 
+/-!
+# Oracle Query Log
+
+This file efines a simple definition of a log for queries based on continuations.
+This definition is chosen over a list of sigma types to give simple type equalities.
+-/
+
 /-- Data type representing a log of oracle queries for a given `oracle_spec`.
   Represented as a list of query inputs and outputs, indexed by the indexing set in the spec -/
 def query_log (spec : oracle_spec) : Type :=
-  Π (i : spec.ι), list (spec.domain i × spec.range i)
+Π (i : spec.ι), list (spec.domain i × spec.range i)
 
 namespace query_log
 
+open oracle_spec
+
 @[ext]
-lemma ext {spec : oracle_spec} {log log' : query_log spec}
-  (h : ∀ (i : spec.ι), log i = log' i) : log = log' :=
-funext h
-
-variables {spec : oracle_spec} (log : query_log spec)
-
-section init
+lemma ext {spec : oracle_spec} {log log' : query_log spec} (h : ∀ (i : spec.ι), log i = log' i) :
+  log = log' := funext h
 
 /-- Empty query log, with no entries for any of the oracles in the spec -/
 @[inline, reducible]
-def init (spec : oracle_spec) : query_log spec :=
-λ i, []
+def init (spec : oracle_spec) : query_log spec := λ i, []
 
 @[simp]
-lemma init_apply (spec : oracle_spec) (i : spec.ι) :
-  (init spec) i = [] :=
-rfl
+lemma init_apply (spec : oracle_spec) (i : spec.ι) : (init spec) i = [] := rfl
 
-end init
+variables {spec : oracle_spec} (log : query_log spec) [computable spec]
 
 section log_query
 
-variable [spec.computable] 
-
 /-- Given a current query log, return the new log after adding a given oracle query -/
-def log_query (log : query_log spec) (i : spec.ι) (t : spec.domain i) (u : spec.range i) :
-  query_log spec :=
+def log_query (i : spec.ι) (t : spec.domain i) (u : spec.range i) : query_log spec :=
 λ j, if hi : i = j then hi.rec_on ((t, u) :: (log i)) else log j
 
 @[simp]
 lemma log_query_apply (i j : spec.ι) (t : spec.domain i) (u : spec.range i) :
-  (log.log_query i t u) j = if hi : i = j then hi.rec_on ((t, u) :: log i) else log j :=
-rfl
+  (log.log_query i t u) j = if hi : i = j then hi.rec_on ((t, u) :: log i) else log j := rfl
 
-lemma log_query_apply_of_index_eq (log : query_log spec)
-  {i j : spec.ι} (hi : i = j) (t : spec.domain i) (u : spec.range i) :
-  (log.log_query i t u) j = hi.rec_on ((t, u) :: log i) :=
+lemma log_query_apply_of_index_eq {i j : spec.ι} (hi : i = j) (t : spec.domain i)
+  (u : spec.range i) : (log.log_query i t u) j = hi.rec_on ((t, u) :: log i) :=
 dite_eq_iff.2 (or.inl ⟨hi, rfl⟩)
 
 @[simp]
-lemma log_query_apply_same_index (log : query_log spec)
-  (i : spec.ι) (t : spec.domain i) (u : spec.range i) :
-  (log.log_query i t u) i = (t, u) :: (log i) :=
-log_query_apply_of_index_eq log rfl t u
+lemma log_query_apply_same_index (i : spec.ι) (t : spec.domain i) (u : spec.range i) :
+  (log.log_query i t u) i = (t, u) :: (log i) := log_query_apply_of_index_eq log rfl t u
 
-lemma log_query_apply_of_index_ne (log : query_log spec)
-  {i j : spec.ι} (hi : i ≠ j) (t : spec.domain i) (u : spec.range i) :
-  (log.log_query i t u) j = log j :=
-dite_eq_iff.2 (or.inr ⟨hi, rfl⟩)
+lemma log_query_apply_of_index_ne {i j : spec.ι} (hi : i ≠ j) (t : spec.domain i)
+  (u : spec.range i) : (log.log_query i t u) j = log j := dite_eq_iff.2 (or.inr ⟨hi, rfl⟩)
 
 end log_query
 
-
 section not_queried
 
-variable [spec.computable]
-
--- Check that a input was never queried
-def not_queried (log : query_log spec) (i : spec.ι) (t : spec.domain i) : bool :=
+/- Returns whether a specific input has been previously logged -/
+def not_queried (i : spec.ι) (t : spec.domain i) : bool :=
 ((log i).find ((=) t ∘ prod.fst)).is_none
 
 lemma not_queried_def (i : spec.ι) (t : spec.domain i) :
-  log.not_queried i t = ((log i).find ((=) t ∘ prod.fst)).is_none :=
-rfl
+  log.not_queried i t = ((log i).find ((=) t ∘ prod.fst)).is_none := rfl
 
-lemma not_queried_init_eq_tt (spec : oracle_spec) [spec.computable]
-  (i : spec.ι) (t : spec.domain i) :
-  (init spec).not_queried i t = tt :=
-rfl
+lemma not_queried_init_eq_tt (i : spec.ι) (t : spec.domain i) :
+  (init spec).not_queried i t = tt := rfl
 
-lemma not_queried_log_query (i j : spec.ι)
-  (t : spec.domain i) (t' : spec.domain j) (u : spec.range i) :
-  (log.log_query i t u).not_queried j t' =
+lemma not_queried_log_query (i j : spec.ι) (t : spec.domain i) (t' : spec.domain j)
+  (u : spec.range i) : (log.log_query i t u).not_queried j t' =
     (log.not_queried j t') && (if hi : i = j then (hi.rec_on t ≠ t') else tt) :=
 begin
   split_ifs with hi,
@@ -111,8 +96,7 @@ log.not_queried_log_query_of_index_eq rfl t t' u
 lemma not_queried_log_query_of_index_ne {i j : spec.ι} (hi : i ≠ j)
   (t : spec.domain i) (t' : spec.domain j) (u : spec.range i) :
   (log.log_query i t u).not_queried j t' = log.not_queried j t' :=
-(log.not_queried_log_query i j t t' u).trans 
-  ((congr_arg _ (dif_neg hi)).trans (band_tt _))
+(log.not_queried_log_query i j t t' u).trans ((congr_arg _ (dif_neg hi)).trans (band_tt _))
 
 end not_queried
 
@@ -120,30 +104,25 @@ section map_at_index
 
 /-- Apply a mapping function to the log corresponding to a particular index
   TODO: I think a lot of the above functions can use this as a helper -/
-def map_at_index [spec.computable] (log : query_log spec) (i : spec.ι)
+def map_at_index (i : spec.ι)
   (f : list (spec.domain i × spec.range i) → list (spec.domain i × spec.range i)) :
   query_log spec :=
 λ j, if hi : i = j then hi.rec_on (f $ log i) else (log j)
 
-variable [spec.computable]
 variables (i j : spec.ι)
   (f : list (spec.domain i × spec.range i) → list (spec.domain i × spec.range i))
 
 @[simp]
 lemma map_at_index_apply : log.map_at_index i f j =
-  if hi : i = j then hi.rec_on (f $ log i) else log j :=
-rfl
+  if hi : i = j then hi.rec_on (f $ log i) else log j := rfl
 
-lemma map_at_index_apply_of_index_eq (h : i = j) :
-  log.map_at_index i f j = h.rec_on (f $ log i) :=
+lemma map_at_index_apply_of_index_eq (h : i = j) : log.map_at_index i f j = h.rec_on (f $ log i) :=
 by simp only [h, map_at_index_apply, dif_pos]
 
-lemma map_at_index_apply_same_index :
-  log.map_at_index i f i = f (log i) :=
+lemma map_at_index_apply_same_index : log.map_at_index i f i = f (log i) :=
 by simp only [map_at_index_apply, eq_self_iff_true, dite_eq_ite, if_true]
 
-lemma map_at_index_apply_of_index_ne (h : i ≠ j) :
-  log.map_at_index i f j = log j :=
+lemma map_at_index_apply_of_index_ne (h : i ≠ j) : log.map_at_index i f j = log j :=
 by simp only [h, not_false_iff, map_at_index_apply, dif_neg]
 
 @[simp]
@@ -178,12 +157,10 @@ end map_at_index
 
 section drop_at_index
 
-def drop_at_index [spec.computable] (log : query_log spec)
-  (i : spec.ι) (n : ℕ) : query_log spec :=
+def drop_at_index (log : query_log spec) (i : spec.ι) (n : ℕ) : query_log spec :=
 log.map_at_index i (list.drop n)
 
-variables [hspec : spec.computable] (n : ℕ)
-include hspec
+variables (n : ℕ)
 
 @[simp]
 lemma drop_at_index_apply (i j : spec.ι) :
@@ -239,8 +216,6 @@ end drop_at_index
 
 section remove_head
 
-variable [spec.computable]
-
 -- remove the head of the index `i` log
 def remove_head (log : query_log spec) (i : spec.ι) :
   query_log spec :=
@@ -265,8 +240,7 @@ lemma remove_head_apply_of_index_ne {i j : spec.ι} (hi : i ≠ j) :
 if_neg hi
 
 @[simp]
-lemma remove_head_init (spec : oracle_spec) [spec.computable] (i : spec.ι) :
-  (init spec).remove_head i = init spec :=
+lemma remove_head_init (i : spec.ι) : (init spec).remove_head i = init spec :=
 ext (λ i', if_t_t (i = i') [])
 
 lemma remove_head_log_query (i j : spec.ι)

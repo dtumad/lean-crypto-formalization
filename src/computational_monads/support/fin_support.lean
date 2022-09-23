@@ -86,10 +86,7 @@ section fin_support
 
 open decidable
 
-variables (oa  : oracle_comp spec α) (ob  : α → oracle_comp spec β) (f  : α → β)
-  (a a' : α) (b b' : β) (i : spec.ι) (t : spec.domain i) (u : spec.range i)
-variables [h : spec.computable] [h' : spec.finite_range]
-include h h'
+variables [computable spec] [finite_range spec]
 
 /-- Version of `fin_support` taking an explicit `decidable` argument instead of an instance -/
 def fin_support' : Π {α : Type} (oa : oracle_comp spec α), oa.decidable → finset α
@@ -105,7 +102,8 @@ def fin_support' : Π {α : Type} (oa : oracle_comp spec α), oa.decidable → f
 def fin_support (oa : oracle_comp spec α) [hoa : oa.decidable] : finset α :=
 oa.fin_support' hoa
 
-lemma fin_support_def [hoa : oa.decidable] : oa.fin_support = oa.fin_support' hoa := rfl
+lemma fin_support_def (oa : oracle_comp spec α) [hoa : oa.decidable] :
+  oa.fin_support = oa.fin_support' hoa := rfl
 
 lemma mem_fin_support'_iff_mem_support : Π {α : Type} (oa : oracle_comp spec α)
   (hoa : decidable oa) (a : α), a ∈ (fin_support' oa hoa) ↔ a ∈ oa.support
@@ -116,26 +114,38 @@ lemma mem_fin_support'_iff_mem_support : Π {α : Type} (oa : oracle_comp spec �
 | _ _ (decidable_query i t) u :=
     by simp [support, fin_support']
 
-lemma mem_fin_support_iff_mem_support [hoa : oa.decidable] (a : α) :
-  a ∈ oa.fin_support ↔ a ∈ oa.support := mem_fin_support'_iff_mem_support oa hoa a
+section support
+
+variables (oa : oracle_comp spec α) [decidable oa] (a : α) (s : finset α)
 
 /-- Correctness of `fin_support` with respect to `support`, i.e. the two are equal as `set`s -/
+lemma mem_fin_support_iff_mem_support : a ∈ oa.fin_support ↔ a ∈ oa.support :=
+mem_fin_support'_iff_mem_support oa _ a
+
 @[simp]
-theorem coe_fin_support_eq_support [decidable oa] : ↑oa.fin_support = oa.support :=
+theorem coe_fin_support_eq_support : ↑oa.fin_support = oa.support :=
 set.ext (λ a, (mem_fin_support_iff_mem_support oa a))
 
-lemma fin_support_eq_iff_support_eq_coe [decidable oa] (s : finset α) :
-  oa.fin_support = s ↔ oa.support = ↑s :=
+lemma fin_support_eq_iff_support_eq_coe : oa.fin_support = s ↔ oa.support = ↑s :=
 by rw [← coe_fin_support_eq_support, finset.coe_inj]
 
-lemma support_subset_fin_support [decidable oa] : oa.support ⊆ ↑oa.fin_support :=
+lemma fin_support_subset_iff_support_subset_coe : oa.fin_support ⊆ s ↔ oa.support ⊆ ↑s :=
+by rw [← finset.coe_subset, coe_fin_support_eq_support]
+
+lemma subset_fin_support_iff_coe_subset_support : s ⊆ oa.fin_support ↔ ↑s ⊆ oa.support :=
+by rw [← finset.coe_subset, coe_fin_support_eq_support]
+
+lemma support_subset_fin_support : oa.support ⊆ ↑oa.fin_support :=
 by rw [coe_fin_support_eq_support oa]
 
-lemma fin_support_subset_support [decidable oa] : ↑oa.fin_support ⊆ oa.support :=
+lemma fin_support_subset_support : ↑oa.fin_support ⊆ oa.support :=
 by rw [coe_fin_support_eq_support oa]
+
+end support
 
 section return
 
+variables (a a' : α)
 variable [decidable_eq α]
 
 @[simp]
@@ -159,8 +169,8 @@ end return
 
 section bind
 
-variables [hoa : oa.decidable] [hob : ∀ a, (ob a).decidable]
-include hoa hob
+variables (oa : oracle_comp spec α) (ob : α → oracle_comp spec β)
+  [decidable oa] [∀ a, decidable (ob a)] (b : β)
 
 @[simp]
 lemma fin_support_bind : (oa >>= ob).fin_support = @finset.bUnion α β
@@ -185,6 +195,8 @@ end bind
 
 section query
 
+variables (i : spec.ι) (t : spec.domain i) (u : spec.range i)
+
 @[simp]
 lemma fin_support_query : (query i t).fin_support = ⊤ := rfl
 
@@ -194,7 +206,7 @@ end query
 
 section map
 
-variables [decidable_eq β] [decidable oa]
+variables [decidable_eq β] (oa : oracle_comp spec α) [decidable oa] (f : α → β) (b : β)
 
 @[simp]
 lemma fin_support_map : (f <$> oa).fin_support = oa.fin_support.image f :=

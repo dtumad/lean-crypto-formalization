@@ -50,71 +50,92 @@ notation `⦃` oa `⦄` := eval_dist oa
 
 section support
 
-@[simp]
-lemma support_eval_dist (oa : oracle_comp spec α) : ⦃oa⦄.support = oa.support :=
-plift.down (eval_dist' oa).2
+variables (oa : oracle_comp spec α) (a : α)
 
 @[simp]
-lemma eval_dist_eq_zero_iff_not_mem_support (oa : oracle_comp spec α) (a : α) :
-    ⦃oa⦄ a = 0 ↔ a ∉ oa.support :=
+lemma support_eval_dist : ⦃oa⦄.support = oa.support := plift.down (eval_dist' oa).2
+
+@[simp]
+lemma eval_dist_eq_zero_iff_not_mem_support : ⦃oa⦄ a = 0 ↔ a ∉ oa.support :=
 (pmf.apply_eq_zero_iff ⦃oa⦄ a).trans
   (iff_of_eq $ congr_arg not (congr_arg (has_mem.mem a) $ support_eval_dist oa))
 
-lemma eval_dist_eq_zero_of_not_mem_support {oa : oracle_comp spec α} {a : α}
-  (h : a ∉ oa.support) : ⦃oa⦄ a = 0 :=
-(eval_dist_eq_zero_iff_not_mem_support oa a).2 h
-
 @[simp]
-lemma eval_dist_ne_zero_iff_mem_support (oa : oracle_comp spec α) (a : α) :
-  ⦃oa⦄ a ≠ 0 ↔ a ∈ oa.support :=
+lemma eval_dist_ne_zero_iff_mem_support : ⦃oa⦄ a ≠ 0 ↔ a ∈ oa.support :=
 by rw [ne.def, eval_dist_eq_zero_iff_not_mem_support, set.not_not_mem]
 
-lemma eval_dist_ne_zero_of_not_mem_support {oa : oracle_comp spec α} (a : α)
-  (h : a ∈ oa.support) : ⦃oa⦄ a ≠ 0 :=
-(eval_dist_ne_zero_iff_mem_support oa a).2 h
-
 @[simp]
-lemma eval_dist_eq_one_iff_support_eq_singleton (oa : oracle_comp spec α) (a : α) :
-  ⦃oa⦄ a = 1 ↔ oa.support = {a} :=
+lemma eval_dist_eq_one_iff_support_eq_singleton : ⦃oa⦄ a = 1 ↔ oa.support = {a} :=
 by rw [pmf.apply_eq_one_iff, support_eval_dist oa]
 
-lemma eval_dist_eq_one_of_support_eq_singleton {oa : oracle_comp spec α} {a : α}
-  (h : oa.support = {a}) : ⦃oa⦄ a = 1 :=
-(eval_dist_eq_one_iff_support_eq_singleton oa a).2 h
-
 @[simp]
-lemma eval_dist_eq_one_iff_support_subset_singleton (oa : oracle_comp spec α) (a : α) :
-  ⦃oa⦄ a = 1 ↔ oa.support ⊆ {a} :=
+lemma eval_dist_eq_one_iff_support_subset_singleton : ⦃oa⦄ a = 1 ↔ oa.support ⊆ {a} :=
 (eval_dist_eq_one_iff_support_eq_singleton oa a).trans
   (set.nonempty.subset_singleton_iff $ support_nonempty oa).symm
 
-lemma eval_dist_eq_one_of_support_subset_singleton {oa : oracle_comp spec α} (a : α)
-  (h : oa.support ⊆ {a}) : ⦃oa⦄ a = 1 :=
-(eval_dist_eq_one_iff_support_subset_singleton oa a).2 h
-
 @[simp]
-lemma eval_dist_pos_iff_mem_support (oa : oracle_comp spec α) (a : α) :
-  0 < ⦃oa⦄ a ↔ a ∈ oa.support :=
+lemma eval_dist_pos_iff_mem_support : 0 < ⦃oa⦄ a ↔ a ∈ oa.support :=
 by rw [pos_iff_ne_zero, eval_dist_ne_zero_iff_mem_support]
 
-lemma eval_dist_pos_of_mem_support {oa : oracle_comp spec α} {a : α}
-  (h : a ∈ oa.support) : 0 < ⦃oa⦄ a :=
+variables {oa} {a}
+
+lemma eval_dist_eq_zero_of_not_mem_support (h : a ∉ oa.support) : ⦃oa⦄ a = 0 :=
+(eval_dist_eq_zero_iff_not_mem_support oa a).2 h
+
+lemma eval_dist_ne_zero_of_not_mem_support (h : a ∈ oa.support) : ⦃oa⦄ a ≠ 0 :=
+(eval_dist_ne_zero_iff_mem_support oa a).2 h
+
+lemma eval_dist_eq_one_of_support_eq_singleton (h : oa.support = {a}) : ⦃oa⦄ a = 1 :=
+(eval_dist_eq_one_iff_support_eq_singleton oa a).2 h
+
+lemma eval_dist_eq_one_of_support_subset_singleton (h : oa.support ⊆ {a}) : ⦃oa⦄ a = 1 :=
+(eval_dist_eq_one_iff_support_subset_singleton oa a).2 h
+
+lemma eval_dist_pos_of_mem_support (h : a ∈ oa.support) : 0 < ⦃oa⦄ a :=
 (eval_dist_pos_iff_mem_support oa a).2 h
 
 end support
 
 section fin_support
 
-variable [spec.computable]
+variables [computable spec] (oa : oracle_comp spec α) [decidable oa] (a : α)
 
-lemma support_eval_dist_eq_fin_support (oa : oracle_comp spec α) [decidable oa] :
-  ⦃oa⦄.support = oa.fin_support :=
+lemma support_eval_dist_eq_fin_support : ⦃oa⦄.support = oa.fin_support :=
 (support_eval_dist oa).trans (coe_fin_support_eq_support oa).symm
 
-lemma eval_dist_eq_zero_iff_not_mem_fin_support (oa : oracle_comp spec α) [decidable oa] (a : α) :
-  ⦃oa⦄ a = 0 ↔ a ∉ oa.fin_support := sorry
+lemma eval_dist_eq_zero_iff_not_mem_fin_support : ⦃oa⦄ a = 0 ↔ a ∉ oa.fin_support :=
+by simp only [mem_fin_support_iff_mem_support, eval_dist_eq_zero_iff_not_mem_support]
 
--- TODO
+lemma eval_dist_ne_zero_iff_mem_fin_support : ⦃oa⦄ a ≠ 0 ↔ a ∈ oa.fin_support :=
+by simp only [mem_fin_support_iff_mem_support, eval_dist_ne_zero_iff_mem_support]
+
+lemma eval_dist_eq_one_iff_fin_support_eq_singleton : ⦃oa⦄ a = 1 ↔ oa.fin_support = {a} :=
+by simp only [fin_support_eq_iff_support_eq_coe, finset.coe_singleton,
+  eval_dist_eq_one_iff_support_eq_singleton]
+
+lemma eval_dist_eq_one_iff_fin_support_subset_singleton : ⦃oa⦄ a = 1 ↔ oa.fin_support ⊆ {a} :=
+by simp only [fin_support_subset_iff_support_subset_coe, finset.coe_singleton,
+  eval_dist_eq_one_iff_support_subset_singleton]
+
+lemma eval_dist_pos_iff_mem_fin_support : 0 < ⦃oa⦄ a ↔ a ∈ oa.fin_support :=
+by simp only [mem_fin_support_iff_mem_support, eval_dist_pos_iff_mem_support]
+
+variables {oa} {a}
+
+lemma eval_dist_eq_zero_of_not_mem_fin_support (h : a ∉ oa.fin_support) : ⦃oa⦄ a = 0 :=
+(eval_dist_eq_zero_iff_not_mem_fin_support oa a).2 h
+
+lemma eval_dist_ne_zero_of_not_mem_fin_support (h : a ∈ oa.fin_support) : ⦃oa⦄ a ≠ 0 :=
+(eval_dist_ne_zero_iff_mem_fin_support oa a).2 h
+
+lemma eval_dist_eq_one_of_fin_support_eq_singleton (h : oa.fin_support = {a}) : ⦃oa⦄ a = 1 :=
+(eval_dist_eq_one_iff_fin_support_eq_singleton oa a).2 h
+
+lemma eval_dist_eq_one_of_fin_support_subset_singleton (h : oa.fin_support ⊆ {a}) : ⦃oa⦄ a = 1 :=
+(eval_dist_eq_one_iff_fin_support_subset_singleton oa a).2 h
+
+lemma eval_dist_pos_of_mem_fin_support (h : a ∈ oa.fin_support) : 0 < ⦃oa⦄ a :=
+(eval_dist_pos_iff_mem_fin_support oa a).2 h
 
 end fin_support
 
@@ -167,8 +188,6 @@ lemma eval_dist_bind'_apply' [spec.computable] [oa.decidable] :
   ⦃bind' α β oa ob⦄ b = ∑ a in oa.fin_support, ⦃oa⦄ a * ⦃ob a⦄ b :=
 eval_dist_bind_apply' oa ob b
 
-/-- Simplification that pushes the first multiplication to the main summation body.
-  Generally could define this for an arbitrary number of `>>=`, but this is mainly convenience -/
 @[simp]
 lemma eval_dist_bind_bind_apply :
   ⦃do {a ← oa, b ← ob a, oc a b}⦄ c = ∑' (a : α) (b : β), ⦃oa⦄ a * (⦃ob a⦄ b * ⦃oc a b⦄ c) :=
@@ -200,9 +219,7 @@ section map
 variables (oa : oracle_comp spec α) (f : α → β)
 
 @[simp]
-lemma eval_dist_map (f : α → β) :
-  ⦃f <$> oa⦄ = ⦃oa⦄.map f :=
-eval_dist_bind oa (pure ∘ f)
+lemma eval_dist_map (f : α → β) : ⦃f <$> oa⦄ = ⦃oa⦄.map f := eval_dist_bind oa (pure ∘ f)
 
 lemma eval_dist_map_apply [decidable_eq β] (oa : oracle_comp spec α) (f : α → β) (b : β) :
   ⦃f <$> oa⦄ b = ∑' (a : α), if b = f a then ⦃oa⦄ a else 0 :=
@@ -210,18 +227,8 @@ by simp only [eval_dist_map oa f, pmf.map_apply f ⦃oa⦄, @eq_comm β b]
 
 lemma eval_dist_map_apply' [spec.computable] [decidable_eq β] [oa.decidable]
   (f : α → β) (b : β) : ⦃f <$> oa⦄ b = ∑ a in oa.fin_support, if b = f a then ⦃oa⦄ a else 0 :=
-begin
-  refine (eval_dist_map_apply oa f b).trans _,
-  refine tsum_eq_sum (λ b hb, _),
-  split_ifs,
-  {
-    refine eval_dist_eq_zero_of_not_mem_support _,
-    rwa mem_fin_support_iff_mem_support at hb,
-  },
-  {
-    exact rfl,
-  }
-end
+(eval_dist_map_apply oa f b).trans (tsum_eq_sum $ λ a ha,
+  by simp only [eval_dist_eq_zero_of_not_mem_fin_support ha, if_t_t])
 
 end map
 

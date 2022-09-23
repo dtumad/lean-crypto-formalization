@@ -180,8 +180,7 @@ end coe_append_assoc
 section examples
 
 -- This set of examples serves as sort of a "unit test" for the coercions above
-variable [h : ∀ α, has_coe (oracle_comp coe_spec α) (oracle_comp coe_spec' α)]
-include h
+variable [∀ α, has_coe (oracle_comp coe_spec α) (oracle_comp coe_spec' α)]
 
 -- coerce a single `coin_oracle` and then append extra oracles
 example (oa : oracle_comp coe_spec α) :

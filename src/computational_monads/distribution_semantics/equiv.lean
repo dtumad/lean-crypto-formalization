@@ -11,13 +11,11 @@ It is often simpler to work with this than distributions directly, particularly 
   original computations have an induction principle that a general `pmf` doesn't have.
 -/
 
-variables {α β γ : Type} {spec spec' : oracle_spec}
-variable [spec.finite_range]
-variable [spec'.finite_range]
-
 namespace distribution_semantics
 
 open oracle_comp oracle_spec
+
+variables {α β γ : Type} {spec spec' : oracle_spec} [finite_range spec] [finite_range spec']
 
 -- Notation for two computations that are equivalent under `eval_dist`
 notation oa `≃ₚ` oa' := ⦃oa⦄ = ⦃oa'⦄
