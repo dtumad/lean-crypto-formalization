@@ -14,10 +14,13 @@ lemma pmf.measurable_set_to_outer_measure_caratheodory (p : pmf α) (s : set α)
   measurable_set[p.to_outer_measure.caratheodory] s :=
 p.to_outer_measure_caratheodory.symm ▸ measurable_space.measurable_set_top
 
+-- TODO: generalize to higher universes
+@[simp]
 lemma pmf.map_bind {A B C : Type} (p : pmf A) (q : A → pmf B) (f : B → C) :
   (p.bind q).map f = p.bind (λ a, (q a).map f) :=
 pmf.monad_map_eq_map f (p.bind q) ▸ map_bind _
 
+@[simp]
 lemma pmf.bind_map {A B C : Type} (p : pmf A) (f : A → B) (q : B → pmf C) :
   (p.map f).bind q = p.bind (q ∘ f) :=
 begin

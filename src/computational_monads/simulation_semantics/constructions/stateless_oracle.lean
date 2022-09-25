@@ -7,7 +7,7 @@ variables {α β : Type} {spec spec' spec'' : oracle_spec}
 /-- Simulate a computation without making use of the internal state.
   We use the `unit` type as the state in this case, so all possible states are equal.
   Implemented as a `tracking_oracle` where the state isn't actually tracking anything -/
-@[simps]
+-- @[simps]
 def stateless_oracle (spec spec' : oracle_spec)
   (o : Π (i : spec.ι), spec.domain i → oracle_comp spec' (spec.range i)) :
   simulation_oracle spec spec' :=
@@ -38,18 +38,30 @@ lemma mem_support_apply_iff (i : spec.ι) (t : spec.domain i) (s s' : unit) (u :
 by simp only [apply_eq, support_bind, support_pure, set.mem_Union, set.mem_singleton_iff,
   prod.mk.inj_iff, eq_iff_true_of_subsingleton, and_true, exists_prop, exists_eq_right']
 
--- @[simp]
+lemma support_simulate_eq_support_default_simulate (oa : oracle_comp spec α) (s : unit) :
+  (oa.simulate ⟪o⟫ s).support = (oa.default_simulate ⟪o⟫).support := punit_eq () s ▸ rfl
+
 lemma support_simulate_eq_preimage (oa : oracle_comp spec α) (s : unit) :
   (oa.simulate ⟪o⟫ s).support = prod.fst ⁻¹' (oa.default_simulate' ⟪o⟫).support :=
 begin
   rw [default_simulate', punit_eq ⟪o⟫.default_state s, simulate', support_map],
-  refine (set.preimage_image_eq _ prod.fst_injective).symm
+  exact (set.preimage_image_eq _ prod.fst_injective).symm
 end
 
 @[simp]
 lemma mem_support_simulate_iff (oa : oracle_comp spec α) (s : unit) (x : α × unit) :
   x ∈ (oa.simulate ⟪o⟫ s).support ↔ x.1 ∈ (oa.default_simulate' ⟪o⟫).support :=
 by rw [support_simulate_eq_preimage, set.mem_preimage]
+
+@[simp]
+lemma support_simulate' (oa : oracle_comp spec α) (s : unit) :
+  (oa.simulate' ⟪o⟫ s).support = (oa.default_simulate' ⟪o⟫).support :=
+congr_arg _ (congr_arg _ (punit_eq _ _))
+
+@[simp]
+lemma mem_support_simulate'_iff (oa : oracle_comp spec α) (s : unit) (x : α) :
+  x ∈ (oa.simulate' ⟪o⟫ s).support ↔ x ∈ (oa.default_simulate' ⟪o⟫).support :=
+by rw [support_simulate']
 
 @[simp]
 lemma support_default_simulate_eq_preimage (oa : oracle_comp spec α) :
@@ -61,15 +73,6 @@ lemma mem_support_default_simulate_iff (oa : oracle_comp spec α) (x : α × uni
   x ∈ (oa.default_simulate ⟪o⟫).support ↔ x.1 ∈ (oa.default_simulate' ⟪o⟫).support :=
 mem_support_simulate_iff o oa () x
 
-@[simp]
-lemma support_simulate' (oa : oracle_comp spec α) (s : unit) :
-  (oa.simulate' ⟪o⟫ s).support = (oa.default_simulate' ⟪o⟫).support :=
-congr_arg _ (congr_arg _ (punit_eq _ _))
-
-@[simp]
-lemma mem_support_simulate'_iff (oa : oracle_comp spec α) (s : unit) (x : α) :
-  x ∈ (oa.simulate' ⟪o⟫ s).support ↔ x ∈ (oa.default_simulate' ⟪o⟫).support :=
-by rw [support_simulate']
 
 section pure
 
@@ -196,7 +199,8 @@ section support
 lemma support_simulate'_eq_support_simulate'_stateless_oracle :
   (simulate' ⟪o | update_state, default_state⟫ oa s).support = (simulate' ⟪o⟫ oa ()).support :=
 begin
-  sorry
+  unfold stateless_oracle,
+  refine support_simulate'_eq_of_oracle_eq o update_state (λ _ _ _ _, ()) default_state _ oa s _
 end
 
 end support

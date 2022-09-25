@@ -45,16 +45,23 @@ lemma coe_coin_uniform_select_def (oa : oracle_comp coin_oracle α) :
 lemma support_coe_coin_uniform_select (oa : oracle_comp coin_oracle α) :
   (↑oa : oracle_comp uniform_selecting α).support = oa.support :=
 begin
+  rw [coe_coin_uniform_select_def],
+
   induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t,
   { simp only [coe_coin_uniform_select_def, support_default_simulate', simulate'_return,
       support_map, support_return, set.image_singleton] },
-  {
-    simp only [coe_coin_uniform_select_def],
-    -- TODO: rest should follow from a lemma up simulation' support with bind
-    rw [support_default_simulate'_bind, support_bind],
-
-
-    sorry
+  { simp only [coe_coin_uniform_select_def, support_simulate'_bind, support_bind],
+    ext b,
+    simp_rw [set.mem_Union],
+    refine ⟨λ h, _, λ h, _⟩,
+    { obtain ⟨⟨a, u⟩, ha, hba⟩ := h,
+      cases u,
+      refine ⟨a, _, by rwa ← hob⟩,
+      rw [← hoa, coe_coin_uniform_select_def, support_simulate', set.mem_image],
+      exact ⟨(a, ()), ha, rfl⟩ },
+    {
+      sorry,
+    }
   },
   { simp only [coe_coin_uniform_select_def, support_uniform_select_fintype bool,
       stateless_oracle.support_default_simulate'_query, support_query] }

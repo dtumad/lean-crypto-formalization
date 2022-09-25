@@ -9,13 +9,15 @@ For example a logging oracle just tracks the queries, without actually affecting
 
 The definition is in terms of a query function that responds to queries,
 and an indepdent update_state function that controls the internal state.
+For simplicity the update state function rather than having oracle access.
+
 In many cases this definition will be composed with an oracle with result depending on the state,
 but this construction allows seperation of the components that affect state independently.
 -/
 
 open oracle_comp oracle_spec
 
-variables {A B : Type} {spec spec' spec'' : oracle_spec}
+variables {α β γ : Type} {spec spec' : oracle_spec}
 
 /-- Oracle where the query result is indepenent of the current oracle state,
 although the new state may depend upon the previous state.
@@ -34,35 +36,31 @@ notation `⟪` o `|` update_state `,` default_state `⟫` :=
 
 namespace tracking_oracle
 
-variables (oa : oracle_comp spec A)
-
-variables {S : Type} 
-  (o : Π (i : spec.ι), spec.domain i → oracle_comp spec' (spec.range i))
+variables {S : Type} (o : Π (i : spec.ι), spec.domain i → oracle_comp spec' (spec.range i))
   (update_state update_state' : Π (s : S) (i : spec.ι), spec.domain i → spec.range i → S)
-  (default_state default_state' : S)
+  (default_state default_state' : S) (a : α) (i : spec.ι) (t : spec.domain i)
+  (x : spec.domain i × S) (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) (s s' : S)
 
-lemma apply_eq (i : spec.ι) (t : spec.domain i) (s : S) :
-  ⟪o | update_state, default_state⟫.o i (t, s) =
-    do { u ← o i t, pure (u, update_state s i t u) } := rfl
+@[simp]
+lemma apply_eq : ⟪o | update_state, default_state⟫.o i x =
+  do { u ← o i x.1, pure (u, update_state x.2 i x.1 u) } := by {cases x, refl}
 
 section support
 
 @[simp]
-lemma support_apply (i : spec.ι) (t : spec.domain i) (s : S) :
-  ((⟪o | update_state, default_state⟫).o i (t, s)).support
-    = { u | u.1 ∈ (o i t).support ∧ u.2 = update_state s i t u.1 } :=
-begin
-  ext x,
+lemma support_apply : ((⟪o | update_state, default_state⟫).o i (t, s)).support
+  = { u | u.1 ∈ (o i t).support ∧ u.2 = update_state s i t u.1 } :=
+set.ext (λ x, begin
   simp only [apply_eq, support_bind, support_pure, set.mem_Union,
     set.mem_singleton_iff, exists_prop, set.mem_set_of_eq, prod.eq_iff_fst_eq_snd_eq],
   refine ⟨λ h, let ⟨x₁, h, h'⟩ := h in h'.1.symm ▸ ⟨h, h'.2⟩, λ h, ⟨x.1, ⟨h.1, rfl, h.2⟩⟩⟩,
-end
+end)
 
 /-- The support of `simulate'` is independing of the tracking oracle 
   TODO: I think this makes more sense using `stateless_oracle` stuff?-/
-lemma support_simulate' (oa : oracle_comp spec A) (s s' : S) :
-  (simulate' ⟪o | update_state, default_state⟫ oa s).support =
-    (simulate' ⟪o | update_state', default_state'⟫ oa s').support :=
+lemma support_simulate'_eq_of_oracle_eq :
+  (simulate' ⟪o | update_state, default_state⟫ oa s).support
+    = (simulate' ⟪o | update_state', default_state'⟫ oa s').support :=
 begin
   induction oa using oracle_comp.induction_on with a A A B oa ob hoa hob i t generalizing s,
   { simp },
@@ -84,10 +82,12 @@ begin
   sorry,
 end
 
-lemma support_default_simulate' (oa : oracle_comp spec A) :
+lemma support_default_simulate'_eq_of_oracle_eq (oa : oracle_comp spec α) :
   (default_simulate' ⟪o | update_state, default_state⟫ oa).support =
     (default_simulate' ⟪o | update_state', default_state'⟫ oa).support :=
-support_simulate' o update_state update_state' default_state default_state' oa _ _
+support_simulate'_eq_of_oracle_eq o update_state update_state' default_state default_state' oa _ _
+
+lemma support_simulate'
 
 end support
 
@@ -99,8 +99,10 @@ variable [spec.finite_range]
 
 section equiv
 
+
+
 -- TODO: should be able to find some generalization for lemmas looking like this
-lemma simulate'_query_equiv_self (s : S) :
+lemma simulate'_query_equiv_self (oa : oracle_comp spec α) (s : S) :
   simulate' (⟪query | update_state, default_state⟫) oa s ≃ₚ oa :=
 begin
   sorry,

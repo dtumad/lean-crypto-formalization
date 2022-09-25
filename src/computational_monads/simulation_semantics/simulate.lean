@@ -30,6 +30,11 @@ structure simulation_oracle (spec spec' : oracle_spec) :=
 (default_state : S)
 (o (i : spec.ι) : (spec.domain i × S) → oracle_comp spec' (spec.range i × S))
 
+/-- View a simulation oracle as a function corresponding to the internal oracle `o` -/
+instance simulation_oracle.has_coe_to_fun : has_coe_to_fun (simulation_oracle spec spec')
+  (λ so, Π (i : spec.ι), spec.domain i × so.S → oracle_comp spec' (spec.range i × so.S)) :=
+⟨λ so i x, so.o i (x.1, x.2)⟩
+
 variables (so : simulation_oracle spec spec') (so' : simulation_oracle spec spec'')
 variables (a : α) (i : spec.ι) (t : spec.domain i)
   (oa oa' : oracle_comp spec α) (ob ob' : α → oracle_comp spec β) (s : so.S) (f : α → β)
@@ -42,7 +47,7 @@ def simulate {spec spec' : oracle_spec} (so : simulation_oracle spec spec') :
   Π {A : Type} (oa : oracle_comp spec A), so.S → oracle_comp spec' (A × so.S)
 | _ (pure' A a) state := return ⟨a, state⟩
 | _ (bind' A B oa ob) state := simulate oa state >>= λ x, simulate (ob x.1) x.2
-| _ (query i t) state := so.o i (t, state)
+| _ (query i t) state := so i (t, state)
 
 @[simp]
 lemma simulate_return : simulate so (return a) s = return (a, s) := rfl
@@ -52,11 +57,11 @@ lemma simulate_pure' : simulate so (pure' α a) s = return (a, s) := rfl
 lemma simulate_pure : simulate so (pure a) s = return (a, s) := rfl
 
 @[simp]
-lemma simulate_bind : simulate so (oa >>= ob) s =
-  simulate so oa s >>= λ x, simulate so (ob x.1) x.2 := rfl
+lemma simulate_bind : simulate so (oa >>= ob) s
+  = simulate so oa s >>= λ x, simulate so (ob x.1) x.2 := rfl
 
-lemma simulate_bind' : simulate so (bind' α β oa ob) s =
-  simulate so oa s >>= λ x, simulate so (ob x.1) x.2 := rfl
+lemma simulate_bind' : simulate so (bind' α β oa ob) s
+  = simulate so oa s >>= λ x, simulate so (ob x.1) x.2 := rfl
 
 @[simp]
 lemma simulate_query : simulate so (query i t) s = so.o i (t, s) := rfl
@@ -72,11 +77,11 @@ lemma support_simulate_pure' : (simulate so (pure' α a) s).support = {(a, s)} :
 
 lemma support_simulate_pure : (simulate so (pure a) s).support = {(a, s)} := rfl
 
-lemma support_simulate_bind : (simulate so (oa >>= ob) s).support =
-  ⋃ x ∈ (simulate so oa s).support, (simulate so (ob $ prod.fst x) x.2).support := rfl
+lemma support_simulate_bind : (simulate so (oa >>= ob) s).support
+  = ⋃ x ∈ (simulate so oa s).support, (simulate so (ob $ prod.fst x) x.2).support := rfl
 
-lemma support_simulate_bind' : (simulate so (bind' α β oa ob) s).support =
-  ⋃ x ∈ (simulate so oa s).support, (simulate so (ob $ prod.fst x) x.2).support := rfl
+lemma support_simulate_bind' : (simulate so (bind' α β oa ob) s).support
+  = ⋃ x ∈ (simulate so oa s).support, (simulate so (ob $ prod.fst x) x.2).support := rfl
 
 lemma support_simulate_query : (simulate so (query i t) s).support = (so.o i (t, s)).support := rfl
 
@@ -87,7 +92,8 @@ set.ext (λ x, by simp only [@eq_comm, simulate_map, support_bind, support_retur
   set.mem_Union, set.mem_singleton_iff, exists_prop, set.mem_image])
 
 /-- Since `support` assumes any possible query result, `simulate` will never reduce the support -/
-theorem support_simulate_subset_support : (simulate so oa s).support ⊆ prod.fst ⁻¹' oa.support :=
+theorem support_simulate_subset_preimage_support :
+  (simulate so oa s).support ⊆ prod.fst ⁻¹' oa.support :=
 begin
   rw [set.preimage],
   induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t generalizing s,
@@ -101,7 +107,7 @@ begin
 end
 
 lemma mem_support_of_mem_support_simulate {x : α × so.S} (hx : x ∈ (simulate so oa s).support) :
-  x.1 ∈ oa.support := support_simulate_subset_support so oa s hx
+  x.1 ∈ oa.support := support_simulate_subset_preimage_support so oa s hx
 
 end support
 
@@ -215,9 +221,10 @@ support_simulate'_return so s a
 lemma support_simulate'_pure (a : α) : (simulate' so (pure a) s).support = {a} :=
 support_simulate'_return so s a
 
+@[simp]
 lemma support_simulate'_bind : (simulate' so (oa >>= ob) s).support =
   ⋃ x ∈ (simulate so oa s).support, (simulate' so (ob $ prod.fst x) x.snd).support :=
-by simp only [set.image_Union, simulate'_bind, support_map, support_bind, support_simulate']
+by simp [set.image_Union]
 
 lemma support_simulate'_bind' : (simulate' so (bind' α β oa ob) s).support =
   ⋃ x ∈ (simulate so oa s).support, (simulate' so (ob $ prod.fst x) x.snd).support :=
@@ -231,6 +238,7 @@ lemma support_simulate'_map : (simulate' so (f <$> oa) s).support =
   f '' (simulate' so oa s).support :=
 by simp only [simulate', support_map, support_simulate_map, set.image_image, prod.map_fst]
 
+/-- Simulation only reduces the possible oracle outputs, so can't reduce the support -/
 lemma support_simulate'_subset_support : (simulate' so oa s).support ⊆ oa.support :=
 begin
   refine (support_simulate' so oa s).symm ▸ λ x hx, _,
@@ -286,23 +294,19 @@ eval_dist_simulate'_return so a s
 lemma eval_dist_simulate'_pure : ⦃simulate' so (pure a) s⦄ = pmf.pure a :=
 eval_dist_simulate'_return so a s
 
-@[simp]
-lemma eval_dist_simulate'_bind :
-  ⦃simulate' so (oa >>= ob) s⦄ = ⦃simulate so oa s⦄ >>= λ x, ⦃simulate' so (ob x.1) x.2⦄ :=
-by simp_rw [eval_dist_simulate', eval_dist_simulate_bind,
-  has_bind.bind, pmf.map_bind]
+lemma eval_dist_simulate'_bind : ⦃simulate' so (oa >>= ob) s⦄ =
+  ⦃simulate so oa s⦄.bind (λ x, ⦃simulate' so (ob x.1) x.2⦄) :=
+by simp only [simulate'_bind, map_bind_equiv, eval_dist_bind, eval_dist_map,
+  eval_dist_simulate', eq_self_iff_true, pmf.map_bind]
 
-lemma eval_dist_simulate'_bind' :
-  ⦃simulate' so (bind' α β oa ob) s⦄ = ⦃simulate so oa s⦄ >>= λ x, ⦃simulate' so (ob x.1) x.2⦄ :=
-eval_dist_simulate'_bind so oa ob s
+lemma eval_dist_simulate'_bind' : ⦃simulate' so (bind' α β oa ob) s⦄ =
+  ⦃simulate so oa s⦄.bind (λ x, ⦃simulate' so (ob x.1) x.2⦄) := eval_dist_simulate'_bind _ _ _ s
 
-lemma eval_dist_simulate'_query :
-  ⦃simulate' so (query i t) s⦄ = ⦃so.o i (t, s)⦄.map prod.fst :=
+lemma eval_dist_simulate'_query : ⦃simulate' so (query i t) s⦄ = ⦃so.o i (t, s)⦄.map prod.fst :=
 by simp only [simulate'_query, eval_dist_map]
 
 @[simp]
-lemma eval_dist_simulate'_map :
-  ⦃simulate' so (f <$> oa) s⦄ = ⦃simulate' so oa s⦄.map f :=
+lemma eval_dist_simulate'_map : ⦃simulate' so (f <$> oa) s⦄ = ⦃simulate' so oa s⦄.map f :=
 by simp_rw [eval_dist_simulate', eval_dist_simulate_map,
   pmf.map_comp, prod.map_fst']
 
