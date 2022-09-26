@@ -9,7 +9,7 @@ variables {α β : Type} {spec spec' spec'' : oracle_spec}
   Implemented as a `tracking_oracle` where the state isn't actually tracking anything -/
 def stateless_oracle (spec spec' : oracle_spec)
   (o : Π (i : spec.ι), spec.domain i → oracle_comp spec' (spec.range i)) :
-  simulation_oracle spec spec' :=
+  simulation_oracle spec spec' unit :=
 ⟪o | λ _ _ _ _, (), ()⟫
 
 notation `⟪` o `⟫` := stateless_oracle _ _ o
@@ -19,8 +19,6 @@ namespace stateless_oracle
 variables (oa : oracle_comp spec α)
   (o : Π (i : spec.ι), spec.domain i → oracle_comp spec' (spec.range i))
   (o' : Π (i : spec.ι), spec.domain i → oracle_comp spec'' (spec.range i))
-
-instance S_unique : unique ⟪o⟫.S := punit.unique
 
 @[simp]
 lemma apply_eq (i : spec.ι) (t : spec.domain i) (s : unit) :

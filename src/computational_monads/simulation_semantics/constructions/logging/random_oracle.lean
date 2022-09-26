@@ -8,17 +8,13 @@ variables {α β γ : Type} {spec spec' spec'' : oracle_spec}
 /-- Oracle that responds uniformly at random to any new queries,
   but returns the same result to subsequent oracle queries -/
 noncomputable def random_oracle (spec : oracle_spec) [spec.computable] [spec.finite_range] :
-  simulation_oracle spec uniform_selecting :=
+  simulation_oracle spec uniform_selecting (query_log spec × unit) :=
 (uniform_oracle spec) ∘ₛ (caching_oracle spec)
 
 namespace random_oracle
 
 variable [spec.computable]
 variable [spec.finite_range]
-
-@[inline, reducible]
-def mk_S (log : query_log spec) : (random_oracle spec).S := (log, ())
-
 variables (log : query_log spec) (log' : query_log spec')
 
 /-- The support of apply is things where the log doesn't change on things previously queried,

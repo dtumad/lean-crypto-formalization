@@ -16,36 +16,35 @@ This is useful for things like a random oracle, where the final result isn't rel
 
 namespace oracle_comp
 
-variables {α β γ : Type} {spec spec' spec'' : oracle_spec}
+variables {α β γ : Type} {spec spec' spec'' : oracle_spec} {S S' : Type}
 
 /-- Specifies a way to simulate a set of oracles using another set of oracles. 
   e.g. using uniform random selection to simulate a hash oracle
   
   `default_state` can be provided as a standard initial state for simulation.
   Used when calling `default_simulate` or `default_simulate'` -/
-structure simulation_oracle (spec spec' : oracle_spec) :=
-(S : Type)
+structure simulation_oracle (spec spec' : oracle_spec) (S : Type) :=
 (default_state : S)
 (o (i : spec.ι) : (spec.domain i × S) → oracle_comp spec' (spec.range i × S))
 
 /-- View a simulation oracle as a function corresponding to the internal oracle `o` -/
-instance simulation_oracle.has_coe_to_fun : has_coe_to_fun (simulation_oracle spec spec')
-  (λ so, Π (i : spec.ι), spec.domain i × so.S → oracle_comp spec' (spec.range i × so.S)) :=
+instance simulation_oracle.has_coe_to_fun : has_coe_to_fun (simulation_oracle spec spec' S)
+  (λ so, Π (i : spec.ι), spec.domain i × S → oracle_comp spec' (spec.range i × S)) :=
 { coe := λ so, so.o }
 
-lemma simulation_oracle.has_coe_to_fun_def (so : simulation_oracle spec spec') (i : spec.ι)
-  (x : spec.domain i × so.S) : so i x = so.o i x := rfl
+lemma simulation_oracle.has_coe_to_fun_def (so : simulation_oracle spec spec' S) (i : spec.ι)
+  (x : spec.domain i × S) : so i x = so.o i x := rfl
 
-variables (so : simulation_oracle spec spec') (so' : simulation_oracle spec spec'')
+variables (so : simulation_oracle spec spec' S) (so' : simulation_oracle spec spec'' S')
 variables (a : α) (i : spec.ι) (t : spec.domain i)
-  (oa oa' : oracle_comp spec α) (ob ob' : α → oracle_comp spec β) (s : so.S) (f : α → β)
+  (oa oa' : oracle_comp spec α) (ob ob' : α → oracle_comp spec β) (s : S) (f : α → β)
 
 section simulate
 
 /-- Simulate an oracle comp to an oracle comp with a different spec.
   Requires providing a maximum recursion depth for the `repeat` constructor -/
-def simulate {spec spec' : oracle_spec} (so : simulation_oracle spec spec') :
-  Π {A : Type} (oa : oracle_comp spec A), so.S → oracle_comp spec' (A × so.S)
+def simulate {spec spec' : oracle_spec} (so : simulation_oracle spec spec' S) :
+  Π {A : Type} (oa : oracle_comp spec A), S → oracle_comp spec' (A × S)
 | _ (pure' A a) state := return ⟨a, state⟩
 | _ (bind' A B oa ob) state := simulate oa state >>= λ x, simulate (ob x.1) x.2
 | _ (query i t) state := so i (t, state)
@@ -107,7 +106,7 @@ begin
   { simp only [support_query, set.top_eq_univ, set.mem_univ, set.set_of_true, set.subset_univ] }
 end
 
-lemma mem_support_of_mem_support_simulate {x : α × so.S} (hx : x ∈ (simulate so oa s).support) :
+lemma mem_support_of_mem_support_simulate {x : α × S} (hx : x ∈ (simulate so oa s).support) :
   x.1 ∈ oa.support := support_simulate_subset_preimage_support so oa s hx
 
 end support
@@ -147,13 +146,13 @@ end eval_dist
 section equiv
 
 lemma simulate_return_equiv : simulate so (return a) s ≃ₚ
-  (return (a, s) : oracle_comp spec' (α × so.S)) := rfl
+  (return (a, s) : oracle_comp spec' (α × S)) := rfl
 
 lemma simulate_pure'_equiv : simulate so (pure' α a) s ≃ₚ
-  (return (a, s) : oracle_comp spec' (α × so.S)) := rfl
+  (return (a, s) : oracle_comp spec' (α × S)) := rfl
 
 lemma simulate_pure_equiv : simulate so (pure a) s ≃ₚ
-  (pure (a, s) : oracle_comp spec' (α × so.S)) := rfl
+  (pure (a, s) : oracle_comp spec' (α × S)) := rfl
 
 lemma simulate_bind_equiv : simulate so (oa >>= ob) s ≃ₚ
   simulate so oa s >>= λ x, simulate so (ob x.1) x.2 := rfl
@@ -180,7 +179,7 @@ end simulate
 section simulate'
 
 /-- Get the result of simulation without returning the internal oracle state -/
-def simulate' (so : simulation_oracle spec spec') (oa : oracle_comp spec α) (s : so.S) :
+def simulate' (so : simulation_oracle spec spec' S) (oa : oracle_comp spec α) (s : S) :
   oracle_comp spec' α := prod.fst <$> oa.simulate so s
 
 lemma simulate'_def : simulate' so oa s = prod.fst <$> oa.simulate so s := rfl

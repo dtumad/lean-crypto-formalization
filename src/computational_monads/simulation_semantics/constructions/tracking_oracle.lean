@@ -25,9 +25,8 @@ For example a logging oracle that just tracks the input and output of queries. -
 def tracking_oracle {spec : oracle_spec} {S : Type}
   (o : Π (i : spec.ι), spec.domain i → oracle_comp spec' (spec.range i))
   (update_state : Π (s : S) (i : spec.ι), spec.domain i → spec.range i → S)
-  (default_state : S) : simulation_oracle spec spec' :=
-{ S := S,
-  default_state := default_state,
+  (default_state : S) : simulation_oracle spec spec' S :=
+{ default_state := default_state,
   o := λ i ⟨t, s⟩, do {u ← o i t, return (u, update_state s i t u)} }
 
 notation `⟪` o `|` update_state `,` default_state `⟫` :=

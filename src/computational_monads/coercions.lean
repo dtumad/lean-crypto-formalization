@@ -27,7 +27,8 @@ In particular we start with the basic finite oracles: `coin_oracle ++ uniform_se
 open oracle_comp oracle_spec distribution_semantics 
 
 variables (spec spec' spec'' spec''' : oracle_spec)
-  (coe_spec coe_spec' coe_spec'' coe_spec''' : oracle_spec) {α : Type}
+  (coe_spec coe_spec' coe_spec'' coe_spec''' : oracle_spec)
+  (S S' : Type) {α : Type}
 
 section coin
 
@@ -128,8 +129,8 @@ default_simulate'_pure_equiv _ a
 
 /-- The right hand simulation oracle is irrelevent to simulate an append right coercion -/
 lemma simulate'_coe_append_right_equiv [spec.finite_range] [spec'.finite_range]
-  [spec''.finite_range] (oa : oracle_comp spec α) (so : simulation_oracle spec spec'')
-  (so' : simulation_oracle spec' spec'') (s : so.S × so'.S) :
+  [spec''.finite_range] (oa : oracle_comp spec α) (so : simulation_oracle spec spec'' S)
+  (so' : simulation_oracle spec' spec'' S') (s : S × S') :
   simulate' (so ++ₛ so') ↑oa s ≃ₚ simulate' so oa s.1 :=
 begin
   induction oa with α a α β oa ob i t,
@@ -139,7 +140,7 @@ begin
 end
 
 lemma simulate_coe_append_right_equiv [spec''.finite_range] (oa : oracle_comp spec α)
-  (so : simulation_oracle spec spec'') (so' : simulation_oracle spec' spec'') (s : so.S × so'.S) :
+  (so : simulation_oracle spec spec'' S) (so' : simulation_oracle spec' spec'' S') (s : S × S') :
   simulate (so ++ₛ so') ↑oa s ≃ₚ do { ⟨a, s'⟩ ← simulate so oa s.1, pure (a, s', s.2) } :=
 sorry
 
@@ -293,16 +294,16 @@ section coe_simulation_oracle
   This allows for greater flexibility when specifying the simulation oracle when
     both the initial and final `oracle_spec` are some appended set of oracles -/
 instance [∀ α, has_coe (oracle_comp coe_spec α) (oracle_comp coe_spec' α)] :
-  has_coe (simulation_oracle spec coe_spec) (simulation_oracle spec coe_spec') :=
-{ coe := λ so, { S := so.S, default_state := so.default_state, o := λ i x, ↑(so i x) } }
+  has_coe (simulation_oracle spec coe_spec S) (simulation_oracle spec coe_spec' S) :=
+{ coe := λ so, {default_state := so.default_state, o := λ i x, ↑(so i x)} }
 
 /-- Coerce a simulation oracle to include an additional number of resulting oracles -/
-example (so : simulation_oracle coe_spec coe_spec') :
-  simulation_oracle coe_spec (coe_spec' ++ spec ++ spec') := ↑so
+example (so : simulation_oracle coe_spec coe_spec' S) :
+  simulation_oracle coe_spec (coe_spec' ++ spec ++ spec') S := ↑so
 
 /-- Can use coercions to seperately simulate both sides of appended oracle specs -/
-example (so : simulation_oracle spec spec'') (so' : simulation_oracle spec' spec''') :
-  simulation_oracle (spec ++ spec') (spec'' ++ spec''') :=
+example (so : simulation_oracle spec spec'' S) (so' : simulation_oracle spec' spec''' S') :
+  simulation_oracle (spec ++ spec') (spec'' ++ spec''') (S × S') :=
 ↑so ++ₛ ↑so'
 
 end coe_simulation_oracle

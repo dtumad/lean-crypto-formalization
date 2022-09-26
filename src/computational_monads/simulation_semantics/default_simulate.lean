@@ -2,8 +2,8 @@ import computational_monads.simulation_semantics.simulate
 
 namespace oracle_comp
 
-variables {α β γ : Type} {spec spec' spec'' : oracle_spec}
-  (so : simulation_oracle spec spec') (so' : simulation_oracle spec spec'')
+variables {α β γ : Type} {spec spec' spec'' : oracle_spec} {S S' : Type}
+  (so : simulation_oracle spec spec' S) (so' : simulation_oracle spec spec'' S')
   (a : α) (i : spec.ι) (t : spec.domain i)
   (oa oa' : oracle_comp spec α) (ob ob' : α → oracle_comp spec β) (f : α → β)
 
@@ -11,8 +11,8 @@ section default_simulate
 
 -- TODO: should this go farther and be `notation` instead of `inline`?
 @[inline, reducible]
-def default_simulate (so : simulation_oracle spec spec') (oa : oracle_comp spec α) :
-  oracle_comp spec' (α × so.S) := oa.simulate so so.default_state
+def default_simulate (so : simulation_oracle spec spec' S) (oa : oracle_comp spec α) :
+  oracle_comp spec' (α × S) := oa.simulate so so.default_state
 
 lemma default_simulate_return : default_simulate so (return a) = pure (a, so.default_state) := rfl
 
@@ -36,7 +36,7 @@ section support
 
 /-- Reduce to the default state for oracles with a subsingleton state type -/
 @[simp]
-lemma support_simulate_eq_support_default_simulate [subsingleton so.S] (s : so.S) :
+lemma support_simulate_eq_support_default_simulate [subsingleton S] (s : S) :
   (simulate so oa s).support = (default_simulate so oa).support :=
 subsingleton.elim so.default_state s ▸ rfl
 
@@ -59,13 +59,13 @@ lemma support_default_simulate_query : (default_simulate so (query i t)).support
   (so i (t, so.default_state)).support := rfl
 
 lemma support_default_simulate_map : (default_simulate so (f <$> oa)).support =
-  prod.map f id '' (default_simulate _ oa).support := support_simulate_map so oa _ f
+  prod.map f id '' (default_simulate so oa).support := support_simulate_map so oa _ f
 
 lemma support_default_simulate_subset_support :
   (default_simulate so oa).support ⊆ prod.fst ⁻¹' oa.support :=
 support_simulate_subset_preimage_support so oa so.default_state
 
-lemma mem_support_of_mem_support_default_simulate {x : α × so.S}
+lemma mem_support_of_mem_support_default_simulate {x : α × S}
   (hx : x ∈ (default_simulate so oa).support) : x.1 ∈ oa.support :=
 mem_support_of_mem_support_simulate so oa so.default_state hx
 
@@ -80,7 +80,7 @@ variable [spec'.finite_range]
 section eval_dist
 
 @[simp]
-lemma eval_dist_simulate_eq_eval_dist_default_simulate [subsingleton so.S] (s : so.S) :
+lemma eval_dist_simulate_eq_eval_dist_default_simulate [subsingleton S] (s : S) :
   ⦃simulate so oa s⦄ = ⦃default_simulate so oa⦄ := subsingleton.elim so.default_state s ▸ rfl
 
 lemma eval_dist_deault_simulate_return :
@@ -112,17 +112,17 @@ end eval_dist
 
 section equiv
 
-lemma simulate_equiv_default_simulate [subsingleton so.S] (s : so.S) :
+lemma simulate_equiv_default_simulate [subsingleton S] (s : S) :
   simulate so oa s ≃ₚ default_simulate so oa := subsingleton.elim so.default_state s ▸ rfl
 
 lemma default_simulate_return_equiv : default_simulate so (return a) ≃ₚ
-  (pure (a, so.default_state) : oracle_comp spec' (α × so.S)) := rfl
+  (pure (a, so.default_state) : oracle_comp spec' (α × S)) := rfl
 
 lemma default_simulate_pure'_equiv : default_simulate so (pure' α a) ≃ₚ
-  (pure (a, so.default_state) : oracle_comp spec' (α × so.S)) := rfl
+  (pure (a, so.default_state) : oracle_comp spec' (α × S)) := rfl
 
 lemma default_simulate_pure_equiv : default_simulate so (pure a) ≃ₚ
-  (pure (a, so.default_state) : oracle_comp spec' (α × so.S)) := rfl
+  (pure (a, so.default_state) : oracle_comp spec' (α × S)) := rfl
 
 lemma default_simulate_bind_equiv : default_simulate so (oa >>= ob) ≃ₚ
   default_simulate so oa >>= λ x, simulate so (ob x.1) x.2 := rfl
@@ -145,7 +145,7 @@ end default_simulate
 section default_simulate'
 
 @[inline, reducible]
-def default_simulate' (so : simulation_oracle spec spec') (oa : oracle_comp spec α) :
+def default_simulate' (so : simulation_oracle spec spec' S) (oa : oracle_comp spec α) :
   oracle_comp spec' α := oa.simulate' so so.default_state
 
 lemma default_simulate'_return : default_simulate' so (return a) =
@@ -168,7 +168,7 @@ lemma default_simulate'_query : default_simulate' so (query i t) =
 
 section support
 
-lemma support_simulate'_eq_support_default_simulate' [subsingleton so.S] (s : so.S) :
+lemma support_simulate'_eq_support_default_simulate' [subsingleton S] (s : S) :
   (simulate' so oa s).support = (default_simulate' so oa).support :=
 subsingleton.elim so.default_state s ▸ rfl
 
@@ -202,7 +202,7 @@ mem_support_of_mem_support_simulate' so oa so.default_state hx
 /-- If the first output of an oracle can take on any value (although the state might not),
 then the first value of simulation has the same support as the original computation.
 For example simulation with the identity oracle `idₛ` doesn't change the support -/
-theorem support_default_simulate'_eq_support [subsingleton so.S]
+theorem support_default_simulate'_eq_support [subsingleton S]
   (h : ∀ i t, prod.fst '' (so i (t, so.default_state)).support = ⊤) :
   (default_simulate' so oa).support = oa.support :=
 support_simulate'_eq_support so oa so.default_state
@@ -218,7 +218,7 @@ variable [spec'.finite_range]
 
 section eval_dist
 
-lemma eval_dist_simulate'_eq_eval_dist_default_simulate' [subsingleton so.S] (s : so.S) :
+lemma eval_dist_simulate'_eq_eval_dist_default_simulate' [subsingleton S] (s : S) :
   ⦃simulate' so oa s⦄ = ⦃default_simulate' so oa⦄ := subsingleton.elim so.default_state s ▸ rfl
 
 lemma eval_dist_default_simulate'_return : ⦃default_simulate' so (return a)⦄ =
@@ -250,7 +250,7 @@ end eval_dist
 
 section equiv
 
-lemma simulate'_equiv_default_simulate' [subsingleton so.S] (s : so.S) :
+lemma simulate'_equiv_default_simulate' [subsingleton S] (s : S) :
   simulate' so oa s ≃ₚ default_simulate' so oa := subsingleton.elim so.default_state s ▸ rfl
 
 lemma default_simulate'_return_equiv : default_simulate' so (return a) ≃ₚ

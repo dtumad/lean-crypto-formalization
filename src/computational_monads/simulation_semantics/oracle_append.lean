@@ -2,15 +2,13 @@ import computational_monads.simulation_semantics.default_simulate
 
 open oracle_comp oracle_spec
 
-variables {spec spec' spec'' spec''' : oracle_spec} {A B C : Type} {α β γ : Type}
+variables {spec spec' spec'' spec''' : oracle_spec} {A B C : Type} {α β γ : Type} {S S' : Type}
   
 namespace simulation_oracle
 
-def oracle_append (so : simulation_oracle spec spec'')
-  (so' : simulation_oracle spec' spec'') :
-  simulation_oracle (spec ++ spec') spec'' :=
-{ S := so.S × so'.S,
-  default_state := (so.default_state, so'.default_state),
+def oracle_append (so : simulation_oracle spec spec'' S) (so' : simulation_oracle spec' spec'' S') :
+  simulation_oracle (spec ++ spec') spec'' (S × S') :=
+{ default_state := (so.default_state, so'.default_state),
   o := λ i, match i with
   | (sum.inl i) := λ ⟨t, s₁, s₂⟩, do {⟨u, s₁'⟩ ← so i (t, s₁), return (u, s₁', s₂)}
   | (sum.inr i) := λ ⟨t, s₁, s₂⟩, do {⟨u, s₂'⟩ ← so' i (t, s₂), return (u, s₁, s₂')}
@@ -19,15 +17,10 @@ def oracle_append (so : simulation_oracle spec spec'')
 -- TODO: should be infix?
 notation so `++ₛ` so' := oracle_append so so'
 
--- TODO: namespace
-@[inline, reducible]
-def oracle_append.mk_S {so : simulation_oracle spec spec''} {so' : simulation_oracle spec' spec''}
-  (s : so.S) (s' : so'.S) : (so ++ₛ so').S := (s, s')
-
-variables (so : simulation_oracle spec spec'') (so' : simulation_oracle spec' spec'')
+variables (so : simulation_oracle spec spec'' S) (so' : simulation_oracle spec' spec'' S')
   (oa : oracle_comp (spec ++ spec') A) (ob : A → oracle_comp (spec ++ spec') B) (a : A)
-  (i : spec.ι) (i' : spec'.ι) (t : spec.domain i) (t' : spec'.domain i') (s : so.S × so'.S)
-  (x : spec.domain i × so.S × so'.S) (x' : spec'.domain i' × so.S × so'.S)
+  (i : spec.ι) (i' : spec'.ι) (t : spec.domain i) (t' : spec'.domain i') (s : S × S')
+  (x : spec.domain i × S × S') (x' : spec'.domain i' × S × S')
 
 @[simp]
 lemma default_state_oracle_append : (so ++ₛ so').default_state =

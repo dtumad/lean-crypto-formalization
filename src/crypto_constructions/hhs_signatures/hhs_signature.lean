@@ -139,10 +139,9 @@ end
 
 -- TODO: this should "look like" a regular signature, since the `b` values are still uniform random coins
 noncomputable def adversary_simulation_oracle [inhabited G] (pk x₀ : X) :
-  simulation_oracle ((hhs_signature G X M n).unforgeable_adversary_oracle_spec) uniform_selecting :=
-{
-  S := query_log (hhs_signature G X M n).random_oracle_spec,
-  default_state := query_log.init (hhs_signature G X M n).random_oracle_spec,
+  simulation_oracle ((hhs_signature G X M n).unforgeable_adversary_oracle_spec)
+    uniform_selecting (query_log (hhs_signature G X M n).random_oracle_spec) :=
+{ default_state := query_log.init (hhs_signature G X M n).random_oracle_spec,
   o := λ i, match i with
   | (sum.inr ()) := λ ⟨m, log⟩, do {
     bs ← repeat_n ($ᵗ bool) n, -- pre-select what all the bool results will be

@@ -80,12 +80,12 @@ uniform_selecting ++ sig.random_oracle_spec
 
 /-- Simulate the basic oracles for the signature, using a random oracle in the natural way -/
 noncomputable def base_oracle (sig : signature) :
-  simulation_oracle sig.base_oracle_spec uniform_selecting :=
+  simulation_oracle sig.base_oracle_spec uniform_selecting (unit × query_log sig.random_oracle_spec × unit) :=
 idₛ ++ₛ random_oracle sig.random_oracle_spec
 
-@[inline, reducible] -- TODO: implicit sig?
-def base_oracle_mk_S (sig : signature) (log : query_log sig.random_oracle_spec) :
-  sig.base_oracle.S := ((), random_oracle.mk_S log)
+-- @[inline, reducible] -- TODO: implicit sig?
+-- def base_oracle_mk_S (sig : signature) (log : query_log sig.random_oracle_spec) :
+--   sig.base_oracle.S := ((), random_oracle.mk_S log)
 
 /-- A signing oracle corresponding to a given signature scheme -/
 @[reducible, inline, derive computable]
@@ -96,11 +96,11 @@ def signing_oracle_spec (sig : signature) [inhabited sig.S] : oracle_spec :=
   using the provided public/secret keys to answer queries for signatures.
 Additionally it logs and returns a list queries to the signing oracle -/
 def signing_oracle (sig : signature) (pk : sig.PK) (sk : sig.SK) :
-  simulation_oracle sig.signing_oracle_spec sig.base_oracle_spec :=
+  simulation_oracle sig.signing_oracle_spec sig.base_oracle_spec (query_log (sig.M →ₒ sig.S) × unit) :=
 ⟪λ _ m, sig.sign (pk, sk, m)⟫ ∘ₛ (logging_oracle (sig.M →ₒ sig.S))
 
-def signing_oracle_mk_S (sig : signature) (pk : sig.PK) (sk : sig.SK) (log : query_log (sig.M →ₒ sig.S)) :
-  (sig.signing_oracle pk sk).S := (log, ())
+-- def signing_oracle_mk_S (sig : signature) (pk : sig.PK) (sk : sig.SK) (log : query_log (sig.M →ₒ sig.S)) :
+--   (sig.signing_oracle pk sk).S := (log, ())
 
 namespace signing_oracle
 
@@ -121,11 +121,11 @@ lemma support_completeness_experiment (sig : signature) (m : sig.M) :
   (completeness_experiment sig m).support = ⋃ (pk : sig.PK) (sk : sig.SK) (σ : sig.S)
     (log log' : query_log sig.random_oracle_spec)
     -- TODO: this kinda looks like a mess
-    (hk : ((pk, sk), sig.base_oracle_mk_S log) ∈
+    (hk : ((pk, sk), ((), log, ())) ∈
       (default_simulate sig.base_oracle $ sig.gen ()).support)
-    (hσ : (σ, sig.base_oracle_mk_S log') ∈
-      (simulate sig.base_oracle (sig.sign (pk, sk, m)) (sig.base_oracle_mk_S log)).support),
-    (simulate' sig.base_oracle (sig.verify (pk, m, σ)) (sig.base_oracle_mk_S log)).support :=
+    (hσ : (σ, ((), log', ())) ∈
+      (simulate sig.base_oracle (sig.sign (pk, sk, m)) ((), log, ())).support),
+    (simulate' sig.base_oracle (sig.verify (pk, m, σ)) ((), log', ())).support :=
 begin
   sorry
 end
@@ -139,11 +139,11 @@ def complete (sig : signature) := ∀ (m : sig.M), ⦃completeness_experiment si
 lemma complete_iff_signatures_support_subset (sig : signature) :
   sig.complete ↔ ∀ (m : sig.M) (pk : sig.PK) (sk : sig.SK) (σ : sig.S)
     (log log' : query_log sig.random_oracle_spec),
-    ((pk, sk), sig.base_oracle_mk_S log) ∈
+    ((pk, sk), ((), log, ())) ∈
       (default_simulate sig.base_oracle $ sig.gen ()).support →
-    (σ, sig.base_oracle_mk_S log') ∈
-      (simulate sig.base_oracle (sig.sign (pk, sk, m)) (sig.base_oracle_mk_S log)).support →
-    (simulate' sig.base_oracle (sig.verify (pk, m, σ)) (sig.base_oracle_mk_S log)).support = {tt} :=
+    (σ, ((), log', ())) ∈
+      (simulate sig.base_oracle (sig.sign (pk, sk, m)) ((), log, ())).support →
+    (simulate' sig.base_oracle (sig.verify (pk, m, σ)) ((), log', ())).support = {tt} :=
 begin
   simp_rw [complete, eval_dist_eq_one_iff_support_eq_singleton,
     support_completeness_experiment], sorry,

@@ -15,15 +15,13 @@ open oracle_comp oracle_spec
 variables {α β : Type} {spec spec' spec'' : oracle_spec}
   (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) (s : unit)
 
-def identity_oracle (spec : oracle_spec) : simulation_oracle spec spec :=
+def identity_oracle (spec : oracle_spec) : simulation_oracle spec spec unit :=
 ⟪query⟫
 
 -- TODO: should the notation take the `oracle_spec` as an arg?
 notation `idₛ` := identity_oracle _
 
 namespace identity_oracle
-
-instance S_unique : unique (identity_oracle spec).S := punit.unique
 
 @[simp]
 lemma apply (i : spec.ι) (t : spec.domain i) (s : unit) :
@@ -54,10 +52,9 @@ begin
   { rw [simulate_query, support_apply] }
 end
 
-@[simp]
 lemma mem_support_simulate_iff (x : α × unit) :
   x ∈ (simulate idₛ oa s).support ↔ x.1 ∈ oa.support :=
-by simpa
+by rw [support_simulate, set.mem_set_of]
 
 @[simp]
 lemma support_simulate' : (simulate' idₛ oa s).support = oa.support :=
