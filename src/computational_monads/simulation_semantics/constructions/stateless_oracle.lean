@@ -100,7 +100,6 @@ lemma support_default_simulate'_bind (oa : oracle_comp spec α) (ob : α → ora
     ⋃ a ∈ (default_simulate' ⟪o⟫ oa).support, (default_simulate' ⟪o⟫ (ob a)).support :=
 begin
   rw [default_simulate', simulate', support_map],
-  rw [support_simulate_eq_preimage, support_default_simulate'_bind],
   sorry,
 end
 

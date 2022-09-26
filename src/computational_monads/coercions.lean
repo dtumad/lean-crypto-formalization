@@ -111,8 +111,8 @@ lemma support_coe_append_right (oa : oracle_comp spec α) :
   (↑oa : oracle_comp (spec ++ spec') α).support = oa.support :=
 begin
   induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t,
-  { simp only [coe_append_right_def, default_simulate'_return, support_map,
-      support_return, set.image_singleton], },
+  { simp only [coe_append_right_def, support_simulate',
+      simulate_return, support_return, set.image_singleton] },
   { simp_rw [coe_append_right_def] at hoa hob,
     simp_rw [support_bind, coe_append_right_def,
       stateless_oracle.support_default_simulate'_bind, hoa, hob] },
@@ -125,7 +125,7 @@ section distribution_semantics
 lemma coe_append_right_pure_equiv [spec.finite_range] [spec'.finite_range] (a : α) :
   (↑(pure a : oracle_comp spec α) : oracle_comp (spec ++ spec') α)
     ≃ₚ (pure a : oracle_comp (spec ++ spec') α) :=
-default_simulate'_pure_equiv _ a
+simulate'_pure_equiv _ a _
 
 /-- The right hand simulation oracle is irrelevent to simulate an append right coercion -/
 lemma simulate'_coe_append_right_equiv [spec.finite_range] [spec'.finite_range]

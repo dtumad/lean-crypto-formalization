@@ -1,4 +1,4 @@
-import computational_monads.simulation_semantics.default_simulate
+import computational_monads.simulation_semantics.simulate
 
 variables {α β γ : Type} {spec spec' : oracle_spec} {S S' : Type}
 
