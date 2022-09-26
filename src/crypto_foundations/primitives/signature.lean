@@ -80,7 +80,7 @@ uniform_selecting ++ sig.random_oracle_spec
 
 /-- Simulate the basic oracles for the signature, using a random oracle in the natural way -/
 noncomputable def base_oracle (sig : signature) :
-  simulation_oracle sig.base_oracle_spec uniform_selecting (unit × query_log sig.random_oracle_spec × unit) :=
+  simulation_oracle sig.base_oracle_spec uniform_selecting (unit × query_log sig.random_oracle_spec) :=
 idₛ ++ₛ random_oracle sig.random_oracle_spec
 
 -- @[inline, reducible] -- TODO: implicit sig?
@@ -121,11 +121,11 @@ lemma support_completeness_experiment (sig : signature) (m : sig.M) :
   (completeness_experiment sig m).support = ⋃ (pk : sig.PK) (sk : sig.SK) (σ : sig.S)
     (log log' : query_log sig.random_oracle_spec)
     -- TODO: this kinda looks like a mess
-    (hk : ((pk, sk), ((), log, ())) ∈
+    (hk : ((pk, sk), ((), log)) ∈
       (default_simulate sig.base_oracle $ sig.gen ()).support)
-    (hσ : (σ, ((), log', ())) ∈
-      (simulate sig.base_oracle (sig.sign (pk, sk, m)) ((), log, ())).support),
-    (simulate' sig.base_oracle (sig.verify (pk, m, σ)) ((), log', ())).support :=
+    (hσ : (σ, ((), log')) ∈
+      (simulate sig.base_oracle (sig.sign (pk, sk, m)) ((), log)).support),
+    (simulate' sig.base_oracle (sig.verify (pk, m, σ)) ((), log')).support :=
 begin
   sorry
 end
@@ -139,11 +139,11 @@ def complete (sig : signature) := ∀ (m : sig.M), ⦃completeness_experiment si
 lemma complete_iff_signatures_support_subset (sig : signature) :
   sig.complete ↔ ∀ (m : sig.M) (pk : sig.PK) (sk : sig.SK) (σ : sig.S)
     (log log' : query_log sig.random_oracle_spec),
-    ((pk, sk), ((), log, ())) ∈
+    ((pk, sk), ((), log)) ∈
       (default_simulate sig.base_oracle $ sig.gen ()).support →
-    (σ, ((), log', ())) ∈
-      (simulate sig.base_oracle (sig.sign (pk, sk, m)) ((), log, ())).support →
-    (simulate' sig.base_oracle (sig.verify (pk, m, σ)) ((), log', ())).support = {tt} :=
+    (σ, ((), log')) ∈
+      (simulate sig.base_oracle (sig.sign (pk, sk, m)) ((), log)).support →
+    (simulate' sig.base_oracle (sig.verify (pk, m, σ)) ((), log')).support = {tt} :=
 begin
   simp_rw [complete, eval_dist_eq_one_iff_support_eq_singleton,
     support_completeness_experiment], sorry,
