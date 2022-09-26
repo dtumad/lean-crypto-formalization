@@ -54,9 +54,9 @@ structure signature :=
 
 namespace signature
 
-section instances
-
 variable (sig : signature)
+
+section instances
 
 instance random_oracle_spec.finite_range : sig.random_oracle_spec.finite_range :=
 sig.random_oracle_spec_finite_range
@@ -80,12 +80,9 @@ uniform_selecting ++ sig.random_oracle_spec
 
 /-- Simulate the basic oracles for the signature, using a random oracle in the natural way -/
 noncomputable def base_oracle (sig : signature) :
-  sim_oracle sig.base_oracle_spec uniform_selecting (unit × query_log sig.random_oracle_spec) :=
-idₛ ++ₛ random_oracle sig.random_oracle_spec
-
--- @[inline, reducible] -- TODO: implicit sig?
--- def base_oracle_mk_S (sig : signature) (log : query_log sig.random_oracle_spec) :
---   sig.base_oracle.S := ((), random_oracle.mk_S log)
+  sim_oracle sig.base_oracle_spec uniform_selecting (query_log sig.random_oracle_spec) :=
+sim_oracle.mask_state (idₛ ++ₛ random_oracle sig.random_oracle_spec)
+  (equiv.punit_prod (query_log sig.random_oracle_spec))
 
 /-- A signing oracle corresponding to a given signature scheme -/
 @[reducible, inline, derive computable]
@@ -96,15 +93,9 @@ def signing_oracle_spec (sig : signature) [inhabited sig.S] : oracle_spec :=
   using the provided public/secret keys to answer queries for signatures.
 Additionally it logs and returns a list queries to the signing oracle -/
 def signing_oracle (sig : signature) (pk : sig.PK) (sk : sig.SK) :
-  sim_oracle sig.signing_oracle_spec sig.base_oracle_spec (query_log (sig.M →ₒ sig.S) × unit) :=
-⟪λ _ m, sig.sign (pk, sk, m)⟫ ∘ₛ (logging_oracle (sig.M →ₒ sig.S))
-
--- def signing_oracle_mk_S (sig : signature) (pk : sig.PK) (sk : sig.SK) (log : query_log (sig.M →ₒ sig.S)) :
---   (sig.signing_oracle pk sk).S := (log, ())
-
-namespace signing_oracle
-
-end signing_oracle
+  sim_oracle sig.signing_oracle_spec sig.base_oracle_spec (query_log (sig.M →ₒ sig.S)) :=
+sim_oracle.mask_state (⟪λ _ m, sig.sign (pk, sk, m)⟫ ∘ₛ (logging_oracle (sig.M →ₒ sig.S)))
+  (equiv.prod_punit (query_log (signing_oracle_spec sig)))
 
 section complete
 
@@ -117,15 +108,12 @@ default_simulate' sig.base_oracle
   (do {(pk, sk) ← sig.gen (), σ ← sig.sign (pk, sk, m), sig.verify (pk, m, σ)})
 
 @[simp]
-lemma support_completeness_experiment (sig : signature) (m : sig.M) :
+lemma support_completeness_experiment (m : sig.M) :
   (completeness_experiment sig m).support = ⋃ (pk : sig.PK) (sk : sig.SK) (σ : sig.S)
     (log log' : query_log sig.random_oracle_spec)
-    -- TODO: this kinda looks like a mess
-    (hk : ((pk, sk), ((), log)) ∈
-      (default_simulate sig.base_oracle $ sig.gen ()).support)
-    (hσ : (σ, ((), log')) ∈
-      (simulate sig.base_oracle (sig.sign (pk, sk, m)) ((), log)).support),
-    (simulate' sig.base_oracle (sig.verify (pk, m, σ)) ((), log')).support :=
+    (hk : ((pk, sk), log) ∈ (default_simulate sig.base_oracle $ sig.gen ()).support)
+    (hσ : (σ, log') ∈ (simulate sig.base_oracle (sig.sign (pk, sk, m)) log).support),
+      (simulate' sig.base_oracle (sig.verify (pk, m, σ)) log').support :=
 begin
   sorry
 end
@@ -136,14 +124,12 @@ end
 def complete (sig : signature) := ∀ (m : sig.M), ⦃completeness_experiment sig m⦄ tt = 1
 
 -- TODO: fix like above
-lemma complete_iff_signatures_support_subset (sig : signature) :
+lemma complete_iff_signatures_support_subset :
   sig.complete ↔ ∀ (m : sig.M) (pk : sig.PK) (sk : sig.SK) (σ : sig.S)
     (log log' : query_log sig.random_oracle_spec),
-    ((pk, sk), ((), log)) ∈
-      (default_simulate sig.base_oracle $ sig.gen ()).support →
-    (σ, ((), log')) ∈
-      (simulate sig.base_oracle (sig.sign (pk, sk, m)) ((), log)).support →
-    (simulate' sig.base_oracle (sig.verify (pk, m, σ)) ((), log')).support = {tt} :=
+    ((pk, sk), log) ∈ (default_simulate sig.base_oracle $ sig.gen ()).support →
+    (σ, log') ∈ (simulate sig.base_oracle (sig.sign (pk, sk, m)) log).support →
+    (simulate' sig.base_oracle (sig.verify (pk, m, σ)) log').support = {tt} :=
 begin
   simp_rw [complete, eval_dist_eq_one_iff_support_eq_singleton,
     support_completeness_experiment], sorry,
@@ -163,11 +149,11 @@ uniform_selecting ++ sig.random_oracle_spec ++ sig.signing_oracle_spec
   Note that the adversary only has access to the public key. -/
 structure unforgeable_adversary (sig : signature) :=
 (adv : sig.PK → oracle_comp (sig.unforgeable_adversary_oracle_spec) (sig.M × sig.S))
--- (adv_poly_time : poly_time_oracle_comp adv)
+(adv_poly_time : poly_time_oracle_comp adv)
 
 namespace unforgeable_adversary
 
-variables {sig : signature} (adversary : unforgeable_adversary sig)
+variables {sig} (adversary : unforgeable_adversary sig)
 
 /-- Wrapper function for simulation that hides the "state values" of the stateless oracles.
 Runs the adversary with a signing oracle based on the provided public/secret keys,
@@ -176,7 +162,7 @@ Runs the adversary with a signing oracle based on the provided public/secret key
 def simulate (pk : sig.PK) (sk : sig.SK) :
   oracle_comp sig.base_oracle_spec (sig.M × sig.S × query_log (sig.M →ₒ sig.S)) := 
 do {
-  ((m, s), (), log, ()) ← (default_simulate (idₛ ++ₛ signing_oracle sig pk sk) (adversary.adv pk)),
+  ((m, s), _, log) ← (default_simulate (idₛ ++ₛ signing_oracle sig pk sk) (adversary.adv pk)),
   return (m, s, log)
 }
 
