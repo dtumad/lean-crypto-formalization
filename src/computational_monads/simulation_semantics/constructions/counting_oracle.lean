@@ -16,19 +16,19 @@ variables {α β γ : Type} {spec spec' : oracle_spec}
 
 /-- Simulation oracle that just counts the number of queries to the oracles -/
 def counting_oracle (spec : oracle_spec) : simulation_oracle spec spec :=
-⟪ query | λ n _ _ _, n + 1 , 0 ⟫
+⟪query | λ n _ _ _, n + 1 , 0⟫
 
 namespace counting_oracle
 
-lemma apply (i : spec.ι) (t : spec.domain i) (n : ℕ) :
-  (counting_oracle spec).o i (t, n) = do { u ← query i t, pure (u, (n + 1 : ℕ)) } := rfl
+lemma apply_eq (i : spec.ι) (x : spec.domain i × ℕ) :
+  counting_oracle spec i x = do {u ← query i x.1, return (u, (x.2 + 1 : ℕ))} :=
+tracking_oracle.apply_eq query (λ n _ _ _, n + 1) 0 i x
 
 section support
 
-lemma support_apply (i : spec.ι) (t : spec.domain i) (n : ℕ) :
-  ((counting_oracle spec).o i (t, n)).support = {x | x.2 = nat.succ n} :=
-(tracking_oracle.support_apply query _ _ i t n).trans
-  (by simpa only [support_query, set.top_eq_univ, set.mem_univ, true_and])
+lemma support_apply (i : spec.ι) (x : spec.domain i × ℕ) :
+  (counting_oracle spec i x).support = {y | y.2 = nat.succ x.2} :=
+(tracking_oracle.support_apply query _ _ i x).trans (by simpa)
 
 end support
 

@@ -5,7 +5,6 @@ open oracle_comp oracle_spec
 
 variables {A B C : Type} {spec spec' spec'' : oracle_spec} 
   
-@[simps]
 def logging_oracle (spec : oracle_spec) [spec.computable] :
   simulation_oracle spec spec :=
 ⟪ query | λ i t u, query_log.log_query i t u, query_log.init spec ⟫
@@ -17,7 +16,7 @@ variable [spec.computable]
 
 @[simp]
 lemma apply (i : spec.ι) (t : spec.domain i) :
-  (logging_oracle spec).o i (t, log) = query i t >>= λ u, return (u, log.log_query i t u) := rfl
+  (logging_oracle spec) i (t, log) = query i t >>= λ u, return (u, log.log_query i t u) := rfl
 
 section simulate
 
@@ -49,7 +48,7 @@ variable [spec.finite_range]
 @[simp]
 lemma eval_dist_simulate'_equiv (oa : oracle_comp spec A) :
   simulate' (logging_oracle spec) oa log ≃ₚ oa :=
-tracking_oracle.simulate'_query_equiv_self oa _ _ log
+tracking_oracle.simulate'_query_equiv_self _ _ oa log
 
 @[simp]
 lemma eval_dist_default_simulate'_equiv (oa : oracle_comp spec A) :

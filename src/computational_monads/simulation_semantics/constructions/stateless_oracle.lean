@@ -7,7 +7,6 @@ variables {α β : Type} {spec spec' spec'' : oracle_spec}
 /-- Simulate a computation without making use of the internal state.
   We use the `unit` type as the state in this case, so all possible states are equal.
   Implemented as a `tracking_oracle` where the state isn't actually tracking anything -/
--- @[simps]
 def stateless_oracle (spec spec' : oracle_spec)
   (o : Π (i : spec.ι), spec.domain i → oracle_comp spec' (spec.range i)) :
   simulation_oracle spec spec' :=
@@ -25,16 +24,16 @@ instance S_unique : unique ⟪o⟫.S := punit.unique
 
 @[simp]
 lemma apply_eq (i : spec.ι) (t : spec.domain i) (s : unit) :
-  ⟪o⟫.o i (t, s) = o i t >>= λ u, return (u, ()) := rfl
+  ⟪o⟫ i (t, s) = o i t >>= λ u, return (u, ()) := rfl
 
 section support
 
 lemma support_apply (i : spec.ι) (t : spec.domain i) (s : unit) :
-  (⟪o⟫.o i (t, s)).support = prod.fst ⁻¹' (o i t).support :=
+  (⟪o⟫ i (t, s)).support = prod.fst ⁻¹' (o i t).support :=
 by simp only [apply_eq, support_bind_prod_mk_fst_of_subsingleton]
 
 lemma mem_support_apply_iff (i : spec.ι) (t : spec.domain i) (s s' : unit) (u : spec.range i) :
-  (u, s') ∈ (⟪o⟫.o i (t, s)).support ↔ u ∈ (o i t).support :=
+  (u, s') ∈ (⟪o⟫ i (t, s)).support ↔ u ∈ (o i t).support :=
 by simp only [apply_eq, support_bind, support_pure, set.mem_Union, set.mem_singleton_iff,
   prod.mk.inj_iff, eq_iff_true_of_subsingleton, and_true, exists_prop, exists_eq_right']
 
@@ -199,8 +198,9 @@ section support
 lemma support_simulate'_eq_support_simulate'_stateless_oracle :
   (simulate' ⟪o | update_state, default_state⟫ oa s).support = (simulate' ⟪o⟫ oa ()).support :=
 begin
-  unfold stateless_oracle,
-  refine support_simulate'_eq_of_oracle_eq o update_state (λ _ _ _ _, ()) default_state _ oa s _
+  sorry
+  -- unfold stateless_oracle,
+  -- refine support_simulate'_eq_of_oracle_eq o update_state (λ _ _ _ _, ()) default_state _ oa s _
 end
 
 end support

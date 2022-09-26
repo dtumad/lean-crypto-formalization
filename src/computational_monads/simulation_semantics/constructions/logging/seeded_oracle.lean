@@ -24,7 +24,6 @@ variables {spec spec' spec'' : oracle_spec} {A B C : Type}
 /-- Use the first element of the `seed` as the query result if inputs match.
   If the query values don't match then throw away the seed as computation has diverged.
   Using this with a log from a previous computation ensures they behave identically. -/
-@[simps]
 def seeded_oracle (spec : oracle_spec) [computable spec] :
   simulation_oracle spec spec :=
 { S := query_log spec,

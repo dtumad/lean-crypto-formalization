@@ -15,7 +15,6 @@ open oracle_comp oracle_spec
 variables {α β : Type} {spec spec' spec'' : oracle_spec}
   (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) (s : unit)
 
-@[simps]
 def identity_oracle (spec : oracle_spec) : simulation_oracle spec spec :=
 ⟪query⟫
 
@@ -28,13 +27,13 @@ instance S_unique : unique (identity_oracle spec).S := punit.unique
 
 @[simp]
 lemma apply (i : spec.ι) (t : spec.domain i) (s : unit) :
-  (idₛ).o i (t, s) = query i t >>= λ u, return (u, ()) := rfl
+  (idₛ) i (t, s) = query i t >>= λ u, return (u, ()) := rfl
 
 section support
 
 @[simp]
 lemma support_apply (i : spec.ι) (t : spec.domain i) :
-  ((idₛ).o i (t, s)).support = {u | u.1 ∈ (query i t).support} :=
+  ((idₛ) i (t, s)).support = {u | u.1 ∈ (query i t).support} :=
 begin
   simp only [apply, support_bind, support_pure, set.Union_true,
     set.Union_singleton_eq_range, support_query, set.top_eq_univ, set.mem_univ, set.set_of_true],
@@ -80,7 +79,7 @@ section equiv
 
 @[simp]
 lemma apply_equiv (i : spec.ι) (t : spec.domain i) :
-  (idₛ).o i (t, s) ≃ₚ (λ u, (u, ())) <$> query i t :=
+  (idₛ) i (t, s) ≃ₚ (λ u, (u, ())) <$> query i t :=
 rfl
 
 @[simp]

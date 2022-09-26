@@ -48,22 +48,21 @@ begin
   rw [coe_coin_uniform_select_def],
 
   induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t,
-  { simp only [coe_coin_uniform_select_def, support_default_simulate', simulate'_return,
-      support_map, support_return, set.image_singleton] },
-  { simp only [coe_coin_uniform_select_def, support_simulate'_bind, support_bind],
+  { simp only [support_simulate', simulate_return, support_return, set.image_singleton] },
+  { simp only [support_simulate'_bind, support_bind],
     ext b,
     simp_rw [set.mem_Union],
     refine ⟨λ h, _, λ h, _⟩,
     { obtain ⟨⟨a, u⟩, ha, hba⟩ := h,
       cases u,
       refine ⟨a, _, by rwa ← hob⟩,
-      rw [← hoa, coe_coin_uniform_select_def, support_simulate', set.mem_image],
+      rw [← hoa, support_simulate', set.mem_image],
       exact ⟨(a, ()), ha, rfl⟩ },
     {
       sorry,
     }
   },
-  { simp only [coe_coin_uniform_select_def, support_uniform_select_fintype bool,
+  { simp only [support_uniform_select_fintype bool,
       stateless_oracle.support_default_simulate'_query, support_query] }
 end
 
@@ -295,7 +294,7 @@ section coe_simulation_oracle
     both the initial and final `oracle_spec` are some appended set of oracles -/
 instance [∀ α, has_coe (oracle_comp coe_spec α) (oracle_comp coe_spec' α)] :
   has_coe (simulation_oracle spec coe_spec) (simulation_oracle spec coe_spec') :=
-{ coe := λ so, { S := so.S, default_state := so.default_state, o := λ i x, ↑(so.o i x) } }
+{ coe := λ so, { S := so.S, default_state := so.default_state, o := λ i x, ↑(so i x) } }
 
 /-- Coerce a simulation oracle to include an additional number of resulting oracles -/
 example (so : simulation_oracle coe_spec coe_spec') :

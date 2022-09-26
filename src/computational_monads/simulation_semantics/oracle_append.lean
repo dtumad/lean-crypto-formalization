@@ -3,9 +3,7 @@ import computational_monads.simulation_semantics.default_simulate
 open oracle_comp oracle_spec
 
 variables {spec spec' spec'' spec''' : oracle_spec} {A B C : Type} {α β γ : Type}
-  (a : A) (oa : oracle_comp (spec' ++ spec'') A)
-  (ob : A → oracle_comp (spec' ++ spec'') B)
-
+  
 namespace simulation_oracle
 
 def oracle_append (so : simulation_oracle spec spec'')
@@ -13,45 +11,50 @@ def oracle_append (so : simulation_oracle spec spec'')
   simulation_oracle (spec ++ spec') spec'' :=
 { S := so.S × so'.S,
   default_state := (so.default_state, so'.default_state),
-  o := λ i, sum.rec_on i
-    (λ i, λ x, do { u_s' ← so.o i ⟨x.1, x.2.1⟩, pure (u_s'.1, u_s'.2, x.2.2) })
-    (λ i, λ x, do { u_s' ← so'.o i ⟨x.1, x.2.2⟩, pure (u_s'.1, x.2.1, u_s'.2) }) }
-
+  o := λ i, match i with
+  | (sum.inl i) := λ ⟨t, s₁, s₂⟩, do {⟨u, s₁'⟩ ← so i (t, s₁), return (u, s₁', s₂)}
+  | (sum.inr i) := λ ⟨t, s₁, s₂⟩, do {⟨u, s₂'⟩ ← so' i (t, s₂), return (u, s₁, s₂')}
+  end }
+  
 -- TODO: should be infix?
 notation so `++ₛ` so' := oracle_append so so'
 
 -- TODO: namespace
-
 @[inline, reducible]
 def oracle_append.mk_S {so : simulation_oracle spec spec''} {so' : simulation_oracle spec' spec''}
   (s : so.S) (s' : so'.S) : (so ++ₛ so').S := (s, s')
 
 variables (so : simulation_oracle spec spec'') (so' : simulation_oracle spec' spec'')
-  (i : spec.ι) (i' : spec'.ι) (t : spec.domain i) (t' : spec'.domain i')
-  (s : so.S × so'.S)
+  (oa : oracle_comp (spec ++ spec') A) (ob : A → oracle_comp (spec ++ spec') B) (a : A)
+  (i : spec.ι) (i' : spec'.ι) (t : spec.domain i) (t' : spec'.domain i') (s : so.S × so'.S)
+  (x : spec.domain i × so.S × so'.S) (x' : spec'.domain i' × so.S × so'.S)
 
 @[simp]
 lemma default_state_oracle_append : (so ++ₛ so').default_state =
   (so.default_state, so'.default_state) := rfl
 
-lemma oracle_append_apply_index (i : spec.ι ⊕ spec'.ι) : (so ++ₛ so').o i = sum.rec_on i
-  (λ i, λ x, do { u_s' ← so.o i ⟨x.1, x.2.1⟩, pure (u_s'.1, u_s'.2, x.2.2) })
-  (λ i, λ x, do { u_s' ← so'.o i ⟨x.1, x.2.2⟩, pure (u_s'.1, x.2.1, u_s'.2) }) := rfl
+@[simp]
+lemma oracle_append_apply_inl : (so ++ₛ so') (sum.inl i) x =
+  do {u_s' ← so i (x.1, x.2.1), return (u_s'.1, u_s'.2, x.2.2)} :=
+begin
+  cases x with t s, cases s with s₁ s₂,
+  refine congr_arg (λ ou, so i (t, s₁) >>= ou) (funext $ λ y, _),
+  cases y, refl,
+end
 
 @[simp]
-lemma oracle_append_apply_inl : (so ++ₛ so').o (sum.inl i) (t, s) =
-  do { u_s' ← so.o i (t, s.1), pure (u_s'.1, u_s'.2, s.2) } := rfl
-
-@[simp]
-lemma oracle_append_apply_inr : (so ++ₛ so').o (sum.inr i') (t', s) =
-  do { u_s' ← so'.o i' (t', s.2), pure (u_s'.1, s.1, u_s'.2)} := rfl
-
-lemma simulate_oracle_append_pure : simulate (so ++ₛ so') (pure a) s = (pure (a, s)) := rfl
+lemma oracle_append_apply_inr : (so ++ₛ so') (sum.inr i') x' =
+  do {u_s' ← so' i' (x'.1, x'.2.2), return (u_s'.1, x'.2.1, u_s'.2)} :=
+begin
+  cases x' with t s, cases s with s₁ s₂,
+  refine congr_arg (λ ou, so' i' (t, s₂) >>= ou) (funext $ λ y, _),
+  cases y, refl,
+end
 
 section support
 
-lemma support_oracle_append_apply_inl : ((so ++ₛ so').o (sum.inl i) (t, s)).support =
-  {x | (x.1, x.2.1) ∈ (so.o i (t, s.1)).support ∧ x.2.2 = s.2} :=
+lemma support_oracle_append_apply_inl : ((so ++ₛ so') (sum.inl i) (t, s)).support =
+  {x | (x.1, x.2.1) ∈ (so i (t, s.1)).support ∧ x.2.2 = s.2} :=
 begin
   ext x,
   simp only [oracle_append_apply_inl, support_bind, support_pure, set.mem_Union,
@@ -63,8 +66,8 @@ begin
     simp only [← h.2, h.1, true_and, prod.mk.eta] }
 end
 
-lemma support_oracle_append_apply_inr : ((so ++ₛ so').o (sum.inr i') (t', s)).support =
-  {x | (x.1, x.2.2) ∈ (so'.o i' (t', s.2)).support ∧ x.2.1 = s.1} :=
+lemma support_oracle_append_apply_inr : ((so ++ₛ so') (sum.inr i') (t', s)).support =
+  {x | (x.1, x.2.2) ∈ (so' i' (t', s.2)).support ∧ x.2.1 = s.1} :=
 begin
   ext x,
   simp only [oracle_append_apply_inr, support_bind, support_pure, set.mem_Union,
@@ -77,7 +80,7 @@ begin
 end
 
 -- GOALS:
--- simulate prop holds on both oracles -> holds on appended oracle
+-- ??? simulate prop holds on both oracles -> holds on appended oracle
 -- state prop holds on first oracles -> holds for first state value
 -- state prop holds on second oracle -> holds for second state value
 
@@ -99,15 +102,6 @@ section eval_dist
 end eval_dist
 
 section equiv
-
-lemma simulate'_oracle_append_pure_equiv : simulate' (so ++ₛ so') (pure a) s ≃ₚ
-  (pure a : oracle_comp spec'' _) := by simp
-
-lemma default_simulate_oracle_append_pure : default_simulate (so ++ₛ so') (pure a) =
-  (pure (a, (so.default_state, so'.default_state))) := rfl
-
-lemma default_simulate'_oracle_append_pure_equiv : default_simulate' (so ++ₛ so') (pure a) ≃ₚ
-  (pure a : oracle_comp spec'' _) := by simp
 
 end equiv
 

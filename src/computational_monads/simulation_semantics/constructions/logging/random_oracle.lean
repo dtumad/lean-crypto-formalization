@@ -7,7 +7,6 @@ variables {α β γ : Type} {spec spec' spec'' : oracle_spec}
 
 /-- Oracle that responds uniformly at random to any new queries,
   but returns the same result to subsequent oracle queries -/
-@[simps]
 noncomputable def random_oracle (spec : oracle_spec) [spec.computable] [spec.finite_range] :
   simulation_oracle spec uniform_selecting :=
 (uniform_oracle spec) ∘ₛ (caching_oracle spec)
@@ -25,7 +24,7 @@ variables (log : query_log spec) (log' : query_log spec')
 /-- The support of apply is things where the log doesn't change on things previously queried,
   and the log has the new query if it was previously queried -/
 lemma support_apply (i : spec.ι) (t : spec.domain i) (log : query_log spec) (u : unit) :
-  ((random_oracle spec).o i (t, log, u)).support =
+  ((random_oracle spec) i (t, log, u)).support =
     λ ⟨u, log', _⟩, if log.lookup i t = u then log' = log else log' = log.log_query i t u :=
 begin
   sorry

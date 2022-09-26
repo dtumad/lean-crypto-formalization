@@ -18,8 +18,6 @@ namespace oracle_comp
 
 variables {α β γ : Type} {spec spec' spec'' : oracle_spec}
 
-constant x : ℕ
-
 /-- Specifies a way to simulate a set of oracles using another set of oracles. 
   e.g. using uniform random selection to simulate a hash oracle
   
@@ -33,7 +31,10 @@ structure simulation_oracle (spec spec' : oracle_spec) :=
 /-- View a simulation oracle as a function corresponding to the internal oracle `o` -/
 instance simulation_oracle.has_coe_to_fun : has_coe_to_fun (simulation_oracle spec spec')
   (λ so, Π (i : spec.ι), spec.domain i × so.S → oracle_comp spec' (spec.range i × so.S)) :=
-⟨λ so i x, so.o i (x.1, x.2)⟩
+{ coe := λ so, so.o }
+
+lemma simulation_oracle.has_coe_to_fun_def (so : simulation_oracle spec spec') (i : spec.ι)
+  (x : spec.domain i × so.S) : so i x = so.o i x := rfl
 
 variables (so : simulation_oracle spec spec') (so' : simulation_oracle spec spec'')
 variables (a : α) (i : spec.ι) (t : spec.domain i)
@@ -64,7 +65,7 @@ lemma simulate_bind' : simulate so (bind' α β oa ob) s
   = simulate so oa s >>= λ x, simulate so (ob x.1) x.2 := rfl
 
 @[simp]
-lemma simulate_query : simulate so (query i t) s = so.o i (t, s) := rfl
+lemma simulate_query : simulate so (query i t) s = so i (t, s) := rfl
 
 @[simp]
 lemma simulate_map : simulate so (f <$> oa) s = simulate so oa s >>= return ∘ prod.map f id := rfl
@@ -83,7 +84,7 @@ lemma support_simulate_bind : (simulate so (oa >>= ob) s).support
 lemma support_simulate_bind' : (simulate so (bind' α β oa ob) s).support
   = ⋃ x ∈ (simulate so oa s).support, (simulate so (ob $ prod.fst x) x.2).support := rfl
 
-lemma support_simulate_query : (simulate so (query i t) s).support = (so.o i (t, s)).support := rfl
+lemma support_simulate_query : (simulate so (query i t) s).support = (so i (t, s)).support := rfl
 
 @[simp]
 lemma support_simulate_map : (simulate so (f <$> oa) s).support =
@@ -134,7 +135,7 @@ lemma eval_dist_simulate_bind' :
   ⦃simulate so (bind' α β oa ob) s⦄ = ⦃simulate so oa s⦄ >>= λ x, ⦃simulate so (ob x.1) x.2⦄ :=
 eval_dist_simulate_bind so oa ob s
 
-lemma eval_dist_simulate_query : ⦃simulate so (query i t) s⦄ = ⦃so.o i (t, s)⦄ := rfl
+lemma eval_dist_simulate_query : ⦃simulate so (query i t) s⦄ = ⦃so i (t, s)⦄ := rfl
 
 @[simp]
 lemma eval_dist_simulate_map :
@@ -160,7 +161,7 @@ lemma simulate_bind_equiv : simulate so (oa >>= ob) s ≃ₚ
 lemma simulate_bind'_equiv : simulate so (bind' α β oa ob) s ≃ₚ
   simulate so oa s >>= λ x, simulate so (ob x.1) x.2 := rfl
 
-lemma simulate_query_equiv : simulate so (query i t) s ≃ₚ so.o i (t, s) := rfl
+lemma simulate_query_equiv : simulate so (query i t) s ≃ₚ so i (t, s) := rfl
 
 lemma simulate_map_equiv : simulate so (f <$> oa) s ≃ₚ prod.map f id <$> simulate so oa s :=
 by simp only [eval_dist_simulate_map, eval_dist_map]
@@ -199,7 +200,7 @@ lemma simulate'_bind' : simulate' so (bind' α β oa ob) s =
   prod.fst <$> (simulate so oa s >>= λ x, simulate so (ob x.1) x.2) := rfl
 
 @[simp]
-lemma simulate'_query : simulate' so (query i t) s = prod.fst <$> so.o i (t, s) := rfl
+lemma simulate'_query : simulate' so (query i t) s = prod.fst <$> so i (t, s) := rfl
 
 @[simp]
 lemma simulate'_map : simulate' so (f <$> oa) s =
@@ -231,7 +232,7 @@ lemma support_simulate'_bind' : (simulate' so (bind' α β oa ob) s).support =
 support_simulate'_bind so oa ob s
 
 lemma support_simulate'_query : (simulate' so (query i t) s).support =
-  prod.fst '' (so.o i (t, s)).support := by simp only [simulate'_query, support_map]
+  prod.fst '' (so i (t, s)).support := by simp only [simulate'_query, support_map]
 
 @[simp]
 lemma support_simulate'_map : (simulate' so (f <$> oa) s).support =
@@ -250,11 +251,10 @@ lemma mem_support_of_mem_support_simulate' {x : α} (hx : x ∈ (simulate' so oa
   x ∈ oa.support :=
 (support_simulate'_subset_support so oa s hx)
 
-/-- If the first output of an oracle can take on any value (although the state might not),
-then the first value of simulation has the same support as the original computation.
-For example simulation with the identity oracle `idₛ` doesn't change the support,
-  and this also holds for something like a logging oracle that just records queries -/
-theorem support_simulate'_eq_support (h : ∀ i t s, prod.fst '' (so.o i (t, s)).support = ⊤) :
+#check group
+
+theorem support_simulate'_eq_support_
+  (h : ∀ i t s, prod.fst '' (so i (t, s)).support = ⊤) :
   (simulate' so oa s).support = oa.support :=
 begin
   refine set.eq_of_subset_of_subset (support_simulate'_subset_support so oa s) (λ x hx, _),
@@ -267,7 +267,28 @@ begin
     obtain ⟨⟨a', s'⟩, ha', ha''⟩ := hoa,
     exact ⟨(a', s'), ha', hob a' x (let this : a = a' := ha''.symm in this ▸ hx) s'⟩ },
   { simp only [support_simulate'_query, set.mem_image],
-    have : x ∈ prod.fst '' (so.o i (t, s)).support := (h i t s).symm ▸ set.mem_univ _,
+    have : x ∈ prod.fst '' (so i (t, s)).support := (h i t s).symm ▸ set.mem_univ _,
+    exact (set.mem_image _ _ _).1 this }
+end
+
+/-- If the first output of an oracle can take on any value (although the state might not),
+then the first value of simulation has the same support as the original computation.
+For example simulation with the identity oracle `idₛ` doesn't change the support,
+  and this also holds for something like a logging oracle that just records queries -/
+theorem support_simulate'_eq_support (h : ∀ i t s, prod.fst '' (so i (t, s)).support = ⊤) :
+  (simulate' so oa s).support = oa.support :=
+begin
+  refine set.eq_of_subset_of_subset (support_simulate'_subset_support so oa s) (λ x hx, _),
+  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t generalizing s,
+  { simpa only [simulate'_return, support_map, support_return, set.image_singleton] using hx },
+  { simp only [support_simulate'_bind, support_bind, set.mem_Union] at hx ⊢,
+    obtain ⟨a, ha, hx⟩ := hx,
+    specialize hoa a ha s,
+    rw [support_simulate', set.mem_image] at hoa,
+    obtain ⟨⟨a', s'⟩, ha', ha''⟩ := hoa,
+    exact ⟨(a', s'), ha', hob a' x (let this : a = a' := ha''.symm in this ▸ hx) s'⟩ },
+  { simp only [support_simulate'_query, set.mem_image],
+    have : x ∈ prod.fst '' (so i (t, s)).support := (h i t s).symm ▸ set.mem_univ _,
     exact (set.mem_image _ _ _).1 this }
 end
 
@@ -302,7 +323,7 @@ by simp only [simulate'_bind, map_bind_equiv, eval_dist_bind, eval_dist_map,
 lemma eval_dist_simulate'_bind' : ⦃simulate' so (bind' α β oa ob) s⦄ =
   ⦃simulate so oa s⦄.bind (λ x, ⦃simulate' so (ob x.1) x.2⦄) := eval_dist_simulate'_bind _ _ _ s
 
-lemma eval_dist_simulate'_query : ⦃simulate' so (query i t) s⦄ = ⦃so.o i (t, s)⦄.map prod.fst :=
+lemma eval_dist_simulate'_query : ⦃simulate' so (query i t) s⦄ = ⦃so i (t, s)⦄.map prod.fst :=
 by simp only [simulate'_query, eval_dist_map]
 
 @[simp]
@@ -336,7 +357,7 @@ lemma simulate'_bind'_equiv : simulate' so (bind' α β oa ob) s ≃ₚ
 simulate'_bind_equiv so oa ob s
 
 lemma simulate'_query_equiv : simulate' so (query i t) s ≃ₚ
-  prod.fst <$> (so.o i (t, s)) := rfl
+  prod.fst <$> (so i (t, s)) := rfl
 
 lemma simulate'_map_equiv (f : α → β) : simulate' so (f <$> oa) s ≃ₚ f <$> simulate' so oa s :=
 by simp only [simulate_map_equiv, eval_dist_map, pmf.map_comp,

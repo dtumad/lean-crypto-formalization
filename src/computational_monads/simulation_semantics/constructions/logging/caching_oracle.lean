@@ -6,7 +6,6 @@ open oracle_comp oracle_spec
 
 variables {A B C : Type} {spec spec' spec'' : oracle_spec}
 
-@[simps]
 def caching_oracle (spec : oracle_spec) [spec.computable] :
   simulation_oracle spec spec :=
 { S := query_log spec,
