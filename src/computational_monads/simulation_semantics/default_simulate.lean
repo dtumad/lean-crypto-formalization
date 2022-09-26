@@ -3,7 +3,7 @@ import computational_monads.simulation_semantics.simulate
 namespace oracle_comp
 
 variables {α β γ : Type} {spec spec' spec'' : oracle_spec} {S S' : Type}
-  (so : simulation_oracle spec spec' S) (so' : simulation_oracle spec spec'' S')
+  (so : sim_oracle spec spec' S) (so' : sim_oracle spec spec'' S')
   (a : α) (i : spec.ι) (t : spec.domain i)
   (oa oa' : oracle_comp spec α) (ob ob' : α → oracle_comp spec β) (f : α → β)
 
@@ -11,7 +11,7 @@ section default_simulate
 
 -- TODO: should this go farther and be `notation` instead of `inline`?
 @[inline, reducible]
-def default_simulate (so : simulation_oracle spec spec' S) (oa : oracle_comp spec α) :
+def default_simulate (so : sim_oracle spec spec' S) (oa : oracle_comp spec α) :
   oracle_comp spec' (α × S) := oa.simulate so so.default_state
 
 lemma default_simulate_return : default_simulate so (return a) = pure (a, so.default_state) := rfl
@@ -145,7 +145,7 @@ end default_simulate
 section default_simulate'
 
 @[inline, reducible]
-def default_simulate' (so : simulation_oracle spec spec' S) (oa : oracle_comp spec α) :
+def default_simulate' (so : sim_oracle spec spec' S) (oa : oracle_comp spec α) :
   oracle_comp spec' α := oa.simulate' so so.default_state
 
 lemma default_simulate'_return : default_simulate' so (return a) =

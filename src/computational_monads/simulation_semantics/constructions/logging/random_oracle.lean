@@ -10,20 +10,20 @@ We capture this unchanged functionality by using an equivalence for the masking.
 Convenient when working with composed or appended oracles, to remove unneeded state elements.
 In particular `unit` state values that start spreading can be avoided.
 -/
-def simulation_oracle.mask_state (so : simulation_oracle spec spec' S) (mask : S ≃ S') :
-  simulation_oracle spec spec' S' :=
+def sim_oracle.mask_state (so : sim_oracle spec spec' S) (mask : S ≃ S') :
+  sim_oracle spec spec' S' :=
 { default_state := mask so.default_state,
   o := λ i x, prod.map id mask <$> (so.o i $ prod.map id mask.symm x) }
 
 /-- Oracle that responds uniformly at random to any new queries,
   but returns the same result to subsequent oracle queries -/
 -- noncomputable def random_oracle (spec : oracle_spec) [spec.computable] [spec.finite_range] :
---   simulation_oracle spec uniform_selecting (query_log spec × unit) :=
+--   sim_oracle spec uniform_selecting (query_log spec × unit) :=
 -- (uniform_oracle spec) ∘ₛ (caching_oracle spec)
 
 noncomputable def random_oracle (spec : oracle_spec) [spec.computable] [spec.finite_range] :
-  simulation_oracle spec uniform_selecting (query_log spec) :=
-simulation_oracle.mask_state ((uniform_oracle spec) ∘ₛ (caching_oracle spec)) (equiv.prod_punit (query_log spec))
+  sim_oracle spec uniform_selecting (query_log spec) :=
+sim_oracle.mask_state ((uniform_oracle spec) ∘ₛ (caching_oracle spec)) (equiv.prod_punit (query_log spec))
 
 namespace random_oracle
 

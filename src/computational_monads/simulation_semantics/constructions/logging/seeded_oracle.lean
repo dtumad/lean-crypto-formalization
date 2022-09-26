@@ -25,7 +25,7 @@ variables {spec spec' spec'' : oracle_spec} {A B C : Type}
   If the query values don't match then throw away the seed as computation has diverged.
   Using this with a log from a previous computation ensures they behave identically. -/
 def seeded_oracle (spec : oracle_spec) [computable spec] :
-  simulation_oracle spec spec (query_log spec) :=
+  sim_oracle spec spec (query_log spec) :=
 { default_state := query_log.init spec,
   o := λ i ⟨t, seed⟩, match seed.lookup_fst i t with
     -- Once the seed is empty, just keep it empty going forward

@@ -4,10 +4,10 @@ open oracle_comp oracle_spec
 
 variables {spec spec' spec'' spec''' : oracle_spec} {A B C : Type} {α β γ : Type} {S S' : Type}
   
-namespace simulation_oracle
+namespace sim_oracle
 
-def oracle_append (so : simulation_oracle spec spec'' S) (so' : simulation_oracle spec' spec'' S') :
-  simulation_oracle (spec ++ spec') spec'' (S × S') :=
+def oracle_append (so : sim_oracle spec spec'' S) (so' : sim_oracle spec' spec'' S') :
+  sim_oracle (spec ++ spec') spec'' (S × S') :=
 { default_state := (so.default_state, so'.default_state),
   o := λ i, match i with
   | (sum.inl i) := λ ⟨t, s₁, s₂⟩, do {⟨u, s₁'⟩ ← so i (t, s₁), return (u, s₁', s₂)}
@@ -17,7 +17,7 @@ def oracle_append (so : simulation_oracle spec spec'' S) (so' : simulation_oracl
 -- TODO: should be infix?
 notation so `++ₛ` so' := oracle_append so so'
 
-variables (so : simulation_oracle spec spec'' S) (so' : simulation_oracle spec' spec'' S')
+variables (so : sim_oracle spec spec'' S) (so' : sim_oracle spec' spec'' S')
   (oa : oracle_comp (spec ++ spec') A) (ob : A → oracle_comp (spec ++ spec') B) (a : A)
   (i : spec.ι) (i' : spec'.ι) (t : spec.domain i) (t' : spec'.domain i') (s : S × S')
   (x : spec.domain i × S × S') (x' : spec'.domain i' × S × S')
@@ -112,4 +112,4 @@ end indep_event
 
 end distribution_semantics
 
-end simulation_oracle
+end sim_oracle

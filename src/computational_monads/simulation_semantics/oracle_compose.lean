@@ -4,16 +4,16 @@ open oracle_comp oracle_spec
 
 variables {spec spec' spec'' : oracle_spec} {A B C : Type} {S S' : Type}
 
-namespace simulation_oracle
+namespace sim_oracle
 
-def oracle_compose (so : simulation_oracle spec spec' S)
-  (so' : simulation_oracle spec' spec'' S') : simulation_oracle spec spec'' (S × S') :=
+def oracle_compose (so : sim_oracle spec spec' S)
+  (so' : sim_oracle spec' spec'' S') : sim_oracle spec spec'' (S × S') :=
 { default_state := (so.default_state, so'.default_state),
   o := λ i x, simulate so' (so i (x.1, x.2.1)) x.2.2 >>= λ u_s, pure (u_s.1.1, u_s.1.2, u_s.2) }
 
 notation so' `∘ₛ` so := oracle_compose so so'
 
-variables (so : simulation_oracle spec spec' S) (so' : simulation_oracle spec' spec'' S')
+variables (so : sim_oracle spec spec' S) (so' : sim_oracle spec' spec'' S')
 
 @[simp]
 lemma default_state_oracle_compose :
@@ -56,4 +56,4 @@ end indep_event
 
 end distribution_semantics
 
-end simulation_oracle
+end sim_oracle

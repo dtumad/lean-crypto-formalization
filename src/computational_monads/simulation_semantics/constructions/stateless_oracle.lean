@@ -9,7 +9,7 @@ variables {α β : Type} {spec spec' spec'' : oracle_spec}
   Implemented as a `tracking_oracle` where the state isn't actually tracking anything -/
 def stateless_oracle (spec spec' : oracle_spec)
   (o : Π (i : spec.ι), spec.domain i → oracle_comp spec' (spec.range i)) :
-  simulation_oracle spec spec' unit :=
+  sim_oracle spec spec' unit :=
 ⟪o | λ _ _ _ _, (), ()⟫
 
 notation `⟪` o `⟫` := stateless_oracle _ _ o

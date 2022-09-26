@@ -80,7 +80,7 @@ uniform_selecting ++ sig.random_oracle_spec
 
 /-- Simulate the basic oracles for the signature, using a random oracle in the natural way -/
 noncomputable def base_oracle (sig : signature) :
-  simulation_oracle sig.base_oracle_spec uniform_selecting (unit × query_log sig.random_oracle_spec) :=
+  sim_oracle sig.base_oracle_spec uniform_selecting (unit × query_log sig.random_oracle_spec) :=
 idₛ ++ₛ random_oracle sig.random_oracle_spec
 
 -- @[inline, reducible] -- TODO: implicit sig?
@@ -96,7 +96,7 @@ def signing_oracle_spec (sig : signature) [inhabited sig.S] : oracle_spec :=
   using the provided public/secret keys to answer queries for signatures.
 Additionally it logs and returns a list queries to the signing oracle -/
 def signing_oracle (sig : signature) (pk : sig.PK) (sk : sig.SK) :
-  simulation_oracle sig.signing_oracle_spec sig.base_oracle_spec (query_log (sig.M →ₒ sig.S) × unit) :=
+  sim_oracle sig.signing_oracle_spec sig.base_oracle_spec (query_log (sig.M →ₒ sig.S) × unit) :=
 ⟪λ _ m, sig.sign (pk, sk, m)⟫ ∘ₛ (logging_oracle (sig.M →ₒ sig.S))
 
 -- def signing_oracle_mk_S (sig : signature) (pk : sig.PK) (sk : sig.SK) (log : query_log (sig.M →ₒ sig.S)) :

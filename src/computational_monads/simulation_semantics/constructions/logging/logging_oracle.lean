@@ -6,7 +6,7 @@ open oracle_comp oracle_spec
 variables {A B C : Type} {spec spec' spec'' : oracle_spec} 
   
 def logging_oracle (spec : oracle_spec) [spec.computable] :
-  simulation_oracle spec spec (query_log spec) :=
+  sim_oracle spec spec (query_log spec) :=
 ⟪ query | λ i t u, query_log.log_query i t u, query_log.init spec ⟫
 
 namespace logging_oracle

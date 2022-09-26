@@ -3,7 +3,7 @@ import computational_monads.simulation_semantics.constructions.stateless_oracle
 /-!
 # Identity Oracle
 
-Defines a `simulation_oracle` that just acts as an identity,
+Defines a `sim_oracle` that just acts as an identity,
   e.g. simulation with this oracle has no effect (besides an empty state)
 
 Main use cases is in simulating a pair of oracles, where only one of the oracles is reduced.
@@ -15,7 +15,7 @@ open oracle_comp oracle_spec
 variables {α β : Type} {spec spec' spec'' : oracle_spec}
   (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) (s : unit)
 
-def identity_oracle (spec : oracle_spec) : simulation_oracle spec spec unit :=
+def identity_oracle (spec : oracle_spec) : sim_oracle spec spec unit :=
 ⟪query⟫
 
 -- TODO: should the notation take the `oracle_spec` as an arg?

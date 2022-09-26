@@ -7,7 +7,7 @@ open oracle_comp oracle_spec
 variables {A B C : Type} {spec spec' spec'' : oracle_spec}
 
 def caching_oracle (spec : oracle_spec) [spec.computable] :
-  simulation_oracle spec spec (query_log spec) :=
+  sim_oracle spec spec (query_log spec) :=
 { default_state := query_log.init spec,
   o := λ i ⟨t, log⟩, match log.lookup i t with
   | (some u) := return (u, log) -- Return the cached value if it already exists

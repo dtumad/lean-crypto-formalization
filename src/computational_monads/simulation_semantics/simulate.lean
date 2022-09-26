@@ -4,7 +4,7 @@ import computational_monads.distribution_semantics.prob_event
 # Oracle Simulation Semantics
 
 Defines the notion of simulating a computation by defining the outputs of oracle query.
-A method of simulation is given by `simulation_oracle`, which contains an internal state
+A method of simulation is given by `sim_oracle`, which contains an internal state
   as well as a function to return a value and update the state given a query to the oracle.
 
 It also contains a `default_state`, specifying the value to use for the default oracle state.
@@ -23,19 +23,19 @@ variables {α β γ : Type} {spec spec' spec'' : oracle_spec} {S S' : Type}
   
   `default_state` can be provided as a standard initial state for simulation.
   Used when calling `default_simulate` or `default_simulate'` -/
-structure simulation_oracle (spec spec' : oracle_spec) (S : Type) :=
+structure sim_oracle (spec spec' : oracle_spec) (S : Type) :=
 (default_state : S)
 (o (i : spec.ι) : (spec.domain i × S) → oracle_comp spec' (spec.range i × S))
 
 /-- View a simulation oracle as a function corresponding to the internal oracle `o` -/
-instance simulation_oracle.has_coe_to_fun : has_coe_to_fun (simulation_oracle spec spec' S)
+instance sim_oracle.has_coe_to_fun : has_coe_to_fun (sim_oracle spec spec' S)
   (λ so, Π (i : spec.ι), spec.domain i × S → oracle_comp spec' (spec.range i × S)) :=
 { coe := λ so, so.o }
 
-lemma simulation_oracle.has_coe_to_fun_def (so : simulation_oracle spec spec' S) (i : spec.ι)
+lemma sim_oracle.has_coe_to_fun_def (so : sim_oracle spec spec' S) (i : spec.ι)
   (x : spec.domain i × S) : so i x = so.o i x := rfl
 
-variables (so : simulation_oracle spec spec' S) (so' : simulation_oracle spec spec'' S')
+variables (so : sim_oracle spec spec' S) (so' : sim_oracle spec spec'' S')
 variables (a : α) (i : spec.ι) (t : spec.domain i)
   (oa oa' : oracle_comp spec α) (ob ob' : α → oracle_comp spec β) (s : S) (f : α → β)
 
@@ -43,7 +43,7 @@ section simulate
 
 /-- Simulate an oracle comp to an oracle comp with a different spec.
   Requires providing a maximum recursion depth for the `repeat` constructor -/
-def simulate {spec spec' : oracle_spec} (so : simulation_oracle spec spec' S) :
+def simulate {spec spec' : oracle_spec} (so : sim_oracle spec spec' S) :
   Π {A : Type} (oa : oracle_comp spec A), S → oracle_comp spec' (A × S)
 | _ (pure' A a) state := return ⟨a, state⟩
 | _ (bind' A B oa ob) state := simulate oa state >>= λ x, simulate (ob x.1) x.2
@@ -179,7 +179,7 @@ end simulate
 section simulate'
 
 /-- Get the result of simulation without returning the internal oracle state -/
-def simulate' (so : simulation_oracle spec spec' S) (oa : oracle_comp spec α) (s : S) :
+def simulate' (so : sim_oracle spec spec' S) (oa : oracle_comp spec α) (s : S) :
   oracle_comp spec' α := prod.fst <$> oa.simulate so s
 
 lemma simulate'_def : simulate' so oa s = prod.fst <$> oa.simulate so s := rfl

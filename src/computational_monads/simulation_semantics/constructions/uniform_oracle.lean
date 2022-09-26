@@ -6,7 +6,7 @@ open oracle_comp oracle_spec
 variables {A B : Type} {spec spec' spec'' : oracle_spec}
 
 noncomputable def uniform_oracle (spec : oracle_spec) [spec.finite_range] : 
-  simulation_oracle spec uniform_selecting unit :=
+  sim_oracle spec uniform_selecting unit :=
 ⟪λ i t, $ᵗ (spec.range i)⟫
 
 namespace uniform_oracle

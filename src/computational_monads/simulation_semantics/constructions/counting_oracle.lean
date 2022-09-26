@@ -15,7 +15,7 @@ variables {α β γ : Type} {spec spec' : oracle_spec}
   (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) (n m : ℕ)
 
 /-- Simulation oracle that just counts the number of queries to the oracles -/
-def counting_oracle (spec : oracle_spec) : simulation_oracle spec spec ℕ :=
+def counting_oracle (spec : oracle_spec) : sim_oracle spec spec ℕ :=
 ⟪query | λ n _ _ _, n + 1 , 0⟫
 
 namespace counting_oracle
