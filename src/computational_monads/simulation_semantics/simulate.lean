@@ -14,8 +14,6 @@ We define `simulate'` to be simulation followed by discarding the state.
 This is useful for things like a random oracle, where the final result isn't relevant in general.
 -/
 
-namespace oracle_comp
-
 variables {α β γ : Type} {spec spec' spec'' : oracle_spec} {S S' : Type}
 
 /-- Specifies a way to simulate a set of oracles using another set of oracles. 
@@ -34,6 +32,8 @@ instance sim_oracle.has_coe_to_fun : has_coe_to_fun (sim_oracle spec spec' S)
 
 lemma sim_oracle.has_coe_to_fun_def (so : sim_oracle spec spec' S) (i : spec.ι)
   (x : spec.domain i × S) : so i x = so.o i x := rfl
+
+namespace oracle_comp
 
 variables (so : sim_oracle spec spec' S) (so' : sim_oracle spec spec'' S')
 variables (a : α) (i : spec.ι) (t : spec.domain i)

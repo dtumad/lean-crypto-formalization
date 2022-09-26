@@ -1,29 +1,17 @@
 import computational_monads.simulation_semantics.constructions.logging.caching_oracle
 import computational_monads.simulation_semantics.constructions.uniform_oracle
+import computational_monads.simulation_semantics.mask_state
 
 open oracle_comp oracle_spec
 
 variables {α β γ : Type} {spec spec' spec'' : oracle_spec} {S S' : Type}
 
-/-- Mask the state value of an oracle, without changing the oracle's behaviour.
-We capture this unchanged functionality by using an equivalence for the masking.
-Convenient when working with composed or appended oracles, to remove unneeded state elements.
-In particular `unit` state values that start spreading can be avoided.
--/
-def sim_oracle.mask_state (so : sim_oracle spec spec' S) (mask : S ≃ S') :
-  sim_oracle spec spec' S' :=
-{ default_state := mask so.default_state,
-  o := λ i x, prod.map id mask <$> (so.o i $ prod.map id mask.symm x) }
-
 /-- Oracle that responds uniformly at random to any new queries,
-  but returns the same result to subsequent oracle queries -/
--- noncomputable def random_oracle (spec : oracle_spec) [spec.computable] [spec.finite_range] :
---   sim_oracle spec uniform_selecting (query_log spec × unit) :=
--- (uniform_oracle spec) ∘ₛ (caching_oracle spec)
-
+but returns the same result to subsequent oracle queries.
+Masking is used to hide the irrelevent state of the `uniform_oracle` -/
 noncomputable def random_oracle (spec : oracle_spec) [spec.computable] [spec.finite_range] :
   sim_oracle spec uniform_selecting (query_log spec) :=
-sim_oracle.mask_state ((uniform_oracle spec) ∘ₛ (caching_oracle spec)) (equiv.prod_punit (query_log spec))
+((uniform_oracle spec) ∘ₛ (caching_oracle spec)).mask_state (equiv.prod_punit (query_log spec))
 
 namespace random_oracle
 
