@@ -32,6 +32,8 @@ instance sim_oracle.has_coe_to_fun : has_coe_to_fun (sim_oracle spec spec' S)
   (λ so, Π (i : spec.ι), spec.domain i × S → oracle_comp spec' (spec.range i × S)) :=
 { coe := λ so, so.o }
 
+def sim_oracle.inhabited_state (so : sim_oracle spec spec' S) : inhabited S := ⟨so.default_state⟩
+
 lemma sim_oracle.has_coe_to_fun_def (so : sim_oracle spec spec' S) (i : spec.ι)
   (x : spec.domain i × S) : so i x = so.o i x := rfl
 

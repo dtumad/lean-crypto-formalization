@@ -22,6 +22,7 @@ variables (so : sim_oracle spec spec'' S) (so' : sim_oracle spec' spec'' S')
   (i : spec.ι) (i' : spec'.ι) (t : spec.domain i) (t' : spec'.domain i') (s : S × S')
   (x : spec.domain i × S × S') (x' : spec'.domain i' × S × S')
 
+-- TODO: namespace instead of `_`?
 @[simp]
 lemma default_state_oracle_append : (so ++ₛ so').default_state =
   (so.default_state, so'.default_state) := rfl

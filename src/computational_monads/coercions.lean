@@ -51,6 +51,7 @@ begin
   induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t,
   { simp only [support_simulate', simulate_return, support_return, set.image_singleton] },
   { refine set.ext (λ b, _),
+    -- TODO!: we really need a generalized way to prove things of this type
     simp_rw [support_simulate'_bind, support_bind, set.mem_Union],
     refine ⟨λ h, _, λ h, _⟩,
     { obtain ⟨⟨a, u⟩, ha, hba⟩ := h,
