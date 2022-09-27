@@ -12,6 +12,8 @@ For example a logging query would use an empty log as the default state.
 
 We define `simulate'` to be simulation followed by discarding the state.
 This is useful for things like a random oracle, where the final result isn't relevant in general.
+
+TODO: maybe subsingleton stuff should be a seperate section at the end?
 -/
 
 variables {α β γ : Type} {spec spec' spec'' : oracle_spec} {S S' : Type}
@@ -40,8 +42,6 @@ variables (a : α) (i : spec.ι) (t : spec.domain i)
   (oa oa' : oracle_comp spec α) (ob ob' : α → oracle_comp spec β) (s : S) (f : α → β)
 
 section simulate
-
-#check tsum
 
 /-- Simulate an oracle comp to an oracle comp with a different spec.
 Requires providing a maximum recursion depth for the `repeat` constructor. -/
@@ -99,12 +99,6 @@ lemma support_simulate_map : (simulate so (f <$> oa) s).support =
 set.ext (λ x, by simp only [@eq_comm, simulate_map, support_bind, support_return,
   set.mem_Union, set.mem_singleton_iff, exists_prop, set.mem_image])
 
-/-- Reduce to the default state for oracles with a subsingleton state type -/
-@[simp]
-lemma support_simulate_eq_support_default_simulate [subsingleton S] (s : S) :
-  (simulate so oa s).support = (default_simulate so oa).support :=
-subsingleton.elim so.default_state s ▸ rfl
-
 /-- Since `support` assumes any possible query result, `simulate` will never reduce the support -/
 theorem support_simulate_subset_preimage_support :
   (simulate so oa s).support ⊆ prod.fst ⁻¹' oa.support :=
@@ -119,9 +113,6 @@ begin
     refine λ b hb, ⟨x.1, hoa s hx, hob x.1 x.2 hb⟩ },
   { simp only [support_query, set.top_eq_univ, set.mem_univ, set.set_of_true, set.subset_univ] }
 end
-
-lemma mem_support_of_mem_support_simulate {x : α × S} (hx : x ∈ (simulate so oa s).support) :
-  x.1 ∈ oa.support := support_simulate_subset_preimage_support so oa s hx
 
 end support
 
@@ -155,16 +146,9 @@ lemma eval_dist_simulate_map :
   ⦃simulate so (f <$> oa) s⦄ = ⦃simulate so oa s⦄.map (prod.map f id) :=
 by simpa only [simulate_map, eval_dist_bind, eval_dist_return]
 
-@[simp]
-lemma eval_dist_simulate_eq_eval_dist_default_simulate [subsingleton S] (s : S) :
-  ⦃simulate so oa s⦄ = ⦃default_simulate so oa⦄ := subsingleton.elim so.default_state s ▸ rfl
-
 end eval_dist
 
 section equiv
-
-lemma simulate_equiv_default_simulate [subsingleton S] (s : S) :
-  simulate so oa s ≃ₚ default_simulate so oa := subsingleton.elim so.default_state s ▸ rfl
 
 lemma simulate_return_equiv : simulate so (return a) s ≃ₚ
   (return (a, s) : oracle_comp spec' (α × S)) := rfl
@@ -236,8 +220,12 @@ section support
 
 @[simp]
 lemma support_simulate' : (simulate' so oa s).support =
-  prod.fst '' (simulate so oa s).support :=
-by simp only [simulate', support_map]
+  prod.fst '' (simulate so oa s).support := by simp only [simulate', support_map]
+
+lemma mem_support_simulate'_iff_exists_state (a : α) :
+  a ∈ (simulate' so oa s).support ↔ ∃ (s' : S), (a, s') ∈ (simulate so oa s).support :=
+by simp only [support_simulate', set.mem_image, prod.exists,
+  exists_and_distrib_right, exists_eq_right]
 
 lemma support_simulate'_return (a : α) : (simulate' so (return a) s).support = {a} :=
 by simp only [simulate'_return, support_map, support_return, set.image_singleton]
@@ -265,21 +253,13 @@ lemma support_simulate'_map : (simulate' so (f <$> oa) s).support =
   f '' (simulate' so oa s).support :=
 by simp only [simulate', support_map, support_simulate_map, set.image_image, prod.map_fst]
 
-lemma support_simulate'_eq_support_default_simulate' [subsingleton S] (s : S) :
-  (simulate' so oa s).support = (default_simulate' so oa).support :=
-subsingleton.elim so.default_state s ▸ rfl
-
 /-- Simulation only reduces the possible oracle outputs, so can't reduce the support -/
 lemma support_simulate'_subset_support : (simulate' so oa s).support ⊆ oa.support :=
 begin
   refine (support_simulate' so oa s).symm ▸ λ x hx, _,
   obtain ⟨y, hy, rfl⟩ := (set.mem_image prod.fst _ _).1 hx,
-  exact mem_support_of_mem_support_simulate so oa s hy,
+  exact support_simulate_subset_preimage_support so oa s hy,
 end
-
-lemma mem_support_of_mem_support_simulate' {x : α} (hx : x ∈ (simulate' so oa s).support) :
-  x ∈ oa.support :=
-(support_simulate'_subset_support so oa s hx)
 
 /-- If the first output of an oracle can take on any value (although the state might not),
 then the first value of simulation has the same support as the original computation.
@@ -301,14 +281,6 @@ begin
     have : x ∈ prod.fst '' (so i (t, s)).support := (h i t s).symm ▸ set.mem_univ _,
     exact (set.mem_image _ _ _).1 this }
 end
-
-/-- Version of `support_simulate'_eq_support` for `default_simulate`, given a `subsingleton` state.
-Has a weaker requirement for the hypothesis `h` that the more general lemma -/
-theorem support_default_simulate'_eq_support [subsingleton S]
-  (h : ∀ i t, prod.fst '' (so i (t, so.default_state)).support = ⊤) :
-  (default_simulate' so oa).support = oa.support :=
-support_simulate'_eq_support so oa so.default_state
-  (λ i t s, subsingleton.elim so.default_state s ▸ h i t)
 
 end support
 
@@ -348,9 +320,6 @@ by simp only [simulate'_query, eval_dist_map]
 lemma eval_dist_simulate'_map : ⦃simulate' so (f <$> oa) s⦄ = ⦃simulate' so oa s⦄.map f :=
 by simp_rw [eval_dist_simulate', eval_dist_simulate_map, pmf.map_comp, prod.map_fst']
 
-lemma eval_dist_simulate'_eq_eval_dist_default_simulate' [subsingleton S] (s : S) :
-  ⦃simulate' so oa s⦄ = ⦃default_simulate' so oa⦄ := subsingleton.elim so.default_state s ▸ rfl
-
 end eval_dist
 
 section equiv
@@ -383,13 +352,9 @@ lemma simulate'_map_equiv (f : α → β) : simulate' so (f <$> oa) s ≃ₚ f <
 by simp only [simulate_map_equiv, eval_dist_map, pmf.map_comp,
   prod.map_fst', simulate'_equiv_fst_map_simulate]
 
-lemma simulate'_equiv_default_simulate' [subsingleton S] (s : S) :
-  simulate' so oa s ≃ₚ default_simulate' so oa := subsingleton.elim so.default_state s ▸ rfl
-
 end equiv
 
 section prob_event
-
 
 
 end prob_event
@@ -397,5 +362,89 @@ end prob_event
 end distribution_semantics
 
 end simulate'
+
+-- Lemmas about the state being `subsingleton` (although this necessarilly implies `unique`).
+-- Main use cases are for things like `stateless_oracle`
+section subsingleton_state
+
+section support
+
+/-- Reduce to the default state for oracles with a subsingleton state type -/
+@[simp]
+lemma support_simulate_eq_support_default_simulate [subsingleton S] (s : S) :
+  (simulate so oa s).support = (default_simulate so oa).support :=
+subsingleton.elim so.default_state s ▸ rfl
+
+
+/-- Version of `support_simulate'_eq_support` for `default_simulate`, given a `subsingleton` state.
+Has a weaker requirement for the hypothesis `h` that the more general lemma -/
+theorem support_default_simulate'_eq_support [subsingleton S]
+  (h : ∀ i t, prod.fst '' (so i (t, so.default_state)).support = ⊤) :
+  (default_simulate' so oa).support = oa.support :=
+support_simulate'_eq_support so oa so.default_state
+  (λ i t s, subsingleton.elim so.default_state s ▸ h i t)
+
+/-- If the state is a `subsingleton` type, suffices to use the support with `default_state` -/
+lemma support_simulate'_eq_support_default_simulate' [subsingleton S] (s : S) :
+  (simulate' so oa s).support = (default_simulate' so oa).support :=
+subsingleton.elim so.default_state s ▸ rfl
+
+/-- Given the state is `subsingleton`, the support of `simulate` is determined by `simulate'` -/
+lemma support_simulate_eq_image_support_simulate' [subsingleton S] :
+  (simulate so oa s).support = (λ x, (x, so.default_state)) '' (default_simulate' so oa).support :=
+begin
+  have : (λ (x : α × S), (x.fst, so.default_state)) = id,
+  from funext (λ x, prod.eq_iff_fst_eq_snd_eq.2 ⟨rfl, subsingleton.elim _ x.2⟩),
+  rw [support_simulate', set.image_image, this, set.image_id,
+    support_simulate_eq_support_default_simulate],
+end
+
+/-- Given the state is `subsingleton`, membership in `support` of `simulate` can be checked
+by just checking that the first component is in the support of `simulate'` -/
+lemma mem_support_simulate_iff_fst_mem_support_simulate' (x : α × S) [subsingleton S] :
+  x ∈ (simulate so oa s).support ↔ x.fst ∈ (simulate' so oa s).support :=
+begin
+  refine subsingleton.elim so.default_state s ▸ _,
+  rw [support_simulate_eq_image_support_simulate', set.mem_image],
+  exact ⟨λ h, let ⟨a, ha, hax⟩ := h in hax ▸ ha, λ h, ⟨x.1, h, prod.eq_iff_fst_eq_snd_eq.2
+    ⟨rfl, subsingleton.elim x.2 so.default_state ▸ rfl⟩⟩⟩
+end
+
+end support
+
+section distribution_semantics
+
+open distribution_semantics
+
+variable [spec'.finite_range]
+
+section eval_dist
+
+@[simp]
+lemma eval_dist_simulate_eq_eval_dist_default_simulate [subsingleton S] (s : S) :
+  ⦃simulate so oa s⦄ = ⦃default_simulate so oa⦄ := subsingleton.elim so.default_state s ▸ rfl
+
+lemma eval_dist_simulate'_eq_eval_dist_default_simulate' [subsingleton S] (s : S) :
+  ⦃simulate' so oa s⦄ = ⦃default_simulate' so oa⦄ := subsingleton.elim so.default_state s ▸ rfl
+
+end eval_dist
+
+section equiv
+
+lemma simulate_equiv_default_simulate [subsingleton S] (s : S) :
+  simulate so oa s ≃ₚ default_simulate so oa := subsingleton.elim so.default_state s ▸ rfl
+
+lemma simulate'_equiv_default_simulate' [subsingleton S] (s : S) :
+  simulate' so oa s ≃ₚ default_simulate' so oa := subsingleton.elim so.default_state s ▸ rfl
+
+end equiv
+
+section prob_event
+
+end prob_event
+
+end distribution_semantics
+
+end subsingleton_state
 
 end oracle_comp

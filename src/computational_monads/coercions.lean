@@ -43,28 +43,26 @@ do {b ← coin, b' ←$ᵗ bool, return (band b b')}
 lemma coe_coin_uniform_select_def (oa : oracle_comp coin_oracle α) :
   (↑oa : oracle_comp uniform_selecting α) = oa.default_simulate' ⟪λ _ _, $ᵗ bool⟫ := rfl
 
+/-- Coercing a `coin_oracle` computation to one using `uniform_selecting` preserves `support` -/
 lemma support_coe_coin_uniform_select (oa : oracle_comp coin_oracle α) :
   (↑oa : oracle_comp uniform_selecting α).support = oa.support :=
 begin
   rw [coe_coin_uniform_select_def],
-
   induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t,
   { simp only [support_simulate', simulate_return, support_return, set.image_singleton] },
-  { simp only [support_simulate'_bind, support_bind],
-    ext b,
-    simp_rw [set.mem_Union],
+  { refine set.ext (λ b, _),
+    simp_rw [support_simulate'_bind, support_bind, set.mem_Union],
     refine ⟨λ h, _, λ h, _⟩,
     { obtain ⟨⟨a, u⟩, ha, hba⟩ := h,
       cases u,
       refine ⟨a, _, by rwa ← hob⟩,
       rw [← hoa, support_simulate', set.mem_image],
       exact ⟨(a, ()), ha, rfl⟩ },
-    {
-      sorry,
-    }
-  },
+    { obtain ⟨a, ha, hba⟩ := h,
+      refine ⟨(a, ()), (mem_support_simulate_iff_fst_mem_support_simulate' _ oa _ (a, ())).2
+        (hoa.symm ▸ ha), by rwa ← hob a at hba⟩ } },
   { simp only [support_uniform_select_fintype bool,
-      stateless_oracle.support_default_simulate'_query, support_query] }
+      stateless_oracle.support_default_simulate'_query, support_query] },
 end
 
 section distribution_semantics
