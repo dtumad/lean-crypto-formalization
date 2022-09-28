@@ -22,9 +22,7 @@ variable [spec.finite_range]
   The result of queries is assumed to be uniform over the oracle's codomain,
     independent of the given domain values in each query.
   Usually the `spec` when calling this would just be `unit →ₒ bool` (i.e. a tape of random bits),
-  However it can be any more general things as well, e.g. uniform sampling from finite sets
-  
-TODO: maybe `eval_dist` should be the public facing name (less letters :\ ) -/
+  However it can be any more general things as well, e.g. uniform sampling from finite sets -/
 private noncomputable def eval_dist' {spec : oracle_spec} [h' : spec.finite_range] :
   Π {α : Type} (oa : oracle_comp spec α), Σ (pa : pmf α), plift (pa.support = oa.support)
 | _ (pure' α a) := ⟨pmf.pure a, plift.up $ (pmf.support_pure a)⟩
@@ -37,11 +35,6 @@ private noncomputable def eval_dist' {spec : oracle_spec} [h' : spec.finite_rang
       end⟩
 | _ (query i t) := ⟨pmf.uniform_of_fintype (spec.range i),
       plift.up ((pmf.support_uniform_of_fintype (spec.range i)))⟩
-
--- variables {α β γ : Type} {spec spec' : oracle_spec} (oa oa' : oracle_comp spec α)
---   (ob ob' : α → oracle_comp spec β) (oc oc' : α → β → oracle_comp spec γ)
---   (a a' : α) (b b' : β) (c c' : γ) (i : spec.ι) (t : spec.domain i)
--- variable [spec.finite_range]
 
 noncomputable def eval_dist (oa : oracle_comp spec α) : pmf α :=
 (eval_dist' oa).1
@@ -152,7 +145,8 @@ lemma eval_dist_return_apply : ⦃(return a : oracle_comp spec α)⦄ a' =
 lemma eval_dist_return_apply_self : ⦃(return a : oracle_comp spec α)⦄ a = 1 := sorry
 
 lemma eval_dist_return_apply_of_ne {a a' : α} (h : a' ≠ a) :
-  ⦃(return a : oracle_comp spec α)⦄ a' = 0 := sorry
+  ⦃(return a : oracle_comp spec α)⦄ a' = 0 :=
+by simpa only [eval_dist_return, pmf.pure_apply, ite_eq_right_iff]
 
 lemma eval_dist_pure' : ⦃(pure' α a : oracle_comp spec α)⦄ = pmf.pure a := rfl
 

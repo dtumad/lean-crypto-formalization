@@ -10,8 +10,6 @@ inductive oracle_comp (spec : oracle_spec) : Type → Type 1
 | bind' (α β : Type) (oa : oracle_comp α) (ob : α → oracle_comp β) : oracle_comp β
 | query (i : spec.ι) (t : spec.domain i) : oracle_comp (spec.range i)
 
--- TODO!!: should make `return` the standard over `pure`
-
 namespace oracle_comp
 
 /-- Probabalistic computation is represented as access to α coin-flipping oracle -/
@@ -38,6 +36,13 @@ lemma bind'_eq_bind (oa : oracle_comp spec α) (ob : α → oracle_comp spec β)
   bind' α β oa ob = (oa >>= ob) := rfl
 
 lemma map_eq_bind (oa : oracle_comp spec α) (f : α → β) : f <$> oa = oa >>= return ∘ f := rfl
+
+-- Simple computation flipping two coins and returning a value based on them
+example : oracle_comp coin_oracle ℕ :=
+do { b ← coin, b' ← coin,
+  x ← return (if b && b' then 2 else 3),
+  y ← return (if b || b' then 3 else 4),
+  return (x * y) }
 
 end monad
 

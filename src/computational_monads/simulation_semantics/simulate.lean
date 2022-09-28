@@ -27,6 +27,12 @@ structure sim_oracle (spec spec' : oracle_spec) (S : Type) :=
 (default_state : S)
 (o (i : spec.ι) : (spec.domain i × S) → oracle_comp spec' (spec.range i × S))
 
+/-- Example of an oracle maintaining in internal incrementing value,
+  and returning a fake coin flip based on whether the state is even. -/
+example : sim_oracle oracle_spec.coin_oracle oracle_spec.coin_oracle ℕ :=
+{ default_state := 0,
+  o := λ i ⟨t, n⟩, return (if even n then tt else ff, n + 1) }
+
 /-- View a simulation oracle as a function corresponding to the internal oracle `o` -/
 instance sim_oracle.has_coe_to_fun : has_coe_to_fun (sim_oracle spec spec' S)
   (λ so, Π (i : spec.ι), spec.domain i × S → oracle_comp spec' (spec.range i × S)) :=

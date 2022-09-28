@@ -8,6 +8,20 @@ structure oracle_spec : Type 1 :=
 (domain range : ι → Type)
 (range_inhabited (i : ι) : inhabited $ range i)
 
+/-- Example of a simple `oracle_spec` for a pair of oracles,
+  each taking a `ℕ` as input, returning a value of type `ℕ` or `ℤ` respectively -/
+example : oracle_spec :=
+{ ι := unit ⊕ unit,
+  domain := λ _, ℕ,
+  range := λ x, match x with
+  | (sum.inl ()) := ℕ
+  | (sum.inr ()) := ℤ
+  end,
+  range_inhabited := λ x, match x with
+  | (sum.inl ()) := nat.inhabited
+  | (sum.inr ()) := int.inhabited
+  end }
+
 namespace oracle_spec
 
 section instances
@@ -45,7 +59,7 @@ instance finite_range.range_fintype' [spec.finite_range] (i : spec.ι) :
 end instances
 
 section empty_spec
-
+ 
 /-- No access to any oracles -/
 def empty_spec : oracle_spec :=
 { ι := empty,

@@ -8,7 +8,6 @@ import computational_monads.oracle_comp
 This file defines the support of an `oracle_comp`, a `set` of possible outputs of the computation.
   We assume that oracle queries could return any possible value in their range.
 This aligns with `pmf.support` for the distribution semantics of `oracle_comp.eval_dist`
-
 -/
 
 namespace oracle_comp
