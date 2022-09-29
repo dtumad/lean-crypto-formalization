@@ -4,7 +4,7 @@ import computational_monads.simulation_semantics.oracle_compose
 
 open oracle_comp oracle_spec
 
-variables {A B C : Type} {spec spec' spec'' : oracle_spec}
+variables {α β γ : Type} {spec spec' : oracle_spec}
 
 def caching_oracle (spec : oracle_spec) [spec.computable] :
   sim_oracle spec spec (query_log spec) :=

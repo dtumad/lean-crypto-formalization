@@ -42,7 +42,7 @@ end
 @[simp]
 theorem support_simulate : (simulate idₛ oa s).support = {x | x.1 ∈ oa.support} :=
 begin
-  induction oa with A a A B oa ob hoa hob i t generalizing s,
+  induction oa with α a α β oa ob hoa hob i t generalizing s,
   { ext x,
     simp [prod.eq_iff_fst_eq_snd_eq, support_simulate_return,
       punit_eq x.snd (), punit_eq () s] },
@@ -82,7 +82,7 @@ rfl
 @[simp]
 theorem simulate_equiv : simulate idₛ oa s ≃ₚ (λ a, (a, ())) <$> oa :=
 begin
-  induction oa with A a A B oa ob hoa hob i t generalizing s,
+  induction oa with α a α β oa ob hoa hob i t generalizing s,
   { simp [punit_eq s ()] },
   { exact trans (simulate_bind_equiv idₛ oa ob s) (trans (bind_equiv_of_equiv_of_equiv
       (hoa s) (λ x, hob x.fst x.snd)) (by simp)) },

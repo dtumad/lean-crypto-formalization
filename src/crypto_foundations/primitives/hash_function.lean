@@ -27,9 +27,9 @@ variables [decidable_eq O]
 
 /-- The security game for collision resistance as a probabalistic function. -/
 def collision_finding_experiment (h : hash_function K I O)
-  (A : K → oracle_comp coin_oracle (I × I)) : oracle_comp coin_oracle bool := 
+  (adversary : K → oracle_comp coin_oracle (I × I)) : oracle_comp coin_oracle bool := 
 do{ k ← (h.keygen ()),
-    xs ← (A k),
+    xs ← (adversary k),
     return (h.hash (k, xs.1) = h.hash (k, xs.2)) }
 
 end hash_function
@@ -50,7 +50,7 @@ structure collision_finding_adversary (H : hash_scheme K I O) :=
 /-- Collision resistant if all polynomial time adversaries have neglibable chance
   of winning the `collision_finding_experiment` as the security parameter increases -/
 def collision_resistant (H : hash_scheme K I O) : Prop :=
-∀ (A : collision_finding_adversary H),
-negligable (λ sp, ⦃(H sp).collision_finding_experiment (A.adv sp)⦄ tt)
+∀ (adversary : collision_finding_adversary H),
+negligable (λ sp, ⦃(H sp).collision_finding_experiment (adversary.adv sp)⦄ tt)
 
 end hash_scheme

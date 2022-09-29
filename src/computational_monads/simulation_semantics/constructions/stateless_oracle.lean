@@ -150,7 +150,7 @@ lemma simulate'_equiv_of_oracle_equiv [spec'.finite_range] [spec''.finite_range]
   (s : unit) (h : ∀ (i : spec.ι) (t : spec.domain i), o i t ≃ₚ o' i t) :
   simulate' ⟪o⟫ oa s ≃ₚ simulate' ⟪o'⟫ oa s :=
 begin
-  induction oa using oracle_comp.induction_on with A a A B oa ob hoa hob i t generalizing s,
+  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t generalizing s,
   sorry, sorry, sorry
   -- { simp only [simulate'_return, map_return_equiv, eval_dist_return] },
   -- { calc simulate' ⟪o⟫ (oa >>= ob) s
@@ -217,7 +217,7 @@ theorem simulate'_equiv_stateless_oracle [spec'.finite_range] :
     simulate' ⟪o⟫ oa () :=
 begin
   sorry
-  -- induction oa using oracle_comp.induction_on with a A A B oa ob hoa hob i t generalizing s,
+  -- induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t generalizing s,
   -- { simp },
   -- { let so := ⟪o|update_state, default_state⟫,
   --   calc simulate' so (oa >>= ob) s

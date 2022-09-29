@@ -127,6 +127,7 @@ lemma coe_append_right_pure_equiv [spec.finite_range] [spec'.finite_range] (a : 
 simulate'_pure_equiv _ a _
 
 /-- The right hand simulation oracle is irrelevent to simulate an append right coercion -/
+@[simp]
 lemma simulate'_coe_append_right_equiv [spec.finite_range] [spec'.finite_range]
   [spec''.finite_range] (oa : oracle_comp spec α) (so : sim_oracle spec spec'' S)
   (so' : sim_oracle spec' spec'' S') (s : S × S') :

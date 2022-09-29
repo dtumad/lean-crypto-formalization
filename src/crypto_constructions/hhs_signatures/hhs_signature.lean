@@ -75,9 +75,9 @@ variables {G X M : Type} [fintype G] [fintype X] [inhabited G]
  
 /-- TODO: must be a better way to make this easy?-/
 @[simp]
-lemma support_coe_uniform_selecting_oracles [inhabited G] {A : Type}
-  (oa : oracle_comp uniform_selecting A) :
-  support (↑oa : oracle_comp (hhs_signature G X M n).base_oracle_spec A) = oa.support :=
+lemma support_coe_uniform_selecting_oracles [inhabited G] {α : Type}
+  (oa : oracle_comp uniform_selecting α) :
+  support (↑oa : oracle_comp (hhs_signature G X M n).base_oracle_spec α) = oa.support :=
 begin
   sorry
 end

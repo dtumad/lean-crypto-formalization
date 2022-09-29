@@ -2,7 +2,7 @@ import computational_monads.simulation_semantics.simulate
 
 open oracle_comp oracle_spec
 
-variables {spec spec' spec'' spec''' : oracle_spec} {A B C : Type} {α β γ : Type} {S S' : Type}
+variables {spec spec' spec'' spec''' : oracle_spec} {α β γ : Type} {S S' : Type}
   
 namespace sim_oracle
 
@@ -18,7 +18,7 @@ def oracle_append (so : sim_oracle spec spec'' S) (so' : sim_oracle spec' spec''
 notation so `++ₛ` so' := oracle_append so so'
 
 variables (so : sim_oracle spec spec'' S) (so' : sim_oracle spec' spec'' S')
-  (oa : oracle_comp (spec ++ spec') A) (ob : A → oracle_comp (spec ++ spec') B) (a : A)
+  (oa : oracle_comp (spec ++ spec') α) (ob : α → oracle_comp (spec ++ spec') β) (a : α)
   (i : spec.ι) (i' : spec'.ι) (t : spec.domain i) (t' : spec'.domain i') (s : S × S')
   (x : spec.domain i × S × S') (x' : spec'.domain i' × S × S')
 

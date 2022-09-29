@@ -16,12 +16,12 @@ p.to_outer_measure_caratheodory.symm ▸ measurable_space.measurable_set_top
 
 -- TODO: generalize to higher universes
 @[simp]
-lemma pmf.map_bind {A B C : Type} (p : pmf A) (q : A → pmf B) (f : B → C) :
+lemma pmf.map_bind {α β γ : Type} (p : pmf α) (q : α → pmf β) (f : β → γ) :
   (p.bind q).map f = p.bind (λ a, (q a).map f) :=
 pmf.monad_map_eq_map f (p.bind q) ▸ map_bind _
 
 @[simp]
-lemma pmf.bind_map {A B C : Type} (p : pmf A) (f : A → B) (q : B → pmf C) :
+lemma pmf.bind_map {α β γ : Type} (p : pmf α) (f : α → β) (q : β → pmf γ) :
   (p.map f).bind q = p.bind (q ∘ f) :=
 begin
   rw [pmf.map],
@@ -32,7 +32,7 @@ begin
 end
 
 @[simp]
-lemma pmf.bind_const {A B : Type} (p : pmf A) (q : pmf B) :
+lemma pmf.bind_const {α β : Type} (p : pmf α) (q : pmf β) :
   (p.bind $ λ _, q) = q :=
 pmf.ext (λ x, by rw [pmf.bind_apply, nnreal.tsum_mul_right _ (q x), pmf.tsum_coe, one_mul])
 

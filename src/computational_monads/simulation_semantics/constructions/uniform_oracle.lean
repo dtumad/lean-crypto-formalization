@@ -3,7 +3,7 @@ import computational_monads.constructions.uniform_select
 
 open oracle_comp oracle_spec
 
-variables {A B : Type} {spec spec' spec'' : oracle_spec}
+variables {α β : Type} {spec spec' spec'' : oracle_spec}
 
 noncomputable def uniform_oracle (spec : oracle_spec) [spec.finite_range] : 
   sim_oracle spec uniform_selecting unit :=
@@ -11,7 +11,7 @@ noncomputable def uniform_oracle (spec : oracle_spec) [spec.finite_range] :
 
 namespace uniform_oracle
 
-variables (oa : oracle_comp spec A)
+variables (oa : oracle_comp spec α)
 variable [spec.finite_range]
 
 @[simp]

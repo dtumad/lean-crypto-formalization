@@ -34,7 +34,7 @@ variables (so : sim_oracle spec spec' S) (mask : S ≃ S') (mask' : S' ≃ S'')
   (ob : α → oracle_comp spec β) (s : S) (s' : S') (s'' : S'')
   (x : spec.domain i × S') (y : spec.range i × S')
 
-lemma apply_eq : so.mask_state mask i x =
+lemma mask_state_apply_eq : so.mask_state mask i x =
   prod.map id mask <$> (so.o i $ prod.map id mask.symm x) := rfl
 
 section support
@@ -57,7 +57,7 @@ begin
       exact ⟨(a', mask.symm t), this.symm ▸ htas, hta.1.symm ▸ hx⟩ },
     { obtain ⟨⟨a, t⟩, hta, hx⟩ := h,
       exact ⟨(a, mask t), ⟨(a, t), hta, rfl⟩, (mask.symm_apply_apply t).symm ▸ hx⟩ } },
-  { simpa only [simulate_query, apply_eq, support_map] }
+  { simpa only [simulate_query, mask_state_apply_eq, support_map] }
 end
 
 lemma support_simulate_mask_eq_preimage_support_simulate :
@@ -104,6 +104,8 @@ section fin_support
 
 variables [computable spec'] [finite_range spec'] [decidable oa]
 
+
+
 end fin_support
 
 section distribution_semantics
@@ -115,9 +117,9 @@ variable [spec'.finite_range]
 section eval_dist
 
 @[simp]
-lemma eval_dist_apply : ⦃(so.mask_state mask) i (t, s')⦄ =
+lemma eval_dist_mask_apply : ⦃so.mask_state mask i (t, s')⦄ =
   (⦃so i (t, mask.symm s')⦄).map (prod.map id mask) :=
-by simpa only [apply_eq, eval_dist_map]
+by simpa only [mask_state_apply_eq, eval_dist_map]
 
 @[simp]
 theorem eval_dist_simulate_mask : ⦃simulate (so.mask_state mask) oa s'⦄
@@ -129,7 +131,7 @@ begin
   { simp_rw [eval_dist_simulate_bind, hoa, hob, pmf.map_bind, pmf.bind_map],
     refine congr_arg _ (funext $ λ x, _),
     simp only [function.comp_app, prod_map, id.def, equiv.symm_apply_apply] },
-  { simp only [eval_dist_apply, simulate_query] }
+  { simp only [eval_dist_mask_apply, simulate_query] }
 end
 
 @[simp]
@@ -145,14 +147,33 @@ begin
       eq_self_iff_true, if_true] }
 end
 
+@[simp]
+lemma eval_dist_simulate'_mask : ⦃simulate' (so.mask_state mask) oa s'⦄ =
+  ⦃simulate' so oa (mask.symm s')⦄ :=
+by simp_rw [eval_dist_simulate', eval_dist_simulate_mask, pmf.map_comp,
+  prod.map_fst', function.comp.left_id]
+
+lemma eval_dist_simulate'_mask_apply : ⦃simulate' (so.mask_state mask) oa s'⦄ a =
+  ⦃simulate' so oa (mask.symm s')⦄ a :=
+by rw [eval_dist_simulate'_mask]
+
 end eval_dist
 
 section equiv
+
+
 
 end equiv
 
 section prob_event
 
+@[simp]
+lemma prob_event_mask_apply (e : set (spec.range i × S')) :
+  ⦃e | so.mask_state mask i (t, s')⦄ = ⦃(prod.map id mask) ⁻¹' e | so i (t, mask.symm s')⦄ :=
+by simpa only [mask_state_apply_eq, prob_event_map, prod_map, id.def]
+
+/-- The probability of an event holding after masking state is the same as the
+probability of the preimage of the event holding on the unmasked computation. -/
 @[simp]
 theorem prob_event_simulate_mask_eq_preimage (e : set (α × S')) :
   ⦃e | simulate (so.mask_state mask) oa s'⦄ =

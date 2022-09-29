@@ -54,9 +54,9 @@ section simulate
 /-- Simulate an oracle comp to an oracle comp with a different spec.
 Requires providing a maximum recursion depth for the `repeat` constructor. -/
 def simulate {spec spec' : oracle_spec} (so : sim_oracle spec spec' S) :
-  Π {A : Type} (oa : oracle_comp spec A), S → oracle_comp spec' (A × S)
-| _ (pure' A a) state := return ⟨a, state⟩
-| _ (bind' A B oa ob) state := simulate oa state >>= λ x, simulate (ob x.1) x.2
+  Π {α : Type} (oa : oracle_comp spec α), S → oracle_comp spec' (α × S)
+| _ (pure' α a) state := return ⟨a, state⟩
+| _ (bind' α β oa ob) state := simulate oa state >>= λ x, simulate (ob x.1) x.2
 | _ (query i t) state := so i (t, state)
 
 /-- Convenience definition to use the default state as the initial state for `simulate`.

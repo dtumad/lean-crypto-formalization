@@ -103,7 +103,7 @@ end query
 /-- If the range of `spec` is a `fintype` then the support is a finite set -/
 theorem support_finite [spec.finite_range] (oa : oracle_comp spec α) : oa.support.finite :=
 begin
-  induction oa with A a A B oa ob hoa hob i t,
+  induction oa with α a α β oa ob hoa hob i t,
   { exact set.finite_singleton a },
   { exact hoa.bind (λ a _, hob a)},
   { exact set.finite_univ }
@@ -111,7 +111,7 @@ end
 
 theorem support_nonempty (oa : oracle_comp spec α) : oa.support.nonempty :=
 begin
-  induction oa with A a A B oa ob hoa hob i t,
+  induction oa with α a α β oa ob hoa hob i t,
   { exact set.singleton_nonempty a },
   { simp only [bind'_eq_bind, support_bind, set.nonempty_bUnion, exists_prop],
     exact let ⟨a, ha⟩ := hoa in ⟨a, ha, hob a⟩ },

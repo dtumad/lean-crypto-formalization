@@ -2,7 +2,7 @@ import computational_monads.simulation_semantics.simulate
 
 open oracle_comp oracle_spec
 
-variables {spec spec' spec'' : oracle_spec} {A B C : Type} {S S' : Type}
+variables {spec spec' spec'' : oracle_spec} {α β γ : Type} {S S' : Type}
 
 namespace sim_oracle
 

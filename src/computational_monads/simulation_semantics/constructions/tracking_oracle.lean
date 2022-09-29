@@ -64,7 +64,7 @@ lemma support_simulate'_eq_of_oracle_eq :
   (simulate' ⟪o | update_state, default_state⟫ oa s).support
     = (simulate' ⟪o | update_state', default_state'⟫ oa s').support :=
 begin
-  induction oa using oracle_comp.induction_on with a A A B oa ob hoa hob i t generalizing s,
+  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t generalizing s,
   { simp },
   {
 
@@ -124,7 +124,6 @@ lemma simulate'_query_equiv_self :
   simulate' (⟪query | update_state, default_state⟫) oa s ≃ₚ oa :=
 begin
   sorry,
-  -- induction oa with A a A B oa ob hoa hob i t generalizing s,
   -- { simp only [pure'_eq_pure, simulate'_pure, map_pure_equiv, eval_dist_return] },
   -- { let so := ⟪query | update_state, default_state⟫,
   --   calc simulate' so (oa >>= ob) s
