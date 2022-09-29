@@ -68,3 +68,8 @@ lemma pmf.to_outer_measure_apply_Union {α : Type*} (p : pmf α) {f : ℕ → se
   (h : pairwise (disjoint on f)) : p.to_outer_measure (⋃ n, f n) = ∑' n, p.to_outer_measure (f n) :=
 measure_theory.outer_measure.Union_eq_of_caratheodory _
   (λ n, pmf.measurable_set_to_outer_measure_caratheodory _ (f n)) h
+
+-- lemma pmf.to_outer_measure_apply_image {α : Type*} (p : pmf β) (e : set α) (f : α → β) :
+--   p.to_outer_measure (f '' e) = 
+
+-- lemma pmf.indicator_map {α : Type*} (p : pmf α) (f : α → β) (e : set β) :

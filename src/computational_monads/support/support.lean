@@ -49,7 +49,7 @@ lemma mem_support_pure_iff (a a' : α) :
 
 end return
 
-section bind
+section bind 
 
 @[simp]
 lemma support_bind (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) :

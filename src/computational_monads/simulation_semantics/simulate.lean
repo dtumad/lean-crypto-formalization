@@ -139,19 +139,19 @@ lemma eval_dist_simulate_pure' : ⦃simulate so (pure' α a) s⦄ = pmf.pure (a,
 lemma eval_dist_simulate_pure : ⦃simulate so (pure a) s⦄ = pmf.pure (a, s) := rfl
 
 @[simp]
-lemma eval_dist_simulate_bind :
-  ⦃simulate so (oa >>= ob) s⦄ = ⦃simulate so oa s⦄ >>= λ x, ⦃simulate so (ob x.1) x.2⦄ :=
+lemma eval_dist_simulate_bind : ⦃simulate so (oa >>= ob) s⦄ =
+  (⦃simulate so oa s⦄).bind (λ x, ⦃simulate so (ob x.1) x.2⦄) :=
 (congr_arg _ $ simulate_bind so oa ob s).trans (eval_dist_bind _ _)
 
-lemma eval_dist_simulate_bind' :
-  ⦃simulate so (bind' α β oa ob) s⦄ = ⦃simulate so oa s⦄ >>= λ x, ⦃simulate so (ob x.1) x.2⦄ :=
+lemma eval_dist_simulate_bind' : ⦃simulate so (bind' α β oa ob) s⦄ =
+  (⦃simulate so oa s⦄).bind (λ x, ⦃simulate so (ob x.1) x.2⦄) :=
 eval_dist_simulate_bind so oa ob s
 
 lemma eval_dist_simulate_query : ⦃simulate so (query i t) s⦄ = ⦃so i (t, s)⦄ := rfl
 
 @[simp]
-lemma eval_dist_simulate_map :
-  ⦃simulate so (f <$> oa) s⦄ = ⦃simulate so oa s⦄.map (prod.map f id) :=
+lemma eval_dist_simulate_map : ⦃simulate so (f <$> oa) s⦄ =
+  ⦃simulate so oa s⦄.map (prod.map f id) :=
 by simpa only [simulate_map, eval_dist_bind, eval_dist_return]
 
 end eval_dist

@@ -82,7 +82,7 @@ def fork : oracle_comp uniform_selecting
   ((option (fin adv.q)) × A × (query_log (T →ₒ U)) × A × (query_log (T →ₒ U))) :=
 do {
   -- run the adversary for the first time, logging coins and caching random oracles
-  ⟨i, x, log, cache⟩ ← adv.sim_with_log,
+  ⟨i, ⟨x, ⟨log, cache⟩⟩⟩ ← adv.sim_with_log,
   -- run again, using the same random choices for first oracle, and newly forked cache
   ⟨i', x', cache'⟩ ← adv.sim_from_seed log.to_seed (cache.fork_cache () (i.map coe)),
   -- return no forking index unless `fork_cache` gives equal values for both runs.

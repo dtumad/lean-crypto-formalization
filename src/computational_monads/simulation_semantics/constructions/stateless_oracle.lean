@@ -127,10 +127,15 @@ end support
 
 section distribution_semantics
 
-section equiv
+section eval_dist
+
+end eval_dist
 
 open distribution_semantics
 
+section equiv
+
+-- TODO: put <$> in equiv versions, derive from `eval_dist` fact
 lemma simulate_equiv_simulate' [spec'.finite_range] (s : unit) :
   simulate ⟪o⟫ oa s ≃ₚ (simulate' ⟪o⟫ oa s >>= λ a, pure (a, ())) :=
 calc simulate ⟪o⟫ oa s ≃ₚ simulate ⟪o⟫ oa s >>= pure : symm (bind_pure_equiv _)

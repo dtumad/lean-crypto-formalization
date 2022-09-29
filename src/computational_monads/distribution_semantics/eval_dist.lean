@@ -186,6 +186,15 @@ begin
   }
 end
 
+/-- Suffices to take the sum over the `support` of the first computation,
+using subtyping to view the support as a `Type` itself.
+-- TODO: PR from zulip should make this trivial I think -/
+lemma eval_dist_bind_apply'' :
+  ⦃oa >>= ob⦄ b = ∑' a : oa.support, ⦃oa⦄ a * ⦃ob a⦄ b :=
+(eval_dist_bind_apply oa ob b).trans begin
+  sorry
+end
+
 lemma eval_dist_bind_apply' [spec.computable] [oa.decidable] :
   ⦃oa >>= ob⦄ b = ∑ a in oa.fin_support, ⦃oa⦄ a * ⦃ob a⦄ b :=
 (eval_dist_bind_apply oa ob b).trans (tsum_eq_sum $ λ a ha,
