@@ -45,18 +45,17 @@ theorem support_simulate_mask_eq_image_support_simulate :
   (simulate (so.mask_state mask) oa s').support =
     (prod.map id mask) '' (simulate so oa (mask.symm s')).support :=
 begin
-  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t generalizing s',
-  { simp_rw [simulate_return, support_return, prod_map, id.def,
-      set.image_singleton, equiv.apply_symm_apply] },
-  { refine set.ext (λ x, _),
-    simp_rw [support_simulate_bind, hoa, set.image_Union, set.mem_Union, hob],
+  refine support_simulate_eq_induction (so.mask_state mask) oa s' (λ α a s, _) _ (λ i t s, _),
+  { rw [support_simulate_return, set.image_singleton, prod_map, id.def, equiv.apply_symm_apply] },
+  { refine λ α β oa ob s, set.ext (λ x, _),
+    simp_rw [support_simulate_bind, set.image_Union, set.mem_Union],
     refine ⟨λ h, _, λ h, _⟩,
+    { obtain ⟨⟨a, t⟩, hta, hx⟩ := h,
+      exact ⟨(a, mask t), ⟨(a, t), hta, rfl⟩, (mask.symm_apply_apply t).symm ▸ hx⟩ },
     { obtain ⟨⟨a, t⟩, ⟨⟨a', t'⟩, ⟨htas, hta⟩⟩, hx⟩ := h,
       rw [prod.map_mk, prod.eq_iff_fst_eq_snd_eq] at hta,
       have : mask.symm t = t' := (congr_arg _ hta.2.symm).trans (mask.symm_apply_apply t'),
-      exact ⟨(a', mask.symm t), this.symm ▸ htas, hta.1.symm ▸ hx⟩ },
-    { obtain ⟨⟨a, t⟩, hta, hx⟩ := h,
-      exact ⟨(a, mask t), ⟨(a, t), hta, rfl⟩, (mask.symm_apply_apply t).symm ▸ hx⟩ } },
+      exact ⟨(a', mask.symm t), this.symm ▸ htas, hta.1.symm ▸ hx⟩ } },
   { simpa only [simulate_query, mask_state_apply_eq, support_map] }
 end
 

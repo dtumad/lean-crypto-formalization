@@ -48,7 +48,8 @@ end monad
 
 /-- Slightly nicer induction priciple, avoiding use of `bind'` and `pure'`.
   Use as induction principle with `induction oa using oracle_comp.induction_on` -/
-@[elab_as_eliminator] def induction_on {C : Π {α : Type}, oracle_comp spec α → Sort*}
+@[elab_as_eliminator]
+def induction_on {C : Π {α : Type}, oracle_comp spec α → Sort*}
   {α : Type} (oa : oracle_comp spec α)
   (h_return : ∀ {α : Type} (a : α), C (return a))
   (h_bind : ∀ {α β : Type} {oa : oracle_comp spec α} {ob : α → oracle_comp spec β},

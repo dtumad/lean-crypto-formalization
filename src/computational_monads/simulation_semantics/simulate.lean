@@ -122,6 +122,20 @@ begin
   { simp only [support_query, set.top_eq_univ, set.mem_univ, set.set_of_true, set.subset_univ] }
 end
 
+lemma support_simulate_eq_induction {supp : Π (α : Type), oracle_comp spec α → S → set (α × S)}
+  (so : sim_oracle spec spec' S) (oa : oracle_comp spec α) (s : S)
+  (h_ret : ∀ α a s, supp α (return a) s = {(a, s)})
+  (h_bind : ∀ α β (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) s,
+    supp β (oa >>= ob) s = ⋃ x ∈ (supp α oa s), supp β (ob $ prod.fst x) $ prod.snd x)
+  (h_query : ∀ i t s, supp (spec.range i) (query i t) s = (so i (t, s)).support) :
+  (simulate so oa s).support = supp α oa s :=
+begin
+  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t generalizing s,
+  { simp only [h_ret, simulate_return, support_return] },
+  { simp only [simulate_bind, support_bind, hoa, hob, h_bind] },
+  { simp only [h_query, simulate_query] }
+end
+
 end support
 
 section distribution_semantics
@@ -288,6 +302,33 @@ begin
   { simp only [support_simulate'_query, set.mem_image],
     have : x ∈ prod.fst '' (so i (t, s)).support := (h i t s).symm ▸ set.mem_univ _,
     exact (set.mem_image _ _ _).1 this }
+end
+
+lemma support_simulate'_eq_support_simulate'
+  {so : sim_oracle spec spec' S} {so' : sim_oracle spec spec' S'}
+  (h : ∀ i t s s', prod.fst '' (so i (t, s)).support = prod.fst '' (so' i (t, s')).support)
+  (oa : oracle_comp spec α) (s : S) (s' : S') :
+  (simulate' so oa s).support = (simulate' so' oa s').support :=
+begin
+  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t generalizing s s',
+  { simp only [simulate'_return, support_map, support_return, set.image_singleton] },
+  { ext x,
+    simp_rw [support_simulate'_bind, set.mem_Union],
+    refine ⟨λ h, _, λ h, _⟩,
+    { obtain ⟨⟨a, t⟩, hoa', hob'⟩ := h,
+      have : ∃ u, (a, u) ∈ (simulate so oa s).support := ⟨t, hoa'⟩,
+      rw [← mem_support_simulate'_iff_exists_state, hoa s s',
+        mem_support_simulate'_iff_exists_state] at this,
+      obtain ⟨t', ht'⟩ := this,
+      exact ⟨(a, t'), ht', hob a t t' ▸ hob'⟩ },
+    -- TODO: This is basically the same as the above, maybe simplify somehow
+    { obtain ⟨⟨a, t⟩, hoa', hob'⟩ := h,
+      have : ∃ u, (a, u) ∈ (simulate so' oa s').support := ⟨t, hoa'⟩,
+      rw [← mem_support_simulate'_iff_exists_state, ← hoa s s',
+        mem_support_simulate'_iff_exists_state] at this,
+      obtain ⟨t', ht'⟩ := this,
+      exact ⟨(a, t'), ht', (hob a t' t).symm ▸ hob'⟩ } },
+  { simpa only [support_simulate'_query] using h i t s s' }
 end
 
 end support

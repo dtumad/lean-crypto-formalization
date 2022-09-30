@@ -34,10 +34,11 @@ notation `⟪` o `|` update_state `,` default_state `⟫` :=
 
 namespace tracking_oracle
 
-variables {S : Type} (o o' : Π (i : spec.ι), spec.domain i → oracle_comp spec' (spec.range i))
-  (update_state update_state' : Π (s : S) (i : spec.ι), spec.domain i → spec.range i → S)
-  (default_state default_state' : S) (a : α) (i : spec.ι) (t : spec.domain i)
-  (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) (s s' : S)
+variables {S S' : Type} (o o' : Π (i : spec.ι), spec.domain i → oracle_comp spec' (spec.range i))
+  (update_state : Π (s : S) (i : spec.ι), spec.domain i → spec.range i → S)
+  (update_state' : Π (s : S') (i : spec.ι), spec.domain i → spec.range i → S')
+  (default_state : S) (default_state' : S') (a : α) (i : spec.ι) (t : spec.domain i)
+  (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) (s : S) (s' : S')
   (x : spec.domain i × S) (y : spec.range i × S)
 
 lemma apply_eq : ⟪o | update_state, default_state⟫ i x =
@@ -73,15 +74,9 @@ lemma support_simulate'_eq_of_oracle_eq :
   (simulate' ⟪o | update_state, default_state⟫ oa s).support =
     (simulate' ⟪o | update_state', default_state'⟫ oa s').support :=
 begin
-  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t generalizing s s',
-  { simp only [simulate'_return, support_map, support_return, set.image_singleton] },
-  {
-
-    sorry,
-  },
-  { ext x,
-    simp only [simulate'_query, support_map, support_apply, set.mem_image, set.mem_set_of_eq,
-      prod.exists, exists_and_distrib_right, exists_eq_right] },
+  refine support_simulate'_eq_support_simulate' (λ i t t t', set.ext $ λ x, _) oa s s',
+  simp only [simulate'_query, support_map, support_apply, set.mem_image, set.mem_set_of_eq,
+    prod.exists, exists_and_distrib_right, exists_eq_right],
 end
 
 end support
