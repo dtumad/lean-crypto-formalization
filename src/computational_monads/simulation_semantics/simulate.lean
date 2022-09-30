@@ -13,8 +13,10 @@ For example a logging query would use an empty log as the default state.
 We define `simulate'` to be simulation followed by discarding the state.
 This is useful for things like a random oracle, where the final result isn't relevant in general.
 
-TODO: maybe subsingleton stuff should be a seperate section at the end?
+-- TODO: this file is long as hell
 -/
+
+open_locale nnreal ennreal
 
 variables {α β γ : Type} {spec spec' spec'' : oracle_spec} {S S' : Type}
 
@@ -27,6 +29,8 @@ structure sim_oracle (spec spec' : oracle_spec) (S : Type) :=
 (default_state : S)
 (o (i : spec.ι) : (spec.domain i × S) → oracle_comp spec' (spec.range i × S))
 
+namespace sim_oracle
+
 /-- Example of an oracle maintaining in internal incrementing value,
   and returning a fake coin flip based on whether the state is even. -/
 example : sim_oracle oracle_spec.coin_oracle oracle_spec.coin_oracle ℕ :=
@@ -34,14 +38,16 @@ example : sim_oracle oracle_spec.coin_oracle oracle_spec.coin_oracle ℕ :=
   o := λ i ⟨t, n⟩, return (if even n then tt else ff, n + 1) }
 
 /-- View a simulation oracle as a function corresponding to the internal oracle `o` -/
-instance sim_oracle.has_coe_to_fun : has_coe_to_fun (sim_oracle spec spec' S)
+instance has_coe_to_fun : has_coe_to_fun (sim_oracle spec spec' S)
   (λ so, Π (i : spec.ι), spec.domain i × S → oracle_comp spec' (spec.range i × S)) :=
 { coe := λ so, so.o }
 
-def sim_oracle.inhabited_state (so : sim_oracle spec spec' S) : inhabited S := ⟨so.default_state⟩
+def inhabited_state (so : sim_oracle spec spec' S) : inhabited S := ⟨so.default_state⟩
 
-lemma sim_oracle.has_coe_to_fun_def (so : sim_oracle spec spec' S) (i : spec.ι)
+lemma has_coe_to_fun_def (so : sim_oracle spec spec' S) (i : spec.ι)
   (x : spec.domain i × S) : so i x = so.o i x := rfl
+
+end sim_oracle
 
 namespace oracle_comp
 
@@ -122,6 +128,8 @@ begin
   { simp only [support_query, set.top_eq_univ, set.mem_univ, set.set_of_true, set.subset_univ] }
 end
 
+/-- Lemma for inductively proving the support of a simulation is a specific function of the input.
+Often this is simpler than induction on the computation itself, especially the case of `bind` -/
 lemma support_simulate_eq_induction {supp : Π (α : Type), oracle_comp spec α → S → set (α × S)}
   (so : sim_oracle spec spec' S) (oa : oracle_comp spec α) (s : S)
   (h_ret : ∀ α a s, supp α (return a) s = {(a, s)})
@@ -157,6 +165,19 @@ lemma eval_dist_simulate_bind : ⦃simulate so (oa >>= ob) s⦄ =
   (⦃simulate so oa s⦄).bind (λ x, ⦃simulate so (ob x.1) x.2⦄) :=
 (congr_arg _ $ simulate_bind so oa ob s).trans (eval_dist_bind _ _)
 
+-- TODO: this is a more general thing, maybe should be more? e.g. return for eq one and ne one
+lemma eval_dist_simulate_bind_apply (x : β × S) : ⦃simulate so (oa >>= ob) s⦄ x
+  = ∑' (a : α) (s' : S), ⦃simulate so oa s⦄ (a, s') * ⦃simulate so (ob a) s'⦄ x :=
+begin
+  rw [eval_dist_simulate_bind, pmf.bind_apply],
+  refine tsum_prod' (nnreal.summable_of_le (λ x, mul_le_of_le_of_le_one le_rfl
+    (pmf.apply_le_one _ _)) (pmf.summable_coe ⦃simulate so oa s⦄)) (λ a, _),
+  have : summable (λ s', ⦃simulate so oa s⦄ (a, s')),
+  from nnreal.summable_comp_injective (pmf.summable_coe ⦃simulate so oa s⦄)
+    (λ s s' hs, (prod.eq_iff_fst_eq_snd_eq.1 hs).2),    refine nnreal.summable_of_le _ this,
+  exact λ s, mul_le_of_le_of_le_one le_rfl (pmf.apply_le_one _ _)
+end
+
 lemma eval_dist_simulate_bind' : ⦃simulate so (bind' α β oa ob) s⦄ =
   (⦃simulate so oa s⦄).bind (λ x, ⦃simulate so (ob x.1) x.2⦄) :=
 eval_dist_simulate_bind so oa ob s
@@ -167,6 +188,50 @@ lemma eval_dist_simulate_query : ⦃simulate so (query i t) s⦄ = ⦃so i (t, s
 lemma eval_dist_simulate_map : ⦃simulate so (f <$> oa) s⦄ =
   ⦃simulate so oa s⦄.map (prod.map f id) :=
 by simpa only [simulate_map, eval_dist_bind, eval_dist_return]
+
+/-- Lemma for inductively proving the support of a simulation is a specific function of the input.
+Often this is simpler than induction on the computation itself, especially the case of `bind` -/
+lemma eval_dist_simulate_eq_induction {pr : Π (α : Type), oracle_comp spec α → S → (pmf (α × S))}
+  (so : sim_oracle spec spec' S) (oa : oracle_comp spec α) (s : S)
+  (h_ret : ∀ α a s, pr α (return a) s = pmf.pure (a, s))
+  (h_bind : ∀ α β (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) s,
+    pr β (oa >>= ob) s = (pr α oa s).bind (λ x, pr β (ob x.1) x.2))
+  (h_query : ∀ i t s, pr (spec.range i) (query i t) s = ⦃so i (t, s)⦄) :
+  ⦃simulate so oa s⦄ = pr α oa s :=
+begin
+  induction oa using oracle_comp.induction_on with α a' α β oa ob hoa hob i t generalizing s,
+  { simp only [h_ret, simulate_return, eval_dist_return] },
+  { simp only [h_bind, hoa, hob, simulate_bind, eval_dist_bind] },
+  { simp only [h_query, simulate_query] }
+end
+
+/-- Lemma for inductively proving that the distribution associated to a simulation
+is a specific function. Gives more explicit criteria than induction on the computation.
+In particular this automatically splits the cases for `return` and the `prod` in the `bind` sum. -/
+lemma eval_dist_simulate_apply_eq_induction
+  {pr : Π (α : Type), oracle_comp spec α → S → (α × S → ℝ≥0)}
+  (so : sim_oracle spec spec' S) (oa : oracle_comp spec α) (s : S) (a : α) (s' : S)
+  (h_ret : ∀ α a s, pr α (return a) s (a, s) = 1)
+  (h_ret' : ∀ α a a' s s', a ≠ a' ∨ s ≠ s' → pr α (return a) s (a', s') = 0)
+  (h_bind : ∀ α β (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) s b s',
+    pr β (oa >>= ob) s (b, s') = ∑' (a : α) (t : S), (pr α oa s (a, t)) * (pr β (ob a) t (b, s')))
+  (h_query : ∀ i t s u s', pr (spec.range i) (query i t) s (u, s') = ⦃so i (t, s)⦄ (u, s')) :
+  ⦃simulate so oa s⦄ (a, s') = pr α oa s (a, s') :=
+begin 
+  induction oa using oracle_comp.induction_on with α a' α β oa ob hoa hob i t generalizing s s',
+  -- TODO: this should be simpler with `return` lemmas
+  { rw [eval_dist_simulate_return, pmf.pure_apply],
+    split_ifs with has,
+    { simp only [prod.eq_iff_fst_eq_snd_eq] at has,
+      rw [← has.1, has.2],
+      exact (h_ret α a s).symm },
+    { simp only [prod.eq_iff_fst_eq_snd_eq, not_and_distrib] at has,
+      cases has with ha hs,
+      { exact (h_ret' α a' a s s' $ or.inl $ ne.symm ha).symm },
+      { exact (h_ret' α a' a s s' $ or.inr $ ne.symm hs).symm } } },
+  { simp only [eval_dist_simulate_bind_apply, h_bind, hoa, hob] },
+  { rw [eval_dist_simulate_query, h_query] },
+end
 
 end eval_dist
 
