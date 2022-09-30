@@ -84,7 +84,6 @@ section fin_support
 
 end fin_support
 
--- TODO: organize
 section distribution_semantics
 
 open distribution_semantics

@@ -34,7 +34,7 @@ notation `⟪` o `|` update_state `,` default_state `⟫` :=
 
 namespace tracking_oracle
 
-variables {S : Type} (o : Π (i : spec.ι), spec.domain i → oracle_comp spec' (spec.range i))
+variables {S : Type} (o o' : Π (i : spec.ι), spec.domain i → oracle_comp spec' (spec.range i))
   (update_state update_state' : Π (s : S) (i : spec.ι), spec.domain i → spec.range i → S)
   (default_state default_state' : S) (a : α) (i : spec.ι) (t : spec.domain i)
   (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) (s s' : S)
@@ -46,51 +46,16 @@ lemma apply_eq : ⟪o | update_state, default_state⟫ i x =
 section support
 
 @[simp]
-lemma support_apply : (⟪o | update_state, default_state⟫ i x).support
-  = {y | y.1 ∈ (o i x.1).support ∧ y.2 = update_state x.2 i x.1 y.1} :=
+lemma support_apply : (⟪o | update_state, default_state⟫ i x).support =
+  {y | y.1 ∈ (o i x.1).support ∧ y.2 = update_state x.2 i x.1 y.1} :=
 set.ext (λ y, begin
   simp only [prod.eq_iff_fst_eq_snd_eq, apply_eq, support_bind, support_return,
     set.mem_Union, set.mem_singleton_iff, exists_prop, set.mem_set_of_eq],
   exact ⟨λ h, let ⟨u, h, h'⟩ := h in h'.1.symm ▸ ⟨h, h'.2⟩, λ h, ⟨y.1, ⟨h.1, rfl, h.2⟩⟩⟩,
 end)
 
-@[simp]
-lemma mem_support_apply_iff : y ∈ (⟪o | update_state, default_state⟫ i x).support
-  ↔ y.1 ∈ (o i x.1).support ∧ y.2 = update_state x.2 i x.1 y.1 :=
-by simpa only [support_apply]
-
-/-- The support of `simulate'` is independing of the tracking oracle -/
-lemma support_simulate'_eq_of_oracle_eq :
-  (simulate' ⟪o | update_state, default_state⟫ oa s).support
-    = (simulate' ⟪o | update_state', default_state'⟫ oa s').support :=
-begin
-  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t generalizing s,
-  { simp },
-  {
-
-    ext x,
-    simp only [support_simulate'_bind],
-    simp [support_simulate'_bind, hoa, hob],
-    refine ⟨λ h, _, λ h, _⟩,
-    {
-      obtain ⟨a, ⟨s, h⟩, ⟨s', h'⟩⟩ := h,
-      refine ⟨a, _⟩,
-      sorry
-    },
-    {
-      sorry, 
-    }
-  },
-  sorry,
-end
-
-lemma support_default_simulate'_eq_of_oracle_eq :
-  (default_simulate' ⟪o | update_state, default_state⟫ oa).support =
-    (default_simulate' ⟪o | update_state', default_state'⟫ oa).support :=
-support_simulate'_eq_of_oracle_eq o update_state update_state' default_state default_state' oa _ _
-
 /-- If the oracle can take on any value then the first element of the support is unchanged -/
-lemma support_simulate'_eq_support (h : ∀ i t, (o i t).support = ⊤) :
+theorem support_simulate'_eq_support (h : ∀ i t, (o i t).support = ⊤) :
   (simulate' ⟪o | update_state, default_state⟫ oa s).support = oa.support :=
 begin
   refine support_simulate'_eq_support _ oa s (λ i t s, _),
@@ -98,9 +63,26 @@ begin
     true_and, set.mem_image, set.mem_set_of_eq, prod.exists, exists_eq_left, exists_apply_eq_apply]
 end
 
+/-- Particular case of `support_simulate'_eq_support` for `query` -/
 lemma support_simulate'_query_oracle_eq_support :
   (simulate' ⟪query | update_state, default_state⟫ oa s).support = oa.support :=
 support_simulate'_eq_support query update_state default_state oa s (λ _ _, rfl)
+
+/-- The support of `simulate'` is independing of the tracking oracle -/
+lemma support_simulate'_eq_of_oracle_eq :
+  (simulate' ⟪o | update_state, default_state⟫ oa s).support =
+    (simulate' ⟪o | update_state', default_state'⟫ oa s').support :=
+begin
+  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t generalizing s s',
+  { simp only [simulate'_return, support_map, support_return, set.image_singleton] },
+  {
+
+    sorry,
+  },
+  { ext x,
+    simp only [simulate'_query, support_map, support_apply, set.mem_image, set.mem_set_of_eq,
+      prod.exists, exists_and_distrib_right, exists_eq_right] },
+end
 
 end support
 

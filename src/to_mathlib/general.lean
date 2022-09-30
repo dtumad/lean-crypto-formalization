@@ -21,7 +21,6 @@ lemma finset.count_to_list [decidable_eq α] (s : finset α) (a : α) :
   s.to_list.count a = if a ∈ s then 1 else 0 :=
 by simp only [list.count_eq_of_nodup s.nodup_to_list, finset.mem_to_list]
 
--- TODO: maybe unneeded
 section option
 
 lemma option.set_eq_union_is_none_is_some {α : Type*} (s : set (option α)) :
