@@ -27,10 +27,7 @@ lemma option.set_eq_union_is_none_is_some {α : Type*} (s : set (option α)) :
   s = {x ∈ s | x.is_none} ∪ {x ∈ s | x.is_some} :=
 begin
   refine set.ext (λ x, ⟨λ hx, _, λ hx, _⟩),
-  { cases x with x;
-    simp only [hx, set.mem_union_eq, set.mem_sep_eq, option.is_none_some,
-      option.is_none_none, coe_sort_ff, and_false, true_and, option.is_some_some,
-        coe_sort_tt, and_self, false_or, true_or, or_false] },
+  { cases x with x; simp [hx], },
   { exact or.rec_on hx (λ hx', hx'.1) (λ hx', hx'.1) }
 end
 
@@ -38,48 +35,11 @@ lemma option.disjoint_is_none_is_some {α : Type*} (s : set (option α)) :
   disjoint {x ∈ s | option.is_none x} {x ∈ s | option.is_some x} :=
 begin
   refine le_of_eq (set.eq_empty_of_forall_not_mem $ option.rec _ _),
-  { exact λ hx, by simpa only [set.mem_sep_eq, option.is_some_none,
-      coe_sort_ff, and_false] using hx.right },
-  { refine λ hx, by simp only [set.inf_eq_inter, set.mem_inter_eq, set.mem_sep_eq,
-    option.is_none_some, coe_sort_ff, and_false, false_and, not_false_iff] }
+  { exact λ hx, by simpa using hx.right },
+  { refine λ hx, by simp }
 end
 
 end option
-
-section ennreal
-
-lemma ennreal.to_nnreal_eq_to_nnreal_iff (x y : ℝ≥0∞) :
-  x.to_nnreal = y.to_nnreal ↔ x = y ∨ (x = 0 ∧ y = ⊤) ∨ (x = ⊤ ∧ y = 0) :=
-begin
-  cases x,
-  { simp only [@eq_comm ℝ≥0 _ y.to_nnreal, @eq_comm ℝ≥0∞ _ y, ennreal.to_nnreal_eq_zero_iff,
-      ennreal.none_eq_top, ennreal.top_to_nnreal, ennreal.top_ne_zero, false_and, eq_self_iff_true,
-        true_and, false_or, or_comm (y = ⊤)] },
-  { cases y; simp }
-end
-
-lemma ennreal.to_real_eq_to_real_iff (x y : ℝ≥0∞) :
-  x.to_real = y.to_real ↔ x = y ∨ (x = 0 ∧ y = ⊤) ∨ (x = ⊤ ∧ y = 0) :=
-by simp only [ennreal.to_real, nnreal.coe_eq, ennreal.to_nnreal_eq_to_nnreal_iff]
-
-lemma ennreal.to_nnreal_eq_to_nnreal_iff' {x y : ℝ≥0∞} (hx : x ≠ ⊤) (hy : y ≠ ⊤) :
-  x.to_nnreal = y.to_nnreal ↔ x = y :=
-by simp only [ennreal.to_nnreal_eq_to_nnreal_iff x y, hx, hy, and_false, false_and, or_false]
-
-lemma ennreal.to_real_eq_to_real_iff' {x y : ℝ≥0∞} (hx : x ≠ ⊤) (hy : y ≠ ⊤) :
-  x.to_real = y.to_real ↔ x = y :=
-by simp only [ennreal.to_real, nnreal.coe_eq, ennreal.to_nnreal_eq_to_nnreal_iff' hx hy]
-
-lemma ennreal.to_nnreal_eq_one_iff (x : ℝ≥0∞) : x.to_nnreal = 1 ↔ x = 1 :=
-begin
-  refine ⟨λ h, _, congr_arg _⟩,
-  cases x,
-  { exact false.elim (zero_ne_one $ ennreal.top_to_nnreal.symm.trans h) },
-  { exact congr_arg _ h }
-end
-
-lemma ennreal.to_real_eq_one_iff (x : ℝ≥0∞) : x.to_real = 1 ↔ x = 1 :=
-by rw [ennreal.to_real, nnreal.coe_eq_one, ennreal.to_nnreal_eq_one_iff]
 
 section tsum
 
@@ -163,5 +123,3 @@ calc ∑' (x : option α), f x
 end
 
 end tsum
-
-end ennreal
