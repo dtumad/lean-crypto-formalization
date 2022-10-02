@@ -13,7 +13,7 @@ For example a logging query would use an empty log as the default state.
 We define `simulate'` to be simulation followed by discarding the state.
 This is useful for things like a random oracle, where the final result isn't relevant in general.
 
--- TODO: this file is long as hell
+-- TODO: this file is long as hell, maybe a whole simulate folder? `basic` `subsingleton` etc.
 -/
 
 open_locale nnreal ennreal
@@ -71,7 +71,11 @@ Marked to be reduced and inlined, so the definition is essentially just notation
 def default_simulate (so : sim_oracle spec spec' S) (oa : oracle_comp spec α) :
   oracle_comp spec' (α × S) := simulate so oa so.default_state
 
-@[simp]
+@[simp] -- TODO: seems like simp tags here get applied more eagerly, prob bad
+-- Problem being that simp starts with inner most terms
+-- Could also try using simp attributes to decide which simp lemmas to use
+-- i.e. we should have a `unfold_simulate_simps`
+-- On the other hand maybe this just indicates the lower level simp lemmas aren't goode enough
 lemma simulate_return : simulate so (return a) s = return (a, s) := rfl
 
 lemma simulate_pure' : simulate so (pure' α a) s = return (a, s) := rfl
@@ -89,7 +93,7 @@ lemma simulate_bind' : simulate so (bind' α β oa ob) s
 lemma simulate_query : simulate so (query i t) s = so i (t, s) := rfl
 
 @[simp]
-lemma simulate_map : simulate so (f <$> oa) s = simulate so oa s >>= return ∘ prod.map f id := rfl
+lemma simulate_map : simulate so (f <$> oa) s = prod.map f id <$> simulate so oa s := rfl
 
 section support
 
@@ -107,11 +111,8 @@ lemma support_simulate_bind' : (simulate so (bind' α β oa ob) s).support
 
 lemma support_simulate_query : (simulate so (query i t) s).support = (so i (t, s)).support := rfl
 
-@[simp]
 lemma support_simulate_map : (simulate so (f <$> oa) s).support =
-  prod.map f id '' (simulate so oa s).support :=
-set.ext (λ x, by simp only [@eq_comm, simulate_map, support_bind, support_return,
-  set.mem_Union, set.mem_singleton_iff, exists_prop, set.mem_image])
+  prod.map f id '' (simulate so oa s).support := by rw [simulate_map, support_map]
 
 /-- Since `support` assumes any possible query result, `simulate` will never reduce the support -/
 theorem support_simulate_subset_preimage_support :
@@ -165,7 +166,6 @@ lemma eval_dist_simulate_bind : ⦃simulate so (oa >>= ob) s⦄ =
   (⦃simulate so oa s⦄).bind (λ x, ⦃simulate so (ob x.1) x.2⦄) :=
 (congr_arg _ $ simulate_bind so oa ob s).trans (eval_dist_bind _ _)
 
--- TODO: this is a more general thing, maybe should be more? e.g. return for eq one and ne one
 lemma eval_dist_simulate_bind_apply (x : β × S) : ⦃simulate so (oa >>= ob) s⦄ x
   = ∑' (a : α) (s' : S), ⦃simulate so oa s⦄ (a, s') * ⦃simulate so (ob a) s'⦄ x :=
 begin
@@ -184,10 +184,8 @@ eval_dist_simulate_bind so oa ob s
 
 lemma eval_dist_simulate_query : ⦃simulate so (query i t) s⦄ = ⦃so i (t, s)⦄ := rfl
 
-@[simp]
 lemma eval_dist_simulate_map : ⦃simulate so (f <$> oa) s⦄ =
-  ⦃simulate so oa s⦄.map (prod.map f id) :=
-by simpa only [simulate_map, eval_dist_bind, eval_dist_return]
+  ⦃simulate so oa s⦄.map (prod.map f id) := by rw [simulate_map, eval_dist_map]
 
 /-- Lemma for inductively proving the support of a simulation is a specific function of the input.
 Often this is simpler than induction on the computation itself, especially the case of `bind` -/
@@ -209,7 +207,7 @@ end
 is a specific function. Gives more explicit criteria than induction on the computation.
 In particular this automatically splits the cases for `return` and the `prod` in the `bind` sum. -/
 lemma eval_dist_simulate_apply_eq_induction
-  {pr : Π (α : Type), oracle_comp spec α → S → (α × S → ℝ≥0)}
+  {pr : Π (α : Type), oracle_comp spec α → S → α × S → ℝ≥0}
   (so : sim_oracle spec spec' S) (oa : oracle_comp spec α) (s : S) (a : α) (s' : S)
   (h_ret : ∀ α a s, pr α (return a) s (a, s) = 1)
   (h_ret' : ∀ α a a' s s', a ≠ a' ∨ s ≠ s' → pr α (return a) s (a', s') = 0)
@@ -219,12 +217,10 @@ lemma eval_dist_simulate_apply_eq_induction
   ⦃simulate so oa s⦄ (a, s') = pr α oa s (a, s') :=
 begin 
   induction oa using oracle_comp.induction_on with α a' α β oa ob hoa hob i t generalizing s s',
-  -- TODO: this should be simpler with `return` lemmas
   { rw [eval_dist_simulate_return, pmf.pure_apply],
     split_ifs with has,
     { simp only [prod.eq_iff_fst_eq_snd_eq] at has,
-      rw [← has.1, has.2],
-      exact (h_ret α a s).symm },
+      refine has.1 ▸ has.2.symm ▸ (h_ret α a s).symm, },
     { simp only [prod.eq_iff_fst_eq_snd_eq, not_and_distrib] at has,
       cases has with ha hs,
       { exact (h_ret' α a' a s s' $ or.inl $ ne.symm ha).symm },
@@ -268,6 +264,10 @@ end distribution_semantics
 
 end simulate
 
+
+
+
+
 section simulate'
 
 /-- Get the result of simulation without returning the internal oracle state -/
@@ -282,6 +282,7 @@ def default_simulate' (so : sim_oracle spec spec' S) (oa : oracle_comp spec α) 
 
 lemma simulate'_def : simulate' so oa s = prod.fst <$> oa.simulate so s := rfl
 
+-- TODO: these especially might be weird with simp lemmas? again maybe a lower level problem though
 @[simp]
 lemma simulate'_return : simulate' so (return a) s = prod.fst <$> (return (a, s)) := rfl
 
@@ -301,7 +302,7 @@ lemma simulate'_query : simulate' so (query i t) s = prod.fst <$> so i (t, s) :=
 
 @[simp]
 lemma simulate'_map : simulate' so (f <$> oa) s =
-  simulate so oa s >>= return ∘ prod.map f id >>= return ∘ prod.fst := rfl
+  prod.fst <$> (prod.map f id <$> simulate so oa s) := rfl
 
 section support
 
@@ -335,7 +336,7 @@ support_simulate'_bind so oa ob s
 lemma support_simulate'_query : (simulate' so (query i t) s).support =
   prod.fst '' (so i (t, s)).support := by simp only [simulate'_query, support_map]
 
-@[simp]
+@[simp] -- example of why more specific simp lemmas are maybe better
 lemma support_simulate'_map : (simulate' so (f <$> oa) s).support =
   f '' (simulate' so oa s).support :=
 by simp only [simulate', support_map, support_simulate_map, set.image_image, prod.map_fst]
@@ -369,7 +370,7 @@ begin
     exact (set.mem_image _ _ _).1 this }
 end
 
-lemma support_simulate'_eq_support_simulate'
+theorem support_simulate'_eq_support_simulate'
   {so : sim_oracle spec spec' S} {so' : sim_oracle spec spec' S'}
   (h : ∀ i t s s', prod.fst '' (so i (t, s)).support = prod.fst '' (so' i (t, s')).support)
   (oa : oracle_comp spec α) (s : S) (s' : S') :
@@ -410,6 +411,17 @@ section eval_dist
 lemma eval_dist_simulate' : ⦃simulate' so oa s⦄ = ⦃simulate so oa s⦄.map prod.fst :=
 eval_dist_map _ prod.fst
 
+/-- Express the probability of `simulate'` returning a specific value
+as the sum over all possible output states of the probability of `simulate` return it -/
+lemma eval_dist_simulate'_apply :
+  ⦃simulate' so oa s⦄ a = ∑' (s' : S), ⦃simulate so oa s⦄ (a, s') :=
+begin
+  rw [eval_dist_simulate', pmf.map_apply],
+  refine (tsum_prod_eq_tsum_snd a $ λ a' ha' s, _).trans (tsum_congr (λ s', _)),
+  { simp only [ne.symm ha', if_false] },
+  { simp only [eq_self_iff_true, if_true] }
+end
+
 lemma eval_dist_simulate'_return : ⦃simulate' so (return a) s⦄ = pmf.pure a :=
 by simp only [simulate'_return, map_return_equiv, eval_dist_return]
 
@@ -424,6 +436,23 @@ lemma eval_dist_simulate'_bind : ⦃simulate' so (oa >>= ob) s⦄ =
 by simp only [simulate'_bind, map_bind_equiv, eval_dist_bind, eval_dist_map,
   eval_dist_simulate', eq_self_iff_true, pmf.map_bind]
 
+lemma eval_dist_simulate'_bind_apply (b : β) : ⦃simulate' so (oa >>= ob) s⦄ b
+  = ∑' (a : α) (s' : S), ⦃simulate so oa s⦄ (a, s') * ⦃simulate' so (ob a) s'⦄ b :=
+calc ⦃simulate' so (oa >>= ob) s⦄ b
+  = ∑' (t : S) (a : α) (s' : S), ⦃simulate so oa s⦄ (a, s') * ⦃simulate so (ob a) s'⦄ (b, t) :
+    by simp_rw [eval_dist_simulate'_apply, eval_dist_simulate_bind_apply]
+  ... = ∑' (a : α) (t s' : S), ⦃simulate so oa s⦄ (a, s') * ⦃simulate so (ob a) s'⦄ (b, t) :
+    begin
+      sorry
+    end
+  ... = ∑' (a : α) (s' t : S), ⦃simulate so oa s⦄ (a, s') * ⦃simulate so (ob a) s'⦄ (b, t) :
+    begin
+      refine tsum_congr (λ a, _),
+      sorry
+    end
+  ... = ∑' (a : α) (s' : S), ⦃simulate so oa s⦄ (a, s') * ⦃simulate' so (ob a) s'⦄ b :
+    by simp_rw [eval_dist_simulate'_apply, ← nnreal.tsum_mul_left]
+
 lemma eval_dist_simulate'_bind' : ⦃simulate' so (bind' α β oa ob) s⦄ =
   ⦃simulate so oa s⦄.bind (λ x, ⦃simulate' so (ob x.1) x.2⦄) := eval_dist_simulate'_bind _ _ _ s
 
@@ -433,6 +462,42 @@ by simp only [simulate'_query, eval_dist_map]
 @[simp]
 lemma eval_dist_simulate'_map : ⦃simulate' so (f <$> oa) s⦄ = ⦃simulate' so oa s⦄.map f :=
 by simp_rw [eval_dist_simulate', eval_dist_simulate_map, pmf.map_comp, prod.map_fst']
+
+-- /-- Lemma for inductively proving that the distribution associated to a simulation
+-- is a specific function. Gives more explicit criteria than induction on the computation.
+-- In particular this automatically splits the cases for `return` and the `prod` in the `bind` sum. -/
+-- lemma eval_dist_simulate'_apply_eq_induction
+--   {pr : Π (α : Type), oracle_comp spec α → S → α → ℝ≥0}
+--   (so : sim_oracle spec spec' S) (oa : oracle_comp spec α) (s : S) (a : α)
+--   (h_ret : ∀ α a s, pr α (return a) s a = 1)
+--   (h_ret' : ∀ α a a' s, a' ≠ a → pr α (return a) s a' = 0)
+--   -- (h_bind : ∀ α β (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) s,
+--   --   pr β (oa >>= ob) s = (pr α oa s).bind (λ x, pr β (ob x.1) x.2))
+--   -- (h_query : ∀ i t s, pr (spec.range i) (query i t) s = ⦃so i (t, s)⦄)
+--   :
+--   ⦃simulate' so oa s⦄ a = pr α oa s a :=
+-- begin
+--   induction oa using oracle_comp.induction_on with α a' α β oa ob hoa hob i t generalizing s,
+--   { simp only [simulate'_return, map_return_equiv, eval_dist_return, pmf.pure_apply],
+--     split_ifs with ha,
+--     { exact ha ▸ (h_ret α a s).symm },
+--     { exact (h_ret' α a' a s ha).symm } },
+--   {
+--     simp_rw [eval_dist_simulate'_bind_apply, hob],
+--     simp only [eval_dist_simulate'_apply] at hoa,
+--     specialize hoa a s,
+--   }
+-- end
+
+/-- If the first result of oracle queries is uniformly distributed,
+then the distribution under `simulate'` is unchanged. -/
+theorem eval_dist_simulate'_eq_eval_dist [spec.finite_range]
+  (h : ∀ i t s, ⦃so i (t, s)⦄.map prod.fst = pmf.uniform_of_fintype (spec.range i)) :
+  ⦃simulate' so oa s⦄ = ⦃oa⦄ :=
+begin
+  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t generalizing s;
+  sorry
+end
 
 end eval_dist
 

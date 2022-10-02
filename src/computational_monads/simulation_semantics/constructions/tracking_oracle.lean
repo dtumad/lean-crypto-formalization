@@ -21,13 +21,16 @@ variables {α β γ : Type} {spec spec' : oracle_spec}
 
 /-- Oracle where the query result is indepenent of the current oracle state,
 although the new state may depend upon the previous state.
-For example a logging oracle that just tracks the input and output of queries. -/
+For example a logging oracle that just tracks the input and output of queries.
+`o` is the way the oracle responds to queries, which doesn't have access to the state.
+`update_state` takes a query and internal state and returns the new internal state.
+Note that `update_state` is not a probabalistic function, and has no oracle access -/
 def tracking_oracle {spec : oracle_spec} {S : Type}
   (o : Π (i : spec.ι), spec.domain i → oracle_comp spec' (spec.range i))
   (update_state : Π (s : S) (i : spec.ι), spec.domain i → spec.range i → S)
   (default_state : S) : sim_oracle spec spec' S :=
 { default_state := default_state,
-  o := λ i ⟨t, s⟩, do {u ← o i t, return (u, update_state s i t u)} }
+  o := λ i ⟨t, s⟩, (λ u, (u, update_state s i t u)) <$> (o i t) }
 
 notation `⟪` o `|` update_state `,` default_state `⟫` :=
   tracking_oracle o update_state default_state
@@ -41,19 +44,20 @@ variables {S S' : Type} (o o' : Π (i : spec.ι), spec.domain i → oracle_comp 
   (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) (s : S) (s' : S')
   (x : spec.domain i × S) (y : spec.range i × S)
 
+@[simp]
 lemma apply_eq : ⟪o | update_state, default_state⟫ i x =
-  do {u ← o i x.1, return (u, update_state x.2 i x.1 u)} := by {cases x, refl}
+  (λ u, (u, update_state x.2 i x.1 u)) <$> (o i x.1) := by {cases x, refl}
 
 section support
 
 @[simp]
 lemma support_apply : (⟪o | update_state, default_state⟫ i x).support =
   {y | y.1 ∈ (o i x.1).support ∧ y.2 = update_state x.2 i x.1 y.1} :=
-set.ext (λ y, begin
-  simp only [prod.eq_iff_fst_eq_snd_eq, apply_eq, support_bind, support_return,
+set.ext (λ y, by {
+  simp only [prod.eq_iff_fst_eq_snd_eq, apply_eq, support_map,
     set.mem_Union, set.mem_singleton_iff, exists_prop, set.mem_set_of_eq],
-  exact ⟨λ h, let ⟨u, h, h'⟩ := h in h'.1.symm ▸ ⟨h, h'.2⟩, λ h, ⟨y.1, ⟨h.1, rfl, h.2⟩⟩⟩,
-end)
+  exact ⟨λ h, let ⟨u, h, h'⟩ := h in h' ▸ ⟨h, rfl⟩,
+    λ h, ⟨y.1, h.1, prod.eq_iff_fst_eq_snd_eq.2 ⟨rfl, h.2.symm⟩⟩⟩ } )
 
 /-- If the oracle can take on any value then the first element of the support is unchanged -/
 theorem support_simulate'_eq_support (h : ∀ i t, (o i t).support = ⊤) :
@@ -85,9 +89,20 @@ section distribution_semantics
 
 open distribution_semantics
 
-variable [spec.finite_range]
-
 section eval_dist
+
+@[simp]
+lemma eval_dist_apply [spec'.finite_range] :
+  ⦃⟪o | update_state, default_state⟫ i (t, s)⦄ = ⦃o i t⦄.map (λ u, (u, update_state s i t u)) :=
+by rw [apply_eq, eval_dist_map]
+
+lemma eval_dist_simulate'_eq_eval_dist [spec.finite_range] [spec'.finite_range] :
+  ⦃simulate' ⟪o | update_state, default_state⟫ oa s⦄ = ⦃oa⦄ :=
+begin
+  refine pmf.ext (λ a, _),
+  refine eval_dist_simulate'_apply_eq_induction _ oa s a _ _,
+end
+
 
 
 end eval_dist
@@ -96,21 +111,21 @@ section equiv
 
 
 
--- TODO: should be able to find some generalization for lemmas looking like this
-lemma simulate'_query_equiv_self :
-  simulate' (⟪query | update_state, default_state⟫) oa s ≃ₚ oa :=
-begin
-  sorry,
-  -- { simp only [pure'_eq_pure, simulate'_pure, map_pure_equiv, eval_dist_return] },
-  -- { let so := ⟪query | update_state, default_state⟫,
-  --   calc simulate' so (oa >>= ob) s
-  --     ≃ₚ simulate so oa s >>= λ x, simulate' so (ob x.1) x.2 : simulate'_bind_equiv _ oa ob _
-  --     ... ≃ₚ simulate so oa s >>= λ x, (ob x.1) : bind_equiv_of_equiv_second _ (by simp [hob])
-  --     ... ≃ₚ simulate' so oa s >>= ob : symm (bind_map_equiv _ prod.fst ob)
-  --     ... ≃ₚ oa >>= ob : bind_equiv_of_equiv_first ob (hoa _) },
-  -- { erw [simulate'_query_equiv, tracking_oracle_o,
-  --     fst_map_bind_mk_equiv, map_id_equiv (query i t)], } 
-end
+-- -- TODO: should be able to find some generalization for lemmas looking like this
+-- lemma simulate'_query_equiv_self [spec.finite_range] :
+--   simulate' (⟪query | update_state, default_state⟫) oa s ≃ₚ oa :=
+-- begin
+--   sorry,
+--   -- { simp only [pure'_eq_pure, simulate'_pure, map_pure_equiv, eval_dist_return] },
+--   -- { let so := ⟪query | update_state, default_state⟫,
+--   --   calc simulate' so (oa >>= ob) s
+--   --     ≃ₚ simulate so oa s >>= λ x, simulate' so (ob x.1) x.2 : simulate'_bind_equiv _ oa ob _
+--   --     ... ≃ₚ simulate so oa s >>= λ x, (ob x.1) : bind_equiv_of_equiv_second _ (by simp [hob])
+--   --     ... ≃ₚ simulate' so oa s >>= ob : symm (bind_map_equiv _ prod.fst ob)
+--   --     ... ≃ₚ oa >>= ob : bind_equiv_of_equiv_first ob (hoa _) },
+--   -- { erw [simulate'_query_equiv, tracking_oracle_o,
+--   --     fst_map_bind_mk_equiv, map_id_equiv (query i t)], } 
+-- end
 
 end equiv
 

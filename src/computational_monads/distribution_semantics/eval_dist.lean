@@ -142,6 +142,16 @@ lemma eval_dist_return : ⦃(return a : oracle_comp spec α)⦄ = pmf.pure a := 
 lemma eval_dist_return_apply : ⦃(return a : oracle_comp spec α)⦄ a' =
   if a' = a then 1 else 0 := rfl
 
+@[simp]
+lemma eval_dist_return_apply_eq_one_iff : ⦃(return a : oracle_comp spec α)⦄ a' = 1 ↔ a' = a :=
+by simp only [eval_dist_return_apply, ite_eq_iff, eq_self_iff_true,
+  zero_ne_one, and_true, and_false, or_false]
+
+@[simp]
+lemma eval_dist_return_apply_eq_zero_iff : ⦃(return a : oracle_comp spec α)⦄ a' = 0 ↔ a' ≠ a :=
+by simp only [eval_dist_return_apply, ite_eq_iff, eq_self_iff_true,
+  one_ne_zero, and_true, and_false, false_or]
+
 lemma eval_dist_return_apply_self : ⦃(return a : oracle_comp spec α)⦄ a = 1 := sorry
 
 lemma eval_dist_return_apply_of_ne {a a' : α} (h : a' ≠ a) :
