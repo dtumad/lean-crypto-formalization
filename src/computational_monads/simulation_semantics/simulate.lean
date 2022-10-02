@@ -13,7 +13,7 @@ For example a logging query would use an empty log as the default state.
 We define `simulate'` to be simulation followed by discarding the state.
 This is useful for things like a random oracle, where the final result isn't relevant in general.
 
--- TODO: this file is long as hell, maybe a whole simulate folder? `basic` `subsingleton` etc.
+-- TODO: this file is long as hell, maybe a whole simulate folder? `basic` `subsingleton` `induction` etc.
 -/
 
 open_locale nnreal ennreal
@@ -365,9 +365,7 @@ begin
     rw [support_simulate', set.mem_image] at hoa,
     obtain ⟨⟨a', s'⟩, ha', ha''⟩ := hoa,
     exact ⟨(a', s'), ha', hob a' x (let this : a = a' := ha''.symm in this ▸ hx) s'⟩ },
-  { simp only [support_simulate'_query, set.mem_image],
-    have : x ∈ prod.fst '' (so i (t, s)).support := (h i t s).symm ▸ set.mem_univ _,
-    exact (set.mem_image _ _ _).1 this }
+  { simp only [support_simulate'_query, h i t s] }
 end
 
 theorem support_simulate'_eq_support_simulate'
@@ -463,41 +461,27 @@ by simp only [simulate'_query, eval_dist_map]
 lemma eval_dist_simulate'_map : ⦃simulate' so (f <$> oa) s⦄ = ⦃simulate' so oa s⦄.map f :=
 by simp_rw [eval_dist_simulate', eval_dist_simulate_map, pmf.map_comp, prod.map_fst']
 
--- /-- Lemma for inductively proving that the distribution associated to a simulation
--- is a specific function. Gives more explicit criteria than induction on the computation.
--- In particular this automatically splits the cases for `return` and the `prod` in the `bind` sum. -/
--- lemma eval_dist_simulate'_apply_eq_induction
---   {pr : Π (α : Type), oracle_comp spec α → S → α → ℝ≥0}
---   (so : sim_oracle spec spec' S) (oa : oracle_comp spec α) (s : S) (a : α)
---   (h_ret : ∀ α a s, pr α (return a) s a = 1)
---   (h_ret' : ∀ α a a' s, a' ≠ a → pr α (return a) s a' = 0)
---   -- (h_bind : ∀ α β (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) s,
---   --   pr β (oa >>= ob) s = (pr α oa s).bind (λ x, pr β (ob x.1) x.2))
---   -- (h_query : ∀ i t s, pr (spec.range i) (query i t) s = ⦃so i (t, s)⦄)
---   :
---   ⦃simulate' so oa s⦄ a = pr α oa s a :=
--- begin
---   induction oa using oracle_comp.induction_on with α a' α β oa ob hoa hob i t generalizing s,
---   { simp only [simulate'_return, map_return_equiv, eval_dist_return, pmf.pure_apply],
---     split_ifs with ha,
---     { exact ha ▸ (h_ret α a s).symm },
---     { exact (h_ret' α a' a s ha).symm } },
---   {
---     simp_rw [eval_dist_simulate'_bind_apply, hob],
---     simp only [eval_dist_simulate'_apply] at hoa,
---     specialize hoa a s,
---   }
--- end
-
 /-- If the first result of oracle queries is uniformly distributed,
 then the distribution under `simulate'` is unchanged. -/
 theorem eval_dist_simulate'_eq_eval_dist [spec.finite_range]
   (h : ∀ i t s, ⦃so i (t, s)⦄.map prod.fst = pmf.uniform_of_fintype (spec.range i)) :
   ⦃simulate' so oa s⦄ = ⦃oa⦄ :=
 begin
-  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t generalizing s;
-  sorry
+  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t generalizing s,
+  { simp only [simulate'_return, map_return_equiv, eval_dist_return] },
+  { 
+    refine pmf.ext (λ b, _),
+    rw [eval_dist_bind_apply, eval_dist_simulate'_bind_apply],
+    refine tsum_congr (λ a, _),
+    rw [← hoa s],
+    rw [eval_dist_simulate'_apply, ← nnreal.tsum_mul_right],
+    refine tsum_congr (λ t, _),
+    rw ← hob,
+  },
+  { simp only [h, simulate'_query, eval_dist_map, eval_dist_query] }
 end
+
+theorem eval_dist_simulate'_eq_eval_dist_simulate' : sorry := sorry
 
 end eval_dist
 

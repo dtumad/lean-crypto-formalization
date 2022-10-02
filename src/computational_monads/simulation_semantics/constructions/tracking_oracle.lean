@@ -68,7 +68,8 @@ begin
     true_and, set.mem_image, set.mem_set_of_eq, prod.exists, exists_eq_left, exists_apply_eq_apply]
 end
 
-/-- Particular case of `support_simulate'_eq_support` for `query` -/
+/-- Particular case of `support_simulate'_eq_support` for `query`.
+In particular a tracking oracle that *only* does tracking doesn't affect the main output -/
 lemma support_simulate'_query_oracle_eq_support :
   (simulate' ⟪query | update_state, default_state⟫ oa s).support = oa.support :=
 support_simulate'_eq_support query update_state default_state oa s (λ _ _, rfl)
@@ -96,14 +97,25 @@ lemma eval_dist_apply [spec'.finite_range] :
   ⦃⟪o | update_state, default_state⟫ i (t, s)⦄ = ⦃o i t⦄.map (λ u, (u, update_state s i t u)) :=
 by rw [apply_eq, eval_dist_map]
 
-lemma eval_dist_simulate'_eq_eval_dist [spec.finite_range] [spec'.finite_range] :
+/-- If the oracle has uniform distribution, then the distribution under `simulate'` is unchanged -/
+lemma eval_dist_simulate'_eq_eval_dist [spec.finite_range] [spec'.finite_range]
+  (h : ∀ i t, ⦃o i t⦄ = pmf.uniform_of_fintype (spec.range i)) :
   ⦃simulate' ⟪o | update_state, default_state⟫ oa s⦄ = ⦃oa⦄ :=
+eval_dist_simulate'_eq_eval_dist _ oa s (λ i t s, trans 
+  (by simpa [eval_dist_apply, pmf.map_comp] using pmf.map_id ⦃o i t⦄) (h i t))
+
+/-- Specific case of `eval_dist_simulate'_eq_eval_dist` for query.
+In particular if a tracking oracle *only* does tracking gives the same main output distribution. -/
+lemma eval_dist_simulate'_query_eq_eval_dist [spec.finite_range] [spec'.finite_range] :
+  ⦃simulate' ⟪query | update_state, default_state⟫ oa s⦄ = ⦃oa⦄ :=
+eval_dist_simulate'_eq_eval_dist query update_state default_state oa s (λ _ _, rfl)
+
+lemma eval_dist_simulate'_eq_eval_dist_simulate' [spec'.finite_range] :
+  ⦃simulate' ⟪o | update_state, default_state⟫ oa s⦄ =
+    ⦃simulate' ⟪o | update_state', default_state'⟫ oa s'⦄ :=
 begin
-  refine pmf.ext (λ a, _),
-  refine eval_dist_simulate'_apply_eq_induction _ oa s a _ _,
+  refine eval_dist_simulate'_eq_eval_
 end
-
-
 
 end eval_dist
 
