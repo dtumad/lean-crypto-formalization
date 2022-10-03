@@ -75,7 +75,7 @@ lemma support_simulate'_query_oracle_eq_support :
 support_simulate'_eq_support query update_state default_state oa s (λ _ _, rfl)
 
 /-- The support of `simulate'` is independing of the tracking oracle -/
-lemma support_simulate'_eq_of_oracle_eq :
+theorem support_simulate'_eq_of_oracle_eq :
   (simulate' ⟪o | update_state, default_state⟫ oa s).support =
     (simulate' ⟪o | update_state', default_state'⟫ oa s').support :=
 begin
@@ -98,7 +98,7 @@ lemma eval_dist_apply [spec'.finite_range] :
 by rw [apply_eq, eval_dist_map]
 
 /-- If the oracle has uniform distribution, then the distribution under `simulate'` is unchanged -/
-lemma eval_dist_simulate'_eq_eval_dist [spec.finite_range] [spec'.finite_range]
+theorem eval_dist_simulate'_eq_eval_dist [spec.finite_range] [spec'.finite_range]
   (h : ∀ i t, ⦃o i t⦄ = pmf.uniform_of_fintype (spec.range i)) :
   ⦃simulate' ⟪o | update_state, default_state⟫ oa s⦄ = ⦃oa⦄ :=
 eval_dist_simulate'_eq_eval_dist _ oa s (λ i t s, trans 
@@ -110,12 +110,13 @@ lemma eval_dist_simulate'_query_eq_eval_dist [spec.finite_range] [spec'.finite_r
   ⦃simulate' ⟪query | update_state, default_state⟫ oa s⦄ = ⦃oa⦄ :=
 eval_dist_simulate'_eq_eval_dist query update_state default_state oa s (λ _ _, rfl)
 
-lemma eval_dist_simulate'_eq_eval_dist_simulate' [spec'.finite_range] :
+/-- The first output of simulation under different `tracking_oracle` with the same oracle
+is the same regardless of if the tracking functions are different. -/
+theorem eval_dist_simulate'_eq_eval_dist_simulate' [spec'.finite_range] :
   ⦃simulate' ⟪o | update_state, default_state⟫ oa s⦄ =
     ⦃simulate' ⟪o | update_state', default_state'⟫ oa s'⦄ :=
-begin
-  refine eval_dist_simulate'_eq_eval_
-end
+eval_dist_simulate'_eq_eval_dist_simulate' (λ i t s s',
+  by simp only [pmf.map_comp, apply_eq, eval_dist_map]) oa s s'
 
 end eval_dist
 
@@ -123,25 +124,11 @@ section equiv
 
 
 
--- -- TODO: should be able to find some generalization for lemmas looking like this
--- lemma simulate'_query_equiv_self [spec.finite_range] :
---   simulate' (⟪query | update_state, default_state⟫) oa s ≃ₚ oa :=
--- begin
---   sorry,
---   -- { simp only [pure'_eq_pure, simulate'_pure, map_pure_equiv, eval_dist_return] },
---   -- { let so := ⟪query | update_state, default_state⟫,
---   --   calc simulate' so (oa >>= ob) s
---   --     ≃ₚ simulate so oa s >>= λ x, simulate' so (ob x.1) x.2 : simulate'_bind_equiv _ oa ob _
---   --     ... ≃ₚ simulate so oa s >>= λ x, (ob x.1) : bind_equiv_of_equiv_second _ (by simp [hob])
---   --     ... ≃ₚ simulate' so oa s >>= ob : symm (bind_map_equiv _ prod.fst ob)
---   --     ... ≃ₚ oa >>= ob : bind_equiv_of_equiv_first ob (hoa _) },
---   -- { erw [simulate'_query_equiv, tracking_oracle_o,
---   --     fst_map_bind_mk_equiv, map_id_equiv (query i t)], } 
--- end
-
 end equiv
 
 section prob_event
+
+
 
 end prob_event
 

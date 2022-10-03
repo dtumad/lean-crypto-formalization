@@ -473,15 +473,35 @@ begin
     refine pmf.ext (λ b, _),
     rw [eval_dist_bind_apply, eval_dist_simulate'_bind_apply],
     refine tsum_congr (λ a, _),
-    rw [← hoa s],
-    rw [eval_dist_simulate'_apply, ← nnreal.tsum_mul_right],
+    rw [← hoa s, eval_dist_simulate'_apply, ← nnreal.tsum_mul_right],
     refine tsum_congr (λ t, _),
     rw ← hob,
   },
   { simp only [h, simulate'_query, eval_dist_map, eval_dist_query] }
 end
 
-theorem eval_dist_simulate'_eq_eval_dist_simulate' : sorry := sorry
+theorem eval_dist_simulate'_eq_eval_dist_simulate'
+  {so : sim_oracle spec spec' S} {so' : sim_oracle spec spec' S'}
+  (h : ∀ i t s s', ⦃so i (t, s)⦄.map prod.fst = ⦃so' i (t, s')⦄.map prod.fst)
+  (oa : oracle_comp spec α) (s : S) (s' : S') :
+  ⦃simulate' so oa s⦄ = ⦃simulate' so' oa s'⦄ :=
+begin
+  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t generalizing s s',
+  { simp only [simulate'_return, map_return_equiv] },
+  { refine pmf.ext (λ b, _),
+    simp only [eval_dist_simulate'_bind_apply],
+    refine tsum_congr (λ a, _),
+    calc ∑' (t : S), ⦃simulate so oa s⦄ (a, t) * ⦃simulate' so (ob a) t⦄ b
+      = ∑' (t : S), ⦃simulate so oa s⦄ (a, t) * ⦃simulate' so' (ob a) s'⦄ b :
+        tsum_congr (λ t, congr_arg (λ x, _ * x) $ by rw hob a t s')
+      ... = (∑' (t' : S'), ⦃simulate so' oa s'⦄ (a, t')) * ⦃simulate' so' (ob a) s'⦄ b :
+        by simp_rw [nnreal.tsum_mul_right, ← eval_dist_simulate'_apply, hoa s s']
+      ... = ∑' (t' : S'), ⦃simulate so' oa s'⦄ (a, t') * ⦃simulate' so (ob a) s⦄ b :
+        by rw [nnreal.tsum_mul_right, hob]
+      ... = ∑' (t' : S'), ⦃simulate so' oa s'⦄ (a, t') * ⦃simulate' so' (ob a) t'⦄ b :
+        tsum_congr (λ t, congr_arg (λ x, _ * x) $ by rw hob) },
+  { simpa only [simulate'_query, eval_dist_map] using h i t s s' },
+end
 
 end eval_dist
 
