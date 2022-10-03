@@ -1,4 +1,5 @@
-import computational_monads.simulation_semantics.simulate.basic
+import computational_monads.simulation_semantics.simulate.support
+import computational_monads.simulation_semantics.simulate.eval_dist
 
 /-!
 # Tracking Simulation Oracle

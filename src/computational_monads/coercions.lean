@@ -1,6 +1,7 @@
 import computational_monads.constructions.uniform_select
 import computational_monads.simulation_semantics.oracle_append
 import computational_monads.simulation_semantics.constructions.identity_oracle
+import computational_monads.simulation_semantics.simulate.subsingleton
 
 /-!
 # Coercions Between Computations With Different Oracle Access
@@ -92,7 +93,7 @@ end distribution_semantics
 end coin
 
 section coe_append
-
+ 
 section coe_append_right
 
 /-- Coerce a computation to one with access to another oracle on the right,
