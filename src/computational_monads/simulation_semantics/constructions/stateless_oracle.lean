@@ -167,7 +167,7 @@ end
 
 lemma simulate'_query_equiv [spec.finite_range] (s : unit) :
   simulate' ⟪query⟫ oa s ≃ₚ oa :=
-tracking_oracle.simulate'_query_equiv_self _ _ _ _
+tracking_oracle.eval_dist_simulate'_query_eq_eval_dist _ _ oa s
 
 lemma simulate'_query_equiv_of_equiv [spec.finite_range] [spec'.finite_range] (s : unit)
   (ho : ∀ (i : spec.ι) (t : spec.domain i), o i t ≃ₚ query i t) :

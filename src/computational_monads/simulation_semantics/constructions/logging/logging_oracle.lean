@@ -48,7 +48,7 @@ variable [spec.finite_range]
 @[simp]
 lemma eval_dist_simulate'_equiv (oa : oracle_comp spec α) :
   simulate' (logging_oracle spec) oa log ≃ₚ oa :=
-tracking_oracle.simulate'_query_equiv_self _ _ oa log
+tracking_oracle.eval_dist_simulate'_query_eq_eval_dist _ _ oa log
 
 @[simp]
 lemma eval_dist_default_simulate'_equiv (oa : oracle_comp spec α) :

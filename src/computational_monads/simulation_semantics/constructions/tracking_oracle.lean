@@ -106,7 +106,7 @@ eval_dist_simulate'_eq_eval_dist _ oa s (λ i t s, trans
 
 /-- Specific case of `eval_dist_simulate'_eq_eval_dist` for query.
 In particular if a tracking oracle *only* does tracking gives the same main output distribution. -/
-lemma eval_dist_simulate'_query_eq_eval_dist [spec.finite_range] [spec'.finite_range] :
+lemma eval_dist_simulate'_query_eq_eval_dist [spec.finite_range] :
   ⦃simulate' ⟪query | update_state, default_state⟫ oa s⦄ = ⦃oa⦄ :=
 eval_dist_simulate'_eq_eval_dist query update_state default_state oa s (λ _ _, rfl)
 
