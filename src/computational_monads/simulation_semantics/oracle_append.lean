@@ -23,10 +23,6 @@ variables (so : sim_oracle spec spec'' S) (so' : sim_oracle spec' spec'' S')
   (x : spec.domain i × S × S') (x' : spec'.domain i' × S × S')
 
 @[simp]
-lemma default_state_oracle_append : (so ++ₛ so').default_state =
-  (so.default_state, so'.default_state) := rfl
-
-@[simp]
 lemma oracle_append_apply_inl : (so ++ₛ so') (sum.inl i) x =
   do {u_s' ← so i (x.1, x.2.1), return (u_s'.1, u_s'.2, x.2.2)} :=
 begin

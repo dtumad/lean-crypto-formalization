@@ -18,7 +18,7 @@ open oracle_comp oracle_spec
 variables {α β γ : Type} {spec spec' : oracle_spec} [finite_range spec] [finite_range spec']
 
 -- Notation for two computations that are equivalent under `eval_dist`
-notation oa `≃ₚ` oa' := ⦃oa⦄ = ⦃oa'⦄
+notation oa ` ≃ₚ ` oa' := ⦃oa⦄ = ⦃oa'⦄
 
 lemma support_eq_of_equiv {oa : oracle_comp spec α} {oa' : oracle_comp spec' α}
   (h : oa ≃ₚ oa') : oa.support = oa'.support :=
