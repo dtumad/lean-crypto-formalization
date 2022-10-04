@@ -87,14 +87,14 @@ sim_oracle.mask_state (idₛ ++ₛ random_oracle sig.random_oracle_spec)
 /-- A signing oracle corresponding to a given signature scheme -/
 @[reducible, inline, derive computable]
 def signing_oracle_spec (sig : signature) [inhabited sig.S] : oracle_spec :=
-(sig.M →ₒ sig.S)
+(sig.M ↦ₒ sig.S)
 
 /-- Simulate a computation with access to a `signing_oracle_spec` to one with `base_oracle_spec`,
   using the provided public/secret keys to answer queries for signatures.
 Additionally it logs and returns a list queries to the signing oracle -/
 def signing_oracle (sig : signature) (pk : sig.PK) (sk : sig.SK) :
-  sim_oracle sig.signing_oracle_spec sig.base_oracle_spec (query_log (sig.M →ₒ sig.S)) :=
-sim_oracle.mask_state (⟪λ _ m, sig.sign (pk, sk, m)⟫ ∘ₛ (logging_oracle (sig.M →ₒ sig.S)))
+  sim_oracle sig.signing_oracle_spec sig.base_oracle_spec (query_log (sig.M ↦ₒ sig.S)) :=
+sim_oracle.mask_state (⟪λ _ m, sig.sign (pk, sk, m)⟫ ∘ₛ (logging_oracle (sig.M ↦ₒ sig.S)))
   (equiv.prod_punit (query_log (signing_oracle_spec sig)))
 
 section complete
@@ -160,7 +160,7 @@ Runs the adversary with a signing oracle based on the provided public/secret key
   returning the results of the adversary, and a log of the queries made by the adversary
  -/
 def simulate (pk : sig.PK) (sk : sig.SK) :
-  oracle_comp sig.base_oracle_spec (sig.M × sig.S × query_log (sig.M →ₒ sig.S)) := 
+  oracle_comp sig.base_oracle_spec (sig.M × sig.S × query_log (sig.M ↦ₒ sig.S)) := 
 do {
   ((m, s), _, log) ← (default_simulate (idₛ ++ₛ signing_oracle sig pk sk) (adversary.adv pk)),
   return (m, s, log)

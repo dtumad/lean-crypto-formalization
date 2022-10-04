@@ -21,7 +21,7 @@ variable [spec.finite_range]
 /- Big step semantics for a computation with finite range oracles
   The result of queries is assumed to be uniform over the oracle's codomain,
     independent of the given domain values in each query.
-  Usually the `spec` when calling this would just be `unit →ₒ bool` (i.e. a tape of random bits),
+  Usually the `spec` when calling this would just be `unit ↦ₒ bool` (i.e. a tape of random bits),
   However it can be any more general things as well, e.g. uniform sampling from finite sets -/
 private noncomputable def eval_dist' {spec : oracle_spec} [h' : spec.finite_range] :
   Π {α : Type} (oa : oracle_comp spec α), Σ (pa : pmf α), plift (pa.support = oa.support)

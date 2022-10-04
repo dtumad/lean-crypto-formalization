@@ -12,9 +12,9 @@ open oracle_comp oracle_spec
 open_locale nnreal ennreal big_operators
 
 structure forking_adversary (T U α : Type) [inhabited U]  :=
-(adv : oracle_comp (uniform_selecting ++ (T →ₒ U)) α)
+(adv : oracle_comp (uniform_selecting ++ (T ↦ₒ U)) α)
 (q : ℕ)
-(choose_fork : α → query_log (T →ₒ U) → option (fin q))
+(choose_fork : α → query_log (T ↦ₒ U) → option (fin q))
 
 namespace forking_adversary
 
@@ -27,7 +27,7 @@ section sim_with_log
   along with the final result and final cache for the random oracle -/
 -- @[derive decidable]
 def sim_with_log (adv : forking_adversary T U α) :
-  oracle_comp uniform_selecting (option (fin adv.q) × α × query_log uniform_selecting × query_log (T →ₒ U)) :=
+  oracle_comp uniform_selecting (option (fin adv.q) × α × query_log uniform_selecting × query_log (T ↦ₒ U)) :=
 do { ⟨x, log, cache⟩ ← default_simulate (logging_oracle _ ++ₛ random_oracle _) adv.adv,
     return (adv.choose_fork x cache, x, log, cache) }
 
@@ -38,8 +38,8 @@ section sim_from_seed
 /-- Simulate the adversary, allowing for a seed value to the uniform select oracle,
   and a preset cache value for the random oracle -/
 def sim_from_seed (adv : forking_adversary T U α)
-  (seed : query_log uniform_selecting) (cache : query_log (T →ₒ U)) :
-  oracle_comp uniform_selecting (option (fin adv.q) × α × query_log (T →ₒ U)) :=
+  (seed : query_log uniform_selecting) (cache : query_log (T ↦ₒ U)) :
+  oracle_comp uniform_selecting (option (fin adv.q) × α × query_log (T ↦ₒ U)) :=
 do { ⟨x, log, cache⟩ ← simulate (seeded_oracle _ ++ₛ random_oracle _) adv.adv (seed, cache),
   return (adv.choose_fork x cache, x, cache) }
 
@@ -79,7 +79,7 @@ variables {n : ℕ} (adv : forking_adversary T U α)
   responding differently to a query specified by `choose_fork`,
   and returning the results if `choose_fork` makes the same choice each time -/
 def fork : oracle_comp uniform_selecting
-  ((option (fin adv.q)) × α × (query_log (T →ₒ U)) × α × (query_log (T →ₒ U))) :=
+  ((option (fin adv.q)) × α × (query_log (T ↦ₒ U)) × α × (query_log (T ↦ₒ U))) :=
 do {
   -- run the adversary for the first time, logging coins and caching random oracles
   ⟨i, ⟨x, ⟨log, cache⟩⟩⟩ ← adv.sim_with_log,
@@ -104,7 +104,7 @@ section distribution_semantics
 
 open distribution_semantics
 
-lemma eval_dist_fork_apply_some (i : (fin adv.q)) (x x' : α) (cache cache' : query_log (T →ₒ U)) :
+lemma eval_dist_fork_apply_some (i : (fin adv.q)) (x x' : α) (cache cache' : query_log (T ↦ₒ U)) :
   ⦃fork adv⦄ (some i, x, cache, x', cache') =
     ∑' (log : query_log uniform_selecting), ⦃adv.sim_with_log⦄ (some i, x, log, cache)
       * ⦃adv.sim_from_seed log.to_seed (cache.fork_cache () (some i))⦄ (some i, x', cache') :=
@@ -170,7 +170,7 @@ calc ⦃prod.fst <$> fork adv⦄ i
 section choose_fork
 
 /-- For any non-`none` forking result, `choose_fork` matches for both side outputs -/
-lemma choose_fork_eq (i : fin adv.q) (cache cache' : query_log (T →ₒ U)) (x x' : α)
+lemma choose_fork_eq (i : fin adv.q) (cache cache' : query_log (T ↦ₒ U)) (x x' : α)
   (h : ((some i, x, cache, x', cache')) ∈ (fork adv).support) :
   adv.choose_fork x cache = i ∧ adv.choose_fork x' cache' = i :=
 begin
@@ -194,12 +194,12 @@ begin
   -- exact ⟨rfl, rfl⟩,
 end
 
-lemma choose_fork_first_eq (i : fin adv.q) (cache cache' : query_log (T →ₒ U)) (x x' : α)
+lemma choose_fork_first_eq (i : fin adv.q) (cache cache' : query_log (T ↦ₒ U)) (x x' : α)
   (h : (some i, x, cache, x', cache') ∈ (fork adv).support) :
   adv.choose_fork x cache = i :=
 (choose_fork_eq adv i cache cache' x x' h).1
 
-lemma choose_fork_second_eq (i : fin adv.q) (cache cache' : query_log (T →ₒ U)) (x x' : α)
+lemma choose_fork_second_eq (i : fin adv.q) (cache cache' : query_log (T ↦ₒ U)) (x x' : α)
   (h : (some i, x, cache, x', cache') ∈ (fork adv).support) :
   adv.choose_fork x' cache' = i :=
 (choose_fork_eq adv i cache cache' x x' h).2
@@ -211,7 +211,7 @@ section cache_input
 /-- Because of the logging and shared cache both results of fork
   make the same query at the point specified by `choose_fork`.
   TODO: theoretically true for any `j ≤ i`, but not sure that is ever needed? -/
-theorem cache_input_same_at_fork (i : fin adv.q) (cache cache' : query_log (T →ₒ U)) (x x' : α)
+theorem cache_input_same_at_fork (i : fin adv.q) (cache cache' : query_log (T ↦ₒ U)) (x x' : α)
   (h : ((some i, x, cache, x', cache')) ∈ (fork adv).support) :
   query_log.query_input_same_at cache cache' () i :=
 begin
@@ -244,7 +244,7 @@ calc ⦃ λ out, out.1.is_some | fork adv ⦄
     by rw forking_adversary.advantage_eq_sum adv
 
 /- forking algorithm succeeds if a forking point is chosen, and the query outputs differ there -/
-def fork_success : option (fin n) × α × query_log (T →ₒ U) × α × query_log (T →ₒ U) → Prop
+def fork_success : option (fin n) × α × query_log (T ↦ₒ U) × α × query_log (T ↦ₒ U) → Prop
 | ⟨none, _, _, _, _⟩ := false
 | ⟨some i, x, cache, x', cache'⟩ := query_log.query_output_diff_at cache cache' () i
 

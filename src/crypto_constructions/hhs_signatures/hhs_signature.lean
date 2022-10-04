@@ -46,7 +46,7 @@ noncomputable def hhs_signature (G X M : Type) [fintype G] [fintype X] [inhabite
   decidable_eq_M := by apply_instance,
   decidable_eq_S := by apply_instance,
   inhabited_S := by apply_instance,
-  random_oracle_spec := ((vector X n × M) →ₒ vector bool n),
+  random_oracle_spec := ((vector X n × M) ↦ₒ vector bool n),
   random_oracle_spec_finite_range := singleton_spec.finite_range _ _,
   random_oracle_spec_computable := singleton_spec.computable _ _,
   gen := λ _, do {
@@ -128,7 +128,7 @@ end
 -- The choose_fork that will be passed to forking lemma
 -- `q` will be the max queries of the adversary
 def choose_fork {q : ℕ} (x₀ : X) (n : ℕ) (pk : X) (m : M) 
-  (σ : vector (G × bool) n) (log : query_log $ ((vector X n × M) →ₒ vector bool n)) : 
+  (σ : vector (G × bool) n) (log : query_log $ ((vector X n × M) ↦ₒ vector bool n)) : 
   option (fin q) :=
 let index' : option ℕ := log.get_index_of_input ()
   (σ.map (λ ⟨c, b⟩, if b then c +ᵥ pk else c +ᵥ x₀), m) in

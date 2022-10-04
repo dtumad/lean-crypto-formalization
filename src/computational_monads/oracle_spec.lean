@@ -93,18 +93,17 @@ def singleton_spec (T U : Type) [hU : inhabited U] : oracle_spec :=
   range_inhabited := λ _, hU }
 
 infixl` ↦ₒ `:25 := singleton_spec
-notation T `→ₒ` U : 67 := singleton_spec T U
 
 variables (T U : Type) [inhabited U]
 
 instance singleton_spec.computable [hT : decidable_eq T] [hU' : decidable_eq U] :
-  computable (T →ₒ U) :=
+  computable (T ↦ₒ U) :=
 { ι_decidable_eq := punit.decidable_eq,
   domain_decidable_eq := λ _, hT,
   range_decidable_eq := λ _, hU' }
 
 instance singleton_spec.finite_range [hU : fintype U] :
-  finite_range (T →ₒ U) :=
+  finite_range (T ↦ₒ U) :=
 { range_fintype := λ _, hU }
 
 end singleton_spec
@@ -136,7 +135,7 @@ end append
 section coin_oracle
 
 @[derive [finite_range, computable]]
-def coin_oracle : oracle_spec := unit →ₒ bool
+def coin_oracle : oracle_spec := unit ↦ₒ bool
 
 end coin_oracle
 
