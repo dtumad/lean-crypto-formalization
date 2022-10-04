@@ -11,8 +11,7 @@ It also contains a `default_state`, specifying the value to use for the default 
 For example a logging query would use an empty log as the default state.
 
 We define `simulate'` to be simulation followed by discarding the state.
-This is useful for things like a random oracle, where the final result isn't relevant in general.
-
+This is useful for things like a random oracle, where the final log isn't relevant in general.
 -/
 
 open_locale nnreal ennreal
@@ -73,11 +72,12 @@ Marked to be reduced and inlined, so the definition is essentially just notation
 def default_simulate (so : sim_oracle spec spec' S) (oa : oracle_comp spec α) :
   oracle_comp spec' (α × S) := simulate so oa so.default_state
 
-@[simp] -- TODO: seems like simp tags here get applied more eagerly, prob bad
+-- TODO: seems like simp tags here get applied more eagerly, prob bad
 -- Problem being that simp starts with inner most terms
 -- Could also try using simp attributes to decide which simp lemmas to use
 -- i.e. we should have a `unfold_simulate_simps`
 -- On the other hand maybe this just indicates the lower level simp lemmas aren't goode enough
+@[simp]
 lemma simulate_return : simulate so (return a) s = return (a, s) := rfl
 
 lemma simulate_pure' : simulate so (pure' α a) s = return (a, s) := rfl
@@ -85,11 +85,11 @@ lemma simulate_pure' : simulate so (pure' α a) s = return (a, s) := rfl
 lemma simulate_pure : simulate so (pure a) s = return (a, s) := rfl
 
 @[simp]
-lemma simulate_bind : simulate so (oa >>= ob) s
-  = simulate so oa s >>= λ x, simulate so (ob x.1) x.2 := rfl
+lemma simulate_bind : simulate so (oa >>= ob) s =
+  simulate so oa s >>= λ x, simulate so (ob x.1) x.2 := rfl
 
-lemma simulate_bind' : simulate so (bind' α β oa ob) s
-  = simulate so oa s >>= λ x, simulate so (ob x.1) x.2 := rfl
+lemma simulate_bind' : simulate so (bind' α β oa ob) s =
+  simulate so oa s >>= λ x, simulate so (ob x.1) x.2 := rfl
 
 @[simp]
 lemma simulate_query : simulate so (query i t) s = so i (t, s) := rfl
@@ -154,8 +154,8 @@ begin
     (pmf.apply_le_one _ _)) (pmf.summable_coe ⦃simulate so oa s⦄)) (λ a, _),
   have : summable (λ s', ⦃simulate so oa s⦄ (a, s')),
   from nnreal.summable_comp_injective (pmf.summable_coe ⦃simulate so oa s⦄)
-    (λ s s' hs, (prod.eq_iff_fst_eq_snd_eq.1 hs).2),    refine nnreal.summable_of_le _ this,
-  exact λ s, mul_le_of_le_of_le_one le_rfl (pmf.apply_le_one _ _)
+    (λ s s' hs, (prod.eq_iff_fst_eq_snd_eq.1 hs).2),
+  exact nnreal.summable_of_le (λ s, mul_le_of_le_of_le_one le_rfl (pmf.apply_le_one _ _)) this,
 end
 
 end eval_dist

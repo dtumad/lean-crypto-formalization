@@ -92,6 +92,7 @@ def singleton_spec (T U : Type) [hU : inhabited U] : oracle_spec :=
   range := λ _, U,
   range_inhabited := λ _, hU }
 
+infixl` ↦ₒ `:25 := singleton_spec
 notation T `→ₒ` U : 67 := singleton_spec T U
 
 variables (T U : Type) [inhabited U]

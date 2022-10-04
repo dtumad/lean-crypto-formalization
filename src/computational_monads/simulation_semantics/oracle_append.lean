@@ -13,16 +13,15 @@ def oracle_append (so : sim_oracle spec spec'' S) (so' : sim_oracle spec' spec''
   | (sum.inl i) := λ ⟨t, s₁, s₂⟩, do {⟨u, s₁'⟩ ← so i (t, s₁), return (u, s₁', s₂)}
   | (sum.inr i) := λ ⟨t, s₁, s₂⟩, do {⟨u, s₂'⟩ ← so' i (t, s₂), return (u, s₁, s₂')}
   end }
+
   
--- TODO: should be infix?
-notation so `++ₛ` so' := oracle_append so so'
+infixl ` ++ₛ `:65 := oracle_append
 
 variables (so : sim_oracle spec spec'' S) (so' : sim_oracle spec' spec'' S')
   (oa : oracle_comp (spec ++ spec') α) (ob : α → oracle_comp (spec ++ spec') β) (a : α)
   (i : spec.ι) (i' : spec'.ι) (t : spec.domain i) (t' : spec'.domain i') (s : S × S')
   (x : spec.domain i × S × S') (x' : spec'.domain i' × S × S')
 
--- TODO: namespace instead of `_`?
 @[simp]
 lemma default_state_oracle_append : (so ++ₛ so').default_state =
   (so.default_state, so'.default_state) := rfl
