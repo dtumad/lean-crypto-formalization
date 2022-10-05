@@ -66,6 +66,7 @@ namespace ennreal
 
 open_locale classical
 
+-- TSUMS
 lemma to_nnreal_tsum_eq {α : Type*} (f : α → ℝ≥0∞) :
   (∑' x, f x).to_nnreal = if ∃ x, f x = ⊤ then 0 else ∑' x, (f x).to_nnreal :=
 begin
@@ -83,13 +84,50 @@ calc (∑' x, f x).to_real = ↑((∑' x, f x).to_nnreal) : rfl
   ... = ite (∃ x, f x = ⊤) 0 ↑(∑' x, (f x).to_nnreal) : by rw [apply_ite coe, nonneg.coe_zero]
   ... = ite (∃ x, f x = ⊤) 0 (∑' x, (f x).to_real) : congr_arg _ nnreal.coe_tsum
 
-lemma to_nnreal_tsum_eq_of_ne_top {α : Type*} {f : α → ℝ≥0∞} (hf : ∀ x, f x ≠ ⊤) :
+-- `to_nnreal_tsum`
+lemma to_nnreal_tsum {α : Type*} {f : α → ℝ≥0∞} (hf : ∀ x, f x ≠ ⊤) :
   (∑' x, f x).to_nnreal = ∑' x, (f x).to_nnreal :=
 (to_nnreal_tsum_eq f).trans (if_neg (not_exists.2 hf))
 
-lemma to_real_tsum_eq_of_ne_top {α : Type*} {f : α → ℝ≥0∞} (hf : ∀ x, f x ≠ ⊤) :
+lemma to_real_tsum {α : Type*} {f : α → ℝ≥0∞} (hf : ∀ x, f x ≠ ⊤) :
   (∑' x, f x).to_real = ∑' x, (f x).to_real :=
-by simp_rw [ennreal.to_real, to_nnreal_tsum_eq_of_ne_top hf, nnreal.coe_tsum]
+by simp_rw [ennreal.to_real, to_nnreal_tsum hf, nnreal.coe_tsum]
+
+
+
+
+
+
+
+-- SUMS
+lemma sum_eq_tsum_indicator {α β : Type*} [add_comm_monoid β] [topological_space β] [t2_space β]
+  (f : α → β) (s : finset α) : ∑ x in s, f x = ∑' x, set.indicator ↑s f x :=
+have ∀ x ∉ s, set.indicator ↑s f x = 0,
+from λ x hx, set.indicator_apply_eq_zero.2 (λ hx', (hx $ finset.mem_coe.1 hx').elim),
+trans (finset.sum_congr rfl (λ x hx, symm $ set.indicator_apply_eq_self.2
+  (λ hx', false.elim (hx' $ finset.mem_coe.2 hx)))) (tsum_eq_sum this).symm
+
+lemma sum_eq_top_of_eq_top {α : Type*} {f : α → ℝ≥0∞} {s : finset α} (hf : ∃ x ∈ s, f x = ⊤) :
+  ∑ x in s, f x = ⊤ :=
+(sum_eq_tsum_indicator f s).trans (let ⟨x, hx, hxf⟩ := hf in ennreal.tsum_eq_top_of_eq_top
+  ⟨x, trans (set.indicator_apply_eq_self.2 (λ hx', (hx' $ finset.mem_coe.2 hx).elim)) hxf⟩)
+
+lemma to_nnreal_indicator {α : Type*} (s : set α) (f : α → ℝ≥0∞) (x : α) :
+  (s.indicator f x).to_nnreal = s.indicator (ennreal.to_nnreal ∘ f) x :=
+begin
+  simp_rw [set.indicator_apply],
+  split_ifs,
+  { exact rfl },
+  { exact ennreal.zero_to_nnreal }
+end
+
+lemma indicator_apply_eq_top {α : Type*} (s : set α) (f : α → ℝ≥0∞) (x : α) :
+  s.indicator f x = ⊤ ↔ x ∈ s ∧ f x = ⊤ :=
+begin
+  rw [set.indicator_apply],
+  split_ifs;
+  simp only [h, true_and, zero_ne_top, false_and]
+end
 
 end ennreal
 

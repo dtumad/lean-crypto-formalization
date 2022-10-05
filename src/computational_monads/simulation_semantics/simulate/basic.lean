@@ -149,13 +149,24 @@ lemma eval_dist_simulate_map : ⦃simulate so (f <$> oa) s⦄ =
 lemma eval_dist_simulate_bind_apply_eq_tsum_tsum (x : β × S) : ⦃simulate so (oa >>= ob) s⦄ x =
   ∑' (a : α) (s' : S), ⦃simulate so oa s⦄ (a, s') * ⦃simulate so (ob a) s'⦄ x :=
 begin
-  rw [eval_dist_simulate_bind, pmf.bind_apply],
-  refine tsum_prod' (nnreal.summable_of_le (λ x, mul_le_of_le_of_le_one le_rfl
-    (pmf.apply_le_one _ _)) (pmf.summable_coe ⦃simulate so oa s⦄)) (λ a, _),
-  have : summable (λ s', ⦃simulate so oa s⦄ (a, s')),
-  from nnreal.summable_comp_injective (pmf.summable_coe ⦃simulate so oa s⦄)
-    (λ s s' hs, (prod.eq_iff_fst_eq_snd_eq.1 hs).2),
-  exact nnreal.summable_of_le (λ s, mul_le_of_le_of_le_one le_rfl (pmf.apply_le_one _ _)) this,
+
+
+  rw [simulate_bind],
+  rw [eval_dist_prod_bind],
+  
+  -- , eval_dist_bind_apply_eq_to_nnreal],
+  -- rw tsum_prod' ennreal.summable (λ _, ennreal.summable),
+  -- refine trans (to_nnreal_tsum _) _,
+  -- rw [ennreal.to_nnreal_tsum],
+
+
+  -- rw [eval_dist_simulate_bind, pmf.bind_apply],
+  -- refine tsum_prod' (nnreal.summable_of_le (λ x, mul_le_of_le_of_le_one le_rfl
+  --   (pmf.apply_le_one _ _)) (pmf.summable_coe ⦃simulate so oa s⦄)) (λ a, _),
+  -- have : summable (λ s', ⦃simulate so oa s⦄ (a, s')),
+  -- from nnreal.summable_comp_injective (pmf.summable_coe ⦃simulate so oa s⦄)
+  --   (λ s s' hs, (prod.eq_iff_fst_eq_snd_eq.1 hs).2),
+  -- exact nnreal.summable_of_le (λ s, mul_le_of_le_of_le_one le_rfl (pmf.apply_le_one _ _)) this,
 end
 
 end eval_dist
