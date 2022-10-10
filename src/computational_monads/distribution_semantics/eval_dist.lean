@@ -277,7 +277,8 @@ calc ⦃oa >>= ob⦄ c = (∑' (x : α × β), (↑(⦃oa⦄ x * ⦃ob x⦄ c) :
   ... = ∑' (a : α), (∑' (b : β), (↑(⦃oa⦄ (a, b) * ⦃ob (a, b)⦄ c) : ℝ≥0∞)).to_nnreal : begin
     refine ennreal.to_nnreal_tsum (λ a, _),
     have : ∑' (b : β), (↑(⦃oa⦄ (a, b) * ⦃ob (a, b)⦄ c) : ℝ≥0∞) ≤ 1 := begin
-      sorry,
+      have : λ b, (↑(⦃oa⦄ (a, b) * ⦃ob (a, b)⦄ c) : ℝ≥0∞) =
+        λ b, (↑(⦃((pmf.pure (a, b)).bind (λ x, ⦃oa⦄ x)).bind sorry⦄ c) : ℝ≥0∞)
     end,
     refine ne_of_lt _,
     refine lt_of_le_of_lt this ennreal.one_lt_top,
