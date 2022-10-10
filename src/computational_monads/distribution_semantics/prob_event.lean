@@ -136,7 +136,7 @@ calc ⦃e'' | oa >>= ob⦄
   ... = (∑' (a : α), ↑(⦃oa⦄ a) * (⦃ob a⦄.to_outer_measure e'')).to_nnreal : congr_arg
     ennreal.to_nnreal (by erw [eval_dist_bind, pmf.to_outer_measure_bind_apply])
   ... = ∑' (a : α), (↑(⦃oa⦄ a) * (⦃ob a⦄.to_outer_measure e'')).to_nnreal :
-    ennreal.to_nnreal_tsum_eq_of_ne_top begin
+    ennreal.to_nnreal_tsum begin
       refine λ x, _,
       refine ennreal.mul_ne_top _ _,
       {
@@ -241,10 +241,7 @@ begin
   refine trans (prob_event_eq_to_nnreal_to_outer_measure_apply _ _) _,
   refine trans (congr_arg ennreal.to_nnreal $ 
       pmf.to_outer_measure_apply_Union ⦃oa⦄ h) _,
-
-  refine trans (ennreal.to_nnreal_tsum_eq_of_ne_top begin
-    refine λ x, pmf.to_outer_measure_apply_ne_top _ _,
-  end) _,
+  refine trans (ennreal.to_nnreal_tsum $ λ x, pmf.to_outer_measure_apply_ne_top _ _) _,
   refine tsum_congr (λ n, congr_arg ennreal.to_nnreal $ symm _),
   refine @pmf.to_measure_apply_eq_to_outer_measure_apply α ⊤ ⦃oa⦄ (es n)
     measurable_space.measurable_set_top,
@@ -267,15 +264,31 @@ begin
       set.indicator_of_not_mem (ha ∘ (set.mem_union_right _)), zero_add] }
 end
 
+section prod
+
 lemma prob_event_diagonal [hα : decidable_eq α] (oa : oracle_comp spec (α × α)) :
   ⦃set.diagonal α | oa⦄ = ∑' (a : α), ⦃oa⦄ (a, a) :=
 calc ⦃set.diagonal α | oa⦄ = ∑' (x : α × α), ite (x ∈ set.diagonal α) (⦃oa⦄ x) 0 :
     prob_event_eq_tsum oa (set.diagonal α)
   ... = ∑' (a a' : α), ite (a = a') (⦃oa⦄ (a, a')) 0 :
-    sorry --tsum_prod' ennreal.summable (λ _, ennreal.summable)
+    begin
+      refine tsum_prod' _ _,
+      { refine nnreal.summable_of_le (λ x, _) ⦃oa⦄.summable_coe,
+        split_ifs; simp only [le_rfl, zero_le'] },
+      { have : summable (λ a, ⦃oa⦄ (a, a)),
+        from nnreal.summable_comp_injective ⦃oa⦄.summable_coe
+          (λ x y hxy, (prod.eq_iff_fst_eq_snd_eq.1 hxy).1),
+        refine λ a, nnreal.summable_of_le (λ a', _) this,
+        split_ifs,
+        { simp only [set.mem_diagonal_iff] at h,
+          exact h ▸ le_rfl },
+        { exact zero_le' } }
+    end
   ... = ∑' (a a' : α), ite (a = a') (⦃oa⦄ (a, a)) 0 :
     tsum_congr (λ a, tsum_congr (λ a', by by_cases h : a = a'; simp only [h, if_false]))
   ... = ∑' (a a' : α), ite (a' = a) (⦃oa⦄ (a, a)) 0 : by simp_rw [@eq_comm]
   ... = ∑' (a : α), ⦃oa⦄ (a, a) : tsum_congr (λ a, tsum_ite_eq _ _) 
+
+end prod
 
 end distribution_semantics
