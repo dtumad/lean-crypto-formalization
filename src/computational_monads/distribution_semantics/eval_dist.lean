@@ -186,13 +186,6 @@ lemma eval_dist_bind_apply' [spec.computable] [oa.decidable] :
 (eval_dist_bind_apply oa ob b).trans (tsum_eq_sum $ λ a ha,
   by rw [(eval_dist_eq_zero_iff_not_mem_fin_support oa a).2 ha, zero_mul])
 
-/-- Suffices to take the sum over the `support` of the first computation,
-using subtyping to view the support as a `Type` itself. -/
-lemma eval_dist_bind_apply'' : ⦃oa >>= ob⦄ b = ∑' a : oa.support, ⦃oa⦄ a * ⦃ob a⦄ b :=
-(eval_dist_bind_apply oa ob b).trans begin
-  sorry
-end
-
 lemma eval_dist_bind_apply_eq_to_nnreal :
   ⦃oa >>= ob⦄ b = ennreal.to_nnreal (∑' (a : α), ↑(⦃oa⦄ a * ⦃ob a⦄ b)) :=
 begin
@@ -212,7 +205,6 @@ lemma eval_dist_bind' : ⦃bind' α β oa ob⦄ = ⦃oa⦄.bind (λ a, ⦃ob a�
 lemma eval_dist_bind'_apply : ⦃bind' α β oa ob⦄ b = ∑' (a : α), ⦃oa⦄ a * ⦃ob a⦄ b :=
 eval_dist_bind_apply oa ob b
 
-@[simp]
 lemma eval_dist_bind_bind_apply : ⦃do {a ← oa, b ← ob a, oc a b}⦄ c
   = ∑' (a : α) (b : β), ⦃oa⦄ a * ⦃ob a⦄ b * ⦃oc a b⦄ c :=
 (eval_dist_bind_apply oa _ c).trans (tsum_congr $ λ a,
@@ -220,7 +212,23 @@ lemma eval_dist_bind_bind_apply : ⦃do {a ← oa, b ← ob a, oc a b}⦄ c
 
 lemma eval_dist_bind_bind_apply_eq_to_nnreal : ⦃do {a ← oa, b ← ob a, oc a b}⦄ c
   = ennreal.to_nnreal (∑' (a : α) (b : β), ↑(⦃oa⦄ a * ⦃ob a⦄ b * ⦃oc a b⦄ c)) :=
-sorry
+begin
+  have : ∀ a b c, ⦃oa⦄ a * ⦃ob a⦄ b * ⦃oc a b⦄ c ≤ ⦃ob a⦄ b,
+  from λ a b c, calc ⦃oa⦄ a * ⦃ob a⦄ b * ⦃oc a b⦄ c 
+    ≤ ⦃oa⦄ a * ⦃ob a⦄ b * 1 : mul_le_mul' le_rfl (⦃oc a b⦄.coe_le_one c)
+    ... = ⦃oa⦄ a * ⦃ob a⦄ b : by rw [mul_one]
+    ... ≤ 1 * ⦃ob a⦄ b : mul_le_mul' (⦃oa⦄.coe_le_one a) le_rfl
+    ... ≤ ⦃ob a⦄ b : by rw [one_mul],
+  have : ∀ a c, ∑' (b : β), (↑(⦃oa⦄ a * ⦃ob a⦄ b * ⦃oc a b⦄ c) : ℝ≥0∞) ≠ ⊤,
+  from λ a c, ennreal.tsum_coe_ne_top_iff_summable.2
+    (nnreal.summable_of_le (λ b, this a b c) ⦃ob a⦄.summable_coe),
+  calc ⦃oa >>= (λ a, ob a >>= (λ b, oc a b))⦄ c
+    = ∑' (a : α) (b : β), ⦃oa⦄ a * ⦃ob a⦄ b * ⦃oc a b⦄ c : (eval_dist_bind_bind_apply oa ob oc c)
+    ... = ∑' (a : α), (∑' (b : β), (↑(⦃oa⦄ a * ⦃ob a⦄ b * ⦃oc a b⦄ c) : ℝ≥0∞)).to_nnreal :
+      (tsum_congr (λ a, (ennreal.to_nnreal_tsum_coe).symm))
+    ... = (∑' (a : α) (b : β), (↑(⦃oa⦄ a * ⦃ob a⦄ b * ⦃oc a b⦄ c) : ℝ≥0∞)).to_nnreal :
+      (ennreal.to_nnreal_tsum $ λ a, this a c).symm
+end
 
 lemma eval_dist_bind_bind_apply' [spec.computable] [oa.decidable] [∀ a, (ob a).decidable] :
   ⦃do {a ← oa, b ← ob a, oc a b}⦄ c =
@@ -262,6 +270,8 @@ end map
 
 section prod
 
+#check ennreal.ne_top_of_tsum_ne_top
+
 /-- Binding on a computation of a `prod` type can be written as a double sum,
 instead of a sum of the product type -/
 lemma eval_dist_prod_bind {α β γ : Type} {spec : oracle_spec} [spec.finite_range]
@@ -276,12 +286,26 @@ calc ⦃oa >>= ob⦄ c = (∑' (x : α × β), (↑(⦃oa⦄ x * ⦃ob x⦄ c) :
   end
   ... = ∑' (a : α), (∑' (b : β), (↑(⦃oa⦄ (a, b) * ⦃ob (a, b)⦄ c) : ℝ≥0∞)).to_nnreal : begin
     refine ennreal.to_nnreal_tsum (λ a, _),
-    have : ∑' (b : β), (↑(⦃oa⦄ (a, b) * ⦃ob (a, b)⦄ c) : ℝ≥0∞) ≤ 1 := begin
-      have : λ b, (↑(⦃oa⦄ (a, b) * ⦃ob (a, b)⦄ c) : ℝ≥0∞) =
-        λ b, (↑(⦃((pmf.pure (a, b)).bind (λ x, ⦃oa⦄ x)).bind sorry⦄ c) : ℝ≥0∞)
-    end,
-    refine ne_of_lt _,
-    refine lt_of_le_of_lt this ennreal.one_lt_top,
+    have : ∑' (b : β), (↑(⦃oa⦄ (a, b) * ⦃ob (a, b)⦄ c) : ℝ≥0∞) ≤ ⦃oa >>= ob⦄ c,
+    {
+      rw [eval_dist_bind_apply, ennreal.coe_tsum],
+      {
+        refine tsum_le_tsum_of_inj (λ b, (a, b)) _ _ (λ _, le_rfl) ennreal.summable ennreal.summable,
+        refine (λ a' b' h, (prod.eq_iff_fst_eq_snd_eq.1 h).2),
+        intros x hx,
+        refine zero_le',
+      },
+      have := pmf.summable_coe ⦃oa⦄,
+      refine nnreal.summable_of_le (λ x, _) this,
+      refine le_trans _ (le_of_eq $ (mul_one $ ⦃oa⦄ x)),
+      refine mul_le_mul' le_rfl (⦃ob x⦄.coe_le_one c),
+    },
+    {
+      refine ne_of_lt (lt_of_le_of_lt _ ennreal.one_lt_top),
+      refine le_trans this _,
+      refine ennreal.coe_le_one_iff.2 _,
+      refine ⦃oa >>= ob⦄.coe_le_one c,
+    }
   end
   ... = ∑' (a : α) (b : β), ⦃oa⦄ (a, b) * ⦃ob (a, b)⦄ c : begin
     refine tsum_congr (λ a, _),

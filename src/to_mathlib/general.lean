@@ -89,12 +89,13 @@ lemma to_nnreal_tsum {α : Type*} {f : α → ℝ≥0∞} (hf : ∀ x, f x ≠ �
   (∑' x, f x).to_nnreal = ∑' x, (f x).to_nnreal :=
 (to_nnreal_tsum_eq f).trans (if_neg (not_exists.2 hf))
 
+lemma to_nnreal_tsum_coe {α : Type*} {f : α → ℝ≥0} :
+  (∑' x, (f x : ℝ≥0∞)).to_nnreal = ∑' x, f x :=
+trans (to_nnreal_tsum $ λ x, ennreal.coe_ne_top) (tsum_congr $ λ x, ennreal.to_nnreal_coe)
+
 lemma to_real_tsum {α : Type*} {f : α → ℝ≥0∞} (hf : ∀ x, f x ≠ ⊤) :
   (∑' x, f x).to_real = ∑' x, (f x).to_real :=
 by simp_rw [ennreal.to_real, to_nnreal_tsum hf, nnreal.coe_tsum]
-
-
-
 
 
 
