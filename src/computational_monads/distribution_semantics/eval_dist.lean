@@ -1,4 +1,5 @@
 import to_mathlib.general
+import to_mathlib.pmf_stuff
 import probability.probability_mass_function.uniform
 import computational_monads.support.fin_support
 
@@ -180,7 +181,8 @@ by simp only [← bind'_eq_bind, eval_dist, eval_dist']
 lemma eval_dist_bind_apply : ⦃oa >>= ob⦄ b = ∑' (a : α), ⦃oa⦄ a * ⦃ob a⦄ b :=
 by simpa only [eval_dist_bind]
 
-/-- If `fin_support` is defined, the `eval_dist` of a bind can be computed as a `finset.sum`.-/
+/-- If `fin_support` is defined, the `eval_dist` of a bind can be computed as a `finset.sum`.
+TODO: naming -/
 lemma eval_dist_bind_apply' [spec.computable] [oa.decidable] :
   ⦃oa >>= ob⦄ b = ∑ a in oa.fin_support, ⦃oa⦄ a * ⦃ob a⦄ b :=
 (eval_dist_bind_apply oa ob b).trans (tsum_eq_sum $ λ a ha,
@@ -188,17 +190,11 @@ lemma eval_dist_bind_apply' [spec.computable] [oa.decidable] :
 
 lemma eval_dist_bind_apply_eq_to_nnreal :
   ⦃oa >>= ob⦄ b = ennreal.to_nnreal (∑' (a : α), ↑(⦃oa⦄ a * ⦃ob a⦄ b)) :=
-begin
-  have : ∀ a, (↑(⦃oa⦄ a * ⦃ob a⦄ b) : ℝ≥0∞) ≠ ⊤ := λ a, ennreal.coe_ne_top,
-  simp only [eval_dist_bind_apply, ennreal.to_nnreal_tsum this, ennreal.to_nnreal_coe],
-end
+by rw [ennreal.to_nnreal_tsum_coe_eq, eval_dist_bind_apply]
 
 lemma eval_dist_bind_apply_eq_to_nnreal' [spec.computable] [oa.decidable] :
   ⦃oa >>= ob⦄ b = ennreal.to_nnreal (∑ a in oa.fin_support, ↑(⦃oa⦄ a * ⦃ob a⦄ b)) :=
-begin
-  have : ∀ a ∈ oa.fin_support, (↑(⦃oa⦄ a * ⦃ob a⦄ b) : ℝ≥0∞) ≠ ⊤ := λ a ha, ennreal.coe_ne_top,
-  simp only [eval_dist_bind_apply', ennreal.to_nnreal_sum this, ennreal.to_nnreal_coe],
-end
+by rw [ennreal.to_nnreal_sum_coe_eq, eval_dist_bind_apply']
 
 lemma eval_dist_bind' : ⦃bind' α β oa ob⦄ = ⦃oa⦄.bind (λ a, ⦃ob a⦄) := eval_dist_bind oa ob
 
@@ -211,7 +207,7 @@ lemma eval_dist_bind_bind_apply : ⦃do {a ← oa, b ← ob a, oc a b}⦄ c
   by simp only [eval_dist_bind_apply, nnreal.tsum_mul_left (⦃oa⦄ a), mul_assoc])
 
 lemma eval_dist_bind_bind_apply_eq_to_nnreal : ⦃do {a ← oa, b ← ob a, oc a b}⦄ c
-  = ennreal.to_nnreal (∑' (a : α) (b : β), ↑(⦃oa⦄ a * ⦃ob a⦄ b * ⦃oc a b⦄ c)) :=
+  = (∑' (a : α) (b : β), ↑(⦃oa⦄ a * ⦃ob a⦄ b * ⦃oc a b⦄ c) : ℝ≥0∞).to_nnreal :=
 begin
   have : ∀ a b c, ⦃oa⦄ a * ⦃ob a⦄ b * ⦃oc a b⦄ c ≤ ⦃ob a⦄ b,
   from λ a b c, calc ⦃oa⦄ a * ⦃ob a⦄ b * ⦃oc a b⦄ c 
@@ -225,9 +221,9 @@ begin
   calc ⦃oa >>= (λ a, ob a >>= (λ b, oc a b))⦄ c
     = ∑' (a : α) (b : β), ⦃oa⦄ a * ⦃ob a⦄ b * ⦃oc a b⦄ c : (eval_dist_bind_bind_apply oa ob oc c)
     ... = ∑' (a : α), (∑' (b : β), (↑(⦃oa⦄ a * ⦃ob a⦄ b * ⦃oc a b⦄ c) : ℝ≥0∞)).to_nnreal :
-      (tsum_congr (λ a, (ennreal.to_nnreal_tsum_coe).symm))
+      (tsum_congr (λ a, (ennreal.to_nnreal_tsum_coe_eq _).symm))
     ... = (∑' (a : α) (b : β), (↑(⦃oa⦄ a * ⦃ob a⦄ b * ⦃oc a b⦄ c) : ℝ≥0∞)).to_nnreal :
-      (ennreal.to_nnreal_tsum $ λ a, this a c).symm
+      (ennreal.tsum_to_nnreal_eq $ λ a, this a c).symm
 end
 
 lemma eval_dist_bind_bind_apply' [spec.computable] [oa.decidable] [∀ a, (ob a).decidable] :
@@ -270,55 +266,17 @@ end map
 
 section prod
 
-#check ennreal.ne_top_of_tsum_ne_top
-
 /-- Binding on a computation of a `prod` type can be written as a double sum,
 instead of a sum of the product type -/
-lemma eval_dist_prod_bind {α β γ : Type} {spec : oracle_spec} [spec.finite_range]
-  (oa : oracle_comp spec (α × β)) (ob : α × β → oracle_comp spec γ) (c : γ) :
-  ⦃oa >>= ob⦄ c = ∑' (a : α) (b : β), ⦃oa⦄ (a, b) * ⦃ob (a, b)⦄ c :=
-calc ⦃oa >>= ob⦄ c = (∑' (x : α × β), (↑(⦃oa⦄ x * ⦃ob x⦄ c) : ℝ≥0∞)).to_nnreal : begin
-    rw [eval_dist_bind_apply_eq_to_nnreal],
-  end
-  ... = (∑' (a : α) (b : β), (↑(⦃oa⦄ (a, b) * ⦃ob (a, b)⦄ c) : ℝ≥0∞)).to_nnreal : begin
-    refine congr_arg ennreal.to_nnreal _,
-    refine tsum_prod' ennreal.summable (λ _, ennreal.summable),
-  end
-  ... = ∑' (a : α), (∑' (b : β), (↑(⦃oa⦄ (a, b) * ⦃ob (a, b)⦄ c) : ℝ≥0∞)).to_nnreal : begin
-    refine ennreal.to_nnreal_tsum (λ a, _),
-    have : ∑' (b : β), (↑(⦃oa⦄ (a, b) * ⦃ob (a, b)⦄ c) : ℝ≥0∞) ≤ ⦃oa >>= ob⦄ c,
-    {
-      rw [eval_dist_bind_apply, ennreal.coe_tsum],
-      {
-        refine tsum_le_tsum_of_inj (λ b, (a, b)) _ _ (λ _, le_rfl) ennreal.summable ennreal.summable,
-        refine (λ a' b' h, (prod.eq_iff_fst_eq_snd_eq.1 h).2),
-        intros x hx,
-        refine zero_le',
-      },
-      have := pmf.summable_coe ⦃oa⦄,
-      refine nnreal.summable_of_le (λ x, _) this,
-      refine le_trans _ (le_of_eq $ (mul_one $ ⦃oa⦄ x)),
-      refine mul_le_mul' le_rfl (⦃ob x⦄.coe_le_one c),
-    },
-    {
-      refine ne_of_lt (lt_of_le_of_lt _ ennreal.one_lt_top),
-      refine le_trans this _,
-      refine ennreal.coe_le_one_iff.2 _,
-      refine ⦃oa >>= ob⦄.coe_le_one c,
-    }
-  end
-  ... = ∑' (a : α) (b : β), ⦃oa⦄ (a, b) * ⦃ob (a, b)⦄ c : begin
-    refine tsum_congr (λ a, _),
-    refine ennreal.to_nnreal_tsum (λ b, _),
-    refine ne_of_lt _,
-    refine lt_of_le_of_lt _ ennreal.one_lt_top,
-    rw ennreal.coe_le_one_iff,
-    suffices : ⦃oa⦄ (a, b) * ⦃ob (a, b)⦄ c ≤ 1 * 1,
-    by rwa [mul_one] at this,
-    refine mul_le_mul _ _ zero_le' zero_le',
-    refine pmf.coe_le_one _ _,
-    refine pmf.coe_le_one _ _,
-  end
+lemma eval_dist_prod_bind (oa : oracle_comp spec (α × β)) (ob : α × β → oracle_comp spec γ)
+  (c : γ) : ⦃oa >>= ob⦄ c = ∑' (a : α) (b : β), ⦃oa⦄ (a, b) * ⦃ob (a, b)⦄ c :=
+by rw [eval_dist_bind, pmf.prod_bind_apply]
+
+lemma eval_dist_map_fst (oa : oracle_comp spec (α × β)) (a : α) :
+  ⦃prod.fst <$> oa⦄ a = ∑' (b : β), ⦃oa⦄ (a, b) :=
+begin
+  sorry,
+end
 
 end prod
 

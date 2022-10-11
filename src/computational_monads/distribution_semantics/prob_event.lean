@@ -134,7 +134,7 @@ calc ⦃e'' | oa >>= ob⦄
   ... = (∑' (a : α), ↑(⦃oa⦄ a) * (⦃ob a⦄.to_outer_measure e'')).to_nnreal : congr_arg
     ennreal.to_nnreal (by erw [eval_dist_bind, pmf.to_outer_measure_bind_apply])
   ... = ∑' (a : α), (↑(⦃oa⦄ a) * (⦃ob a⦄.to_outer_measure e'')).to_nnreal :
-    ennreal.to_nnreal_tsum begin
+    ennreal.tsum_to_nnreal_eq begin
       refine λ x, _,
       refine ennreal.mul_ne_top _ _,
       {
@@ -239,7 +239,7 @@ begin
   refine trans (prob_event_eq_to_nnreal_to_outer_measure_apply _ _) _,
   refine trans (congr_arg ennreal.to_nnreal $ 
       pmf.to_outer_measure_apply_Union ⦃oa⦄ h) _,
-  refine trans (ennreal.to_nnreal_tsum $ λ x, pmf.to_outer_measure_apply_ne_top _ _) _,
+  refine trans (ennreal.tsum_to_nnreal_eq $ λ x, pmf.to_outer_measure_apply_ne_top _ _) _,
   refine tsum_congr (λ n, congr_arg ennreal.to_nnreal $ symm _),
   refine @pmf.to_measure_apply_eq_to_outer_measure_apply α ⊤ ⦃oa⦄ (es n)
     measurable_space.measurable_set_top,

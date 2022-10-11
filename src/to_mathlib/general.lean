@@ -45,26 +45,14 @@ end tsum_prod
 
 namespace ennreal
 
-section tsum
-
-lemma to_nnreal_tsum {α : Type*} {f : α → ℝ≥0∞} (hf : ∀ x, f x ≠ ⊤) :
-  (∑' x, f x).to_nnreal = ∑' x, (f x).to_nnreal :=
-calc (∑' x, f x).to_nnreal = (∑' (b : α), (((f b).to_nnreal) : ℝ≥0∞)).to_nnreal :
-    congr_arg ennreal.to_nnreal (tsum_congr $ λ x, (coe_to_nnreal (hf x)).symm)
-  ... = ∑' x, (f x).to_nnreal : by rw [← nnreal.tsum_eq_to_nnreal_tsum]
-
-lemma to_nnreal_tsum_coe {α : Type*} {f : α → ℝ≥0} :
+lemma to_nnreal_tsum_coe_eq {α : Type*} (f : α → ℝ≥0) :
   (∑' x, (f x : ℝ≥0∞)).to_nnreal = ∑' x, f x :=
-trans (to_nnreal_tsum $ λ x, ennreal.coe_ne_top) (tsum_congr $ λ x, ennreal.to_nnreal_coe)
+trans (tsum_to_nnreal_eq $ λ x, ennreal.coe_ne_top) (tsum_congr $ λ x, ennreal.to_nnreal_coe)
 
-lemma to_real_tsum {α : Type*} {f : α → ℝ≥0∞} (hf : ∀ x, f x ≠ ⊤) :
-  (∑' x, f x).to_real = ∑' x, (f x).to_real :=
-calc (∑' x, f x).to_real = ↑((∑' x, f x).to_nnreal) : rfl
-  ... = ∑' x, (f x).to_real : by simpa only [to_nnreal_tsum hf, nnreal.coe_tsum]
-
-end tsum
-
-section sum
+lemma to_nnreal_sum_coe_eq {α : Type*} (f : α → ℝ≥0) (s : finset α) :
+  (∑ x in s, (f x : ℝ≥0∞)).to_nnreal = ∑ x in s, f x :=
+trans (to_nnreal_sum $ λ x _, ennreal.coe_ne_top)
+  (finset.sum_congr rfl $ λ x _, ennreal.to_nnreal_coe)
 
 -- SUMS
 lemma sum_eq_tsum_indicator {α β : Type*} [add_comm_monoid β] [topological_space β] [t2_space β]
@@ -73,13 +61,6 @@ have ∀ x ∉ s, set.indicator ↑s f x = 0,
 from λ x hx, set.indicator_apply_eq_zero.2 (λ hx', (hx $ finset.mem_coe.1 hx').elim),
 trans (finset.sum_congr rfl (λ x hx, symm $ set.indicator_apply_eq_self.2
   (λ hx', false.elim (hx' $ finset.mem_coe.2 hx)))) (tsum_eq_sum this).symm
-
-lemma sum_eq_top_of_eq_top {α : Type*} {f : α → ℝ≥0∞} {s : finset α} (hf : ∃ x ∈ s, f x = ⊤) :
-  ∑ x in s, f x = ⊤ :=
-(sum_eq_tsum_indicator f s).trans (let ⟨x, hx, hxf⟩ := hf in ennreal.tsum_eq_top_of_eq_top
-  ⟨x, trans (set.indicator_apply_eq_self.2 (λ hx', (hx' $ finset.mem_coe.2 hx).elim)) hxf⟩)
-
-end sum
 
 end ennreal
 

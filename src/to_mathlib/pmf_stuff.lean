@@ -69,6 +69,60 @@ lemma pmf.to_outer_measure_apply_Union {α : Type*} (p : pmf α) {f : ℕ → se
 measure_theory.outer_measure.Union_eq_of_caratheodory _
   (λ n, pmf.measurable_set_to_outer_measure_caratheodory _ (f n)) h
 
+lemma pmf.prod_bind_apply {α β γ : Type}
+  (p : pmf (α × β)) (q : α × β → pmf γ) (c : γ) :
+  p.bind q c = ∑' (a : α) (b : β), p (a, b) * q (a, b) c :=
+calc p.bind q c = (∑' (x : α × β), (↑(p x * q x c) : ℝ≥0∞)).to_nnreal :
+    by rw [pmf.bind_apply, ennreal.to_nnreal_tsum_coe_eq]
+  ... = (∑' (a : α) (b : β), (↑(p (a, b) * q (a, b) c) : ℝ≥0∞)).to_nnreal :
+    congr_arg ennreal.to_nnreal (tsum_prod' ennreal.summable (λ _, ennreal.summable))
+  ... = ∑' (a : α), (∑' (b : β), (↑(p (a, b) * q (a, b) c) : ℝ≥0∞)).to_nnreal :
+    begin
+      refine ennreal.tsum_to_nnreal_eq (λ a, _),
+      have : ∑' (b : β), (↑(p (a, b) * q (a, b) c) : ℝ≥0∞) ≤ p.bind q c,
+      {
+
+        rw [pmf.bind_apply, ennreal.coe_tsum],
+        {
+          refine tsum_le_tsum_of_inj (λ b, (a, b)) _ _ (λ _, le_rfl) ennreal.summable ennreal.summable,
+          refine (λ a' b' h, (prod.eq_iff_fst_eq_snd_eq.1 h).2),
+          intros x hx,
+          refine zero_le',
+        },
+        have := pmf.summable_coe p,
+        refine nnreal.summable_of_le (λ x, _) this,
+        refine le_trans _ (le_of_eq $ (mul_one $ p x)),
+        refine mul_le_mul' le_rfl ((q x).coe_le_one c),
+      },
+      {
+        refine ne_of_lt (lt_of_le_of_lt _ ennreal.one_lt_top),
+        refine le_trans this _,
+        refine ennreal.coe_le_one_iff.2 _,
+        refine (p.bind q).coe_le_one c,
+      }
+    end
+  ... = ∑' (a : α) (b : β), p (a, b) * q (a, b) c :
+    begin
+      refine tsum_congr (λ a, _),
+      refine ennreal.tsum_to_nnreal_eq (λ b, _),
+      refine ne_of_lt _,
+      refine lt_of_le_of_lt _ ennreal.one_lt_top,
+      rw ennreal.coe_le_one_iff,
+      suffices : p (a, b) * q (a, b) c ≤ 1 * 1,
+      by rwa [mul_one] at this,
+      refine mul_le_mul _ _ zero_le' zero_le',
+      refine pmf.coe_le_one _ _,
+      refine pmf.coe_le_one _ _,
+    end
+
+lemma pmf.map_fst_apply {α β : Type*} (p : pmf (α × β)) (a : α) :
+  p.map prod.fst a = ∑' (b : β), p (a, b) :=
+begin
+  rw [pmf.map_apply],
+  sorry,
+end
+
+
 -- lemma pmf.to_outer_measure_apply_image {α : Type*} (p : pmf β) (e : set α) (f : α → β) :
 --   p.to_outer_measure (f '' e) = 
 
