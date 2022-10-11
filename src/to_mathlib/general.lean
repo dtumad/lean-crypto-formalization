@@ -8,7 +8,7 @@ import analysis.convex.specific_functions
 # Misc Lemmas That Ideally Should Port to Mathlib
 -/
 
-open_locale measure_theory nnreal ennreal big_operators
+open_locale measure_theory nnreal ennreal big_operators classical
 
 variables {α β γ : Type*} {n : ℕ}
 
@@ -20,26 +20,6 @@ set.ext (λ y, by simp only [set.mem_singleton_iff,
 lemma finset.count_to_list [decidable_eq α] (s : finset α) (a : α) :
   s.to_list.count a = if a ∈ s then 1 else 0 :=
 by simp only [list.count_eq_of_nodup s.nodup_to_list, finset.mem_to_list]
-
-section option
-
-lemma option.set_eq_union_is_none_is_some {α : Type*} (s : set (option α)) :
-  s = {x ∈ s | x.is_none} ∪ {x ∈ s | x.is_some} :=
-begin
-  refine set.ext (λ x, ⟨λ hx, _, λ hx, _⟩),
-  { cases x with x; simp [hx], },
-  { exact or.rec_on hx (λ hx', hx'.1) (λ hx', hx'.1) }
-end
-
-lemma option.disjoint_is_none_is_some {α : Type*} (s : set (option α)) :
-  disjoint {x ∈ s | option.is_none x} {x ∈ s | option.is_some x} :=
-begin
-  refine le_of_eq (set.eq_empty_of_forall_not_mem $ option.rec _ _),
-  { exact λ hx, by simpa using hx.right },
-  { refine λ hx, by simp }
-end
-
-end option
 
 section tsum
 
@@ -63,8 +43,6 @@ begin
 end
 
 namespace ennreal
-
-open_locale classical
 
 -- TSUMS
 lemma to_nnreal_tsum_eq {α : Type*} (f : α → ℝ≥0∞) :
@@ -113,6 +91,9 @@ lemma sum_eq_top_of_eq_top {α : Type*} {f : α → ℝ≥0∞} {s : finset α} 
 (sum_eq_tsum_indicator f s).trans (let ⟨x, hx, hxf⟩ := hf in ennreal.tsum_eq_top_of_eq_top
   ⟨x, trans (set.indicator_apply_eq_self.2 (λ hx', (hx' $ finset.mem_coe.2 hx).elim)) hxf⟩)
 
+
+
+-- indicators
 lemma to_nnreal_indicator {α : Type*} (s : set α) (f : α → ℝ≥0∞) (x : α) :
   (s.indicator f x).to_nnreal = s.indicator (ennreal.to_nnreal ∘ f) x :=
 begin
@@ -133,7 +114,8 @@ end
 end ennreal
 
 /-- Version of `tsum_ite_eq_extract` for `nnreal` rather than `topological_add_group`. -/
-lemma nnreal.tsum_ite_eq_extract [decidable_eq β] {f : β → ℝ≥0} (hf : summable f) (b : β) :
+lemma nnreal.tsum_ite_eq_extract [decidable_eq β]
+  {f : β → ℝ≥0} (hf : summable f) (b : β) :
   ∑' x, f x = f b + ∑' x, ite (x = b) 0 (f x) :=
 calc ∑' x, f x = ∑' x, ((ite (x = b) (f x) 0) + (ite (x = b) 0 (f x))) :
     tsum_congr (λ n, by split_ifs; simp only [zero_add, add_zero])
@@ -144,6 +126,42 @@ calc ∑' x, f x = ∑' x, ((ite (x = b) (f x) 0) + (ite (x = b) 0 (f x))) :
     by { congr, exact (tsum_eq_single b (λ b' hb', if_neg hb')) }
   ... = f b + ∑' x, ite (x = b) 0 (f x) :
     by { congr, exact (if_pos rfl) }
+
+#check tsum_ite_eq_extract
+
+#check summable_of_nonneg_of_le
+
+#check summable.summable_of_eq_zero_or_self
+
+lemma summable.help {α β : Type*} [topological_space α] [add_comm_monoid α] [t2_space α]
+  [has_continuous_add α] {f g : β → α} (hf : summable f)
+  (h : ∀ b, g b = 0 ∨ g b = f b) : summable g :=
+begin
+  have := summable
+end
+
+lemma tsum_ite_eq_extract' {α β : Type*} [topological_space α] [add_comm_monoid α] [t2_space α]
+  [has_continuous_add α]
+  [decidable_eq β]
+  {f : β → α} (hf : summable f) (b : β) :
+  ∑' x, f x = f b + ∑' x, ite (x = b) 0 (f x) :=
+calc ∑' x, f x = ∑' x, ((ite (x = b) (f x) 0) + (ite (x = b) 0 (f x))) :
+    tsum_congr (λ n, by split_ifs; simp only [zero_add, add_zero])
+  ... = ∑' x, ite (x = b) (f x) 0 + ∑' x, ite (x = b) 0 (f x) :
+    begin
+      refine tsum_add _ _,
+      {
+        refine summable.ite
+      }
+    end
+    
+    -- by refine tsum_add (nnreal.summable_of_le (λ b', _) hf) (nnreal.summable_of_le (λ b', _) hf);
+    --   split_ifs; simp only [le_rfl, zero_le']
+  ... = (ite (b = b) (f b) 0) + ∑' x, ite (x = b) 0 (f x) :
+    by { congr, exact (tsum_eq_single b (λ b' hb', if_neg hb')) }
+  ... = f b + ∑' x, ite (x = b) 0 (f x) :
+    by { congr, exact (if_pos rfl) }
+
 
 lemma nnreal.tsum_option [decidable_eq α] {f : option α → ℝ≥0} (hf : summable f) :
   tsum f = f none + ∑' (a : α), f (some a) :=

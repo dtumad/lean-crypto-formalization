@@ -27,7 +27,6 @@ variable [spec'.finite_range]
 Defined in terms of the outer measure associated to the corresponding `pmf`.
 The initial definition uses a `measure` to access more general lemmas,
   but is equal to the `outer_measure` (see `prob_event_eq_to_outer_measure_apply`). -/
-
 noncomputable def prob_event {α : Type} (oa : oracle_comp spec α) (event : set α) : ℝ≥0 :=
 ennreal.to_nnreal (@pmf.to_measure α ⊤ ⦃oa⦄ event)
 
@@ -65,8 +64,7 @@ end
 lemma prob_event_eq_tsum [decidable_pred (∈ e)] : ⦃e | oa⦄ = ∑' x, if x ∈ e then ⦃oa⦄ x else 0 :=
 begin
   refine (prob_event_eq_tsum_indicator oa e).trans (tsum_congr $ λ x, _),
-  rw [set.indicator],
-  split_ifs; refl,
+  unfold set.indicator, congr,
 end
 
 lemma prob_event_eq_of_equiv {oa : oracle_comp spec α} {oa' : oracle_comp spec' α}
@@ -259,7 +257,8 @@ begin
       simp only [ha, ha', this, set.indicator_of_mem, set.indicator_of_not_mem,
         not_false_iff, add_zero]},
     { have : a ∈ e' := set.mem_union.elim ha (false.elim ∘ ha') id,
-      simp only [ha, ha', this, set.indicator_of_mem, set.indicator_of_not_mem, not_false_iff, zero_add]} },
+      simp only [ha, ha', this, set.indicator_of_mem, set.indicator_of_not_mem,
+        not_false_iff, zero_add]} },
   { rw [set.indicator_of_not_mem ha, set.indicator_of_not_mem (ha ∘ (set.mem_union_left _)),
       set.indicator_of_not_mem (ha ∘ (set.mem_union_right _)), zero_add] }
 end
