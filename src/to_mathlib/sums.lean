@@ -8,7 +8,6 @@ open_locale nnreal ennreal big_operators classical
 
 variables {α β γ : Type*}
 
-
 section tsum_prod
 
 lemma tsum_prod_eq_tsum_snd {α β γ : Type*} [add_comm_monoid α] [topological_space α] [t2_space α]

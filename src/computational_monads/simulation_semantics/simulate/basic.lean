@@ -321,59 +321,20 @@ lemma eval_dist_simulate'_bind_apply (b : β) : ⦃simulate' so (oa >>= ob) s⦄
 begin
   rw [simulate'_bind, eval_dist_map_fst],
   simp_rw [eval_dist_prod_bind, eval_dist_simulate'_apply],
-  simp_rw [← nnreal.tsum_mul_left],
+  simp_rw [← nnreal.tsum_mul_left], 
   -- TODO: Should all probabilities just be `ℝ≥0∞`?
-  rw [← ennreal.coe_eq_coe],
-  calc ↑(∑' t a s', ⦃simulate so oa s⦄ (a, s') * ⦃simulate so (ob a) s'⦄ (b, t))
-    =  ∑' t a s', ↑(⦃simulate so oa s⦄ (a, s') * ⦃simulate so (ob a) s'⦄ (b, t)) : begin
-      rw [ennreal.coe_tsum],
-      {
-        apply tsum_congr,
-        intro t,
-        rw [ennreal.coe_tsum],
-        {
-          apply tsum_congr,
-          intro t,
-          rw [ennreal.coe_tsum],
-          
-          sorry,
-        },
-        {
-          sorry
-        }
-      },
-      {
-        sorry,
-      }
-    end
-    ... = ∑' a t s', ↑(⦃simulate so oa s⦄ (a, s') * ⦃simulate so (ob a) s'⦄ (b, t)) :
-      begin
-        refine ennreal.tsum_comm,
-      end
-    ... = ∑' a s' t, ↑(⦃simulate so oa s⦄ (a, s') * ⦃simulate so (ob a) s'⦄ (b, t)) :
-      begin
-        refine tsum_congr (λ a, ennreal.tsum_comm),
-      end
-    ... = ↑(∑' a s' t, ⦃simulate so oa s⦄ (a, s') * ⦃simulate so (ob a) s'⦄ (b, t)) : begin
+  -- rw [← ennreal.coe_eq_coe],
+  calc ∑' t a s', ⦃simulate so oa s⦄ (a, s') * ⦃simulate so (ob a) s'⦄ (b, t)
+    = ∑' a t s', ⦃simulate so oa s⦄ (a, s') * ⦃simulate so (ob a) s'⦄ (b, t) :
+    begin
       sorry
     end
-  
+    ... = ∑' a s' t, ⦃simulate so oa s⦄ (a, s') * ⦃simulate so (ob a) s'⦄ (b, t) :
+    begin
+      sorry
+    end
+    
 end
-
--- calc ⦃simulate' so (oa >>= ob) s⦄ b
---   = ∑' (t : S) (a : α) (s' : S), ⦃simulate so oa s⦄ (a, s') * ⦃simulate so (ob a) s'⦄ (b, t) :
---     by simp_rw [eval_dist_simulate'_apply, eval_dist_simulate_bind_apply_eq_tsum_tsum]
---   ... = ∑' (a : α) (t s' : S), ⦃simulate so oa s⦄ (a, s') * ⦃simulate so (ob a) s'⦄ (b, t) :
---     begin
---       sorry
---     end
---   ... = ∑' (a : α) (s' t : S), ⦃simulate so oa s⦄ (a, s') * ⦃simulate so (ob a) s'⦄ (b, t) :
---     begin
---       refine tsum_congr (λ a, _),
---       sorry
---     end
---   ... = ∑' (a : α) (s' : S), ⦃simulate so oa s⦄ (a, s') * ⦃simulate' so (ob a) s'⦄ b :
---     by simp_rw [eval_dist_simulate'_apply, ← nnreal.tsum_mul_left]
 
 lemma eval_dist_simulate'_bind' : ⦃simulate' so (bind' α β oa ob) s⦄ =
   ⦃simulate so oa s⦄.bind (λ x, ⦃simulate' so (ob x.1) x.2⦄) := eval_dist_simulate'_bind _ _ _ s

@@ -122,6 +122,8 @@ calc p.bind q c = (∑' (x : α × β), (↑(p x * q x c) : ℝ≥0∞)).to_nnre
       refine pmf.coe_le_one _ _,
     end
 
+
+
 /-- Alternative to `prod_bind_apply` with the opposite order of summation -/
 lemma pmf.prod_bind_apply' {α β γ : Type*}
   (p : pmf (α × β)) (q : α × β → pmf γ) (c : γ) :
