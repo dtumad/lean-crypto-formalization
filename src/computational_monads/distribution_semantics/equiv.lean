@@ -1,5 +1,4 @@
 import computational_monads.distribution_semantics.eval_dist
-import to_mathlib.pmf_stuff
 
 /-!
 # Equivalence Between Computations in Terms of Distribution Semantics

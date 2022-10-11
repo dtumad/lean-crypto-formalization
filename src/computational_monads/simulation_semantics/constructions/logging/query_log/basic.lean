@@ -1,5 +1,4 @@
 import computational_monads.oracle_spec
-import to_mathlib.general
 
 /-!
 # Oracle Query Log

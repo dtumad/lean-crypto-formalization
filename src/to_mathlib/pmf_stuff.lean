@@ -1,12 +1,11 @@
-import to_mathlib.general
-
+import to_mathlib.sums
 import probability.probability_mass_function.uniform
 
 /-!
 # Lemmas about probability mass functions to move to mathlib 
 -/
 
-open_locale measure_theory nnreal ennreal big_operators
+open_locale measure_theory nnreal ennreal big_operators classical
 
 variables {α β γ : Type*}
 
@@ -14,14 +13,22 @@ lemma pmf.measurable_set_to_outer_measure_caratheodory (p : pmf α) (s : set α)
   measurable_set[p.to_outer_measure.caratheodory] s :=
 p.to_outer_measure_caratheodory.symm ▸ measurable_space.measurable_set_top
 
--- TODO: generalize to higher universes
-@[simp]
-lemma pmf.map_bind {α β γ : Type} (p : pmf α) (q : α → pmf β) (f : β → γ) :
-  (p.bind q).map f = p.bind (λ a, (q a).map f) :=
-pmf.monad_map_eq_map f (p.bind q) ▸ map_bind _
+lemma pmf.indicator_summable {α : Type*} (p : pmf α) (s : set α)
+  : summable (s.indicator p) :=
+nnreal.summable_of_le (set.indicator_le_self s p) p.summable_coe
+
+lemma pmf.apply_le_one {α : Type*} (p : pmf α) (a : α) : p a ≤ 1 :=
+p.coe_le_one a
+
+section monad
 
 @[simp]
-lemma pmf.bind_map {α β γ : Type} (p : pmf α) (f : α → β) (q : β → pmf γ) :
+lemma pmf.map_bind {α β γ : Type*} (p : pmf α) (q : α → pmf β) (f : β → γ) :
+  (p.bind q).map f = p.bind (λ a, (q a).map f) :=
+sorry
+
+@[simp]
+lemma pmf.bind_map {α β γ : Type*} (p : pmf α) (f : α → β) (q : β → pmf γ) :
   (p.map f).bind q = p.bind (q ∘ f) :=
 begin
   rw [pmf.map],
@@ -32,9 +39,13 @@ begin
 end
 
 @[simp]
-lemma pmf.bind_const {α β : Type} (p : pmf α) (q : pmf β) :
+lemma pmf.bind_const {α β : Type*} (p : pmf α) (q : pmf β) :
   (p.bind $ λ _, q) = q :=
 pmf.ext (λ x, by rw [pmf.bind_apply, nnreal.tsum_mul_right _ (q x), pmf.tsum_coe, one_mul])
+
+end monad
+
+section measure
 
 lemma pmf.to_measure_apply_ne_top {α : Type*} [measurable_space α] (p : pmf α) (s : set α) :
   p.to_measure s ≠ ⊤ := measure_theory.measure_ne_top p.to_measure s
@@ -46,13 +57,6 @@ begin
   refine λ h, (@pmf.to_measure_apply_ne_top α ⊤ p s) (le_antisymm le_top $
     le_trans (le_of_eq h.symm) (@pmf.to_outer_measure_apply_le_to_measure_apply α ⊤ p s)),
 end
-
-lemma pmf.indicator_summable {α : Type*} (p : pmf α) (s : set α)
-  : summable (s.indicator p) :=
-nnreal.summable_of_le (set.indicator_le_self s p) p.summable_coe
-
-lemma pmf.apply_le_one {α : Type*} (p : pmf α) (a : α) : p a ≤ 1 :=
-p.coe_le_one a
 
 lemma pmf.to_measure_apply_eq_iff_to_outer_measure_apply_eq {α : Type*} [measurable_space α]
   (p : pmf α) (x : ℝ≥0∞) (s : set α) (hs : measurable_set s) :
@@ -69,7 +73,11 @@ lemma pmf.to_outer_measure_apply_Union {α : Type*} (p : pmf α) {f : ℕ → se
 measure_theory.outer_measure.Union_eq_of_caratheodory _
   (λ n, pmf.measurable_set_to_outer_measure_caratheodory _ (f n)) h
 
-lemma pmf.prod_bind_apply {α β γ : Type}
+end measure
+
+section prod
+
+lemma pmf.prod_bind_apply {α β γ : Type*}
   (p : pmf (α × β)) (q : α × β → pmf γ) (c : γ) :
   p.bind q c = ∑' (a : α) (b : β), p (a, b) * q (a, b) c :=
 calc p.bind q c = (∑' (x : α × β), (↑(p x * q x c) : ℝ≥0∞)).to_nnreal :
@@ -115,15 +123,54 @@ calc p.bind q c = (∑' (x : α × β), (↑(p x * q x c) : ℝ≥0∞)).to_nnre
       refine pmf.coe_le_one _ _,
     end
 
-lemma pmf.map_fst_apply {α β : Type*} (p : pmf (α × β)) (a : α) :
-  p.map prod.fst a = ∑' (b : β), p (a, b) :=
+/-- Alternative to `prod_bind_apply` with the opposite order of summation -/
+lemma pmf.prod_bind_apply' {α β γ : Type*}
+  (p : pmf (α × β)) (q : α × β → pmf γ) (c : γ) :
+  p.bind q c = ∑' (b : β) (a : α), p (a, b) * q (a, b) c :=
 begin
-  rw [pmf.map_apply],
-  sorry,
+  let p' : pmf (β × α) := p.map prod.swap,
+  let q' : β × α → pmf γ := q ∘ prod.swap,
+  have : p.bind q = (p.map prod.swap).bind (q ∘ prod.swap) := begin
+    -- ext x,
+    rw [pmf.bind_map p prod.swap],
+    rw [function.comp.assoc],
+    rw [prod.swap_swap_eq],
+    rw [function.comp.right_id]
+  end,
+  rw this,
+
+  refine (pmf.prod_bind_apply _ _ c).trans _,
+  refine tsum_congr (λ b, _),
+  refine tsum_congr (λ a, _),
+  rw [function.comp_app, prod.swap_prod_mk],
+  have : (pmf.map prod.swap p) (b, a) = p (a, b) := begin
+    rw [pmf.map_apply],
+    refine trans (tsum_eq_single (a, b) _) _,
+    {
+      intros x hx,
+      have : (b, a) ≠ x.swap := λ hx', hx _,
+      simp only [this, if_false],
+      refine trans _ (trans (congr_arg prod.swap hx'.symm) rfl),
+      refine symm (prod.swap_swap x)
+    },
+    { rw [prod.swap_prod_mk, eq_self_iff_true, if_true] }
+  end,
+  rw this,
 end
 
+lemma pmf.map_fst_apply {α β : Type*} (p : pmf (α × β)) (a : α) :
+  p.map prod.fst a = ∑' (b : β), p (a, b) :=
+calc p.map prod.fst a = ∑' (a' : α) (b : β), ite (a = a') (p (a', b)) 0 :
+    by simp_rw [pmf.map, pmf.prod_bind_apply p, function.comp_apply,
+      pmf.pure_apply, mul_ite, mul_one, mul_zero]
+  ... = ∑' (b : β), ite (a = a) (p (a, b)) 0 :
+    tsum_eq_single _ (λ a' ha', by simp only [ne.symm ha', if_false, tsum_zero])
+  ... = ∑' (b : β), p (a, b) : by simp only [eq_self_iff_true, if_true]
 
--- lemma pmf.to_outer_measure_apply_image {α : Type*} (p : pmf β) (e : set α) (f : α → β) :
---   p.to_outer_measure (f '' e) = 
+lemma pmf.map_snd_apply {α β : Type*} (p : pmf (α × β)) (b : β) :
+  p.map prod.snd b = ∑' (a : α), p (a, b) :=
+begin
+  
+end
 
--- lemma pmf.indicator_map {α : Type*} (p : pmf α) (f : α → β) (e : set β) :
+end prod

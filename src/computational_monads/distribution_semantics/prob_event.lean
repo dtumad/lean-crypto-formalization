@@ -1,6 +1,5 @@
 import computational_monads.distribution_semantics.equiv
 import probability.independence
-import to_mathlib.pmf_stuff
 
 /-!
 # Probability of Events
