@@ -71,16 +71,16 @@ Requires a different convergence assumption involving `function.update` -/
 lemma tsum_ite_eq_extract' {α β : Type*} [topological_space α] [add_comm_monoid α] [t2_space α]
   [has_continuous_add α] {f : β → α} (b : β) (hf : summable (f.update b 0)) :
   ∑' x, f x = f b + ∑' x, ite (x = b) 0 (f x) :=
-calc ∑' x, f x = ∑' x, ((ite (x = b) (f x) 0) + (ite (x = b) 0 (f x))) :
-    tsum_congr (λ n, by split_ifs; simp only [zero_add, add_zero])
-  ... = ∑' x, ite (x = b) (f x) 0 + ∑' x, ite (x = b) 0 (f x) :
-    have (λ (b' : β), ite (b' = b) 0 (f b')) = function.update f b 0,
-    from funext (λ b', symm $ f.update_apply b 0 b'),
-    tsum_add ⟨ite (b = b) (f b) 0, has_sum_single b (λ b hb, if_neg hb)⟩ (this.symm ▸ hf)
-  ... = (ite (b = b) (f b) 0) + ∑' x, ite (x = b) 0 (f x) :
+calc ∑' x, f x = ∑' x, ((ite (x = b) (f x) 0) + (f.update b 0 x)) :
+    tsum_congr (λ n, begin
+    
+    end)
+  ... = ∑' x, ite (x = b) (f x) 0 + ∑' x, f.update b 0 x :
+    tsum_add ⟨ite (b = b) (f b) 0, has_sum_single b (λ b hb, if_neg hb)⟩ (hf)
+  ... = (ite (b = b) (f b) 0) + ∑' x, f.update b 0 x :
     by { congr, exact (tsum_eq_single b (λ b' hb', if_neg hb')) }
   ... = f b + ∑' x, ite (x = b) 0 (f x) :
-    by { congr, exact (if_pos rfl) }
+    by simp only [function.update, eq_self_iff_true, if_true, eq_rec_constant, dite_eq_ite]
 
 lemma nnreal.tsum_ite_eq_extract {f : β → ℝ≥0} (hf : summable f) (b : β) :
   ∑' x, f x = f b + ∑' x, ite (x = b) 0 (f x) :=
