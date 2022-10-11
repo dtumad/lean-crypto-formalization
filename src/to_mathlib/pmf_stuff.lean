@@ -17,15 +17,12 @@ lemma pmf.indicator_summable {α : Type*} (p : pmf α) (s : set α)
   : summable (s.indicator p) :=
 nnreal.summable_of_le (set.indicator_le_self s p) p.summable_coe
 
-lemma pmf.apply_le_one {α : Type*} (p : pmf α) (a : α) : p a ≤ 1 :=
-p.coe_le_one a
-
 section monad
 
 @[simp]
 lemma pmf.map_bind {α β γ : Type*} (p : pmf α) (q : α → pmf β) (f : β → γ) :
   (p.bind q).map f = p.bind (λ a, (q a).map f) :=
-sorry
+by simp_rw [pmf.map, pmf.bind_bind]
 
 @[simp]
 lemma pmf.bind_map {α β γ : Type*} (p : pmf α) (f : α → β) (q : β → pmf γ) :
@@ -77,6 +74,8 @@ end measure
 
 section prod
 
+/-- If and intermediate distribution is a product, can express the probability as a
+double sum rather than a sum over a `prod` type. -/
 lemma pmf.prod_bind_apply {α β γ : Type*}
   (p : pmf (α × β)) (q : α × β → pmf γ) (c : γ) :
   p.bind q c = ∑' (a : α) (b : β), p (a, b) * q (a, b) c :=
@@ -158,6 +157,7 @@ begin
   rw this,
 end
 
+/-- First output of a computation of a `prod` type as a summation over possible second outputs. -/
 lemma pmf.map_fst_apply {α β : Type*} (p : pmf (α × β)) (a : α) :
   p.map prod.fst a = ∑' (b : β), p (a, b) :=
 calc p.map prod.fst a = ∑' (a' : α) (b : β), ite (a = a') (p (a', b)) 0 :
@@ -167,10 +167,15 @@ calc p.map prod.fst a = ∑' (a' : α) (b : β), ite (a = a') (p (a', b)) 0 :
     tsum_eq_single _ (λ a' ha', by simp only [ne.symm ha', if_false, tsum_zero])
   ... = ∑' (b : β), p (a, b) : by simp only [eq_self_iff_true, if_true]
 
+/-- Second output of a computation of a `prod` type as a summation over possible first outputs. -/
 lemma pmf.map_snd_apply {α β : Type*} (p : pmf (α × β)) (b : β) :
   p.map prod.snd b = ∑' (a : α), p (a, b) :=
-begin
-  
-end
+calc p.map prod.snd b = ∑' (b' : β) (a : α), ite (b = b') (p (a, b')) 0 :
+    by simp_rw [pmf.map, pmf.prod_bind_apply' p, function.comp_apply,
+      pmf.pure_apply, mul_ite, mul_one, mul_zero]
+  ... = ∑' (a : α), ite (b = b) (p (a, b)) 0 :
+    tsum_eq_single _ (λ a' ha', by simp only [ne.symm ha', if_false, tsum_zero])
+  ... = ∑' (a : α), p (a, b) : by simp only [eq_self_iff_true, if_true]
+
 
 end prod
