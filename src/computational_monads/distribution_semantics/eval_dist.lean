@@ -41,6 +41,11 @@ noncomputable def eval_dist (oa : oracle_comp spec α) : pmf α :=
 
 notation `⦃` oa `⦄` := eval_dist oa
 
+noncomputable def eval_dist_e (oa : oracle_comp spec α) (a : α) : ℝ≥0∞ :=
+↑((eval_dist' oa).1 a)
+
+notation `⦃=` a `|` oa `⦄` := eval_dist_e oa a
+
 section support
 
 variables (oa : oracle_comp spec α) (a : α)
