@@ -8,6 +8,13 @@ open_locale nnreal ennreal big_operators classical
 
 variables {α β γ : Type*}
 
+lemma sum_eq_tsum_indicator {α β : Type*} [add_comm_monoid β] [topological_space β] [t2_space β]
+  (f : α → β) (s : finset α) : ∑ x in s, f x = ∑' x, set.indicator ↑s f x :=
+have ∀ x ∉ s, set.indicator ↑s f x = 0,
+from λ x hx, set.indicator_apply_eq_zero.2 (λ hx', (hx $ finset.mem_coe.1 hx').elim),
+(finset.sum_congr rfl (λ x hx, (set.indicator_apply_eq_self.2 $
+  λ hx', (hx' $ finset.mem_coe.2 hx).elim).symm)).trans (tsum_eq_sum this).symm
+
 section tsum_prod
 
 lemma tsum_prod_eq_tsum_snd {α β γ : Type*} [add_comm_monoid α] [topological_space α] [t2_space α]
@@ -42,16 +49,40 @@ lemma to_nnreal_sum_coe_eq {α : Type*} (f : α → ℝ≥0) (s : finset α) :
 trans (to_nnreal_sum $ λ x _, ennreal.coe_ne_top)
   (finset.sum_congr rfl $ λ x _, ennreal.to_nnreal_coe)
 
-lemma sum_eq_tsum_indicator {α β : Type*} [add_comm_monoid β] [topological_space β] [t2_space β]
-  (f : α → β) (s : finset α) : ∑ x in s, f x = ∑' x, set.indicator ↑s f x :=
-have ∀ x ∉ s, set.indicator ↑s f x = 0,
-from λ x hx, set.indicator_apply_eq_zero.2 (λ hx', (hx $ finset.mem_coe.1 hx').elim),
-trans (finset.sum_congr rfl (λ x hx, symm $ set.indicator_apply_eq_self.2
-  (λ hx', false.elim (hx' $ finset.mem_coe.2 hx)))) (tsum_eq_sum this).symm
-
 end ennreal
 
 section extract
+
+
+/-- Version of `tsum_ite_eq_extract` for `add_comm_monoid` rather than `add_comm_group`.
+Rather than showing that `f.update` has a specific sum in terms of `has_sum`,
+it gives a relationship between the sums of `f` and `f.update` given that both exist. -/
+lemma has_sum.update' {α β : Type*} [topological_space α] [add_comm_monoid α] [t2_space α]
+  [has_continuous_add α] {f : β → α} {a a' : α} (hf : has_sum f a)
+  (b : β) (x : α) (hf' : has_sum (f.update b x) a') : a + x = a' + f b :=
+begin
+  have : ∀ b', f b' + ite (b' = b) x 0 = f.update b x b' + ite (b' = b) (f b) 0,
+  { intro b',
+    split_ifs with hb',
+    { simpa only [function.update_apply, hb', eq_self_iff_true] using add_comm (f b) x },
+    { simp only [function.update_apply, hb', if_false] } },
+  have h := hf.add ((has_sum_ite_eq b x)),
+  simp_rw this at h,
+  exact h.unique (hf'.add (has_sum_ite_eq b (f b)))
+end
+
+/-- Version of `tsum_ite_eq_extract` for `add_comm_monoid` rather than `add_comm_group`.
+Rather than showing that the `ite` expression has a specific sum in terms of `has_sum`,
+it gives a relationship between the sums of `f` and `ite (n = b) 0 (f n)` given that both exist. -/
+lemma has_sum.ite_eq_extract' {α β : Type*} [topological_space α] [add_comm_monoid α] [t2_space α]
+  [has_continuous_add α] {f : β → α} {a : α} (hf : has_sum f a)
+  (b : β) (a' : α) (hf' : has_sum (λ n, ite (n = b) 0 (f n)) a') :
+  a = a' + f b :=
+begin
+  refine (add_zero a).symm.trans (hf.update' b 0 _),
+  convert hf',
+  exact funext (f.update_apply b 0),  
+end
 
 /-- Version of `tsum_ite_eq_extract` for `add_comm_monoid` rather than `add_comm_group`.
 Requires a different convergence assumption involving `function.update` -/
