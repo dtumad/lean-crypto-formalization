@@ -19,6 +19,13 @@ inductive queries_at_most : Π {α : Type}, oracle_comp spec α → ℕ → Type
     (hoa : queries_at_most oa p) (h : p ≤ q) :
     queries_at_most oa q
 
+example : oracle_comp coin_oracle ℕ :=
+do {
+    b ← coin,
+    -- if b then (return 0) else (return 1)
+    return (if b then 0 else 1)
+}
+
 /-- An function `ℕ → oracle_comp` has `polynomial_queries` if the number of queries made
   has growth bounded by a polynomial in the input `ℕ`. Note that it's a sigma type, not a `Prop`.
   Used to show that an `oracle_comp` with polynomial time simulated by a polynomial time oracle

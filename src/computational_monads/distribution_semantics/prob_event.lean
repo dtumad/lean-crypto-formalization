@@ -182,6 +182,13 @@ by simp only [prob_event_eq_to_nnreal_to_outer_measure_apply,
 
 end map
 
+/-- Probability that a predicate holds on the first part of output. -/
+example : ⦃λ x, x.1 = tt | do {b ← coin, return (b, 5)}⦄ = 1 / 2 :=
+begin
+  simp [tsum_fintype],
+  split_ifs,
+end
+
 section support
 
 /-- Given a `finset` containing the `support` of some `oracle_comp`,

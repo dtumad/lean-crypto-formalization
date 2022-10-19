@@ -37,7 +37,7 @@ lemma bind'_eq_bind (oa : oracle_comp spec α) (ob : α → oracle_comp spec β)
 
 lemma map_eq_bind (oa : oracle_comp spec α) (f : α → β) : f <$> oa = oa >>= return ∘ f := rfl
 
--- Simple computation flipping two coins and returning a value based on them
+/-- Simple computation flipping two coins and returning a value based on them -/
 example : oracle_comp coin_oracle ℕ :=
 do { b ← coin, b' ← coin,
   x ← return (if b && b' then 2 else 3),
