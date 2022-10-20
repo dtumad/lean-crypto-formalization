@@ -135,21 +135,19 @@ by simp only [support_map, set.mem_image, exists_prop]
 end map
 
 /-- Should be able to automatically derive the support for most simple computations -/
-example : support (do {
+example : do {
   β ← coin, β' ← coin,
   x ← if β then return 0 else return 1,
   y ← return (if β' then 1 else 0),
   return (x * y)
-}) = {1, 0} :=
-by simp
+}.support = {1, 0} := by simp
 
-example : support (do {
+example : do {
   β ← coin,
   x ← return (if β then 1 else 0),
   y ← return (if β then 0 else 1),
   return (x * y)
-}) = {0} :=
-by simp
+}.support = {0} := by simp
 
 end support
 

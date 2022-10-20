@@ -272,7 +272,7 @@ support_simulate'_bind so oa ob s
 lemma support_simulate'_query : (simulate' so (query i t) s).support =
   prod.fst '' (so i (t, s)).support := by simp only [simulate'_query, support_map]
 
-@[simp] -- example of why more specific simp lemmas are maybe better
+@[simp] -- TODO: of why more specific simp lemmas are maybe better
 lemma support_simulate'_map : (simulate' so (f <$> oa) s).support =
   f '' (simulate' so oa s).support :=
 by simp only [simulate', support_map, support_simulate_map, set.image_image, prod.map_fst]

@@ -13,10 +13,7 @@ structure oracle_spec : Type 1 :=
 example : oracle_spec :=
 { ι := unit ⊕ unit,
   domain := λ _, ℕ,
-  range := λ x, match x with
-  | (sum.inl ()) := ℕ
-  | (sum.inr ()) := ℤ
-  end,
+  range := λ x, match x with | (sum.inl ()) := ℕ | (sum.inr ()) := ℤ end,
   range_inhabited := λ x, match x with
   | (sum.inl ()) := nat.inhabited
   | (sum.inr ()) := int.inhabited

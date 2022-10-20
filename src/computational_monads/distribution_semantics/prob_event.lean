@@ -32,8 +32,7 @@ ennreal.to_nnreal (@pmf.to_measure α ⊤ ⦃oa⦄ event)
 notation `⦃` event `|` oa `⦄` := prob_event oa event
 
 /-- Probability that the result of a computation is greater than `5` -/
-noncomputable example (oa : oracle_comp oracle_spec.coin_oracle (fin 10)) :
-  ℝ≥0∞ := ⦃(>) 5 | oa⦄
+noncomputable example (oa : oracle_comp oracle_spec.coin_oracle (fin 10)) : ℝ≥0∞ := ⦃(>) 5 | oa⦄
 
 lemma prob_event_eq_to_nnreal_to_outer_measure_apply :
   ⦃e | oa⦄ = (⦃oa⦄.to_outer_measure e).to_nnreal :=
@@ -181,13 +180,6 @@ by simp only [prob_event_eq_to_nnreal_to_outer_measure_apply,
   eval_dist_map, pmf.to_outer_measure_map_apply]
 
 end map
-
-/-- Probability that a predicate holds on the first part of output. -/
-example : ⦃λ x, x.1 = tt | do {b ← coin, return (b, 5)}⦄ = 1 / 2 :=
-begin
-  simp [tsum_fintype],
-  split_ifs,
-end
 
 section support
 

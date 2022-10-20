@@ -1,4 +1,5 @@
 import to_mathlib.general
+import topology.algebra.infinite_sum
 
 /-!
 # Lemmas about Sums that fit better in mathlib
@@ -15,25 +16,27 @@ from λ x hx, set.indicator_apply_eq_zero.2 (λ hx', (hx $ finset.mem_coe.1 hx')
 (finset.sum_congr rfl (λ x hx, (set.indicator_apply_eq_self.2 $
   λ hx', (hx' $ finset.mem_coe.2 hx).elim).symm)).trans (tsum_eq_sum this).symm
 
+-- NOTE: not going to PR this
 section tsum_prod
 
+open function set
+
 lemma tsum_prod_eq_tsum_snd {α β γ : Type*} [add_comm_monoid α] [topological_space α] [t2_space α]
-  {f : β × γ → α} (b : β) (h : ∀ b' ≠ b, ∀ c, f (b', c) = 0) :
+  {f : β × γ → α} (b : β) (h : ∀ c, ∀ b' ≠ b, f (b', c) = 0) :
   ∑' (x : β × γ), f x = ∑' (c : γ), f (b, c) :=
 begin
-  sorry,
+  have : support f ⊆ range (λ x, (b, x)),
+  { rintros ⟨b, c'⟩ hx, obtain rfl := of_not_not ((h _ _).mt hx.out), exact mem_range_self _ },
+  rw [← tsum_subtype_eq_of_support_subset this, tsum_range f (prod.mk.inj_left b)]
 end
 
 lemma tsum_prod_eq_tsum_fst {α β γ : Type*} [add_comm_monoid α] [topological_space α] [t2_space α]
-  {f : β × γ → α} (c : γ) (h : ∀ c' ≠ c, ∀ b, f (b, c') = 0) :
+  {f : β × γ → α} (c : γ) (h : ∀ b, ∀ c' ≠ c, f (b, c') = 0) :
   ∑' (x : β × γ), f x = ∑' (b : β), f (b, c) :=
 begin
-  refine tsum_eq_tsum_of_ne_zero_bij (λ b, (b.1, c)) (λ x x' hx, _) (λ x hx, _) (λ x, rfl),
-  { simpa only [eq_self_iff_true, and_true, prod.eq_iff_fst_eq_snd_eq] using hx },
-  { cases x with b c',
-    have hc : c' = c := by_contra (λ hc, hx $ h c' hc b),
-    refine ⟨⟨b, by rwa [function.mem_support, ← hc]⟩, _⟩,
-    simp only [prod.mk.inj_iff, eq_self_iff_true, true_and, hc] }
+  have : support f ⊆ range (λ x, (x, c)),
+  { rintros ⟨b, c'⟩ hx, obtain rfl := of_not_not ((h _ _).mt hx.out), exact mem_range_self _ },
+  rw [← tsum_subtype_eq_of_support_subset this, tsum_range f (prod.mk.inj_right c)]
 end
 
 end tsum_prod
