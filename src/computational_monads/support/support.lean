@@ -16,8 +16,6 @@ open oracle_spec
 
 variables {α β γ : Type} {spec spec' : oracle_spec}
 
-section support
-
 /-- Set of possible outputs of the computation, allowing for any possible output of the queries.
   This will generally correspond to the support of `eval_dist`,
     but is slightly more general since it doesn't require α finite range. -/
@@ -148,42 +146,5 @@ example : do {
   y ← return (if β then 0 else 1),
   return (x * y)
 }.support = {0} := by simp
-
-end support
-
--- TODO: file and general `support` file?
-section prod
-
-@[simp]
-lemma support_bind_prod_mk_fst (oa : oracle_comp spec α) (b : β) :
-  (oa >>= λ a, return (a, b)).support = {x | x.1 ∈ oa.support ∧ x.2 = b} :=
-begin
-  ext x, 
-  simp_rw [support_bind, support_return, set.mem_Union, set.mem_singleton_iff,
-    prod.eq_iff_fst_eq_snd_eq, exists_prop],
-  exact ⟨λ h, let ⟨i, hi, hi', hb⟩ := h in ⟨hi'.symm ▸ hi, hb⟩, λ h, ⟨x.1, h.1, rfl, h.2⟩⟩
-end
-
-@[simp]
-lemma support_bind_prod_mk_snd (oa : oracle_comp spec α) (b : β) :
-  (oa >>= λ a, return (b, a)).support = {x | x.2 ∈ oa.support ∧ x.1 = b} :=
-begin
-  ext x, 
-  simp_rw [support_bind, support_return, set.mem_Union, set.mem_singleton_iff,
-    prod.eq_iff_fst_eq_snd_eq, exists_prop],
-  exact ⟨λ h, let ⟨i, hi, hb, hi'⟩ := h in ⟨hi'.symm ▸ hi, hb⟩, λ h, ⟨x.2, h.1, h.2, rfl⟩⟩
-end
-
-@[simp]
-lemma support_bind_prod_mk_fst_of_subsingleton [subsingleton β] (oa : oracle_comp spec α) (b : β) :
-  (oa >>= λ a, return (a, b)).support = prod.fst ⁻¹' oa.support :=
-by simpa only [support_bind_prod_mk_fst, eq_iff_true_of_subsingleton, and_true]
-
-@[simp]
-lemma support_bind_prod_mk_snd_of_subsingleton [subsingleton β] (oa : oracle_comp spec α) (b : β) :
-  (oa >>= λ a, return (b, a)).support = prod.snd ⁻¹' oa.support :=
-by simpa only [support_bind_prod_mk_snd, eq_iff_true_of_subsingleton, and_true]
-
-end prod
 
 end oracle_comp

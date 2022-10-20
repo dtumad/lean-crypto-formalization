@@ -297,7 +297,7 @@ lemma eval_dist_simulate'_apply :
   ⦃simulate' so oa s⦄ a = ∑' (s' : S), ⦃simulate so oa s⦄ (a, s') :=
 begin
   rw [eval_dist_simulate', pmf.map_apply],
-  refine (tsum_prod_eq_tsum_snd a $ λ a' ha' s, _).trans (tsum_congr (λ s', _)),
+  refine (tsum_prod_eq_tsum_snd a $ λ s a' ha', _).trans (tsum_congr (λ s', _)),
   { simp only [ne.symm ha', if_false] },
   { simp only [eq_self_iff_true, if_true] }
 end
@@ -322,8 +322,6 @@ begin
   rw [simulate'_bind, eval_dist_map_fst],
   simp_rw [eval_dist_prod_bind, eval_dist_simulate'_apply],
   simp_rw [← nnreal.tsum_mul_left], 
-  -- TODO: Should all probabilities just be `ℝ≥0∞`?
-  -- rw [← ennreal.coe_eq_coe],
   calc ∑' t a s', ⦃simulate so oa s⦄ (a, s') * ⦃simulate so (ob a) s'⦄ (b, t)
     = ∑' a t s', ⦃simulate so oa s⦄ (a, s') * ⦃simulate so (ob a) s'⦄ (b, t) :
     begin
