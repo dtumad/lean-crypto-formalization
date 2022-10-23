@@ -308,10 +308,19 @@ begin
     simp only [subtype.val_eq_coe, function.support_mul, set.mem_inter_iff, function.mem_support, ne.def,
       eval_dist_eq_zero_iff_not_mem_support, set.not_not_mem] at this,
     refine hg ↑x ↑y h this.1 this.2,
-
   },
   {
-    sorry,
+    intros x hx,
+    simp only [function.support_mul, set.mem_inter_iff, function.mem_support, ne.def,
+      eval_dist_eq_zero_iff_not_mem_support, set.not_not_mem] at hx,
+    specialize h x hx.1 hx.2,
+    rw [set.mem_range] at h,
+    obtain ⟨y, hy⟩ := h,
+    rw [← hy, set.range_comp, set.mem_image],
+    refine ⟨y, _, rfl⟩,
+    rw [subtype.range_coe_subtype],
+    simp only [hy, hx, function.support_mul, set.mem_inter_iff, function.mem_support,
+      ne.def, eval_dist_eq_zero_iff_not_mem_support, set.not_not_mem, set.mem_set_of_eq, true_and],
   }
 end
 

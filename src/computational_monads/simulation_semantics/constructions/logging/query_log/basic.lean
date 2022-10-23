@@ -14,7 +14,7 @@ def query_log (spec : oracle_spec) : Type :=
 
 namespace query_log
 
-open oracle_spec
+open oracle_spec 
 
 @[ext]
 lemma ext {spec : oracle_spec} {log log' : query_log spec} (h : ∀ (i : spec.ι), log i = log' i) :
