@@ -1,4 +1,5 @@
 import computational_monads.support.support
+import to_mathlib.general
 
 /-!
 # Support of an Oracle Computation as a Finset
@@ -122,8 +123,10 @@ variables (oa : oracle_comp spec α) [decidable oa] (a : α) (s : finset α)
 lemma mem_fin_support_iff_mem_support : a ∈ oa.fin_support ↔ a ∈ oa.support :=
 mem_fin_support'_iff_mem_support oa _ a
 
-@[simp]
-theorem coe_fin_support_eq_support : ↑oa.fin_support = oa.support :=
+lemma fin_support_eq_to_finset : oa.fin_support = oa.support.to_finset :=
+finset.ext (λ x, by simp only [mem_fin_support_iff_mem_support, set.mem_to_finset])
+
+@[simp] theorem coe_fin_support_eq_support : ↑oa.fin_support = oa.support :=
 set.ext (λ a, (mem_fin_support_iff_mem_support oa a))
 
 lemma fin_support_eq_iff_support_eq_coe : oa.fin_support = s ↔ oa.support = ↑s :=
@@ -145,17 +148,14 @@ end support
 
 section return
 
-variables (a a' : α)
-variable [decidable_eq α]
+variables (a a' : α) [decidable_eq α]
 
-@[simp]
-lemma fin_support_return : (return a : oracle_comp spec α).fin_support = {a} := rfl
+@[simp] lemma fin_support_return : (return a : oracle_comp spec α).fin_support = {a} := rfl
 
 lemma mem_fin_support_return_iff : a' ∈ (return a : oracle_comp spec α).fin_support ↔ a' = a :=
 finset.mem_singleton
 
-@[simp] -- Need a `simp` tag here because of weird instance issues
-lemma fin_support_pure' : (pure' α a : oracle_comp spec α).fin_support = {a} := rfl
+@[simp] lemma fin_support_pure' : (pure' α a : oracle_comp spec α).fin_support = {a} := rfl
 
 lemma mem_fin_support_pure'_iff : a' ∈ (pure' α a : oracle_comp spec α).fin_support ↔ a' = a :=
 finset.mem_singleton
@@ -172,8 +172,7 @@ section bind
 variables (oa : oracle_comp spec α) (ob : α → oracle_comp spec β)
   [decidable oa] [∀ a, decidable (ob a)] (b : β)
 
-@[simp]
-lemma fin_support_bind : (oa >>= ob).fin_support = @finset.bUnion α β
+@[simp] lemma fin_support_bind : (oa >>= ob).fin_support = @finset.bUnion α β
   (decidable_eq_of_decidable (oa >>= ob)) oa.fin_support (λ a, (ob a).fin_support) :=
 by simp only [fin_support_eq_iff_support_eq_coe, support_bind,
   finset.coe_bUnion, coe_fin_support_eq_support]
@@ -182,14 +181,22 @@ lemma mem_fin_support_bind_iff : b ∈ (oa >>= ob).fin_support ↔
   ∃ a ∈ oa.fin_support, b ∈ (ob a).fin_support :=
 by rw [fin_support_bind, finset.mem_bUnion]
 
-@[simp] -- Again the type class issues require `simp` tags here that seem unneeded
-lemma fin_support_bind' : (bind' α β oa ob).fin_support = @finset.bUnion α β
+@[simp] lemma fin_support_bind' : (bind' α β oa ob).fin_support = @finset.bUnion α β
   (decidable_eq_of_decidable (bind' α β oa ob)) oa.fin_support (λ a, (ob a).fin_support) :=
 fin_support_bind oa ob
 
 lemma mem_fin_support_bind'_iff : b ∈ (bind' α β oa ob).fin_support ↔
   ∃ a ∈ oa.fin_support, b ∈ (ob a).fin_support :=
-mem_fin_support_bind_iff oa ob b 
+mem_fin_support_bind_iff oa ob b
+
+lemma fin_support_return_bind [decidable_eq α] (a : α) :
+  (return a >>= ob).fin_support = (ob a).fin_support :=
+by simp only [fin_support_bind, fin_support_return, finset.singleton_bUnion]
+
+@[simp] lemma fin_support_bind_return [decidable_eq β] (f : α → β) :
+  (oa >>= λ a, return (f a)).fin_support = oa.fin_support.image f :=
+by rw [fin_support_eq_iff_support_eq_coe, support_bind_return,
+  finset.coe_image, coe_fin_support_eq_support]
 
 end bind
 
@@ -197,8 +204,7 @@ section query
 
 variables (i : spec.ι) (t : spec.domain i) (u : spec.range i)
 
-@[simp]
-lemma fin_support_query : (query i t).fin_support = ⊤ := rfl
+@[simp] lemma fin_support_query : (query i t).fin_support = ⊤ := rfl
 
 lemma mem_fin_support_query : u ∈ (query i t).fin_support := finset.mem_univ u
 
@@ -208,8 +214,7 @@ section map
 
 variables [decidable_eq β] (oa : oracle_comp spec α) [decidable oa] (f : α → β) (b : β)
 
-@[simp]
-lemma fin_support_map : (f <$> oa).fin_support = oa.fin_support.image f :=
+@[simp] lemma fin_support_map : (f <$> oa).fin_support = oa.fin_support.image f :=
 by rw [fin_support_eq_iff_support_eq_coe, finset.coe_image,
   support_map, coe_fin_support_eq_support]
 
@@ -217,6 +222,24 @@ lemma mem_fin_support_map_iff : b ∈ (f <$> oa).fin_support ↔ ∃ a ∈ oa.fi
 by rw [fin_support_map, finset.mem_image]
 
 end map
+
+section image
+
+variables [decidable_eq β] (oa : oracle_comp spec α) [decidable oa] (f : α → β) (b : β)
+
+lemma coe_image_fin_support_eq_image_support :
+  (oa.fin_support.image f : set β) = f '' oa.support :=
+by simp only [finset.coe_image, coe_fin_support_eq_support]
+
+lemma image_fin_support_eq_iff_image_support_eq_coe (s : finset β) :
+  oa.fin_support.image f = s ↔ f '' oa.support = ↑s :=
+by rw [← coe_image_fin_support_eq_image_support, finset.coe_eq_coe_iff]
+
+lemma mem_image_fin_support_iff_mem_image_support :
+  b ∈ oa.fin_support.image f ↔ b ∈ f '' oa.support :=
+by rw [← finset.mem_coe, coe_image_fin_support_eq_image_support]
+
+end image
 
 end fin_support
 

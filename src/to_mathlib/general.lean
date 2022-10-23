@@ -1,14 +1,9 @@
-import probability.probability_mass_function.constructions 
-import data.vector.basic
-import data.vector.mem
-import analysis.convex.function
-import analysis.convex.specific_functions
+import probability.probability_mass_function.basic
 
 /-! 
 # Misc Lemmas That Ideally Should Port to Mathlib
 -/
 
-open_locale nnreal ennreal big_operators classical
 
 variables {α β γ : Type*}
 
@@ -19,3 +14,9 @@ set.ext (λ y, by simp only [set.mem_singleton_iff,
 lemma finset.count_to_list [decidable_eq α] (s : finset α) (a : α) :
   s.to_list.count a = if a ∈ s then 1 else 0 :=
 by simp only [list.count_eq_of_nodup s.nodup_to_list, finset.mem_to_list]
+
+lemma finset.coe_eq_coe_iff (s s' : finset α) : (s : set α) = (s' : set α) ↔ s = s' :=
+begin
+  refine ⟨λ h, finset.ext (λ x, _), λ h, congr_arg coe h⟩,
+  rw [← finset.mem_coe, ← finset.mem_coe, h],
+end
