@@ -29,7 +29,7 @@ section support
 
 lemma support_apply (i : spec.ι) (t : spec.domain i) (s : unit) :
   (⟪o⟫ i (t, s)).support = prod.fst ⁻¹' (o i t).support :=
-by simp only [apply_eq, support_bind_prod_mk_fst_of_subsingleton]
+by simp only [apply_eq, support_bind_prod_mk_fst_id_of_subsingleton]
 
 lemma mem_support_apply_iff (i : spec.ι) (t : spec.domain i) (s s' : unit) (u : spec.range i) :
   (u, s') ∈ (⟪o⟫ i (t, s)).support ↔ u ∈ (o i t).support :=

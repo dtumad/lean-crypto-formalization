@@ -32,6 +32,10 @@ by erw [mem_support_bind_prod_mk_fst, set.image_id]
 set.ext (λ x, by simp_rw [mem_support_bind_prod_mk_fst, set.mem_preimage,
   eq_iff_true_of_subsingleton, and_true])
 
+@[simp] lemma support_bind_prod_mk_fst_id_of_subsingleton [subsingleton γ] (c : γ) :
+  (oa >>= λ a, return (a, c)).support = prod.fst ⁻¹' oa.support :=
+by erw [support_bind_prod_mk_fst_of_subsingleton, set.image_id]
+
 lemma mem_support_bind_prod_mk_fst_of_subsingleton [subsingleton γ] (f : α → β) (c : γ)
   (x : β × γ) : x ∈ (oa >>= λ a, return (f a, c)).support ↔ x.1 ∈ (f '' oa.support) :=
 by rw [support_bind_prod_mk_fst_of_subsingleton, set.mem_preimage]

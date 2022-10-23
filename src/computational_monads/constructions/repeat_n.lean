@@ -1,4 +1,4 @@
-import data.vector.basic
+import data.vector.mem
 
 import computational_monads.distribution_semantics.equiv
 

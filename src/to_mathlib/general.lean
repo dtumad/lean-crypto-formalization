@@ -4,7 +4,6 @@ import probability.probability_mass_function.basic
 # Misc Lemmas That Ideally Should Port to Mathlib
 -/
 
-
 variables {α β γ : Type*}
 
 lemma singleton_eq_top_of_subsingleton {α : Type*} [subsingleton α] (x : α) : ({x} : set α) = ⊤ :=

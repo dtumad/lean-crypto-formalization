@@ -1,6 +1,6 @@
 import computational_monads.distribution_semantics.prob_event
-
 import to_mathlib.uniform_of_vector
+import data.vector.mem
 
 /-!
 # Computations Uniformly Drawing From Data Structures
