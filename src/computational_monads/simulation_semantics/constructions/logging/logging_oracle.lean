@@ -11,24 +11,19 @@ def logging_oracle (spec : oracle_spec) [spec.computable] :
 
 namespace logging_oracle
 
-variables (log : query_log spec) (log' : query_log spec')
-variable [spec.computable]
+variables (log : query_log spec) (log' : query_log spec') [computable spec]
 
-@[simp]
-lemma apply (i : spec.ι) (t : spec.domain i) :
+@[simp] lemma apply (i : spec.ι) (t : spec.domain i) :
   (logging_oracle spec) i (t, log) = query i t >>= λ u, return (u, log.log_query i t u) := rfl
 
 section simulate
 
-@[simp]
 lemma simulate_pure (a : α) : simulate (logging_oracle _) (return a) log = return ⟨a, log⟩ := rfl
 
-@[simp]
 lemma simulate_query (i : spec.ι) (t : spec.domain i) :
   simulate (logging_oracle _) (query i t) log =
     do { u ← query i t, return (u, log.log_query i t u) } := rfl
 
-@[simp]
 lemma simulate_bind (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) :
   simulate (logging_oracle _) (oa >>= ob) log =
     (simulate (logging_oracle _) oa log) >>=

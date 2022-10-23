@@ -17,7 +17,6 @@ variables (so : sim_oracle spec spec' S) (so' : sim_oracle spec spec'' S')
   (a : α) (i : spec.ι) (t : spec.domain i) (oa oa' : oracle_comp spec α)
   (ob ob' : α → oracle_comp spec β) (s : S) (f : α → β)
 
-
 /-- Lemma for inductively proving the support of a simulation is a specific function of the input.
 Often this is simpler than induction on the computation itself, especially the case of `bind` -/
 lemma eval_dist_simulate_eq_induction [spec'.finite_range]
@@ -60,7 +59,6 @@ begin
   { simp only [eval_dist_simulate_bind_apply_eq_tsum_tsum, h_bind, hoa, hob] },
   { rw [eval_dist_simulate_query, h_query] },
 end
-
 
 /-- If the first result of oracle queries is uniformly distributed,
 then the distribution under `simulate'` is unchanged. -/

@@ -31,10 +31,10 @@ variables  (oa : oracle_comp spec α) (oa' : oracle_comp spec' α)
 
 section bind
 
-lemma pure_bind_equiv (a : α) : (pure a >>= ob) ≃ₚ (ob a) :=
+lemma return_bind_equiv (a : α) : (return a >>= ob) ≃ₚ (ob a) :=
 (eval_dist_bind (return a) ob).trans (pmf.pure_bind a (λ a, ⦃ob a⦄))
 
-lemma bind_pure_equiv : (oa >>= pure) ≃ₚ oa :=
+lemma bind_pure_equiv : (oa >>= return) ≃ₚ oa :=
 trans (eval_dist_bind oa pure) (pmf.bind_pure (⦃oa⦄))
 
 lemma bind_equiv_of_equiv_first {oa oa' : oracle_comp spec α} (ob : α → oracle_comp spec β)
@@ -66,9 +66,9 @@ section map
 variables (f : α → β)
 
 @[simp]
-lemma map_return_equiv (a : α) : f <$> (pure a : oracle_comp spec α) ≃ₚ
+lemma map_return_equiv (a : α) : f <$> (return a : oracle_comp spec α) ≃ₚ
   (return (f a) : oracle_comp spec β) :=
-trans (eval_dist_map (pure a) f) (pmf.pure_map f a)
+trans (eval_dist_map (return a) f) (pmf.pure_map f a)
 
 @[simp]
 lemma bind_map_equiv (ob : β → oracle_comp spec γ) : (f <$> oa) >>= ob ≃ₚ oa >>= (ob ∘ f) :=
@@ -102,7 +102,7 @@ calc ⦃g <$> (f <$> oa)⦄
   ... = ⦃(g ∘ f) <$> oa⦄ : symm (eval_dist_map oa $ g ∘ f)
 
 lemma map_map_return_equiv (a : α) (f : α → β) (g : β → γ) :
-  g <$> (f <$> (return a : oracle_comp spec α)) ≃ₚ (pure (g (f a)) : oracle_comp spec γ) :=
+  g <$> (f <$> (return a : oracle_comp spec α)) ≃ₚ (return (g (f a)) : oracle_comp spec γ) :=
 by rw [map_map_equiv, map_return_equiv]
 
 end map
@@ -123,13 +123,13 @@ variables (f : α → β) (g : α → γ)
 
 @[simp]
 lemma fst_map_bind_mk_equiv :
-  (prod.fst <$> (oa >>= λ a, pure (f a, g a)) : oracle_comp spec β) ≃ₚ f <$> oa :=
+  (prod.fst <$> (oa >>= λ a, return (f a, g a)) : oracle_comp spec β) ≃ₚ f <$> oa :=
 by simp only [functor.map, oracle_comp.bind'_eq_bind, eval_dist_bind,
   eval_dist_return, pmf.bind_bind, pmf.pure_bind]
 
 @[simp]
 lemma snd_map_bind_mk_equiv :
-  (prod.snd <$> (oa >>= λ a, pure (f a, g a)) : oracle_comp spec γ) ≃ₚ g <$> oa :=
+  (prod.snd <$> (oa >>= λ a, return (f a, g a)) : oracle_comp spec γ) ≃ₚ g <$> oa :=
 by simp only [functor.map, oracle_comp.bind'_eq_bind, eval_dist_bind,
   eval_dist_return, pmf.bind_bind, pmf.pure_bind]
 

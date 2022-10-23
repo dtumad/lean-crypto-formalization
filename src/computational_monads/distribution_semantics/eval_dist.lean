@@ -231,6 +231,10 @@ lemma eval_dist_bind_bind_apply' [spec.computable] [oa.decidable] [∀ a, (ob a)
 (eval_dist_bind_apply' oa _ c).trans (finset.sum_congr rfl $ λ a ha,
   by simp only [eval_dist_bind_apply', finset.mul_sum, mul_assoc])
 
+lemma eval_dist_bind_return_apply (f : α → β) :
+  ⦃oa >>= λ a, return (f a)⦄ b = ∑' (a : α), ite (b = f a) (⦃oa⦄ a) 0 :=
+by simp_rw [eval_dist_bind_apply, eval_dist_return_apply, mul_ite, mul_zero, mul_one]
+
 end bind
 
 section query
@@ -289,5 +293,26 @@ lemma eval_dist_map_snd (oa : oracle_comp spec (α × β)) (b : β) :
 by rw [eval_dist_map, pmf.map_snd_apply]
 
 end prod
+
+lemma helper {oa : oracle_comp spec α}
+  {ob : α → oracle_comp spec β} {b : β} (g : γ → α)
+  (h : ∀ x ∈ oa.support, b ∈ (ob x).support → x ∈ set.range g)
+  (hg : ∀ x y, g x = g y → g x ∈ oa.support → b ∈ (ob (g x)).support → x = y) :
+  ⦃oa >>= ob⦄ b = ∑' (c : γ), ⦃oa⦄ (g c) * ⦃ob (g c)⦄ b :=
+begin
+  rw [eval_dist_bind_apply],
+  refine tsum_eq_tsum_of_ne_zero_bij (g ∘ coe) _ _ (λ _, rfl),
+  {
+    intros x y h,
+    have := x.2,
+    simp only [subtype.val_eq_coe, function.support_mul, set.mem_inter_iff, function.mem_support, ne.def,
+      eval_dist_eq_zero_iff_not_mem_support, set.not_not_mem] at this,
+    refine hg ↑x ↑y h this.1 this.2,
+
+  },
+  {
+    sorry,
+  }
+end
 
 end distribution_semantics

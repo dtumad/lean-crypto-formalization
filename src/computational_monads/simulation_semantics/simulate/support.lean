@@ -47,6 +47,8 @@ begin
   { simp only [support_query, set.top_eq_univ, set.mem_univ, set.set_of_true, set.subset_univ] }
 end
 
+lemma mem_support_of_mem_support_simulate (x : α × S) (hx : x ∈ (simulate so oa s).support) :
+  x.1 ∈ oa.support := by simpa using (support_simulate_subset_preimage_support so oa s hx)
 
 /-- Simulation only reduces the possible oracle outputs, so can't reduce the support -/
 lemma support_simulate'_subset_support : (simulate' so oa s).support ⊆ oa.support :=
@@ -74,7 +76,6 @@ begin
     exact ⟨(a', s'), ha', hob a' x (let this : a = a' := ha''.symm in this ▸ hx) s'⟩ },
   { simp only [support_simulate'_query, h i t s] }
 end
-
 
 theorem support_simulate'_eq_support_simulate'
   {so : sim_oracle spec spec' S} {so' : sim_oracle spec spec' S'}

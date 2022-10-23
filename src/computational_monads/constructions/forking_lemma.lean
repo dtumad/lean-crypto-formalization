@@ -25,7 +25,6 @@ section sim_with_log
 
 /-- Simulate the adversary, returning a log of the uniform selecting oracle,
   along with the final result and final cache for the random oracle -/
--- @[derive decidable]
 def sim_with_log (adv : forking_adversary T U α) :
   oracle_comp uniform_selecting (option (fin adv.q) × α × query_log uniform_selecting × query_log (T ↦ₒ U)) :=
 do { ⟨x, log, cache⟩ ← default_simulate (logging_oracle _ ++ₛ random_oracle _) adv.adv,
@@ -109,32 +108,62 @@ lemma eval_dist_fork_apply_some (i : (fin adv.q)) (x x' : α) (cache cache' : qu
     ∑' (log : query_log uniform_selecting), ⦃adv.sim_with_log⦄ (some i, x, log, cache)
       * ⦃adv.sim_from_seed log.to_seed (cache.fork_cache () (some i))⦄ (some i, x', cache') :=
 begin
-  rw [fork_def],
-  rw [eval_dist_bind_bind_apply],
-  rw [tsum_prod_eq_tsum_snd (some i)],
-  {
-    rw [tsum_prod_eq_tsum_snd x],
-    {
-      rw [tsum_prod_eq_tsum_fst cache],
-      {
-        refine tsum_congr (λ log, _),
-        refine trans (tsum_eq_single (some i, x', cache') _) _,
-        {
-          rintros ⟨j, y, cache''⟩ h,
-          refine mul_eq_zero_of_right _ _, sorry,
-        },
-        {
-          simp only [option.map_some', eq_self_iff_true, if_true, eval_dist_return, pmf.pure_apply, mul_one],
-        }
-      },
-      sorry, apply_instance,
-    },
-    sorry, apply_instance,
-  },
-  {
-    sorry,
-  },
-  apply_instance,
+  calc ⦃fork adv⦄ (some i, x, cache, x', cache') =
+
+  
+    ∑' (log : query_log uniform_selecting), ⦃adv.sim_with_log⦄ (some i, x, log, cache)
+      * ⦃adv.sim_from_seed log.to_seed (cache.fork_cache () (some i))⦄ (some i, x', cache') : sorry
+  
+  -- rw [fork_def],
+  -- refine trans (helper (λ log, (i, x, log, cache)) _ _) (_),
+  -- {
+  --   sorry,
+  -- },
+  -- {
+  --   sorry,
+  -- },
+  -- {
+  --   simp only [option.coe_def, option.map_some'],
+  --   sorry,
+  -- },
+  --   intro log,
+  --   rw [eval_dist_bind_return_apply],
+  --   simp only [option.coe_def, option.map_some'],
+
+  --   refine congr_arg (λ x, _ * x) _,
+  --   refine trans (tsum_eq_single (some i, x', cache) _) _,
+    
+  -- }
+  
+  -- eval_dist_bind_apply],
+  -- simp_rw [eval_dist_bind_return_apply],
+  
+
+  -- rw [eval_dist_bind_bind_apply],
+  -- rw [tsum_prod_eq_tsum_snd (some i)],
+  -- {
+  --   rw [tsum_prod_eq_tsum_snd x],
+  --   {
+  --     rw [tsum_prod_eq_tsum_fst cache],
+  --     {
+  --       refine tsum_congr (λ log, _),
+  --       refine trans (tsum_eq_single (some i, x', cache') _) _,
+  --       {
+  --         rintros ⟨j, y, cache''⟩ h,
+  --         refine mul_eq_zero_of_right _ _, sorry,
+  --       },
+  --       {
+  --         simp only [option.map_some', eq_self_iff_true, if_true, eval_dist_return, pmf.pure_apply, mul_one],
+  --       }
+  --     },
+  --     sorry, apply_instance,
+  --   },
+  --   sorry, apply_instance,
+  -- },
+  -- {
+  --   sorry,
+  -- },
+  -- apply_instance,
 end
 
 end distribution_semantics
@@ -229,11 +258,8 @@ calc ⦃ λ out, out.1.is_some | fork adv ⦄
     symm ((distribution_semantics.prob_event_map _ _ _))
   ... = ∑' (j : fin adv.q), (⦃prod.fst <$> fork adv⦄ (some j)) :
     (distribution_semantics.prob_event_is_some $ prod.fst <$> fork adv)
-  -- ... = ∑' (j : fin adv.q), (⦃adv.sim_choose_fork ×ₘ adv.sim_choose_fork⦄ (some j, some j)) :
-  --   tsum_congr (λ j, eval_dist_fst_map_fork_apply _ _)
   ... = ∑' (j : fin adv.q), (⦃adv.sim_choose_fork⦄ (some j)) ^ 2 :
     tsum_congr (λ j, eval_dist_fst_map_fork_apply _ _)
-    --by simp only [eval_dist_prod_apply, pow_two, ennreal.coe_mul]
   ... = ∑ j, (⦃adv.sim_choose_fork⦄ (some j)) ^ 2 :
     tsum_fintype _
   ... ≥ (∑ j, ⦃adv.sim_choose_fork⦄ (some j)) ^ 2 / (finset.univ : finset $ fin adv.q).card ^ 1 :
