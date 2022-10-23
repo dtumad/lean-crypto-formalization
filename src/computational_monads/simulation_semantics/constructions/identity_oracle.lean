@@ -33,7 +33,7 @@ section support
 lemma support_apply (i : spec.ι) (t : spec.domain i) :
   ((idₛ) i (t, s)).support = {u | u.1 ∈ (query i t).support} :=
 begin
-  simp only [apply, support_bind, support_pure, set.Union_true,
+  simp only [apply, support_bind, support_return, set.Union_true,
     set.Union_singleton_eq_range, support_query, set.top_eq_univ, set.mem_univ, set.set_of_true],
   exact set.eq_univ_of_forall (λ x, set.mem_range.2
     ⟨x.1, prod.eq_iff_fst_eq_snd_eq.2 ⟨rfl, punit_eq () x.snd⟩⟩),

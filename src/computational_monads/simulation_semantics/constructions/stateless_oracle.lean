@@ -33,7 +33,7 @@ by simp only [apply_eq, support_bind_prod_mk_fst_id_of_subsingleton]
 
 lemma mem_support_apply_iff (i : spec.ι) (t : spec.domain i) (s s' : unit) (u : spec.range i) :
   (u, s') ∈ (⟪o⟫ i (t, s)).support ↔ u ∈ (o i t).support :=
-by simp only [apply_eq, support_bind, support_pure, set.mem_Union, set.mem_singleton_iff,
+by simp only [apply_eq, support_bind, support_return, set.mem_Union, set.mem_singleton_iff,
   prod.mk.inj_iff, eq_iff_true_of_subsingleton, and_true, exists_prop, exists_eq_right']
 
 lemma support_simulate_eq_support_default_simulate (oa : oracle_comp spec α) (s : unit) :
@@ -72,13 +72,13 @@ lemma mem_support_default_simulate_iff (oa : oracle_comp spec α) (x : α × uni
 mem_support_simulate_iff o oa () x
 
 
-section pure
+section return
 
-lemma support_simulate_pure (a : α) (s : unit) :
-  (simulate ⟪o⟫ (pure a) s).support = {(a, ())} := 
+lemma support_simulate_return (a : α) (s : unit) :
+  (simulate ⟪o⟫ (return a) s).support = {(a, ())} := 
 by {induction s, refl}
 
-end pure
+end return
 
 section bind
 
@@ -138,12 +138,12 @@ section equiv
 
 -- TODO: put <$> in equiv versions, derive from `eval_dist` fact
 lemma simulate_equiv_simulate' [spec'.finite_range] (s : unit) :
-  simulate ⟪o⟫ oa s ≃ₚ (simulate' ⟪o⟫ oa s >>= λ a, pure (a, ())) :=
-calc simulate ⟪o⟫ oa s ≃ₚ simulate ⟪o⟫ oa s >>= pure : symm (bind_pure_equiv _)
-  ... ≃ₚ simulate ⟪o⟫ oa s >>= λ x, pure (x.1, x.2) : by simp only [prod.mk.eta]
-  ... ≃ₚ simulate ⟪o⟫ oa s >>= λ x, pure (x.1, ()) : 
+  simulate ⟪o⟫ oa s ≃ₚ (simulate' ⟪o⟫ oa s >>= λ a, return (a, ())) :=
+calc simulate ⟪o⟫ oa s ≃ₚ simulate ⟪o⟫ oa s >>= return : symm (bind_return_equiv _)
+  ... ≃ₚ simulate ⟪o⟫ oa s >>= λ x, return (x.1, x.2) : by simp only [prod.mk.eta]
+  ... ≃ₚ simulate ⟪o⟫ oa s >>= λ x, return (x.1, ()) : 
     bind_equiv_of_equiv_second _ (λ x, by simp [punit_eq x.snd ()])
-  ... ≃ₚ simulate' ⟪o⟫ oa s >>= λ a, pure (a, ()) : by rw [simulate', bind_map_equiv]
+  ... ≃ₚ simulate' ⟪o⟫ oa s >>= λ a, return (a, ()) : by rw [simulate', bind_map_equiv]
 
 lemma simulate'_equiv_of_oracle_equiv [spec'.finite_range] [spec''.finite_range] 
   {o : Π (i : spec.ι), spec.domain i → oracle_comp spec' (spec.range i)}

@@ -18,7 +18,7 @@ variables (log : query_log spec) (log' : query_log spec') [computable spec]
 
 section simulate
 
-lemma simulate_pure (a : α) : simulate (logging_oracle _) (return a) log = return ⟨a, log⟩ := rfl
+lemma simulate_return (a : α) : simulate (logging_oracle _) (return a) log = return ⟨a, log⟩ := rfl
 
 lemma simulate_query (i : spec.ι) (t : spec.domain i) :
   simulate (logging_oracle _) (query i t) log =

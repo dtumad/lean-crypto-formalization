@@ -34,8 +34,8 @@ section bind
 lemma return_bind_equiv (a : α) : (return a >>= ob) ≃ₚ (ob a) :=
 (eval_dist_bind (return a) ob).trans (pmf.pure_bind a (λ a, ⦃ob a⦄))
 
-lemma bind_pure_equiv : (oa >>= return) ≃ₚ oa :=
-trans (eval_dist_bind oa pure) (pmf.bind_pure (⦃oa⦄))
+lemma bind_return_equiv : (oa >>= return) ≃ₚ oa :=
+trans (eval_dist_bind oa return) (pmf.bind_pure (⦃oa⦄))
 
 lemma bind_equiv_of_equiv_first {oa oa' : oracle_comp spec α} (ob : α → oracle_comp spec β)
   (h : oa ≃ₚ oa') : (oa >>= ob) ≃ₚ (oa' >>= ob) :=

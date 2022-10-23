@@ -22,7 +22,7 @@ lemma apply_eq (i : spec.ι) (t : spec.domain i) (u : unit) :
 lemma support_apply (i : spec.ι) (t : spec.domain i) (u : unit) :
   ((uniform_oracle spec) i (t, u)).support = ⊤ :=
 by simp only [set.eq_univ_iff_forall, apply_eq, support_bind, support_uniform_select_fintype,
-  set.top_eq_univ, support_pure, set.Union_true, set.Union_singleton_eq_range, set.mem_range,
+  set.top_eq_univ, support_return, set.Union_true, set.Union_singleton_eq_range, set.mem_range,
   prod.forall, prod.mk.inj_iff, exists_eq_left, forall_const, eq_iff_true_of_subsingleton]
 
 section eval_dist

@@ -46,7 +46,7 @@ lemma support_oracle_append_apply_inl : ((so ++ₛ so') (sum.inl i) (t, s)).supp
   {x | (x.1, x.2.1) ∈ (so i (t, s.1)).support ∧ x.2.2 = s.2} :=
 begin
   ext x,
-  simp only [oracle_append_apply_inl, support_bind, support_pure, set.mem_Union,
+  simp only [oracle_append_apply_inl, support_bind, support_return, set.mem_Union,
     set.mem_singleton_iff, exists_prop, prod.exists, set.mem_set_of_eq],
   refine ⟨λ h, _, λ h, _⟩,
   { obtain ⟨u, s', hu, hx⟩ := h,
@@ -59,7 +59,7 @@ lemma support_oracle_append_apply_inr : ((so ++ₛ so') (sum.inr i') (t', s)).su
   {x | (x.1, x.2.2) ∈ (so' i' (t', s.2)).support ∧ x.2.1 = s.1} :=
 begin
   ext x,
-  simp only [oracle_append_apply_inr, support_bind, support_pure, set.mem_Union,
+  simp only [oracle_append_apply_inr, support_bind, support_return, set.mem_Union,
     set.mem_singleton_iff, exists_prop, prod.exists, set.mem_set_of_eq],
   refine ⟨λ h, _, λ h, _⟩,
   { obtain ⟨u, s', hu, hx⟩ := h,

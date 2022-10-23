@@ -36,12 +36,12 @@ section support
 lemma support_repeat_n : Π n, support (repeat_n oa n) = { v | ∀ a ∈ v.to_list, a ∈ oa.support }
 | 0 := begin
   ext v,
-  simp only [repeat_n_zero, support_pure, set.mem_singleton_iff,
+  simp only [repeat_n_zero, support_return, set.mem_singleton_iff,
     eq_iff_true_of_subsingleton, set.mem_set_of_eq, true_iff],
   exact λ a ha, false.elim (v.not_mem_zero a ha),
 end
 | (n + 1) := begin
-  simp_rw [repeat_n, support_bind_bind, support_pure],
+  simp_rw [repeat_n, support_bind_bind, support_return],
   ext v,
   simp only [set.mem_Union, set.mem_singleton_iff, exists_prop, set.mem_set_of_eq],
   refine ⟨λ h, _, λ h, _⟩,

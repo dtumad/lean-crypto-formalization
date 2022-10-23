@@ -94,10 +94,10 @@ begin
   exact measurable_space.measurable_set_top,
 end
 
-section pure
+section return
 
-lemma prob_event_pure_eq_indicator :
-  ⦃e | (pure a : oracle_comp spec α)⦄ = e.indicator (λ _, (1 : ℝ≥0)) a :=
+lemma prob_event_return_eq_indicator :
+  ⦃e | (return a : oracle_comp spec α)⦄ = e.indicator (λ _, 1) a :=
 begin
   refine trans (prob_event_eq_to_nnreal_to_outer_measure_apply _ e) _,
   refine trans (congr_arg ennreal.to_nnreal $ pmf.to_outer_measure_pure_apply a e) _,
@@ -105,22 +105,22 @@ begin
 end
 
 @[simp]
-lemma prob_event_pure [decidable_pred (∈ e)] :
-  ⦃e | (pure a : oracle_comp spec α)⦄ = if a ∈ e then 1 else 0 :=
+lemma prob_event_return [decidable_pred (∈ e)] :
+  ⦃e | (return a : oracle_comp spec α)⦄ = if a ∈ e then 1 else 0 :=
 begin
-  refine trans (prob_event_pure_eq_indicator a e) _,
+  refine trans (prob_event_return_eq_indicator a e) _,
   split_ifs with ha; simp [ha],
 end
 
-lemma prob_event_pure_of_true (ha : a ∈ e) :
-  ⦃ e | (pure a : oracle_comp spec α) ⦄ = 1 :=
-by simp only [ha, prob_event_pure_eq_indicator, set.indicator_of_mem]
+lemma prob_event_return_of_true (ha : a ∈ e) :
+  ⦃ e | (return a : oracle_comp spec α) ⦄ = 1 :=
+by simp only [ha, prob_event_return_eq_indicator, set.indicator_of_mem]
 
-lemma prob_event_pure_of_false (ha : a ∉ e) :
-  ⦃ e | (pure a : oracle_comp spec α) ⦄ = 0 :=
-by simp only [ha, prob_event_pure_eq_indicator, set.indicator_of_not_mem, not_false_iff]
+lemma prob_event_return_of_false (ha : a ∉ e) :
+  ⦃ e | (return a : oracle_comp spec α) ⦄ = 0 :=
+by simp only [ha, prob_event_return_eq_indicator, set.indicator_of_not_mem, not_false_iff]
 
-end pure
+end return
 
 section bind
 
@@ -146,13 +146,13 @@ calc ⦃e'' | oa >>= ob⦄
     ennreal.to_nnreal_coe, prob_event_eq_to_nnreal_to_outer_measure_apply])
 
 @[simp]
-lemma prob_event_pure_bind : ⦃e'' | pure a >>= ob⦄ = ⦃e'' | ob a⦄ :=
-prob_event_eq_of_equiv (pure_bind_equiv ob a) e''
+lemma prob_event_return_bind : ⦃e'' | return a >>= ob⦄ = ⦃e'' | ob a⦄ :=
+prob_event_eq_of_equiv (return_bind_equiv ob a) e''
 
 @[simp]
-lemma prob_event_bind_pure :
-  ⦃e | oa >>= pure ⦄ = ⦃e | oa⦄ :=
-prob_event_eq_of_equiv (bind_pure_equiv oa) e
+lemma prob_event_bind_return :
+  ⦃e | oa >>= return⦄ = ⦃e | oa⦄ :=
+prob_event_eq_of_equiv (bind_return_equiv oa) e
 
 end bind
 

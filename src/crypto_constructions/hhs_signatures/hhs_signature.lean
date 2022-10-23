@@ -90,7 +90,7 @@ rfl
 lemma support_gen : ((hhs_signature G X M n).gen ()).support =
   ⋃ (x₀ : X) (sk : G), { ((x₀, sk +ᵥ x₀), sk) } :=
 by simp only [gen_apply, support_bind_bind, support_coe_uniform_selecting_oracles,
-  support_uniform_select_fintype, support_pure, set.Union_true]
+  support_uniform_select_fintype, support_return, set.Union_true]
 
 @[simp]
 lemma sign_apply (x₀ : X) (pk : X) (sk : G) (m : M) :

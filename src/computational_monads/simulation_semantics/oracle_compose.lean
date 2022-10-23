@@ -13,7 +13,7 @@ For type inference reasons we list the arguments in the opposite order of `funct
 def oracle_compose (so : sim_oracle spec spec' S) (so' : sim_oracle spec' spec'' S') :
   sim_oracle spec spec'' (S × S') :=
 { default_state := (so.default_state, so'.default_state),
-  o := λ i x, simulate so' (so i (x.1, x.2.1)) x.2.2 >>= λ u_s, pure (u_s.1.1, u_s.1.2, u_s.2) }
+  o := λ i x, simulate so' (so i (x.1, x.2.1)) x.2.2 >>= λ u_s, return (u_s.1.1, u_s.1.2, u_s.2) }
 
 -- We use `notation` over `infixl` to swap the arguments without invoking `function.comp`.
 notation so' `∘ₛ` so := oracle_compose so so'
@@ -21,7 +21,7 @@ notation so' `∘ₛ` so := oracle_compose so so'
 variables (so : sim_oracle spec spec' S) (so' : sim_oracle spec' spec'' S')
 
 lemma oracle_compose_apply_index (i : spec.ι) (s : S × S') : (so' ∘ₛ so) i =
-  λ x, simulate so' (so i (x.1, x.2.1)) x.2.2 >>= λ u_s, pure (u_s.1.1, u_s.1.2, u_s.2) := rfl
+  λ x, simulate so' (so i (x.1, x.2.1)) x.2.2 >>= λ u_s, return (u_s.1.1, u_s.1.2, u_s.2) := rfl
 
 section support
 
