@@ -128,7 +128,10 @@ section query_input_same_at
 
 def query_input_same_at (cache cache' : query_log spec)
   (i : spec.ι) (n : ℕ) : Prop :=
-((cache i).nth n).map prod.fst = ((cache i).nth n).map prod.fst
+match (cache i).reverse.nth n with
+| none := true -- An out of bounds will match with anything by convention
+| (some ⟨t, u⟩) := some t = ((cache i).reverse.nth n).map prod.fst
+end
 
 end query_input_same_at
 
@@ -137,7 +140,10 @@ section query_input_diff_at
 -- query_results are different for the two caches at `n`
 def query_output_diff_at (cache cache' : query_log spec)
   (i : spec.ι) (n : ℕ) : Prop :=
-((cache i).nth n).map prod.snd ≠ ((cache' i).nth n).map prod.snd
+match (cache i).reverse.nth n with
+| none := true -- An out of bounds will differ from anything by convention
+| (some ⟨t, u⟩) := some u ≠ ((cache' i).reverse.nth n).map prod.snd
+end
 
 end query_input_diff_at
 

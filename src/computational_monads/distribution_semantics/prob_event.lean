@@ -42,6 +42,12 @@ congr_arg ennreal.to_nnreal (@pmf.to_measure_apply_eq_to_outer_measure_apply
 lemma prob_event_eq_to_nnreal_to_measure_apply :
   ⦃e | oa⦄ = (@pmf.to_measure α ⊤ ⦃oa⦄ e).to_nnreal := rfl
 
+lemma prob_event_le_one : ⦃e | oa⦄ ≤ 1 :=
+begin
+  rw [prob_event_eq_to_nnreal_to_outer_measure_apply],
+  sorry -- Easy with `ennreal` overhaul
+end
+
 lemma coe_prob_event_eq_to_outer_measure_apply : (⦃e | oa⦄ : ℝ≥0∞) = ⦃oa⦄.to_outer_measure e :=
 (ennreal.coe_to_nnreal $ @pmf.to_measure_apply_ne_top α ⊤ ⦃oa⦄ e).trans
   (@pmf.to_measure_apply_eq_to_outer_measure_apply α ⊤ _ e (measurable_space.measurable_set_top))
@@ -74,6 +80,7 @@ lemma prob_event_eq_iff_to_outer_measure_apply_eq {oa : oracle_comp spec α} (e 
 by simp_rw [prob_event_eq_to_nnreal_to_outer_measure_apply, ennreal.to_nnreal_eq_to_nnreal_iff,
   pmf.to_outer_measure_apply_ne_top, and_false, false_and, or_false]
 
+-- TODO: only needed cause of random nnreal stuff
 lemma prob_event_eq_mul_iff_to_outer_measure_apply_eq {oa : oracle_comp spec α} (e e' e'' : set α) :
   ⦃e | oa⦄ = ⦃e' | oa⦄ * ⦃e'' | oa⦄ ↔
     ⦃oa⦄.to_outer_measure e = (⦃oa⦄.to_outer_measure e') * (⦃oa⦄.to_outer_measure e'') :=
