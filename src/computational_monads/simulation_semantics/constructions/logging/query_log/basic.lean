@@ -54,12 +54,22 @@ end log_query
 
 section not_queried
 
-/- Returns whether a specific input has been previously logged -/
+/- Returns whether a specific input has been previously logged
+TODO: might as well coerce to a `Prop`? -/
 def not_queried (i : spec.ι) (t : spec.domain i) : bool :=
 ((log i).find ((=) t ∘ prod.fst)).is_none
 
 lemma not_queried_def (i : spec.ι) (t : spec.domain i) :
   log.not_queried i t = ((log i).find ((=) t ∘ prod.fst)).is_none := rfl
+
+/-- An input hasn't been queried iff it isn't in the log for any possible output -/
+lemma not_queried_iff_not_mem (i : spec.ι) (t : spec.domain i) :
+  log.not_queried i t = tt ↔ ∀ (u : spec.range i), (t, u) ∉ log i :=
+begin
+  rw [not_queried_def, option.is_none_iff_eq_none, list.find_eq_none],
+  refine ⟨λ h u htu, h (t, u) htu rfl, λ h x hx hx', h x.2 (hx'.symm ▸ _)⟩,
+  rwa [prod.mk.eta],
+end
 
 lemma not_queried_init_eq_tt (i : spec.ι) (t : spec.domain i) :
   (init spec).not_queried i t = tt := rfl

@@ -61,12 +61,19 @@ lemma lookup_log_query_of_input_ne (i : spec.ι)
   (log.log_query i t u).lookup i t' = log.lookup i t' :=
 trans (log.lookup_log_query_same_index i t t' u) (if_neg ht)
 
+lemma lookup_eq_none_iff_not_queried (i : spec.ι) (t : spec.domain i)
+  : log.lookup i t = none ↔ log.not_queried i t = tt :=
+begin
+  rw [lookup, option.map_eq_none', list.find_eq_none, not_queried_iff_not_mem],
+  exact ⟨λ h u htu, h (t, u) htu rfl, λ h x hu' ht', h x.2 (ht' ▸ (by rwa prod.mk.eta))⟩,
+end
+
 end lookup
 
 section lookup_fst
 
 /-- `lookup`, but only checking the front element of the list.
-  Main use case is using the `query_log` is a seed for a second computation -/
+  Main use case is using the `query_log` as a seed for a second computation -/
 def lookup_fst (log : query_log spec) (i : spec.ι) (t : spec.domain i) :
   option (spec.range i) :=
 match log i with

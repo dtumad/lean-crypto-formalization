@@ -12,24 +12,22 @@ open oracle_comp oracle_spec
 open_locale nnreal ennreal big_operators
 
 structure forking_adversary (T U α : Type) [inhabited U] [fintype U] [decidable_eq T] [decidable_eq U] :=
-(adv : oracle_comp (uniform_selecting ++ (T ↦ₒ U)) α)
-(q : ℕ)
--- Given an output and a cache, decide which part of cache should be forked
+(adv : oracle_comp (uniform_selecting ++ (T ↦ₒ U)) α) (q : ℕ)
+-- Given an output and a random oracle cache, decide which part of cache should be forked.
 (choose_fork : α → query_log (T ↦ₒ U) → option (fin q))
-(no_overflow : ∀ (a : α) (cache : query_log (T ↦ₒ U)) (i : fin q), choose_fork a cache = some i →
-  (a, (), cache) ∈ (default_simulate (uniform_oracle _ ++ₛ random_oracle _) adv).support →
-  ↑i < (cache ()).length)
+-- The adversary always makes at least one query to the random oracle.
 (cache_nonempty : ∀ (a : α) (cache : query_log (T ↦ₒ U)),
   (a, (), cache) ∈ (default_simulate (uniform_oracle _ ++ₛ random_oracle _) adv).support →
   ¬ (cache ()).empty)
+-- If choose fork result isn't `none`, the chosen index corresponds to an actual cache entry.
+(no_overflow : ∀ (a : α) (cache : query_log (T ↦ₒ U)) (i : fin q), choose_fork a cache = some i →
+  (a, (), cache) ∈ (default_simulate (uniform_oracle _ ++ₛ random_oracle _) adv).support →
+  ↑i < (cache ()).length)
 
 namespace forking_adversary
 
 variables {T U α : Type} [inhabited U] [fintype U] [decidable_eq T] [decidable_eq U]
   (adv : forking_adversary T U α)
-
-lemma cache_nonempty_of_mem_support_simulate : sorry :=
-sorry
 
 section simulate_choose_fork
 

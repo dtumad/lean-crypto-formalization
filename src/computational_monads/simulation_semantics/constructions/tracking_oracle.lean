@@ -45,17 +45,14 @@ variables {S S' : Type} (o o' : Π (i : spec.ι), spec.domain i → oracle_comp 
   (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) (s : S) (s' : S')
   (x : spec.domain i × S) (y : spec.range i × S)
 
-@[simp]
-lemma apply_eq : ⟪o | update_state, default_state⟫ i x =
+@[simp] lemma apply_eq : ⟪o | update_state, default_state⟫ i x =
   (λ u, (u, update_state x.2 i x.1 u)) <$> (o i x.1) := by {cases x, refl}
 
 section support
 
-@[simp]
-lemma support_apply : (⟪o | update_state, default_state⟫ i x).support =
+@[simp] lemma support_apply : (⟪o | update_state, default_state⟫ i x).support =
   {y | y.1 ∈ (o i x.1).support ∧ y.2 = update_state x.2 i x.1 y.1} :=
-set.ext (λ y, by {
-  simp only [prod.eq_iff_fst_eq_snd_eq, apply_eq, support_map,
+set.ext (λ y, by { simp only [prod.eq_iff_fst_eq_snd_eq, apply_eq, support_map,
     set.mem_Union, set.mem_singleton_iff, exists_prop, set.mem_set_of_eq],
   exact ⟨λ h, let ⟨u, h, h'⟩ := h in h' ▸ ⟨h, rfl⟩,
     λ h, ⟨y.1, h.1, prod.eq_iff_fst_eq_snd_eq.2 ⟨rfl, h.2.symm⟩⟩⟩ } )
@@ -75,7 +72,7 @@ lemma support_simulate'_query_oracle_eq_support :
   (simulate' ⟪query | update_state, default_state⟫ oa s).support = oa.support :=
 support_simulate'_eq_support query update_state default_state oa s (λ _ _, rfl)
 
-/-- The support of `simulate'` is independing of the tracking oracle -/
+/-- The support of `simulate'` is independing of the tracking functions -/
 theorem support_simulate'_eq_of_oracle_eq :
   (simulate' ⟪o | update_state, default_state⟫ oa s).support =
     (simulate' ⟪o | update_state', default_state'⟫ oa s').support :=
@@ -93,8 +90,7 @@ open distribution_semantics
 
 section eval_dist
 
-@[simp]
-lemma eval_dist_apply [spec'.finite_range] :
+@[simp] lemma eval_dist_apply [spec'.finite_range] :
   ⦃⟪o | update_state, default_state⟫ i (t, s)⦄ = ⦃o i t⦄.map (λ u, (u, update_state s i t u)) :=
 by rw [apply_eq, eval_dist_map]
 
@@ -121,15 +117,12 @@ eval_dist_simulate'_eq_eval_dist_simulate' (λ i t s s',
 
 end eval_dist
 
-section equiv
-
-
-
-end equiv
-
 section prob_event
 
-
+@[simp] lemma prob_event_apply [spec'.finite_range] (e : set (spec.range i × S)) :
+  ⦃e | ⟪o | update_state, default_state⟫ i (t, s)⦄ =
+    ⦃λ u, (u, update_state s i t u) ∈ e | o i t⦄ :=
+by simpa only [apply_eq, prob_event_map]
 
 end prob_event
 
