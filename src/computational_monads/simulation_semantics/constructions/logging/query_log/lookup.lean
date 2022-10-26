@@ -1,5 +1,11 @@
 import computational_monads.simulation_semantics.constructions.logging.query_log.basic
 
+/-!
+# Lookup Functions for Query Logs
+
+This file defines functions for looking up values in a `query_log`.
+-/
+
 namespace query_log
 
 variables {spec : oracle_spec} (log : query_log spec)
@@ -9,7 +15,8 @@ section lookup
 
 /-- Find the query output of the first oracle query with the given input.
   Result is returned as an `option`, with `none` for inputs that haven't previously been queried.
-  Main use case is for using the log as a cache for repeated queries. -/
+  Main use case is for using the log as a cache for repeated queries.
+  Note that this returns the *most recently* logged query, not the first -/
 def lookup (log : query_log spec) (i : spec.ι) (t : spec.domain i) :
   option (spec.range i) :=
 ((log i).find $ (= t) ∘ prod.fst).map prod.snd
@@ -61,12 +68,20 @@ lemma lookup_log_query_of_input_ne (i : spec.ι)
   (log.log_query i t u).lookup i t' = log.lookup i t' :=
 trans (log.lookup_log_query_same_index i t t' u) (if_neg ht)
 
-lemma lookup_eq_none_iff_not_queried (i : spec.ι) (t : spec.domain i)
-  : log.lookup i t = none ↔ log.not_queried i t = tt :=
+lemma lookup_eq_none_iff_not_queried (i : spec.ι) (t : spec.domain i) :
+  log.lookup i t = none ↔ log.not_queried i t :=
 begin
   rw [lookup, option.map_eq_none', list.find_eq_none, not_queried_iff_not_mem],
   exact ⟨λ h u htu, h (t, u) htu rfl, λ h x hu' ht', h x.2 (ht' ▸ (by rwa prod.mk.eta))⟩,
 end
+
+lemma exists_eq_lookup_iff_not_not_queried (i : spec.ι) (t : spec.domain i) :
+  (∃ (u : spec.range i), some u = log.lookup i t) ↔ ¬ log.not_queried i t :=
+by rw [← lookup_eq_none_iff_not_queried, ← ne.def, option.ne_none_iff_exists]
+
+lemma exists_eq_lookup_of_not_not_queried (i : spec.ι) (t : spec.domain i)
+  (h : ¬ log.not_queried i t) : ∃ (u : spec.range i), some u = log.lookup i t :=
+(exists_eq_lookup_iff_not_not_queried log i t).2 h
 
 end lookup
 
@@ -122,12 +137,10 @@ section get_index
 
 /-- Get the index of the first query with the given input `t`.
   Returns `none` if the input has never been queried
-  TODO: check if the fold should be right or left
-  TODO: `not_queried` can be defined using this instead? -/
+  TODO: check if the fold should be right or left-/
 def get_index_of_input [spec.computable] (log : query_log spec)
   (i : spec.ι) (t : spec.domain i) : option ℕ :=
-(log i).foldr_with_index
-  (λ n ⟨t', _⟩ m, if t' = t then some n else m) none
+(log i).foldr_with_index (λ n ⟨t', _⟩ m, if t' = t then some n else m) none
 
 end get_index
 

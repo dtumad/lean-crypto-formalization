@@ -177,7 +177,7 @@ default_simulate' (idₛ ++ₛ random_oracle sig.random_oracle_spec) (do {
   (pk, sk) ← sig.gen (),
   (m, σ, log) ← adversary.simulate pk sk,
   b ← sig.verify (pk, m, σ),
-  return (b ∧ log.not_queried () m)
+  return (if log.not_queried () m then b else ff)
 })
 
 namespace unforgeable_experiment

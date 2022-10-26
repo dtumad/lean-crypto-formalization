@@ -16,67 +16,93 @@ namespace query_log
 
 open oracle_spec 
 
-@[ext]
-lemma ext {spec : oracle_spec} {log log' : query_log spec} (h : ∀ (i : spec.ι), log i = log' i) :
-  log = log' := funext h
+variables {spec : oracle_spec} (log : query_log spec)
+  (i j : spec.ι) (t : spec.domain i) (u : spec.range i)
+
+@[ext] lemma ext {spec : oracle_spec} {log log' : query_log spec}
+  (h : ∀ (i : spec.ι), log i = log' i) : log = log' := funext h
+
+section init
 
 /-- Empty query log, with no entries for any of the oracles in the spec -/
 @[inline, reducible]
 def init (spec : oracle_spec) : query_log spec := λ i, []
 
-@[simp]
-lemma init_apply (spec : oracle_spec) (i : spec.ι) : (init spec) i = [] := rfl
+@[simp] lemma init_apply : init spec i = [] := rfl
 
-variables {spec : oracle_spec} (log : query_log spec) [computable spec]
+lemma not_mem_init : (t, u) ∉ (init spec i) := list.not_mem_nil (t, u)
+
+lemma mem_init_iff_false : (t, u) ∈ (init spec i) ↔ false := 
+by simp only [iff_false, not_mem_init, not_false_iff]
+
+end init
 
 section log_query
+
+variable [spec.computable]
 
 /-- Given a current query log, return the new log after adding a given oracle query -/
 def log_query (i : spec.ι) (t : spec.domain i) (u : spec.range i) : query_log spec :=
 λ j, if hi : i = j then hi.rec_on ((t, u) :: (log i)) else log j
 
-@[simp]
-lemma log_query_apply (i j : spec.ι) (t : spec.domain i) (u : spec.range i) :
+@[simp] lemma log_query_apply (i j : spec.ι) (t : spec.domain i) (u : spec.range i) :
   (log.log_query i t u) j = if hi : i = j then hi.rec_on ((t, u) :: log i) else log j := rfl
 
 lemma log_query_apply_of_index_eq {i j : spec.ι} (hi : i = j) (t : spec.domain i)
   (u : spec.range i) : (log.log_query i t u) j = hi.rec_on ((t, u) :: log i) :=
 dite_eq_iff.2 (or.inl ⟨hi, rfl⟩)
 
-@[simp]
-lemma log_query_apply_same_index (i : spec.ι) (t : spec.domain i) (u : spec.range i) :
+@[simp] lemma log_query_apply_same_index (i : spec.ι) (t : spec.domain i) (u : spec.range i) :
   (log.log_query i t u) i = (t, u) :: (log i) := log_query_apply_of_index_eq log rfl t u
 
 lemma log_query_apply_of_index_ne {i j : spec.ι} (hi : i ≠ j) (t : spec.domain i)
   (u : spec.range i) : (log.log_query i t u) j = log j := dite_eq_iff.2 (or.inr ⟨hi, rfl⟩)
 
+lemma nodup_log_query_iff (i : spec.ι) (t : spec.domain i) (u : spec.range i) (j : spec.ι)
+  (hj : (log j).nodup) : (log.log_query i t u j).nodup ↔ i ≠ j ∨ (t, u) ∉ log i :=
+begin
+  by_cases hi : i = j,
+  { induction hi,
+    simp only [log_query_apply_same_index, list.nodup_cons, hj, and_true, ne.def,
+      eq_self_iff_true, not_true, false_or] },
+  { simp only [log.log_query_apply_of_index_ne hi, hj, hi, ne.def, not_false_iff, true_or] }
+end
+
 end log_query
 
 section not_queried
 
+variable [spec.computable]
+
 /- Returns whether a specific input has been previously logged
 TODO: might as well coerce to a `Prop`? -/
-def not_queried (i : spec.ι) (t : spec.domain i) : bool :=
-((log i).find ((=) t ∘ prod.fst)).is_none
+def not_queried (i : spec.ι) (t : spec.domain i) : Prop :=
+((log i).find ((=) t ∘ prod.fst)) = none
 
 lemma not_queried_def (i : spec.ι) (t : spec.domain i) :
-  log.not_queried i t = ((log i).find ((=) t ∘ prod.fst)).is_none := rfl
+  log.not_queried i t ↔ (((log i).find ((=) t ∘ prod.fst)) = none) := iff.rfl
+
+instance not_queried.decidable (i : spec.ι) (t : spec.domain i) : decidable (log.not_queried i t) :=
+option.decidable_eq ((log i).find ((=) t ∘ prod.fst)) none
 
 /-- An input hasn't been queried iff it isn't in the log for any possible output -/
 lemma not_queried_iff_not_mem (i : spec.ι) (t : spec.domain i) :
-  log.not_queried i t = tt ↔ ∀ (u : spec.range i), (t, u) ∉ log i :=
+  log.not_queried i t ↔ ∀ (u : spec.range i), (t, u) ∉ log i :=
 begin
-  rw [not_queried_def, option.is_none_iff_eq_none, list.find_eq_none],
+  rw [not_queried_def, list.find_eq_none],
   refine ⟨λ h u htu, h (t, u) htu rfl, λ h x hx hx', h x.2 (hx'.symm ▸ _)⟩,
   rwa [prod.mk.eta],
 end
 
-lemma not_queried_init_eq_tt (i : spec.ι) (t : spec.domain i) :
-  (init spec).not_queried i t = tt := rfl
+lemma not_queried_init (i : spec.ι) (t : spec.domain i) : (init spec).not_queried i t :=
+begin
+  rw [not_queried_def, list.find_eq_none],
+  refine λ x hx _, (not_mem_init i x.1 x.2 hx),
+end
 
 lemma not_queried_log_query (i j : spec.ι) (t : spec.domain i) (t' : spec.domain j)
-  (u : spec.range i) : (log.log_query i t u).not_queried j t' =
-    (log.not_queried j t') && (if hi : i = j then (hi.rec_on t ≠ t') else tt) :=
+  (u : spec.range i) : (log.log_query i t u).not_queried j t' ↔
+    (log.not_queried j t') ∧ (if hi : i = j then (hi.rec_on t ≠ t') else true) :=
 begin
   split_ifs with hi,
   { induction hi,
@@ -84,32 +110,34 @@ begin
     by_cases ht : t' = t,
     { induction ht,
       have : (eq t' ∘ prod.fst) (t', u) := (function.comp_app (eq t') prod.fst (t', u)).symm ▸ rfl,
-      simp only [list.find_cons_of_pos _ this, option.is_none_some, ne.def, eq_self_iff_true,
-        not_true, to_bool_false_eq_ff, band_ff] },
-    { have : ¬ (eq t' ∘ prod.fst) (t, u) := by simp only [ht, function.comp_app, not_false_iff],
-      simpa only [list.find_cons_of_neg _ this, ht, ne.symm ht,
-        ne.def, not_false_iff, to_bool_true_eq_tt, band_tt] } },
-  { simp only [not_queried, log_query_apply_of_index_ne log hi, band_tt] }
+      simp only [list.find_cons_of_pos _ this, ne.def, eq_self_iff_true, not_true, and_false] },
+    { have : ¬ (eq t' ∘ prod.fst) (t, u) := ht,
+      simp only [list.find_cons_of_neg _ this, list.find_eq_none, not_queried_iff_not_mem, ne.def, ne.symm ht,
+        not_false_iff, and_true, function.comp_app, prod.forall],
+      exact ⟨λ h u hu, h t' u hu rfl, λ h t'' u' htu' ht', h u' $ ht'.symm ▸ htu'⟩ } },
+  { simp only [not_queried, log_query_apply_of_index_ne log hi, and_true] }
 end
 
 lemma not_queried_log_query_of_index_eq {i j : spec.ι} (hi : i = j)
   (t : spec.domain i) (t' : spec.domain j) (u : spec.range i) :
-  (log.log_query i t u).not_queried j t' = (log.not_queried j t') && (hi.rec_on t ≠ t') :=
-(log.not_queried_log_query i j t t' u).trans (congr_arg ((&&) $ log.not_queried j t') (dif_pos hi))
+  (log.log_query i t u).not_queried j t' ↔ (log.not_queried j t') ∧ (hi.rec_on t ≠ t') :=
+(log.not_queried_log_query i j t t' u).trans (by rw [dif_pos hi])
 
 lemma not_queried_log_query_same_index (i : spec.ι)
   (t t' : spec.domain i) (u : spec.range i) :
-  (log.log_query i t u).not_queried i t' = (log.not_queried i t') && (t ≠ t') :=
+  (log.log_query i t u).not_queried i t' ↔ (log.not_queried i t') ∧ (t ≠ t') :=
 log.not_queried_log_query_of_index_eq rfl t t' u
 
 lemma not_queried_log_query_of_index_ne {i j : spec.ι} (hi : i ≠ j)
   (t : spec.domain i) (t' : spec.domain j) (u : spec.range i) :
-  (log.log_query i t u).not_queried j t' = log.not_queried j t' :=
-(log.not_queried_log_query i j t t' u).trans ((congr_arg _ (dif_neg hi)).trans (band_tt _))
+  (log.log_query i t u).not_queried j t' ↔ log.not_queried j t' :=
+(log.not_queried_log_query i j t t' u).trans (by rw [dif_neg hi, and_true])
 
 end not_queried
 
 section map_at_index
+
+variable [spec.computable]
 
 /-- Apply a mapping function to the log corresponding to a particular index
   TODO: I think a lot of the above functions can use this as a helper -/
@@ -118,8 +146,7 @@ def map_at_index (i : spec.ι)
   query_log spec :=
 λ j, if hi : i = j then hi.rec_on (f $ log i) else (log j)
 
-variables (i j : spec.ι)
-  (f : list (spec.domain i × spec.range i) → list (spec.domain i × spec.range i))
+variables (f : list (spec.domain i × spec.range i) → list (spec.domain i × spec.range i))
 
 @[simp]
 lemma map_at_index_apply : log.map_at_index i f j =
@@ -165,6 +192,8 @@ end
 end map_at_index
 
 section drop_at_index
+
+variable [spec.computable]
 
 def drop_at_index (log : query_log spec) (i : spec.ι) (n : ℕ) : query_log spec :=
 log.map_at_index i (list.drop n)
@@ -224,6 +253,8 @@ end
 end drop_at_index
 
 section remove_head
+
+variable [spec.computable]
 
 -- remove the head of the index `i` log
 def remove_head (log : query_log spec) (i : spec.ι) :
