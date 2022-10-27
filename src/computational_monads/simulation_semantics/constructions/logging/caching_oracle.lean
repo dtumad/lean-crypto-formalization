@@ -61,22 +61,49 @@ lemma support_apply_of_not_not_queried (hlog : ¬ log.not_queried i t) :
   ((caching_oracle spec) i (t, log)).support = {x | some x.1 = log.lookup i t ∧ x.2 = log} :=
 by rw [support_apply, if_neg hlog]
 
+-- TODO: slightly too specific
+lemma test {spec spec' : oracle_spec} {S : Type} (so : sim_oracle spec spec' S)
+  (P : Π (i : spec.ι) (t : spec.domain i), S → Prop) (i : spec.ι) (t : spec.domain i) (s : S) (hs : P i t s)
+  (oa : oracle_comp spec α) (x : α × S)
+  (hx : x ∈ (simulate so oa s).support)
+  (hso : ∀ i' t' i t s, ∀ x ∈ (so i' (t', s)).support, P i t (prod.snd x)) : P i t x.2 :=
+begin
+  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i' t' generalizing s,
+  {
+    rw [support_simulate_return, set.mem_singleton_iff] at hx,
+    exact hx.symm ▸ hs
+  },
+  {
+    rw [mem_support_simulate_bind] at hx,
+    obtain ⟨a, s', ha, ha'⟩ := hx,
+    specialize hoa (a, s') s hs ha,
+    exact hob a x s' hoa ha'
+  },
+  {
+    rw [support_simulate_query] at hx,
+    exact hso i' t' i t s x hx,
+  }
+end
+
 /-- If the initial cache has `nodup` for some oracle, then so does the final cache. -/
 lemma nodup_simulate (hlog : (log i).nodup) (x : α × query_log spec)
   (hx : x ∈ (simulate (caching_oracle spec) oa log).support) : (x.2 i).nodup :=
 begin
-  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob j t,
-  { rw [simulate_return, support_return, set.mem_singleton_iff] at hx,
-    refine hx.symm ▸ hlog },
-  {
-    sorry,
-  },
-  { by_cases h : log.not_queried j t,
-    { rw [simulate_query, support_apply, if_pos h, set.mem_set_of_eq] at hx,
-      rw [hx, log.nodup_log_query_iff j t x.1 i hlog],
-      refine or.inr ((log.not_queried_iff_not_mem _ _).1 h _) },
-    { rw [simulate_query, support_apply, if_neg h, set.mem_set_of_eq] at hx,
-      exact hx.2.symm ▸ hlog } }
+  apply test (caching_oracle spec) (λ i _ log, (log i).nodup) i sorry log hlog oa x hx,
+  sorry,
+  -- induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob j t generalizing log,
+  -- { rw [support_simulate_return, set.mem_singleton_iff] at hx,
+  --   refine hx.symm ▸ hlog },
+  -- { rw [mem_support_simulate_bind] at hx,
+  --   obtain ⟨a, log', ha, ha'⟩ := hx,
+  --   specialize hoa (a, log') log hlog ha,
+  --   exact hob a x log' hoa ha' },
+  -- { by_cases h : log.not_queried j t,
+  --   { rw [simulate_query, support_apply, if_pos h, set.mem_set_of_eq] at hx,
+  --     rw [hx, log.nodup_log_query_iff j t x.1 i hlog],
+  --     refine or.inr ((log.not_queried_iff_not_mem _ _).1 h _) },
+  --   { rw [simulate_query, support_apply, if_neg h, set.mem_set_of_eq] at hx,
+  --     exact hx.2.symm ▸ hlog } }
 end
 
 /-- If a value is already cached in the initial state, it has the same cache value after. -/

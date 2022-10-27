@@ -105,8 +105,14 @@ lemma support_simulate_pure' : (simulate so (pure' α a) s).support = {(a, s)} :
 
 lemma support_simulate_pure : (simulate so (pure a) s).support = {(a, s)} := rfl
 
-lemma support_simulate_bind : (simulate so (oa >>= ob) s).support
-  = ⋃ x ∈ (simulate so oa s).support, (simulate so (ob $ prod.fst x) x.2).support := rfl
+lemma support_simulate_bind : (simulate so (oa >>= ob) s).support =
+  ⋃ x ∈ (simulate so oa s).support, (simulate so (ob $ prod.fst x) x.2).support := rfl
+
+lemma mem_support_simulate_bind (x : β × S) : x ∈ (simulate so (oa >>= ob) s).support ↔
+  ∃ (a : α) (s' : S), (a, s') ∈ (simulate so oa s).support ∧ x ∈ (simulate so (ob a) s').support :=
+begin
+  sorry
+end
 
 lemma support_simulate_bind' : (simulate so (bind' α β oa ob) s).support
   = ⋃ x ∈ (simulate so oa s).support, (simulate so (ob $ prod.fst x) x.2).support := rfl
