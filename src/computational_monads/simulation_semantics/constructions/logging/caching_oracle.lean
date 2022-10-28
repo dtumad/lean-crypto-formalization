@@ -61,12 +61,11 @@ lemma support_apply_of_not_not_queried (hlog : ¬ log.not_queried i t) :
   ((caching_oracle spec) i (t, log)).support = {x | some x.1 = log.lookup i t ∧ x.2 = log} :=
 by rw [support_apply, if_neg hlog]
 
--- TODO: slightly too specific
-lemma test {spec spec' : oracle_spec} {S : Type} (so : sim_oracle spec spec' S)
-  (P : Π (i : spec.ι) (t : spec.domain i), S → Prop) (i : spec.ι) (t : spec.domain i) (s : S) (hs : P i t s)
-  (oa : oracle_comp spec α) (x : α × S)
-  (hx : x ∈ (simulate so oa s).support)
-  (hso : ∀ i' t' i t s, ∀ x ∈ (so i' (t', s)).support, P i t (prod.snd x)) : P i t x.2 :=
+lemma test'' {spec spec' : oracle_spec} {S : Type} (so : sim_oracle spec spec' S)
+  (P : Π (i : spec.ι) (t : spec.domain i) (u : spec.range i), S → Prop) (s : S)
+  (oa : oracle_comp spec α) (x : α × S) (hx : x ∈ (simulate so oa s).support)
+  (i : spec.ι) (t : spec.domain i) (u : spec.range i) (hs : P i t u s)
+  (hso : ∀ i' t' i t s u, ∀ x ∈ (so i' (t', s)).support, P i t u s → P i t u (prod.snd x)) : P i t u x.2 :=
 begin
   induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i' t' generalizing s,
   {
@@ -76,12 +75,59 @@ begin
   {
     rw [mem_support_simulate_bind] at hx,
     obtain ⟨a, s', ha, ha'⟩ := hx,
-    specialize hoa (a, s') s hs ha,
-    exact hob a x s' hoa ha'
+    specialize hoa (a, s') s ha hs,
+    exact hob a x s' ha' hoa
   },
   {
     rw [support_simulate_query] at hx,
-    exact hso i' t' i t s x hx,
+    exact hso i' t' i t s _ x hx hs,
+  }
+end
+
+-- TODO: slightly too specific
+lemma test {spec spec' : oracle_spec} {S : Type} (so : sim_oracle spec spec' S)
+  (P : Π (i : spec.ι) (t : spec.domain i), S → Prop) (s : S)
+  (oa : oracle_comp spec α) (x : α × S) (hx : x ∈ (simulate so oa s).support)
+  (i : spec.ι) (t : spec.domain i) (hs : P i t s)
+  (hso : ∀ i' t' i t s, ∀ x ∈ (so i' (t', s)).support, P i t s → P i t (prod.snd x)) : P i t x.2 :=
+begin
+  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i' t' generalizing s,
+  {
+    rw [support_simulate_return, set.mem_singleton_iff] at hx,
+    exact hx.symm ▸ hs
+  },
+  {
+    rw [mem_support_simulate_bind] at hx,
+    obtain ⟨a, s', ha, ha'⟩ := hx,
+    specialize hoa (a, s') s ha hs,
+    exact hob a x s' ha' hoa
+  },
+  {
+    rw [support_simulate_query] at hx,
+    exact hso i' t' i t s x hx hs,
+  }
+end
+
+lemma test' {spec spec' : oracle_spec} {S : Type} (so : sim_oracle spec spec' S)
+  (P : Π (i : spec.ι), S → Prop) (s : S)
+  (oa : oracle_comp spec α) (x : α × S) (hx : x ∈ (simulate so oa s).support)
+  (i : spec.ι) (hs : P i s)
+  (hso : ∀ i' t i s, ∀ x ∈ (so i' (t, s)).support, P i s → P i (prod.snd x)) : P i x.2 :=
+begin
+  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i' t' generalizing s,
+  {
+    rw [support_simulate_return, set.mem_singleton_iff] at hx,
+    exact hx.symm ▸ hs
+  },
+  {
+    rw [mem_support_simulate_bind] at hx,
+    obtain ⟨a, s', ha, ha'⟩ := hx,
+    specialize hoa (a, s') s ha hs,
+    exact hob a x s' ha' hoa
+  },
+  {
+    rw [support_simulate_query] at hx,
+    exact hso i' t' i s x hx hs,
   }
 end
 
@@ -89,21 +135,18 @@ end
 lemma nodup_simulate (hlog : (log i).nodup) (x : α × query_log spec)
   (hx : x ∈ (simulate (caching_oracle spec) oa log).support) : (x.2 i).nodup :=
 begin
-  apply test (caching_oracle spec) (λ i _ log, (log i).nodup) i sorry log hlog oa x hx,
-  sorry,
-  -- induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob j t generalizing log,
-  -- { rw [support_simulate_return, set.mem_singleton_iff] at hx,
-  --   refine hx.symm ▸ hlog },
-  -- { rw [mem_support_simulate_bind] at hx,
-  --   obtain ⟨a, log', ha, ha'⟩ := hx,
-  --   specialize hoa (a, log') log hlog ha,
-  --   exact hob a x log' hoa ha' },
-  -- { by_cases h : log.not_queried j t,
-  --   { rw [simulate_query, support_apply, if_pos h, set.mem_set_of_eq] at hx,
-  --     rw [hx, log.nodup_log_query_iff j t x.1 i hlog],
-  --     refine or.inr ((log.not_queried_iff_not_mem _ _).1 h _) },
-  --   { rw [simulate_query, support_apply, if_neg h, set.mem_set_of_eq] at hx,
-  --     exact hx.2.symm ▸ hlog } }
+  refine test' (caching_oracle spec) (λ i log, (log i).nodup) log oa x hx i hlog _,
+  intros j t j' log x hx hlog,
+  by_cases h : log.not_queried j t,
+  {
+    rw [support_apply_of_not_queried _ _ _ h, set.mem_set_of_eq] at hx,
+    rw [hx, query_log.nodup_log_query_iff _ _ _ _ _ hlog],
+    refine or.inr ((log.not_queried_iff_not_mem _ _).1 h _),
+  },
+  {
+    rw [support_apply_of_not_not_queried _ _ _ h, set.mem_set_of_eq] at hx,
+    exact hx.2.symm ▸ hlog,
+  },
 end
 
 /-- If a value is already cached in the initial state, it has the same cache value after. -/
@@ -111,7 +154,35 @@ lemma lookup_simulate_eq_some_of_lookup_eq_some (x : α × query_log spec)
   (hx : x ∈ (simulate (caching_oracle spec) oa log).support)
   (hlog : log.lookup i t = some u) : x.2.lookup i t = some u :=
 begin
-  sorry
+  apply test'' (caching_oracle spec) (λ i t u log, log.lookup i t = some u) log oa x hx i t u hlog,
+  {
+    clear hlog hx x log u t i oa,
+    intros i' t' i t log u x hx hlog,
+    by_cases h : log.not_queried i' t',
+    {
+
+      rw [support_apply_of_not_queried _ _ _ h, set.mem_set_of_eq] at hx,
+      rw [hx],
+      rw [query_log.lookup_log_query],
+      split_ifs with hi ht,
+      {
+        obtain rfl := ht,
+        obtain rfl := hi,
+        rw [← query_log.lookup_eq_none_iff_not_queried] at h,
+        refine false.elim (option.some_ne_none _ (trans hlog.symm h)),
+      },
+      {
+        exact hlog,
+      },
+      {
+        exact hlog,
+      }
+    },
+    {
+      rw [support_apply_of_not_not_queried _ _ _ h, set.mem_set_of_eq] at hx,
+      rwa [hx.2],
+    }
+  },
 end
 
 /-- If a value isn't cached after simulation, it wasn't cached in the initial state. -/
