@@ -4,6 +4,8 @@ import computational_monads.simulation_semantics.simulate.basic
 # Support of Simulations
 
 This file contains more complex lemmas about the support of `simulate` and `simulate'`.
+In particular it relates the `support` after `simulate` and `simulate'` to the original `support`,
+and gives lemmas for proving equalities between or properties of these `supports`.
 -/
 
 variables {α β γ : Type} {spec spec' spec'' : oracle_spec} {S S' : Type}
@@ -32,7 +34,8 @@ begin
   { simp only [h_query, simulate_query] }
 end
 
-/-- Since `support` assumes any possible query result, `simulate` will never reduce the support -/
+/-- Since `support` assumes any possible query result, `simulate` will never reduce the support.
+In particular the support of a simulation lies in the pullback of the original support. -/
 theorem support_simulate_subset_preimage_support :
   (simulate so oa s).support ⊆ prod.fst ⁻¹' oa.support :=
 begin
@@ -50,7 +53,8 @@ end
 lemma mem_support_of_mem_support_simulate (x : α × S) (hx : x ∈ (simulate so oa s).support) :
   x.1 ∈ oa.support := by simpa using (support_simulate_subset_preimage_support so oa s hx)
 
-/-- Simulation only reduces the possible oracle outputs, so can't reduce the support -/
+/-- Simulation only reduces the possible oracle outputs, so can't reduce the support. In particular
+the first output of a simulation has support at most that of the original computation -/
 lemma support_simulate'_subset_support : (simulate' so oa s).support ⊆ oa.support :=
 begin
   refine (support_simulate' so oa s).symm ▸ λ x hx, _,
@@ -77,6 +81,10 @@ begin
   { simp only [support_simulate'_query, h i t s] }
 end
 
+/-- If the possible outputs of two oracles are the same for any inputs  regardless of their
+internal states, then the `support` of `simulate'` with either oracle is the same.
+Intuitively the simulations *could* take the same branch at each oracle query, and while the
+probabilities of divergence may vary, this doesn't affect the set of possible results. -/
 theorem support_simulate'_eq_support_simulate'
   {so : sim_oracle spec spec' S} {so' : sim_oracle spec spec' S'}
   (h : ∀ i t s s', prod.fst '' (so i (t, s)).support = prod.fst '' (so' i (t, s')).support)
@@ -102,6 +110,21 @@ begin
       obtain ⟨t', ht'⟩ := this,
       exact ⟨(a, t'), ht', (hob a t' t).symm ▸ hob'⟩ } },
   { simpa only [support_simulate'_query] using h i t s s' }
+end
+
+/-- Given a property `P` of oracle states, if any query call to the oracle preserves it,
+then simulation of an entire computation with that oracle will also preserve it. -/
+theorem support_state_simulate_induction (so : sim_oracle spec spec' S) (P : S → Prop)
+  (s : S) (hs : P s) (oa : oracle_comp spec α) (x : α × S) (hx : x ∈ (simulate so oa s).support)
+  (hso : ∀ i t s, ∀ x ∈ (so i (t, s)).support, P s → P (prod.snd x)) : P x.2 :=
+begin
+  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i' t' generalizing s,
+  { rw [support_simulate_return, set.mem_singleton_iff] at hx,
+    exact hx.symm ▸ hs },
+  { rw [mem_support_simulate_bind] at hx,
+    obtain ⟨a, s', ha, ha'⟩ := hx,
+    exact hob a x s' (hoa (a, s') s hs ha) ha' },
+  { exact hso i' t' s x hx hs }
 end
 
 end oracle_comp

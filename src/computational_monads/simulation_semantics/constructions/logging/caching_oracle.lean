@@ -2,6 +2,15 @@ import computational_monads.simulation_semantics.constructions.logging.logging_o
 import computational_monads.simulation_semantics.constructions.logging.query_log.lookup
 import computational_monads.simulation_semantics.oracle_compose
 
+/-!
+# Caching Simulation Oracle
+
+This file defines a `sim_oracle` that implements caching functionality.
+`caching_oracle` represents a simulator that logs all new queries, returning the old
+log values for queries that have been previously asked, so the `query_log` functions as a cache.
+This is often useful when composed with other oracles, such as in `random_oracle`.
+-/
+
 open oracle_comp oracle_spec
 
 variables {α β γ : Type} {spec : oracle_spec} [computable spec]
@@ -61,47 +70,18 @@ lemma support_apply_of_not_not_queried (hlog : ¬ log.not_queried i t) :
   ((caching_oracle spec) i (t, log)).support = {x | some x.1 = log.lookup i t ∧ x.2 = log} :=
 by rw [support_apply, if_neg hlog]
 
-/-- Given a property `P` of oracle states, if any query to the oracle preserves it,
-then simulation of an entire computation with that oracle will also preserve it. -/
-lemma most_basic {spec spec' : oracle_spec} {S : Type} (so : sim_oracle spec spec' S)
-  (P : S → Prop) (s : S) (hs : P s)
-  (oa : oracle_comp spec α) (x : α × S) (hx : x ∈ (simulate so oa s).support)
-  
-  (hso : ∀ i t s, ∀ x ∈ (so i (t, s)).support, P s → P (prod.snd x)) : P x.2 :=
-begin
-  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i' t' generalizing s,
-  {
-    rw [support_simulate_return, set.mem_singleton_iff] at hx,
-    exact hx.symm ▸ hs
-  },
-  {
-    rw [mem_support_simulate_bind] at hx,
-    obtain ⟨a, s', ha, ha'⟩ := hx,
-    specialize hoa (a, s') s hs ha,
-    exact hob a x s' hoa ha'
-  },
-  {
-    rw [support_simulate_query] at hx,
-    exact hso i' t' s x hx hs,
-  }
-end
-
 /-- If the initial cache has `nodup` for some oracle, then so does the final cache. -/
 lemma nodup_simulate (hlog : (log i).nodup) (x : α × query_log spec)
   (hx : x ∈ (simulate (caching_oracle spec) oa log).support) : (x.2 i).nodup :=
 begin
-  refine most_basic (caching_oracle spec) (λ log, (log i).nodup) log hlog oa x hx _,
-  intros j t log x hx hlog,
-  by_cases h : log.not_queried j t,
-  {
-    rw [support_apply_of_not_queried _ _ _ h, set.mem_set_of_eq] at hx,
+  refine support_state_simulate_induction (caching_oracle spec) (λ log, (log i).nodup)
+    log hlog oa x hx (λ i t log x hx hlog, _),
+  by_cases h : log.not_queried i t,
+  { rw [support_apply_of_not_queried _ _ _ h, set.mem_set_of_eq] at hx,
     rw [hx, query_log.nodup_log_query_iff _ _ _ _ _ hlog],
-    refine or.inr ((log.not_queried_iff_not_mem _ _).1 h _),
-  },
-  {
-    rw [support_apply_of_not_not_queried _ _ _ h, set.mem_set_of_eq] at hx,
-    exact hx.2.symm ▸ hlog,
-  }
+    exact or.inr ((log.not_queried_iff_not_mem _ _).1 h _) },
+  { rw [support_apply_of_not_not_queried _ _ _ h, set.mem_set_of_eq] at hx,
+    exact hx.2.symm ▸ hlog }
 end
 
 /-- If a value is already cached in the initial state, it has the same cache value after. -/
@@ -109,35 +89,20 @@ lemma lookup_simulate_eq_some_of_lookup_eq_some (x : α × query_log spec)
   (hx : x ∈ (simulate (caching_oracle spec) oa log).support)
   (hlog : log.lookup i t = some u) : x.2.lookup i t = some u :=
 begin
-  apply most_basic (caching_oracle spec) (λ log, log.lookup i t = some u) log hlog oa x hx,
-  {
-    -- clear hlog hx x log u t i oa,
-    intros i' t' log x hx hlog,
-    by_cases h : log.not_queried i' t',
-    {
-
-      rw [support_apply_of_not_queried _ _ _ h, set.mem_set_of_eq] at hx,
-      rw [hx],
-      rw [query_log.lookup_log_query],
-      split_ifs with hi ht,
-      {
-        obtain rfl := ht,
-        obtain rfl := hi,
-        rw [← query_log.lookup_eq_none_iff_not_queried] at h,
-        refine false.elim (option.some_ne_none _ (trans hlog.symm h)),
-      },
-      {
-        exact hlog,
-      },
-      {
-        exact hlog,
-      }
-    },
-    {
-      rw [support_apply_of_not_not_queried _ _ _ h, set.mem_set_of_eq] at hx,
-      rwa [hx.2],
-    }
-  },
+  refine support_state_simulate_induction (caching_oracle spec) (λ log, log.lookup i t = some u)
+    log hlog oa x hx (λ i t log x hx hlog, _),
+  by_cases h : log.not_queried i t,
+  { rw [support_apply_of_not_queried _ _ _ h, set.mem_set_of_eq] at hx,
+    rw [hx, query_log.lookup_log_query],
+    split_ifs with hi ht,
+    { obtain rfl := ht,
+      obtain rfl := hi,
+      exact false.elim (option.some_ne_none _ (trans hlog.symm $
+        (log.lookup_eq_none_iff_not_queried _ _).2 h)) },
+    { exact hlog },
+    { exact hlog } },
+  { rw [support_apply_of_not_not_queried _ _ _ h, set.mem_set_of_eq] at hx,
+    exact hx.2.symm ▸ hlog }
 end
 
 /-- If a value isn't cached after simulation, it wasn't cached in the initial state. -/
@@ -149,7 +114,7 @@ begin
 end
 
 /-- The length of the final cache is at least as long as the initial cache -/
-lemma len_cache_le_len_cache_simulate (x : α × query_log spec)
+lemma length_cache_le_length_cache_simulate (x : α × query_log spec)
   (hx : x ∈ (simulate (caching_oracle spec) oa log).support) :
   (log i).length ≤ (x.2 i).length :=
 begin
@@ -171,9 +136,8 @@ end
 /-- Re-running a computation with an old cache doesn't change the possible outputs,
 assuming the old cache was generated by an honest simulation. -/
 theorem support_simulate_bind_simulate' (oa : oracle_comp spec α) :
-  (simulate (caching_oracle spec) oa log >>=
-    λ x, simulate (caching_oracle spec) oa x.2).support =
-      (simulate (caching_oracle spec) oa log).support :=
+  (simulate (caching_oracle spec) oa log >>= λ x, simulate (caching_oracle spec) oa x.2).support =
+    (simulate (caching_oracle spec) oa log).support :=
 begin
   induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t,
   {
