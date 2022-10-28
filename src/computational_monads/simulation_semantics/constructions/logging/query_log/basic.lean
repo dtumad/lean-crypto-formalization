@@ -58,7 +58,7 @@ dite_eq_iff.2 (or.inl ⟨hi, rfl⟩)
 lemma log_query_apply_of_index_ne {i j : spec.ι} (hi : i ≠ j) (t : spec.domain i)
   (u : spec.range i) : (log.log_query i t u) j = log j := dite_eq_iff.2 (or.inr ⟨hi, rfl⟩)
 
-lemma nodup_log_query_iff (i : spec.ι) (t : spec.domain i) (u : spec.range i) (j : spec.ι)
+lemma nodup_log_query_apply_iff (i : spec.ι) (t : spec.domain i) (u : spec.range i) (j : spec.ι)
   (hj : (log j).nodup) : (log.log_query i t u j).nodup ↔ i ≠ j ∨ (t, u) ∉ log i :=
 begin
   by_cases hi : i = j,
@@ -66,6 +66,36 @@ begin
     simp only [log_query_apply_same_index, list.nodup_cons, hj, and_true, ne.def,
       eq_self_iff_true, not_true, false_or] },
   { simp only [log.log_query_apply_of_index_ne hi, hj, hi, ne.def, not_false_iff, true_or] }
+end
+
+lemma length_log_query_apply (i : spec.ι) (t : spec.domain i) (u : spec.range i) (j : spec.ι) :
+  (log.log_query i t u j).length = (log j).length + ite (i = j) 1 0 :=
+begin
+  rw [log_query_apply],
+  split_ifs with h,
+  { obtain rfl := h, exact rfl },
+  { exact symm (add_zero _) },
+end
+
+lemma length_log_query_apply_of_index_eq {i : spec.ι} (t : spec.domain i) (u : spec.range i)
+  {j : spec.ι} (h : i = j) : (log.log_query i t u j).length = (log j).length + 1 :=
+by {induction h, simp only [list.length, log_query_apply_same_index] }
+
+lemma length_log_query_apply_same_index (i : spec.ι) (t : spec.domain i) (u : spec.range i) :
+  (log.log_query i t u i).length = (log i).length + 1 :=
+by simp only [list.length, log_query_apply_same_index]
+
+lemma length_log_query_apply_of_index_ne {i : spec.ι} (t : spec.domain i) (u : spec.range i)
+  {j : spec.ι} (h : i ≠ j) : (log.log_query i t u j).length = (log j).length :=
+by rw [log_query_apply_of_index_ne log h]
+
+lemma length_apply_le_lenght_log_query_apply (i : spec.ι) (t : spec.domain i) (u : spec.range i)
+  (j : spec.ι) : (log j).length ≤ (log.log_query i t u j).length :=
+begin
+  by_cases hij : i = j,
+  { induction hij,
+    simp only [list.length, log_query_apply_same_index, le_add_iff_nonneg_right, zero_le'] },
+  { rw [length_log_query_apply_of_index_ne log t u hij] }
 end
 
 end log_query
