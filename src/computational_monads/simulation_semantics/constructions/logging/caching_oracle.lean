@@ -118,7 +118,7 @@ begin
   rw [← ne.def, option.ne_none_iff_exists'] at h,
   refine let ⟨u, hu⟩ := h in option.some_ne_none u ((lookup_simulate_eq_some_of_lookup_eq_some
     oa i t u log x hx hu).symm.trans hx'),
-end
+end 
 
 /-- For any query fresh to the initial cache, if there is some output such that query has a cached
 value, then there are also outputs with any other possible cached value. -/
@@ -128,7 +128,22 @@ lemma exists_cache_lookup_eq_some (hlog : log.not_queried i t)
   ∃ (y : α × query_log spec) (hy : y ∈ (simulate (caching_oracle spec) oa log).support),
     y.2.lookup i t = some u' :=
 begin
-  sorry
+  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t,
+  {
+    rw [support_simulate_return, set.mem_singleton_iff] at hx,
+    have : ¬ log.not_queried i t := begin
+      rw [← query_log.lookup_eq_none_iff_not_queried, option.eq_none_iff_forall_not_mem, not_forall],
+      refine ⟨u, _⟩,
+      simpa only [hx] using h,
+    end,
+    refine (this hlog).elim,
+  },
+  {
+    sorry,
+  },
+  {
+    sorry,
+  }
 end
 
 end lookup
@@ -180,7 +195,18 @@ theorem support_simulate_fork_cache_some
   (simulate (caching_oracle spec) oa (x.2.fork_cache i (some n))).support =
     (simulate (caching_oracle spec) oa cache).support :=
 begin
-  sorry
+
+
+  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t,
+  {
+    sorry,
+  },
+  {
+    sorry
+  },
+  {
+    simp, sorry,
+  }
 end
 
 /-- Specialized version of `support_simulate_fork_cache_some` when the initial state is empty.

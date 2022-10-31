@@ -133,7 +133,7 @@ lemma lookup_fst_log_query_of_index_ne {i j : spec.ι} (hi : i ≠ j)
 
 end lookup_fst
 
-section get_index
+section get_index_of_input
 
 /-- Get the index of the first query with the given input `t`.
   Returns `none` if the input has never been queried
@@ -142,7 +142,25 @@ def get_index_of_input [spec.computable] (log : query_log spec)
   (i : spec.ι) (t : spec.domain i) : option ℕ :=
 (log i).foldr_with_index (λ n ⟨t', _⟩ m, if t' = t then some n else m) none
 
-end get_index
+end get_index_of_input
+
+section update_result_at_index
+
+section update_query_result
+
+/-- Update the result of the first query to `t` to a new value.
+If the value was never queried then return the original log. -/
+def update_result_at_index [spec.computable] (log : query_log spec) (i : spec.ι)
+  (t : spec.domain i) (u : spec.range i) : query_log spec :=
+match log.get_index_of_input i t with
+| none := log
+| (some n) := log.map_at_index i (λ l, l.update_nth n (t, u))
+end
+
+end update_query_result
+
+
+end update_result_at_index
 
 section query_input_same_at
 

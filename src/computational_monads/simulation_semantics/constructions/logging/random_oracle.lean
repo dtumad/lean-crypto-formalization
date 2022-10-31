@@ -6,6 +6,7 @@ open oracle_comp oracle_spec
 
 variables {α β γ : Type} {spec spec' spec'' : oracle_spec} {S S' : Type}
 
+
 /-- Oracle that responds uniformly at random to any new queries,
 but returns the same result to subsequent oracle queries.
 Masking is used to hide the irrelevent state of the `uniform_oracle` -/

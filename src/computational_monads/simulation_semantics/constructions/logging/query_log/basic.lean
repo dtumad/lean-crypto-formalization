@@ -104,8 +104,7 @@ section not_queried
 
 variable [spec.computable]
 
-/- Returns whether a specific input has been previously logged
-TODO: might as well coerce to a `Prop`? -/
+/- Returns whether a specific input has been previously logged. -/
 def not_queried (i : spec.ι) (t : spec.domain i) : Prop :=
 ((log i).find ((=) t ∘ prod.fst)) = none
 
@@ -225,6 +224,7 @@ section drop_at_index
 
 variable [spec.computable]
 
+/-- Drop the given number of elements from the given log at the specified index. -/
 def drop_at_index (log : query_log spec) (i : spec.ι) (n : ℕ) : query_log spec :=
 log.map_at_index i (list.drop n)
 
@@ -286,7 +286,7 @@ section remove_head
 
 variable [spec.computable]
 
--- remove the head of the index `i` log
+/-- remove the head of the index `i` log -/
 def remove_head (log : query_log spec) (i : spec.ι) :
   query_log spec :=
 λ j, if i = j then (log j).tail else (log j)
