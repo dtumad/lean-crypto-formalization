@@ -127,4 +127,32 @@ begin
   { exact hso i' t' s x hx hs }
 end
 
+theorem support_simulate_simulate_eq_support_simulate (so so' : sim_oracle spec spec' S)
+  (h : ∀ i t s, (⋃ x ∈ (so i (t, s)).support, (so' i (t, prod.snd x)).support) = (so i (t, s)).support)
+  (s : S) (oa : oracle_comp spec α) :
+  (simulate so oa s >>= λ x, simulate so' oa x.2).support = (simulate so oa s).support :=
+begin
+  refine symm (support_simulate_eq_induction so oa s _ _ _),
+  {
+    intros α a s,
+    simp only [simulate_return, support_bind_return, support_return, set.image_singleton]
+  },
+  {
+
+    intros α β oa ob s,
+    ext x,
+    simp,
+    split,
+    {
+      intro h,
+      sorry,
+    },
+    sorry,
+  },
+  {
+    intros i t s,
+    exact h i t s,
+  }
+end
+
 end oracle_comp

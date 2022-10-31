@@ -7,27 +7,28 @@ variables {spec : oracle_spec} (log : query_log spec)
 section fork_cache
 
 /-- Remove parts of the cache after the query chosen to fork on.
-Just wraps a call to `drop_at_index`, dropping everything if the input is `none`. The choice to
-drop everything given a `none` input is just convention, but simplifies some proofs.
-
-TODO: Should be deleting until `i`th from the back (to a list of length i):
-  1 → keep the backmost, 0 → keep no entries -/
+Just wraps a call to `drop_at_index`, dropping everything if the input is `none`.
+The result contains exactly the back `i` elements of the 
+The choice to drop everything given a `none` input is just convention, but simplifies some proofs. -/
 def fork_cache [spec.computable] (log : query_log spec)
   (i : spec.ι) (n : option ℕ) : query_log spec :=
 match n with
 | none := query_log.init spec
-| (some m) := log.drop_at_index i m -- The front values are most recent, so drop them first
+| (some m) := log.drop_at_index i ((log i).length - m) -- The front values are most recent, so drop them first
 end
 
 variable [spec.computable]
 
-lemma fork_cache_init (i : spec.ι) (n : option ℕ) :
+@[simp] lemma fork_cache_init (i : spec.ι) (n : option ℕ) :
   (query_log.init spec).fork_cache i n = query_log.init spec :=
 begin
   induction n with n,
   { exact rfl },
-  { exact drop_at_index_init n i }
+  { exact drop_at_index_init _ i }
 end
+
+@[simp] lemma fork_cache_none (i : spec.ι) (log : query_log spec) :
+  log.fork_cache i none = query_log.init spec := rfl
 
 end fork_cache
 
