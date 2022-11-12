@@ -1,5 +1,18 @@
+/-
+Copyright (c) 2022 Devon Tuma. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Devon Tuma
+-/
 import computational_monads.simulation_semantics.constructions.tracking_oracle
 import computational_monads.support.prod
+
+/-!
+# Stateless Oracles
+
+This file defines a specific version of `tracking_oracle`, where the tracking isn't used.
+This allows a specified function for responding to queries,
+making no use of the internal state (which is left as a `unit` type).
+-/
 
 open oracle_comp oracle_spec
 

@@ -1,3 +1,8 @@
+/-
+Copyright (c) 2022 Devon Tuma. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Devon Tuma
+-/
 import computational_monads.oracle_spec
 
 variables {α β γ : Type} {spec spec' : oracle_spec}

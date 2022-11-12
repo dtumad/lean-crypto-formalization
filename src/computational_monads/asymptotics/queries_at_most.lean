@@ -1,5 +1,21 @@
+/-
+Copyright (c) 2022 Devon Tuma. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Devon Tuma
+-/
 import computational_monads.simulation_semantics.constructions.counting_oracle
 import data.polynomial
+
+/-!
+# Query Bounds for Oracle Computations
+
+This file defines a inductive type for computations making at most some given number of queries.
+`queries_at_most oa n` says that on any run, `oa` makes at most `n` calls to the oracle,
+regardless of what the query outputs are.
+
+`polynomial_queries oa` says that there is some polynomial bounding the number of computations
+made by the computation `oa`
+-/
 
 open oracle_comp oracle_spec
 

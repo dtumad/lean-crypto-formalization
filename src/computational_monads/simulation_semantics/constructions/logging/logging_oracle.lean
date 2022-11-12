@@ -1,5 +1,18 @@
+/-
+Copyright (c) 2022 Devon Tuma. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Devon Tuma
+-/
 import computational_monads.simulation_semantics.constructions.logging.query_log.basic
 import computational_monads.simulation_semantics.constructions.tracking_oracle
+
+/-!
+# Logging Oracles
+
+This file defines a `logging_oracle` for simulating a computation while logging all queries.
+The implementation is as a `tracking_oracle`, using a `query_log` as the internal state to
+log the input and output of each query.
+-/
 
 open oracle_comp oracle_spec
 

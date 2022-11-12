@@ -1,10 +1,13 @@
+/-
+Copyright (c) 2022 Devon Tuma. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Devon Tuma
+-/
 import algebra.add_torsor
 
 import computational_monads.asymptotics.polynomial_time
 import computational_monads.asymptotics.negligable
 import computational_monads.coercions
-
-open_locale nnreal ennreal
 
 /-!
 # Hard Homogeneous Spaces
@@ -14,6 +17,8 @@ This file builds up the definition of a hard homogeneous space.
 `algorithmic_homogeneous_space` requires the group action and group operations are efficiently computable.
 `hard_homogeneous_space` further requires vectorization and parallelization are hard.
 -/
+
+open_locale nnreal ennreal
 
 open oracle_comp oracle_spec
 

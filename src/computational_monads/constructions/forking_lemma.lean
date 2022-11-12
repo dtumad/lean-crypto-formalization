@@ -1,9 +1,23 @@
+/-
+Copyright (c) 2022 Devon Tuma. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Devon Tuma
+-/
 import computational_monads.constructions.prod
 import computational_monads.distribution_semantics.option
 import computational_monads.simulation_semantics.oracle_append
 import computational_monads.simulation_semantics.constructions.logging.random_oracle
 import computational_monads.simulation_semantics.constructions.logging.seeded_oracle
 import computational_monads.distribution_semantics.independence
+
+/-!
+# Forking Lemma for Oracle Computations
+
+This file defines a version of the forking lemma, constructing a computation
+that "rewinds" a computation to a particular query, and then reruns it.
+The result is a pair of outputs, for which the beginning of the corresponding
+computations match, in terms of the queries logged to the oracles. 
+-/
 
 noncomputable theory
 

@@ -1,6 +1,18 @@
+/-
+Copyright (c) 2022 Devon Tuma. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Devon Tuma
+-/
 import data.vector.mem
-
 import computational_monads.distribution_semantics.equiv
+
+/-!
+# Repeated Runs of an Oracle Computation
+
+This file defines a construction for repeating a given computation multiple times.
+`repeat_n oa n` represents running `oa` independently `n` times,
+returning the result as a `vector` of length `n`.
+-/
 
 namespace oracle_comp
 

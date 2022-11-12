@@ -1,6 +1,19 @@
+/-
+Copyright (c) 2022 Devon Tuma. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Devon Tuma
+-/
 import computational_monads.simulation_semantics.constructions.logging.caching_oracle
 import computational_monads.simulation_semantics.constructions.uniform_oracle
 import computational_monads.simulation_semantics.mask_state
+
+/-!
+# Random Oralces
+
+This file defines a traditional cryptographic `random_oracle`,
+an oracle that responds uniformly to new queries, and with the same value for repeat queries.
+The definition is a composition of a `uniform_oracle` and a `caching_oracle`.
+-/
 
 open oracle_comp oracle_spec
 

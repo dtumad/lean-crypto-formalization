@@ -1,16 +1,20 @@
+/-
+Copyright (c) 2022 Devon Tuma. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Devon Tuma
+-/
 import to_mathlib.poly_time
-
 import computational_monads.distribution_semantics.equiv
+/-!
+# Polynomial Time Complexity of Oracle Computations
 
-universes u v w
+This file extends the definition `poly_time` from functions `α → β`
+to functions `α → oracle_comp spec β` for some `spec : oracle_spec`.
+The definition is inductive, constructed by proving each step of the computation
+is itself polynomial time.
+-/
 
-section negligable
-
-end negligable
-
-section poly_time_oracle_comp
-
-open oracle_comp
+namespace oracle_comp
 
 /-- Extend polynomial time to the `oracle_comp` monad in the natural way. -/
 inductive poly_time_oracle_comp {spec : oracle_spec} :
@@ -28,6 +32,4 @@ inductive poly_time_oracle_comp {spec : oracle_spec} :
     (h : ∀ a, f a ≃ₚ g a) (hf : poly_time_oracle_comp g) :
     poly_time_oracle_comp f
 
-open poly_time_oracle_comp
-
-end poly_time_oracle_comp
+end oracle_comp

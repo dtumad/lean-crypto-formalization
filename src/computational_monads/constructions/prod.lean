@@ -1,4 +1,17 @@
+/-
+Copyright (c) 2022 Devon Tuma. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Devon Tuma
+-/
 import computational_monads.distribution_semantics.independence
+
+/-!
+# Pairwise Oracle Computations
+
+This file defines a construction for running two computations,
+returning both results together in a pair as a `prod` type.
+`oa ×ₘ ob` represents the computation running both independently and returning both results.
+-/
 
 variables {α β γ : Type} {spec spec' : oracle_spec}
 

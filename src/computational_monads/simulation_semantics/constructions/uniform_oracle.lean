@@ -1,5 +1,18 @@
+/-
+Copyright (c) 2022 Devon Tuma. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Devon Tuma
+-/
 import computational_monads.simulation_semantics.constructions.stateless_oracle
 import computational_monads.constructions.uniform_select
+
+/-!
+# Uniform Oracles
+
+This file defines a simulation oracle called `uniform_oracle`,
+that reduces any computation to one with a `uniform_selecting` `oracle_spec`,
+by responding uniformly at random to any query.
+-/
 
 open oracle_comp oracle_spec
 
