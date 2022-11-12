@@ -101,7 +101,7 @@ end parallelization
 end computational_advantages
 
 /-- A `hard_homogenous_space` is a -/
-class hard_homogenous_space {G X : ℕ → Type} [∀ n, fintype $ G n] [∀ n, fintype $ X n]
+class hard_homogenous_space (G X : ℕ → Type) [∀ n, fintype $ G n] [∀ n, fintype $ X n]
   [∀ n, decidable_eq $ G n] [∀ n, decidable_eq $ X n]
   [∀ n, add_group $ G n] [∀ n, algorithmic_homogenous_space (G n) (X n)] :=
 (vectorization_hard : ∀ (adversary : Π (sp : ℕ), vectorization.adversary (G sp) (X sp)),
