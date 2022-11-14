@@ -104,7 +104,7 @@ variables {n : ℕ} (adv : forking_adversary T U α)
 /-- Run computation twice, using the same random information for both,
   responding differently to a query specified by `choose_fork`,
   and returning the results if `choose_fork` makes the same choice each time -/
-def fork : oracle_comp uniform_selecting
+def fork (adv : forking_adversary T U α) : oracle_comp uniform_selecting
   ((option (fin adv.q)) × α × (query_log (T ↦ₒ U)) × α × (query_log (T ↦ₒ U))) :=
 do {
   -- run the adversary for the first time, logging coins and caching random oracles

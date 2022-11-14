@@ -23,7 +23,7 @@ variables {α β : Type} {spec spec' : oracle_spec}
 
 /-- Oracle computations that uniformly make at most a given number of queries.
   In particular `simulate` will call the `sim_oracle` at most that many times -/
-inductive queries_at_most : Π {α : Type}, oracle_comp spec α → ℕ → Type 1
+inductive queries_at_most : Π {α : Type}, oracle_comp spec α → ℕ → Prop
 | queries_at_most_pure' {α : Type} (a : α) :
     queries_at_most (pure' α a) 0
 | queries_at_most_bind' {α β : Type} (oa : oracle_comp spec α) (ob : α → oracle_comp spec β)
@@ -39,5 +39,5 @@ inductive queries_at_most : Π {α : Type}, oracle_comp spec α → ℕ → Type
   has growth bounded by a polynomial in the input `ℕ`. Note that it's a sigma type, not a `Prop`.
   Used to show that an `oracle_comp` with polynomial time simulated by a polynomial time oracle
     is still polynomial time if the number of queries is also polynomial -/
-def polynomial_queries (oa : ℕ → oracle_comp spec α) : Type 1 :=
-Σ (p : polynomial ℕ), ∀ n, queries_at_most (oa n) (p.eval n)
+def polynomial_queries (oa : ℕ → oracle_comp spec α) : Prop :=
+∃ (p : polynomial ℕ), ∀ n, queries_at_most (oa n) (p.eval n)

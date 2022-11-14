@@ -138,6 +138,15 @@ lemma lookup_fst_log_query_of_index_ne {i j : spec.ι} (hi : i ≠ j)
 
 end lookup_fst
 
+section lookup_with_index
+
+/-- TODO: weird things with direction and with the carry over case on `r` -/
+def lookup_with_index [spec.computable] (log : query_log spec)
+  (i : spec.ι) (t : spec.domain i) : option (spec.range i × ℕ) :=
+(log i).foldr_with_index (λ n ⟨t', u⟩ r, if t' = t then some (u, n) else r) none
+
+end lookup_with_index
+
 section get_index_of_input
 
 /-- Get the index of the first query with the given input `t`.

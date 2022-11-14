@@ -19,7 +19,19 @@ This is often useful when composed with other oracles, such as in `random_oracle
 
 open oracle_comp oracle_spec
 
-variables {α β γ : Type} {spec : oracle_spec} [computable spec]
+variables {α β γ : Type} {spec spec' : oracle_spec} [computable spec]
+
+/-- Computation that returns a currently cached value, or queries a new value if needed,
+returning both the result and the (potentially updated) cache.
+The function for a fresh query is given by `ou`, which may have other oracles than the cache. -/
+def query_log.lookup_cached_or_run
+  (cache : query_log spec) (i : spec.ι) (t : spec.domain i)
+  (ou : oracle_comp spec' (spec.range i)) :
+  oracle_comp spec' (spec.range i × query_log spec) :=
+match cache.lookup i t with
+| (some u) := return (u, cache)
+| none := do {u ← ou, return (u, cache.log_query i t u)}
+end
 
 /-- Oracle for logging previous queries, and returning the same value for matching inputs -/
 def caching_oracle (spec : oracle_spec) [spec.computable] :

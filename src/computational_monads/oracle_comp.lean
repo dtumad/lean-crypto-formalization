@@ -80,4 +80,16 @@ begin
   { exact ⟨arbitrary (spec.range i)⟩ }
 end
 
+/-- Shorthand for querying the left side of two available oracles -/
+@[inline, reducible]
+def query₁ {spec spec' : oracle_spec}
+  (i : spec.ι) (t : spec.domain i) : oracle_comp (spec ++ spec') (spec.range i) :=
+@query (spec ++ spec') (sum.inl i) t
+
+/-- Shorthand for querying the right side of two available oracles -/
+@[inline, reducible]
+def query₂ {spec spec' : oracle_spec}
+  (i : spec'.ι) (t : spec'.domain i) : oracle_comp (spec ++ spec') (spec'.range i) :=
+@query (spec ++ spec') (sum.inr i) t
+
 end oracle_comp

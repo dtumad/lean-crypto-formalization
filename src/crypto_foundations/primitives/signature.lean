@@ -6,8 +6,10 @@ Authors: Devon Tuma
 import computational_monads.simulation_semantics.oracle_append
 import computational_monads.simulation_semantics.constructions.logging.random_oracle
 import computational_monads.simulation_semantics.constructions.identity_oracle
+import computational_monads.coercions
 import computational_monads.asymptotics.polynomial_time
 import computational_monads.asymptotics.negligable
+import computational_monads.asymptotics.queries_at_most
 
 /-!
 # Cryptographic Signature Schemes
@@ -83,6 +85,12 @@ end instances
 def base_oracle_spec (sig : signature) : oracle_spec :=
 uniform_selecting ++ sig.random_oracle_spec
 
+@[priority std.priority.default-75]
+instance h (α : Type) : has_coe
+  (oracle_comp sig.random_oracle_spec α)
+  (oracle_comp sig.base_oracle_spec α) :=
+by apply_instance
+
 /-- Simulate the basic oracles for the signature, using a random oracle in the natural way -/
 noncomputable def base_oracle (sig : signature) :
   sim_oracle sig.base_oracle_spec uniform_selecting (query_log sig.random_oracle_spec) :=
@@ -155,6 +163,8 @@ uniform_selecting ++ sig.random_oracle_spec ++ sig.signing_oracle_spec
 structure unforgeable_adversary (sig : signature) :=
 (adv : sig.PK → oracle_comp (sig.unforgeable_adversary_oracle_spec) (sig.M × sig.S))
 (adv_poly_time : poly_time_oracle_comp adv)
+(query_bound : ℕ)
+(adv_queries_at_most : ∀ pk, queries_at_most (adv pk) query_bound)
 
 namespace unforgeable_adversary
 
@@ -218,6 +228,7 @@ def complete (sig_scheme : signature_scheme) : Prop :=
   `unforgeable_experiment` as the security parameter grows -/
 def unforgeable (sig_scheme : signature_scheme) : Prop :=
 ∀ (adversary : Π (sp : ℕ), unforgeable_adversary $ sig_scheme sp),
+  (∃ (p : polynomial ℕ), ∀ n, (adversary n).query_bound ≤ p.eval n) →
   negligable (λ sp, unforgeable_advantage (sig_scheme sp) (adversary sp))
 
 end signature_scheme
