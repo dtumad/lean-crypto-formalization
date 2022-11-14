@@ -17,7 +17,7 @@ open oracle_comp oracle_spec
 
 section commits
 
-variables {G X M : Type} [fintype G] [fintype X] [inhabited G]
+variables {G X M : Type} [fintype G] [fintype X] [inhabited G] [inhabited X]
   [decidable_eq G] [decidable_eq X] [decidable_eq M]
   [add_group G] [algorithmic_homogenous_space G X] {n : ℕ}
 
@@ -44,7 +44,7 @@ end commits
 /-- Signature derived from a hard homogenous space, based on the diffie helmann case.
   `n` represents the number of commitments to make, more corresponding to more difficult forgery.
   `x₀` is some arbitrary public base point in `X`, used to compute public keys from secret keys -/
-def hhs_signature (G X M : Type) (n : ℕ) [fintype G] [fintype X] [inhabited G]
+def hhs_signature (G X M : Type) (n : ℕ) [fintype G] [fintype X] [inhabited G] [inhabited X]
   [decidable_eq G] [decidable_eq X] [decidable_eq M] [add_group G]
   [algorithmic_homogenous_space G X] : signature :=
 { M := M, PK := X × X, SK := G, S := vector (G × bool) n,
@@ -72,7 +72,7 @@ def hhs_signature (G X M : Type) (n : ℕ) [fintype G] [fintype X] [inhabited G]
 
 namespace hhs_signature 
 
-variables {G X M : Type} [fintype G] [fintype X] [inhabited G]
+variables {G X M : Type} [fintype G] [fintype X] [inhabited G] [inhabited X]
   [decidable_eq G] [decidable_eq X] [decidable_eq M]
   [add_group G] [algorithmic_homogenous_space G X] {n : ℕ}
 
@@ -87,9 +87,8 @@ end
 section gen
 
 @[simp]
-lemma gen_apply (u : unit) :
-  ((hhs_signature G X M n).gen u) = do { x₀ ←$ᵗ X, sk ←$ᵗ G, return ((x₀, sk +ᵥ x₀), sk) } :=
-rfl
+lemma gen_apply (u : unit) : ((hhs_signature G X M n).gen u) =
+  do { x₀ ←$ᵗ X, sk ←$ᵗ G, return ((x₀, sk +ᵥ x₀), sk) } := rfl
 
 lemma support_gen : ((hhs_signature G X M n).gen ()).support =
   ⋃ (x₀ : X) (sk : G), { ((x₀, sk +ᵥ x₀), sk) } :=
@@ -107,8 +106,7 @@ lemma sign_apply (x₀ pk : X) (sk : G) (m : M) :
     (ys : vector X n) ← return (cs.map (λ c, c +ᵥ pk)),
     (h : vector bool n) ← query₂ () (ys, m),
     return (zip_commits_with_hash cs h sk)
-  } :=
-rfl
+  } := rfl
 
 @[simp]
 lemma support_sign (x₀ pk : X) (sk : G) (m : M) :
@@ -125,8 +123,7 @@ lemma verify_apply {n : ℕ} (x₀ pk : X) (m : M) (σ : vector (G × bool) n) :
   ((hhs_signature G X M n).verify ((x₀, pk), m, σ)) = do {
     (h : vector bool n) ← query₂ () (retrieve_commits x₀ pk σ, m),
     return (h = σ.map prod.snd) 
-  } :=
-rfl
+  } := rfl
 
 end verify
 
@@ -176,6 +173,10 @@ end
 
 end complete
 
+section unforgeable_reductions
+
+variables (x₀ pk : X) (adversary : (hhs_signature G X M n).unforgeable_adversary)
+
 section mock_signing_oracle
 
 /-- Oracle to mock a signing oracle for messages in the vectorization reduction.
@@ -183,56 +184,55 @@ Predetermines the random oracle results to fake a valid signature,
 keeping the results in a seperate internal mocked cache.
 Queries to the random oracle are first filtered through this,
 and are passed to the true random oracle only if the query is fresh. -/
-def mock_signing_oracle (x₀ pk : X) :
-  sim_oracle (hhs_signature G X M n).unforgeable_adversary_oracle_spec
-    (hhs_signature G X M n).base_oracle_spec
-    (query_log (hhs_signature G X M n).random_oracle_spec) :=
+def mock_signing_oracle : sim_oracle (hhs_signature G X M n).unforgeable_adversary_oracle_spec
+  (hhs_signature G X M n).base_oracle_spec
+  (query_log (hhs_signature G X M n).random_oracle_spec) :=
 { default_state := query_log.init _,
   o := λ i, match i with
-  -- For uniform selection queries, simply forward them to the lower level.
-  | (sum.inl (sum.inl i)) := λ ⟨t, mock_cache⟩, do {
-    u ← query (sum.inl i) t,
-    return (u, mock_cache)
-  }
-  -- For random oracle queries, check if the query has been mocked.
-  -- If so, return the mocked value, otherwise call the regular random oracle
-  | (sum.inl (sum.inr i)) := λ ⟨t, mock_cache⟩, mock_cache.lookup_cached_or_run i t
-    (@query (hhs_signature G X M n).base_oracle_spec (sum.inr i) t)
-  | (sum.inr ()) := λ ⟨m, mock_cache⟩, do {
-    bs ← repeat_n ($ᵗ bool) n, -- pre-select what all the bool results will be.
-    cs ← repeat_n ($ᵗ G) n,
-    ys ← return (vector.zip_with (λ (b : bool) c, if b then c +ᵥ pk else c +ᵥ x₀) bs cs),
-    mock_cache' ← return (mock_cache.log_query () (ys, m) bs),
-    return (vector.zip_with prod.mk cs bs, mock_cache')
-  }
+    -- For uniform selection queries, simply forward them to the lower level.
+    | (sum.inl (sum.inl i)) := λ ⟨t, mock_cache⟩, do {
+      u ← query (sum.inl i) t,
+      return (u, mock_cache)
+    }
+    -- For random oracle queries, check if the query has been mocked.
+    -- If so, return the mocked value, otherwise call the regular random oracle
+    | (sum.inl (sum.inr i)) := λ ⟨t, mock_cache⟩, mock_cache.lookup_cached_or_run i t
+      (@query (hhs_signature G X M n).base_oracle_spec (sum.inr i) t)
+    | (sum.inr ()) := λ ⟨m, mock_cache⟩, do {
+      bs ← repeat_n ($ᵗ bool) n, -- pre-select what all the bool results will be.
+      cs ← repeat_n ($ᵗ G) n,
+      ys ← return (vector.zip_with (λ (b : bool) c, if b then c +ᵥ pk else c +ᵥ x₀) bs cs),
+      mock_cache' ← return (mock_cache.log_query () (ys, m) bs),
+      return (vector.zip_with prod.mk cs bs, mock_cache')
+    }
   end }
 
 end mock_signing_oracle
 
 section mock_signing_reduction
 
-def mock_signing_reduction (x₀ pk : X) (adv : (hhs_signature G X M n).unforgeable_adversary) :
+/-- Fake the signing oracle, and force a query corresponding to adversary's result. -/
+def mock_signing_reduction :
   oracle_comp (hhs_signature G X M n).base_oracle_spec (M × vector (G × bool) n) :=
 do {
-  ⟨m, σ⟩ ← default_simulate' (mock_signing_oracle x₀ pk) (adv.adv (x₀, pk)),
+  ⟨m, σ⟩ ← default_simulate' (mock_signing_oracle x₀ pk) (adversary.adv (x₀, pk)),
   _ ← query₂ () (retrieve_commits x₀ pk σ, m), -- force a query to the final output
   return (m, σ)
 }
 
-def simulate_mock_signing_reduction
-  (x₀ pk : X) (adv : (hhs_signature G X M n).unforgeable_adversary) :
-  oracle_comp uniform_selecting (M × vector (G × bool) n ×
-    query_log (hhs_signature G X M n).random_oracle_spec) :=
+/-- Further simulate the random oracle after mocking the signing oracle-/
+def simulate_mock_signing_reduction : oracle_comp uniform_selecting (M × vector (G × bool) n ×
+  query_log (hhs_signature G X M n).random_oracle_spec) :=
 do {
-  ⟨⟨m, σ⟩, (), cache⟩ ← default_simulate (idₛ ++ₛ random_oracle _) (mock_signing_reduction x₀ pk adv),
+  ⟨⟨m, σ⟩, (), cache⟩ ← default_simulate (idₛ ++ₛ random_oracle _)
+    (mock_signing_reduction x₀ pk adversary),
   return (m, σ, cache)
 }
 
-theorem prob_event_is_valid_signature_ge_unforgeable_advantage
-  (x₀ pk : X) (adv : (hhs_signature G X M n).unforgeable_adversary) :
-  ⦃λ ⟨m, σ, cache⟩, is_valid_signature x₀ pk m σ cache | simulate_mock_signing_reduction x₀ pk adv⦄
-    ≥ signature.unforgeable_advantage adv
-  :=
+theorem prob_event_is_valid_signature_ge_unforgeable_advantage  :
+  ⦃λ ⟨m, σ, cache⟩, is_valid_signature x₀ pk m σ cache |
+    simulate_mock_signing_reduction x₀ pk adversary⦄
+      ≥ signature.unforgeable_advantage adversary :=
 begin
   sorry
 end
@@ -242,9 +242,9 @@ end mock_signing_reduction
 section choose_fork
 
 /- The choose_fork that will be passed to forking lemma. `q` will be the
-max queries of the adversary (given by `polynomial_queries` assumption).
+max queries of the adversary (given by its `query_bound`).
 Returns none if it hasn't been queried or if the signature isn't valid -/
-def choose_fork (x₀ pk : X) (m : M) (σ : vector (G × bool) n)
+def choose_fork (m : M) (σ : vector (G × bool) n)
   (cache : query_log (hhs_signature G X M n).random_oracle_spec) (q : ℕ) : option (fin q) :=
 match cache.lookup_with_index () (retrieve_commits x₀ pk σ, m) with
 | none := none
@@ -259,57 +259,56 @@ section fork_reduction
 `oracle_comp.fork` to get two results, that can be used to construct a adversary for
 vectorization in the hard homogenous space.
 `q` is the maximum number of queries made by the adversary to consider. -/
-def forking_adversary_reduction (x₀ pk : X) (q : ℕ)
-  (adversary : (hhs_signature G X M n).unforgeable_adversary) :
+def forking_adversary_reduction (adversary : (hhs_signature G X M n).unforgeable_adversary) :
   forking_adversary (vector X n × M) (vector bool n) (M × vector (G × bool) n) :=
 { adv := mock_signing_reduction x₀ pk adversary,
-  q := q,
-  choose_fork := λ ⟨m, σ⟩ log, choose_fork x₀ pk m σ log q,
+  q := adversary.query_bound,
+  choose_fork := λ ⟨m, σ⟩ log, choose_fork x₀ pk m σ log (adversary.query_bound),
   cache_nonempty := sorry,
   no_overflow := sorry }
 
 /-- The forked adversary reduction succeeds at least as often as the original -/
-theorem forking_adversary_reduction_advantage (x₀ pk : X) (q : ℕ)
-  (adversary : (hhs_signature G X M n).unforgeable_adversary) :
-  (forking_adversary_reduction x₀ pk q adversary).advantage
+theorem forking_adversary_reduction_advantage :
+  (forking_adversary_reduction x₀ pk adversary).advantage
     ≥ signature.unforgeable_advantage adversary :=
-calc (forking_adversary_reduction x₀ pk q adversary).advantage
+calc (forking_adversary_reduction x₀ pk adversary).advantage
   = ⦃λ ⟨m, σ, cache⟩, is_valid_signature x₀ pk m σ cache | simulate_mock_signing_reduction x₀ pk adversary⦄ :
     sorry
   ... ≥ signature.unforgeable_advantage adversary :
     prob_event_is_valid_signature_ge_unforgeable_advantage x₀ pk adversary
 
+variables (i : option $ fin adversary.query_bound) (m m' : M)
+  (cache cache' : query_log (hhs_signature G X M n).random_oracle_spec)
+  (σ σ' : vector (G × bool) n)
+
 section lookup
 
-theorem lookup_eq_hash_left (x₀ pk : X) (q : ℕ) (m m' : M)
-  (cache cache' : query_log (hhs_signature G X M n).random_oracle_spec)
-  (adversary : (hhs_signature G X M n).unforgeable_adversary) (i : fin q)
-  (σ σ' : vector (G × bool) n)
-  (h : (some i, (m, σ), cache, (m', σ'), cache') ∈
-    (fork (forking_adversary_reduction pk x₀ q adversary)).support) :
+/-- `choose_fork` forces the resulting cache to have a query
+matching the resulting `bool`s in the signature -/
+theorem lookup_left_eq_signature_bools (hi : i.is_some)
+  (h : (i, (m, σ), cache, (m', σ'), cache') ∈
+    (fork (forking_adversary_reduction pk x₀ adversary)).support) :
   cache.lookup () (retrieve_commits x₀ pk σ, m) = some (σ.map prod.snd) :=
 begin
   sorry
 end
 
-theorem lookup_eq_hash_right (x₀ pk : X) (q : ℕ) (m m' : M)
-  (cache cache' : query_log (hhs_signature G X M n).random_oracle_spec)
-  (adversary : (hhs_signature G X M n).unforgeable_adversary) (i : fin q)
-  (σ σ' : vector (G × bool) n)
-  (h : (some i, (m, σ), cache, (m', σ'), cache') ∈
-    (fork (forking_adversary_reduction pk x₀ q adversary)).support) :
+/-- `choose_fork` forces the resulting cache to have a query
+matching the resulting `bool`s in the signature -/
+theorem lookup_right_eq_signature_bools (hi : i.is_some)
+  (h : (i, (m, σ), cache, (m', σ'), cache') ∈
+    (fork (forking_adversary_reduction pk x₀ adversary)).support) :
   cache'.lookup () (retrieve_commits x₀ pk σ', m') = some (σ'.map prod.snd) :=
 begin
   sorry
 end
 
-theorem lookup_ne_lookup (x₀ pk : X) (q : ℕ) (m m' : M)
-  (cache cache' : query_log (hhs_signature G X M n).random_oracle_spec)
-  (adversary : (hhs_signature G X M n).unforgeable_adversary) (i : fin q)
-  (σ σ' : vector (G × bool) n)
-  (h : (some i, (m, σ), cache, (m', σ'), cache') ∈
-    (fork (forking_adversary_reduction pk x₀ q adversary)).support)
-  (h' : forked_cache_differs (some i, (m, σ), cache, (m', σ'), cache')) :
+/-- If the fork succeeds at giving different outputs at the forked query,
+then that must be true for the signature's commits, by definition of `choose_fork`. -/
+theorem lookup_ne_lookup_of_cache_differs (hi : i.is_some)
+  (h : (i, (m, σ), cache, (m', σ'), cache') ∈
+    (fork (forking_adversary_reduction pk x₀ adversary)).support)
+  (h' : forked_cache_differs (i, (m, σ), cache, (m', σ'), cache')) :
   cache'.lookup () (retrieve_commits x₀ pk σ', m') ≠
     cache.lookup () (retrieve_commits x₀ pk σ, m) :=
 begin
@@ -319,13 +318,11 @@ end
 end lookup
 
 /-- If fork returns a non-`none` index, then the inputs to the oracle must also match,
-  in particular the output of `retrieve_commits` must also change. -/
-theorem retrieve_commits_eq_retrieve_commits_of_is_some (x₀ pk : X) (q : ℕ) (m m' : M)
-  (cache cache' : query_log (hhs_signature G X M n).random_oracle_spec)
-  (adversary : (hhs_signature G X M n).unforgeable_adversary) (i : option (fin q))
-  (hi : i.is_some) (σ σ' : vector (G × bool) n)
+in particular the output of `retrieve_commits` must also match,
+since `choose_fork` uses this to decide which oracle to fork on. -/
+theorem retrieve_commits_eq_retrieve_commits (hi : i.is_some)
   (h : (i, (m, σ), cache, (m', σ'), cache') ∈
-    (fork (forking_adversary_reduction pk x₀ q adversary)).support) :
+    (fork (forking_adversary_reduction pk x₀ adversary)).support) :
   retrieve_commits x₀ pk σ = retrieve_commits x₀ pk σ' :=
 begin
   sorry
@@ -333,13 +330,10 @@ end
 
 /-- If the forked caches differ, then so must the booleans in the resulting signature,
 since they must be exactly the outputs of the oracle for signing to succeed -/
-theorem oracle_output_ne_oracle_output (x₀ pk : X) (q : ℕ) (m m' : M)
-  (cache cache' : query_log (hhs_signature G X M n).random_oracle_spec)
-  (adversary : (hhs_signature G X M n).unforgeable_adversary) (i : fin q)
-  (σ σ' : vector (G × bool) n)
-  (h : (some i, (m, σ), cache, (m', σ'), cache') ∈
-    (fork (forking_adversary_reduction pk x₀ q adversary)).support)
-  (h' : forked_cache_differs (some i, (m, σ), cache, (m', σ'), cache')) :
+theorem oracle_output_ne_oracle_output (hi : i.is_some)
+  (h : (i, (m, σ), cache, (m', σ'), cache') ∈
+    (fork (forking_adversary_reduction pk x₀ adversary)).support)
+  (h' : forked_cache_differs (i, (m, σ), cache, (m', σ'), cache')) :
   σ.map prod.snd ≠ σ'.map prod.snd :=
 begin
   sorry
@@ -349,44 +343,35 @@ end
 corresponding to a query with the same input and a different output.
 This further implies that `retrieve_commits` agrees on both,
 but the actual booleans are different, which will let us get a vectorization. -/
-theorem of_fork_success (x₀ pk : X) (q : ℕ)
-  (adversary : (hhs_signature G X M n).unforgeable_adversary) (i : option (fin q))
-  (m m' : M) (cache cache' : query_log (hhs_signature G X M n).random_oracle_spec)
-  (σ σ' : vector (G × bool) n)
+theorem vectorizable_of_fork_success
   (h : (i, (m, σ), cache, (m', σ'), cache') ∈
-    (fork (forking_adversary_reduction pk x₀ q adversary)).support)
+    (fork (forking_adversary_reduction pk x₀ adversary)).support)
   (h' : fork_success (i, (m, σ), cache, (m', σ'), cache')) :
   retrieve_commits x₀ pk σ = retrieve_commits x₀ pk σ'
     ∧ σ.map prod.snd ≠ σ'.map prod.snd :=
-begin
-  split,
-  {
-    sorry,
-  },
-  {
-    sorry,
-  }
-end
+let ⟨hi, hcache⟩ := h' in
+⟨retrieve_commits_eq_retrieve_commits x₀ pk _ i m m' cache cache' σ σ' hi h,
+  oracle_output_ne_oracle_output x₀ pk _ i m m' cache cache' σ σ' hi h hcache⟩
 
 /-- The probability of the fork succeeding is at least the square of
 the original adversary's success probability, minus a small chance
 of both oracle calls giving the same result. -/
-theorem prob_event_fork_success_reduction (x₀ pk : X) (q : ℕ)
+theorem prob_event_fork_success_reduction (x₀ pk : X)
   (adversary : (hhs_signature G X M n).unforgeable_adversary) :
-  ⦃fork_success | fork (forking_adversary_reduction pk x₀ q adversary)⦄ ≥
-    ((signature.unforgeable_advantage adversary) ^ 2 / q) - (1 / 2 ^ n) :=
-calc ⦃fork_success | fork (forking_adversary_reduction pk x₀ q adversary)⦄
-  ≥ ((forking_adversary_reduction pk x₀ q adversary).advantage ^ 2 / q) - (1 / (fintype.card $ vector bool n)) :
-    prob_event_fork_success (forking_adversary_reduction pk x₀ q adversary)
-  ... ≥ ((forking_adversary_reduction pk x₀ q adversary).advantage ^ 2 / q) - (1 / 2 ^ n) :
+  ⦃fork_success | fork (forking_adversary_reduction pk x₀ adversary)⦄ ≥
+    ((signature.unforgeable_advantage adversary) ^ 2 / (adversary.query_bound)) - (1 / 2 ^ n) :=
+calc ⦃fork_success | fork (forking_adversary_reduction pk x₀ adversary)⦄
+  ≥ ((forking_adversary_reduction pk x₀ adversary).advantage ^ 2 / (adversary.query_bound))
+      - (1 / (fintype.card $ vector bool n)) :
+    prob_event_fork_success (forking_adversary_reduction pk x₀ adversary)
+  ... ≥ ((forking_adversary_reduction pk x₀ adversary).advantage ^ 2 / (adversary.query_bound)) - (1 / 2 ^ n) :
     begin
       rw [card_vector, fintype.card_bool, nat.cast_pow, nat.cast_two],
       exact le_rfl
     end
-  ... ≥ ((signature.unforgeable_advantage adversary) ^ 2 / q) - (1 / 2 ^ n) :
+  ... ≥ ((signature.unforgeable_advantage adversary) ^ 2 / (adversary.query_bound)) - (1 / 2 ^ n) :
     sorry
   
-
 end fork_reduction
 
 section vectorization_reduction
@@ -404,32 +389,49 @@ end
 
 /-- Reduce an unforgeability adversery to a hhs vectorization adversary,
 by forking the adversary and using the two different results -/
-def vectorization_adversary_reduction (q : ℕ)
-  (adversary : (hhs_signature G X M n).unforgeable_adversary) :
+def vectorization_adversary_reduction (adversary : (hhs_signature G X M n).unforgeable_adversary) :
   vectorization.adversary G X :=
 { adv := λ ⟨pk, x₀⟩, do {
-    ⟨i, ⟨m, σ⟩, cache, ⟨m', σ'⟩, cache'⟩ ← fork (forking_adversary_reduction pk x₀ q adversary),
+    ⟨i, ⟨m, σ⟩, cache, ⟨m', σ'⟩, cache'⟩ ← fork (forking_adversary_reduction pk x₀ adversary),
     return (vectorization_of_signatures σ σ')
   } }
 
-theorem main_result (q : ℕ) (adversary : (hhs_signature G X M n).unforgeable_adversary)
-  (pk x₀ : X) :
-  ⦃(=) (pk -ᵥ x₀) | (vectorization_adversary_reduction q adversary).adv (pk, x₀)⦄ ≥
-    ((signature.unforgeable_advantage adversary) ^ 2 / q) - (1 / 2 ^ n)  :=
+theorem main_result (pk x₀ : X) (adversary : (hhs_signature G X M n).unforgeable_adversary) :
+  ⦃(=) (pk -ᵥ x₀) | (vectorization_adversary_reduction adversary).adv (pk, x₀)⦄ ≥
+    ((signature.unforgeable_advantage adversary) ^ 2 / adversary.query_bound) - (1 / 2 ^ n)  :=
 begin
   sorry
 end
 
+lemma vectorization_adversary_reduction_advantage
+  (adversary : (hhs_signature G X M n).unforgeable_adversary) :
+  vectorization.advantage (vectorization_adversary_reduction adversary) ≥
+    ((signature.unforgeable_advantage adversary) ^ 2 / adversary.query_bound) - (1 / 2 ^ n) :=
+calc vectorization.advantage (vectorization_adversary_reduction adversary)
+  = (∑' pk x₀, ⦃(=) (pk -ᵥ x₀) | (vectorization_adversary_reduction adversary).adv (pk, x₀)⦄) / (fintype.card X) ^ 2 :
+    vectorization.advantage_eq_tsum (vectorization_adversary_reduction adversary)
+  ... ≥ (∑' (pk x₀ : X), ((signature.unforgeable_advantage adversary) ^ 2 / adversary.query_bound - (1 / 2 ^ n))) / (fintype.card X) ^ 2 :
+    div_le_div_of_le_of_nonneg (tsum_le_tsum (λ pk, tsum_le_tsum
+      (λ x₀, by apply main_result) sorry sorry) sorry sorry) zero_le'
+  ... = ((signature.unforgeable_advantage adversary) ^ 2 / adversary.query_bound) - (1 / 2 ^ n) :
+    begin
+      simp_rw [tsum_fintype, finset.sum_const, nsmul_eq_mul],
+      rw [← mul_assoc, ← pow_two, div_eq_mul_inv, mul_comm, ← mul_assoc],
+      have : (↑(fintype.card X) : nnreal) ^ 2 ≠ 0 := sorry,
+      erw [inv_mul_cancel this, one_mul],
+    end 
+
 end vectorization_reduction
 
-end hhs_signature
+end unforgeable_reductions
 
+end hhs_signature
 
 /-- Construct a signature scheme by incrementing both the hard homogenous space parameter,
 and the number of commits made by the signature.
 Both are controlled by the same parameter, but this could eventually be generalized -/
 def hhs_signature_scheme (G X : ℕ → Type) (M : Type)
-  [∀ n, fintype $ G n] [∀ n, fintype $ X n] [∀ n, inhabited $ G n]
+  [∀ n, fintype $ G n] [∀ n, fintype $ X n] [∀ n, inhabited $ G n] [∀ n, inhabited $ X n]
   [∀ n, decidable_eq $ G n] [∀ n, decidable_eq $ X n] [decidable_eq M]
   [∀ n, add_group $ G n] [∀ n, algorithmic_homogenous_space (G n) (X n)]
   [hard_homogenous_space G X] : signature_scheme :=
@@ -440,16 +442,16 @@ namespace hhs_signature_scheme
 section unforgeable
 
 variables (G X : ℕ → Type) (M : Type)
-  [∀ n, fintype $ G n] [∀ n, fintype $ X n] [∀ n, inhabited $ G n]
+  [∀ n, fintype $ G n] [∀ n, fintype $ X n] [∀ n, inhabited $ G n] [∀ n, inhabited $ X n]
   [∀ n, decidable_eq $ G n] [∀ n, decidable_eq $ X n] [decidable_eq M]
   [∀ n, add_group $ G n] [∀ n, algorithmic_homogenous_space (G n) (X n)]
   [hard_homogenous_space G X]
 
 theorem hhs_signature_scheme_unforgeable : (hhs_signature_scheme G X M).unforgeable :=
 begin
-  rintros adversary ⟨p, hp⟩,
+  intros adversary _,
   let reduction : Π (sp : ℕ), vectorization.adversary (G sp) (X sp) :=
-    λ n, hhs_signature.vectorization_adversary_reduction (p.eval n) (adversary n),
+    λ n, hhs_signature.vectorization_adversary_reduction (adversary n),
   have := hard_homogenous_space.vectorization_hard reduction,
   sorry,
 end

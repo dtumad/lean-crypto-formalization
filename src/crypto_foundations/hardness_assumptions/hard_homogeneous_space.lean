@@ -44,26 +44,24 @@ structure adversary (G X : Type) : Type 1 :=
 (adv : X × X → oracle_comp uniform_selecting G)
 -- (adv_poly_time : poly_time_oracle_comp adv)
 
-section naive_adversary
-
-variables (G X)
-
-noncomputable def naive_adversary : adversary G X :=
-{ adv := λ _, $ᵗ G,
-  -- adv_poly_time :=
-  }
-
-end naive_adversary
-
 /-- Analogue of Discrete-logarithm asumption game -/
 noncomputable def experiment (adversary : adversary G X) : oracle_comp uniform_selecting bool :=
-do{ x₁ ←$ᵗ X, x₂ ←$ᵗ X,
-    g ← adversary.adv (x₁, x₂),
-    return (g = x₁ -ᵥ x₂) }
+do { x₁ ←$ᵗ X, x₂ ←$ᵗ X, g ← adversary.adv (x₁, x₂), return (g = x₁ -ᵥ x₂) }
 
 /-- Vectorization advantage of an adversary in the vectorization experiment. -/
-noncomputable def advantage (adversary : adversary G X) : ℝ≥0∞ :=
-⦃ (=) tt | experiment adversary ⦄ - ⦃ (=) tt | experiment (naive_adversary G X) ⦄
+noncomputable def advantage (adversary : adversary G X) : ℝ≥0 :=
+⦃ (=) tt | experiment adversary ⦄
+
+lemma advantage_eq_tsum (adversary : adversary G X) :
+  advantage adversary = (∑' x₁ x₂, ⦃(=) (x₁ -ᵥ x₂) | adversary.adv (x₁, x₂)⦄) / (fintype.card X) ^ 2 :=
+begin
+  rw [advantage, experiment, prob_event_uniform_select_fintype_apply_bind],
+  -- refine tsum_congr (λ x₁, _),
+  -- rw [prob_event_uniform_select_fintype_apply_bind],
+  -- simp_rw [div_eq_mul_inv, ← nnreal.tsum_mul_right],
+  -- refine tsum_congr (λ x₂, _),
+  sorry,
+end
 
 end vectorization
 
@@ -71,29 +69,16 @@ namespace parallelization
 
 structure adversary (G X : Type) :=
 (adv : X × X × X → oracle_comp uniform_selecting X)
--- (adv_poly_time : poly_time_oracle_comp adv)
-
-section naive_adversary
-
-variables (G X)
-
-noncomputable def naive_adversary : adversary G X :=
-{ adv := λ _, $ᵗ X,
-  -- adv_poly_time :=
-  }
-
-end naive_adversary
+(adv_poly_time : poly_time_oracle_comp adv)
 
 /-- Analogue of the decisional Diffie-Helman experiment -/
 noncomputable def experiment (adversary : adversary G X) :
   oracle_comp uniform_selecting bool :=
-do{ x₁ ←$ᵗ X, x₂ ←$ᵗ X, x₃ ←$ᵗ X,
-    x₄ ← adversary.adv (x₁, x₂, x₃),
-    return (x₂ -ᵥ x₁ = x₄ -ᵥ x₃) }
+do{ x₁ ←$ᵗ X, x₂ ←$ᵗ X, x₃ ←$ᵗ X, x₄ ← adversary.adv (x₁, x₂, x₃), return (x₂ -ᵥ x₁ = x₄ -ᵥ x₃) }
 
 /-- Parallelization advantage of an adversary in parallelization experiment -/
 noncomputable def advantage (adversary : adversary G X) : ℝ≥0∞ :=
-⦃ (=) tt | experiment adversary ⦄ - ⦃ (=) tt | experiment (naive_adversary G X) ⦄
+⦃ (=) tt | experiment adversary ⦄
 
 end parallelization
 
