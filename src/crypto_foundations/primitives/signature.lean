@@ -201,8 +201,8 @@ end unforgeable_experiment
 
 /-- Adversaries success at forging a signature.
   TODO: maybe this doesn't need an independent definition -/
-noncomputable def unforgeable_advantage (sig : signature)
-  (adversary : unforgeable_adversary sig) : ℝ≥0∞ :=
+noncomputable def unforgeable_advantage {sig : signature}
+  (adversary : unforgeable_adversary sig) : ℝ≥0 :=
 ⦃ (= tt) | unforgeable_experiment sig adversary ⦄
 
 namespace unforgeable_advantage
@@ -229,6 +229,6 @@ def complete (sig_scheme : signature_scheme) : Prop :=
 def unforgeable (sig_scheme : signature_scheme) : Prop :=
 ∀ (adversary : Π (sp : ℕ), unforgeable_adversary $ sig_scheme sp),
   (∃ (p : polynomial ℕ), ∀ n, (adversary n).query_bound ≤ p.eval n) →
-  negligable (λ sp, unforgeable_advantage (sig_scheme sp) (adversary sp))
+  negligable (λ sp, unforgeable_advantage (adversary sp))
 
 end signature_scheme

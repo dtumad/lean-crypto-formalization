@@ -259,6 +259,13 @@ lemma choose_fork_snd_eq (i : fin adv.q) (cache cache' : query_log (T ↦ₒ U))
   adv.choose_fork x' cache' = i :=
 (choose_fork_eq adv i cache cache' x x' h).2
 
+lemma choose_fork_eq_choose_fork (i : fin adv.q) (cache cache' : query_log (T ↦ₒ U)) (x x' : α)
+  (h : ((some i, x, cache, x', cache')) ∈ (fork adv).support) :
+  adv.choose_fork x cache = adv.choose_fork x' cache' :=
+begin
+  sorry
+end
+
 end choose_fork
 
 section cache_input

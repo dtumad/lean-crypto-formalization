@@ -92,8 +92,7 @@ do{ x₁ ←$ᵗ X, x₂ ←$ᵗ X, x₃ ←$ᵗ X,
     return (x₂ -ᵥ x₁ = x₄ -ᵥ x₃) }
 
 /-- Parallelization advantage of an adversary in parallelization experiment -/
-noncomputable def advantage (adversary : adversary G X) :
-  ℝ≥0∞ :=
+noncomputable def advantage (adversary : adversary G X) : ℝ≥0∞ :=
 ⦃ (=) tt | experiment adversary ⦄ - ⦃ (=) tt | experiment (naive_adversary G X) ⦄
 
 end parallelization
