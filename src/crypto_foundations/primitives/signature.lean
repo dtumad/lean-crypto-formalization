@@ -63,7 +63,7 @@ namespace signature
 
 variable (sig : signature)
 
-section instances
+section oracle_instances
 
 instance random_oracle_spec.finite_range : sig.random_oracle_spec.finite_range :=
 sig.random_oracle_spec_finite_range
@@ -77,19 +77,15 @@ instance decidable_eq_M' : decidable_eq sig.M := sig.decidable_eq_M
 
 instance inhabited_S' : inhabited sig.S := sig.inhabited_S
 
-end instances
+end oracle_instances
+
+section oracles
 
 /-- Shorthand for the combination of the `uniform_selecting` oracle and the `random_oracles`,
   i.e. the oracles available to the signature algorithms themselves -/
 @[reducible, inline, derive finite_range, derive computable]
 def base_oracle_spec (sig : signature) : oracle_spec :=
 uniform_selecting ++ sig.random_oracle_spec
-
-@[priority std.priority.default-75]
-instance h (α : Type) : has_coe
-  (oracle_comp sig.random_oracle_spec α)
-  (oracle_comp sig.base_oracle_spec α) :=
-by apply_instance
 
 /-- Simulate the basic oracles for the signature, using a random oracle in the natural way -/
 noncomputable def base_oracle (sig : signature) :
@@ -109,6 +105,8 @@ def signing_oracle (sig : signature) (pk : sig.PK) (sk : sig.SK) :
   sim_oracle sig.signing_oracle_spec sig.base_oracle_spec (query_log (sig.M ↦ₒ sig.S)) :=
 sim_oracle.mask_state (⟪λ _ m, sig.sign (pk, sk, m)⟫ ∘ₛ (logging_oracle (sig.M ↦ₒ sig.S)))
   (equiv.prod_punit (query_log (signing_oracle_spec sig)))
+
+end oracles
 
 section complete
 
@@ -181,12 +179,10 @@ do {
   return (m, s, log)
 }
 
-end unforgeable_adversary
-
 /-- Experiement for testing if a signature scheme is unforgeable.
   Generate the public/secret keys, then simulate the adversary to get a signature.
   Adversary succeeds if the signature verifies and the message hasn't been queried -/
-noncomputable def unforgeable_experiment (sig : signature) (adversary : unforgeable_adversary sig) :
+noncomputable def experiment (sig : signature) (adversary : unforgeable_adversary sig) :
   oracle_comp uniform_selecting bool :=
 default_simulate' (idₛ ++ₛ random_oracle sig.random_oracle_spec) (do {
   (pk, sk) ← sig.gen (),
@@ -195,19 +191,13 @@ default_simulate' (idₛ ++ₛ random_oracle sig.random_oracle_spec) (do {
   return (if log.not_queried () m then b else ff)
 })
 
-namespace unforgeable_experiment
-
-end unforgeable_experiment
-
 /-- Adversaries success at forging a signature.
   TODO: maybe this doesn't need an independent definition -/
-noncomputable def unforgeable_advantage {sig : signature}
+noncomputable def advantage {sig : signature}
   (adversary : unforgeable_adversary sig) : ℝ≥0 :=
-⦃ (= tt) | unforgeable_experiment sig adversary ⦄
+⦃ (= tt) | adversary.experiment sig ⦄
 
-namespace unforgeable_advantage
-
-end unforgeable_advantage
+end unforgeable_adversary
 
 end unforgeable
 
@@ -229,6 +219,6 @@ def complete (sig_scheme : signature_scheme) : Prop :=
 def unforgeable (sig_scheme : signature_scheme) : Prop :=
 ∀ (adversary : Π (sp : ℕ), unforgeable_adversary $ sig_scheme sp),
   (∃ (p : polynomial ℕ), ∀ n, (adversary n).query_bound ≤ p.eval n) →
-  negligable (λ sp, unforgeable_advantage (adversary sp))
+  negligable (λ sp, (adversary sp).advantage)
 
 end signature_scheme

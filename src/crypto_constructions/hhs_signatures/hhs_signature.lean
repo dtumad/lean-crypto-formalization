@@ -232,7 +232,7 @@ do {
 theorem prob_event_is_valid_signature_ge_unforgeable_advantage  :
   ⦃λ ⟨m, σ, cache⟩, is_valid_signature x₀ pk m σ cache |
     simulate_mock_signing_reduction x₀ pk adversary⦄
-      ≥ signature.unforgeable_advantage adversary :=
+      ≥ adversary.advantage :=
 begin
   sorry
 end
@@ -243,7 +243,11 @@ section choose_fork
 
 /- The choose_fork that will be passed to forking lemma. `q` will be the
 max queries of the adversary (given by its `query_bound`).
-Returns none if it hasn't been queried or if the signature isn't valid -/
+Returns none if it hasn't been queried or if the signature isn't valid.
+
+Note that if the message was queried to signing oracle (causing the experiment to fail
+for unforgeability), then the result will only be in the higher level cache,
+not the lower level one being used here (since it never leaves the "mock") -/
 def choose_fork (m : M) (σ : vector (G × bool) n)
   (cache : query_log (hhs_signature G X M n).random_oracle_spec) (q : ℕ) : option (fin q) :=
 match cache.lookup_with_index () (retrieve_commits x₀ pk σ, m) with
@@ -269,12 +273,11 @@ def forking_adversary_reduction (adversary : (hhs_signature G X M n).unforgeable
 
 /-- The forked adversary reduction succeeds at least as often as the original -/
 theorem forking_adversary_reduction_advantage :
-  (forking_adversary_reduction x₀ pk adversary).advantage
-    ≥ signature.unforgeable_advantage adversary :=
+  (forking_adversary_reduction x₀ pk adversary).advantage ≥ adversary.advantage :=
 calc (forking_adversary_reduction x₀ pk adversary).advantage
   = ⦃λ ⟨m, σ, cache⟩, is_valid_signature x₀ pk m σ cache | simulate_mock_signing_reduction x₀ pk adversary⦄ :
     sorry
-  ... ≥ signature.unforgeable_advantage adversary :
+  ... ≥ adversary.advantage :
     prob_event_is_valid_signature_ge_unforgeable_advantage x₀ pk adversary
 
 variables (i : option $ fin adversary.query_bound) (m m' : M)
@@ -359,7 +362,7 @@ of both oracle calls giving the same result. -/
 theorem prob_event_fork_success_reduction (x₀ pk : X)
   (adversary : (hhs_signature G X M n).unforgeable_adversary) :
   ⦃fork_success | fork (forking_adversary_reduction pk x₀ adversary)⦄ ≥
-    ((signature.unforgeable_advantage adversary) ^ 2 / (adversary.query_bound)) - (1 / 2 ^ n) :=
+    (adversary.advantage ^ 2 / (adversary.query_bound)) - (1 / 2 ^ n) :=
 calc ⦃fork_success | fork (forking_adversary_reduction pk x₀ adversary)⦄
   ≥ ((forking_adversary_reduction pk x₀ adversary).advantage ^ 2 / (adversary.query_bound))
       - (1 / (fintype.card $ vector bool n)) :
@@ -369,7 +372,7 @@ calc ⦃fork_success | fork (forking_adversary_reduction pk x₀ adversary)⦄
       rw [card_vector, fintype.card_bool, nat.cast_pow, nat.cast_two],
       exact le_rfl
     end
-  ... ≥ ((signature.unforgeable_advantage adversary) ^ 2 / (adversary.query_bound)) - (1 / 2 ^ n) :
+  ... ≥ (adversary.advantage ^ 2 / (adversary.query_bound)) - (1 / 2 ^ n) :
     sorry
   
 end fork_reduction
@@ -377,10 +380,11 @@ end fork_reduction
 section vectorization_reduction
 
 def vectorization_of_signatures (σ σ' : vector (G × bool) n) : G :=
-(σ.to_list.zip σ'.to_list).foldr (λ ⟨⟨g₀, b⟩, ⟨g₁, b'⟩⟩ g, if b ≠ b' then g₀ - g₁ else g) (arbitrary G)
+(σ.to_list.zip σ'.to_list).foldr (λ ⟨⟨g₀, b⟩, ⟨g₁, b'⟩⟩ g,
+  if b then (if b' then g else g₁ - g₀) else (if b' then g₀ - g₁ else g)) (arbitrary G)
 
-theorem vectorization_of_signatures_eq_of_exists_index (pk x₀ : X)
-  (σ σ' : vector (G × bool) n) (h : retrieve_commits pk x₀ σ = retrieve_commits pk x₀ σ')
+theorem vectorization_of_signatures_eq_of_exists_index (σ σ' : vector (G × bool) n)
+  (h : retrieve_commits pk x₀ σ = retrieve_commits pk x₀ σ')
   (h' : σ.map prod.snd ≠ σ'.map prod.snd) :
   vectorization_of_signatures σ σ' = pk -ᵥ x₀ :=
 begin
@@ -390,30 +394,43 @@ end
 /-- Reduce an unforgeability adversery to a hhs vectorization adversary,
 by forking the adversary and using the two different results -/
 def vectorization_adversary_reduction (adversary : (hhs_signature G X M n).unforgeable_adversary) :
-  vectorization.adversary G X :=
+  vectorization_adversary G X :=
 { adv := λ ⟨pk, x₀⟩, do {
     ⟨i, ⟨m, σ⟩, cache, ⟨m', σ'⟩, cache'⟩ ← fork (forking_adversary_reduction pk x₀ adversary),
     return (vectorization_of_signatures σ σ')
   } }
 
-theorem main_result (pk x₀ : X) (adversary : (hhs_signature G X M n).unforgeable_adversary) :
+theorem main_result (adversary : (hhs_signature G X M n).unforgeable_adversary) :
   ⦃(=) (pk -ᵥ x₀) | (vectorization_adversary_reduction adversary).adv (pk, x₀)⦄ ≥
-    ((signature.unforgeable_advantage adversary) ^ 2 / adversary.query_bound) - (1 / 2 ^ n)  :=
-begin
-  sorry
-end
+    (adversary.advantage ^ 2 / adversary.query_bound) - (1 / 2 ^ n)  :=
+calc ⦃(=) (pk -ᵥ x₀) | (vectorization_adversary_reduction adversary).adv (pk, x₀)⦄
+  = ⦃λ o, (vectorization_of_signatures o.2.1.2 o.2.2.2.1.2) = pk -ᵥ x₀ | fork (forking_adversary_reduction pk x₀ adversary)⦄ :
+    sorry
+  ... ≥ ⦃fork_success | fork (forking_adversary_reduction pk x₀ adversary)⦄ :
+    begin
+      refine distribution_semantics.prob_event_le_prob_event_of_subset _ _,
+      intros o ho,
+      -- have := vectorizable_of_fork_success x₀ pk _ _ _ _ _ _ _ _ _ ho,
+      apply vectorization_of_signatures_eq_of_exists_index,
+      refine (vectorizable_of_fork_success pk x₀ _ _ o.2.1.1 o.2.2.2.1.1 _ _ _ _ sorry ho.1).1,
+      refine (vectorizable_of_fork_success pk x₀ _ _ o.2.1.1 o.2.2.2.1.1 _ _ _ _ sorry ho.1).2
+    end
+  ... ≥ (adversary.advantage ^ 2 / adversary.query_bound) - (1 / 2 ^ n) :
+    prob_event_fork_success_reduction x₀ pk _
 
 lemma vectorization_adversary_reduction_advantage
   (adversary : (hhs_signature G X M n).unforgeable_adversary) :
-  vectorization.advantage (vectorization_adversary_reduction adversary) ≥
-    ((signature.unforgeable_advantage adversary) ^ 2 / adversary.query_bound) - (1 / 2 ^ n) :=
-calc vectorization.advantage (vectorization_adversary_reduction adversary)
+  (vectorization_adversary_reduction adversary).advantage ≥
+    (adversary.advantage ^ 2 / adversary.query_bound) - (1 / 2 ^ n) :=
+calc (vectorization_adversary_reduction adversary).advantage
   = (∑' pk x₀, ⦃(=) (pk -ᵥ x₀) | (vectorization_adversary_reduction adversary).adv (pk, x₀)⦄) / (fintype.card X) ^ 2 :
-    vectorization.advantage_eq_tsum (vectorization_adversary_reduction adversary)
-  ... ≥ (∑' (pk x₀ : X), ((signature.unforgeable_advantage adversary) ^ 2 / adversary.query_bound - (1 / 2 ^ n))) / (fintype.card X) ^ 2 :
-    div_le_div_of_le_of_nonneg (tsum_le_tsum (λ pk, tsum_le_tsum
-      (λ x₀, by apply main_result) sorry sorry) sorry sorry) zero_le'
-  ... = ((signature.unforgeable_advantage adversary) ^ 2 / adversary.query_bound) - (1 / 2 ^ n) :
+    vectorization_adversary.advantage_eq_tsum (vectorization_adversary_reduction adversary)
+  ... ≥ (∑' (pk x₀ : X), (adversary.advantage ^ 2 / adversary.query_bound - (1 / 2 ^ n))) / (fintype.card X) ^ 2 :
+    begin
+      exact div_le_div_of_le_of_nonneg (tsum_le_tsum (λ pk, tsum_le_tsum
+        (λ x₀, by apply main_result) sorry sorry) sorry sorry) zero_le'
+    end
+  ... = (adversary.advantage ^ 2 / adversary.query_bound) - (1 / 2 ^ n) :
     begin
       simp_rw [tsum_fintype, finset.sum_const, nsmul_eq_mul],
       rw [← mul_assoc, ← pow_two, div_eq_mul_inv, mul_comm, ← mul_assoc],
@@ -450,7 +467,7 @@ variables (G X : ℕ → Type) (M : Type)
 theorem hhs_signature_scheme_unforgeable : (hhs_signature_scheme G X M).unforgeable :=
 begin
   intros adversary _,
-  let reduction : Π (sp : ℕ), vectorization.adversary (G sp) (X sp) :=
+  let reduction : Π (sp : ℕ), vectorization_adversary (G sp) (X sp) :=
     λ n, hhs_signature.vectorization_adversary_reduction (adversary n),
   have := hard_homogenous_space.vectorization_hard reduction,
   sorry,

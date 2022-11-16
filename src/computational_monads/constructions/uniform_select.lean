@@ -325,7 +325,10 @@ by simp only [prob_event_eq_to_nnreal_to_outer_measure_apply, ennreal.to_nnreal_
 
 lemma prob_event_uniform_select_fintype_apply_bind (ob : α → oracle_comp uniform_selecting β)
   (event : set β) :
-  ⦃event | $ᵗ α >>= ob⦄ = ∑' a, ⦃event | ob a⦄ / fintype.card α
+  ⦃event | $ᵗ α >>= ob⦄ = ∑' a, ⦃event | ob a⦄ / fintype.card α :=
+begin
+  sorry
+end
 
 end distribution_semantics
 

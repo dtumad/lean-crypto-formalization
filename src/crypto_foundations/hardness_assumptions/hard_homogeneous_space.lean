@@ -38,22 +38,23 @@ section computational_advantages
 variables {G X : Type} [fintype G] [fintype X] [decidable_eq G] [decidable_eq X]
   [add_group G] [algorithmic_homogenous_space G X]
   
-namespace vectorization
-
-structure adversary (G X : Type) : Type 1 :=
+structure vectorization_adversary (G X : Type) : Type 1 :=
 (adv : X × X → oracle_comp uniform_selecting G)
 -- (adv_poly_time : poly_time_oracle_comp adv)
 
+namespace vectorization_adversary
+
 /-- Analogue of Discrete-logarithm asumption game -/
-noncomputable def experiment (adversary : adversary G X) : oracle_comp uniform_selecting bool :=
+noncomputable def experiment (adversary : vectorization_adversary G X) :
+  oracle_comp uniform_selecting bool :=
 do { x₁ ←$ᵗ X, x₂ ←$ᵗ X, g ← adversary.adv (x₁, x₂), return (g = x₁ -ᵥ x₂) }
 
 /-- Vectorization advantage of an adversary in the vectorization experiment. -/
-noncomputable def advantage (adversary : adversary G X) : ℝ≥0 :=
+noncomputable def advantage (adversary : vectorization_adversary G X) : ℝ≥0 :=
 ⦃ (=) tt | experiment adversary ⦄
 
-lemma advantage_eq_tsum (adversary : adversary G X) :
-  advantage adversary = (∑' x₁ x₂, ⦃(=) (x₁ -ᵥ x₂) | adversary.adv (x₁, x₂)⦄) / (fintype.card X) ^ 2 :=
+lemma advantage_eq_tsum (adversary : vectorization_adversary G X) :
+  adversary.advantage = (∑' x₁ x₂, ⦃(=) (x₁ -ᵥ x₂) | adversary.adv (x₁, x₂)⦄) / (fintype.card X) ^ 2 :=
 begin
   rw [advantage, experiment, prob_event_uniform_select_fintype_apply_bind],
   -- refine tsum_congr (λ x₁, _),
@@ -63,7 +64,7 @@ begin
   sorry,
 end
 
-end vectorization
+end vectorization_adversary
 
 namespace parallelization
 
@@ -88,7 +89,7 @@ end computational_advantages
 class hard_homogenous_space (G X : ℕ → Type) [∀ n, fintype $ G n] [∀ n, fintype $ X n]
   [∀ n, decidable_eq $ G n] [∀ n, decidable_eq $ X n]
   [∀ n, add_group $ G n] [∀ n, algorithmic_homogenous_space (G n) (X n)] :=
-(vectorization_hard : ∀ (adversary : Π (sp : ℕ), vectorization.adversary (G sp) (X sp)),
-  negligable (λ sp, vectorization.advantage (adversary sp)))
+(vectorization_hard : ∀ (adversary : Π (sp : ℕ), vectorization_adversary (G sp) (X sp)),
+  negligable (λ sp, (adversary sp).advantage ))
 (parallelization_hard : ∀ (adversary : Π (sp : ℕ), parallelization.adversary (G sp) (X sp)),
   negligable (λ sp, parallelization.advantage (adversary sp)))

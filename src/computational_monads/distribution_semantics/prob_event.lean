@@ -53,6 +53,9 @@ begin
   sorry -- Easy with `ennreal` overhaul
 end
 
+lemma prob_event_le_prob_event_of_subset (oa : oracle_comp spec α) {e e' : set α}
+  (h : (e ∩ oa.support) ⊆ e') : ⦃e | oa⦄ ≤ ⦃e' | oa⦄ := sorry
+
 lemma coe_prob_event_eq_to_outer_measure_apply : (⦃e | oa⦄ : ℝ≥0∞) = ⦃oa⦄.to_outer_measure e :=
 (ennreal.coe_to_nnreal $ @pmf.to_measure_apply_ne_top α ⊤ ⦃oa⦄ e).trans
   (@pmf.to_measure_apply_eq_to_outer_measure_apply α ⊤ _ e (measurable_space.measurable_set_top))
@@ -165,6 +168,13 @@ prob_event_eq_of_equiv (return_bind_equiv ob a) e''
 lemma prob_event_bind_return :
   ⦃e | oa >>= return⦄ = ⦃e | oa⦄ :=
 prob_event_eq_of_equiv (bind_return_equiv oa) e
+
+@[simp]
+lemma prob_event_bind_return' (f : α → β) (e : set β) :
+  ⦃e | oa >>= λ a, return (f a)⦄ = ⦃f ⁻¹' e | oa⦄ :=
+begin
+  sorry
+end
 
 end bind
 
