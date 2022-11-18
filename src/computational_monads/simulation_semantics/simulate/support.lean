@@ -39,6 +39,21 @@ begin
   { simp only [h_query, simulate_query] }
 end
 
+/-- Given a property `P` of oracle states, if any query call to the oracle preserves it,
+then simulation of an entire computation with that oracle will also preserve it. -/
+theorem support_state_simulate_induction (so : sim_oracle spec spec' S) (P : S → Prop)
+  (s : S) (hs : P s) (oa : oracle_comp spec α) (x : α × S) (hx : x ∈ (simulate so oa s).support)
+  (hso : ∀ i t s, ∀ x ∈ (so i (t, s)).support, P s → P (prod.snd x)) : P x.2 :=
+begin
+  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i' t' generalizing s,
+  { rw [support_simulate_return, set.mem_singleton_iff] at hx,
+    exact hx.symm ▸ hs },
+  { rw [mem_support_simulate_bind] at hx,
+    obtain ⟨a, s', ha, ha'⟩ := hx,
+    exact hob a x s' (hoa (a, s') s hs ha) ha' },
+  { exact hso i' t' s x hx hs }
+end
+
 /-- Since `support` assumes any possible query result, `simulate` will never reduce the support.
 In particular the support of a simulation lies in the pullback of the original support. -/
 theorem support_simulate_subset_preimage_support :
@@ -66,6 +81,10 @@ begin
   obtain ⟨y, hy, rfl⟩ := (set.mem_image prod.fst _ _).1 hx,
   exact support_simulate_subset_preimage_support so oa s hy,
 end
+
+lemma mem_support_of_mem_support_simulate' (x : α)
+  (hx : x ∈ (simulate' so oa s).support) : x ∈ oa.support :=
+support_simulate'_subset_support so oa s hx
 
 /-- If the first output of an oracle can take on any value (although the state might not),
 then the first value of simulation has the same support as the original computation.
@@ -115,21 +134,6 @@ begin
       obtain ⟨t', ht'⟩ := this,
       exact ⟨(a, t'), ht', (hob a t' t).symm ▸ hob'⟩ } },
   { simpa only [support_simulate'_query] using h i t s s' }
-end
-
-/-- Given a property `P` of oracle states, if any query call to the oracle preserves it,
-then simulation of an entire computation with that oracle will also preserve it. -/
-theorem support_state_simulate_induction (so : sim_oracle spec spec' S) (P : S → Prop)
-  (s : S) (hs : P s) (oa : oracle_comp spec α) (x : α × S) (hx : x ∈ (simulate so oa s).support)
-  (hso : ∀ i t s, ∀ x ∈ (so i (t, s)).support, P s → P (prod.snd x)) : P x.2 :=
-begin
-  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i' t' generalizing s,
-  { rw [support_simulate_return, set.mem_singleton_iff] at hx,
-    exact hx.symm ▸ hs },
-  { rw [mem_support_simulate_bind] at hx,
-    obtain ⟨a, s', ha, ha'⟩ := hx,
-    exact hob a x s' (hoa (a, s') s hs ha) ha' },
-  { exact hso i' t' s x hx hs }
 end
 
 theorem support_simulate_simulate_eq_support_simulate (so so' : sim_oracle spec spec' S)

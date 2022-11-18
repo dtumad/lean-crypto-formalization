@@ -236,6 +236,11 @@ lemma eval_dist_bind_bind_apply' [spec.computable] [oa.decidable] [∀ a, (ob a)
 (eval_dist_bind_apply' oa _ c).trans (finset.sum_congr rfl $ λ a ha,
   by simp only [eval_dist_bind_apply', finset.mul_sum, mul_assoc])
 
+lemma eval_dist_bind_return (f : α → β) :
+  ⦃oa >>= λ a, return (f a)⦄ = pmf.map f ⦃oa⦄ :=
+pmf.ext (λ b, by simp_rw [eval_dist_bind_apply, eval_dist_return_apply,
+  mul_ite, mul_zero, mul_one, pmf.map_apply])
+
 lemma eval_dist_bind_return_apply (f : α → β) :
   ⦃oa >>= λ a, return (f a)⦄ b = ∑' (a : α), ite (b = f a) (⦃oa⦄ a) 0 :=
 by simp_rw [eval_dist_bind_apply, eval_dist_return_apply, mul_ite, mul_zero, mul_one]

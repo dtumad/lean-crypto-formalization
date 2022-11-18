@@ -55,8 +55,6 @@ begin
   refine congr_arg (λ x, x / (l.length : ℝ≥0∞)) begin
     have := finset.sum_filter_count_eq_countp _ l,
     refine trans _ (congr_arg coe this),
-    -- rw [nat.cast_sum],
-    -- convert _,
     refine trans (@tsum_eq_sum _ _ _ _ _ _ (finset.filter t l.to_finset) _) _,
     {
       refine (λ b hb, _),

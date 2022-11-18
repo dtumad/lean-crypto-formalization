@@ -29,24 +29,21 @@ variables (a : α) (i : spec.ι) (t : spec.domain i)
 section support
 
 /-- Reduce to the default state for oracles with a subsingleton state type -/
-@[simp]
-lemma support_simulate_eq_support_default_simulate [subsingleton S] (s : S) :
+@[simp] lemma support_simulate_eq_support_default_simulate [subsingleton S] (s : S) :
   (simulate so oa s).support = (default_simulate so oa).support :=
 subsingleton.elim so.default_state s ▸ rfl
 
+/-- If the state is a `subsingleton` type, suffices to use the support with `default_state` -/
+@[simp] lemma support_simulate'_eq_support_default_simulate' [subsingleton S] (s : S) :
+  (simulate' so oa s).support = (default_simulate' so oa).support :=
+subsingleton.elim so.default_state s ▸ rfl
 
 /-- Version of `support_simulate'_eq_support` for `default_simulate`, given a `subsingleton` state.
 Has a weaker requirement for the hypothesis `h` that the more general lemma -/
-theorem support_default_simulate'_eq_support [subsingleton S]
+theorem support_simulate'_eq_support_of_subsingleton [subsingleton S] (s : S)
   (h : ∀ i t, prod.fst '' (so i (t, so.default_state)).support = ⊤) :
-  (default_simulate' so oa).support = oa.support :=
-support_simulate'_eq_support so oa so.default_state
-  (λ i t s, subsingleton.elim so.default_state s ▸ h i t)
-
-/-- If the state is a `subsingleton` type, suffices to use the support with `default_state` -/
-lemma support_simulate'_eq_support_default_simulate' [subsingleton S] (s : S) :
-  (simulate' so oa s).support = (default_simulate' so oa).support :=
-subsingleton.elim so.default_state s ▸ rfl
+  (simulate' so oa s).support = oa.support :=
+support_simulate'_eq_support so oa s (λ i t s, subsingleton.elim so.default_state s ▸ h i t)
 
 /-- Given the state is `subsingleton`, the support of `simulate` is determined by `simulate'` -/
 lemma support_simulate_eq_image_support_simulate' [subsingleton S] :

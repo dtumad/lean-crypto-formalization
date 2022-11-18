@@ -38,6 +38,12 @@ variables (oa : oracle_comp spec α)
 lemma apply_eq (i : spec.ι) (t : spec.domain i) (s : unit) :
   ⟪o⟫ i (t, s) = o i t >>= λ u, return (u, ()) := rfl
 
+instance decidable (i : spec.ι) (t : spec.domain i) (s : unit) :
+  (⟪o⟫ i (t, s)).decidable :=
+begin
+  sorry
+end
+
 section support
 
 lemma support_apply (i : spec.ι) (t : spec.domain i) (s : unit) :

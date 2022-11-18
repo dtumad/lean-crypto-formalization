@@ -27,7 +27,7 @@ Without the `finite_range` instance, the support may be infinite,
 
 namespace oracle_comp
 
-variables {α β γ : Type} {spec : oracle_spec}
+variables {α β γ : Type} {spec spec' : oracle_spec}
 
 open oracle_spec
 
@@ -78,6 +78,14 @@ instance decidable_query (i : spec.ι) (t : spec.domain i) :
 
 instance decidable_coin : decidable coin := decidable_query _ _
 
+def decidable_of_decidable_bind_fst {oa : oracle_comp spec α} {ob : α → oracle_comp spec β}
+  : Π (h : decidable (oa >>= ob)), oa.decidable
+| (decidable_bind' α β _ _ hoa hob) := hoa
+
+def decidable_of_decidable_bind_snd {oa : oracle_comp spec α} {ob : α → oracle_comp spec β} (a : α)
+  : Π (h : decidable (oa >>= ob)), (ob a).decidable
+| (decidable_bind' α β _ _ hoa hob) := hob a
+
 end decidable
 
 /-- Simple computations should have automatic decidable instances -/
@@ -92,7 +100,7 @@ section fin_support
 
 open decidable
 
-variables [computable spec] [finite_range spec]
+variables [computable spec] [computable spec'] [finite_range spec] [finite_range spec']
 
 /-- Version of `fin_support` taking an explicit `decidable` argument instead of an instance -/
 def fin_support' : Π {α : Type} (oa : oracle_comp spec α), oa.decidable → finset α
@@ -122,7 +130,8 @@ lemma mem_fin_support'_iff_mem_support : Π {α : Type} (oa : oracle_comp spec �
 
 section support
 
-variables (oa : oracle_comp spec α) [decidable oa] (a : α) (s : finset α)
+variables (oa : oracle_comp spec α) (oa' : oracle_comp spec' α) [decidable oa] [decidable oa']
+  (a : α) (s : finset α)
 
 /-- Correctness of `fin_support` with respect to `support`, i.e. the two are equal as `set`s -/
 lemma mem_fin_support_iff_mem_support : a ∈ oa.fin_support ↔ a ∈ oa.support :=
@@ -136,6 +145,10 @@ set.ext (λ a, (mem_fin_support_iff_mem_support oa a))
 
 lemma fin_support_eq_iff_support_eq_coe : oa.fin_support = s ↔ oa.support = ↑s :=
 by rw [← coe_fin_support_eq_support, finset.coe_inj]
+
+lemma fin_support_eq_fin_support_iff_support_eq_support :
+  oa.fin_support = oa'.fin_support ↔ oa.support = oa'.support :=
+by rw [fin_support_eq_iff_support_eq_coe, coe_fin_support_eq_support]
 
 lemma fin_support_subset_iff_support_subset_coe : oa.fin_support ⊆ s ↔ oa.support ⊆ ↑s :=
 by rw [← finset.coe_subset, coe_fin_support_eq_support]

@@ -98,6 +98,12 @@ lemma support_uniform_select_vector : ($ᵛ v).support = {a | a ∈ v.to_list} :
 lemma mem_support_uniform_select_vector_iff : a ∈ ($ᵛ v).support ↔ a ∈ v.to_list :=
 by simp only [support_uniform_select_vector, set.mem_set_of_eq]
 
+lemma support_uniform_select_vector_cons : ($ᵛ (a ::ᵥ v)).support = {a} ∪ ($ᵛ v).support :=
+sorry
+
+lemma support_uniform_select_vector_singleton (v : vector α 1) : ($ᵛ v).support = {v.head} :=
+sorry
+
 @[simp]
 lemma fin_support_uniform_select_vector : ($ᵛ v).fin_support = finset.image v.nth finset.univ :=
 begin

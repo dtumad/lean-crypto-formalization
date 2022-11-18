@@ -138,7 +138,7 @@ section coin_oracle
 @[derive [finite_range, computable]]
 def coin_oracle : oracle_spec := unit ↦ₒ bool
 
-@[simp] lemma coin_oracle.range.card : fintype.card (coin_oracle.range ()) = 2 := rfl
+@[simp] lemma coin_oracle.range.card (i : unit) : fintype.card (coin_oracle.range i) = 2 := rfl
 
 end coin_oracle
 
