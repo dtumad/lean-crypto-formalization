@@ -144,11 +144,11 @@ end uniform_select_vector
 
 section uniform_select_list
 
-/-- If a list isn't empty, we can convert it to a vector and then sample from it.
-  TODO: this should probably correspond to an actual `pmf` function -/
-def uniform_select_list : Π (xs : list α) (h : ¬ xs.empty), oracle_comp uniform_selecting α
-| [] h := false.elim (h rfl)
-| (x :: xs) _ := uniform_select_vector ⟨x :: xs, list.length_cons x xs⟩ 
+/-- If a list isn't empty, we can convert it to a vector and then sample from it.-/
+@[derive decidable]
+def uniform_select_list (xs : list α) (h : ¬ xs.empty) : oracle_comp uniform_selecting α :=
+let v : vector α (xs.length.pred.succ) := ⟨xs, symm $ nat.succ_pred_eq_of_pos
+  (list.length_pos_of_ne_nil (λ h', h $ list.empty_iff_eq_nil.2 h'))⟩ in uniform_select_vector v
 
 notation `$ˡ` := uniform_select_list
 
@@ -159,13 +159,6 @@ lemma uniform_select_list_nil (h : ¬ ([] : list α).empty) (oa : oracle_comp un
 
 lemma uniform_select_list_cons (h : ¬ (x :: xs).empty) :
   $ˡ (x :: xs) h = uniform_select_vector ⟨x :: xs, list.length_cons x xs⟩ := rfl
-
-noncomputable instance uniform_select_list.decidable : ($ˡ xs h).decidable :=
-begin
-  induction xs with x xs,
-  { exact false.elim (h rfl) },
-  { exact uniform_select_vector.decidable _ }
-end
 
 section support
 

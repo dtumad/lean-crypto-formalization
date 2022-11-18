@@ -38,11 +38,9 @@ variables (oa : oracle_comp spec α)
 lemma apply_eq (i : spec.ι) (t : spec.domain i) (s : unit) :
   ⟪o⟫ i (t, s) = o i t >>= λ u, return (u, ()) := rfl
 
-instance decidable (i : spec.ι) (t : spec.domain i) (s : unit) :
-  (⟪o⟫ i (t, s)).decidable :=
-begin
-  sorry
-end
+instance decidable [spec.computable] [∀ i x, (o i x).decidable] (i : spec.ι)
+  (x : spec.domain i × unit) : (⟪o⟫ i x).decidable :=
+tracking_oracle.decidable o _ _ i x
 
 section support
 
@@ -110,8 +108,6 @@ begin
   rw [support_simulate_eq_preimage],
   sorry
 end
-
--- rw set.preimage_image_eq,
 
 -- TODO: full API
 @[simp]

@@ -7,9 +7,10 @@ import computational_monads.constructions.uniform_select
 import computational_monads.simulation_semantics.oracle_append
 import computational_monads.simulation_semantics.constructions.identity_oracle
 import computational_monads.simulation_semantics.simulate.subsingleton
+import computational_monads.coercions.coin
 
 /-!
-# Coercions Between Computations With Different Oracle Access
+# Coercions Between Computations With Additional Oracles
 
 This file provides a number of `has_coe` instances for different `oracle_comp` computations.
 This is a very powerful tool when defining computations in terms of simpler versions.
@@ -30,74 +31,13 @@ In particular we start with the basic finite oracles: `coin_oracle ++ uniform_se
   between oracles to happen automatically
 -/
 
-open oracle_comp oracle_spec distribution_semantics 
+namespace oracle_comp
+
+open oracle_spec distribution_semantics 
 
 variables (spec spec' spec'' spec''' : oracle_spec)
   (coe_spec coe_spec' coe_spec'' coe_spec''' : oracle_spec)
   (S S' : Type) {α : Type}
-
-section coin
-
-/-- coerce a coin flip into a uniform random selection of a `bool` -/
-noncomputable instance coe_coin_uniform_select (α) :
-  has_coe (oracle_comp coin_oracle α) (oracle_comp uniform_selecting α) :=
-{ coe := λ oa, oa.default_simulate' ⟪λ _ _, $ᵗ bool⟫ }
-
-noncomputable example : oracle_comp uniform_selecting bool :=
-do {b ← coin, b' ←$ᵗ bool, return (band b b')}
-
-lemma coe_coin_uniform_select_def (oa : oracle_comp coin_oracle α) :
-  (↑oa : oracle_comp uniform_selecting α) = oa.default_simulate' ⟪λ _ _, $ᵗ bool⟫ := rfl
-
-/-- Coercing a `coin_oracle` computation to one using `uniform_selecting` preserves `support` -/
-lemma support_coe_coin_uniform_select (oa : oracle_comp coin_oracle α) :
-  (↑oa : oracle_comp uniform_selecting α).support = oa.support :=
-begin
-  rw [coe_coin_uniform_select_def],
-  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t,
-  { simp only [support_simulate', simulate_return, support_return, set.image_singleton] },
-  { refine set.ext (λ b, _),
-    -- TODO!: we really need a generalized way to prove things of this type
-    simp_rw [support_simulate'_bind, support_bind, set.mem_Union],
-    refine ⟨λ h, _, λ h, _⟩,
-    { obtain ⟨⟨a, u⟩, ha, hba⟩ := h,
-      cases u,
-      refine ⟨a, _, by rwa ← hob⟩,
-      rw [← hoa, support_simulate', set.mem_image],
-      exact ⟨(a, ()), ha, rfl⟩ },
-    { obtain ⟨a, ha, hba⟩ := h,
-      refine ⟨(a, ()), (mem_support_simulate_iff_fst_mem_support_simulate' _ oa _ (a, ())).2
-        (hoa.symm ▸ ha), by rwa ← hob a at hba⟩ } },
-  { simp only [support_uniform_select_fintype bool,
-      stateless_oracle.support_default_simulate'_query, support_query] },
-end
-
-section distribution_semantics
-
-open distribution_semantics
-
-/-- Coercing to a `uniform_selecting` oracle doesn't change the underlying distribution -/
-@[simp]
-lemma coe_coin_uniform_select_equiv_coin : Π {α : Type} (oc : oracle_comp coin_oracle α),
-    (↑oc : oracle_comp uniform_selecting α) ≃ₚ oc
-| _ (pure' α a) := by simp [coe_coin_uniform_select_def, pmf.pure_map]
-| _ (bind' α β oa ob) := begin
-  rw [coe_coin_uniform_select_def],
-  refine (stateless_oracle.simulate'_query_equiv_of_equiv _ _ _ _),
-  intros i t,
-  exact eval_dist_uniform_select_fintype bool,
-end
-| _ (query i t) := begin
-  erw [coe_coin_uniform_select_def, simulate'_query_equiv, stateless_oracle.apply_eq,
-    fst_map_bind_mk_equiv, map_id_equiv],
-  exact eval_dist_uniform_select_fintype bool,
-end
-
-end distribution_semantics
-
-end coin
-
-section coe_append
  
 section coe_append_right
 
@@ -292,24 +232,4 @@ do { n ←$[0..10], if n ≤ 3 then return ff else coin }
 
 end examples
 
-end coe_append
-
-section coe_sim_oracle
-
-/-- Use a coercion on the resulting type of a simulation to coerce the simulation oracle itself.
-  This allows for greater flexibility when specifying the simulation oracle when
-    both the initial and final `oracle_spec` are some appended set of oracles -/
-instance [∀ α, has_coe (oracle_comp coe_spec α) (oracle_comp coe_spec' α)] :
-  has_coe (sim_oracle spec coe_spec S) (sim_oracle spec coe_spec' S) :=
-{ coe := λ so, {default_state := so.default_state, o := λ i x, ↑(so i x)} }
-
-/-- Coerce a simulation oracle to include an additional number of resulting oracles -/
-example (so : sim_oracle coe_spec coe_spec' S) :
-  sim_oracle coe_spec (coe_spec' ++ spec ++ spec') S := ↑so
-
-/-- Can use coercions to seperately simulate both sides of appended oracle specs -/
-example (so : sim_oracle spec spec'' S) (so' : sim_oracle spec' spec''' S') :
-  sim_oracle (spec ++ spec') (spec'' ++ spec''') (S × S') :=
-↑so ++ₛ ↑so'
-
-end coe_sim_oracle
+end oracle_comp

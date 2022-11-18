@@ -53,6 +53,13 @@ variables {S S' : Type} (o o' : Π (i : spec.ι), spec.domain i → oracle_comp 
 @[simp] lemma apply_eq : ⟪o | update_state, default_state⟫ i x =
   (λ u, (u, update_state x.2 i x.1 u)) <$> (o i x.1) := by {cases x, refl}
 
+instance decidable [computable spec] [decidable_eq S] [∀ i x, (o i x).decidable] :
+  (⟪o | update_state, default_state⟫ i x).decidable :=
+begin
+  rw [apply_eq],
+  exact oracle_comp.decidable_map _ _,
+end
+
 section support
 
 @[simp] lemma support_apply : (⟪o | update_state, default_state⟫ i x).support =

@@ -7,7 +7,7 @@ import algebra.add_torsor
 
 import computational_monads.asymptotics.polynomial_time
 import computational_monads.asymptotics.negligable
-import computational_monads.coercions
+import computational_monads.coercions.sim_oracle
 
 /-!
 # Hard Homogeneous Spaces
