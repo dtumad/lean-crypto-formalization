@@ -102,7 +102,7 @@ lemma simulate_query : simulate so (query i t) s = so i (t, s) := rfl
 @[simp]
 lemma simulate_map : simulate so (f <$> oa) s = prod.map f id <$> simulate so oa s := rfl
 
-instance simulate_decidable [spec.computable] [hoa : oa.decidable] [decidable_eq S]
+instance simulate.decidable [spec.computable] [hoa : oa.decidable] [decidable_eq S]
   [h : ∀ i t s, (so i (t, s)).decidable] : (oa.simulate so s).decidable :=
 begin
   unfreezingI {induction oa using oracle_comp.induction_on with α a α β oa ob hoa' hob' i t generalizing s},
@@ -129,9 +129,7 @@ lemma support_simulate_bind : (simulate so (oa >>= ob) s).support =
 
 lemma mem_support_simulate_bind (x : β × S) : x ∈ (simulate so (oa >>= ob) s).support ↔
   ∃ (a : α) (s' : S), (a, s') ∈ (simulate so oa s).support ∧ x ∈ (simulate so (ob a) s').support :=
-begin
-  sorry
-end
+by simp_rw [support_simulate_bind, set.mem_Union, prod.exists, exists_prop]
 
 lemma support_simulate_bind' : (simulate so (bind' α β oa ob) s).support
   = ⋃ x ∈ (simulate so oa s).support, (simulate so (ob $ prod.fst x) x.2).support := rfl
@@ -171,28 +169,11 @@ lemma eval_dist_simulate_query : ⦃simulate so (query i t) s⦄ = ⦃so i (t, s
 lemma eval_dist_simulate_map : ⦃simulate so (f <$> oa) s⦄ =
   ⦃simulate so oa s⦄.map (prod.map f id) := by rw [simulate_map, eval_dist_map]
 
+/-- Write the `eval_dist` of a simulation as a double summation over the possible
+intermediate outputs and states of the computation. -/
 lemma eval_dist_simulate_bind_apply_eq_tsum_tsum (x : β × S) : ⦃simulate so (oa >>= ob) s⦄ x =
   ∑' (a : α) (s' : S), ⦃simulate so oa s⦄ (a, s') * ⦃simulate so (ob a) s'⦄ x :=
-begin
-
-
-  rw [simulate_bind],
-  rw [eval_dist_prod_bind],
-  
-  -- , eval_dist_bind_apply_eq_to_nnreal],
-  -- rw tsum_prod' ennreal.summable (λ _, ennreal.summable),
-  -- refine trans (tsum_to_nnreal_eq _) _,
-  -- rw [ennreal.tsum_to_nnreal_eq],
-
-
-  -- rw [eval_dist_simulate_bind, pmf.bind_apply],
-  -- refine tsum_prod' (nnreal.summable_of_le (λ x, mul_le_of_le_of_le_one le_rfl
-  --   (pmf.apply_le_one _ _)) (pmf.summable_coe ⦃simulate so oa s⦄)) (λ a, _),
-  -- have : summable (λ s', ⦃simulate so oa s⦄ (a, s')),
-  -- from nnreal.summable_comp_injective (pmf.summable_coe ⦃simulate so oa s⦄)
-  --   (λ s s' hs, (prod.eq_iff_fst_eq_snd_eq.1 hs).2),
-  -- exact nnreal.summable_of_le (λ s, mul_le_of_le_of_le_one le_rfl (pmf.apply_le_one _ _)) this,
-end
+by rw [simulate_bind, eval_dist_prod_bind]
 
 end eval_dist
 
@@ -265,7 +246,7 @@ lemma simulate'_query : simulate' so (query i t) s = prod.fst <$> so i (t, s) :=
 lemma simulate'_map : simulate' so (f <$> oa) s =
   prod.fst <$> (prod.map f id <$> simulate so oa s) := rfl
 
-instance simulate'_decidable [spec.computable] [hoa : oa.decidable] [decidable_eq S]
+instance simulate'.decidable [spec.computable] [hoa : oa.decidable] [decidable_eq S]
   [h : ∀ i t s, (so i (t, s)).decidable] : (oa.simulate' so s).decidable :=
 begin
   haveI : decidable_eq α := decidable_eq_of_decidable oa,

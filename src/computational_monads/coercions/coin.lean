@@ -31,9 +31,9 @@ variables {α β : Type} (oa : oracle_comp coin_oracle α)
 lemma coe_coin_uniform_select_def : (↑oa : oracle_comp uniform_selecting α) =
   oa.default_simulate' ⟪λ _ _, $ᵛ (tt ::ᵥ ff ::ᵥ vector.nil)⟫ := rfl
 
-instance coe_coin_uniform_select.decidable [hoa : oa.decidable] :
+noncomputable instance coe_coin_uniform_select.decidable [hoa : oa.decidable] :
   (↑oa : oracle_comp uniform_selecting α).decidable :=
-oracle_comp.simulate'_decidable _ _ _
+simulate'.decidable _ _ _
 
 section support
 
