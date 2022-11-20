@@ -26,7 +26,7 @@ In particular, can coerce to any set of appended oracles assuming that:
 2. The subset of original oracles in the target is in the same order.
 
 To match this we adopt both conventions in general, and use a standard ordering for all oracles.
-In particular we start with the basic finite oracles: `coin_oracle ++ uniform_selecting ++ ...`,
+In particular we start with the basic finite oracles: `coin_spec ++ uniform_selecting ++ ...`,
   and then add additional oracles further in the list. This standard ordering allows most coercions
   between oracles to happen automatically
 -/
@@ -160,7 +160,7 @@ section examples
 -- This set of examples serves as sort of a "unit test" for the coercions above
 variable [∀ α, has_coe (oracle_comp coe_spec α) (oracle_comp coe_spec' α)]
 
--- coerce a single `coin_oracle` and then append extra oracles
+-- coerce a single `coin_spec` and then append extra oracles
 example (oa : oracle_comp coe_spec α) :
   oracle_comp (coe_spec' ++ spec' ++ spec'') α := ↑oa
 example (oa : oracle_comp coe_spec α) :

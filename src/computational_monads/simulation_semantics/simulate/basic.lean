@@ -3,7 +3,7 @@ Copyright (c) 2022 Devon Tuma. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
-import computational_monads.distribution_semantics.prob_event
+import computational_monads.distribution_semantics.prod
 
 /-!
 # Oracle Simulation Semantics
@@ -36,7 +36,7 @@ namespace sim_oracle
 
 /-- Example of an oracle maintaining in internal incrementing value,
   and returning a fake coin flip based on whether the state is even. -/
-example : sim_oracle oracle_spec.coin_oracle oracle_spec.coin_oracle ℕ :=
+example : sim_oracle oracle_spec.coin_spec oracle_spec.coin_spec ℕ :=
 { default_state := 0,
   o := λ i ⟨t, n⟩, return (if even n then tt else ff, n + 1) }
 

@@ -19,7 +19,7 @@ This file defines the notion of a keyed hash function.
 /-- `keygen` takes in a security parameter and outputs a key bundled with the parameter
   `hash` takes a `hash_key` and a string in the input space to a string in the output space -/
 structure hash_function (K I O : Type) :=
-(keygen : unit → oracle_comp coin_oracle K)
+(keygen : unit → oracle_comp coin_spec K)
 (hash : K × I → O)
 -- (keygen_poly_time : poly_time_oracle_comp keygen)
 -- (hash_poly_time : poly_time hash)
@@ -32,7 +32,7 @@ variables [decidable_eq O]
 
 /-- The security game for collision resistance as a probabalistic function. -/
 def collision_finding_experiment (h : hash_function K I O)
-  (adversary : K → oracle_comp coin_oracle (I × I)) : oracle_comp coin_oracle bool := 
+  (adversary : K → oracle_comp coin_spec (I × I)) : oracle_comp coin_spec bool := 
 do{ k ← (h.keygen ()),
     xs ← (adversary k),
     return (h.hash (k, xs.1) = h.hash (k, xs.2)) }
@@ -49,7 +49,7 @@ variables {K I O : ℕ → Type} {H : hash_scheme K I O}
 variables [∀ n, decidable_eq $ O n]
 
 structure collision_finding_adversary (H : hash_scheme K I O) :=
-(adv : Π (sp : ℕ), K sp → oracle_comp coin_oracle ((I sp) × (I sp)))
+(adv : Π (sp : ℕ), K sp → oracle_comp coin_spec ((I sp) × (I sp)))
 -- (adv_poly_time : ∀ sp, poly_time_oracle_comp $ adv sp)
 
 /-- Collision resistant if all polynomial time adversaries have neglibable chance

@@ -18,7 +18,7 @@ If the support is decidable, we can instead give an expression in terms of `fins
 
 namespace distribution_semantics
 
-open oracle_comp
+open oracle_comp oracle_spec
 open_locale big_operators nnreal ennreal
 
 variables {α β γ ι : Type} {spec spec' : oracle_spec} 
@@ -37,7 +37,7 @@ ennreal.to_nnreal (@pmf.to_measure α ⊤ ⦃oa⦄ event)
 notation `⦃` event `|` oa `⦄` := prob_event oa event
 
 /-- Probability that the result of a computation is greater than `5` -/
-noncomputable example (oa : oracle_comp oracle_spec.coin_oracle (fin 10)) : ℝ≥0∞ := ⦃(>) 5 | oa⦄
+noncomputable example (oa : oracle_comp oracle_spec.coin_spec (fin 10)) : ℝ≥0∞ := ⦃(>) 5 | oa⦄
 
 lemma prob_event_eq_to_nnreal_to_outer_measure_apply :
   ⦃e | oa⦄ = (⦃oa⦄.to_outer_measure e).to_nnreal :=
@@ -52,9 +52,6 @@ begin
   rw [prob_event_eq_to_nnreal_to_outer_measure_apply],
   sorry -- Easy with `ennreal` overhaul
 end
-
-lemma prob_event_le_prob_event_of_subset (oa : oracle_comp spec α) {e e' : set α}
-  (h : (e ∩ oa.support) ⊆ e') : ⦃e | oa⦄ ≤ ⦃e' | oa⦄ := sorry
 
 lemma coe_prob_event_eq_to_outer_measure_apply : (⦃e | oa⦄ : ℝ≥0∞) = ⦃oa⦄.to_outer_measure e :=
 (ennreal.coe_to_nnreal $ @pmf.to_measure_apply_ne_top α ⊤ ⦃oa⦄ e).trans
@@ -77,6 +74,13 @@ lemma prob_event_eq_tsum [decidable_pred (∈ e)] : ⦃e | oa⦄ = ∑' x, if x 
 begin
   refine (prob_event_eq_tsum_indicator oa e).trans (tsum_congr $ λ x, _),
   unfold set.indicator, congr,
+end
+
+lemma prob_event_le_prob_event_of_subset (oa : oracle_comp spec α) {e e' : set α}
+  (h : (e ∩ oa.support) ⊆ e') : ⦃e | oa⦄ ≤ ⦃e' | oa⦄ :=
+begin
+  rw [prob_event_eq_tsum_indicator, prob_event_eq_tsum_indicator],
+  sorry -- todo: easy with ennreal
 end
 
 lemma prob_event_eq_of_equiv {oa : oracle_comp spec α} {oa' : oracle_comp spec' α}
@@ -169,13 +173,6 @@ lemma prob_event_bind_return :
   ⦃e | oa >>= return⦄ = ⦃e | oa⦄ :=
 prob_event_eq_of_equiv (bind_return_equiv oa) e
 
-@[simp]
-lemma prob_event_bind_return' (f : α → β) (e : set β) :
-  ⦃e | oa >>= λ a, return (f a)⦄ = ⦃f ⁻¹' e | oa⦄ :=
-begin
-  sorry
-end
-
 end bind
 
 section query
@@ -207,18 +204,24 @@ section support
 
 /-- Given a `finset` containing the `support` of some `oracle_comp`,
   it suffices to take `finset.sum` over that instead of a `tsum` -/
-theorem prob_event_eq_sum_of_support_subset {oa : oracle_comp spec α} [decidable_pred e]
-  (s : finset α) (hs : oa.support ⊆ s) :
-  ⦃e | oa⦄ = ∑ x in s, if x ∈ e then ⦃oa⦄ x else 0 :=
+theorem prob_event_eq_sum_of_support_subset [decidable_pred e] (s : finset α)
+  (hs : oa.support ⊆ s) : ⦃e | oa⦄ = ∑ x in s, if x ∈ e then ⦃oa⦄ x else 0 :=
 begin
   refine trans (prob_event_eq_tsum oa e) (tsum_eq_sum (λ a ha, _)),
-  have : ⦃oa⦄ a = 0 := eval_dist_eq_zero_of_not_mem_support (λ h, ha (hs h)),
-  simp only [this, ennreal.coe_zero, if_t_t],
+  simp only [eval_dist_eq_zero_of_not_mem_support (λ h, ha (hs h)), ennreal.coe_zero, if_t_t],
+end
+
+theorem prob_event_bind_eq_sum_of_support_subset (e : set β) (s : finset α) (hs : oa.support ⊆ s) :
+  ⦃e | oa >>= ob⦄ = ∑ x in s, ⦃oa⦄ x * ⦃e | ob x⦄ :=
+begin
+  rw [prob_event_bind],
+  refine tsum_eq_sum (λ x hx, _),
+  rw [eval_dist_eq_zero_of_not_mem_support (λ h, hx (hs h)), zero_mul],
 end
 
 lemma prob_event_eq_sum_fin_support [spec.computable] [decidable_pred e] [oa.decidable] :
-  ⦃ e | oa ⦄ = ∑ x in oa.fin_support, if x ∈ e then ⦃oa⦄ x else 0 :=
-(prob_event_eq_sum_of_support_subset e oa.fin_support $ support_subset_fin_support oa)
+  ⦃e | oa⦄ = ∑ x in oa.fin_support, if x ∈ e then ⦃oa⦄ x else 0 :=
+(prob_event_eq_sum_of_support_subset _ e oa.fin_support $ support_subset_fin_support oa)
 
 @[simp]
 lemma prob_event_eq_zero_iff_disjoint_support : ⦃e | oa⦄ = 0 ↔ disjoint oa.support e :=
@@ -282,32 +285,5 @@ begin
   { rw [set.indicator_of_not_mem ha, set.indicator_of_not_mem (ha ∘ (set.mem_union_left _)),
       set.indicator_of_not_mem (ha ∘ (set.mem_union_right _)), zero_add] }
 end
-
-section prod
-
-lemma prob_event_diagonal [hα : decidable_eq α] (oa : oracle_comp spec (α × α)) :
-  ⦃set.diagonal α | oa⦄ = ∑' (a : α), ⦃oa⦄ (a, a) :=
-calc ⦃set.diagonal α | oa⦄ = ∑' (x : α × α), ite (x ∈ set.diagonal α) (⦃oa⦄ x) 0 :
-    prob_event_eq_tsum oa (set.diagonal α)
-  ... = ∑' (a a' : α), ite (a = a') (⦃oa⦄ (a, a')) 0 :
-    begin
-      refine tsum_prod' _ _,
-      { refine nnreal.summable_of_le (λ x, _) ⦃oa⦄.summable_coe,
-        split_ifs; simp only [le_rfl, zero_le'] },
-      { have : summable (λ a, ⦃oa⦄ (a, a)),
-        from nnreal.summable_comp_injective ⦃oa⦄.summable_coe
-          (λ x y hxy, (prod.eq_iff_fst_eq_snd_eq.1 hxy).1),
-        refine λ a, nnreal.summable_of_le (λ a', _) this,
-        split_ifs,
-        { simp only [set.mem_diagonal_iff] at h,
-          exact h ▸ le_rfl },
-        { exact zero_le' } }
-    end
-  ... = ∑' (a a' : α), ite (a = a') (⦃oa⦄ (a, a)) 0 :
-    tsum_congr (λ a, tsum_congr (λ a', by by_cases h : a = a'; simp only [h, if_false]))
-  ... = ∑' (a a' : α), ite (a' = a) (⦃oa⦄ (a, a)) 0 : by simp_rw [@eq_comm]
-  ... = ∑' (a : α), ⦃oa⦄ (a, a) : tsum_congr (λ a, tsum_ite_eq _ _) 
-
-end prod
 
 end distribution_semantics

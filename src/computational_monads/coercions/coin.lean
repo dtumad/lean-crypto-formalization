@@ -9,7 +9,7 @@ import computational_monads.simulation_semantics.constructions.stateless_oracle
 /-!
 # Coercions Between Coin Oracle to Uniform Select Oracle
 
-This file defines a coercion from a `oracle_comp` for the `coin_oracle` spec to a `uniform_select`
+This file defines a coercion from a `oracle_comp` for the `coin_spec` spec to a `uniform_select`
 oracle, which are in most cases the base oracle for probablistic computation.
 
 The coercion is implemented using the `uniform_of_vector` simulation oracle
@@ -23,10 +23,10 @@ namespace oracle_comp
 
 /-- coerce a coin flip into a uniform random selection of a `bool` -/
 instance coe_coin_uniform_select (α : Type) :
-  has_coe (oracle_comp coin_oracle α) (oracle_comp uniform_selecting α) :=
+  has_coe (oracle_comp coin_spec α) (oracle_comp uniform_selecting α) :=
 { coe := λ oa, oa.default_simulate' ⟪λ _ _, $ᵛ (tt ::ᵥ ff ::ᵥ vector.nil)⟫ }
 
-variables {α β : Type} (oa : oracle_comp coin_oracle α)
+variables {α β : Type} (oa : oracle_comp coin_spec α)
 
 lemma coe_coin_uniform_select_def : (↑oa : oracle_comp uniform_selecting α) =
   oa.default_simulate' ⟪λ _ _, $ᵛ (tt ::ᵥ ff ::ᵥ vector.nil)⟫ := rfl
@@ -64,7 +64,7 @@ begin
   erw [stateless_oracle.apply_eq, eval_dist_bind_return, pmf.map_comp, pmf.map_id],
   cases x;
   simp only [eval_dist_uniform_select_vector_apply, vector.to_list_cons, vector.to_list_nil,
-    pmf.uniform_of_fintype_apply, coin_oracle.range.card, list.count_cons, list.count_nil,
+    pmf.uniform_of_fintype_apply, card_range_coin_spec, list.count_cons, list.count_nil,
     eq_self_iff_true, if_false, if_true, nat.cast_add, nat.cast_one, nat.cast_two, one_div]
 end
 

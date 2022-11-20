@@ -56,14 +56,4 @@ calc ⦃e | oa⦄
 
 end prob_event
 
-section indep_events
-
-
-end indep_events
-
-section indep_event
-
-
-end indep_event
-
 end distribution_semantics 

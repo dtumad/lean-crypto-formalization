@@ -114,7 +114,7 @@ end map
 
 /-- Equivalence should be able to erase most unneeded variables using `simp` lemmas.
   Combined with other equivalences can prove many basic things automatically -/
-example (n : ℕ) (oa oa' : oracle_comp coin_oracle ℕ):
+example (n : ℕ) (oa oa' : oracle_comp coin_spec ℕ):
 do { _ ← oa, x ← return 0, y ← return 1, z ← return 2,
   n ← return (x * y), m ← return (n * z),
   b ← coin, _ ← oa, b' ← coin, _ ← oa',

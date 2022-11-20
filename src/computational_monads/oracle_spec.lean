@@ -5,9 +5,24 @@ Authors: Devon Tuma
 -/
 import data.fintype.basic
 
+/-!
+# Specification of Oracle Access
+
+This file defines a type to represent the set of oracles available to a computation.
+The `oracle_spec` type specifies an indexing set for the available oracles,
+and input and output types for each oracle. We also require that the range of the oracle
+is nonempty, so it has at least one possible output.
+
+We also define type classes `computable` and `finite_range` for `oracle_spec`.
+`computable` requires that we have `decidable_eq` instances on the involved types,
+and `finite_range` requires that each oracle's output type is a `fintype`.
+These will be used when defining `oracle_comp.fin_support` and `oracle_comp.eval_dist`.
+-/
+
 /-- Specification of the various oracles available to a computation.
-  `ι` index the set of oracles (e.g. `ι := ℕ` gives a different oracle for each `n : ℕ)`.
-  `domain range : ι → Type` give the input and output of the oracle corresponding to `i : ι`. -/
+`ι` is an indexing set of oracles (i.e. `ι := ℕ` gives a different oracle for each `n : ℕ`).
+`domain range : ι → Type` give the input and output of the oracle corresponding to `i : ι`.
+We also require for the output types to be nonempty (ensuring `oracle_comp.support` is nonempty) -/
 structure oracle_spec : Type 1 := 
 (ι : Type)
 (domain range : ι → Type)
@@ -28,8 +43,7 @@ namespace oracle_spec
 
 section instances
 
-@[simp]
-instance range_inhabited' {spec : oracle_spec} (i : spec.ι) : inhabited (spec.range i) :=
+instance range.inhabited {spec : oracle_spec} (i : spec.ι) : inhabited (spec.range i) :=
 spec.range_inhabited i
 
 variables (spec : oracle_spec)
@@ -52,7 +66,9 @@ instance computable.domain_decidable_eq' [spec.computable] (i : spec.ι) :
 instance computable.range_decidable_eq' [spec.computable] (i : spec.ι) :
   decidable_eq (spec.range i) := computable.range_decidable_eq i
 
-/-- Class of `oracle_spec` for which uniform random oracles are well defined -/
+/-- Class of `oracle_spec` for which the output type of each oracle has is a finite type.
+In this case we can consider the distribution obtained by viewing each oracle as responding
+uniformly at random (see `eval_dist` and `prob_event`) -/
 class finite_range (spec : oracle_spec) :=
 (range_fintype (i : spec.ι) : fintype $ spec.range i)
 
@@ -61,33 +77,10 @@ instance finite_range.range_fintype' [spec.finite_range] (i : spec.ι) :
 
 end instances
 
-section empty_spec
- 
-/-- No access to any oracles -/
-def empty_spec : oracle_spec :=
-{ ι := empty,
-  domain := empty.elim,
-  range := λ _, unit,
-  range_inhabited := λ _, by apply_instance }
-
-notation `[]ₒ` := empty_spec
-
-instance empty_spec.computable : computable []ₒ := 
-{ ι_decidable_eq := empty.decidable_eq,
-  domain_decidable_eq := λ i, i.elim,
-  range_decidable_eq := λ i, i.elim }
-
-instance empty_spec.finite_range : finite_range []ₒ :=
-{ range_fintype := λ i, i.elim }
-
-instance inhabited : inhabited oracle_spec := ⟨[]ₒ⟩
-
-end empty_spec
-
 section singleton_spec
 
-/-- Access to a single oracle `T → U` -/
-def singleton_spec (T U : Type) [hU : inhabited U] : oracle_spec :=
+/-- Access to a single oracle with input type `T` and output type `U`. -/
+@[simps] def singleton_spec (T U : Type) [hU : inhabited U] : oracle_spec :=
 { ι := unit,
   domain := λ _, T,
   range := λ _, U,
@@ -103,15 +96,39 @@ instance singleton_spec.computable [hT : decidable_eq T] [hU' : decidable_eq U] 
   domain_decidable_eq := λ _, hT,
   range_decidable_eq := λ _, hU' }
 
-instance singleton_spec.finite_range [hU : fintype U] :
-  finite_range (T ↦ₒ U) :=
+instance singleton_spec.finite_range [hU : fintype U] : finite_range (T ↦ₒ U) :=
 { range_fintype := λ _, hU }
 
 end singleton_spec
 
+section empty_spec
+ 
+/-- No access to any oracles. Represented by an empty indexing set via the `empty` type. -/
+@[simps] def empty_spec : oracle_spec :=
+{ ι := empty,
+  domain := empty.elim,
+  range := λ _, unit,
+  range_inhabited := λ _, by apply_instance }
+
+notation `[]ₒ` := empty_spec
+
+instance empty_spec.computable : computable []ₒ := 
+{ ι_decidable_eq := empty.decidable_eq,
+  domain_decidable_eq := λ i, i.elim,
+  range_decidable_eq := λ i, i.elim }
+
+instance empty_spec.finite_range : finite_range []ₒ :=
+{ range_fintype := λ i, i.elim }
+
+end empty_spec
+
+instance inhabited : inhabited oracle_spec := ⟨[]ₒ⟩
+
 section append
 
-/-- Combine two specifications using a `sum` type to index the different specs -/
+/-- Combine two specifications using a `sum` type to index the different specs.
+Given `spec spec' : oracle_spec`, `spec ++ spec'` gives access to the combined set of oracles,
+with `sum.inl` corresponding to the left oracle and `sum.inr` corresponding to the right oracle. -/
 instance oracle_spec.has_append : has_append oracle_spec :=
 { append := λ spec spec', 
   { ι := spec.ι ⊕ spec'.ι,
@@ -121,30 +138,36 @@ instance oracle_spec.has_append : has_append oracle_spec :=
 
 variables (spec spec' : oracle_spec)
 
-instance append_computable [spec.computable] [spec'.computable] :
+instance append.computable [spec.computable] [spec'.computable] :
   computable (spec ++ spec') :=
 { ι_decidable_eq := sum.decidable_eq spec.ι spec'.ι,
   domain_decidable_eq := by refine (λ i, sum.rec_on i _ _); exact computable.domain_decidable_eq,
   range_decidable_eq := by refine (λ i, sum.rec_on i _ _); exact computable.range_decidable_eq }
 
-instance append_finite_range [spec.finite_range] [spec'.finite_range] :
+instance append.finite_range [spec.finite_range] [spec'.finite_range] :
   (spec ++ spec').finite_range :=
 { range_fintype := by refine (λ i, sum.rec_on i _ _); exact finite_range.range_fintype }
 
 end append
 
-section coin_oracle
+section coin_spec
 
-@[derive [finite_range, computable]]
-def coin_oracle : oracle_spec := unit ↦ₒ bool
+/-- Access to a single oracle, returning a `bool` to each oracle query.
+The probability distribution associated to the oracle will eventually be 50/50 for `tt` and `ff`,
+representing oracle access to a fair coin flip. -/
+@[simps, derive [finite_range, computable]]
+def coin_spec : oracle_spec := unit ↦ₒ bool
 
-@[simp] lemma coin_oracle.range.card (i : unit) : fintype.card (coin_oracle.range i) = 2 := rfl
+@[simp] lemma card_range_coin_spec (i : unit) : fintype.card (coin_spec.range i) = 2 := rfl
 
-end coin_oracle
+end coin_spec
 
 section uniform_selecting
 
-def uniform_selecting : oracle_spec :=
+/-- Access to a `fin n` oracle for each `n : ℕ`, representing an oracle for evenly sampling
+from a range of numbers. The output of the `n` query is actually in `fin (n + 1)`,
+avoiding a return type of the empty `fin 0` type. -/
+@[simps] def uniform_selecting : oracle_spec :=
 { ι := ℕ,
   domain := λ n, unit,
   range := λ n, fin (n + 1),
@@ -158,15 +181,8 @@ instance uniform_selecting.computable : computable uniform_selecting :=
 instance uniform_selecting.finite_range : finite_range uniform_selecting :=
 { range_fintype := λ n, fin.fintype (n + 1) }
 
-@[simp]
-lemma uniform_selecting.domain_apply (n : ℕ) :
-  uniform_selecting.domain n = unit :=
-rfl
-
-@[simp]
-lemma uniform_selecting.range_apply (n : ℕ) :
-  uniform_selecting.range n = fin (n + 1) :=
-rfl
+@[simp] lemma card_range_uniform_selecting (n : ℕ) :
+  fintype.card (uniform_selecting.range n) = n + 1 := finset.card_fin (n + 1)
 
 end uniform_selecting
 
