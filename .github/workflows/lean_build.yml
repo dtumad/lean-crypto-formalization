@@ -20,7 +20,6 @@ jobs:
       uses: leanprover-contrib/lean-build-action@master
 
   style_lint:
-    if: github.repository MAIN_OR_FORK 'leanprover-community/mathlib'
     name: Lint styleJOB_NAME
     runs-on: STYLE_LINT_RUNNER
     steps:
