@@ -18,3 +18,20 @@ jobs:
 
     - name: build project
       uses: leanprover-contrib/lean-build-action@master
+
+  style_lint:
+    if: github.repository MAIN_OR_FORK 'leanprover-community/mathlib'
+    name: Lint styleJOB_NAME
+    runs-on: STYLE_LINT_RUNNER
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: install Python
+        if: ${{ 'STYLE_LINT_RUNNER' == 'ubuntu-latest' }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+
+      - name: lint
+        run: |
+          ./scripts/lint-style.sh
