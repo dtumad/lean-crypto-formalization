@@ -7,14 +7,14 @@ import computational_monads.distribution_semantics.prob_event
 import computational_monads.asymptotics.polynomial_time
 import computational_monads.asymptotics.negligable
 
-open oracle_comp oracle_spec
-
 /-!
 # Hash Functions
 
-This file defines the notion of a keyed hash function.
+This file defines a basic version of a hash function.
 
 -/
+
+open oracle_comp oracle_spec
 
 /-- `keygen` takes in a security parameter and outputs a key bundled with the parameter
   `hash` takes a `hash_key` and a string in the input space to a string in the output space -/
@@ -50,7 +50,7 @@ variables [∀ n, decidable_eq $ O n]
 
 structure collision_finding_adversary (H : hash_scheme K I O) :=
 (adv : Π (sp : ℕ), K sp → oracle_comp coin_spec ((I sp) × (I sp)))
--- (adv_poly_time : ∀ sp, poly_time_oracle_comp $ adv sp)
+(adv_poly_time : ∀ sp, poly_time_oracle_comp $ adv sp)
 
 /-- Collision resistant if all polynomial time adversaries have neglibable chance
   of winning the `collision_finding_experiment` as the security parameter increases -/

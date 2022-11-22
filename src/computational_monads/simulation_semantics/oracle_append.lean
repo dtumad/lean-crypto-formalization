@@ -5,6 +5,18 @@ Authors: Devon Tuma
 -/
 import computational_monads.simulation_semantics.simulate.basic
 
+/-!
+# Appending Simulation Oracles
+
+This file defines an append operation `++ₛ` for simulation oracles,
+creating a simulation oracle for a combined set of initial oracles.
+In particular, if simulation oracles `so` and `so'` have starting oracles given by
+`spec` and `spec'`, then `so ++ₛ so'` will have starting oracles `spec ++ spec'`.
+
+The implementation just maintains a seperate state for each oracle,
+using pattern matching on queries to decide which `sim_oracle` to call.
+-/
+
 open oracle_comp oracle_spec
 
 variables {spec spec' spec'' spec''' : oracle_spec} {α β γ : Type} {S S' : Type}
@@ -19,7 +31,6 @@ def oracle_append (so : sim_oracle spec spec'' S) (so' : sim_oracle spec' spec''
   | (sum.inr i) := λ ⟨t, s₁, s₂⟩, do {⟨u, s₂'⟩ ← so' i (t, s₂), return (u, s₁, s₂')}
   end }
 
-  
 infixl ` ++ₛ `:65 := oracle_append
 
 variables (so : sim_oracle spec spec'' S) (so' : sim_oracle spec' spec'' S')

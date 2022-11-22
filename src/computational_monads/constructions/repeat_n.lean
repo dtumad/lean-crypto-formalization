@@ -57,22 +57,18 @@ end
   ext v,
   simp only [set.mem_Union, set.mem_singleton_iff, exists_prop, set.mem_set_of_eq],
   refine ⟨λ h, _, λ h, _⟩,
-  {
-    intros a' ha',
+  { intros a' ha',
     obtain ⟨a, ha, as, has, h⟩ := h,
     rw support_repeat_n n at has,
     rw h at ha',
     rw vector.mem_cons_iff a a' as at ha',
     refine ha'.elim (λ h', _) (λ h', _),
     refine h'.symm ▸ ha,
-    exact has a' h'
-  },
-  {
-    obtain ⟨a, as, hv⟩ := vector.exists_eq_cons v,
+    exact has a' h' },
+  { obtain ⟨a, as, hv⟩ := vector.exists_eq_cons v,
     refine ⟨a, h a (hv.symm ▸ (vector.mem_cons_self a as)), as, _, hv⟩,
     rw support_repeat_n n,
-    refine λ a' ha', h a' (hv.symm ▸ vector.mem_cons_of_mem a a' as ha'),
-  }
+    refine λ a' ha', h a' (hv.symm ▸ vector.mem_cons_of_mem a a' as ha') }
 end
 
 lemma mem_support_repeat_n_iff : as ∈ (repeat_n oa n).support ↔

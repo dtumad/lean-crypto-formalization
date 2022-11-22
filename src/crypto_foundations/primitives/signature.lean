@@ -174,28 +174,25 @@ Runs the adversary with a signing oracle based on the provided public/secret key
  -/
 def simulate (pk : sig.PK) (sk : sig.SK) :
   oracle_comp sig.base_oracle_spec (sig.M × sig.S × query_log (sig.M ↦ₒ sig.S)) := 
-do {
-  ((m, s), _, log) ← (default_simulate (idₛ ++ₛ signing_oracle sig pk sk) (adversary.adv pk)),
-  return (m, s, log)
-}
+do{ ((m, s), _, log) ← (default_simulate (idₛ ++ₛ signing_oracle sig pk sk) (adversary.adv pk)),
+    return (m, s, log) }
 
 /-- Experiement for testing if a signature scheme is unforgeable.
   Generate the public/secret keys, then simulate the adversary to get a signature.
   Adversary succeeds if the signature verifies and the message hasn't been queried -/
 noncomputable def experiment (sig : signature) (adversary : unforgeable_adversary sig) :
   oracle_comp uniform_selecting bool :=
-default_simulate' (idₛ ++ₛ random_oracle sig.random_oracle_spec) (do {
-  (pk, sk) ← sig.gen (),
-  (m, σ, log) ← adversary.simulate pk sk,
-  b ← sig.verify (pk, m, σ),
-  return (if log.not_queried () m then b else ff)
-})
+default_simulate' (idₛ ++ₛ random_oracle sig.random_oracle_spec)
+(do{ (pk, sk) ← sig.gen (),
+      (m, σ, log) ← adversary.simulate pk sk,
+      b ← sig.verify (pk, m, σ),
+      return (if log.not_queried () m then b else ff) })
 
 /-- Adversaries success at forging a signature.
   TODO: maybe this doesn't need an independent definition -/
 noncomputable def advantage {sig : signature}
   (adversary : unforgeable_adversary sig) : ℝ≥0 :=
-⦃ (= tt) | adversary.experiment sig ⦄
+⦃(= tt) | adversary.experiment sig⦄
 
 end unforgeable_adversary
 

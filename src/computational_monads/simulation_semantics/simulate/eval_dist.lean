@@ -73,14 +73,12 @@ theorem eval_dist_simulate'_eq_eval_dist [spec.finite_range] [spec'.finite_range
 begin
   induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t generalizing s,
   { simp only [simulate'_return, map_return_equiv, eval_dist_return] },
-  { 
-    refine pmf.ext (λ b, _),
+  { refine pmf.ext (λ b, _),
     rw [eval_dist_bind_apply, eval_dist_simulate'_bind_apply],
     refine tsum_congr (λ a, _),
     rw [← hoa s, eval_dist_simulate'_apply, ← nnreal.tsum_mul_right],
     refine tsum_congr (λ t, _),
-    rw ← hob,
-  },
+    rw ← hob },
   { simp only [h, simulate'_query, eval_dist_map, eval_dist_query] }
 end
 

@@ -58,38 +58,32 @@ section equiv
 -- Log and run, run from seed, return original output -> looks like just logging
 lemma seeded_oracle_first_equiv [spec.finite_range]
   (oa : oracle_comp spec α) (i : spec.ι) (choose_fork : α → query_log spec → option ℕ) :
-⦃(do {
-  ⟨a, log⟩ ← simulate (logging_oracle spec) oa (query_log.init spec),
-  seed ← return (log.fork_cache i $ choose_fork a log).to_seed,
-  ⟨a', log'⟩ ← simulate (seeded_oracle spec) oa seed,
-  return (a, log)
-} : oracle_comp spec (α × query_log spec))⦄ =
+⦃do{ ⟨a, log⟩ ← simulate (logging_oracle spec) oa (query_log.init spec),
+      seed ← return (log.fork_cache i $ choose_fork a log).to_seed,
+      ⟨a', log'⟩ ← simulate (seeded_oracle spec) oa seed,
+      return (a, log) }⦄ =
   ⦃(simulate (logging_oracle spec) oa (query_log.init spec))⦄ :=
 sorry
 
 -- Log and run, run from seed, return new output -> looks like just logging
 lemma seeded_oracle_second_equiv [spec.finite_range]
   (oa : oracle_comp spec α) (i : spec.ι) (choose_fork : α → query_log spec → option ℕ) :
-⦃(do {
-  ⟨a, log⟩ ← simulate (logging_oracle spec) oa (query_log.init spec),
-  seed ← return (log.fork_cache i $ choose_fork a log).to_seed,
-  ⟨a', log'⟩ ← simulate (seeded_oracle spec) oa (seed),
-  return (a', log')
-} : oracle_comp spec (α × query_log spec))⦄ =  
+⦃do{ ⟨a, log⟩ ← simulate (logging_oracle spec) oa (query_log.init spec),
+      seed ← return (log.fork_cache i $ choose_fork a log).to_seed,
+      ⟨a', log'⟩ ← simulate (seeded_oracle spec) oa (seed),
+      return (a', log') }⦄ =  
   ⦃(simulate (logging_oracle spec) oa (query_log.init spec))⦄ :=
 sorry
 
 -- The log values match up until the point where the log was forked
 lemma seeded_oracle_log_eq_log [spec.finite_range]
   (oa : oracle_comp spec α) (i : spec.ι) (choose_fork : α → query_log spec → option ℕ) :
-(do {
-  ⟨a, log⟩ ← simulate (logging_oracle spec) oa (query_log.init spec),
-  seed ← return (log.fork_cache i $ choose_fork a log).to_seed,
-  ⟨a', log'⟩ ← simulate (seeded_oracle spec) oa (seed),
-  return (a, log, log')
-} : oracle_comp spec (α × query_log spec × query_log spec)).support
+do{ ⟨a, log⟩ ← simulate (logging_oracle spec) oa (query_log.init spec),
+    seed ← return (log.fork_cache i $ choose_fork a log).to_seed,
+    ⟨a', log'⟩ ← simulate (seeded_oracle spec) oa (seed),
+    return (a, log, log') }.support
   ⊆ λ ⟨a, log, log'⟩, log.fork_cache i (choose_fork a log) =
-    log'.fork_cache i (choose_fork a log) :=
+      log'.fork_cache i (choose_fork a log) :=
 sorry
 
 end equiv

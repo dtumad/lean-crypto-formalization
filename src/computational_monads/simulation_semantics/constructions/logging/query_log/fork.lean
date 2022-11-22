@@ -5,6 +5,13 @@ Authors: Devon Tuma
 -/
 import computational_monads.simulation_semantics.constructions.logging.query_log.basic
 
+/-!
+# Forking Operations for Query Logs
+
+This file defines functions for forking a `query_log`, in the sense of removing
+all queries after some specified query, leaving the ones before that as is.
+-/
+
 namespace query_log
 
 variables {spec : oracle_spec} (log : query_log spec)
@@ -13,13 +20,13 @@ section fork_cache
 
 /-- Remove parts of the cache after the query chosen to fork on.
 Just wraps a call to `drop_at_index`, dropping everything if the input is `none`.
-The result contains exactly the back `i` elements of the 
-The choice to drop everything given a `none` input is just convention, but simplifies some proofs. -/
+The result contains exactly the back `i` elements. The choice to drop everything given a `none`
+input is just convention, but simplifies some proofs. -/
 def fork_cache [spec.computable] (log : query_log spec)
   (i : spec.ι) (n : option ℕ) : query_log spec :=
 match n with
 | none := query_log.init spec
-| (some m) := log.drop_at_index i ((log i).length - m) -- The front values are most recent, so drop them first
+| (some m) := log.drop_at_index i ((log i).length - m) -- The front values are most recent??
 end
 
 variable [spec.computable]

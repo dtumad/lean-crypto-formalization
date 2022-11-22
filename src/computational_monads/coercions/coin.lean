@@ -41,9 +41,9 @@ section support
   (↑oa : oracle_comp uniform_selecting α).support = oa.support :=
 begin
   refine support_simulate'_eq_support _ oa () (λ i t s, _),
-  rw [stateless_oracle.apply_eq, support_bind_return, ← set.image_comp, set.top_eq_univ, bool.univ_eq,
-    support_uniform_select_vector_cons, support_uniform_select_vector_singleton, vector.head_cons,
-    set.image_id', set.union_singleton],
+  rw [stateless_oracle.apply_eq, support_bind_return, ← set.image_comp,
+    set.top_eq_univ, bool.univ_eq, support_uniform_select_vector_cons,
+    support_uniform_select_vector_singleton, vector.head_cons, set.image_id', set.union_singleton],
 end
 
 @[simp] lemma fin_support_coe_coin_uniform_select [oa.decidable] :

@@ -141,18 +141,10 @@ lemma mem_support_map_iff (f : α → β) (oa : oracle_comp spec α) (b : β) :
 end map
 
 /-- Should be able to automatically derive the support for most simple computations -/
-example : do {
-  β ← coin, β' ← coin,
-  x ← if β then return 0 else return 1,
-  y ← return (if β' then 1 else 0),
-  return (x * y)
-}.support = {1, 0} := by simp
-
-example : do {
-  β ← coin,
-  x ← return (if β then 1 else 0),
-  y ← return (if β then 0 else 1),
-  return (x * y)
-}.support = {0} := by simp
+example :
+do{ β ← coin, β' ← coin,
+    x ← if β then return 0 else return 1,
+    y ← return (if β' then 1 else 0),
+    return (x * y) }.support = {1, 0} := by simp
 
 end oracle_comp

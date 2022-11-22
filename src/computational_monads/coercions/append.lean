@@ -119,7 +119,8 @@ section coe_right_side_append
 
 /-- Coerce the oracle on the right side of an existing set of appended oracles -/
 @[priority std.priority.default+5]
-instance coe_right_side_append (α) [∀ α, has_coe (oracle_comp coe_spec α) (oracle_comp coe_spec' α)] :
+instance coe_right_side_append (α)
+  [∀ α, has_coe (oracle_comp coe_spec α) (oracle_comp coe_spec' α)] :
   has_coe (oracle_comp (spec ++ coe_spec) α) (oracle_comp (spec ++ coe_spec') α) :=
 { coe := λ oc, oc.default_simulate' ⟪λ i, match i with
   | (sum.inl i') := (λ t, (query i' t : oracle_comp (spec ++ coe_spec') (spec.range i')))
@@ -132,7 +133,8 @@ section coe_left_side_append
 
 /-- Coerce the oracle on the left side of an existing set of appended oracles -/
 @[priority std.priority.default+5]
-instance coe_left_side_append (α) [∀ α, has_coe (oracle_comp coe_spec α) (oracle_comp coe_spec' α)] :
+instance coe_left_side_append (α)
+  [∀ α, has_coe (oracle_comp coe_spec α) (oracle_comp coe_spec' α)] :
   has_coe (oracle_comp (coe_spec ++ spec) α) (oracle_comp (coe_spec' ++ spec) α) :=
 { coe := λ oc, oc.simulate' ⟪λ i, match i with
 | (sum.inl i') := (λ t, (query i' t : oracle_comp (coe_spec' ++ spec) (coe_spec.range i')))

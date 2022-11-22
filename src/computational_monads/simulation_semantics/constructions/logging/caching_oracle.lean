@@ -146,21 +146,15 @@ lemma exists_cache_lookup_eq_some (hlog : log.not_queried i t)
     y.2.lookup i t = some u' :=
 begin
   induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t,
-  {
-    rw [support_simulate_return, set.mem_singleton_iff] at hx,
+  { rw [support_simulate_return, set.mem_singleton_iff] at hx,
     have : ¬ log.not_queried i t := begin
-      rw [← query_log.lookup_eq_none_iff_not_queried, option.eq_none_iff_forall_not_mem, not_forall],
+      rw [← query_log.lookup_eq_none_iff_not_queried,
+        option.eq_none_iff_forall_not_mem, not_forall],
       refine ⟨u, _⟩,
       simpa only [hx] using h,
     end,
-    refine (this hlog).elim,
-  },
-  {
-    sorry,
-  },
-  {
-    sorry,
-  }
+    refine (this hlog).elim },
+  sorry, sorry,
 end
 
 end lookup
@@ -188,8 +182,9 @@ lemma length_cache_le_length_cache_simulate (x : α × query_log spec)
   (hx : x ∈ (simulate (caching_oracle spec) oa log).support) :
   (log i).length ≤ (x.2 i).length :=
 begin
-  refine support_state_simulate_induction (caching_oracle spec) (λ log', (log i).length ≤ (log' i).length)
-    log le_rfl oa x hx (λ i' t log' x' hx' hlog', le_trans hlog' _),
+  refine support_state_simulate_induction (caching_oracle spec)
+    (λ log', (log i).length ≤ (log' i).length) log le_rfl oa
+      x hx (λ i' t log' x' hx' hlog', le_trans hlog' _),
   by_cases hlog'' : log'.not_queried i' t,
   { rw [support_apply_of_not_queried _ _ _ hlog'', set.mem_set_of_eq] at hx',
     exact hx'.symm ▸ log'.length_apply_le_lenght_log_query_apply i' t x'.1 i },
@@ -212,18 +207,8 @@ theorem support_simulate_fork_cache_some
   (simulate (caching_oracle spec) oa (x.2.fork_cache i (some n))).support =
     (simulate (caching_oracle spec) oa cache).support :=
 begin
-
-
   induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t,
-  {
-    sorry,
-  },
-  {
-    sorry
-  },
-  {
-    simp, sorry,
-  }
+  sorry, sorry, sorry,
 end
 
 /-- Specialized version of `support_simulate_fork_cache_some` when the initial state is empty.
@@ -257,31 +242,22 @@ begin
   intros i t log,
   ext x,
   refine ⟨λ h, _, λ h, _⟩,
-  {
-    simp_rw [set.mem_Union] at h,
+  { simp_rw [set.mem_Union] at h,
     obtain ⟨y, hy, hy'⟩ := h,
     by_cases hlog : log.not_queried i t,
-    {
-      rw [support_apply_of_not_queried i t log hlog, set.mem_set_of_eq] at ⊢ hy,
+    { rw [support_apply_of_not_queried i t log hlog, set.mem_set_of_eq] at ⊢ hy,
       have : ¬ y.2.not_queried i t := sorry,
       rw [support_apply_of_not_not_queried i t y.2 this, set.mem_set_of_eq] at hy',
       refine hy'.2.trans _,
       have : x.1 = y.1 := sorry,
-      rw [hy, this],
-
-    },
-    {
-      rw [support_apply_of_not_not_queried i t log hlog, set.mem_set_of_eq] at ⊢ hy,
+      rw [hy, this] },
+    { rw [support_apply_of_not_not_queried i t log hlog, set.mem_set_of_eq] at ⊢ hy,
       have : ¬ y.2.not_queried i t := sorry,
       rw [support_apply_of_not_not_queried i t y.2 this, set.mem_set_of_eq] at hy',
       refine ⟨trans (hy'.1.trans _) hy.1, hy'.2.trans hy.2⟩,
       rw [hy.2],
-      exact symm hy.1,
-    }
-  },
-  {
-    sorry,
-  },
+      exact symm hy.1 } },
+  sorry,
 end
 
 end support

@@ -143,22 +143,13 @@ section bind
 
 @[simp]
 lemma prob_event_bind : ⦃e'' | oa >>= ob⦄ = ∑' (a : α), ⦃oa⦄ a * ⦃e'' | ob a⦄ :=
-calc ⦃e'' | oa >>= ob⦄
-  = (⦃oa >>= ob⦄.to_outer_measure e'').to_nnreal :
+calc ⦃e'' | oa >>= ob⦄ = (⦃oa >>= ob⦄.to_outer_measure e'').to_nnreal :
     prob_event_eq_to_nnreal_to_outer_measure_apply _ _
   ... = (∑' (a : α), ↑(⦃oa⦄ a) * (⦃ob a⦄.to_outer_measure e'')).to_nnreal : congr_arg
     ennreal.to_nnreal (by erw [eval_dist_bind, pmf.to_outer_measure_bind_apply])
   ... = ∑' (a : α), (↑(⦃oa⦄ a) * (⦃ob a⦄.to_outer_measure e'')).to_nnreal :
-    ennreal.tsum_to_nnreal_eq begin
-      refine λ x, _,
-      refine ennreal.mul_ne_top _ _,
-      {
-        refine ennreal.coe_ne_top,
-      },
-      {
-        refine pmf.to_outer_measure_apply_ne_top _ _,
-      }
-    end
+    ennreal.tsum_to_nnreal_eq (λ x, ennreal.mul_ne_top
+      ennreal.coe_ne_top (pmf.to_outer_measure_apply_ne_top _ _))
   ... = ∑' (a : α), ⦃oa⦄ a * ⦃e'' | ob a⦄ : tsum_congr (λ a, by rw [ennreal.to_nnreal_mul,
     ennreal.to_nnreal_coe, prob_event_eq_to_nnreal_to_outer_measure_apply])
 

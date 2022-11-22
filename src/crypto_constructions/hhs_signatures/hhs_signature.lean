@@ -4,13 +4,21 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
 import data.vector.zip
-
 import crypto_foundations.primitives.signature
 import crypto_foundations.hardness_assumptions.hard_homogeneous_space
 import computational_monads.constructions.repeat_n
 import computational_monads.constructions.forking_lemma
 
--- TODO: is this ideal to be doing? or maybe not important?
+/-!
+# Signature Scheme Based On Hard Homogenous Spaces
+
+This file defines a signature scheme based on hard homogenous spaces,
+using a generalized version of the basic Diffie-Helmann signature scheme.
+
+We prove both completeness and unforgeability, providing an explicit reduction
+from signature forgery to a vectorization forgery.
+-/
+
 noncomputable theory
 
 open oracle_comp oracle_spec
@@ -48,21 +56,17 @@ def hhs_signature (G X M : Type) (n : ℕ) [fintype G] [fintype X] [inhabited G]
   [decidable_eq G] [decidable_eq X] [decidable_eq M] [add_group G]
   [algorithmic_homogenous_space G X] : signature :=
 { M := M, PK := X × X, SK := G, S := vector (G × bool) n,
-  gen := λ _, do {
-    x₀ ←$ᵗ X,
-    sk ←$ᵗ G,
-    return ((x₀, sk +ᵥ x₀), sk)
-  },
-  sign := λ ⟨⟨x₀, pk⟩, sk, m⟩, do {
-    (cs : vector G n) ← repeat_n ($ᵗ G) n,
-    (ys : vector X n) ← return (cs.map (λ c, c +ᵥ pk)),
-    (h : vector bool n) ← query₂ () (ys, m),
-    return (zip_commits_with_hash cs h sk)
-  },
-  verify := λ ⟨⟨x₀, pk⟩, m, σ⟩, do {
-    (h : vector bool n) ← query₂ () (retrieve_commits x₀ pk σ, m),
-    return (h = σ.map prod.snd) 
-  },
+  gen := λ _,
+  do{ x₀ ←$ᵗ X, sk ←$ᵗ G,
+      return ((x₀, sk +ᵥ x₀), sk) },
+  sign := λ ⟨⟨x₀, pk⟩, sk, m⟩,
+  do{ (cs : vector G n) ← repeat_n ($ᵗ G) n,
+      (ys : vector X n) ← return (cs.map (λ c, c +ᵥ pk)),
+      (h : vector bool n) ← query₂ () (ys, m),
+      return (zip_commits_with_hash cs h sk) },
+  verify := λ ⟨⟨x₀, pk⟩, m, σ⟩,
+  do{ (h : vector bool n) ← query₂ () (retrieve_commits x₀ pk σ, m),
+      return (h = σ.map prod.snd) },
   random_oracle_spec := ((vector X n × M) ↦ₒ vector bool n),
   random_oracle_spec_finite_range := singleton_spec.finite_range _ _,
   random_oracle_spec_computable := singleton_spec.computable _ _,
@@ -101,12 +105,11 @@ section sign
 
 @[simp]
 lemma sign_apply (x₀ pk : X) (sk : G) (m : M) :
-  ((hhs_signature G X M n).sign ((x₀, pk), sk, m)) = do {
-    (cs : vector G n) ← repeat_n ($ᵗ G) n,
-    (ys : vector X n) ← return (cs.map (λ c, c +ᵥ pk)),
-    (h : vector bool n) ← query₂ () (ys, m),
-    return (zip_commits_with_hash cs h sk)
-  } := rfl
+  ((hhs_signature G X M n).sign ((x₀, pk), sk, m)) =
+  do{ (cs : vector G n) ← repeat_n ($ᵗ G) n,
+      (ys : vector X n) ← return (cs.map (λ c, c +ᵥ pk)),
+      (h : vector bool n) ← query₂ () (ys, m),
+      return (zip_commits_with_hash cs h sk) } := rfl
 
 @[simp]
 lemma support_sign (x₀ pk : X) (sk : G) (m : M) :
@@ -120,10 +123,9 @@ section verify
 
 @[simp]
 lemma verify_apply {n : ℕ} (x₀ pk : X) (m : M) (σ : vector (G × bool) n) :
-  ((hhs_signature G X M n).verify ((x₀, pk), m, σ)) = do {
-    (h : vector bool n) ← query₂ () (retrieve_commits x₀ pk σ, m),
-    return (h = σ.map prod.snd) 
-  } := rfl
+  ((hhs_signature G X M n).verify ((x₀, pk), m, σ)) =
+  do{ (h : vector bool n) ← query₂ () (retrieve_commits x₀ pk σ, m),
+      return (h = σ.map prod.snd) } := rfl
 
 end verify
 
@@ -142,8 +144,8 @@ end
 /-- Sign always returns valid signatures, in terms of the final random oracle state. -/
 lemma is_valid_signature_of_mem_support_sign (x₀ pk : X) (sk : G) (m : M)
   (σ : vector (G × bool) n) (cache : query_log (hhs_signature G X M n).random_oracle_spec)
-  (h : (σ, (), cache) ∈
-    (default_simulate (idₛ ++ₛ random_oracle _) $ (hhs_signature G X M n).sign ((x₀, pk), sk, m)).support) :
+  (h : (σ, (), cache) ∈ (default_simulate (idₛ ++ₛ random_oracle _) $
+    (hhs_signature G X M n).sign ((x₀, pk), sk, m)).support) :
   is_valid_signature x₀ pk m σ cache :=
 begin
   sorry
@@ -190,21 +192,19 @@ def mock_signing_oracle : sim_oracle (hhs_signature G X M n).unforgeable_adversa
 { default_state := query_log.init _,
   o := λ i, match i with
     -- For uniform selection queries, simply forward them to the lower level.
-    | (sum.inl (sum.inl i)) := λ ⟨t, mock_cache⟩, do {
-      u ← query (sum.inl i) t,
-      return (u, mock_cache)
-    }
+    | (sum.inl (sum.inl i)) := λ ⟨t, mock_cache⟩,
+      do{ u ← query (sum.inl i) t,
+          return (u, mock_cache) }
     -- For random oracle queries, check if the query has been mocked.
     -- If so, return the mocked value, otherwise call the regular random oracle
     | (sum.inl (sum.inr i)) := λ ⟨t, mock_cache⟩, mock_cache.lookup_cached_or_run i t
       (@query (hhs_signature G X M n).base_oracle_spec (sum.inr i) t)
-    | (sum.inr ()) := λ ⟨m, mock_cache⟩, do {
-      bs ← repeat_n ($ᵗ bool) n, -- pre-select what all the bool results will be.
-      cs ← repeat_n ($ᵗ G) n,
-      ys ← return (vector.zip_with (λ (b : bool) c, if b then c +ᵥ pk else c +ᵥ x₀) bs cs),
-      mock_cache' ← return (mock_cache.log_query () (ys, m) bs),
-      return (vector.zip_with prod.mk cs bs, mock_cache')
-    }
+    | (sum.inr ()) := λ ⟨m, mock_cache⟩,
+      do{ bs ← repeat_n ($ᵗ bool) n, -- pre-select what all the bool results will be.
+          cs ← repeat_n ($ᵗ G) n,
+          ys ← return (vector.zip_with (λ (b : bool) c, if b then c +ᵥ pk else c +ᵥ x₀) bs cs),
+          mock_cache' ← return (mock_cache.log_query () (ys, m) bs),
+          return (vector.zip_with prod.mk cs bs, mock_cache') }
   end }
 
 end mock_signing_oracle
@@ -214,20 +214,16 @@ section mock_signing_reduction
 /-- Fake the signing oracle, and force a query corresponding to adversary's result. -/
 def mock_signing_reduction :
   oracle_comp (hhs_signature G X M n).base_oracle_spec (M × vector (G × bool) n) :=
-do {
-  ⟨m, σ⟩ ← default_simulate' (mock_signing_oracle x₀ pk) (adversary.adv (x₀, pk)),
-  _ ← query₂ () (retrieve_commits x₀ pk σ, m), -- force a query to the final output
-  return (m, σ)
-}
+do{ ⟨m, σ⟩ ← default_simulate' (mock_signing_oracle x₀ pk) (adversary.adv (x₀, pk)),
+    _ ← query₂ () (retrieve_commits x₀ pk σ, m), -- force a query to the final output
+    return (m, σ) }
 
 /-- Further simulate the random oracle after mocking the signing oracle-/
 def simulate_mock_signing_reduction : oracle_comp uniform_selecting (M × vector (G × bool) n ×
   query_log (hhs_signature G X M n).random_oracle_spec) :=
-do {
-  ⟨⟨m, σ⟩, (), cache⟩ ← default_simulate (idₛ ++ₛ random_oracle _)
-    (mock_signing_reduction x₀ pk adversary),
-  return (m, σ, cache)
-}
+do{ ⟨⟨m, σ⟩, (), cache⟩ ← default_simulate (idₛ ++ₛ random_oracle _)
+      (mock_signing_reduction x₀ pk adversary),
+    return (m, σ, cache) }
 
 theorem prob_event_is_valid_signature_ge_unforgeable_advantage  :
   ⦃λ ⟨m, σ, cache⟩, is_valid_signature x₀ pk m σ cache |
@@ -275,7 +271,8 @@ def forking_adversary_reduction (adversary : (hhs_signature G X M n).unforgeable
 theorem forking_adversary_reduction_advantage :
   (forking_adversary_reduction x₀ pk adversary).advantage ≥ adversary.advantage :=
 calc (forking_adversary_reduction x₀ pk adversary).advantage
-  = ⦃λ ⟨m, σ, cache⟩, is_valid_signature x₀ pk m σ cache | simulate_mock_signing_reduction x₀ pk adversary⦄ :
+  = ⦃λ ⟨m, σ, cache⟩, is_valid_signature x₀ pk m σ cache |
+      simulate_mock_signing_reduction x₀ pk adversary⦄ :
     sorry
   ... ≥ adversary.advantage :
     prob_event_is_valid_signature_ge_unforgeable_advantage x₀ pk adversary
@@ -367,7 +364,8 @@ calc ⦃fork_success | fork (forking_adversary_reduction pk x₀ adversary)⦄
   ≥ ((forking_adversary_reduction pk x₀ adversary).advantage ^ 2 / (adversary.query_bound))
       - (1 / (fintype.card $ vector bool n)) :
     prob_event_fork_success (forking_adversary_reduction pk x₀ adversary)
-  ... ≥ ((forking_adversary_reduction pk x₀ adversary).advantage ^ 2 / (adversary.query_bound)) - (1 / 2 ^ n) :
+  ... ≥ ((forking_adversary_reduction pk x₀ adversary).advantage ^ 2 /
+          (adversary.query_bound)) - (1 / 2 ^ n) :
     begin
       rw [card_vector, fintype.card_bool, nat.cast_pow, nat.cast_two],
       exact le_rfl
@@ -395,16 +393,16 @@ end
 by forking the adversary and using the two different results -/
 def vectorization_adversary_reduction (adversary : (hhs_signature G X M n).unforgeable_adversary) :
   vectorization_adversary G X :=
-{ adv := λ ⟨pk, x₀⟩, do {
-    ⟨i, ⟨m, σ⟩, cache, ⟨m', σ'⟩, cache'⟩ ← fork (forking_adversary_reduction pk x₀ adversary),
-    return (vectorization_of_signatures σ σ')
-  } }
+{ adv := λ ⟨pk, x₀⟩,
+    do{ ⟨i, ⟨m, σ⟩, cache, ⟨m', σ'⟩, cache'⟩ ← fork (forking_adversary_reduction pk x₀ adversary),
+        return (vectorization_of_signatures σ σ') } }
 
 theorem main_result (adversary : (hhs_signature G X M n).unforgeable_adversary) :
   ⦃(=) (pk -ᵥ x₀) | (vectorization_adversary_reduction adversary).adv (pk, x₀)⦄ ≥
     (adversary.advantage ^ 2 / adversary.query_bound) - (1 / 2 ^ n)  :=
 calc ⦃(=) (pk -ᵥ x₀) | (vectorization_adversary_reduction adversary).adv (pk, x₀)⦄
-  = ⦃λ o, (vectorization_of_signatures o.2.1.2 o.2.2.2.1.2) = pk -ᵥ x₀ | fork (forking_adversary_reduction pk x₀ adversary)⦄ :
+  = ⦃λ o, (vectorization_of_signatures o.2.1.2 o.2.2.2.1.2) = pk -ᵥ x₀ |
+      fork (forking_adversary_reduction pk x₀ adversary)⦄ :
     sorry
   ... ≥ ⦃fork_success | fork (forking_adversary_reduction pk x₀ adversary)⦄ :
     begin
@@ -423,9 +421,11 @@ lemma vectorization_adversary_reduction_advantage
   (vectorization_adversary_reduction adversary).advantage ≥
     (adversary.advantage ^ 2 / adversary.query_bound) - (1 / 2 ^ n) :=
 calc (vectorization_adversary_reduction adversary).advantage
-  = (∑' pk x₀, ⦃(=) (pk -ᵥ x₀) | (vectorization_adversary_reduction adversary).adv (pk, x₀)⦄) / (fintype.card X) ^ 2 :
+  = (∑' pk x₀, ⦃(=) (pk -ᵥ x₀) |
+      (vectorization_adversary_reduction adversary).adv (pk, x₀)⦄) / (fintype.card X) ^ 2 :
     vectorization_adversary.advantage_eq_tsum (vectorization_adversary_reduction adversary)
-  ... ≥ (∑' (pk x₀ : X), (adversary.advantage ^ 2 / adversary.query_bound - (1 / 2 ^ n))) / (fintype.card X) ^ 2 :
+  ... ≥ (∑' (pk x₀ : X), (adversary.advantage ^ 2 / adversary.query_bound - (1 / 2 ^ n))) /
+          (fintype.card X) ^ 2 :
     begin
       exact div_le_div_of_le_of_nonneg (tsum_le_tsum (λ pk, tsum_le_tsum
         (λ x₀, by apply main_result) sorry sorry) sorry sorry) zero_le'

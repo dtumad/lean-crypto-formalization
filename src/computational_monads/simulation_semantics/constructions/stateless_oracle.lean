@@ -170,7 +170,8 @@ begin
   sorry, sorry, sorry
   -- { simp only [simulate'_return, map_return_equiv, eval_dist_return] },
   -- { calc simulate' ⟪o⟫ (oa >>= ob) s
-  --     ≃ₚ simulate ⟪o⟫ oa s >>= λ x, simulate' ⟪o⟫ (ob x.1) x.2 : simulate'_bind_equiv ⟪o⟫ oa ob _
+  --     ≃ₚ simulate ⟪o⟫ oa s >>= λ x, simulate' ⟪o⟫ (ob x.1) x.2 :
+    --simulate'_bind_equiv ⟪o⟫ oa ob _
   --     ... ≃ₚ simulate ⟪o'⟫ oa s >>= λ x, simulate' ⟪o'⟫ (ob x.1) x.2 : begin
   --       simp [simulate_equiv_simulate', hoa],
   --       -- congr,
@@ -237,7 +238,8 @@ begin
   -- { simp },
   -- { let so := ⟪o|update_state, default_state⟫,
   --   calc simulate' so (oa >>= ob) s
-  --     ≃ₚ (simulate so oa s) >>= (λ x, simulate' so (ob x.1) x.2) : simulate'_bind_equiv so oa ob s
+  --     ≃ₚ (simulate so oa s) >>= (λ x, simulate' so (ob x.1) x.2) :
+              --simulate'_bind_equiv so oa ob s
   --     ... ≃ₚ (simulate so oa s) >>= (λ x, simulate' ⟪o⟫ (ob x.1) ()) :
   --       bind_equiv_of_equiv_second _ (λ a, (hob a.1 a.2))
   --     ... ≃ₚ (simulate' so oa s) >>= (λ x, simulate' ⟪o⟫ (ob x) ()) : by erw [bind_map_equiv]

@@ -105,7 +105,8 @@ lemma simulate_map : simulate so (f <$> oa) s = prod.map f id <$> simulate so oa
 instance simulate.decidable [spec.computable] [hoa : oa.decidable] [decidable_eq S]
   [h : ∀ i t s, (so i (t, s)).decidable] : (oa.simulate so s).decidable :=
 begin
-  unfreezingI {induction oa using oracle_comp.induction_on with α a α β oa ob hoa' hob' i t generalizing s},
+  unfreezingI {induction oa using oracle_comp.induction_on
+    with α a α β oa ob hoa' hob' i t generalizing s},
   { haveI : decidable_eq α := decidable_eq_of_decidable' hoa,
     exact oracle_comp.decidable_return (a, s) },
   { haveI : oa.decidable := decidable_of_decidable_bind_fst hoa,

@@ -146,8 +146,8 @@ begin
       have : (eq t' ∘ prod.fst) (t', u) := (function.comp_app (eq t') prod.fst (t', u)).symm ▸ rfl,
       simp only [list.find_cons_of_pos _ this, ne.def, eq_self_iff_true, not_true, and_false] },
     { have : ¬ (eq t' ∘ prod.fst) (t, u) := ht,
-      simp only [list.find_cons_of_neg _ this, list.find_eq_none, not_queried_iff_not_mem, ne.def, ne.symm ht,
-        not_false_iff, and_true, function.comp_app, prod.forall],
+      simp only [list.find_cons_of_neg _ this, list.find_eq_none, not_queried_iff_not_mem,
+        ne.def, ne.symm ht, not_false_iff, and_true, function.comp_app, prod.forall],
       exact ⟨λ h u hu, h t' u hu rfl, λ h t'' u' htu' ht', h u' $ ht'.symm ▸ htu'⟩ } },
   { simp only [not_queried, log_query_apply_of_index_ne log hi, and_true] }
 end
@@ -280,7 +280,8 @@ begin
     by_cases hj : j = k,
     { induction h, induction hj,
       simp only [list.drop, drop_at_index_apply_same_index, log_query_apply_same_index] },
-    { rw [drop_at_index_apply_of_index_ne _ (n + 1) hj, log_query_apply_of_index_ne log (ne_of_eq_of_ne h hj),
+    { rw [drop_at_index_apply_of_index_ne _ (n + 1) hj,
+        log_query_apply_of_index_ne log (ne_of_eq_of_ne h hj),
         drop_at_index_apply_of_index_ne _ n hj] } },
   { exact map_at_index_log_query_of_ne log j i _ (ne.symm h) t u }
 end

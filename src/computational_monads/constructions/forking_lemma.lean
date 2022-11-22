@@ -26,7 +26,8 @@ open oracle_comp oracle_spec
 
 open_locale nnreal ennreal big_operators
 
-structure forking_adversary (T U α : Type) [inhabited U] [fintype U] [decidable_eq T] [decidable_eq U] :=
+structure forking_adversary (T U α : Type) [inhabited U] [fintype U]
+  [decidable_eq T] [decidable_eq U] :=
 (adv : oracle_comp (uniform_selecting ++ (T ↦ₒ U)) α) (q : ℕ)
 -- Given an output and a random oracle cache, decide which part of cache should be forked.
 (choose_fork : α → query_log (T ↦ₒ U) → option (fin q))
@@ -50,7 +51,7 @@ section simulate_choose_fork
   Implemented as running `simulate_with_log` and throwing out the resulting log and cache -/
 def simulate_choose_fork (adv : forking_adversary T U α) :
   oracle_comp uniform_selecting (option (fin adv.q)) :=
-do { ⟨x, log, cache⟩ ← default_simulate (logging_oracle _ ++ₛ random_oracle _) adv.adv,
+do{ ⟨x, log, cache⟩ ← default_simulate (logging_oracle _ ++ₛ random_oracle _) adv.adv,
     return (adv.choose_fork x cache) }
 
 end simulate_choose_fork
@@ -59,9 +60,9 @@ section simulate_with_log
 
 /-- Simulate the adversary, returning a log of the uniform selecting oracle,
   along with the final result and final cache for the random oracle -/
-def simulate_with_log (adv : forking_adversary T U α) :
-  oracle_comp uniform_selecting (option (fin adv.q) × α × query_log uniform_selecting × query_log (T ↦ₒ U)) :=
-do { ⟨x, log, cache⟩ ← default_simulate (logging_oracle _ ++ₛ random_oracle _) adv.adv,
+def simulate_with_log (adv : forking_adversary T U α) : oracle_comp uniform_selecting
+  (option (fin adv.q) × α × query_log uniform_selecting × query_log (T ↦ₒ U)) :=
+do{ ⟨x, log, cache⟩ ← default_simulate (logging_oracle _ ++ₛ random_oracle _) adv.adv,
     return (adv.choose_fork x cache, x, log, cache) }
 
 variables (o : option (fin adv.q) × α × query_log uniform_selecting × query_log (T ↦ₒ U))
@@ -99,24 +100,22 @@ end advantage
 
 end forking_adversary
 
-variables {T U α : Type} [inhabited U] [fintype U] [decidable_eq T] [decidable_eq U] [decidable_eq α]
-variables {n : ℕ} (adv : forking_adversary T U α) 
+variables {T U α : Type} [inhabited U] [fintype U] [decidable_eq T] [decidable_eq U]
+  [decidable_eq α] {n : ℕ} (adv : forking_adversary T U α) 
 
 /-- Run computation twice, using the same random information for both,
   responding differently to a query specified by `choose_fork`,
   and returning the results if `choose_fork` makes the same choice each time -/
 def fork (adv : forking_adversary T U α) : oracle_comp uniform_selecting
   ((option (fin adv.q)) × α × (query_log (T ↦ₒ U)) × α × (query_log (T ↦ₒ U))) :=
-do {
-  -- run the adversary for the first time, logging coins and caching random oracles
-  ⟨i, ⟨x, ⟨log, cache⟩⟩⟩ ← adv.simulate_with_log,
-  -- run again, using the same random choices for first oracle, and newly forked cache
-  -- TODO: might be off by one error with forking somewhere along the way?
-  ⟨i', x', cache'⟩ ← adv.simulate_from_seed log.to_seed (cache.fork_cache () (i.map coe)),
-  -- return no forking index unless `fork_cache` gives equal values for both runs.
-  -- also return the side outputs and the random oracle cache for both runs
-  return ⟨if i = i' then i else none, x, cache, x', cache'⟩
-}
+do{ -- run the adversary for the first time, logging coins and caching random oracles
+    ⟨i, ⟨x, ⟨log, cache⟩⟩⟩ ← adv.simulate_with_log,
+    -- run again, using the same random choices for first oracle, and newly forked cache
+    -- TODO: might be off by one error with forking somewhere along the way?
+    ⟨i', x', cache'⟩ ← adv.simulate_from_seed log.to_seed (cache.fork_cache () (i.map coe)),
+    -- return no forking index unless `fork_cache` gives equal values for both runs.
+    -- also return the side outputs and the random oracle cache for both runs
+    return ⟨if i = i' then i else none, x, cache, x', cache'⟩ }
 
 /-- Definition without the match functions used in the original definition -/
 lemma fork_def : fork adv = do {o ← adv.simulate_with_log,
@@ -154,12 +153,12 @@ begin
   calc ⦃fork adv⦄ (some i, x, cache, x', cache')
     = ∑' (log : query_log uniform_selecting), ⦃adv.simulate_with_log⦄ (some i, x, log, cache)
         * ⦃adv.simulate_from_seed log.to_seed (cache.fork_cache () (some i))
-        >>= λ o, return (ite (some i = o.fst) (some i) none, x, cache, o.snd.fst, o.snd.snd)⦄ (some i, x, cache, x', cache') :
+        >>= λ o, return (ite (some i = o.fst) (some i) none, x, cache, o.snd.fst, o.snd.snd)⦄
+                  (some i, x, cache, x', cache') :
     begin
       rw fork_def,
       refine (helper (λ log, (i, x, log, cache)) _ _),
-      {
-        intros o ho ho',
+      { intros o ho ho',
         simp only [support_bind_return, set.mem_image, prod.mk.inj_iff, prod.exists] at ho',
         obtain ⟨i', x'', log, ho', hi', hx', hcache, hx'', hcache'⟩ := ho',
         rw [set.mem_range],
@@ -169,14 +168,11 @@ begin
         have : o.fst = i' := begin
           refine by_contra (λ hoi', option.some_ne_none i (hi'.symm.trans $ if_neg hoi')),
         end,
-        refine trans (if_pos this).symm hi',
-      },
-      { 
-        simp only [],
+        refine trans (if_pos this).symm hi' },
+      { simp only [],
         intros log log' h _ _,
         simp only [prod.eq_iff_fst_eq_snd_eq] at h,
-        exact h.2.2.1,
-      },
+        exact h.2.2.1 },
     end 
     ... = ∑' (log : query_log uniform_selecting), ⦃adv.simulate_with_log⦄ (some i, x, log, cache)
       * ⦃adv.simulate_from_seed log.to_seed (cache.fork_cache () (some i))⦄ (some i, x', cache') :
@@ -187,20 +183,15 @@ begin
       refine mul_eq_mul_left_iff.2 (or.inl _),
       refine trans (eval_dist_bind_return_apply _ _ _) _,
       refine trans (tsum_eq_single (some i, x', cache') _) _,
-      {
-        intros o ho,
+      { intros o ho,
         convert if_neg (λ ho', ho $ symm _),
         simp only [prod.eq_iff_fst_eq_snd_eq] at ho' ⊢,
         refine ⟨_, ho'.2.2.2⟩,
         by_contra hi,
         refine option.some_ne_none i (ho'.1.trans _),
-        refine if_neg hi,
-      },
-      {
-        convert if_pos _,
-        simp only [eq_self_iff_true, if_true],
-        
-      },
+        refine if_neg hi },
+      { convert if_pos _,
+        simp only [eq_self_iff_true, if_true] },
     end
 end
 
@@ -214,7 +205,8 @@ calc ⦃λ out, out.1.is_some | fork adv⦄
     tsum_congr (λ j, eval_dist_fst_map_fork_apply _ _)
   ... = ∑ j, (⦃adv.simulate_choose_fork⦄ (some j)) ^ 2 :
     tsum_fintype _
-  ... ≥ (∑ j, ⦃adv.simulate_choose_fork⦄ (some j)) ^ 2 / (finset.univ : finset $ fin adv.q).card ^ 1 :
+  ... ≥ (∑ j, ⦃adv.simulate_choose_fork⦄ (some j)) ^ 2 /
+          (finset.univ : finset $ fin adv.q).card ^ 1 :
     nnreal.pow_sum_div_card_le_sum_pow ⊤ (λ j, ⦃adv.simulate_choose_fork⦄ (some j)) 1
   ... ≥ (∑ j, ⦃adv.simulate_choose_fork⦄ (some j)) ^ 2 / adv.q :
     by simp only [finset.card_fin, pow_one, ge_iff_le]

@@ -164,11 +164,10 @@ def decidable_of_decidable_bind_snd {oa : oracle_comp spec α} {ob : α → orac
 end decidable
 
 /-- Simple computations should have automatic decidable instances -/
-example : decidable (do {
-  b ← coin, b' ← coin,
-  x ← return (b && b'),
-  y ← return (b || b'),
-  return (if x then 1 else if y then 2 else 3)
-}) := by apply_instance
+example :
+do{ b ← coin, b' ← coin,
+    x ← return (b && b'),
+    y ← return (b || b'),
+    return (if x then 1 else if y then 2 else 3) }.decidable := by apply_instance
 
 end oracle_comp

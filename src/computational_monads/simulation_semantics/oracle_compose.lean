@@ -5,6 +5,13 @@ Authors: Devon Tuma
 -/
 import computational_monads.simulation_semantics.simulate.basic
 
+/-!
+# Composition of Simulation Oracles
+
+This file defines an operator `∘ₛ` for composing two simulation oracles in the natural way,
+such that simulation corresponds to a two step simulation by both.
+-/
+
 open oracle_comp oracle_spec
 
 variables {spec spec' spec'' : oracle_spec} {α β γ : Type} {S S' : Type}

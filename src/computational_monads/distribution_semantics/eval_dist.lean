@@ -285,15 +285,12 @@ lemma helper {oa : oracle_comp spec α}
 begin
   rw [eval_dist_bind_apply],
   refine tsum_eq_tsum_of_ne_zero_bij (g ∘ coe) _ _ (λ _, rfl),
-  {
-    intros x y h,
+  { intros x y h,
     have := x.2,
-    simp only [subtype.val_eq_coe, function.support_mul, set.mem_inter_iff, function.mem_support, ne.def,
-      eval_dist_eq_zero_iff_not_mem_support, set.not_not_mem] at this,
-    refine hg ↑x ↑y h this.1 this.2,
-  },
-  {
-    intros x hx,
+    simp only [subtype.val_eq_coe, function.support_mul, set.mem_inter_iff, function.mem_support,
+      ne.def, eval_dist_eq_zero_iff_not_mem_support, set.not_not_mem] at this,
+    refine hg ↑x ↑y h this.1 this.2 },
+  { intros x hx,
     simp only [function.support_mul, set.mem_inter_iff, function.mem_support, ne.def,
       eval_dist_eq_zero_iff_not_mem_support, set.not_not_mem] at hx,
     specialize h x hx.1 hx.2,
@@ -303,8 +300,7 @@ begin
     refine ⟨y, _, rfl⟩,
     rw [subtype.range_coe_subtype],
     simp only [hy, hx, function.support_mul, set.mem_inter_iff, function.mem_support,
-      ne.def, eval_dist_eq_zero_iff_not_mem_support, set.not_not_mem, set.mem_set_of_eq, true_and],
-  }
+      ne.def, eval_dist_eq_zero_iff_not_mem_support, set.not_not_mem, set.mem_set_of_eq, true_and] }
 end
 
 end distribution_semantics

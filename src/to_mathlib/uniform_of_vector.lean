@@ -56,25 +56,20 @@ begin
     have := finset.sum_filter_count_eq_countp _ l,
     refine trans _ (congr_arg coe this),
     refine trans (@tsum_eq_sum _ _ _ _ _ _ (finset.filter t l.to_finset) _) _,
-    {
-      refine (λ b hb, _),
+    { refine (λ b hb, _),
       refine nat.cast_eq_zero.2 _,
       refine list.count_eq_zero_of_not_mem _,
       rw list.mem_filter,
       rw finset.mem_filter at hb,
       rw [list.mem_to_finset] at hb,
-      exact hb,
-    },
-    {
-      rw [← nat.cast_sum],
+      exact hb },
+    { rw [← nat.cast_sum],
       refine congr_arg coe _,
       refine finset.sum_congr rfl (λ x hx, _),
       refine list.count_filter _,
       rw [finset.mem_filter] at hx,
-      refine hx.2,
-    }
-  end,
-  
+      refine hx.2 }
+  end
 end
 
 @[simp]
@@ -168,8 +163,8 @@ begin
     { exact zero_add _ } }
 end
 
-lemma tsum_ite_eq_vector_nth {β : Type} [add_comm_monoid_with_one β] [topological_space β] [t2_space β]
-  {n : ℕ} (v : vector α n) (a : α) :
+lemma tsum_ite_eq_vector_nth {β : Type} [add_comm_monoid_with_one β]
+  [topological_space β] [t2_space β] {n : ℕ} (v : vector α n) (a : α) :
   ∑' (i : fin n), ite (v.nth i = a) (1 : β) 0 = ↑(v.to_list.count a) :=
 calc ∑' (i : fin n), ite (v.nth i = a) (1 : β) 0
   = ∑ (i : fin n), ite (v.nth i = a) (1 : β) 0 : tsum_eq_sum (λ _ hb, (hb $ finset.mem_univ _).elim)

@@ -92,26 +92,20 @@ calc p.bind q c = (∑' (x : α × β), (↑(p x * q x c) : ℝ≥0∞)).to_nnre
     begin
       refine ennreal.tsum_to_nnreal_eq (λ a, _),
       have : ∑' (b : β), (↑(p (a, b) * q (a, b) c) : ℝ≥0∞) ≤ p.bind q c,
-      {
-
-        rw [pmf.bind_apply, ennreal.coe_tsum],
-        {
-          refine tsum_le_tsum_of_inj (λ b, (a, b)) _ _ (λ _, le_rfl) ennreal.summable ennreal.summable,
+      { rw [pmf.bind_apply, ennreal.coe_tsum],
+        { refine tsum_le_tsum_of_inj (λ b, (a, b)) _ _ (λ _, le_rfl)
+            ennreal.summable ennreal.summable,
           refine (λ a' b' h, (prod.eq_iff_fst_eq_snd_eq.1 h).2),
           intros x hx,
-          refine zero_le',
-        },
+          refine zero_le' },
         have := pmf.summable_coe p,
         refine nnreal.summable_of_le (λ x, _) this,
         refine le_trans _ (le_of_eq $ (mul_one $ p x)),
-        refine mul_le_mul' le_rfl ((q x).coe_le_one c),
-      },
-      {
-        refine ne_of_lt (lt_of_le_of_lt _ ennreal.one_lt_top),
+        refine mul_le_mul' le_rfl ((q x).coe_le_one c), },
+      { refine ne_of_lt (lt_of_le_of_lt _ ennreal.one_lt_top),
         refine le_trans this _,
         refine ennreal.coe_le_one_iff.2 _,
-        refine (p.bind q).coe_le_one c,
-      }
+        refine (p.bind q).coe_le_one c }
     end
   ... = ∑' (a : α) (b : β), p (a, b) * q (a, b) c :
     begin
@@ -126,8 +120,6 @@ calc p.bind q c = (∑' (x : α × β), (↑(p x * q x c) : ℝ≥0∞)).to_nnre
       refine pmf.coe_le_one _ _,
       refine pmf.coe_le_one _ _,
     end
-
-
 
 /-- Alternative to `prod_bind_apply` with the opposite order of summation -/
 lemma pmf.prod_bind_apply' {α β γ : Type*}
@@ -152,13 +144,11 @@ begin
   have : (pmf.map prod.swap p) (b, a) = p (a, b) := begin
     rw [pmf.map_apply],
     refine trans (tsum_eq_single (a, b) _) _,
-    {
-      intros x hx,
+    { intros x hx,
       have : (b, a) ≠ x.swap := λ hx', hx _,
       simp only [this, if_false],
       refine trans _ (trans (congr_arg prod.swap hx'.symm) rfl),
-      refine symm (prod.swap_swap x)
-    },
+      refine symm (prod.swap_swap x) },
     { rw [prod.swap_prod_mk, eq_self_iff_true, if_true] }
   end,
   rw this,

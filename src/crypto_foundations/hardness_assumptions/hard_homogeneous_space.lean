@@ -14,7 +14,7 @@ import computational_monads.coercions.sim_oracle
 
 This file builds up the definition of a hard homogeneous space.
 
-`algorithmic_homogeneous_space` requires the group action and group operations are efficiently computable.
+`algorithmic_homogeneous_space` requires the group operations to be efficiently computable.
 `hard_homogeneous_space` further requires vectorization and parallelization are hard.
 -/
 
@@ -53,8 +53,8 @@ do { x₁ ←$ᵗ X, x₂ ←$ᵗ X, g ← adversary.adv (x₁, x₂), return (g
 noncomputable def advantage (adversary : vectorization_adversary G X) : ℝ≥0 :=
 ⦃ (=) tt | experiment adversary ⦄
 
-lemma advantage_eq_tsum (adversary : vectorization_adversary G X) :
-  adversary.advantage = (∑' x₁ x₂, ⦃(=) (x₁ -ᵥ x₂) | adversary.adv (x₁, x₂)⦄) / (fintype.card X) ^ 2 :=
+lemma advantage_eq_tsum (adversary : vectorization_adversary G X) : adversary.advantage =
+  (∑' x₁ x₂, ⦃(=) (x₁ -ᵥ x₂) | adversary.adv (x₁, x₂)⦄) / (fintype.card X) ^ 2 :=
 begin
   rw [advantage, experiment, prob_event_uniform_select_fintype_apply_bind],
   -- refine tsum_congr (λ x₁, _),
