@@ -55,19 +55,25 @@ variables {S S' : Type} (o o' : Π (i : spec.ι), spec.domain i → oracle_comp 
 
 instance decidable [computable spec] [decidable_eq S] [∀ i x, (o i x).decidable] :
   (⟪o | update_state, default_state⟫ i x).decidable :=
-begin
-  rw [apply_eq],
-  exact oracle_comp.decidable_map _ _,
-end
+by { rw [apply_eq], exact oracle_comp.decidable_map _ _ }
 
 section support
 
 @[simp] lemma support_apply : (⟪o | update_state, default_state⟫ i x).support =
   {y | y.1 ∈ (o i x.1).support ∧ y.2 = update_state x.2 i x.1 y.1} :=
-set.ext (λ y, by { simp only [prod.eq_iff_fst_eq_snd_eq, apply_eq, support_map,
-    set.mem_Union, set.mem_singleton_iff, exists_prop, set.mem_set_of_eq],
-  exact ⟨λ h, let ⟨u, h, h'⟩ := h in h' ▸ ⟨h, rfl⟩,
-    λ h, ⟨y.1, h.1, prod.eq_iff_fst_eq_snd_eq.2 ⟨rfl, h.2.symm⟩⟩⟩ } )
+set.ext (λ y, begin
+  rw [apply_eq],
+  -- simp only [prod.eq_iff_fst_eq_snd_eq, apply_eq, support_map,
+  --   set.mem_Union, set.mem_singleton_iff, exists_prop, set.mem_set_of_eq],
+  -- exact ⟨λ h, let ⟨u, h, h'⟩ := h in h' ▸ ⟨h, rfl⟩,
+  --   λ h, ⟨y.1, h.1, prod.eq_iff_fst_eq_snd_eq.2 ⟨rfl, h.2.symm⟩⟩⟩
+end)
+
+@[simp] lemma support_apply_of_subsingleton [subsingleton S] :
+  (⟪o | update_state, default_state⟫ i x).support = prod.fst ⁻¹' (o i x.1).support :=
+begin
+
+end
 
 /-- If the oracle can take on any value then the first element of the support is unchanged -/
 theorem support_simulate'_eq_support (h : ∀ i t, (o i t).support = ⊤) :
@@ -79,13 +85,12 @@ begin
 end
 
 /-- Particular case of `support_simulate'_eq_support` for `query`.
-In particular a tracking oracle that *only* does tracking doesn't affect the main output.
-TODO: true with more general than just `query` -/
+In particular a tracking oracle that *only* does tracking doesn't affect the main output. -/
 lemma support_simulate'_query_oracle_eq_support :
   (simulate' ⟪query | update_state, default_state⟫ oa s).support = oa.support :=
 support_simulate'_eq_support query update_state default_state oa s (λ _ _, rfl)
 
-/-- The support of `simulate'` is independing of the tracking functions -/
+/-- The support of `simulate'` is independt of the tracking functions -/
 theorem support_simulate'_eq_of_oracle_eq :
   (simulate' ⟪o | update_state, default_state⟫ oa s).support =
     (simulate' ⟪o | update_state', default_state'⟫ oa s').support :=
@@ -96,6 +101,11 @@ begin
 end
 
 end support
+
+section fin_support
+
+
+end fin_support
 
 section distribution_semantics
 
