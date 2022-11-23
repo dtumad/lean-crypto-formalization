@@ -48,6 +48,22 @@ lemma support_apply (i : spec.ι) (t : spec.domain i) (s : unit) :
   (⟪o⟫ i (t, s)).support = prod.fst ⁻¹' (o i t).support :=
 by simp only [apply_eq, support_bind_prod_mk_fst_id_of_subsingleton]
 
+-- TODO: this should generalize I think?
+lemma fin_support_apply [spec'.computable] [spec'.finite_range] [spec.computable]
+  [∀ i x, (o i x).decidable]
+  (i : spec.ι) (t : spec.domain i) (s : unit) (x : spec.range i × unit) :
+  (⟪o⟫ i (t, s)).fin_support = finset.preimage (o i t).fin_support prod.fst
+    (λ y hy z hz h, prod.eq_iff_fst_eq_snd_eq.2 ⟨h, punit_eq _ _⟩) :=
+begin
+
+end
+
+lemma mem_fin_support_apply [spec'.computable] [spec'.finite_range] [spec.computable]
+  [∀ i x, (o i x).decidable]
+  (i : spec.ι) (t : spec.domain i) (s : unit) (x : spec.range i × unit) :
+  x ∈ (⟪o⟫ i (t, s)).fin_support ↔ x.1 ∈ (o i t).fin_support :=
+sorry
+
 lemma mem_support_apply_iff (i : spec.ι) (t : spec.domain i) (s s' : unit) (u : spec.range i) :
   (u, s') ∈ (⟪o⟫ i (t, s)).support ↔ u ∈ (o i t).support :=
 by simp only [apply_eq, support_bind, support_return, set.mem_Union, set.mem_singleton_iff,
@@ -56,20 +72,18 @@ by simp only [apply_eq, support_bind, support_return, set.mem_Union, set.mem_sin
 lemma support_simulate_eq_support_default_simulate (oa : oracle_comp spec α) (s : unit) :
   (oa.simulate ⟪o⟫ s).support = (oa.default_simulate ⟪o⟫).support := punit_eq () s ▸ rfl
 
-lemma support_simulate_eq_preimage (oa : oracle_comp spec α) (s : unit) :
+lemma support_simulate_eq_preimage_default_simulate' (oa : oracle_comp spec α) (s : unit) :
   (oa.simulate ⟪o⟫ s).support = prod.fst ⁻¹' (oa.default_simulate' ⟪o⟫).support :=
 begin
   rw [default_simulate', punit_eq ⟪o⟫.default_state s, simulate', support_map],
   exact (set.preimage_image_eq _ prod.fst_injective).symm
 end
 
-@[simp]
-lemma mem_support_simulate_iff (oa : oracle_comp spec α) (s : unit) (x : α × unit) :
+@[simp] lemma mem_support_simulate_iff (oa : oracle_comp spec α) (s : unit) (x : α × unit) :
   x ∈ (oa.simulate ⟪o⟫ s).support ↔ x.1 ∈ (oa.default_simulate' ⟪o⟫).support :=
-by rw [support_simulate_eq_preimage, set.mem_preimage]
+by rw [support_simulate_eq_preimage_default_simulate', set.mem_preimage]
 
-@[simp]
-lemma support_simulate' (oa : oracle_comp spec α) (s : unit) :
+@[simp] lemma support_simulate' (oa : oracle_comp spec α) (s : unit) :
   (oa.simulate' ⟪o⟫ s).support = (oa.default_simulate' ⟪o⟫).support :=
 congr_arg _ (congr_arg _ (punit_eq _ _))
 
@@ -81,13 +95,12 @@ by rw [support_simulate']
 @[simp]
 lemma support_default_simulate_eq_preimage (oa : oracle_comp spec α) :
   (oa.default_simulate ⟪o⟫).support = prod.fst ⁻¹' (oa.default_simulate' ⟪o⟫).support :=
-support_simulate_eq_preimage o oa ()
+support_simulate_eq_preimage_default_simulate' o oa ()
 
 @[simp]
 lemma mem_support_default_simulate_iff (oa : oracle_comp spec α) (x : α × unit) :
   x ∈ (oa.default_simulate ⟪o⟫).support ↔ x.1 ∈ (oa.default_simulate' ⟪o⟫).support :=
 mem_support_simulate_iff o oa () x
-
 
 section return
 
@@ -105,7 +118,7 @@ lemma support_simulate_bind (oa : oracle_comp spec α) (ob : α → oracle_comp 
     ⋃ (x : α) (hx : (x, ()) ∈ (simulate ⟪o⟫ oa ()).support),
       (simulate ⟪o⟫ (ob x) ()).support :=
 begin
-  rw [support_simulate_eq_preimage],
+  rw [support_simulate_eq_preimage_default_simulate'],
   sorry
 end
 

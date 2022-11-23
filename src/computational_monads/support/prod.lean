@@ -21,9 +21,8 @@ section bind_mk_fst
 
 variables (f : α → β) (c : γ)
 
-lemma support_bind_prod_mk_fst :
-  (oa >>= λ a, return (f a, c)).support = (λ x, (f x, c)) '' oa.support :=
-support_bind_return oa _
+lemma support_bind_prod_mk_fst : (oa >>= λ a, return (f a, c)).support =
+  (λ x, (f x, c)) '' oa.support := support_bind_return oa _
 
 lemma mem_support_bind_prod_mk_fst (x : β × γ) :
   x ∈ (oa >>= λ a, return (f a, c)).support ↔ x.1 ∈ f '' oa.support ∧ x.2 = c :=
@@ -39,25 +38,24 @@ by erw [mem_support_bind_prod_mk_fst, set.image_id]
 set.ext (λ x, by simp_rw [mem_support_bind_prod_mk_fst, set.mem_preimage,
   eq_iff_true_of_subsingleton, and_true])
 
-@[simp] lemma support_bind_prod_mk_fst_id_of_subsingleton [subsingleton γ] :
-  (oa >>= λ a, return (a, c)).support = prod.fst ⁻¹' oa.support :=
-by erw [support_bind_prod_mk_fst_of_subsingleton, set.image_id]
-
 lemma mem_support_bind_prod_mk_fst_of_subsingleton [subsingleton γ]
   (x : β × γ) : x ∈ (oa >>= λ a, return (f a, c)).support ↔ x.1 ∈ (f '' oa.support) :=
 by rw [support_bind_prod_mk_fst_of_subsingleton, set.mem_preimage]
 
+@[simp] lemma support_bind_prod_mk_fst_id_of_subsingleton [subsingleton γ] :
+  (oa >>= λ a, return (a, c)).support = prod.fst ⁻¹' oa.support :=
+by rw [support_bind_prod_mk_fst_of_subsingleton, set.image_id']
+
 lemma mem_support_bind_prod_mk_fst_id_of_subsingleton [subsingleton γ] (x : α × γ) :
   x ∈ (oa >>= λ a, return (a, c)).support ↔ x.1 ∈ oa.support :=
-by erw [mem_support_bind_prod_mk_fst_of_subsingleton, set.image_id]
+by rw [mem_support_bind_prod_mk_fst_of_subsingleton, set.image_id']
 
 section fin_support
 
 variables [computable spec] [finite_range spec] [decidable oa] [decidable_eq γ]
 
-lemma fin_support_bind_prod_mk_fst [decidable_eq β] :
-  (oa >>= λ a, return (f a, c)).fin_support = oa.fin_support.image (λ x, (f x, c)) :=
-fin_support_bind_return oa _
+lemma fin_support_bind_prod_mk_fst [decidable_eq β] : (oa >>= λ a, return (f a, c)).fin_support =
+  oa.fin_support.image (λ x, (f x, c)) := fin_support_bind_return oa _
 
 lemma mem_fin_support_bind_prod_mk_fst [decidable_eq β] (x : β × γ) :
   x ∈ (oa >>= λ a, return (f a, c)).fin_support ↔ x.1 ∈ oa.fin_support.image f ∧ x.2 = c :=
@@ -68,10 +66,20 @@ lemma mem_fin_support_bind_prod_mk_fst_id [decidable_eq α] (x : α × γ) :
   x ∈ (oa >>= λ a, return (a, c)).fin_support ↔ x.1 ∈ oa.fin_support ∧ x.2 = c :=
 by erw [mem_fin_support_bind_prod_mk_fst, finset.image_id]
 
+@[simp] lemma fin_support_bind_prod_mk_fst_of_subsingleton [decidable_eq β] [subsingleton γ] :
+  (oa >>= λ a, return (f a, c)).fin_support = (oa.fin_support.image f).preimage prod.fst
+    (λ y hy z hz h, prod.eq_iff_fst_eq_snd_eq.2 ⟨h, subsingleton.elim _ _⟩) :=
+finset.ext (λ x, by simp only [fin_support_bind_prod_mk_fst, finset.mem_preimage, finset.mem_image,
+  prod.eq_iff_fst_eq_snd_eq, eq_iff_true_of_subsingleton, and_true])
+
 lemma mem_fin_support_bind_prod_mk_fst_of_subsingleton [decidable_eq β] [subsingleton γ]
   (x : β × γ) : x ∈ (oa >>= λ a, return (f a, c)).fin_support ↔ x.1 ∈ (oa.fin_support.image f) :=
-by rw [mem_fin_support_iff_mem_support, mem_support_bind_prod_mk_fst_of_subsingleton,
-  mem_image_fin_support_iff_mem_image_support]
+by rw [fin_support_bind_prod_mk_fst_of_subsingleton, finset.mem_preimage]
+
+@[simp] lemma fin_support_bind_prod_mk_fst_id_of_subsingleton [decidable_eq α] [subsingleton γ] :
+  (oa >>= λ a, return (a, c)).fin_support = oa.fin_support.preimage prod.fst
+    (λ y hy z hz h, prod.eq_iff_fst_eq_snd_eq.2 ⟨h, subsingleton.elim _ _⟩) :=
+by rw [fin_support_bind_prod_mk_fst_of_subsingleton, finset.image_id']
 
 lemma mem_fin_support_bind_prod_mk_fst_id_of_subsingleton [decidable_eq α] [subsingleton γ]
   (x : α × γ) : x ∈ (oa >>= λ a, return (a, c)).fin_support ↔ x.1 ∈ oa.fin_support :=
@@ -85,9 +93,8 @@ section bind_mk_snd
 
 variables (f : α → γ) (b : β)
 
-lemma support_bind_prod_mk_snd :
-  (oa >>= λ a, return (b, f a)).support = (λ x, (b, f x)) '' oa.support :=
-support_bind_return oa _
+lemma support_bind_prod_mk_snd : (oa >>= λ a, return (b, f a)).support =
+  (λ x, (b, f x)) '' oa.support := support_bind_return oa _
 
 lemma mem_support_bind_prod_mk_snd (x : β × γ) :
   x ∈ (oa >>= λ a, return (b, f a)).support ↔ x.1 = b ∧ x.2 ∈ f '' oa.support :=
@@ -103,13 +110,13 @@ by erw [mem_support_bind_prod_mk_snd, set.image_id]
 set.ext (λ x, by simp_rw [mem_support_bind_prod_mk_snd, set.mem_preimage,
   eq_iff_true_of_subsingleton, true_and])
 
-@[simp] lemma support_bind_prod_mk_snd_id_of_subsingleton [subsingleton β] :
-  (oa >>= λ a, return (b, a)).support = prod.snd ⁻¹' oa.support :=
-by erw [support_bind_prod_mk_snd_of_subsingleton, set.image_id]
-
 lemma mem_support_bind_prod_mk_snd_of_subsingleton [subsingleton β]
   (x : β × γ) : x ∈ (oa >>= λ a, return (b, f a)).support ↔ x.2 ∈ (f '' oa.support) :=
 by rw [support_bind_prod_mk_snd_of_subsingleton, set.mem_preimage]
+
+@[simp] lemma support_bind_prod_mk_snd_id_of_subsingleton [subsingleton β] :
+  (oa >>= λ a, return (b, a)).support = prod.snd ⁻¹' oa.support :=
+by erw [support_bind_prod_mk_snd_of_subsingleton, set.image_id]
 
 lemma mem_support_bind_prod_mk_snd_id_of_subsingleton [subsingleton β] (x : β × α) :
   x ∈ (oa >>= λ a, return (b, a)).support ↔ x.2 ∈ oa.support :=
@@ -132,10 +139,20 @@ lemma mem_fin_support_bind_prod_mk_snd_id [decidable_eq α] (x : β × α) :
   x ∈ (oa >>= λ a, return (b, a)).fin_support ↔ x.1 = b ∧ x.2 ∈ oa.fin_support :=
 by erw [mem_fin_support_bind_prod_mk_snd, finset.image_id]
 
+@[simp] lemma fin_support_bind_prod_mk_snd_of_subsingleton [decidable_eq γ] [subsingleton β] :
+  (oa >>= λ a, return (b, f a)).fin_support = (oa.fin_support.image f).preimage prod.snd
+    (λ y hy z hz h, prod.eq_iff_fst_eq_snd_eq.2 ⟨subsingleton.elim _ _, h⟩) :=
+finset.ext (λ x, by simp only [fin_support_bind_prod_mk_snd, finset.mem_preimage, finset.mem_image,
+  prod.eq_iff_fst_eq_snd_eq, eq_iff_true_of_subsingleton, true_and])
+
 lemma mem_fin_support_bind_prod_mk_snd_of_subsingleton [decidable_eq γ] [subsingleton β]
   (x : β × γ) : x ∈ (oa >>= λ a, return (b, f a)).fin_support ↔ x.2 ∈ (oa.fin_support.image f) :=
-by rw [mem_fin_support_iff_mem_support, mem_support_bind_prod_mk_snd_of_subsingleton,
-  mem_image_fin_support_iff_mem_image_support]
+by rw [fin_support_bind_prod_mk_snd_of_subsingleton, finset.mem_preimage]
+
+@[simp] lemma fin_support_bind_prod_mk_snd_id_of_subsingleton [decidable_eq α] [subsingleton β] :
+  (oa >>= λ a, return (b, a)).fin_support = oa.fin_support.preimage prod.snd
+    (λ y hy z hz h, prod.eq_iff_fst_eq_snd_eq.2 ⟨subsingleton.elim _ _, h⟩) :=
+by rw [fin_support_bind_prod_mk_snd_of_subsingleton, finset.image_id']
 
 lemma mem_fin_support_bind_prod_mk_snd_id_of_subsingleton [decidable_eq α] [subsingleton β]
   (x : β × α) : x ∈ (oa >>= λ a, return (b, a)).fin_support ↔ x.2 ∈ oa.fin_support :=

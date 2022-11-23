@@ -85,7 +85,7 @@ by simp only [support_bind, mem_support_pure_iff, set.Union_Union_eq_left]
 
 lemma mem_support_return_bind_iff (a : α) (ob : α → oracle_comp spec β) (b : β) :
   b ∈ (return a >>= ob).support ↔ b ∈ (ob a).support :=
-by simp only [support_bind, mem_support_pure_iff, set.Union_Union_eq_left]
+by rw [support_return_bind]
 
 @[simp] lemma support_bind_return (oa : oracle_comp spec α) (f : α → β) :
   (oa >>= λ a, return (f a)).support = f '' oa.support :=
@@ -93,7 +93,7 @@ calc (f <$> oa).support = ⋃ α ∈ oa.support, {f α} : rfl
   ... = f '' (⋃ α ∈ oa.support, {α}) : by simp only [set.image_Union, set.image_singleton]
   ... = f '' oa.support : congr_arg (λ _, f '' _) (set.bUnion_of_singleton oa.support)
 
-lemma mem_support_bind_return (oa : oracle_comp spec α) (f : α → β) (b : β) :
+lemma mem_support_bind_return_iff (oa : oracle_comp spec α) (f : α → β) (b : β) :
   b ∈ (oa >>= λ a, return (f a)).support ↔ ∃ a ∈ oa.support, f a = b :=
 by simp only [support_bind_return, set.mem_image, exists_prop]
 
@@ -109,7 +109,7 @@ lemma mem_support_query (i : spec.ι) (t : spec.domain i) (u : spec.range i) :
 
 end query
 
-/-- If the range of `spec` is a `fintype` then the support is a finite set -/
+/-- If the range of `spec` is a `fintype` then the support is a finite set. -/
 theorem support_finite [spec.finite_range] (oa : oracle_comp spec α) : oa.support.finite :=
 begin
   induction oa with α a α β oa ob hoa hob i t,
@@ -121,6 +121,8 @@ end
 noncomputable instance support.fintype [spec.finite_range] (oa : oracle_comp spec α) :
   fintype oa.support := (support_finite oa).fintype
 
+/-- Since the range of oracles in an `oracle_spec` are required to be nonempty,
+we naturally get that the `support` of an `oracle_comp` is nonempty. -/
 theorem support_nonempty (oa : oracle_comp spec α) : oa.support.nonempty :=
 begin
   induction oa with α a α β oa ob hoa hob i t,
@@ -136,7 +138,7 @@ section map
   (f <$> oa).support = f '' oa.support := support_bind_return oa f
 
 lemma mem_support_map_iff (f : α → β) (oa : oracle_comp spec α) (b : β) :
-  b ∈ (f <$> oa).support ↔ ∃ a ∈ oa.support, f a = b := mem_support_bind_return oa f b
+  b ∈ (f <$> oa).support ↔ ∃ a ∈ oa.support, f a = b := mem_support_bind_return_iff oa f b
 
 end map
 

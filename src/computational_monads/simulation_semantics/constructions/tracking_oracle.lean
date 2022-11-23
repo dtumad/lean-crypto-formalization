@@ -79,7 +79,8 @@ begin
 end
 
 /-- Particular case of `support_simulate'_eq_support` for `query`.
-In particular a tracking oracle that *only* does tracking doesn't affect the main output -/
+In particular a tracking oracle that *only* does tracking doesn't affect the main output.
+TODO: true with more general than just `query` -/
 lemma support_simulate'_query_oracle_eq_support :
   (simulate' ⟪query | update_state, default_state⟫ oa s).support = oa.support :=
 support_simulate'_eq_support query update_state default_state oa s (λ _ _, rfl)

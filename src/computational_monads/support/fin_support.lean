@@ -83,10 +83,10 @@ by rw [← finset.coe_subset, coe_fin_support_eq_support]
 lemma subset_fin_support_iff_coe_subset_support : s ⊆ oa.fin_support ↔ ↑s ⊆ oa.support :=
 by rw [← finset.coe_subset, coe_fin_support_eq_support]
 
-lemma support_subset_fin_support : oa.support ⊆ ↑oa.fin_support :=
+lemma support_subset_coe_fin_support : oa.support ⊆ ↑oa.fin_support :=
 by rw [coe_fin_support_eq_support oa]
 
-lemma fin_support_subset_support : ↑oa.fin_support ⊆ oa.support :=
+lemma coe_fin_support_subset_support : ↑oa.fin_support ⊆ oa.support :=
 by rw [coe_fin_support_eq_support oa]
 
 end support
@@ -138,10 +138,18 @@ lemma fin_support_return_bind [decidable_eq α] (a : α) :
   (return a >>= ob).fin_support = (ob a).fin_support :=
 by simp only [fin_support_bind, fin_support_return, finset.singleton_bUnion]
 
+lemma mem_fin_support_return_bind_iff [decidable_eq α] (a : α) (b : β) :
+  b ∈ (return a >>= ob).fin_support ↔ b ∈ (ob a).fin_support :=
+by rw [fin_support_return_bind]
+
 @[simp] lemma fin_support_bind_return [decidable_eq β] (f : α → β) :
   (oa >>= λ a, return (f a)).fin_support = oa.fin_support.image f :=
 by rw [fin_support_eq_iff_support_eq_coe, support_bind_return,
   finset.coe_image, coe_fin_support_eq_support]
+
+lemma mem_fin_support_bind_return_iff [decidable_eq β] (f : α → β) (b : β) :
+  b ∈ (oa >>= λ a, return (f a)).fin_support ↔ ∃ a ∈ oa.fin_support, f a = b :=
+by simp only [fin_support_bind_return, finset.mem_image]
 
 end bind
 

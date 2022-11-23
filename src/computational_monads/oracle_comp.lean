@@ -109,7 +109,8 @@ section decidable
 
 /-- Inductive definition for computations that only return values of types
 with `decidable_eq` instances. In this case we can explicitly calculate the `support`
-as a `finset` rather than a `set`. -/
+as a `finset` rather than a `set`.
+TODO: this seems like bad naming? overlaps? `decidable_comp`? -/
 class inductive decidable : Π {α : Type}, oracle_comp spec α → Type 1
 | decidable_pure' (α : Type) (a : α) (h : decidable_eq α) : decidable (pure' α a)
 | decidable_bind' (α β : Type) (oa : oracle_comp spec α) (ob : α → oracle_comp spec β)

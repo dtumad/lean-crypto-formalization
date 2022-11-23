@@ -14,29 +14,42 @@ that reduces any computation to one with a `uniform_selecting` `oracle_spec`,
 by responding uniformly at random to any query.
 -/
 
-open oracle_comp oracle_spec
+open oracle_comp oracle_spec nnreal ennreal
 
-variables {α β : Type} {spec spec' spec'' : oracle_spec}
+variables {α β : Type} {spec : oracle_spec}
 
 noncomputable def uniform_oracle (spec : oracle_spec) [spec.finite_range] : 
   sim_oracle spec uniform_selecting unit :=
 ⟪λ i t, $ᵗ (spec.range i)⟫
 
+lemma uniform_oracle.def (spec : oracle_spec) [spec.finite_range] :
+  uniform_oracle spec = ⟪λ i t, $ᵗ (spec.range i)⟫ := rfl
+
 namespace uniform_oracle
 
-variables (oa : oracle_comp spec α)
-variable [spec.finite_range]
+variables (oa : oracle_comp spec α) [finite_range spec]
+  (i : spec.ι) (t : spec.domain i) (u : unit)
 
-@[simp]
-lemma apply_eq (i : spec.ι) (t : spec.domain i) (u : unit) :
-  (uniform_oracle spec) i (t, u) = $ᵗ (spec.range i) >>= λ u, return (u, ()) := rfl
+@[simp] lemma apply_eq : uniform_oracle spec i (t, u) =
+  $ᵗ (spec.range i) >>= λ u, return (u, ()) := rfl
 
-@[simp]
-lemma support_apply (i : spec.ι) (t : spec.domain i) (u : unit) :
-  ((uniform_oracle spec) i (t, u)).support = ⊤ :=
-by simp only [set.eq_univ_iff_forall, apply_eq, support_bind, support_uniform_select_fintype,
-  set.top_eq_univ, support_return, set.Union_true, set.Union_singleton_eq_range, set.mem_range,
-  prod.forall, prod.mk.inj_iff, exists_eq_left, forall_const, eq_iff_true_of_subsingleton]
+noncomputable instance decidable [spec.computable] :
+  oracle_comp.decidable (uniform_oracle spec i (t, u)) :=
+stateless_oracle.decidable _ i (t, u)
+
+section support
+
+@[simp] lemma support_apply : (uniform_oracle spec i (t, u)).support = ⊤ :=
+by simp only [uniform_oracle.def, stateless_oracle.support_apply,
+  support_uniform_select_fintype, set.top_eq_univ, set.preimage_univ]
+
+@[simp] lemma fin_support_apply [spec.computable] :
+  (uniform_oracle spec i (t, u)).fin_support = ⊤ :=
+begin
+  sorry,
+end
+
+end support
 
 section eval_dist
 
