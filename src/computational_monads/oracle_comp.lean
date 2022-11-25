@@ -47,16 +47,17 @@ Simplification lemmas will tend towards `return` and `>>=` over `pure'` and `bin
 instance monad (spec : oracle_spec) : monad (oracle_comp spec) :=
 { pure := oracle_comp.pure', bind := oracle_comp.bind' }
 
-@[simp] lemma pure'_eq_return (spec : oracle_spec) (a : α) :
+@[simp] lemma pure'_eq_return (spec) (a : α) :
   (pure' α a : oracle_comp spec α) = return a := rfl
 
-@[simp] lemma pure_eq_return (spec : oracle_spec) (a : α) :
+@[simp] lemma pure_eq_return (spec) (a : α) :
   (pure a : oracle_comp spec α) = return a := rfl
 
 @[simp] lemma bind'_eq_bind (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) :
   bind' α β oa ob = (oa >>= ob) := rfl
 
-lemma map_eq_bind (oa : oracle_comp spec α) (f : α → β) : f <$> oa = oa >>= return ∘ f := rfl
+lemma map_eq_bind_return_comp (oa : oracle_comp spec α) (f : α → β) :
+  f <$> oa = oa >>= return ∘ f := rfl
 
 /-- Simple computation flipping two coins and returning a value based on them -/
 example : oracle_comp coin_spec ℕ :=

@@ -149,4 +149,17 @@ begin
   { exact h }
 end
 
+/-- If the state has at most one elements, we can express the support of `simulate` in terms
+of only `simulate'`. For example in a `stateless_oracle` or `uniform_oracle`. -/
+lemma support_simulate_eq_support_simulate'_of_subsingleton [subsingleton S]
+  (so : sim_oracle spec spec' S) : (simulate so oa s).support =
+    {x | x.1 ∈ (simulate' so oa s).support} :=
+begin
+  refine set.ext (λ x, _),
+  rw [set.mem_set_of, support_simulate', set.mem_image],
+  refine ⟨λ h, ⟨x, h, rfl⟩, λ h, _⟩,
+  obtain ⟨y, hy, h⟩ := h,
+  rwa [← @prod.mk.eta _ _ x, ← h, subsingleton.elim x.2 y.2, prod.mk.eta],
+end
+
 end oracle_comp

@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
 import computational_monads.simulation_semantics.simulate.support
+import computational_monads.support.prod
 import computational_monads.simulation_semantics.simulate.eval_dist
 
 /-!
@@ -59,46 +60,59 @@ by { rw [apply_eq], exact oracle_comp.decidable_map _ _ }
 
 section support
 
+-- TODO: convention for this or a "mem" version? both?
 @[simp] lemma support_apply : (⟪o | update_state, default_state⟫ i x).support =
-  {y | y.1 ∈ (o i x.1).support ∧ y.2 = update_state x.2 i x.1 y.1} :=
-set.ext (λ y, begin
-  rw [apply_eq],
-  -- simp only [prod.eq_iff_fst_eq_snd_eq, apply_eq, support_map,
-  --   set.mem_Union, set.mem_singleton_iff, exists_prop, set.mem_set_of_eq],
-  -- exact ⟨λ h, let ⟨u, h, h'⟩ := h in h' ▸ ⟨h, rfl⟩,
-  --   λ h, ⟨y.1, h.1, prod.eq_iff_fst_eq_snd_eq.2 ⟨rfl, h.2.symm⟩⟩⟩
-end)
-
-@[simp] lemma support_apply_of_subsingleton [subsingleton S] :
-  (⟪o | update_state, default_state⟫ i x).support = prod.fst ⁻¹' (o i x.1).support :=
-begin
-
-end
+  {y | y.1 ∈ (o i x.1).support ∧ update_state x.2 i x.1 y.1 = y.2} :=
+set.ext (λ y, by rw [apply_eq, map_eq_bind_return_comp,
+  mem_support_bind_prod_mk_id_fst, set.mem_set_of])
 
 /-- If the oracle can take on any value then the first element of the support is unchanged -/
 theorem support_simulate'_eq_support (h : ∀ i t, (o i t).support = ⊤) :
   (simulate' ⟪o | update_state, default_state⟫ oa s).support = oa.support :=
-begin
-  refine support_simulate'_eq_support _ oa s (λ i t s, _),
-  simp only [set.top_eq_univ, set.eq_univ_iff_forall, h, support_apply, set.mem_univ, forall_const,
-    true_and, set.mem_image, set.mem_set_of_eq, prod.exists, exists_eq_left, exists_apply_eq_apply]
-end
+support_simulate'_eq_support _ oa s (λ i t s, set.ext (λ x, by simp only
+  [h, set.top_eq_univ, set.mem_univ, true_and, apply_eq, support_map, set.mem_image,
+    prod.exists, prod.mk.inj_iff, exists_eq_left, exists_eq_left', exists_apply_eq_apply]))
 
 /-- Particular case of `support_simulate'_eq_support` for `query`.
 In particular a tracking oracle that *only* does tracking doesn't affect the main output. -/
-lemma support_simulate'_query_oracle_eq_support :
+@[simp] lemma support_simulate'_query_eq_support :
   (simulate' ⟪query | update_state, default_state⟫ oa s).support = oa.support :=
 support_simulate'_eq_support query update_state default_state oa s (λ _ _, rfl)
+
+theorem support_simulate'_eq_of_support_eq (h : ∀ i t, (o i t).support = (o' i t).support) :
+  (simulate' ⟪o | update_state, default_state⟫ oa s).support =
+    (simulate' ⟪o' | update_state', default_state'⟫ oa s').support :=
+begin
+  refine support_simulate'_eq_support_simulate' (λ i t t t', set.ext $ λ x, _) oa s s',
+  simp only [h, simulate'_query, support_map, support_apply, set.mem_image, set.mem_set_of_eq,
+    prod.exists, exists_and_distrib_right, exists_eq_right'],
+end
 
 /-- The support of `simulate'` is independt of the tracking functions -/
 theorem support_simulate'_eq_of_oracle_eq :
   (simulate' ⟪o | update_state, default_state⟫ oa s).support =
     (simulate' ⟪o | update_state', default_state'⟫ oa s').support :=
-begin
-  refine support_simulate'_eq_support_simulate' (λ i t t t', set.ext $ λ x, _) oa s s',
-  simp only [simulate'_query, support_map, support_apply, set.mem_image, set.mem_set_of_eq,
-    prod.exists, exists_and_distrib_right, exists_eq_right],
-end
+support_simulate'_eq_of_support_eq o o _ _ _ _ oa s s' (λ _ _, rfl)
+
+section subsingleton
+
+variables [subsingleton S]
+
+@[simp] lemma support_apply_of_subsingleton :
+  (⟪o | update_state, default_state⟫ i x).support = prod.fst ⁻¹' (o i x.1).support :=
+set.ext (λ y, by erw [apply_eq, map_eq_bind_return_comp,
+  support_bind_prod_mk_of_snd_subsingleton, set.image_id])
+
+lemma support_simulate_eq_image_support_of_subsingleton (h : ∀ i t, (o i t).support = ⊤) :
+  (simulate ⟪o | update_state, default_state⟫ oa s).support = {x | x.1 ∈ oa.support} :=
+by rw [support_simulate_eq_support_simulate'_of_subsingleton,
+  support_simulate'_eq_support o _ _ oa s h]
+
+@[simp] lemma support_simulate_query_eq_support_of_subsingleton :
+  (simulate ⟪query | update_state, default_state⟫ oa s).support = {x | x.1 ∈ oa.support} :=
+support_simulate_eq_image_support_of_subsingleton query _ _ oa s (λ _ _, rfl)
+
+end subsingleton
 
 end support
 
