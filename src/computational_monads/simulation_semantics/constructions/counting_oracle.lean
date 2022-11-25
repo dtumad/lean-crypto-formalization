@@ -35,7 +35,7 @@ section support
 lemma support_apply (i : spec.ι) (x : spec.domain i × ℕ) :
   (counting_oracle spec i x).support = {y | y.2 = nat.succ x.2} :=
 (tracking_oracle.support_apply query _ _ i x).trans
-  (by simp only [support_query, set.top_eq_univ, set.mem_univ, true_and])
+  (sorry) --by simp only [support_query, set.top_eq_univ, set.mem_univ, true_and])
 
 end support
 

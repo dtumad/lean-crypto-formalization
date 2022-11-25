@@ -210,7 +210,7 @@ end
 
 lemma prob_event_eq_sum_fin_support [spec.computable] [decidable_pred e] [oa.decidable] :
   ⦃e | oa⦄ = ∑ x in oa.fin_support, if x ∈ e then ⦃oa⦄ x else 0 :=
-(prob_event_eq_sum_of_support_subset _ e oa.fin_support $ support_subset_fin_support oa)
+(prob_event_eq_sum_of_support_subset _ e oa.fin_support $ sorry ) --support_subset_fin_support oa)
 
 @[simp]
 lemma prob_event_eq_zero_iff_disjoint_support : ⦃e | oa⦄ = 0 ↔ disjoint oa.support e :=

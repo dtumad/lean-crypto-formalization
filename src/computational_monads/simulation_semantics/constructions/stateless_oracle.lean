@@ -46,7 +46,7 @@ section support
 
 lemma support_apply (i : spec.ι) (t : spec.domain i) (s : unit) :
   (⟪o⟫ i (t, s)).support = prod.fst ⁻¹' (o i t).support :=
-by simp only [apply_eq, support_bind_prod_mk_fst_id_of_subsingleton]
+sorry --by simp only [apply_eq, support_bind_prod_mk_fst_id_of_subsingleton]
 
 -- TODO: this should generalize I think?
 lemma fin_support_apply [spec'.computable] [spec'.finite_range] [spec.computable]
@@ -55,7 +55,7 @@ lemma fin_support_apply [spec'.computable] [spec'.finite_range] [spec.computable
   (⟪o⟫ i (t, s)).fin_support = finset.preimage (o i t).fin_support prod.fst
     (λ y hy z hz h, prod.eq_iff_fst_eq_snd_eq.2 ⟨h, punit_eq _ _⟩) :=
 begin
-
+  sorry,
 end
 
 lemma mem_fin_support_apply [spec'.computable] [spec'.finite_range] [spec.computable]

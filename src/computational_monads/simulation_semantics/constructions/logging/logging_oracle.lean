@@ -45,7 +45,7 @@ end simulate
 section support
 
 @[simp] lemma support_simulate' : (simulate' (logging_oracle spec) oa log).support = oa.support :=
-tracking_oracle.support_simulate'_query_oracle_eq_support _ _ oa log
+sorry --tracking_oracle.support_simulate'_query_oracle_eq_support _ _ oa log
 
 lemma support_default_simulate' :
   (default_simulate' (logging_oracle spec) oa).support = oa.support :=
