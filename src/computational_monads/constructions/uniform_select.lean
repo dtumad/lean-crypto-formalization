@@ -203,8 +203,7 @@ end uniform_select_list
 
 section uniform_select_finset
 
-/-- We can sample randomly from a `finset` by converting to a list and then sampling that.
-  Note this conversion is noncomputable, this conversion uses the axiom of choice. -/
+/-- We can sample randomly from a `finset` by converting to a list and then sampling that. -/
 @[derive decidable] noncomputable def uniform_select_finset (bag : finset α) (h : bag.nonempty) :
   oracle_comp uniform_selecting α := 
 uniform_select_list bag.to_list (finset.nonempty.not_empty_to_list h)
