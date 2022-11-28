@@ -28,43 +28,30 @@ variables {α β γ ι : Type} {spec spec' : oracle_spec}  [finite_range spec] [
 /-- Probability of a predicate holding after running a particular experiment.
 Defined in terms of the outer measure associated to the corresponding `pmf`.
 The initial definition uses a `measure` to access more general lemmas,
-  but is equal to the `outer_measure` (see `prob_event_eq_to_outer_measure_apply`). -/
-noncomputable def prob_event {α : Type} (oa : oracle_comp spec α) (event : set α) : ℝ≥0 :=
-ennreal.to_nnreal (@pmf.to_measure α ⊤ ⦃oa⦄ event)
+but is equal to the `outer_measure` (see `prob_event_eq_to_outer_measure_apply`). -/
+noncomputable def prob_event (oa : oracle_comp spec α) (event : set α) : ℝ≥0∞ :=
+⦃oa⦄.to_outer_measure event
 
 notation `⦃` event `|` oa `⦄` := prob_event oa event
 
-/-- Probability that the result of a computation is greater than `5` -/
-noncomputable example (oa : oracle_comp oracle_spec.coin_spec (fin 10)) : ℝ≥0∞ := ⦃(>) 5 | oa⦄
+lemma prob_event.def : ⦃e | oa⦄ = ⦃oa⦄.to_outer_measure e := rfl
 
-lemma prob_event_eq_to_nnreal_to_outer_measure_apply :
-  ⦃e | oa⦄ = (⦃oa⦄.to_outer_measure e).to_nnreal :=
-congr_arg ennreal.to_nnreal (@pmf.to_measure_apply_eq_to_outer_measure_apply
-  α ⊤ _ e (measurable_space.measurable_set_top))
-
-lemma prob_event_eq_to_nnreal_to_measure_apply :
-  ⦃e | oa⦄ = (@pmf.to_measure α ⊤ ⦃oa⦄ e).to_nnreal := rfl
+lemma prob_event_eq_to_measure_apply : ⦃e | oa⦄ = (@pmf.to_measure α ⊤ ⦃oa⦄ e) :=
+(@pmf.to_measure_apply_eq_to_outer_measure_apply α ⊤ ⦃oa⦄ e
+  measurable_space.measurable_set_top).symm
 
 lemma prob_event_le_one : ⦃e | oa⦄ ≤ 1 :=
 begin
-  rw [prob_event_eq_to_nnreal_to_outer_measure_apply],
-  sorry -- Easy with `ennreal` overhaul
-end
 
-lemma coe_prob_event_eq_to_outer_measure_apply : (⦃e | oa⦄ : ℝ≥0∞) = ⦃oa⦄.to_outer_measure e :=
-(ennreal.coe_to_nnreal $ @pmf.to_measure_apply_ne_top α ⊤ ⦃oa⦄ e).trans
-  (@pmf.to_measure_apply_eq_to_outer_measure_apply α ⊤ _ e (measurable_space.measurable_set_top))
+  refine le_trans (⦃oa⦄.to_outer_measure.mono (set.subset_univ e)) (le_of_eq _),
+  refine (⦃oa⦄.to_outer_measure_apply_eq_one_iff _).2 (set.subset_univ ⦃oa⦄.support),
+end
 
 /-- Probability of an event in terms of non-decidable `set.indicator` sum -/
 lemma prob_event_eq_tsum_indicator : ⦃e | oa⦄ = ∑' x, e.indicator ⦃oa⦄ x :=
 begin
   rw [prob_event_eq_to_nnreal_to_outer_measure_apply],
-  have := pmf.to_outer_measure_apply ⦃oa⦄ e,
-  refine (congr_arg ennreal.to_nnreal this).trans _,
-  refine trans (congr_arg ennreal.to_nnreal _) (ennreal.to_nnreal_coe),
-  rw [ennreal.coe_tsum],
-  simp_rw ennreal.coe_indicator,
-  exact nnreal.indicator_summable ⦃oa⦄.summable_coe e
+  exact pmf.to_outer_measure_apply ⦃oa⦄ e,
 end
 
 /-- Probability of an event in terms of a decidable `ite` sum-/
