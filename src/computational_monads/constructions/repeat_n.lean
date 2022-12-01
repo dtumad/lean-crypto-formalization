@@ -135,7 +135,7 @@ begin
   induction n with n hn,
   { simp only [vector.eq_nil as, repeat_n_zero oa, eval_dist_return, pmf.pure_apply,
       if_true, vector.map_nil, vector.to_list_nil, list.prod_nil, eq_self_iff_true] },
-  { refine trans (eval_dist_bind_bind_apply _ _ _ _) _,
+  { refine trans (eval_dist_bind_bind_apply_eq_tsum_tsum _ _ _ _) _,
     simp [hn],
     refine trans (tsum_tsum_eq_single _ as.head as.tail _ _) _,
     { refine λ a h, _,

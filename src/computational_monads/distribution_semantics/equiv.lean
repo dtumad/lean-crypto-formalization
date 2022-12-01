@@ -112,14 +112,14 @@ by rw [map_map_equiv, map_return_equiv]
 
 end map
 
-/-- Equivalence should be able to erase most unneeded variables using `simp` lemmas.
-  Combined with other equivalences can prove many basic things automatically -/
-example (n : ℕ) (oa oa' : oracle_comp coin_spec ℕ):
-do{ _ ← oa, x ← return 0, y ← return 1, z ← return 2,
-    n ← return (x * y), m ← return (n * z),
-    b ← coin, _ ← oa, b' ← coin, _ ← oa',
-    v ← return (if b then n else m, if b' then m else n),
-    return (if b ∧ b' then 0 else v.1 + v.2) } ≃ₚ (return 0 : oracle_comp spec ℕ) := by simp
+-- /-- Equivalence should be able to erase most unneeded variables using `simp` lemmas.
+--   Combined with other equivalences can prove many basic things automatically -/
+-- example (n : ℕ) (oa oa' : oracle_comp coin_spec ℕ):
+-- do{ _ ← oa, x ← return 0, y ← return 1, z ← return 2,
+--     n ← return (x * y), m ← return (n * z),
+--     b ← coin, _ ← oa, b' ← coin, _ ← oa',
+--     v ← return (if b then n else m, if b' then m else n),
+--     return (if b ∧ b' then 0 else v.1 + v.2) } ≃ₚ (return 0 : oracle_comp spec ℕ) := by simp
 
 section prod
 
