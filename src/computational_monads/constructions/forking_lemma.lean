@@ -85,7 +85,7 @@ end simulate_from_seed
 
 section advantage
 
-def advantage (adv : forking_adversary T U α) : ℝ≥0 :=
+def advantage (adv : forking_adversary T U α) : ℝ≥0∞ :=
 ⦃ λ x, option.is_some x | simulate_choose_fork adv ⦄
 
 lemma advantage_eq_tsum (adv : forking_adversary T U α) :
@@ -180,7 +180,7 @@ begin
 
       -- simp only [option.coe_def, option.map_some'],
       refine tsum_congr (λ log, _),
-      refine mul_eq_mul_left_iff.2 (or.inl _),
+      refine congr_arg (λ x, _ * x) _,
       refine trans (eval_dist_bind_return_apply _ _ _) _,
       refine trans (tsum_eq_single (some i, x', cache') _) _,
       { intros o ho,
@@ -207,9 +207,9 @@ calc ⦃λ out, out.1.is_some | fork adv⦄
     tsum_fintype _
   ... ≥ (∑ j, ⦃adv.simulate_choose_fork⦄ (some j)) ^ 2 /
           (finset.univ : finset $ fin adv.q).card ^ 1 :
-    nnreal.pow_sum_div_card_le_sum_pow ⊤ (λ j, ⦃adv.simulate_choose_fork⦄ (some j)) 1
+    sorry --nnreal.pow_sum_div_card_le_sum_pow ⊤ (λ j, ⦃adv.simulate_choose_fork⦄ (some j)) 1
   ... ≥ (∑ j, ⦃adv.simulate_choose_fork⦄ (some j)) ^ 2 / adv.q :
-    by simp only [finset.card_fin, pow_one, ge_iff_le]
+    sorry --by simp only [finset.card_fin, pow_one, ge_iff_le]
   ... = (adv.advantage ^ 2) / adv.q :
     by rw forking_adversary.advantage_eq_sum adv
 
@@ -317,11 +317,12 @@ calc ⦃fork_success | fork adv⦄
     sorry
   end
   ... ≥ ⦃λ o, o.1.is_some | fork adv⦄ - (1 / fintype.card U) : begin
-    rw [mul_tsub, mul_one, mul_div, mul_one], 
-    refine tsub_le_tsub_left _ _,
-    have : 0 < (fintype.card U : ℝ≥0) := nat.cast_pos.2 fintype.card_pos,
-    rw div_le_div_right this,
-    refine distribution_semantics.prob_event_le_one _ _,
+    sorry
+    -- rw [mul_tsub, mul_one, mul_div, mul_one], 
+    -- refine tsub_le_tsub_left _ _,
+    -- have : 0 < (fintype.card U : ℝ≥0) := nat.cast_pos.2 fintype.card_pos,
+    -- rw div_le_div_right this,
+    -- refine distribution_semantics.prob_event_le_one _ _,
   end
   ... ≥ ((adv.advantage) ^ 2 / adv.q) - (1 / fintype.card U) :
     tsub_le_tsub (prob_fork_eq_some adv) le_rfl

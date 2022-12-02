@@ -43,7 +43,7 @@ end
 is a specific function. Gives more explicit criteria than induction on the computation.
 In particular this automatically splits the cases for `return` and the `prod` in the `bind` sum. -/
 lemma eval_dist_simulate_apply_eq_induction [spec'.finite_range]
-  {pr : Π (α : Type), oracle_comp spec α → S → α × S → ℝ≥0}
+  {pr : Π (α : Type), oracle_comp spec α → S → α × S → ℝ≥0∞}
   (so : sim_oracle spec spec' S) (oa : oracle_comp spec α) (s : S) (a : α) (s' : S)
   (h_ret : ∀ α a s, pr α (return a) s (a, s) = 1)
   (h_ret' : ∀ α a a' s s', a ≠ a' ∨ s ≠ s' → pr α (return a) s (a', s') = 0)
@@ -74,9 +74,9 @@ begin
   induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t generalizing s,
   { simp only [simulate'_return, map_return_equiv, eval_dist_return] },
   { refine pmf.ext (λ b, _),
-    rw [eval_dist_bind_apply, eval_dist_simulate'_bind_apply],
+    rw [eval_dist_bind_apply_eq_tsum, eval_dist_simulate'_bind_apply],
     refine tsum_congr (λ a, _),
-    rw [← hoa s, eval_dist_simulate'_apply, ← nnreal.tsum_mul_right],
+    rw [← hoa s, eval_dist_simulate'_apply, ← ennreal.tsum_mul_right],
     refine tsum_congr (λ t, _),
     rw ← hob },
   { simp only [h, simulate'_query, eval_dist_map, eval_dist_query] }
@@ -97,9 +97,9 @@ begin
       = ∑' (t : S), ⦃simulate so oa s⦄ (a, t) * ⦃simulate' so' (ob a) s'⦄ b :
         tsum_congr (λ t, congr_arg (λ x, _ * x) $ by rw hob a t s')
       ... = (∑' (t' : S'), ⦃simulate so' oa s'⦄ (a, t')) * ⦃simulate' so' (ob a) s'⦄ b :
-        by simp_rw [nnreal.tsum_mul_right, ← eval_dist_simulate'_apply, hoa s s']
+        by simp_rw [ennreal.tsum_mul_right, ← eval_dist_simulate'_apply, hoa s s']
       ... = ∑' (t' : S'), ⦃simulate so' oa s'⦄ (a, t') * ⦃simulate' so (ob a) s⦄ b :
-        by rw [nnreal.tsum_mul_right, hob]
+        by rw [ennreal.tsum_mul_right, hob]
       ... = ∑' (t' : S'), ⦃simulate so' oa s'⦄ (a, t') * ⦃simulate' so' (ob a) t'⦄ b :
         tsum_congr (λ t, congr_arg (λ x, _ * x) $ by rw hob) },
   { simpa only [simulate'_query, eval_dist_map] using h i t s s' },

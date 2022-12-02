@@ -44,9 +44,8 @@ iff.rfl
 
 lemma indep_events_iff : indep_events oa events events' ↔
   ∀ e e', e ∈ events → e' ∈ events' → ⦃e ∩ e' | oa⦄ = ⦃e | oa⦄ * ⦃e' | oa⦄ :=
-by simp only [indep_events, probability_theory.indep_sets,
-  prob_event_eq_mul_iff_to_outer_measure_apply_eq, @pmf.to_measure_apply_eq_to_outer_measure_apply
-    α ⊤ ⦃oa⦄ _ measurable_space.measurable_set_top]
+by simp_rw [indep_events_iff_indep_sets, probability_theory.indep_sets,
+  prob_event_eq_to_measure_apply]
 
 lemma prob_event_inter_eq_mul_of_indep_events (h : indep_events oa events events')
   (he : e ∈ events) (he' : e' ∈ events') : ⦃ e ∩ e' | oa ⦄ = ⦃ e | oa ⦄ * ⦃ e' | oa ⦄ :=
@@ -70,8 +69,10 @@ by rw [indep_event_iff_indep_events, indep_events_iff_indep_sets,
   probability_theory.indep_set_iff_indep_sets_singleton]; apply measurable_space.measurable_set_top
 
 lemma indep_event_iff : indep_event oa e e' ↔ ⦃e ∩ e' | oa⦄ = ⦃ e | oa ⦄ * ⦃ e' | oa ⦄ :=
-by rw [indep_event_iff_indep_set, probability_theory.indep_set_iff_measure_inter_eq_mul,
-  prob_event_eq_mul_iff_to_measure_apply_eq]; apply measurable_space.measurable_set_top
+begin
+  simp_rw [indep_event_iff_indep_set, prob_event_eq_to_measure_apply],
+  exact probability_theory.indep_set_iff_measure_inter_eq_mul trivial trivial _,
+end
 
 lemma prob_event_inter_eq_mul_of_indep_event (h : indep_event oa e e') :
   ⦃ e ∩ e' | oa ⦄ = ⦃ e | oa ⦄ * ⦃ e' | oa ⦄ :=

@@ -4,7 +4,6 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
 import algebra.add_torsor
-
 import computational_monads.asymptotics.polynomial_time
 import computational_monads.asymptotics.negligable
 import computational_monads.coercions.sim_oracle
@@ -50,7 +49,7 @@ noncomputable def experiment (adversary : vectorization_adversary G X) :
 do { x₁ ←$ᵗ X, x₂ ←$ᵗ X, g ← adversary.adv (x₁, x₂), return (g = x₁ -ᵥ x₂) }
 
 /-- Vectorization advantage of an adversary in the vectorization experiment. -/
-noncomputable def advantage (adversary : vectorization_adversary G X) : ℝ≥0 :=
+noncomputable def advantage (adversary : vectorization_adversary G X) : ℝ≥0∞ :=
 ⦃ (=) tt | experiment adversary ⦄
 
 lemma advantage_eq_tsum (adversary : vectorization_adversary G X) : adversary.advantage =

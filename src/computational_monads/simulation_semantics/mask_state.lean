@@ -182,8 +182,7 @@ probability of the preimage of the event holding on the unmasked computation. -/
 theorem prob_event_simulate_mask_eq_preimage (e : set (α × S')) :
   ⦃e | simulate (so.mask_state mask) oa s'⦄ =
     ⦃(prod.map id mask) ⁻¹' e | simulate so oa (mask.symm s')⦄ :=
-by simp_rw [prob_event_eq_to_nnreal_to_outer_measure_apply,
-  eval_dist_simulate_mask, pmf.to_outer_measure_map_apply]
+by simp_rw [prob_event.def, eval_dist_simulate_mask, pmf.to_outer_measure_map_apply]
 
 lemma prob_event_simulate_mask_eq_image (e : set (α × S')) :
   ⦃e | simulate (so.mask_state mask) oa s'⦄ =

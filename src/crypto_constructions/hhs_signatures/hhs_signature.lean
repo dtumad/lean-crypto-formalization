@@ -427,15 +427,17 @@ calc (vectorization_adversary_reduction adversary).advantage
   ... ≥ (∑' (pk x₀ : X), (adversary.advantage ^ 2 / adversary.query_bound - (1 / 2 ^ n))) /
           (fintype.card X) ^ 2 :
     begin
-      exact div_le_div_of_le_of_nonneg (tsum_le_tsum (λ pk, tsum_le_tsum
-        (λ x₀, by apply main_result) sorry sorry) sorry sorry) zero_le'
+      sorry,
+      -- exact div_le_div_of_le_of_nonneg (tsum_le_tsum (λ pk, tsum_le_tsum
+      --   (λ x₀, by apply main_result) sorry sorry) sorry sorry) zero_le'
     end
   ... = (adversary.advantage ^ 2 / adversary.query_bound) - (1 / 2 ^ n) :
     begin
       simp_rw [tsum_fintype, finset.sum_const, nsmul_eq_mul],
       rw [← mul_assoc, ← pow_two, div_eq_mul_inv, mul_comm, ← mul_assoc],
       have : (↑(fintype.card X) : nnreal) ^ 2 ≠ 0 := sorry,
-      erw [inv_mul_cancel this, one_mul],
+      sorry,
+      -- erw [inv_mul_cancel this, one_mul],
     end 
 
 end vectorization_reduction

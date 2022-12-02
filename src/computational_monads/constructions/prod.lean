@@ -53,7 +53,7 @@ lemma eval_dist_prod_apply --[decidable_eq α] [decidable_eq β]
   (oa : oracle_comp spec α) (ob : oracle_comp spec β) (a : α) (b : β) :
   ⦃oa ×ₘ ob⦄ (a, b) = ⦃oa⦄ a * ⦃ob⦄ b :=
 calc ⦃oa ×ₘ ob⦄ (a, b) = ∑' (x : α) (y : β), (⦃oa⦄ x * ⦃ob⦄ y) * (⦃return (x, y)⦄ (a, b)) :
-    by simp_rw [prod_def, eval_dist_bind_bind_apply]
+    by simp_rw [prod_def, eval_dist_bind_bind_apply_eq_tsum_tsum]
   ... = (⦃oa⦄ a * ⦃ob⦄ b) * (⦃(return (a, b) : oracle_comp spec _)⦄ (a, b)) :
     begin
       refine tsum_tsum_eq_single _ a b (λ a' ha', _) (λ a' b' hb', _),
@@ -73,18 +73,18 @@ lemma prob_event_set_prod_eq_mul
   (e : set α) (e' : set β) [decidable_pred e] [decidable_pred e'] :
   ⦃e ×ˢ e' | oa ×ₘ ob⦄ = ⦃e | oa⦄ * ⦃e' | ob⦄ :=
 calc ⦃e ×ˢ e' | oa ×ₘ ob⦄
-  = ∑' (x : α × β), ite (x ∈ e ×ˢ e') (⦃oa⦄ x.1 * ⦃ob⦄ x.2) 0 : begin
-    refine trans (prob_event_eq_tsum _ _) (tsum_congr (λ x, x.rec $ λ a b, _)),
+  = ∑' (x : α × β), ite (x ∈ e ×ˢ e') (⦃oa⦄ x.1 * ⦃ob⦄ x.2) 0 :
+  begin
+    refine trans (prob_event_eq_tsum_ite _ _) (tsum_congr (λ x, x.rec $ λ a b, _)),
     simp only [set.mem_prod, eval_dist_prod_apply, ← ennreal.coe_mul],
   end
   ... = (∑' a, ite (a ∈ e) (⦃oa⦄ a) 0) * (∑' b, ite (b ∈ e') (⦃ob⦄ b) 0) :
   begin
-    sorry
-    -- simp_rw [← ennreal.tsum_mul_right, ← ennreal.tsum_mul_left,
-    --   tsum_prod' ennreal.summable (λ _, ennreal.summable)],
-    -- exact tsum_congr (λ a, tsum_congr (λ b, trans (by congr) (ite_and_mul_zero _ _ _ _))),
+    simp_rw [← ennreal.tsum_mul_right, ← ennreal.tsum_mul_left,
+      tsum_prod' ennreal.summable (λ _, ennreal.summable)],
+    exact tsum_congr (λ a, tsum_congr (λ b, trans (by congr) (ite_and_mul_zero _ _ _ _))),
   end
-  ... = ⦃e | oa⦄ * ⦃e' | ob⦄ : by simp only [prob_event_eq_tsum]
+  ... = ⦃e | oa⦄ * ⦃e' | ob⦄ : by simp_rw [prob_event_eq_tsum_ite]
 
 end prob_event
 

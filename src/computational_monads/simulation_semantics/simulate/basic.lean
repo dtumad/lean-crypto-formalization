@@ -335,16 +335,17 @@ lemma eval_dist_simulate'_bind_apply (b : β) : ⦃simulate' so (oa >>= ob) s⦄
 begin
   rw [simulate'_bind, eval_dist_map_fst],
   simp_rw [eval_dist_prod_bind, eval_dist_simulate'_apply],
-  simp_rw [← nnreal.tsum_mul_left], 
-  calc ∑' t a s', ⦃simulate so oa s⦄ (a, s') * ⦃simulate so (ob a) s'⦄ (b, t)
-    = ∑' a t s', ⦃simulate so oa s⦄ (a, s') * ⦃simulate so (ob a) s'⦄ (b, t) :
-    begin
-      sorry
-    end
-    ... = ∑' a s' t, ⦃simulate so oa s⦄ (a, s') * ⦃simulate so (ob a) s'⦄ (b, t) :
-    begin
-      sorry
-    end
+  sorry,
+  -- simp_rw [← nnreal.tsum_mul_left], 
+  -- calc ∑' t a s', ⦃simulate so oa s⦄ (a, s') * ⦃simulate so (ob a) s'⦄ (b, t)
+  --   = ∑' a t s', ⦃simulate so oa s⦄ (a, s') * ⦃simulate so (ob a) s'⦄ (b, t) :
+  --   begin
+  --     sorry
+  --   end
+  --   ... = ∑' a s' t, ⦃simulate so oa s⦄ (a, s') * ⦃simulate so (ob a) s'⦄ (b, t) :
+  --   begin
+  --     sorry
+  --   end
     
 end
 

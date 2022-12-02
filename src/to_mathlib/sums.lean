@@ -122,6 +122,9 @@ end extract
 
 section option
 
+lemma ennreal.tsum_option (f : option α → ℝ≥0∞) :
+  tsum f = f none + ∑' a, f (some a) := sorry
+
 lemma nnreal.tsum_option {f : option α → ℝ≥0} (hf : summable f) :
   tsum f = f none + ∑' (a : α), f (some a) :=
 calc ∑' (x : option α), f x

@@ -190,8 +190,7 @@ default_simulate' (idₛ ++ₛ random_oracle sig.random_oracle_spec)
 
 /-- Adversaries success at forging a signature.
   TODO: maybe this doesn't need an independent definition -/
-noncomputable def advantage {sig : signature}
-  (adversary : unforgeable_adversary sig) : ℝ≥0 :=
+noncomputable def advantage {sig : signature} (adversary : unforgeable_adversary sig) : ℝ≥0∞ :=
 ⦃(= tt) | adversary.experiment sig⦄
 
 end unforgeable_adversary

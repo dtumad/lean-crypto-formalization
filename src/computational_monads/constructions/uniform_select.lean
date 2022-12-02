@@ -24,8 +24,8 @@ namespace oracle_comp
 
 variables {α β γ : Type}
 
-open oracle_spec
-open_locale classical big_operators nnreal ennreal
+open oracle_spec pmf
+open_locale classical big_operators ennreal
 
 section uniform_fin
 
@@ -126,10 +126,8 @@ lemma eval_dist_uniform_select_vector_apply : ⦃$ᵛ v⦄ a = v.to_list.count a
 by rw [eval_dist_uniform_select_vector, pmf.uniform_of_vector_apply]
 
 @[simp] lemma prob_event_uniform_select_vector (event : set α) :
-  ⦃event | $ᵛ v⦄ = (v.to_list.countp event) / (n + 1) :=
-by simp only [prob_event_eq_to_nnreal_to_outer_measure_apply, ennreal.to_nnreal_div,
-  eval_dist_uniform_select_vector, pmf.to_outer_measure_uniform_of_vector_apply,
-  ← nat.cast_succ, ennreal.to_nnreal_nat]
+  ⦃event | $ᵛ v⦄ = (v.to_list.countp event) / ↑(n + 1) :=
+by rw [prob_event.def, eval_dist_uniform_select_vector, to_outer_measure_uniform_of_vector_apply]
 
 end distribution_semantics
 
@@ -193,9 +191,7 @@ end
 
 @[simp] lemma prob_event_uniform_select_list (event : set α) :
   ⦃event | $ˡ xs h⦄ = xs.countp event / xs.length :=
-by simp only [prob_event_eq_to_nnreal_to_outer_measure_apply, ennreal.to_nnreal_div,
-  pmf.to_outer_measure_uniform_of_list_apply, ennreal.to_nnreal_nat,
-  eval_dist_uniform_select_list]
+by rw [prob_event.def, eval_dist_uniform_select_list, to_outer_measure_uniform_of_list_apply]
 
 end distribution_semantics 
 
@@ -249,9 +245,7 @@ by rw [eval_dist_uniform_select_finset, pmf.uniform_of_finset_apply]
 
 @[simp] lemma prob_event_uniform_select_finset (event : set α) :
   ⦃event | $ˢ bag h⦄ = (bag.filter (∈ event)).card / bag.card :=
-by simp only [prob_event_eq_to_nnreal_to_outer_measure_apply, ennreal.to_nnreal_div,
-  ennreal.to_nnreal_nat, eval_dist_uniform_select_finset,
-  pmf.to_outer_measure_uniform_of_finset_apply]
+by rw [prob_event.def, eval_dist_uniform_select_finset, to_outer_measure_uniform_of_finset_apply]
 
 lemma prob_event_uniform_select_finset_bind_eq_sum (ob : α → oracle_comp uniform_selecting β)
   (event : set β) :
@@ -312,13 +306,10 @@ by rw [eval_dist_uniform_select_fintype, pmf.uniform_of_fintype_apply]
 
 @[simp] lemma prob_event_uniform_select_fintype_apply (event : set α) :
   ⦃event | $ᵗ α⦄ = fintype.card event / fintype.card α :=
-by simp only [prob_event_eq_to_nnreal_to_outer_measure_apply, ennreal.to_nnreal_div,
-  ennreal.to_nnreal_nat, eval_dist_uniform_select_fintype,
-  pmf.to_outer_measure_uniform_of_fintype_apply]
+by rw [prob_event.def, eval_dist_uniform_select_fintype, to_outer_measure_uniform_of_fintype_apply]
 
 lemma prob_event_uniform_select_fintype_apply_bind (ob : α → oracle_comp uniform_selecting β)
-  (event : set β) :
-  ⦃event | $ᵗ α >>= ob⦄ = ∑ a, ⦃event | ob a⦄ / fintype.card α :=
+  (event : set β) : ⦃event | $ᵗ α >>= ob⦄ = ∑ a, ⦃event | ob a⦄ / fintype.card α :=
 by simp_rw [uniform_select_fintype, prob_event_uniform_select_finset_bind_eq_sum, finset.card_univ]
 
 end distribution_semantics

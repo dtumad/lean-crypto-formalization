@@ -32,7 +32,7 @@ variables (oa : oracle_comp spec (option α)) (e : set (option α))
 
 lemma prob_event_option [decidable_eq α] (e : set (option α)) :
   ⦃e | oa⦄ = (e.indicator ⦃oa⦄ none) + ∑' (a : α), e.indicator ⦃oa⦄ (some a) :=
-(prob_event_eq_tsum_indicator oa e).trans (nnreal.tsum_option (pmf.indicator_summable ⦃oa⦄ e))
+(prob_event_eq_tsum_indicator oa e).trans (ennreal.tsum_option _)
 
 lemma prob_event_is_none : ⦃λ x, x.is_none | oa ⦄ = ⦃oa⦄ none :=
 prob_event_eq_eval_dist_of_disjoint_sdiff_support oa _ rfl

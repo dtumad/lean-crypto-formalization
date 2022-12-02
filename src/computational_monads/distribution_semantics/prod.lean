@@ -47,21 +47,9 @@ section prob_event
 lemma prob_event_diagonal [hα : decidable_eq α] (oa : oracle_comp spec (α × α)) :
   ⦃set.diagonal α | oa⦄ = ∑' (a : α), ⦃oa⦄ (a, a) :=
 calc ⦃set.diagonal α | oa⦄ = ∑' (x : α × α), ite (x ∈ set.diagonal α) (⦃oa⦄ x) 0 :
-    prob_event_eq_tsum oa (set.diagonal α)
+    prob_event_eq_tsum_ite oa (set.diagonal α)
   ... = ∑' (a a' : α), ite (a = a') (⦃oa⦄ (a, a')) 0 :
-    begin
-      refine tsum_prod' _ _,
-      { refine nnreal.summable_of_le (λ x, _) ⦃oa⦄.summable_coe,
-        split_ifs; simp only [le_rfl, zero_le'] },
-      { have : summable (λ a, ⦃oa⦄ (a, a)),
-        from nnreal.summable_comp_injective ⦃oa⦄.summable_coe
-          (λ x y hxy, (prod.eq_iff_fst_eq_snd_eq.1 hxy).1),
-        refine λ a, nnreal.summable_of_le (λ a', _) this,
-        split_ifs,
-        { simp only [set.mem_diagonal_iff] at h,
-          exact h ▸ le_rfl },
-        { exact zero_le' } }
-    end
+    tsum_prod' ennreal.summable (λ _, ennreal.summable)
   ... = ∑' (a a' : α), ite (a = a') (⦃oa⦄ (a, a)) 0 :
     tsum_congr (λ a, tsum_congr (λ a', by by_cases h : a = a'; simp only [h, if_false]))
   ... = ∑' (a a' : α), ite (a' = a) (⦃oa⦄ (a, a)) 0 : by simp_rw [@eq_comm]
