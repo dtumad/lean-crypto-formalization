@@ -86,76 +86,12 @@ double sum rather than a sum over a `prod` type. -/
 lemma pmf.prod_bind_apply {α β γ : Type*}
   (p : pmf (α × β)) (q : α × β → pmf γ) (c : γ) :
   p.bind q c = ∑' (a : α) (b : β), p (a, b) * q (a, b) c :=
-sorry
--- calc p.bind q c = (∑' (x : α × β), (↑(p x * q x c) : ℝ≥0∞)).to_nnreal :
---     by rw [pmf.bind_apply, ennreal.to_nnreal_tsum_coe_eq]
---   ... = (∑' (a : α) (b : β), (↑(p (a, b) * q (a, b) c) : ℝ≥0∞)).to_nnreal :
---     congr_arg ennreal.to_nnreal (tsum_prod' ennreal.summable (λ _, ennreal.summable))
---   ... = ∑' (a : α), (∑' (b : β), (↑(p (a, b) * q (a, b) c) : ℝ≥0∞)).to_nnreal :
---     begin
---       refine ennreal.tsum_to_nnreal_eq (λ a, _),
---       have : ∑' (b : β), (↑(p (a, b) * q (a, b) c) : ℝ≥0∞) ≤ p.bind q c,
---       { rw [pmf.bind_apply, ennreal.coe_tsum],
---         { refine tsum_le_tsum_of_inj (λ b, (a, b)) _ _ (λ _, le_rfl)
---             ennreal.summable ennreal.summable,
---           refine (λ a' b' h, (prod.eq_iff_fst_eq_snd_eq.1 h).2),
---           intros x hx,
---           refine zero_le' },
---         have := pmf.summable_coe p,
---         refine nnreal.summable_of_le (λ x, _) this,
---         refine le_trans _ (le_of_eq $ (mul_one $ p x)),
---         refine mul_le_mul' le_rfl ((q x).coe_le_one c), },
---       { refine ne_of_lt (lt_of_le_of_lt _ ennreal.one_lt_top),
---         refine le_trans this _,
---         refine ennreal.coe_le_one_iff.2 _,
---         refine (p.bind q).coe_le_one c }
---     end
---   ... = ∑' (a : α) (b : β), p (a, b) * q (a, b) c :
---     begin
---       refine tsum_congr (λ a, _),
---       refine ennreal.tsum_to_nnreal_eq (λ b, _),
---       refine ne_of_lt _,
---       refine lt_of_le_of_lt _ ennreal.one_lt_top,
---       rw ennreal.coe_le_one_iff,
---       suffices : p (a, b) * q (a, b) c ≤ 1 * 1,
---       by rwa [mul_one] at this,
---       refine mul_le_mul _ _ zero_le' zero_le',
---       refine pmf.coe_le_one _ _,
---       refine pmf.coe_le_one _ _,
---     end
+tsum_prod' ennreal.summable $ λ _, ennreal.summable
 
-/-- Alternative to `prod_bind_apply` with the opposite order of summation -/
 lemma pmf.prod_bind_apply' {α β γ : Type*}
   (p : pmf (α × β)) (q : α × β → pmf γ) (c : γ) :
   p.bind q c = ∑' (b : β) (a : α), p (a, b) * q (a, b) c :=
-begin
-  let p' : pmf (β × α) := p.map prod.swap,
-  let q' : β × α → pmf γ := q ∘ prod.swap,
-  have : p.bind q = (p.map prod.swap).bind (q ∘ prod.swap) := begin
-    -- ext x,
-    rw [pmf.bind_map p prod.swap],
-    rw [function.comp.assoc],
-    rw [prod.swap_swap_eq],
-    rw [function.comp.right_id]
-  end,
-  rw this,
-
-  refine (pmf.prod_bind_apply _ _ c).trans _,
-  refine tsum_congr (λ b, _),
-  refine tsum_congr (λ a, _),
-  rw [function.comp_app, prod.swap_prod_mk],
-  have : (pmf.map prod.swap p) (b, a) = p (a, b) := begin
-    rw [pmf.map_apply],
-    refine trans (tsum_eq_single (a, b) _) _,
-    { intros x hx,
-      have : (b, a) ≠ x.swap := λ hx', hx _,
-      simp only [this, if_false],
-      refine trans _ (trans (congr_arg prod.swap hx'.symm) rfl),
-      refine symm (prod.swap_swap x) },
-    { rw [prod.swap_prod_mk, eq_self_iff_true, if_true] }
-  end,
-  rw this,
-end
+(pmf.prod_bind_apply p q c).trans (by rw ennreal.tsum_comm)
 
 /-- First output of a computation of a `prod` type as a summation over possible second outputs. -/
 lemma pmf.map_fst_apply {α β : Type*} (p : pmf (α × β)) (a : α) :

@@ -59,8 +59,8 @@ trans (to_nnreal_sum $ λ x _, ennreal.coe_ne_top)
 
 end ennreal
 
+-- NOTE: PR open
 section extract
-
 
 /-- Version of `tsum_ite_eq_extract` for `add_comm_monoid` rather than `add_comm_group`.
 Rather than showing that `f.update` has a specific sum in terms of `has_sum`,
@@ -114,7 +114,7 @@ begin
   split_ifs; simp only [zero_le', le_rfl]
 end
 
-lemma ennreal.tsum_ite_eq_extract {f : β → ℝ≥0∞} (hf : summable f) (b : β) :
+lemma ennreal.tsum_ite_eq_extract {f : β → ℝ≥0∞} (b : β) :
   ∑' x, f x = f b + ∑' x, ite (x = b) 0 (f x) :=
 tsum_ite_eq_extract' b ennreal.summable
 
@@ -123,7 +123,18 @@ end extract
 section option
 
 lemma ennreal.tsum_option (f : option α → ℝ≥0∞) :
-  tsum f = f none + ∑' a, f (some a) := sorry
+  tsum f = f none + ∑' a, f (some a) :=
+begin
+  refine trans (ennreal.tsum_ite_eq_extract none) _,
+  refine congr_arg (λ x, f none + x) _,
+  refine (tsum_eq_tsum_of_ne_zero_bij (λ a, some a.1) _ (λ x hx, _) _),
+  { simp only [subtype.val_eq_coe, imp_self, set_coe.forall, implies_true_iff] },
+  { rw [function.mem_support, ne.def, ite_eq_left_iff, not_imp,
+      ← ne.def, option.ne_none_iff_exists] at hx,
+    obtain ⟨y, hy⟩ := hx.1,
+    refine set.mem_range.2 ⟨⟨y, function.mem_support.2 (hy.symm ▸ hx.2)⟩, hy⟩ },
+  convert λ x, if_neg (option.some_ne_none _),
+end 
 
 lemma nnreal.tsum_option {f : option α → ℝ≥0} (hf : summable f) :
   tsum f = f none + ∑' (a : α), f (some a) :=
