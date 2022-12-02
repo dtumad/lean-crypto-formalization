@@ -31,11 +31,10 @@ tracking_oracle.apply_eq query (λ n _ _ _, n + 1) 0 i x
 
 section support
 
-@[simp]
-lemma support_apply (i : spec.ι) (x : spec.domain i × ℕ) :
-  (counting_oracle spec i x).support = {y | y.2 = nat.succ x.2} :=
-(tracking_oracle.support_apply query _ _ i x).trans
-  (sorry) --by simp only [support_query, set.top_eq_univ, set.mem_univ, true_and])
+@[simp] lemma support_apply (i : spec.ι) (x : spec.domain i × ℕ) :
+  (counting_oracle spec i x).support = {y | x.2 + 1 = y.2} :=
+by simp only [counting_oracle, tracking_oracle.support_apply,
+  support_query, set.top_eq_univ, set.mem_univ, true_and]
 
 end support
 

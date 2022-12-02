@@ -13,7 +13,8 @@ This file defines the probability of some event holding after running a computat
 The definition is in terms of the `measure` associated to the `pmf` given by `eval_dist`.
 
 This definition is equivalent to one in terms of summations, in particular an infinite `tsum`.
-If the support is decidable, we can instead give an expression in terms of `finset.sum`
+If the support is decidable (or the event is a `finset`),
+we can instead give an expression in terms of `finset.sum`.
 -/
 
 namespace distribution_semantics
@@ -52,6 +53,10 @@ pmf.to_outer_measure_apply ⦃oa⦄ e
 lemma prob_event_eq_tsum_ite [decidable_pred (∈ e)] :
   ⦃e | oa⦄ = ∑' x, if x ∈ e then ⦃oa⦄ x else 0 :=
 (prob_event_eq_tsum_indicator oa e).trans (tsum_congr $ λ x, by {unfold set.indicator, congr})
+
+lemma prob_event_finset_eq_sum (e : finset α) :
+  ⦃↑e | oa⦄ = ∑ x in e, ⦃oa⦄ x :=
+by rw [prob_event_eq_tsum_indicator, finset.sum_eq_tsum_indicator]
 
 lemma prob_event_le_prob_event_of_subset (oa : oracle_comp spec α) {e e' : set α}
   (h : (e ∩ oa.support) ⊆ e') : ⦃e | oa⦄ ≤ ⦃e' | oa⦄ :=

@@ -243,6 +243,14 @@ lemma eval_dist_uniform_select_finset_apply :
   ⦃$ˢ bag h⦄ a = if a ∈ bag then bag.card⁻¹ else 0 :=
 by rw [eval_dist_uniform_select_finset, pmf.uniform_of_finset_apply]
 
+lemma eval_dist_uniform_select_finset_bind_apply_eq_sum (ob : α → oracle_comp uniform_selecting β)
+  (b : β) : ⦃$ˢ bag h >>= ob⦄ b = (∑ x in bag, ⦃ob x⦄ b) / bag.card :=
+begin
+  simp_rw [eval_dist_bind_apply_eq_sum, fin_support_uniform_select_finset,
+    eval_dist_uniform_select_finset_apply, div_eq_mul_inv, finset.sum_mul, ite_mul, zero_mul],
+  exact finset.sum_congr rfl (λ x hx, (if_pos hx).trans $ mul_comm _ _),
+end
+
 @[simp] lemma prob_event_uniform_select_finset (event : set α) :
   ⦃event | $ˢ bag h⦄ = (bag.filter (∈ event)).card / bag.card :=
 by rw [prob_event.def, eval_dist_uniform_select_finset, to_outer_measure_uniform_of_finset_apply]
@@ -251,12 +259,10 @@ lemma prob_event_uniform_select_finset_bind_eq_sum (ob : α → oracle_comp unif
   (event : set β) :
   ⦃event | $ˢ bag h >>= ob⦄ = ∑ x in bag, ⦃event | ob x⦄ / bag.card :=
 begin
-  have : ($ˢ bag h).support ⊆ bag,
-  by rw [support_uniform_select_finset],
-  simp only [prob_event_bind_eq_sum_of_support_subset _ ob event bag this,
-    eval_dist_uniform_select_finset_apply],
-  refine finset.sum_congr rfl (λ x hx, _),
-  rw [if_pos hx, div_eq_mul_inv, mul_comm],
+  refine (prob_event_bind_eq_sum_of_support_subset ($ˢ bag h) ob event bag _).trans _,
+  { exact (support_uniform_select_finset bag h) ▸ rfl.subset },
+  { refine finset.sum_congr rfl (λ x hx, _),
+    rw [eval_dist_uniform_select_finset_apply, if_pos hx, div_eq_mul_inv, mul_comm] }
 end
 
 end distribution_semantics
@@ -311,6 +317,9 @@ by rw [prob_event.def, eval_dist_uniform_select_fintype, to_outer_measure_unifor
 lemma prob_event_uniform_select_fintype_apply_bind (ob : α → oracle_comp uniform_selecting β)
   (event : set β) : ⦃event | $ᵗ α >>= ob⦄ = ∑ a, ⦃event | ob a⦄ / fintype.card α :=
 by simp_rw [uniform_select_fintype, prob_event_uniform_select_finset_bind_eq_sum, finset.card_univ]
+
+-- lemma prob_event_uniform_select_fintype_apply_bind' (ob : α → oracle_com uniform_selecting β)
+--   (event : set β) : ⦃event | $ᵗ ⦄
 
 end distribution_semantics
 

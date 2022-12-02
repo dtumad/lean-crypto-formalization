@@ -51,7 +51,7 @@ variables {S S' : Type} (o o' : Π (i : spec.ι), spec.domain i → oracle_comp 
   (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) (s : S) (s' : S')
   (x : spec.domain i × S) (y : spec.range i × S)
 
-@[simp] lemma apply_eq : ⟪o | update_state, default_state⟫ i x =
+lemma apply_eq : ⟪o | update_state, default_state⟫ i x =
   (λ u, (u, update_state x.2 i x.1 u)) <$> (o i x.1) := by {cases x, refl}
 
 instance decidable [computable spec] [decidable_eq S] [∀ i x, (o i x).decidable] :

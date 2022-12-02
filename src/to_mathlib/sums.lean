@@ -14,7 +14,7 @@ open_locale nnreal ennreal big_operators classical
 
 variables {α β γ : Type*}
 
-lemma sum_eq_tsum_indicator {α β : Type*} [add_comm_monoid β] [topological_space β] [t2_space β]
+lemma finset.sum_eq_tsum_indicator {α β : Type*} [add_comm_monoid β] [topological_space β] [t2_space β]
   (f : α → β) (s : finset α) : ∑ x in s, f x = ∑' x, set.indicator ↑s f x :=
 have ∀ x ∉ s, set.indicator ↑s f x = 0,
 from λ x hx, set.indicator_apply_eq_zero.2 (λ hx', (hx $ finset.mem_coe.1 hx').elim),

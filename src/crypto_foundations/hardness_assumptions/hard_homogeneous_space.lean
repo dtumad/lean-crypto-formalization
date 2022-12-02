@@ -56,6 +56,7 @@ lemma advantage_eq_tsum (adversary : vectorization_adversary G X) : adversary.ad
   (∑' x₁ x₂, ⦃(=) (x₁ -ᵥ x₂) | adversary.adv (x₁, x₂)⦄) / (fintype.card X) ^ 2 :=
 begin
   rw [advantage, experiment, prob_event_uniform_select_fintype_apply_bind],
+  
   -- refine tsum_congr (λ x₁, _),
   -- rw [prob_event_uniform_select_fintype_apply_bind],
   -- simp_rw [div_eq_mul_inv, ← nnreal.tsum_mul_right],

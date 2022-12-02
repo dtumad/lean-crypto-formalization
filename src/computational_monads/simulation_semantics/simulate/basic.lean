@@ -332,22 +332,8 @@ by simp only [simulate'_bind, map_bind_equiv, eval_dist_bind, eval_dist_map,
 
 lemma eval_dist_simulate'_bind_apply (b : β) : ⦃simulate' so (oa >>= ob) s⦄ b
   = ∑' (a : α) (s' : S), ⦃simulate so oa s⦄ (a, s') * ⦃simulate' so (ob a) s'⦄ b :=
-begin
-  rw [simulate'_bind, eval_dist_map_fst],
-  simp_rw [eval_dist_prod_bind, eval_dist_simulate'_apply],
-  sorry,
-  -- simp_rw [← nnreal.tsum_mul_left], 
-  -- calc ∑' t a s', ⦃simulate so oa s⦄ (a, s') * ⦃simulate so (ob a) s'⦄ (b, t)
-  --   = ∑' a t s', ⦃simulate so oa s⦄ (a, s') * ⦃simulate so (ob a) s'⦄ (b, t) :
-  --   begin
-  --     sorry
-  --   end
-  --   ... = ∑' a s' t, ⦃simulate so oa s⦄ (a, s') * ⦃simulate so (ob a) s'⦄ (b, t) :
-  --   begin
-  --     sorry
-  --   end
-    
-end
+by rw [eval_dist_simulate'_bind, pmf.bind_apply, tsum_prod'
+  ennreal.summable (λ _, ennreal.summable)]
 
 lemma eval_dist_simulate'_bind' : ⦃simulate' so (bind' α β oa ob) s⦄ =
   ⦃simulate so oa s⦄.bind (λ x, ⦃simulate' so (ob x.1) x.2⦄) := eval_dist_simulate'_bind _ _ _ s

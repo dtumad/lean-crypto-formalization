@@ -45,9 +45,8 @@ by simp only [uniform_oracle.def, stateless_oracle.support_apply,
 
 @[simp] lemma fin_support_apply [spec.computable] :
   (uniform_oracle spec i (t, u)).fin_support = ⊤ :=
-begin
-  sorry,
-end
+by rw [fin_support_eq_iff_support_eq_coe, support_apply,
+  finset.top_eq_univ, finset.coe_univ, set.top_eq_univ]
 
 end support
 
