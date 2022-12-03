@@ -40,10 +40,6 @@ end support
 
 section distribution_semantics
 
-section equiv
-
-end equiv
-
 section prob_event
 
 

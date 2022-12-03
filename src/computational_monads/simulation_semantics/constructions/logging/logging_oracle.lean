@@ -69,17 +69,6 @@ logging_oracle.eval_dist_simulate' oa (query_log.init spec)
 
 end eval_dist
 
-section equiv
-
-/-- If you throw outf final state then it looks like the original computation -/
-lemma simulate'_equiv : simulate' (logging_oracle spec) oa log ≃ₚ oa :=
-tracking_oracle.eval_dist_simulate'_query_eq_eval_dist _ _ oa log
-
-lemma default_simulate'_equiv : default_simulate' (logging_oracle spec) oa ≃ₚ oa :=
-logging_oracle.simulate'_equiv oa (query_log.init spec)
-
-end equiv
-
 end distribution_semantics
 
 end logging_oracle

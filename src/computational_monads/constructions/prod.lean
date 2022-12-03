@@ -88,10 +88,6 @@ calc ⦃e ×ˢ e' | oa ×ₘ ob⦄
 
 end prob_event
 
-section equiv
-
-end equiv
-
 section indep_events
 
 /-- Any collections of sets corresponding to output types of two computations

@@ -51,6 +51,8 @@ noncomputable def eval_dist (oa : oracle_comp spec α) : pmf α :=
 
 notation `⦃` oa `⦄` := eval_dist oa
 
+notation oa ` ≃ₚ ` oa' := ⦃oa⦄ = ⦃oa'⦄
+
 lemma eval_dist.def (oa : oracle_comp spec α) : ⦃oa⦄ = (eval_dist' oa).1 := rfl
 
 variables (oa oa' : oracle_comp spec α) (ob ob' : α → oracle_comp spec β)
@@ -202,6 +204,10 @@ lemma eval_dist_bind_bind_apply_eq_sum_sum [spec.computable] [oa.decidable] [∀
     ∑ a in oa.fin_support, ∑ b in (ob a).fin_support, ⦃oa⦄ a * ⦃ob a⦄ b * ⦃oc a b⦄ c :=
 by simp only [eval_dist_bind_apply_eq_sum, finset.mul_sum, mul_assoc]
 
+lemma eval_dist_bind_eq_of_eval_dist_eq (hoa : ⦃oa⦄ = ⦃oa'⦄)
+  (hob : ∀ a, ⦃ob a⦄ = ⦃ob' a⦄) : ⦃oa >>= ob⦄ = ⦃oa' >>= ob'⦄ :=
+by simp_rw [eval_dist_bind, hoa, hob]
+
 end bind
 
 section query
@@ -226,6 +232,14 @@ lemma eval_dist_map_apply' [spec.computable] [decidable_eq β] [oa.decidable]
 (eval_dist_map_apply oa f b).trans (tsum_eq_sum $ λ a ha,
   by simp only [eval_dist_eq_zero_of_not_mem_fin_support ha, if_t_t])
 
+lemma eval_dist_map_return (f : α → β) (a : α) :
+  ⦃f <$> (return a : oracle_comp spec α)⦄ = pmf.pure (f a) :=
+by simp [eval_dist_map, pmf.map_pure]
+
+lemma eval_dist_map_bind (f : β → γ) :
+  ⦃f <$> (oa >>= ob)⦄ = ⦃oa⦄.bind (λ a, ⦃ob a⦄.map f) :=
+by simp only [eval_dist_map, eval_dist_bind, pmf.map_bind]
+
 end map
 
 @[simp] lemma eval_dist_bind_return : ⦃oa >>= λ a, return (f a)⦄ = pmf.map f ⦃oa⦄ :=
@@ -234,6 +248,9 @@ by simp_rw [eval_dist_bind, eval_dist_return, pmf.bind_pure_comp]
 lemma eval_dist_bind_return_apply :
   ⦃oa >>= λ a, return (f a)⦄ b = ∑' (a : α), ite (b = f a) (⦃oa⦄ a) 0 :=
 by rw [eval_dist_bind_return, pmf.map_apply]
+
+@[simp] lemma eval_dist_bind_return_id : ⦃oa >>= return⦄ = ⦃oa⦄ :=
+(eval_dist_bind_return oa id).trans (by rw [pmf.map_id])
 
 lemma eval_dist_return_bind : ⦃return a >>= ob⦄ = ⦃ob a⦄ :=
 by simp only [eval_dist_bind, eval_dist_return, pmf.pure_bind]

@@ -51,10 +51,6 @@ section eval_dist
 
 end eval_dist
 
-section equiv
-
-end equiv
-
 section prob_event
 
 end prob_event

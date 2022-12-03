@@ -77,37 +77,37 @@ open distribution_semantics
 
 variable [spec.finite_range]
 
-section equiv
+section eval_dist
 
 @[simp]
-lemma apply_equiv (i : spec.ι) (t : spec.domain i) :
-  (idₛ) i (t, s) ≃ₚ (λ u, (u, ())) <$> query i t :=
+lemma eval_dist_apply (i : spec.ι) (t : spec.domain i) :
+  ⦃idₛ i (t, s)⦄ = ⦃(λ u, (u, ())) <$> query i t⦄ :=
 rfl
 
-@[simp]
-theorem simulate_equiv : simulate idₛ oa s ≃ₚ (λ a, (a, ())) <$> oa :=
-begin
-  induction oa with α a α β oa ob hoa hob i t generalizing s,
-  { simp [punit_eq s ()] },
-  { exact trans (simulate_bind_equiv idₛ oa ob s) (trans (bind_equiv_of_equiv_of_equiv
-      (hoa s) (λ x, hob x.fst x.snd)) (by simp)) },
-  { exact (simulate_query_equiv idₛ i t ()).trans (apply_equiv () i t) }
-end
+-- @[simp]
+-- theorem eval_dist_simulate : ⦃simulate idₛ oa s⦄ = ⦃(λ a, (a, ())) <$> oa⦄ :=
+-- begin
+--   induction oa with α a α β oa ob hoa hob i t generalizing s,
+--   { simp [punit_eq s (), pmf.pure_map] },
+--   { exact trans (simulate_bind_equiv idₛ oa ob s) (trans (eval_dist_bind_eq_of_eval_dist_eq
+--       (hoa s) (λ x, hob x.fst x.snd)) (by simp)) },
+--   { exact (simulate_query_equiv idₛ i t ()).trans (apply_equiv () i t) }
+-- end
 
-lemma default_simulate_equiv : default_simulate idₛ oa ≃ₚ (λ a, (a, ())) <$> oa :=
-simulate_equiv oa ()
+-- lemma eval_dist_default_simulate : default_simulate idₛ oa ≃ₚ (λ a, (a, ())) <$> oa :=
+-- simulate_equiv oa ()
 
-@[simp]
-lemma simulate'_equiv : (simulate' idₛ oa s) ≃ₚ oa :=
-calc simulate' idₛ oa s ≃ₚ prod.fst <$> simulate idₛ oa s : rfl
-  ... ≃ₚ prod.fst <$> (λ a, (a, ())) <$> oa : (map_equiv_of_equiv _ (simulate_equiv oa s))
-  ... ≃ₚ (prod.fst ∘ λ a, (a, ())) <$> oa : map_map_equiv oa _ _
-  ... ≃ₚ oa : map_id_equiv oa
+-- @[simp]
+-- lemma simulate'_equiv : (simulate' idₛ oa s) ≃ₚ oa :=
+-- calc simulate' idₛ oa s ≃ₚ prod.fst <$> simulate idₛ oa s : rfl
+--   ... ≃ₚ prod.fst <$> (λ a, (a, ())) <$> oa : (map_equiv_of_equiv _ (simulate_equiv oa s))
+--   ... ≃ₚ (prod.fst ∘ λ a, (a, ())) <$> oa : map_map_equiv oa _ _
+--   ... ≃ₚ oa : map_id_equiv oa
 
-lemma default_simulate'_equiv : default_simulate' idₛ oa ≃ₚ oa :=
-simulate'_equiv oa ()
+-- lemma default_simulate'_equiv : default_simulate' idₛ oa ≃ₚ oa :=
+-- simulate'_equiv oa ()
 
-end equiv
+end eval_dist
 
 section prob_event
 

@@ -21,11 +21,6 @@ section eval_dist
 
 end eval_dist
 
-section equiv
-
-
-end equiv
-
 section prob_event
 
 variables (oa : oracle_comp spec (option α)) (e : set (option α))

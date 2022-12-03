@@ -178,30 +178,6 @@ by rw [simulate_bind, eval_dist_prod_bind]
 
 end eval_dist
 
-section equiv
-
-lemma simulate_return_equiv : simulate so (return a) s ≃ₚ
-  (return (a, s) : oracle_comp spec' (α × S)) := rfl
-
-lemma simulate_pure'_equiv : simulate so (pure' α a) s ≃ₚ
-  (return (a, s) : oracle_comp spec' (α × S)) := rfl
-
-lemma simulate_pure_equiv : simulate so (pure a) s ≃ₚ
-  (pure (a, s) : oracle_comp spec' (α × S)) := rfl
-
-lemma simulate_bind_equiv : simulate so (oa >>= ob) s ≃ₚ
-  simulate so oa s >>= λ x, simulate so (ob x.1) x.2 := rfl
-
-lemma simulate_bind'_equiv : simulate so (bind' α β oa ob) s ≃ₚ
-  simulate so oa s >>= λ x, simulate so (ob x.1) x.2 := rfl
-
-lemma simulate_query_equiv : simulate so (query i t) s ≃ₚ so i (t, s) := rfl
-
-lemma simulate_map_equiv : simulate so (f <$> oa) s ≃ₚ prod.map f id <$> simulate so oa s :=
-by simp only [eval_dist_simulate_map, eval_dist_map]
-
-end equiv
-
 section prob_event
 
 
@@ -317,7 +293,7 @@ begin
 end
 
 lemma eval_dist_simulate'_return : ⦃simulate' so (return a) s⦄ = pmf.pure a :=
-by simp only [simulate'_return, map_return_equiv, eval_dist_return]
+by simp only [simulate'_return, eval_dist_map, eval_dist_return, pmf.map_pure]
 
 lemma eval_dist_simulate'_pure' : ⦃simulate' so (pure' α a) s⦄ = pmf.pure a :=
 eval_dist_simulate'_return so a s
@@ -327,7 +303,7 @@ eval_dist_simulate'_return so a s
 
 lemma eval_dist_simulate'_bind : ⦃simulate' so (oa >>= ob) s⦄ =
   ⦃simulate so oa s⦄.bind (λ x, ⦃simulate' so (ob x.1) x.2⦄) :=
-by simp only [simulate'_bind, map_bind_equiv, eval_dist_bind, eval_dist_map,
+by simp only [simulate'_bind, eval_dist_map_bind, eval_dist_bind, eval_dist_map,
   eval_dist_simulate', eq_self_iff_true, pmf.map_bind]
 
 lemma eval_dist_simulate'_bind_apply (b : β) : ⦃simulate' so (oa >>= ob) s⦄ b
@@ -346,38 +322,6 @@ lemma eval_dist_simulate'_map : ⦃simulate' so (f <$> oa) s⦄ = ⦃simulate' s
 by simp_rw [eval_dist_simulate', eval_dist_simulate_map, pmf.map_comp, prod.map_fst']
 
 end eval_dist
-
-section equiv
-
-lemma simulate'_equiv_fst_map_simulate :
-  simulate' so oa s ≃ₚ prod.fst <$> simulate so oa s := rfl
-
-lemma simulate'_return_equiv : simulate' so (return a) s ≃ₚ
-  (return a : oracle_comp spec' α) := by simp only [simulate'_return, map_return_equiv]
-
-lemma simulate'_pure'_equiv : simulate' so (pure' α a) s ≃ₚ
-  (return a : oracle_comp spec' α) := simulate'_return_equiv so a s
-
-lemma simulate'_pure_equiv : simulate' so (pure a) s ≃ₚ
-  (return a : oracle_comp spec' α) := simulate'_return_equiv so a s
-
-lemma simulate'_bind_equiv : simulate' so (oa >>= ob) s ≃ₚ
-  simulate so oa s >>= λ x, simulate' so (ob x.1) x.2 :=
-by simp only [simulate'_equiv_fst_map_simulate, simulate_bind, map_bind_equiv,
-  eval_dist_bind, simulate'_equiv_fst_map_simulate]
-
-lemma simulate'_bind'_equiv : simulate' so (bind' α β oa ob) s ≃ₚ
-  simulate so oa s >>= λ x, simulate' so (ob x.1) x.2 :=
-simulate'_bind_equiv so oa ob s
-
-lemma simulate'_query_equiv : simulate' so (query i t) s ≃ₚ
-  prod.fst <$> (so i (t, s)) := rfl
-
-lemma simulate'_map_equiv (f : α → β) : simulate' so (f <$> oa) s ≃ₚ f <$> simulate' so oa s :=
-by simp only [simulate_map_equiv, eval_dist_map, pmf.map_comp,
-  prod.map_fst', simulate'_equiv_fst_map_simulate]
-
-end equiv
 
 section prob_event
 

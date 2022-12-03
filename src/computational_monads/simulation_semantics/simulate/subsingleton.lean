@@ -85,16 +85,6 @@ lemma eval_dist_simulate'_eq_eval_dist_default_simulate' [subsingleton S] (s : S
 
 end eval_dist
 
-section equiv
-
-lemma simulate_equiv_default_simulate [subsingleton S] (s : S) :
-  simulate so oa s ≃ₚ default_simulate so oa := subsingleton.elim so.default_state s ▸ rfl
-
-lemma simulate'_equiv_default_simulate' [subsingleton S] (s : S) :
-  simulate' so oa s ≃ₚ default_simulate' so oa := subsingleton.elim so.default_state s ▸ rfl
-
-end equiv
-
 section prob_event
 
 end prob_event

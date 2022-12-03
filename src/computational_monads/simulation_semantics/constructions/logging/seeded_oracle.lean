@@ -50,13 +50,8 @@ end simulate
 
 section eval_dist
 
-
-end eval_dist
-
-section equiv
-
 -- Log and run, run from seed, return original output -> looks like just logging
-lemma seeded_oracle_first_equiv [spec.finite_range]
+lemma eval_dist_seeded_oracle_fst [spec.finite_range]
   (oa : oracle_comp spec α) (i : spec.ι) (choose_fork : α → query_log spec → option ℕ) :
 ⦃do{ ⟨a, log⟩ ← simulate (logging_oracle spec) oa (query_log.init spec),
       seed ← return (log.fork_cache i $ choose_fork a log).to_seed,
@@ -66,7 +61,7 @@ lemma seeded_oracle_first_equiv [spec.finite_range]
 sorry
 
 -- Log and run, run from seed, return new output -> looks like just logging
-lemma seeded_oracle_second_equiv [spec.finite_range]
+lemma eval_dist_seeded_oracle_snd [spec.finite_range]
   (oa : oracle_comp spec α) (i : spec.ι) (choose_fork : α → query_log spec → option ℕ) :
 ⦃do{ ⟨a, log⟩ ← simulate (logging_oracle spec) oa (query_log.init spec),
       seed ← return (log.fork_cache i $ choose_fork a log).to_seed,
@@ -86,6 +81,6 @@ do{ ⟨a, log⟩ ← simulate (logging_oracle spec) oa (query_log.init spec),
       log'.fork_cache i (choose_fork a log) :=
 sorry
 
-end equiv
+end eval_dist
 
 end seeded_oracle

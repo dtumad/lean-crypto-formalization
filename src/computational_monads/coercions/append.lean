@@ -67,17 +67,19 @@ end
 
 section distribution_semantics
 
-lemma coe_append_right_pure_equiv [spec.finite_range] [spec'.finite_range] (a : α) :
-  (↑(pure a : oracle_comp spec α) : oracle_comp (spec ++ spec') α)
-    ≃ₚ (pure a : oracle_comp (spec ++ spec') α) :=
-simulate'_pure_equiv _ a _
+open distribution_semantics
+
+lemma eval_dist_coe_append_right_return [spec.finite_range] [spec'.finite_range] (a : α) :
+  ⦃(↑(return a : oracle_comp spec α) : oracle_comp (spec ++ spec') α)⦄ =
+    ⦃(return a : oracle_comp (spec ++ spec') α)⦄ :=
+eval_dist_simulate'_return _ a _
 
 /-- The right hand simulation oracle is irrelevent to simulate an append right coercion -/
 @[simp]
-lemma simulate'_coe_append_right_equiv [spec.finite_range] [spec'.finite_range]
+lemma eval_dist_simulate'_coe_append_right [spec.finite_range] [spec'.finite_range]
   [spec''.finite_range] (oa : oracle_comp spec α) (so : sim_oracle spec spec'' S)
   (so' : sim_oracle spec' spec'' S') (s : S × S') :
-  simulate' (so ++ₛ so') ↑oa s ≃ₚ simulate' so oa s.1 :=
+  ⦃simulate' (so ++ₛ so') ↑oa s⦄ = ⦃simulate' so oa s.1⦄ :=
 begin
   induction oa with α a α β oa ob i t,
   { sorry },
@@ -85,9 +87,9 @@ begin
   { sorry }
 end
 
-lemma simulate_coe_append_right_equiv [spec''.finite_range] (oa : oracle_comp spec α)
+lemma eval_dist_simulate_coe_append_right [spec''.finite_range] (oa : oracle_comp spec α)
   (so : sim_oracle spec spec'' S) (so' : sim_oracle spec' spec'' S') (s : S × S') :
-  simulate (so ++ₛ so') ↑oa s ≃ₚ do { ⟨a, s'⟩ ← simulate so oa s.1, pure (a, s', s.2) } :=
+  ⦃simulate (so ++ₛ so') ↑oa s⦄ = ⦃do {⟨a, s'⟩ ← simulate so oa s.1, return (a, s', s.2)}⦄ :=
 sorry
 
 end distribution_semantics

@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
 import data.vector.mem
-import computational_monads.distribution_semantics.equiv
+import computational_monads.distribution_semantics.prob_event
 
 /-!
 # Repeated Runs of an Oracle Computation
@@ -149,10 +149,6 @@ begin
 end
 
 end eval_dist
-
-section equiv
-
-end equiv
 
 section prob_event
 

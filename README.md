@@ -15,9 +15,9 @@ This also allows for an infinite set of oracles (for example ring signature sign
 It also contains basic constructions of oracles, including logging oracles, random oracles, and ways to combine and compose oracles to construct more complex oracles.
 Simulation semantics are also used to define a number of coercions between computations with less oracles to more oracles in order to simplify the specification of algorithms and oracles.
 
-`src/computational_monads/distribution_semantics` defines a denotational semantics for computations with access to simple oracles, such as a coin oracle or uniform selection oracle.
+`src/computational_monads/distribution_semantics` defines a denotational semantics (`eval_dist`) for computations with access to simple oracles, such as a coin oracle or uniform selection oracle.
 The denotation is given by a probability mass function, using the `pmf` definition in mathlib.
-It also defines the notion of computations being equivalent under the distribution semantics, and the probability of an event holding after a computation (as a specialization of the outer measure associated to the probability distribution).
+It also defines the probability of an event holding after a computation (`prob_event`) as a specialization of the outer measure associated to the probability distribution.
 
 The general structure of most constructions is to first use the simulation semantics to reduce a computation to a simple set of basic oracles, and then to use the distribution semantics to reason about the corresponding probability distribution for the computation.
 

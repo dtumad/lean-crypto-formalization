@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
 import to_mathlib.poly_time
-import computational_monads.distribution_semantics.equiv
+import computational_monads.distribution_semantics.prob_event
 /-!
 # Polynomial Time Complexity of Oracle Computations
 

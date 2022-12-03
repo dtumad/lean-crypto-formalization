@@ -36,6 +36,13 @@ begin
   rw pmf.pure_bind,
 end
 
+@[simp] lemma pmf.map_pure {α β : Type*} (f : α → β) (a : α) :
+  (pmf.pure a).map f = pmf.pure (f a) :=
+begin
+  refine pmf.ext (λ x, _),
+  sorry
+end
+
 @[simp] lemma pmf.bind_const {α β : Type*} (p : pmf α) (q : pmf β) : (p.bind $ λ _, q) = q :=
 pmf.ext (λ x, by rw [pmf.bind_apply, ennreal.tsum_mul_right, pmf.tsum_coe, one_mul])
 

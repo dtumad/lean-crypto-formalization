@@ -3,8 +3,7 @@ Copyright (c) 2022 Devon Tuma. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
-import computational_monads.distribution_semantics.equiv
-import probability.independence
+import computational_monads.distribution_semantics.eval_dist
 
 /-!
 # Probability of Events
@@ -82,8 +81,8 @@ lemma prob_event_le_prob_event_of_subset' (oa : oracle_comp spec α) {e e' : set
   (h : e ⊆ e') : ⦃e | oa⦄ ≤ ⦃e' | oa⦄ :=
 prob_event_le_prob_event_of_subset oa (trans (set.inter_subset_left _ _) h)
 
-lemma prob_event_eq_of_equiv {oa : oracle_comp spec α} {oa' : oracle_comp spec' α}
-  (h : oa ≃ₚ oa') (e : set α) : ⦃e | oa⦄ = ⦃e | oa'⦄ :=
+lemma prob_event_eq_of_eval_dist_eq {oa : oracle_comp spec α} {oa' : oracle_comp spec' α}
+  (h : ⦃oa⦄ = ⦃oa'⦄) (e : set α) : ⦃e | oa⦄ = ⦃e | oa'⦄ :=
 by simp_rw [prob_event, h]
 
 -- -- TODO: only needed cause of random nnreal stuff
@@ -141,10 +140,10 @@ section bind
 by simp only [prob_event.def, eval_dist_bind, pmf.to_outer_measure_bind_apply]
 
 @[simp] lemma prob_event_return_bind : ⦃e'' | return a >>= ob⦄ = ⦃e'' | ob a⦄ :=
-prob_event_eq_of_equiv (return_bind_equiv ob a) e''
+prob_event_eq_of_eval_dist_eq (eval_dist_return_bind ob a) e''
 
 @[simp] lemma prob_event_bind_return : ⦃e | oa >>= return⦄ = ⦃e | oa⦄ :=
-prob_event_eq_of_equiv (bind_return_equiv oa) e
+prob_event_eq_of_eval_dist_eq (eval_dist_bind_return_id oa) e
 
 end bind
 

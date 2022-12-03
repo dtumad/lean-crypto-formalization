@@ -167,11 +167,12 @@ section equiv
 -- TODO: put <$> in equiv versions, derive from `eval_dist` fact
 lemma simulate_equiv_simulate' [spec'.finite_range] (s : unit) :
   simulate ⟪o⟫ oa s ≃ₚ (simulate' ⟪o⟫ oa s >>= λ a, return (a, ())) :=
-calc simulate ⟪o⟫ oa s ≃ₚ simulate ⟪o⟫ oa s >>= return : symm (bind_return_equiv _)
-  ... ≃ₚ simulate ⟪o⟫ oa s >>= λ x, return (x.1, x.2) : by simp only [prod.mk.eta]
-  ... ≃ₚ simulate ⟪o⟫ oa s >>= λ x, return (x.1, ()) : 
-    bind_equiv_of_equiv_second _ (λ x, by simp [punit_eq x.snd ()])
-  ... ≃ₚ simulate' ⟪o⟫ oa s >>= λ a, return (a, ()) : by rw [simulate', bind_map_equiv]
+sorry
+-- calc simulate ⟪o⟫ oa s ≃ₚ simulate ⟪o⟫ oa s >>= return : symm (eval_dist_bind_return _)
+--   ... ≃ₚ simulate ⟪o⟫ oa s >>= λ x, return (x.1, x.2) : by simp only [prod.mk.eta]
+--   ... ≃ₚ simulate ⟪o⟫ oa s >>= λ x, return (x.1, ()) : 
+--     eval_dist_bind_eq_of_eval_dist_eq _ (λ x, by simp [punit_eq x.snd ()])
+--   ... ≃ₚ simulate' ⟪o⟫ oa s >>= λ a, return (a, ()) : by rw [simulate', bind_map_equiv]
 
 lemma simulate'_equiv_of_oracle_equiv [spec'.finite_range] [spec''.finite_range] 
   {o : Π (i : spec.ι), spec.domain i → oracle_comp spec' (spec.range i)}

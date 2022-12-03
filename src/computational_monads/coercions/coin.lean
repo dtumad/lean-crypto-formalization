@@ -70,7 +70,7 @@ end
 
 @[simp] lemma prob_event_coe_coin_uniform_select (e : set α) :
   ⦃e | (↑oa : oracle_comp uniform_selecting α)⦄ = ⦃e | oa⦄ :=
-prob_event_eq_of_equiv (eval_dist_coe_coin_uniform_select oa) e
+prob_event_eq_of_eval_dist_eq (eval_dist_coe_coin_uniform_select oa) e
 
 end distribution_semantics
 
