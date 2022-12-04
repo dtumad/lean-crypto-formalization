@@ -8,13 +8,13 @@ import computational_monads.support.fin_support
 /-!
 # Support of Computations Involving Prod
 
-This file contains lemmas about `support` and `fin_support` focused on working with `prod` types.
+This file contains lemmas about `support` and `fin_support` focused on working with `option` types.
 -/
 
 namespace oracle_comp
 
 open oracle_spec
 
-
+variables {α β γ : Type} {spec : oracle_spec} (oa : oracle_comp spec α)
 
 end oracle_comp

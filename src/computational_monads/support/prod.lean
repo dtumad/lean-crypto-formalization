@@ -9,15 +9,14 @@ import computational_monads.support.fin_support
 # Support of Computations Involving Prod
 
 This file contains lemmas about `support` and `fin_support` focused on working with `prod` types.
-
-TODO: `<$>` versions.
+We also give specialized versions for when one half of the product type is `subsingleton`
 -/
 
 namespace oracle_comp
 
 open oracle_spec
 
-variables {α β γ : Type} {spec spec' : oracle_spec} (oa : oracle_comp spec α)
+variables {α β γ : Type} {spec : oracle_spec} (oa : oracle_comp spec α)
   (f : α → β) (g : α → γ) (b : β) (c : γ)
 
 section bind_prod_mk
@@ -27,9 +26,16 @@ section support
 lemma support_bind_prod_mk : (oa >>= λ a, return (f a, g a)).support =
   (λ a, (f a, g a)) '' oa.support := support_bind_return oa _
 
+lemma support_map_prod_mk : ((λ a, (f a, g a) : α → β × γ) <$> oa).support =
+  (λ a, (f a, g a)) '' oa.support := support_map _ oa
+
 lemma mem_support_bind_prod_mk (x : β × γ) :
   x ∈ (oa >>= λ a, return (f a, g a)).support ↔ ∃ y ∈ oa.support, f y = x.1 ∧ g y = x.2 :=
 by simp only [support_bind_return, set.mem_image, exists_prop, prod.eq_iff_fst_eq_snd_eq]
+
+lemma mem_support_map_prod_mk (x : β × γ) :
+  x ∈ ((λ a, (f a, g a) : α → β × γ) <$> oa).support ↔ ∃ y ∈ oa.support, f y = x.1 ∧ g y = x.2 :=
+mem_support_bind_prod_mk oa f g x
 
 lemma mem_support_bind_prod_mk_id_fst (x : α × γ) :
   x ∈ (oa >>= λ a, return (a, g a)).support ↔ x.1 ∈ oa.support ∧ g x.1 = x.2 :=
@@ -59,25 +65,33 @@ end support
 
 section fin_support
 
-variables [computable spec] [finite_range spec] [decidable oa] [decidable_eq β] [decidable_eq γ]
+variables [computable spec] [finite_range spec] [decidable oa]
 
-lemma fin_support_bind_prod_mk :
+lemma fin_support_bind_prod_mk [decidable_eq β] [decidable_eq γ] :
   (oa >>= λ a, return (f a, g a)).fin_support = oa.fin_support.image (λ a, (f a, g a)) :=
 fin_support_bind_return oa _
 
-lemma mem_fin_support_bind_prod_mk (x : β × γ) :
+lemma mem_fin_support_bind_prod_mk [decidable_eq β] [decidable_eq γ] (x : β × γ) :
   x ∈ (oa >>= λ a, return (f a, g a)).fin_support ↔ ∃ y ∈ oa.fin_support, f y = x.1 ∧ g y = x.2 :=
 by simp only [mem_fin_support_iff_mem_support, mem_support_bind_prod_mk]
 
-lemma mem_fin_support_bind_prod_mk_fst (x : β × γ) :
-  x ∈ (oa >>= λ a, return (f a, c)).fin_support ↔ x.1 ∈ oa.fin_support.image f ∧ x.2 = c :=
-by simp_rw [fin_support_bind_prod_mk, finset.mem_image, prod.eq_iff_fst_eq_snd_eq,
-  ← exists_and_distrib_right, @eq_comm γ c]
+lemma mem_fin_support_bind_prod_mk_id_fst [decidable_eq α] [decidable_eq γ] (x : α × γ) :
+  x ∈ (oa >>= λ a, return (a, g a)).fin_support ↔ x.1 ∈ oa.fin_support ∧ g x.1 = x.2 :=
+by simp only [mem_fin_support_iff_mem_support, mem_support_bind_prod_mk_id_fst]
 
-lemma mem_fin_support_bind_prod_mk_snd (x : β × γ) :
+lemma mem_fin_support_bind_prod_mk_id_snd [decidable_eq α] [decidable_eq β] (x : β × α) :
+  x ∈ (oa >>= λ a, return (f a, a)).fin_support ↔ x.2 ∈ oa.fin_support ∧ f x.2 = x.1  :=
+by simp only [mem_fin_support_iff_mem_support, mem_support_bind_prod_mk_id_snd]
+
+lemma mem_fin_support_bind_prod_mk_fst [decidable_eq β] [decidable_eq γ] (x : β × γ) :
+  x ∈ (oa >>= λ a, return (f a, c)).fin_support ↔ x.1 ∈ oa.fin_support.image f ∧ x.2 = c :=
+by simp only [mem_fin_support_iff_mem_support, mem_support_bind_prod_mk_fst,
+  mem_image_fin_support_iff_mem_image_support]
+
+lemma mem_fin_support_bind_prod_mk_snd [decidable_eq β] [decidable_eq γ] (x : β × γ) :
   x ∈ (oa >>= λ a, return (b, g a)).fin_support ↔ x.1 = b ∧ x.2 ∈ oa.fin_support.image g :=
-by simp_rw [fin_support_bind_prod_mk, finset.mem_image, prod.eq_iff_fst_eq_snd_eq,
-  ← exists_and_distrib_left, @eq_comm β b]
+by simp only [mem_fin_support_iff_mem_support, mem_support_bind_prod_mk_snd,
+  mem_image_fin_support_iff_mem_image_support]
 
 end fin_support
 

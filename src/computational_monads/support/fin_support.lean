@@ -17,9 +17,12 @@ The resulting `fin_set` is equal to `oracle_comp.support` when coerced to a `set
 
 This requires a number of decidability hypotheses for the computation itself.
 The need for `oracle_comp.decidable` arises from the need to use `finset.bUnion` for `bind'`.
-We also require a `computable` and `finite_range` instance for the `oracle_spec` itself.
+This could be avoided by including a `decidable_eq` requirement of the `pure'` constructor,
+but this partially destrays the monad structure of `oracle_comp`.
+
+We also require `spec.computable` and `spec.finite_range` instances for the `oracle_spec` itself.
 Without the `finite_range` instance, the support may be infinite,
-  so only `oracle_comp.support` will exist
+  so only `oracle_comp.support` will exist.
 -/
 
 namespace oracle_comp
@@ -100,9 +103,9 @@ variables (a a' : α) [decidable_eq α]
 lemma mem_fin_support_return_iff : a' ∈ (return a : oracle_comp spec α).fin_support ↔ a' = a :=
 finset.mem_singleton
 
-@[simp] lemma fin_support_pure' : (pure' α a : oracle_comp spec α).fin_support = {a} := rfl
+@[simp] lemma fin_support_pure' : (@pure' spec α a).fin_support = {a} := rfl
 
-lemma mem_fin_support_pure'_iff : a' ∈ (pure' α a : oracle_comp spec α).fin_support ↔ a' = a :=
+lemma mem_fin_support_pure'_iff : a' ∈ (@pure' spec α a).fin_support ↔ a' = a :=
 finset.mem_singleton
 
 lemma fin_support_pure : (pure a : oracle_comp spec α).fin_support = {a} := rfl
@@ -165,7 +168,8 @@ end query
 
 section map
 
-variables [decidable_eq β] (oa : oracle_comp spec α) [decidable oa] (f : α → β) (b : β)
+variables [decidable_eq β] [decidable_eq γ] (oa : oracle_comp spec α) [decidable oa]
+  (ob : α → oracle_comp spec β) [∀ a, decidable (ob a)] (f : α → β) (g : β → γ) (b : β) (c : γ)
 
 @[simp] lemma fin_support_map : (f <$> oa).fin_support = oa.fin_support.image f :=
 by rw [fin_support_eq_iff_support_eq_coe, finset.coe_image,
@@ -173,6 +177,16 @@ by rw [fin_support_eq_iff_support_eq_coe, finset.coe_image,
 
 lemma mem_fin_support_map_iff : b ∈ (f <$> oa).fin_support ↔ ∃ a ∈ oa.fin_support, f a = b :=
 by rw [fin_support_map, finset.mem_image]
+
+@[simp] lemma fin_support_map_bind : (g <$> (oa >>= ob)).fin_support =
+  @finset.bUnion α γ (decidable_eq_of_decidable (g <$> (oa >>= ob)))
+    oa.fin_support (λ a, (ob a).fin_support.image g) :=
+by simp_rw [fin_support_eq_iff_support_eq_coe, finset.coe_bUnion, finset.coe_image,
+  coe_fin_support_eq_support, support_map_bind]
+
+lemma mem_fin_support_map_bind_iff : c ∈ (g <$> (oa >>= ob)).fin_support ↔
+  ∃ a ∈ oa.fin_support, ∃ b ∈ (ob a).fin_support, g b = c :=
+by simp only [fin_support_map_bind, finset.mem_bUnion, finset.mem_image]
 
 end map
 
@@ -193,5 +207,12 @@ lemma mem_image_fin_support_iff_mem_image_support :
 by rw [← finset.mem_coe, coe_image_fin_support_eq_image_support]
 
 end image
+
+@[simp] lemma fin_support_bind_ite [decidable_eq β] (oa : oracle_comp spec α) [oa.decidable]
+  (p : α → Prop) [decidable_pred p] (f : α → β) (g : α → β) :
+  (oa >>= λ a, return (if p a then f a else g a)).fin_support =
+    ((oa.fin_support.filter p).image f) ∪ ((oa.fin_support.filter (not ∘ p)).image g) :=
+by simp only [fin_support_eq_iff_support_eq_coe, support_bind_ite, finset.coe_union,
+  finset.coe_image, finset.coe_filter, coe_fin_support_eq_support]
 
 end oracle_comp

@@ -53,7 +53,7 @@ lemma support_repeat_n : Π n, support (repeat_n oa n) = { v | ∀ a ∈ v.to_li
   exact λ a ha, false.elim (v.not_mem_zero a ha),
 end
 | (n + 1) := begin
-  simp_rw [repeat_n, support_bind_bind, support_return],
+  simp_rw [repeat_n, support_bind, support_return],
   ext v,
   simp only [set.mem_Union, set.mem_singleton_iff, exists_prop, set.mem_set_of_eq],
   refine ⟨λ h, _, λ h, _⟩,

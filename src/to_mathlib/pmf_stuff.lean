@@ -25,8 +25,7 @@ lemma pmf.map_bind {α β γ : Type*} (p : pmf α) (q : α → pmf β) (f : β �
   (p.bind q).map f = p.bind (λ a, (q a).map f) :=
 by simp_rw [pmf.map, pmf.bind_bind]
 
-@[simp]
-lemma pmf.bind_map {α β γ : Type*} (p : pmf α) (f : α → β) (q : β → pmf γ) :
+@[simp] lemma pmf.bind_map {α β γ : Type*} (p : pmf α) (f : α → β) (q : β → pmf γ) :
   (p.map f).bind q = p.bind (q ∘ f) :=
 begin
   rw [pmf.map],
@@ -39,8 +38,10 @@ end
 @[simp] lemma pmf.map_pure {α β : Type*} (f : α → β) (a : α) :
   (pmf.pure a).map f = pmf.pure (f a) :=
 begin
-  refine pmf.ext (λ x, _),
-  sorry
+  refine pmf.ext (λ b, _),
+  simp_rw [pmf.map_apply, pmf.pure_apply],
+  exact trans (tsum_eq_single a $ λ a' ha', by rw [if_neg ha', if_t_t])
+    (by rw [eq_self_iff_true, if_true]),
 end
 
 @[simp] lemma pmf.bind_const {α β : Type*} (p : pmf α) (q : pmf β) : (p.bind $ λ _, q) = q :=
