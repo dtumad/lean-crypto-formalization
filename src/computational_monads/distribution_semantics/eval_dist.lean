@@ -32,22 +32,6 @@ The result of queries is assumed to be uniform over the oracle's codomain,
   independent of the given domain values in each query.
 Usually the `spec` when calling this would just be `coin_oracle` or `uniform_selecting`,
 However it can be any more general things as well, e.g. a dice rolling oracle -/
--- private noncomputable def eval_dist' {spec : oracle_spec} [h' : spec.finite_range] :
---   Π {α : Type} (oa : oracle_comp spec α), Σ (pa : pmf α), plift (pa.support = oa.support)
--- | _ (pure' α a) := ⟨pmf.pure a, plift.up $ (pmf.support_pure a)⟩
--- | _ (bind' α β oa ob) := ⟨(eval_dist' oa).1.bind (λ a, (eval_dist' $ ob a).1), begin
---         refine plift.up (set.ext $ λ b, _),
---         erw pmf.mem_support_bind_iff,
---         simp only [support, plift.down (eval_dist' oa).2, set.mem_Union],
---         split; rintro ⟨a, ha, ha'⟩; refine ⟨a, ha, _⟩;
---           simpa [(plift.down (eval_dist' (ob a)).2)] using ha'
---       end⟩
--- | _ (query i t) := ⟨pmf.uniform_of_fintype (spec.range i),
---       plift.up ((pmf.support_uniform_of_fintype (spec.range i)))⟩
-
--- noncomputable def eval_dist (oa : oracle_comp spec α) : pmf α :=
--- (eval_dist' oa).1
-
 noncomputable def eval_dist {spec : oracle_spec} [h : spec.finite_range] :
   Π {α : Type} (oa : oracle_comp spec α), pmf α
 | _ (pure' α a) := pmf.pure a
@@ -257,11 +241,10 @@ section map
 
 @[simp] lemma eval_dist_map : ⦃f <$> oa⦄ = ⦃oa⦄.map f := eval_dist_bind oa (pure ∘ f)
 
-lemma eval_dist_map_apply [decidable_eq β] :
-  ⦃f <$> oa⦄ y = ∑' (x : α), if y = f x then ⦃oa⦄ x else 0 :=
+lemma eval_dist_map_apply : ⦃f <$> oa⦄ y = ∑' (x : α), if y = f x then ⦃oa⦄ x else 0 :=
 by simp only [eval_dist_map oa f, pmf.map_apply f ⦃oa⦄, @eq_comm β y]
 
-lemma eval_dist_map_apply' [spec.computable] [decidable_eq β] [oa.decidable] :
+lemma eval_dist_map_apply' [spec.computable] [oa.decidable] :
   ⦃f <$> oa⦄ y = ∑ x in oa.fin_support, if y = f x then ⦃oa⦄ x else 0 :=
 (eval_dist_map_apply oa f y).trans (tsum_eq_sum $ λ a ha,
   by simp only [eval_dist_eq_zero_of_not_mem_fin_support ha, if_t_t])
@@ -274,8 +257,8 @@ by simp only [eval_dist_map, eval_dist_bind, pmf.map_bind]
 
 end map
 
-lemma eval_dist_bind_ite_apply_eq_tsum_add_tsum (p : α → Prop) [decidable_pred p]
-  (f g : α → β) : ⦃oa >>= λ a, return (if p a then f a else g a)⦄ y =
+lemma eval_dist_bind_ite_apply_eq_tsum_add_tsum (p : α → Prop) (f g : α → β) :
+  ⦃oa >>= λ a, return (if p a then f a else g a)⦄ y =
   (∑' x, ite (p x ∧ y = f x) (⦃oa⦄ x) 0) + (∑' x, ite (¬ p x ∧ y = g x) (⦃oa⦄ x) 0) :=
 begin
   rw [eval_dist_bind_return_apply, ← ennreal.tsum_add],

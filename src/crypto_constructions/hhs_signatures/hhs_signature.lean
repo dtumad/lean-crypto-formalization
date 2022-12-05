@@ -406,7 +406,7 @@ calc ⦃(=) (pk -ᵥ x₀) | (vectorization_adversary_reduction adversary).adv (
     sorry
   ... ≥ ⦃fork_success | fork (forking_adversary_reduction pk x₀ adversary)⦄ :
     begin
-      refine distribution_semantics.prob_event_le_prob_event_of_subset _ _,
+      refine distribution_semantics.prob_event_mono _ _,
       intros o ho,
       -- have := vectorizable_of_fork_success x₀ pk _ _ _ _ _ _ _ _ _ ho,
       apply vectorization_of_signatures_eq_of_exists_index,

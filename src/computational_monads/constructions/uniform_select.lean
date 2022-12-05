@@ -6,7 +6,6 @@ Authors: Devon Tuma
 import computational_monads.distribution_semantics.prob_event
 import to_mathlib.uniform_of_vector
 import data.vector.mem
-import data.finset.sum
 
 /-!
 # Computations Uniformly Drawing From Data Structures
@@ -317,9 +316,6 @@ by rw [prob_event.def, eval_dist_uniform_select_fintype, to_outer_measure_unifor
 lemma prob_event_uniform_select_fintype_apply_bind (ob : α → oracle_comp uniform_selecting β)
   (event : set β) : ⦃event | $ᵗ α >>= ob⦄ = ∑ a, ⦃event | ob a⦄ / fintype.card α :=
 by simp_rw [uniform_select_fintype, prob_event_uniform_select_finset_bind_eq_sum, finset.card_univ]
-
--- lemma prob_event_uniform_select_fintype_apply_bind' (ob : α → oracle_com uniform_selecting β)
---   (event : set β) : ⦃event | $ᵗ ⦄
 
 end distribution_semantics
 
