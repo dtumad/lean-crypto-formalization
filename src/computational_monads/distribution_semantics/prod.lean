@@ -14,7 +14,7 @@ General lemmas about probability computations involving `prod`
 namespace oracle_comp
 
 open oracle_spec distribution_semantics 
-open_locale classical big_operators ennreal
+open_locale big_operators ennreal
 
 
 variables {α β γ δ : Type} {spec spec' : oracle_spec} [finite_range spec] [finite_range spec']
@@ -46,7 +46,7 @@ end eval_dist
 
 section prob_event
 
-lemma prob_event_diagonal (oa : oracle_comp spec (α × α)) :
+lemma prob_event_diagonal [decidable_eq α] (oa : oracle_comp spec (α × α)) :
   ⦃set.diagonal α | oa⦄ = ∑' (a : α), ⦃oa⦄ (a, a) :=
 calc ⦃set.diagonal α | oa⦄ = ∑' (x : α × α), ite (x ∈ set.diagonal α) (⦃oa⦄ x) 0 :
     prob_event_eq_tsum_ite oa (set.diagonal α)

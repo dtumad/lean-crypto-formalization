@@ -19,7 +19,7 @@ we can instead give an expression in terms of `finset.sum`.
 namespace distribution_semantics
 
 open oracle_comp oracle_spec
-open_locale classical big_operators ennreal
+open_locale big_operators ennreal
 
 variables {α β γ : Type} {spec : oracle_spec} [finite_range spec]
 
@@ -58,15 +58,18 @@ lemma prob_event_eq_sum_fin_support_indicator [spec.computable] [oa.decidable] :
   set.indicator_apply_eq_zero.2 (λ _, eval_dist_eq_zero_of_not_mem_fin_support ha))
 
 /-- Probability of an event in terms of a decidable `ite` sum-/
-lemma prob_event_eq_tsum_ite : ⦃e | oa⦄ = ∑' x, ite (x ∈ e) (⦃oa⦄ x) 0 :=
-prob_event_eq_tsum_indicator oa e
+lemma prob_event_eq_tsum_ite [decidable_pred e] : ⦃e | oa⦄ = ∑' x, ite (x ∈ e) (⦃oa⦄ x) 0 :=
+trans (prob_event_eq_tsum_indicator oa e) (tsum_congr $ λ _, by { rw set.indicator, congr} )
 
-lemma prob_event_eq_sum_ite [fintype α] : ⦃e | oa⦄ = ∑ x, ite (x ∈ e) (⦃oa⦄ x) 0 :=
-prob_event_eq_sum_indicator oa e
+lemma prob_event_eq_sum_ite [fintype α] [decidable_pred e] :
+  ⦃e | oa⦄ = ∑ x, ite (x ∈ e) (⦃oa⦄ x) 0 :=
+trans (prob_event_eq_sum_indicator oa e) (finset.sum_congr rfl $
+  λ _ _, by {rw set.indicator, congr})
 
-lemma prob_event_eq_sum_fin_support_ite [spec.computable] [oa.decidable] :
+lemma prob_event_eq_sum_fin_support_ite [decidable_pred e] [spec.computable] [oa.decidable] :
   ⦃e | oa⦄ = ∑ x in oa.fin_support, ite (x ∈ e) (⦃oa⦄ x) 0 :=
-prob_event_eq_sum_fin_support_indicator oa e
+trans (prob_event_eq_sum_fin_support_indicator oa e) (finset.sum_congr rfl $
+  λ _ _, by {rw set.indicator, congr})
 
 lemma prob_event_coe_finset_eq_sum (e : finset α) : ⦃↑e | oa⦄ = ∑ x in e, ⦃oa⦄ x :=
 by rw [prob_event_eq_tsum_indicator, finset.sum_eq_tsum_indicator]
@@ -117,22 +120,25 @@ section return
 
 variables (a : α) (e : set α)
 
-@[simp] lemma prob_event_return : ⦃e | (return a : oracle_comp spec α)⦄ = ite (a ∈ e) 1 0 :=
-by simp only [prob_event.def, eval_dist_return, pmf.to_outer_measure_pure_apply]
+@[simp] lemma prob_event_return [decidable_pred e] :
+  ⦃e | (return a : oracle_comp spec α)⦄ = ite (a ∈ e) 1 0 :=
+by { simp only [prob_event.def, eval_dist_return, pmf.to_outer_measure_pure_apply], congr }
 
-lemma prob_event_return_eq_indicator : ⦃e | (return a : oracle_comp spec α)⦄ =
+lemma prob_event_return_eq_indicator [decidable_pred e] : ⦃e | (return a : oracle_comp spec α)⦄ =
   e.indicator (λ _, 1) a := by simp only [prob_event_return, set.indicator_apply]
 
-lemma prob_event_pure' : ⦃e | (pure' α a : oracle_comp spec α)⦄ = ite (a ∈ e) 1 0 :=
-by simp only [pure'_eq_return, prob_event.def, eval_dist_return, pmf.to_outer_measure_pure_apply]
+lemma prob_event_pure' [decidable_pred e] :
+  ⦃e | (pure' α a : oracle_comp spec α)⦄ = ite (a ∈ e) 1 0 :=
+by { simp only [pure'_eq_return, prob_event.def, eval_dist_return,
+  pmf.to_outer_measure_pure_apply], congr }
 
-lemma prob_event_pure'_eq_indicator : ⦃e | (pure' α a : oracle_comp spec α)⦄ =
+lemma prob_event_pure'_eq_indicator [decidable_pred e] : ⦃e | (pure' α a : oracle_comp spec α)⦄ =
   e.indicator (λ _, 1) a := by simp only [pure'_eq_return, prob_event_return, set.indicator_apply]
 
-lemma prob_event_pure : ⦃e | (pure a : oracle_comp spec α)⦄ = ite (a ∈ e) 1 0 :=
-by simp only [prob_event.def, eval_dist_return, pmf.to_outer_measure_pure_apply]
+lemma prob_event_pure [decidable_pred e] : ⦃e | (pure a : oracle_comp spec α)⦄ = ite (a ∈ e) 1 0 :=
+by { simp only [prob_event.def, eval_dist_return, pmf.to_outer_measure_pure_apply], congr }
 
-lemma prob_event_pure_eq_indicator : ⦃e | (pure a : oracle_comp spec α)⦄ =
+lemma prob_event_pure_eq_indicator [decidable_pred e] : ⦃e | (pure a : oracle_comp spec α)⦄ =
   e.indicator (λ _, 1) a := by simp only [prob_event_return, set.indicator_apply]
 
 @[simp] lemma prob_event_return_eq_one_iff : ⦃e | (return a : oracle_comp spec α)⦄ = 1 ↔ a ∈ e :=
@@ -188,7 +194,8 @@ section query
 variables (i : spec.ι) (t : spec.domain i) (u : spec.range i)
   (oa : spec.range i → oracle_comp spec α) (e : set (spec.range i)) (e' : set α)
 
-@[simp] lemma prob_event_query : ⦃e | query i t⦄ = fintype.card e / fintype.card (spec.range i) :=
+@[simp] lemma prob_event_query [decidable_pred e] :
+  ⦃e | query i t⦄ = fintype.card e / fintype.card (spec.range i) :=
 by simp only [prob_event.def, eval_dist_query, pmf.to_outer_measure_uniform_of_fintype_apply,
   fintype.card_of_finset, finset.filter_congr_decidable]
 
@@ -234,8 +241,8 @@ prob_event_eq_prob_event_of_inter_support_eq oa (by rw [set.inter_assoc, set.int
 
 /-- Given a `finset` containing the `support` of some `oracle_comp`,
   it suffices to take `finset.sum` over that instead of a `tsum` -/
-theorem prob_event_eq_sum_of_support_subset (s : finset α) (hs : oa.support ⊆ s) :
-  ⦃e | oa⦄ = ∑ x in s, if x ∈ e then ⦃oa⦄ x else 0 :=
+theorem prob_event_eq_sum_of_support_subset [decidable_pred e] (s : finset α) (hs : oa.support ⊆ s) :
+  ⦃e | oa⦄ = ∑ x in s, ite (x ∈ e) (⦃oa⦄ x) 0 :=
 trans (prob_event_eq_tsum_ite oa e) (tsum_eq_sum (λ x hx,
   by rw [eval_dist_eq_zero_of_not_mem_support (λ hx', hx $ finset.mem_coe.1 (hs hx')), if_t_t]))
 
@@ -257,8 +264,8 @@ section fin_support
 variables  [computable spec] (oa : oracle_comp spec α) [decidable oa]
   (ob : α → oracle_comp spec β) (e e' : set α)
 
-lemma prob_event_eq_sum_fin_support :
-  ⦃e | oa⦄ = ∑ x in oa.fin_support, if x ∈ e then ⦃oa⦄ x else 0 :=
+lemma prob_event_eq_sum_fin_support [decidable_pred e] :
+  ⦃e | oa⦄ = ∑ x in oa.fin_support, ite (x ∈ e) (⦃oa⦄ x) 0 :=
 (prob_event_eq_sum_of_support_subset _ e oa.fin_support $ support_subset_coe_fin_support oa)
 
 end fin_support

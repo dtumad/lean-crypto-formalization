@@ -131,10 +131,7 @@ section distribution_semantics
 
 open distribution_semantics
 
-open_locale classical
-
-/-- TODO: Is this quite right?
-  The probability of returning a given index is the independent value of getting it from both -/
+/-- The probability of returning a given index is the independent value of getting it from both -/
 lemma eval_dist_fst_map_fork_apply (i : option $ fin adv.q) :
   ⦃prod.fst <$> fork adv⦄ i = ⦃adv.simulate_choose_fork⦄ i ^ 2 :=
 calc ⦃prod.fst <$> fork adv⦄ i
@@ -177,21 +174,21 @@ begin
     ... = ∑' (log : query_log uniform_selecting), ⦃adv.simulate_with_log⦄ (some i, x, log, cache)
       * ⦃adv.simulate_from_seed log.to_seed (cache.fork_cache () (some i))⦄ (some i, x', cache') :
     begin
-
-      -- simp only [option.coe_def, option.map_some'],
       refine tsum_congr (λ log, _),
       refine congr_arg (λ x, _ * x) _,
-      refine trans (eval_dist_bind_return_apply_eq_tsum _ _ _) _,
+      refine trans (eval_dist_bind_return_apply_eq_tsum_preimage _ _ _) _,
       refine trans (tsum_eq_single (some i, x', cache') _) _,
       { intros o ho,
-        convert if_neg (λ ho', ho $ symm _),
-        simp only [prod.eq_iff_fst_eq_snd_eq] at ho' ⊢,
-        refine ⟨_, ho'.2.2.2⟩,
-        by_contra hi,
-        refine option.some_ne_none i (ho'.1.trans _),
-        refine if_neg hi },
-      { convert if_pos _,
-        simp only [eq_self_iff_true, if_true] },
+        simp only [prod.mk.eta, set.indicator_apply_eq_zero, set.mem_preimage,
+          set.mem_singleton_iff, prod.mk.inj_iff, eq_self_iff_true,
+            true_and, eval_dist_eq_zero_iff_not_mem_support, and_imp],
+        intros ho' ho'',
+        by_cases hi : some i = o.fst,
+        { exact (ho $ prod.eq_iff_fst_eq_snd_eq.2 ⟨hi.symm, ho''⟩).elim },
+        { exact (option.some_ne_none i $ by rw [← ho', if_neg hi]).elim } },
+      refine set.indicator_apply_eq_self.2 _,
+      simp only [set.mem_preimage, eq_self_iff_true, if_true, set.mem_singleton,
+        not_true, is_empty.forall_iff]
     end
 end
 

@@ -19,11 +19,12 @@ variables {α β γ : Type} {spec spec' : oracle_spec}
 def oracle_comp.prod (oa : oracle_comp spec α) (ob : oracle_comp spec β) :
   oracle_comp spec (α × β) := do {a ← oa, b ← ob, return (a, b)}
 
-infixl `×ₘ` : 100 := oracle_comp.prod
+infixr `×ₘ` : 100 := oracle_comp.prod
 
 namespace oracle_comp
 
 open oracle_spec
+open_locale ennreal big_operators
 
 lemma prod_def (oa : oracle_comp spec α) (ob : oracle_comp spec β) :
   oa ×ₘ ob = do {a ← oa, b ← ob, return (a, b)} := rfl
@@ -48,21 +49,35 @@ variable [spec.finite_range]
 
 section eval_dist
 
-@[simp]
-lemma eval_dist_prod_apply
-  (oa : oracle_comp spec α) (ob : oracle_comp spec β) (a : α) (b : β) :
-  ⦃oa ×ₘ ob⦄ (a, b) = ⦃oa⦄ a * ⦃ob⦄ b :=
-calc ⦃oa ×ₘ ob⦄ (a, b) = ∑' (x : α) (y : β), (⦃oa⦄ x * ⦃ob⦄ y) * (⦃return (x, y)⦄ (a, b)) :
+/-- Since the two computations run independently, the probability of an element
+  is the product of the two individual probabilities-/
+@[simp] lemma eval_dist_prod_apply (oa : oracle_comp spec α) (ob : oracle_comp spec β)
+  (x : α × β) : ⦃oa ×ₘ ob⦄ x = ⦃oa⦄ x.1 * ⦃ob⦄ x.2 :=
+calc ⦃oa ×ₘ ob⦄ x = ∑' (a : α) (b : β), (⦃oa⦄ a * ⦃ob⦄ b) * (⦃return (a, b)⦄ x) :
     by simp_rw [prod_def, eval_dist_bind_apply_eq_tsum, ← ennreal.tsum_mul_left, mul_assoc]
-  ... = (⦃oa⦄ a * ⦃ob⦄ b) * (⦃(return (a, b) : oracle_comp spec _)⦄ (a, b)) :
-    begin
-      refine tsum_tsum_eq_single _ a b (λ a' ha', _) (λ a' b' hb', _),
-      { have : (a, b) ≠ (a', b) := λ h, ha' (prod.eq_iff_fst_eq_snd_eq.1 h).1.symm,
-        simp only [eval_dist_return_apply_of_ne this, if_false, mul_zero]},
-      { have : (a, b) ≠ (a', b') := λ h, hb' (prod.eq_iff_fst_eq_snd_eq.1 h).2.symm,
-        simp only [eval_dist_return_apply_of_ne this, if_false, mul_zero]}
-    end
-  ... = ⦃oa⦄ a * ⦃ob⦄ b : by rw [eval_dist_return_apply_self, mul_one]
+  ... = ∑' (y : α × β), (⦃oa⦄ y.1 * ⦃ob⦄ y.2) * (⦃(return (y.1, y.2) : oracle_comp spec _)⦄ x) :
+    by rw ← ennreal.tsum_prod
+  ... = (⦃oa⦄ x.1 * ⦃ob⦄ x.2) * (⦃(return (x.1, x.2) : oracle_comp spec _)⦄ x) :
+    tsum_eq_single x (λ y hy, by rw [prod.mk.eta, eval_dist_return_apply_of_ne hy.symm, mul_zero])
+  ... = ⦃oa⦄ x.1 * ⦃ob⦄ x.2 : by rw [prod.mk.eta, eval_dist_return_apply_self, mul_one]
+
+@[simp] lemma eval_dist_indicator_prod_apply (oa : oracle_comp spec α) (ob : oracle_comp spec β)
+  (e : set α) (e' : set β) (a : α) (b : β) :
+  (e ×ˢ e').indicator ⦃oa ×ₘ ob⦄ (a, b) = (e.indicator ⦃oa⦄ a) * (e'.indicator ⦃ob⦄ b) :=
+begin
+  by_cases ha : a ∈ e,
+  { by_cases hb : b ∈ e',
+    { have : (a, b) ∈ (e ×ˢ e') := ⟨ha, hb⟩,
+      rw [set.indicator_apply_eq_self.2 (λ h, (h this).elim),
+        set.indicator_apply_eq_self.2 (λ h, (h ha).elim),
+        set.indicator_apply_eq_self.2 (λ h, (h hb).elim), eval_dist_prod_apply] },
+    { have : (a, b) ∉ (e ×ˢ e') := λ h, hb h.2,
+      rw [set.indicator_apply_eq_zero.2 (λ h, (this h).elim),
+        set.indicator_apply_eq_zero.2 (λ h, (hb h).elim), mul_zero] } },
+  { have : (a, b) ∉ (e ×ˢ e') := λ h, ha h.1,
+    rw [set.indicator_apply_eq_zero.2 (λ h, (this h).elim),
+      set.indicator_apply_eq_zero.2 (λ h, (ha h).elim), zero_mul] }
+end
 
 end eval_dist
 
@@ -70,27 +85,16 @@ section prob_event
 
 lemma prob_event_set_prod_eq_mul
   (oa : oracle_comp spec α) (ob : oracle_comp spec β)
-  (e : set α) (e' : set β) [decidable_pred e] [decidable_pred e'] :
-  ⦃e ×ˢ e' | oa ×ₘ ob⦄ = ⦃e | oa⦄ * ⦃e' | ob⦄ :=
+  (e : set α) (e' : set β) : ⦃e ×ˢ e' | oa ×ₘ ob⦄ = ⦃e | oa⦄ * ⦃e' | ob⦄ :=
 calc ⦃e ×ˢ e' | oa ×ₘ ob⦄
-  = ∑' (x : α × β), ite (x ∈ e ×ˢ e') (⦃oa⦄ x.1 * ⦃ob⦄ x.2) 0 :
-  begin
-    refine trans (prob_event_eq_tsum_ite _ _) (tsum_congr (λ x, x.rec $ λ a b, _)),
-    simp only [set.mem_prod, eval_dist_prod_apply, ← ennreal.coe_mul],
-  end
-  ... = (∑' a, ite (a ∈ e) (⦃oa⦄ a) 0) * (∑' b, ite (b ∈ e') (⦃ob⦄ b) 0) :
+  = ∑' (x : α × β), (e ×ˢ e').indicator (⦃oa ×ₘ ob⦄) x : (prob_event_eq_tsum_indicator _ _)
+  ... = (∑' a, e.indicator ⦃oa⦄ a) * (∑' b, e'.indicator ⦃ob⦄ b) :
   begin
     simp_rw [← ennreal.tsum_mul_right, ← ennreal.tsum_mul_left,
       tsum_prod' ennreal.summable (λ _, ennreal.summable)],
-    exact tsum_congr (λ a, tsum_congr (λ b, trans (by congr) (ite_and_mul_zero _ _ _ _))),
+    refine tsum_congr (λ a, tsum_congr (λ b, eval_dist_indicator_prod_apply oa ob e e' a b)),
   end
-  ... = ⦃e | oa⦄ * ⦃e' | ob⦄ : begin
-    simp_rw [prob_event_eq_tsum_ite],
-    congr;
-    { ext x,
-      split_ifs,
-      refl, refl }
-  end
+  ... = ⦃e | oa⦄ * ⦃e' | ob⦄ : by simp_rw [prob_event_eq_tsum_indicator]
 
 end prob_event
 

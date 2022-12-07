@@ -14,21 +14,20 @@ that reduces any computation to one with a `uniform_selecting` `oracle_spec`,
 by responding uniformly at random to any query.
 -/
 
-open oracle_comp oracle_spec nnreal ennreal
+open oracle_comp oracle_spec ennreal
 
-variables {α β : Type} {spec : oracle_spec}
+variables {α β : Type} {spec : oracle_spec} [finite_range spec] [computable spec]
 
-noncomputable def uniform_oracle (spec : oracle_spec) [spec.finite_range] : 
+noncomputable def uniform_oracle (spec : oracle_spec) [spec.finite_range] [spec.computable] : 
   sim_oracle spec uniform_selecting unit :=
 ⟪λ i t, $ᵗ (spec.range i)⟫
 
-lemma uniform_oracle.def (spec : oracle_spec) [spec.finite_range] :
+lemma uniform_oracle.def (spec : oracle_spec) [spec.finite_range] [spec.computable] :
   uniform_oracle spec = ⟪λ i t, $ᵗ (spec.range i)⟫ := rfl
 
 namespace uniform_oracle
 
-variables (oa : oracle_comp spec α) [finite_range spec]
-  (i : spec.ι) (t : spec.domain i) (u : unit)
+variables (oa : oracle_comp spec α) (i : spec.ι) (t : spec.domain i) (u : unit)
 
 @[simp] lemma apply_eq : uniform_oracle spec i (t, u) =
   $ᵗ (spec.range i) >>= λ u, return (u, ()) := rfl

@@ -99,7 +99,6 @@ end fin_support
 section distribution_semantics
 
 open distribution_semantics
--- open_locale classical
 
 variable [spec.finite_range]
 
@@ -117,13 +116,11 @@ begin
         begin
           simp only [oa.repeat_succ, eval_dist_bind_apply_eq_tsum, eval_dist_return_apply,
             mul_ite, mul_one, mul_zero, ← ennreal.tsum_mul_left],
-          exact tsum_congr (λ y, tsum_congr (λ ys, by congr)),
         end
       ... = ite (x ::ᵥ xs = x ::ᵥ xs) (⦃oa⦄ x * ⦃oa.repeat m⦄ xs) 0 : 
         begin
           rw ← ennreal.tsum_prod,
-          refine (tsum_eq_single (x, xs) (λ y_ys h, _)),
-          refine if_neg _,
+          refine trans (tsum_eq_single (x, xs) (λ y_ys h, if_neg _)) rfl,
           simp only [ne.def, prod.eq_iff_fst_eq_snd_eq, not_and,
               vector.eq_cons_iff, not_and, vector.head_cons, vector.tail_cons] at h ⊢,
           exact λ h', ne.symm (h h'.symm),
