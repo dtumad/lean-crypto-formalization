@@ -32,31 +32,15 @@ open oracle_spec decidable
 variables {α β γ : Type} {spec spec' : oracle_spec}
   [computable spec] [computable spec'] [finite_range spec] [finite_range spec']
 
-/-- Version of `fin_support` taking an explicit `decidable` argument instead of an instance -/
-def fin_support' : Π {α : Type} (oa : oracle_comp spec α), oa.decidable → finset α
-| _ _ (decidable_pure' α a h) := {a}
-| _ _ (decidable_bind' α β oa ob hoa hob) := 
-  have hβ : decidable_eq β := decidable_eq_of_decidable' (hob $ (inhabited_base oa).1),
-  @finset.bUnion α β hβ (fin_support' oa hoa) (λ a, fin_support' (ob a) (hob a))
-| _ _ (decidable_query i t) := finset.univ
-
 /-- Compute an explicit `finset` of the elements in `support`,
   assuming `computable` and `finite_range` instances on the `spec`,
   and a `decidable` instance on the `oracle_comp` itself. -/
-def fin_support (oa : oracle_comp spec α) [hoa : oa.decidable] : finset α :=
-oa.fin_support' hoa
-
-lemma fin_support_def (oa : oracle_comp spec α) [hoa : oa.decidable] :
-  oa.fin_support = oa.fin_support' hoa := rfl
-
-lemma mem_fin_support'_iff_mem_support : Π {α : Type} (oa : oracle_comp spec α)
-  (hoa : decidable oa) (a : α), a ∈ (fin_support' oa hoa) ↔ a ∈ oa.support
-| _ _ (decidable_pure' α a h) α' :=
-    by simp [finset.coe_singleton α, support, fin_support']
-| _ _ (decidable_bind' α β oa ob hoa hob) b :=
-    by simp [fin_support', support, mem_fin_support'_iff_mem_support]
-| _ _ (decidable_query i t) u :=
-    by simp [support, fin_support']
+def fin_support : Π {α : Type} (oa : oracle_comp spec α) [decidable oa], finset α
+| _ _ (decidable_pure' α a h) := {a}
+| _ _ (decidable_bind' α β oa ob hoa hob) := 
+  have hβ : decidable_eq β := decidable_eq_of_decidable' (hob $ (inhabited_base oa).1),
+  @finset.bUnion α β hβ (@fin_support α oa hoa) (λ a, @fin_support β (ob a) (hob a))
+| _ _ (decidable_query i t) := finset.univ
 
 section support
 
@@ -64,8 +48,14 @@ variables (oa : oracle_comp spec α) (oa' : oracle_comp spec' α) [decidable oa]
   (a : α) (s : finset α)
 
 /-- Correctness of `fin_support` with respect to `support`, i.e. the two are equal as `set`s -/
-lemma mem_fin_support_iff_mem_support : a ∈ oa.fin_support ↔ a ∈ oa.support :=
-mem_fin_support'_iff_mem_support oa _ a
+theorem mem_fin_support_iff_mem_support : Π {α : Type} (oa : oracle_comp spec α)
+  [hoa : decidable oa] (a : α), a ∈ (@fin_support _ _ _ _ _ hoa) ↔ a ∈ oa.support
+| _ _ (decidable_pure' α a h) α' :=
+    by simp [finset.coe_singleton α, support, fin_support]
+| _ _ (decidable_bind' α β oa ob hoa hob) b :=
+    by simp [fin_support, support,mem_fin_support_iff_mem_support]
+| _ _ (decidable_query i t) u :=
+    by simp [support, fin_support]
 
 lemma fin_support_eq_to_finset : oa.fin_support = oa.support.to_finset :=
 finset.ext (λ x, by simp only [mem_fin_support_iff_mem_support, set.mem_to_finset])
@@ -118,51 +108,64 @@ end return
 section bind
 
 variables (oa : oracle_comp spec α) (ob : α → oracle_comp spec β)
-  [decidable oa] [∀ a, decidable (ob a)] (b : β)
+  [decidable oa] [∀ a, decidable (ob a)] (f : α → β) (x a : α) (y : β)
 
 @[simp] lemma fin_support_bind : (oa >>= ob).fin_support = @finset.bUnion α β
   (decidable_eq_of_decidable (oa >>= ob)) oa.fin_support (λ a, (ob a).fin_support) :=
 by simp only [fin_support_eq_iff_support_eq_coe, support_bind,
   finset.coe_bUnion, coe_fin_support_eq_support]
 
-lemma mem_fin_support_bind_iff : b ∈ (oa >>= ob).fin_support ↔
-  ∃ a ∈ oa.fin_support, b ∈ (ob a).fin_support :=
+lemma mem_fin_support_bind_iff : y ∈ (oa >>= ob).fin_support ↔
+  ∃ x ∈ oa.fin_support, y ∈ (ob x).fin_support :=
 by rw [fin_support_bind, finset.mem_bUnion]
 
 @[simp] lemma fin_support_bind' : (bind' α β oa ob).fin_support = @finset.bUnion α β
   (decidable_eq_of_decidable (bind' α β oa ob)) oa.fin_support (λ a, (ob a).fin_support) :=
 fin_support_bind oa ob
 
-lemma mem_fin_support_bind'_iff : b ∈ (bind' α β oa ob).fin_support ↔
-  ∃ a ∈ oa.fin_support, b ∈ (ob a).fin_support :=
-mem_fin_support_bind_iff oa ob b
+lemma mem_fin_support_bind'_iff : y ∈ (bind' α β oa ob).fin_support ↔
+  ∃ x ∈ oa.fin_support, y ∈ (ob x).fin_support :=
+mem_fin_support_bind_iff oa ob y
 
-lemma fin_support_return_bind [decidable_eq α] (a : α) :
+lemma fin_support_return_bind [decidable_eq α] :
   (return a >>= ob).fin_support = (ob a).fin_support :=
 by simp only [fin_support_bind, fin_support_return, finset.singleton_bUnion]
 
-lemma mem_fin_support_return_bind_iff [decidable_eq α] (a : α) (b : β) :
-  b ∈ (return a >>= ob).fin_support ↔ b ∈ (ob a).fin_support :=
+lemma mem_fin_support_return_bind_iff [decidable_eq α] :
+  y ∈ (return a >>= ob).fin_support ↔ y ∈ (ob a).fin_support :=
 by rw [fin_support_return_bind]
 
-@[simp] lemma fin_support_bind_return [decidable_eq β] (f : α → β) :
+@[simp] lemma fin_support_bind_return [decidable_eq β] :
   (oa >>= λ a, return (f a)).fin_support = oa.fin_support.image f :=
 by rw [fin_support_eq_iff_support_eq_coe, support_bind_return,
   finset.coe_image, coe_fin_support_eq_support]
 
-lemma mem_fin_support_bind_return_iff [decidable_eq β] (f : α → β) (b : β) :
-  b ∈ (oa >>= λ a, return (f a)).fin_support ↔ ∃ a ∈ oa.fin_support, f a = b :=
+lemma mem_fin_support_bind_return_iff [decidable_eq β] :
+  y ∈ (oa >>= λ a, return (f a)).fin_support ↔ ∃ x ∈ oa.fin_support, f x = y :=
 by simp only [fin_support_bind_return, finset.mem_image]
+
+@[simp] lemma fin_support_bind_return_id [decidable_eq α] :
+  (oa >>= return).fin_support = oa.fin_support :=
+(fin_support_bind_return oa id).trans finset.image_id
 
 end bind
 
 section query
 
 variables (i : spec.ι) (t : spec.domain i) (u : spec.range i)
+  (oa : spec.range i → oracle_comp spec α) [∀ u, decidable (oa u)] (x : α)
 
 @[simp] lemma fin_support_query : (query i t).fin_support = ⊤ := rfl
 
 lemma mem_fin_support_query : u ∈ (query i t).fin_support := finset.mem_univ u
+
+lemma fin_support_query_bind [decidable_eq α] :
+  (query i t >>= oa).fin_support = finset.bUnion finset.univ (λ u, (oa u).fin_support) :=
+by {simp only [fin_support_bind, fin_support_query, finset.top_eq_univ], congr}
+
+lemma mem_fin_support_query_bind_iff [decidable_eq α] :
+  x ∈ (query i t >>= oa).fin_support ↔ ∃ t, x ∈ (oa t).fin_support :=
+by simp only [fin_support_query_bind, finset.mem_bUnion, finset.mem_univ, exists_true_left]
 
 end query
 

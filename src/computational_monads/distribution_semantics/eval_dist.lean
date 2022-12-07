@@ -42,18 +42,20 @@ notation `⦃` oa `⦄` := eval_dist oa
 
 notation oa ` ≃ₚ ` oa' := ⦃oa⦄ = ⦃oa'⦄
 
-variables (a : α) (oa oa' : oracle_comp spec α) (ob ob' : α → oracle_comp spec β)
-  (oc oc' : α → β → oracle_comp spec γ) (i : spec.ι) (t : spec.domain i) (u : spec.range i)
-  (f : α → β) (g : β → γ) (x x' : α) (y y' : β) (z z' : γ)
+-- variables (a : α) (oa oa' : oracle_comp spec α) (ob ob' : α → oracle_comp spec β)
+--   (oc oc' : α → β → oracle_comp spec γ) (i : spec.ι) (t : spec.domain i) (u : spec.range i)
+--   (f : α → β) (g : β → γ) (x x' : α) (y y' : β) (z z' : γ)
 
 section support
 
+variables (oa : oracle_comp spec α) (x : α)
+
 @[simp] lemma support_eval_dist : ⦃oa⦄.support = oa.support :=
 begin
-  induction oa with α a α β oa ob hoa hob i t,
+  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t,
   { exact pmf.support_pure a },
-  { refine (set.ext $ λ x, _),
-    simp only [eval_dist, pmf.mem_support_bind_iff, hoa, hob, mem_support_bind'_iff] },
+  { refine (set.ext $ λ x, by simp_rw [mem_support_bind_iff, ← bind'_eq_bind, eval_dist,
+      pmf.mem_support_bind_iff, hoa, hob]) },
   { rw [eval_dist, pmf.support_uniform_of_fintype, support_query] }
 end
 
@@ -95,7 +97,7 @@ end support
 
 section fin_support
 
-variables [computable spec] [decidable oa]
+variables [computable spec] (oa : oracle_comp spec α) [decidable oa] (x : α)
 
 lemma support_eval_dist_eq_fin_support : ⦃oa⦄.support = oa.fin_support :=
 (support_eval_dist oa).trans (coe_fin_support_eq_support oa).symm
@@ -138,6 +140,8 @@ end fin_support
 
 section return
 
+variables (a x : α)
+
 @[simp] lemma eval_dist_return : ⦃(return a : oracle_comp spec α)⦄ = pmf.pure a := rfl
 
 lemma eval_dist_return_apply : ⦃(return a : oracle_comp spec α)⦄ x = ite (x = a) 1 0 := rfl
@@ -171,49 +175,29 @@ end return
 
 section bind
 
+variables (a : α) (oa oa' : oracle_comp spec α) (ob ob' : α → oracle_comp spec β)
+  (f : α → β) (x : α) (y : β)
+
 @[simp] lemma eval_dist_bind : ⦃oa >>= ob⦄ = ⦃oa⦄.bind (λ x, ⦃ob x⦄) :=
 by rw [← bind'_eq_bind, eval_dist]
 
-lemma eval_dist_bind_apply_eq_tsum : ⦃oa >>= ob⦄ y = ∑' (x : α), ⦃oa⦄ x * ⦃ob x⦄ y :=
+lemma eval_dist_bind' : ⦃bind' α β oa ob⦄ = ⦃oa⦄.bind (λ x, ⦃ob x⦄) := eval_dist_bind oa ob
+
+lemma eval_dist_bind_apply_eq_tsum : ⦃oa >>= ob⦄ y = ∑' x, ⦃oa⦄ x * ⦃ob x⦄ y :=
 by simpa only [eval_dist_bind]
 
-lemma eval_dist_bind_apply_eq_sum [spec.computable] [oa.decidable] :
+lemma eval_dist_bind_apply_eq_sum [fintype α] : ⦃oa >>= ob⦄ y = ∑ x, ⦃oa⦄ x * ⦃ob x⦄ y :=
+by simpa only [eval_dist_bind_apply_eq_tsum]
+  using tsum_eq_sum (λ x hx, (hx $ finset.mem_univ x).elim)
+
+lemma eval_dist_bind_apply_eq_sum_fin_support [spec.computable] [oa.decidable] :
   ⦃oa >>= ob⦄ y = ∑ x in oa.fin_support, ⦃oa⦄ x * ⦃ob x⦄ y :=
 (eval_dist_bind_apply_eq_tsum oa ob y).trans (tsum_eq_sum $ λ a ha,
   by rw [(eval_dist_eq_zero_iff_not_mem_fin_support oa a).2 ha, zero_mul])
 
-lemma eval_dist_bind' : ⦃bind' α β oa ob⦄ = ⦃oa⦄.bind (λ x, ⦃ob x⦄) := by rw eval_dist
-
-lemma eval_dist_bind'_apply_eq_tsum : ⦃bind' α β oa ob⦄ y = ∑' (x : α), ⦃oa⦄ x * ⦃ob x⦄ y :=
-by simpa only [eval_dist_bind']
-
-lemma eval_dist_bind'_apply_eq_sum [spec.computable] [oa.decidable] :
-  ⦃oa >>= ob⦄ y = ∑ x in oa.fin_support, ⦃oa⦄ x * ⦃ob x⦄ y :=
-(eval_dist_bind'_apply_eq_tsum oa ob y).trans (tsum_eq_sum $ λ a ha,
-  by rw [(eval_dist_eq_zero_iff_not_mem_fin_support oa a).2 ha, zero_mul])
-
-lemma eval_dist_bind_bind_apply_eq_tsum_tsum : ⦃do {x ← oa, y ← ob x, oc x y}⦄ z
-  = ∑' (x : α) (y : β), ⦃oa⦄ x * ⦃ob x⦄ y * ⦃oc x y⦄ z :=
-by simp only [eval_dist_bind_apply_eq_tsum, ← ennreal.tsum_mul_left, mul_assoc]
-
-lemma eval_dist_bind_bind_apply_eq_sum_sum [spec.computable] [oa.decidable]
-  [∀ a, (ob a).decidable] : ⦃do {x ← oa, y ← ob x, oc x y}⦄ z =
-    ∑ x in oa.fin_support, ∑ y in (ob x).fin_support, ⦃oa⦄ x * ⦃ob x⦄ y * ⦃oc x y⦄ z :=
-by simp only [eval_dist_bind_apply_eq_sum, finset.mul_sum, mul_assoc]
-
 lemma eval_dist_bind_eq_of_eval_dist_eq (hoa : ⦃oa⦄ = ⦃oa'⦄)
   (hob : ∀ a, ⦃ob a⦄ = ⦃ob' a⦄) : ⦃oa >>= ob⦄ = ⦃oa' >>= ob'⦄ :=
 by simp_rw [eval_dist_bind, hoa, hob]
-
-@[simp] lemma eval_dist_bind_return : ⦃oa >>= λ x, return (f x)⦄ = ⦃oa⦄.map f :=
-by simp_rw [eval_dist_bind, eval_dist_return, pmf.bind_pure_comp]
-
-lemma eval_dist_bind_return_apply :
-  ⦃oa >>= λ x, return (f x)⦄ y = ∑' (x : α), ite (y = f x) (⦃oa⦄ x) 0 :=
-by rw [eval_dist_bind_return, pmf.map_apply]
-
-@[simp] lemma eval_dist_bind_return_id : ⦃oa >>= return⦄ = ⦃oa⦄ :=
-(eval_dist_bind_return oa id).trans (by rw [pmf.map_id])
 
 lemma eval_dist_return_bind : ⦃return a >>= ob⦄ = ⦃ob a⦄ :=
 by simp only [eval_dist_bind, eval_dist_return, pmf.pure_bind]
@@ -221,33 +205,67 @@ by simp only [eval_dist_bind, eval_dist_return, pmf.pure_bind]
 lemma eval_dist_return_bind_apply : ⦃return a >>= ob⦄ y = ⦃ob a⦄ y :=
 by simp only [eval_dist_bind, eval_dist_return, pmf.pure_bind]
 
+@[simp] lemma eval_dist_bind_return : ⦃oa >>= λ x, return (f x)⦄ = ⦃oa⦄.map f :=
+by simp_rw [eval_dist_bind, eval_dist_return, pmf.bind_pure_comp]
+
+lemma eval_dist_bind_return_apply_eq_tsum :
+  ⦃oa >>= λ x, return (f x)⦄ y = ∑' x, ite (y = f x) (⦃oa⦄ x) 0 :=
+by rw [eval_dist_bind_return, pmf.map_apply]
+
+lemma eval_dist_bind_return_apply_eq_sum [fintype α] :
+  ⦃oa >>= λ x, return (f x)⦄ y = ∑ x, ite (y = f x) (⦃oa⦄ x) 0 :=
+(eval_dist_bind_return_apply_eq_tsum oa f y).trans
+  (tsum_eq_sum (λ x hx, (hx $ finset.mem_univ x).elim))
+
+lemma eval_dist_bind_return_apply_eq_sum_fin_support [spec.computable] [oa.decidable] :
+  ⦃oa >>= λ x, return (f x)⦄ y = ∑ x in oa.fin_support, ite (y = f x) (⦃oa⦄ x) 0 :=
+(eval_dist_bind_return_apply_eq_tsum oa f y).trans
+  (tsum_eq_sum (λ x hx, by rw [eval_dist_eq_zero_of_not_mem_fin_support hx, if_t_t]))
+
+@[simp] lemma eval_dist_bind_return_id : ⦃oa >>= return⦄ = ⦃oa⦄ :=
+(eval_dist_bind_return oa id).trans (by rw [pmf.map_id])
+
 end bind
 
 section query
+
+variables (i : spec.ι) (t : spec.domain i) (u : spec.range i)
+  (oa : spec.range i → oracle_comp spec α) (x : α)
 
 @[simp] lemma eval_dist_query : ⦃query i t⦄ = pmf.uniform_of_fintype (spec.range i) := rfl
 
 lemma eval_dist_query_apply : ⦃query i t⦄ u = 1 / (fintype.card $ spec.range i) :=
 by simp only [eval_dist_query, pmf.uniform_of_fintype_apply, one_div]
 
-lemma eval_dist_query_bind_eq_tsum (oa : spec.range i → oracle_comp spec α) :
+lemma eval_dist_query_bind_apply_eq_tsum :
   ⦃query i t >>= oa⦄ x = (∑' u, ⦃oa u⦄ x) / (fintype.card $ spec.range i) :=
 by simp_rw [eval_dist_bind_apply_eq_tsum, eval_dist_query_apply, div_eq_mul_inv,
   one_mul, ennreal.tsum_mul_left, mul_comm]
+
+lemma eval_dist_query_bind_apply_eq_sum :
+  ⦃query i t >>= oa⦄ x = (∑ u, ⦃oa u⦄ x) / (fintype.card $ spec.range i) :=
+by simp_rw [eval_dist_bind_apply_eq_sum, eval_dist_query_apply, div_eq_mul_inv,
+  one_mul, finset.sum_mul, mul_comm]
 
 end query
 
 section map
 
+variables (oa : oracle_comp spec α) (ob : α → oracle_comp spec β)
+  (f : α → β) (g : β → γ) (x : α) (y : β)
+
 @[simp] lemma eval_dist_map : ⦃f <$> oa⦄ = ⦃oa⦄.map f := eval_dist_bind oa (pure ∘ f)
 
-lemma eval_dist_map_apply : ⦃f <$> oa⦄ y = ∑' (x : α), if y = f x then ⦃oa⦄ x else 0 :=
-by simp only [eval_dist_map oa f, pmf.map_apply f ⦃oa⦄, @eq_comm β y]
+lemma eval_dist_map_apply_eq_tsum : ⦃f <$> oa⦄ y = ∑' x, if y = f x then ⦃oa⦄ x else 0 :=
+eval_dist_bind_return_apply_eq_tsum oa _ y
 
-lemma eval_dist_map_apply' [spec.computable] [oa.decidable] :
+lemma eval_dist_map_apply_eq_sum [fintype α] :
+  ⦃f <$> oa⦄ y = ∑ x, if y = f x then ⦃oa⦄ x else 0 :=
+eval_dist_bind_return_apply_eq_sum oa _ y
+
+lemma eval_dist_map_apply_eq_sum_fin_support [spec.computable] [oa.decidable] :
   ⦃f <$> oa⦄ y = ∑ x in oa.fin_support, if y = f x then ⦃oa⦄ x else 0 :=
-(eval_dist_map_apply oa f y).trans (tsum_eq_sum $ λ a ha,
-  by simp only [eval_dist_eq_zero_of_not_mem_fin_support ha, if_t_t])
+eval_dist_bind_return_apply_eq_sum_fin_support oa _ y
 
 lemma eval_dist_map_return : ⦃f <$> (return x : oracle_comp spec α)⦄ = pmf.pure (f x) :=
 by simp [eval_dist_map, pmf.map_pure]
@@ -257,16 +275,33 @@ by simp only [eval_dist_map, eval_dist_bind, pmf.map_bind]
 
 end map
 
-lemma eval_dist_bind_ite_apply_eq_tsum_add_tsum (p : α → Prop) (f g : α → β) :
+section ite
+
+variables (oa : oracle_comp spec α) (p : α → Prop) (f g : α → β) (x : α) (y : β)
+
+lemma eval_dist_bind_ite_apply_eq_tsum_add_tsum :
   ⦃oa >>= λ a, return (if p a then f a else g a)⦄ y =
-  (∑' x, ite (p x ∧ y = f x) (⦃oa⦄ x) 0) + (∑' x, ite (¬ p x ∧ y = g x) (⦃oa⦄ x) 0) :=
+    (∑' x, ite (p x ∧ y = f x) (⦃oa⦄ x) 0) + (∑' x, ite (¬ p x ∧ y = g x) (⦃oa⦄ x) 0) :=
 begin
-  rw [eval_dist_bind_return_apply, ← ennreal.tsum_add],
+  rw [eval_dist_bind_return_apply_eq_tsum, ← ennreal.tsum_add],
   refine tsum_congr (λ x, _),
   by_cases hpx : p x;
   simp only [hpx, if_true, true_and, not_true, false_and, if_false, add_zero,
     if_false, false_and, not_false_iff, true_and, zero_add]
 end
+
+lemma eval_dist_bind_ite_apply_eq_sum_add_sum [fintype α] :
+  ⦃oa >>= λ a, return (if p a then f a else g a)⦄ y =
+    (∑ x, ite (p x ∧ y = f x) (⦃oa⦄ x) 0) + (∑ x, ite (¬ p x ∧ y = g x) (⦃oa⦄ x) 0) :=
+begin
+  rw [eval_dist_bind_return_apply_eq_sum, ← finset.sum_add_distrib],
+  refine finset.sum_congr rfl (λ x _, _),
+  by_cases hpx : p x;
+  simp only [hpx, if_true, true_and, not_true, false_and, if_false, add_zero,
+    if_false, false_and, not_false_iff, true_and, zero_add],
+end
+
+end ite
 
 /-- Right the `eval_dist` of bind as a sum over another type,
 using a map that is both injective and surjective on corresponding supports -/

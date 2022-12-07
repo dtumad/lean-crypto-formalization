@@ -39,61 +39,67 @@ variables (spec) (a x : α)
 
 @[simp] lemma support_return : (return a : oracle_comp spec α).support = {a} := rfl
 
-lemma mem_support_return_iff : x ∈ (return a : oracle_comp spec α).support ↔ x = a :=
-set.mem_singleton_iff
+lemma mem_support_return_iff : x ∈ (return a : oracle_comp spec α).support ↔ x = a := iff.rfl
 
 lemma support_pure' : (pure' α a : oracle_comp spec α).support = {a} := rfl
 
-lemma mem_support_pure'_iff : x ∈ (pure' α a : oracle_comp spec α).support ↔ x = a :=
-mem_support_return_iff spec a x
+lemma mem_support_pure'_iff : x ∈ (pure' α a : oracle_comp spec α).support ↔ x = a := iff.rfl
 
 lemma support_pure : (pure a : oracle_comp spec α).support = {a} := rfl
 
-lemma mem_support_pure_iff : x ∈ (pure a : oracle_comp spec α).support ↔ x = a :=
-set.mem_singleton_iff
+lemma mem_support_pure_iff : x ∈ (pure a : oracle_comp spec α).support ↔ x = a := iff.rfl
 
 end return
 
 section bind
 
-variables (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) (x : β)
+variables (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) (f : α → β) (x a : α) (y : β)
 
 @[simp] lemma support_bind : (oa >>= ob).support = ⋃ α ∈ oa.support, (ob α).support := rfl
 
-lemma mem_support_bind_iff : x ∈ (oa >>= ob).support ↔
-  ∃ y ∈ oa.support, x ∈ (ob y).support := by simp_rw [support_bind, set.mem_Union]
+lemma mem_support_bind_iff : y ∈ (oa >>= ob).support ↔
+  ∃ x ∈ oa.support, y ∈ (ob x).support := by simp_rw [support_bind, set.mem_Union]
 
 lemma support_bind' : (bind' α β oa ob).support = ⋃ α ∈ oa.support, (ob α).support := rfl
 
-lemma mem_support_bind'_iff : x ∈ (bind' α β oa ob).support ↔
-  ∃ a ∈ oa.support, x ∈ (ob a).support := by simp_rw [support_bind', set.mem_Union]
+lemma mem_support_bind'_iff : y ∈ (bind' α β oa ob).support ↔
+  ∃ x ∈ oa.support, y ∈ (ob x).support := by simp_rw [support_bind', set.mem_Union]
 
-lemma support_return_bind (a : α) (ob : α → oracle_comp spec β) :
+lemma support_return_bind :
   (return a >>= ob).support = (ob a).support :=
-by simp only [support_bind, mem_support_pure_iff, set.Union_Union_eq_left]
+by simp only [support_bind, mem_support_return_iff, set.Union_Union_eq_left]
 
-lemma mem_support_return_bind_iff (a : α) (ob : α → oracle_comp spec β) (b : β) :
-  b ∈ (return a >>= ob).support ↔ b ∈ (ob a).support := by rw [support_return_bind]
+lemma mem_support_return_bind_iff :
+  y ∈ (return a >>= ob).support ↔ y ∈ (ob a).support := by rw [support_return_bind]
 
-@[simp] lemma support_bind_return (oa : oracle_comp spec α) (f : α → β) :
-  (oa >>= λ a, return (f a)).support = f '' oa.support :=
+@[simp] lemma support_bind_return : (oa >>= λ a, return (f a)).support = f '' oa.support :=
 calc (f <$> oa).support = ⋃ α ∈ oa.support, {f α} : rfl
   ... = f '' (⋃ α ∈ oa.support, {α}) : by simp only [set.image_Union, set.image_singleton]
   ... = f '' oa.support : congr_arg (λ _, f '' _) (set.bUnion_of_singleton oa.support)
 
-lemma mem_support_bind_return_iff (oa : oracle_comp spec α) (f : α → β) (b : β) :
-  b ∈ (oa >>= λ a, return (f a)).support ↔ ∃ a ∈ oa.support, f a = b :=
+lemma mem_support_bind_return_iff :
+  y ∈ (oa >>= λ x, return (f x)).support ↔ ∃ x ∈ oa.support, f x = y :=
 by simp only [support_bind_return, set.mem_image, exists_prop]
+
+@[simp] lemma support_bind_return_id : (oa >>= return).support = oa.support :=
+(support_bind_return oa id).trans (set.image_id oa.support)
 
 end bind
 
 section query
 
 variables (i : spec.ι) (t : spec.domain i) (u : spec.range i)
+  (oa : spec.range i → oracle_comp spec α) (x : α)
 
 @[simp] lemma support_query : (query i t).support = ⊤ := rfl
 
 lemma mem_support_query_iff : u ∈ (query i t).support := set.mem_univ u
+
+lemma support_query_bind : (query i t >>= oa).support = ⋃ u, (oa u).support :=
+by simp only [support_bind, set.Union_true]
+
+lemma mem_support_query_bind_iff : x ∈ (query i t >>= oa).support ↔ ∃ t, x ∈ (oa t).support :=
+by rw [support_query_bind, set.mem_Union]
 
 end query
 
@@ -110,7 +116,7 @@ mem_support_bind_return_iff oa f b
 lemma support_map_return : (f <$> (return a : oracle_comp spec α)).support = {f a} :=
 by simp only [support_map, support_return, set.image_singleton]
 
-lemma mem_support_return : y ∈ (f <$> (return a : oracle_comp spec α)).support ↔ y = f a :=
+lemma mem_support_map_return_iff : y ∈ (f <$> (return a : oracle_comp spec α)).support ↔ y = f a :=
 by simp only [support_map, support_return, set.image_singleton, set.mem_singleton_iff]
 
 @[simp] lemma support_map_bind : (g <$> (oa >>= ob)).support =

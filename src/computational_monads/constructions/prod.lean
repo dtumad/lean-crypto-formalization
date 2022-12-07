@@ -49,11 +49,11 @@ variable [spec.finite_range]
 section eval_dist
 
 @[simp]
-lemma eval_dist_prod_apply --[decidable_eq α] [decidable_eq β]
+lemma eval_dist_prod_apply
   (oa : oracle_comp spec α) (ob : oracle_comp spec β) (a : α) (b : β) :
   ⦃oa ×ₘ ob⦄ (a, b) = ⦃oa⦄ a * ⦃ob⦄ b :=
 calc ⦃oa ×ₘ ob⦄ (a, b) = ∑' (x : α) (y : β), (⦃oa⦄ x * ⦃ob⦄ y) * (⦃return (x, y)⦄ (a, b)) :
-    by simp_rw [prod_def, eval_dist_bind_bind_apply_eq_tsum_tsum]
+    by simp_rw [prod_def, eval_dist_bind_apply_eq_tsum, ← ennreal.tsum_mul_left, mul_assoc]
   ... = (⦃oa⦄ a * ⦃ob⦄ b) * (⦃(return (a, b) : oracle_comp spec _)⦄ (a, b)) :
     begin
       refine tsum_tsum_eq_single _ a b (λ a' ha', _) (λ a' b' hb', _),
@@ -84,31 +84,37 @@ calc ⦃e ×ˢ e' | oa ×ₘ ob⦄
       tsum_prod' ennreal.summable (λ _, ennreal.summable)],
     exact tsum_congr (λ a, tsum_congr (λ b, trans (by congr) (ite_and_mul_zero _ _ _ _))),
   end
-  ... = ⦃e | oa⦄ * ⦃e' | ob⦄ : by simp_rw [prob_event_eq_tsum_ite]
+  ... = ⦃e | oa⦄ * ⦃e' | ob⦄ : begin
+    simp_rw [prob_event_eq_tsum_ite],
+    congr;
+    { ext x,
+      split_ifs,
+      refl, refl }
+  end
 
 end prob_event
 
-section indep_events
+-- section indep_events
 
-/-- Any collections of sets corresponding to output types of two computations
-  are independent when returning the outputs of the computations in a `prod` type -/
-lemma indep_events_prod (oa : oracle_comp spec α) (ob : oracle_comp spec β)
-  (events₁ : set (set α)) (events₂ : set (set β)) :
-  indep_events (oa ×ₘ ob) ((λ e, {x | x.1 ∈ e}) '' events₁) ((λ e, {x | x.2 ∈ e}) '' events₂) :=
-sorry
+-- /-- Any collections of sets corresponding to output types of two computations
+--   are independent when returning the outputs of the computations in a `prod` type -/
+-- lemma indep_events_prod (oa : oracle_comp spec α) (ob : oracle_comp spec β)
+--   (events₁ : set (set α)) (events₂ : set (set β)) :
+--   indep_events (oa ×ₘ ob) ((λ e, {x | x.1 ∈ e}) '' events₁) ((λ e, {x | x.2 ∈ e}) '' events₂) :=
+-- sorry
 
-end indep_events
+-- end indep_events
 
-section indep_event
+-- section indep_event
 
-/-- Any events corresponding to two computations respective output types
-  are independent when returning the two outputs in a `prod` type -/
-lemma indep_event_prod (e₁ : set α) (e₂ : set β)
-  (oa : oracle_comp spec α) (ob : oracle_comp spec β) :
-  indep_event (oa ×ₘ ob) {x | x.1 ∈ e₁} {x | x.2 ∈ e₂} :=
-sorry
+-- /-- Any events corresponding to two computations respective output types
+--   are independent when returning the two outputs in a `prod` type -/
+-- lemma indep_event_prod (e₁ : set α) (e₂ : set β)
+--   (oa : oracle_comp spec α) (ob : oracle_comp spec β) :
+--   indep_event (oa ×ₘ ob) {x | x.1 ∈ e₁} {x | x.2 ∈ e₂} :=
+-- sorry
 
-end indep_event
+-- end indep_event
 
 end distribution_semantics
 

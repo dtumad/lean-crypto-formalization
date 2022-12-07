@@ -128,14 +128,13 @@ variable [spec.finite_range]
 section eval_dist
 
 /-- Probability of a vector is the product of probabilities of each element. -/
-@[simp]
-lemma eval_dist_repeat_n_apply :
+@[simp] lemma eval_dist_repeat_n_apply :
   ⦃repeat_n oa n⦄ as = (as.map (λ a, ⦃oa⦄ a)).to_list.prod :=
 begin
   induction n with n hn,
   { simp only [vector.eq_nil as, repeat_n_zero oa, eval_dist_return, pmf.pure_apply,
       if_true, vector.map_nil, vector.to_list_nil, list.prod_nil, eq_self_iff_true] },
-  { refine trans (eval_dist_bind_bind_apply_eq_tsum_tsum _ _ _ _) _,
+  { simp_rw [repeat_n, eval_dist_bind_apply_eq_tsum, ← ennreal.tsum_mul_left],
     simp [hn],
     refine trans (tsum_tsum_eq_single _ as.head as.tail _ _) _,
     { refine λ a h, _,
