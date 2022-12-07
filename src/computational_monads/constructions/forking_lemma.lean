@@ -181,7 +181,7 @@ begin
       -- simp only [option.coe_def, option.map_some'],
       refine tsum_congr (λ log, _),
       refine congr_arg (λ x, _ * x) _,
-      refine trans (eval_dist_bind_return_apply _ _ _) _,
+      refine trans (eval_dist_bind_return_apply_eq_tsum _ _ _) _,
       refine trans (tsum_eq_single (some i, x', cache') _) _,
       { intros o ho,
         convert if_neg (λ ho', ho $ symm _),
@@ -255,9 +255,7 @@ lemma choose_fork_snd_eq (i : fin adv.q) (cache cache' : query_log (T ↦ₒ U))
 lemma choose_fork_eq_choose_fork (i : fin adv.q) (cache cache' : query_log (T ↦ₒ U)) (x x' : α)
   (h : ((some i, x, cache, x', cache')) ∈ (fork adv).support) :
   adv.choose_fork x cache = adv.choose_fork x' cache' :=
-begin
-  sorry
-end
+by rw [choose_fork_fst_eq adv _ _ _ _ _ h, choose_fork_snd_eq adv _ _ _ _ _ h]
 
 end choose_fork
 
