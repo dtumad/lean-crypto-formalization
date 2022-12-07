@@ -13,12 +13,10 @@ import data.vector.mem
 This file defines different uniform computations derived from a `uniform_selecting` oracle.
 The base construction is `uniform_fin`, suggestively denoted `$[0..n]`.
 From this we build corresponding computations for `vector`, `list`, `finset`, and `fintype`,
-  using the notations `$ᵛ`, `$ˡ`, `$ˢ`, and `$ᵗ` respectively.
+using the notations `$ᵛ`, `$ˡ`, `$ˢ`, and `$ᵗ` respectively.
 
 Note that the `list` and `finset` versions require explicit proofs of being nonempty,
-  so using `vector` and `fintype` is usually preferable when this is possible.
-
-TODO: could split to more files
+so using `vector` and `fintype` is usually preferable when this is possible.
 -/
 
 namespace oracle_comp

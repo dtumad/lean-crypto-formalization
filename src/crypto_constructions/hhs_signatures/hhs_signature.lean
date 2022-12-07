@@ -6,7 +6,7 @@ Authors: Devon Tuma
 import data.vector.zip
 import crypto_foundations.primitives.signature
 import crypto_foundations.hardness_assumptions.hard_homogeneous_space
-import computational_monads.constructions.repeat_n
+import computational_monads.constructions.repeat
 import computational_monads.constructions.forking_lemma
 
 /-!
@@ -60,7 +60,7 @@ def hhs_signature (G X M : Type) (n : ℕ) [fintype G] [fintype X] [inhabited G]
   do{ x₀ ←$ᵗ X, sk ←$ᵗ G,
       return ((x₀, sk +ᵥ x₀), sk) },
   sign := λ ⟨⟨x₀, pk⟩, sk, m⟩,
-  do{ (cs : vector G n) ← repeat_n ($ᵗ G) n,
+  do{ (cs : vector G n) ← repeat ($ᵗ G) n,
       (ys : vector X n) ← return (cs.map (λ c, c +ᵥ pk)),
       (h : vector bool n) ← query₂ () (ys, m),
       return (zip_commits_with_hash cs h sk) },
@@ -106,7 +106,7 @@ section sign
 @[simp]
 lemma sign_apply (x₀ pk : X) (sk : G) (m : M) :
   ((hhs_signature G X M n).sign ((x₀, pk), sk, m)) =
-  do{ (cs : vector G n) ← repeat_n ($ᵗ G) n,
+  do{ (cs : vector G n) ← repeat ($ᵗ G) n,
       (ys : vector X n) ← return (cs.map (λ c, c +ᵥ pk)),
       (h : vector bool n) ← query₂ () (ys, m),
       return (zip_commits_with_hash cs h sk) } := rfl
@@ -200,8 +200,8 @@ def mock_signing_oracle : sim_oracle (hhs_signature G X M n).unforgeable_adversa
     | (sum.inl (sum.inr i)) := λ ⟨t, mock_cache⟩, mock_cache.lookup_cached_or_run i t
       (@query (hhs_signature G X M n).base_oracle_spec (sum.inr i) t)
     | (sum.inr ()) := λ ⟨m, mock_cache⟩,
-      do{ bs ← repeat_n ($ᵗ bool) n, -- pre-select what all the bool results will be.
-          cs ← repeat_n ($ᵗ G) n,
+      do{ bs ← repeat ($ᵗ bool) n, -- pre-select what all the bool results will be.
+          cs ← repeat ($ᵗ G) n,
           ys ← return (vector.zip_with (λ (b : bool) c, if b then c +ᵥ pk else c +ᵥ x₀) bs cs),
           mock_cache' ← return (mock_cache.log_query () (ys, m) bs),
           return (vector.zip_with prod.mk cs bs, mock_cache') }
