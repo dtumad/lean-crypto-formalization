@@ -202,7 +202,7 @@ by simp only [prob_event.def, eval_dist_query, pmf.to_outer_measure_uniform_of_f
 lemma prob_event_query_bind_eq_tsum :
   ⦃e' | query i t >>= oa⦄ = (∑' x, ⦃e' | oa x⦄) / fintype.card (spec.range i) :=
 by simp only [prob_event_bind_eq_tsum, eval_dist_query_apply, div_eq_mul_inv,
-  ← ennreal.tsum_mul_right, one_mul, mul_comm]
+  ← ennreal.tsum_mul_left, one_mul, mul_comm]
 
 lemma prob_event_query_bind_eq_sum :
   ⦃e' | query i t >>= oa⦄ = (∑ x, ⦃e' | oa x⦄) / fintype.card (spec.range i) :=
