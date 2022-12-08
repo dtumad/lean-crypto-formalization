@@ -62,11 +62,11 @@ lemma mem_support_repeat_iff_forall :
   xs ∈ (oa.repeat m).support ↔ ∀ x ∈ xs.to_list, x ∈ oa.support :=
 by rw [support_repeat, set.mem_set_of_eq, list.all₂_iff_forall]
 
-@[simp] lemma support_repeat_zero : (oa.repeat 0).support = ⊤ :=
-by simp only [repeat_zero, support_return, singleton_eq_top_of_subsingleton]
+@[simp] lemma support_repeat_zero : (oa.repeat 0).support = {vector.nil} :=
+by simp only [repeat_zero, support_return]
 
 lemma mem_support_repeat_zero : xs₀ ∈ (repeat oa 0).support :=
-by simp only [repeat_zero, support_return, singleton_eq_top_of_subsingleton]
+by simp only [repeat_zero, support_return, set.mem_singleton_iff, eq_iff_true_of_subsingleton]
 
 @[simp] lemma support_repeat_succ : (oa.repeat (n + 1)).support =
   {xs | xs.head ∈ oa.support ∧ xs.tail ∈ (oa.repeat n).support} :=
