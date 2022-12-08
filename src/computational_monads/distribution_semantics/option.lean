@@ -29,9 +29,9 @@ lemma prob_event_option [decidable_eq α] (e : set (option α)) :
   ⦃e | oa⦄ = (e.indicator ⦃oa⦄ none) + ∑' (a : α), e.indicator ⦃oa⦄ (some a) :=
 (prob_event_eq_tsum_indicator oa e).trans (ennreal.tsum_option _)
 
-lemma prob_event_is_none : ⦃λ x, x.is_none | oa ⦄ = ⦃oa⦄ none :=
-prob_event_eq_eval_dist_of_disjoint_sdiff_support oa _ rfl
-  (set.disjoint_iff_forall_ne.2 (λ x hx, false.elim $ hx.2 (option.is_none_iff_eq_none.1 hx.1)))
+lemma prob_event_is_none : ⦃λ x, x.is_none | oa⦄ = ⦃oa⦄ none :=
+prob_event_eq_eval_dist oa _ option.is_none_none
+  (λ x hx hx', (hx $ option.eq_none_of_is_none hx').elim)
 
 lemma prob_event_is_some [decidable_eq α] : ⦃λ x, x.is_some | oa⦄ = ∑' (a : α), ⦃oa⦄ (some a) :=
 let e : set (option α) := λ x, x.is_some in

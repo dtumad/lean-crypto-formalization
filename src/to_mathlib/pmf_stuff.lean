@@ -14,10 +14,7 @@ open_locale measure_theory nnreal ennreal big_operators classical
 
 variables {α β γ : Type*}
 
-lemma pmf.measurable_set_to_outer_measure_caratheodory (p : pmf α) (s : set α) :
-  measurable_set[p.to_outer_measure.caratheodory] s :=
-p.to_outer_measure_caratheodory.symm ▸ measurable_space.measurable_set_top
-
+-- NOTE: PR open
 section monad
 
 @[simp]
@@ -37,32 +34,19 @@ end
 
 @[simp] lemma pmf.map_pure {α β : Type*} (f : α → β) (a : α) :
   (pmf.pure a).map f = pmf.pure (f a) :=
-begin
-  refine pmf.ext (λ b, _),
-  simp_rw [pmf.map_apply, pmf.pure_apply],
-  exact trans (tsum_eq_single a $ λ a' ha', by rw [if_neg ha', if_t_t])
-    (by rw [eq_self_iff_true, if_true]),
-end
+pmf.pure_map _ _
 
 @[simp] lemma pmf.bind_const {α β : Type*} (p : pmf α) (q : pmf β) : (p.bind $ λ _, q) = q :=
 pmf.ext (λ x, by rw [pmf.bind_apply, ennreal.tsum_mul_right, pmf.tsum_coe, one_mul])
 
 end monad
 
+-- NOTE: PR open
 section measure
-
-lemma pmf.to_outer_measure_apply_eq_apply {α : Type*} (p : pmf α) (s : set α) (x : α)
-  (hx : x ∈ s) (h : disjoint (s \ {x}) p.support) :
-  p.to_outer_measure s = p x :=
-calc p.to_outer_measure s = ∑' x, s.indicator p x : p.to_outer_measure_apply s
-  ... = s.indicator p x : tsum_eq_single x (λ y hy, set.indicator_apply_eq_zero.2 $ λ hy',
-    (p.apply_eq_zero_iff y).2 (λ hyp, (set.disjoint_iff_forall_ne.1 h) y ⟨hy', hy⟩ y hyp rfl))
-  ... = p x : set.indicator_apply_eq_self.2 (λ hx', (hx' hx).elim)
 
 lemma pmf.to_measure_apply_ne_top {α : Type*} [measurable_space α] (p : pmf α) (s : set α) :
   p.to_measure s ≠ ⊤ := measure_theory.measure_ne_top p.to_measure s
 
--- TODO: measurable??
 lemma pmf.to_outer_measure_apply_ne_top {α : Type*} (p : pmf α) (s : set α) :
   p.to_outer_measure s ≠ ⊤ :=
 begin
@@ -70,10 +54,13 @@ begin
     le_trans (le_of_eq h.symm) (@pmf.to_outer_measure_apply_le_to_measure_apply α ⊤ p s)),
 end
 
-lemma pmf.to_measure_apply_eq_iff_to_outer_measure_apply_eq {α : Type*} [measurable_space α]
-  (p : pmf α) (x : ℝ≥0∞) (s : set α) (hs : measurable_set s) :
-  p.to_measure s = x ↔ p.to_outer_measure s = x :=
-by rw [p.to_measure_apply_eq_to_outer_measure_apply s hs]
+end measure
+
+section union
+
+lemma pmf.measurable_set_to_outer_measure_caratheodory (p : pmf α) (s : set α) :
+  measurable_set[p.to_outer_measure.caratheodory] s :=
+p.to_outer_measure_caratheodory.symm ▸ measurable_space.measurable_set_top
 
 lemma pmf.to_measure_apply_Union {α : Type*} [measurable_space α] (p : pmf α)
   {f : ℕ → set α} (hf : ∀ n, measurable_set (f n)) (h : pairwise (disjoint on f)) :
@@ -85,7 +72,7 @@ lemma pmf.to_outer_measure_apply_Union {α : Type*} (p : pmf α) {f : ℕ → se
 measure_theory.outer_measure.Union_eq_of_caratheodory _
   (λ n, pmf.measurable_set_to_outer_measure_caratheodory _ (f n)) h
 
-end measure
+end union
 
 section prod
 

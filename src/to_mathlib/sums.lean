@@ -14,13 +14,6 @@ open_locale nnreal ennreal big_operators classical
 
 variables {α β γ : Type*}
 
-lemma finset.sum_eq_tsum_indicator {α β : Type*} [add_comm_monoid β] [topological_space β] [t2_space β]
-  (f : α → β) (s : finset α) : ∑ x in s, f x = ∑' x, set.indicator ↑s f x :=
-have ∀ x ∉ s, set.indicator ↑s f x = 0,
-from λ x hx, set.indicator_apply_eq_zero.2 (λ hx', (hx $ finset.mem_coe.1 hx').elim),
-(finset.sum_congr rfl (λ x hx, (set.indicator_apply_eq_self.2 $
-  λ hx', (hx' $ finset.mem_coe.2 hx).elim).symm)).trans (tsum_eq_sum this).symm
-
 -- NOTE: not going to PR this
 section tsum_prod
 
@@ -46,21 +39,15 @@ end
 
 end tsum_prod
 
-namespace ennreal
-
-lemma to_nnreal_tsum_coe_eq {α : Type*} (f : α → ℝ≥0) :
-  (∑' x, (f x : ℝ≥0∞)).to_nnreal = ∑' x, f x :=
-trans (tsum_to_nnreal_eq $ λ x, ennreal.coe_ne_top) (tsum_congr $ λ x, ennreal.to_nnreal_coe)
-
-lemma to_nnreal_sum_coe_eq {α : Type*} (f : α → ℝ≥0) (s : finset α) :
-  (∑ x in s, (f x : ℝ≥0∞)).to_nnreal = ∑ x in s, f x :=
-trans (to_nnreal_sum $ λ x _, ennreal.coe_ne_top)
-  (finset.sum_congr rfl $ λ x _, ennreal.to_nnreal_coe)
-
-end ennreal
-
 -- NOTE: PR open
 section extract
+
+lemma finset.sum_eq_tsum_indicator {α β : Type*} [add_comm_monoid β] [topological_space β] [t2_space β]
+  (f : α → β) (s : finset α) : ∑ x in s, f x = ∑' x, set.indicator ↑s f x :=
+have ∀ x ∉ s, set.indicator ↑s f x = 0,
+from λ x hx, set.indicator_apply_eq_zero.2 (λ hx', (hx $ finset.mem_coe.1 hx').elim),
+(finset.sum_congr rfl (λ x hx, (set.indicator_apply_eq_self.2 $
+  λ hx', (hx' $ finset.mem_coe.2 hx).elim).symm)).trans (tsum_eq_sum this).symm
 
 /-- Version of `tsum_ite_eq_extract` for `add_comm_monoid` rather than `add_comm_group`.
 Rather than showing that `f.update` has a specific sum in terms of `has_sum`,

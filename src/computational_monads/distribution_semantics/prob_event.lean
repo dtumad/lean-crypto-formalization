@@ -274,9 +274,13 @@ section sets
 
 variables (oa : oracle_comp spec α) (e : set α)
 
-lemma prob_event_eq_eval_dist_of_disjoint_sdiff_support {x : α} (hx : x ∈ e)
-  (h : disjoint (e \ {x}) oa.support) : ⦃e | oa⦄ = ⦃oa⦄ x :=
-⦃oa⦄.to_outer_measure_apply_eq_apply e x hx (by rwa [support_eval_dist])
+lemma prob_event_eq_eval_dist {x} (hx : x ∈ e)
+  (h : ∀ y ≠ x, y ∈ e → y ∉ oa.support) : ⦃e | oa⦄ = ⦃oa⦄ x :=
+begin
+  refine (prob_event_eq_tsum_indicator oa e).trans (trans (tsum_eq_single x $ λ y hy, _) _),
+  { simpa only [set.indicator_apply_eq_zero, eval_dist_eq_zero_iff_not_mem_support] using h y hy },
+  { simp only [set.indicator_apply_eq_self, hx, not_true, false_implies_iff] }
+end
 
 lemma prob_event_Union_eq_of_pairwise_disjoint (es : ℕ → set α) (h : pairwise (disjoint on es)) :
   ⦃⋃ i, es i | oa⦄ = ∑' i, ⦃es i | oa⦄ :=
