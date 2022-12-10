@@ -48,24 +48,9 @@ section support
 
 lemma support_apply (i : spec.ι) (t : spec.domain i) (s : unit) :
   (⟪o⟫ i (t, s)).support = prod.fst ⁻¹' (o i t).support :=
-(tracking_oracle.support_apply o _ _ i (t, s)).trans
-  (by simp only [set.preimage, eq_iff_true_of_subsingleton, and_true])
-
--- TODO: this should generalize I think?
-lemma fin_support_apply [spec'.computable] [spec'.finite_range] [spec.computable]
-  [∀ i x, (o i x).decidable]
-  (i : spec.ι) (t : spec.domain i) (s : unit) (x : spec.range i × unit) :
-  (⟪o⟫ i (t, s)).fin_support = finset.preimage (o i t).fin_support prod.fst
-    (λ y hy z hz h, prod.eq_iff_fst_eq_snd_eq.2 ⟨h, punit_eq _ _⟩) :=
-begin
-  sorry,
-end
-
-lemma mem_fin_support_apply [spec'.computable] [spec'.finite_range] [spec.computable]
-  [∀ i x, (o i x).decidable]
-  (i : spec.ι) (t : spec.domain i) (s : unit) (x : spec.range i × unit) :
-  x ∈ (⟪o⟫ i (t, s)).fin_support ↔ x.1 ∈ (o i t).fin_support :=
 sorry
+-- (tracking_oracle.support_apply o _ _ i (t, s)).trans
+--   (by simp only [set.preimage, eq_iff_true_of_subsingleton, and_true])
 
 lemma mem_support_apply_iff (i : spec.ι) (t : spec.domain i) (s s' : unit) (u : spec.range i) :
   (u, s') ∈ (⟪o⟫ i (t, s)).support ↔ u ∈ (o i t).support :=
@@ -112,6 +97,22 @@ mem_support_simulate_iff o oa () x
 end support
 
 section fin_support
+
+-- TODO: this should generalize I think?
+lemma fin_support_apply [spec'.computable] [spec'.finite_range] [spec.computable]
+  [∀ i x, (o i x).decidable]
+  (i : spec.ι) (t : spec.domain i) (s : unit) (x : spec.range i × unit) :
+  (⟪o⟫ i (t, s)).fin_support = finset.preimage (o i t).fin_support prod.fst
+    (λ y hy z hz h, prod.eq_iff_fst_eq_snd_eq.2 ⟨h, punit_eq _ _⟩) :=
+begin
+  sorry,
+end
+
+lemma mem_fin_support_apply [spec'.computable] [spec'.finite_range] [spec.computable]
+  [∀ i x, (o i x).decidable]
+  (i : spec.ι) (t : spec.domain i) (s : unit) (x : spec.range i × unit) :
+  x ∈ (⟪o⟫ i (t, s)).fin_support ↔ x.1 ∈ (o i t).fin_support :=
+sorry
 
 end fin_support
 

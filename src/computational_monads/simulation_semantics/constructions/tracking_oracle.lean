@@ -51,7 +51,7 @@ variables {S S' : Type} (o o' : Π (i : spec.ι), spec.domain i → oracle_comp 
   (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) (s : S) (s' : S')
   (x : spec.domain i × S) (y : spec.range i × S)
 
-lemma apply_eq : ⟪o | update_state, default_state⟫ i x =
+@[simp] lemma apply_eq : ⟪o | update_state, default_state⟫ i x =
   (λ u, (u, update_state x.2 i x.1 u)) <$> (o i x.1) := by {cases x, refl}
 
 instance decidable [computable spec] [decidable_eq S] [∀ i x, (o i x).decidable] :
@@ -61,9 +61,17 @@ by { rw [apply_eq], exact oracle_comp.decidable_map _ _ }
 section support
 
 @[simp] lemma support_apply : (⟪o | update_state, default_state⟫ i x).support =
-  {y | y.1 ∈ (o i x.1).support ∧ update_state x.2 i x.1 y.1 = y.2} :=
-set.ext (λ y, by rw [apply_eq, map_eq_bind_return_comp,
-  mem_support_bind_prod_mk_id_fst, set.mem_set_of])
+  (λ u, (u, update_state x.2 i x.1 u)) '' (o i x.1).support :=
+set.ext (λ y, by rw [apply_eq, support_map])
+
+lemma mem_support_apply {y : spec.range i × S} : y ∈ (⟪o | update_state, default_state⟫ i x).support ↔
+  y.1 ∈ (o i x.1).support ∧ update_state x.2 i x.1 y.1 = y.2 :=
+begin
+  rw [support_apply],
+  cases x,
+  sorry,
+  
+end
 
 /-- If the oracle can take on any value then the first element of the support is unchanged -/
 theorem support_simulate'_eq_support (h : ∀ i t, (o i t).support = ⊤) :
@@ -83,8 +91,9 @@ theorem support_simulate'_eq_support_simulate' (h : ∀ i t, (o i t).support = (
     (simulate' ⟪o' | update_state', default_state'⟫ oa s').support :=
 begin
   refine support_simulate'_eq_support_simulate' (λ i t t t', set.ext $ λ x, _) oa s s',
-  simp only [h, simulate'_query, support_map, support_apply, set.mem_image, set.mem_set_of_eq,
+  simp only [mem_support_apply, h, simulate'_query, support_map, support_apply, set.mem_image, set.mem_set_of_eq,
     prod.exists, exists_and_distrib_right, exists_eq_right'],
+  sorry,
 end
 
 /-- The support of `simulate'` is independt of the tracking functions -/
@@ -117,6 +126,13 @@ end support
 
 section fin_support
 
+lemma fin_support_apply [∀ i t, (o i t).decidable] [decidable_eq S] [spec.computable]
+  [spec'.computable] [spec'.finite_range] :
+  (⟪o | update_state, default_state⟫ i x).fin_support =
+    (o i x.1).fin_support.image (λ u, (u, update_state x.2 i x.1 u)) :=
+begin
+  sorry,
+end
 
 end fin_support
 
