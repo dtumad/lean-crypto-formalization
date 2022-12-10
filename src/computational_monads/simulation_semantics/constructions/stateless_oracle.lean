@@ -46,7 +46,8 @@ section support
 
 lemma support_apply (i : spec.ι) (t : spec.domain i) (s : unit) :
   (⟪o⟫ i (t, s)).support = prod.fst ⁻¹' (o i t).support :=
-sorry --by simp only [apply_eq, support_bind_prod_mk_fst_id_of_subsingleton]
+(tracking_oracle.support_apply o _ _ i (t, s)).trans
+  (by simp only [set.preimage, eq_iff_true_of_subsingleton, and_true])
 
 -- TODO: this should generalize I think?
 lemma fin_support_apply [spec'.computable] [spec'.finite_range] [spec.computable]
@@ -153,6 +154,10 @@ sorry
 end query
 
 end support
+
+section fin_support
+
+end fin_support
 
 section distribution_semantics
 

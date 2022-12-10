@@ -60,7 +60,6 @@ by { rw [apply_eq], exact oracle_comp.decidable_map _ _ }
 
 section support
 
--- TODO: convention for this or a "mem" version? both?
 @[simp] lemma support_apply : (⟪o | update_state, default_state⟫ i x).support =
   {y | y.1 ∈ (o i x.1).support ∧ update_state x.2 i x.1 y.1 = y.2} :=
 set.ext (λ y, by rw [apply_eq, map_eq_bind_return_comp,
@@ -79,7 +78,7 @@ In particular a tracking oracle that *only* does tracking doesn't affect the mai
   (simulate' ⟪query | update_state, default_state⟫ oa s).support = oa.support :=
 support_simulate'_eq_support query update_state default_state oa s (λ _ _, rfl)
 
-theorem support_simulate'_eq_of_support_eq (h : ∀ i t, (o i t).support = (o' i t).support) :
+theorem support_simulate'_eq_support_simulate' (h : ∀ i t, (o i t).support = (o' i t).support) :
   (simulate' ⟪o | update_state, default_state⟫ oa s).support =
     (simulate' ⟪o' | update_state', default_state'⟫ oa s').support :=
 begin
@@ -89,10 +88,10 @@ begin
 end
 
 /-- The support of `simulate'` is independt of the tracking functions -/
-theorem support_simulate'_eq_of_oracle_eq :
+theorem support_simulate'_eq_support_simulate'_of_oracle_eq :
   (simulate' ⟪o | update_state, default_state⟫ oa s).support =
     (simulate' ⟪o | update_state', default_state'⟫ oa s').support :=
-support_simulate'_eq_of_support_eq o o _ _ _ _ oa s s' (λ _ _, rfl)
+support_simulate'_eq_support_simulate' o o _ _ _ _ oa s s' (λ _ _, rfl)
 
 section subsingleton
 
@@ -103,14 +102,14 @@ variables [subsingleton S]
 set.ext (λ y, by erw [apply_eq, map_eq_bind_return_comp,
   support_bind_prod_mk_of_snd_subsingleton, set.image_id])
 
-lemma support_simulate_eq_image_support_of_subsingleton (h : ∀ i t, (o i t).support = ⊤) :
-  (simulate ⟪o | update_state, default_state⟫ oa s).support = {x | x.1 ∈ oa.support} :=
-by rw [support_simulate_eq_support_simulate'_of_subsingleton,
+lemma support_simulate_eq_preimage_support_of_subsingleton (h : ∀ i t, (o i t).support = ⊤) :
+  (simulate ⟪o | update_state, default_state⟫ oa s).support = prod.fst ⁻¹' oa.support :=
+by rw [set.preimage, support_simulate_eq_support_simulate'_of_subsingleton,
   support_simulate'_eq_support o _ _ oa s h]
 
 @[simp] lemma support_simulate_query_eq_support_of_subsingleton :
-  (simulate ⟪query | update_state, default_state⟫ oa s).support = {x | x.1 ∈ oa.support} :=
-support_simulate_eq_image_support_of_subsingleton query _ _ oa s (λ _ _, rfl)
+  (simulate ⟪query | update_state, default_state⟫ oa s).support = prod.fst ⁻¹' oa.support :=
+support_simulate_eq_preimage_support_of_subsingleton query _ _ oa s (λ _ _, rfl)
 
 end subsingleton
 
@@ -144,22 +143,52 @@ lemma eval_dist_simulate'_query_eq_eval_dist [spec.finite_range] :
   ⦃simulate' ⟪query | update_state, default_state⟫ oa s⦄ = ⦃oa⦄ :=
 eval_dist_simulate'_eq_eval_dist query update_state default_state oa s (λ _ _, rfl)
 
+lemma eval_dist_simulate'_eq_eval_dist_simulate' [spec'.finite_range]
+  (h : ∀ i t, o i t ≃ₚ o' i t) : ⦃simulate' ⟪o | update_state, default_state⟫ oa s⦄ =
+    ⦃simulate' ⟪o' | update_state', default_state'⟫ oa s'⦄ :=
+eval_dist_simulate'_eq_eval_dist_simulate' (λ i t s s',
+  by simp only [pmf.map_comp, tracking_oracle.apply_eq, eval_dist_map, h]) oa s s'
+
 /-- The first output of simulation under different `tracking_oracle` with the same oracle
 is the same regardless of if the tracking functions are different. -/
-theorem eval_dist_simulate'_eq_eval_dist_simulate' [spec'.finite_range] :
+theorem eval_dist_simulate'_eq_eval_dist_simulate'_of_oracle_eq [spec'.finite_range] :
   ⦃simulate' ⟪o | update_state, default_state⟫ oa s⦄ =
     ⦃simulate' ⟪o | update_state', default_state'⟫ oa s'⦄ :=
-eval_dist_simulate'_eq_eval_dist_simulate' (λ i t s s',
-  by simp only [pmf.map_comp, apply_eq, eval_dist_map]) oa s s'
+eval_dist_simulate'_eq_eval_dist_simulate' o o _ _ _ _ oa s s' (λ _ _, rfl)
 
 end eval_dist
 
 section prob_event
 
+variable (e : set α)
+
 @[simp] lemma prob_event_apply [spec'.finite_range] (e : set (spec.range i × S)) :
   ⦃e | ⟪o | update_state, default_state⟫ i (t, s)⦄ =
     ⦃λ u, (u, update_state s i t u) ∈ e | o i t⦄ :=
 by simpa only [apply_eq, prob_event_map]
+
+lemma prob_event_simulate'_eq_prob_event [spec.finite_range] [spec'.finite_range]
+  (h : ∀ i t, ⦃o i t⦄ = pmf.uniform_of_fintype (spec.range i)) :
+  ⦃e | simulate' ⟪o | update_state, default_state⟫ oa s⦄ = ⦃e | oa⦄ :=
+prob_event_eq_of_eval_dist_eq (eval_dist_simulate'_eq_eval_dist _ _ _ _ _ h) e
+
+/-- Specific case of `eval_dist_simulate'_eq_eval_dist` for query.
+In particular if a tracking oracle *only* does tracking gives the same main output distribution. -/
+lemma prob_event_simulate'_query_eq_prob_event [spec.finite_range] [spec'.finite_range] :
+  ⦃e | simulate' ⟪query | update_state, default_state⟫ oa s⦄ = ⦃e | oa⦄ :=
+prob_event_simulate'_eq_prob_event _ _ _ oa s e (λ _ _, rfl)
+
+lemma prob_event_simulate'_eq_prob_event_simulate' [spec'.finite_range]
+  (h : ∀ i t, o i t ≃ₚ o' i t) : ⦃e | simulate' ⟪o | update_state, default_state⟫ oa s⦄ =
+    ⦃e | simulate' ⟪o' | update_state', default_state'⟫ oa s'⦄ :=
+prob_event_eq_of_eval_dist_eq (eval_dist_simulate'_eq_eval_dist_simulate' _ _ _ _ _ _ _ _ _ h) e
+
+/-- The first output of simulation under different `tracking_oracle` with the same oracle
+is the same regardless of if the tracking functions are different. -/
+theorem prob_event_simulate'_eq_eval_dist_simulate'_of_oracle_eq [spec'.finite_range] :
+  ⦃e | simulate' ⟪o | update_state, default_state⟫ oa s⦄ =
+    ⦃e | simulate' ⟪o | update_state', default_state'⟫ oa s'⦄ :=
+prob_event_simulate'_eq_prob_event_simulate' o o _ _ _ _ oa s s' e (λ _ _, rfl)
 
 end prob_event
 

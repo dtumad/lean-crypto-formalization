@@ -21,7 +21,7 @@ namespace distribution_semantics
 open oracle_comp oracle_spec
 open_locale big_operators ennreal
 
-variables {α β γ : Type} {spec : oracle_spec} [finite_range spec]
+variables {α β γ : Type} {spec spec' : oracle_spec} [finite_range spec] [finite_range spec']
 
 /-- Probability of a predicate holding after running a particular experiment.
 Defined in terms of the outer measure associated to the corresponding `pmf` by `eval_dist`. -/
@@ -78,7 +78,7 @@ end sums
 
 section order
 
-variables (oa oa' : oracle_comp spec α) (e e' : set α)
+variables (oa : oracle_comp spec α) (oa' : oracle_comp spec' α) (e e' : set α)
 
 lemma prob_event_le_one : ⦃e | oa⦄ ≤ 1 :=
 (⦃oa⦄.to_outer_measure.mono (set.subset_univ e)).trans
@@ -92,7 +92,7 @@ pmf.to_outer_measure_mono ⦃oa⦄ (by simpa only [support_eval_dist])
 lemma prob_event_mono' {e e'} (h : e ⊆ e') : ⦃e | oa⦄ ≤ ⦃e' | oa⦄ :=
 prob_event_mono oa (trans (set.inter_subset_left _ _) h)
 
-lemma prob_event_le_of_eval_dist_apply_le {oa oa' : oracle_comp spec α}
+lemma prob_event_le_of_eval_dist_apply_le {oa : oracle_comp spec α} {oa' : oracle_comp spec' α}
   (h : ∀ x ∈ oa.support, ⦃oa⦄ x ≤ ⦃oa'⦄ x) (e : set α) : ⦃e | oa⦄ ≤ ⦃e | oa'⦄ :=
 begin
   simp only [prob_event_eq_tsum_indicator],
@@ -105,12 +105,12 @@ begin
 end
 
 /-- If the `eval_dist` agrees on all elements of the support, then `prob_event` agrees as well. -/
-lemma prob_event_eq_of_eval_dist_apply_eq {oa oa' : oracle_comp spec α}
+lemma prob_event_eq_of_eval_dist_apply_eq {oa : oracle_comp spec α} {oa' : oracle_comp spec' α}
   (h : ∀ x ∈ oa.support ∪ oa'.support, ⦃oa⦄ x = ⦃oa'⦄ x) (e : set α) : ⦃e | oa⦄ = ⦃e | oa'⦄ :=
 antisymm (prob_event_le_of_eval_dist_apply_le (λ x hx, le_of_eq (h x $ or.inl hx)) e)
   (prob_event_le_of_eval_dist_apply_le (λ x hx, le_of_eq (h x $ or.inr hx).symm) e)
 
-lemma prob_event_eq_of_eval_dist_eq {oa oa' : oracle_comp spec α}
+lemma prob_event_eq_of_eval_dist_eq {oa : oracle_comp spec α} {oa' : oracle_comp spec' α}
   (h : ⦃oa⦄ = ⦃oa'⦄) (e : set α) : ⦃e | oa⦄ = ⦃e | oa'⦄ :=
 prob_event_eq_of_eval_dist_apply_eq (λ x _, by rw [h]) e
 

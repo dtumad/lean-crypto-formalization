@@ -28,10 +28,10 @@ instance coe_coin_uniform_select (α : Type) :
 
 variables {α β : Type} (oa : oracle_comp coin_spec α)
 
-lemma coe_coin_uniform_select_def : (↑oa : oracle_comp uniform_selecting α) =
+lemma coe_coin_uniform_select.def : (↑oa : oracle_comp uniform_selecting α) =
   oa.default_simulate' ⟪λ _ _, $ᵛ (tt ::ᵥ ff ::ᵥ vector.nil)⟫ := rfl
 
-noncomputable instance coe_coin_uniform_select.decidable [hoa : oa.decidable] :
+instance coe_coin_uniform_select.decidable [hoa : oa.decidable] :
   (↑oa : oracle_comp uniform_selecting α).decidable :=
 simulate'.decidable _ _ _
 
@@ -39,12 +39,9 @@ section support
 
 @[simp] lemma support_coe_coin_uniform_select :
   (↑oa : oracle_comp uniform_selecting α).support = oa.support :=
-begin
-  refine support_simulate'_eq_support _ oa () (λ i t s, _),
-  rw [stateless_oracle.apply_eq, support_bind_return, ← set.image_comp,
-    set.top_eq_univ, bool.univ_eq, support_uniform_select_vector_cons,
-    support_uniform_select_vector_singleton, vector.head_cons, set.image_id', set.union_singleton],
-end
+support_simulate'_eq_support _ oa () (λ i t s, by simp only [support_bind_return, bool.univ_eq,
+  ← set.image_comp, set.top_eq_univ, support_uniform_select_vector_cons, stateless_oracle.apply_eq,
+  support_uniform_select_vector_singleton, vector.head_cons, set.image_id', set.union_singleton])
 
 @[simp] lemma fin_support_coe_coin_uniform_select [oa.decidable] :
   (↑oa : oracle_comp uniform_selecting α).fin_support = oa.fin_support :=
