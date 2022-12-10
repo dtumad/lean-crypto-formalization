@@ -11,7 +11,9 @@ import computational_monads.support.prod
 
 This file defines a specific version of `tracking_oracle`, where the tracking isn't used.
 This allows a specified function for responding to queries,
-making no use of the internal state (which is left as a `unit` type).
+while making no use of the internal state (which is left as a `unit` type).
+This is used for example in coercing from a computation with one set of oracles
+to one with some superset of those oracles, using the simulation function to pass upwards.
 -/
 
 open oracle_comp oracle_spec
@@ -70,6 +72,10 @@ lemma mem_support_apply_iff (i : spec.ι) (t : spec.domain i) (s s' : unit) (u :
 by simp only [apply_eq, support_bind, support_return, set.mem_Union, set.mem_singleton_iff,
   prod.mk.inj_iff, eq_iff_true_of_subsingleton, and_true, exists_prop, exists_eq_right']
 
+theorem support_simulate'_eq_support (h : ∀ i t, (o i t).support = ⊤) (u : unit) :
+  (simulate' ⟪o⟫ oa u).support = oa.support :=
+tracking_oracle.support_simulate'_eq_support o _ _ oa u h
+
 lemma support_simulate_eq_support_default_simulate (oa : oracle_comp spec α) (s : unit) :
   (oa.simulate ⟪o⟫ s).support = (oa.default_simulate ⟪o⟫).support := punit_eq () s ▸ rfl
 
@@ -102,56 +108,6 @@ support_simulate_eq_preimage_default_simulate' o oa ()
 lemma mem_support_default_simulate_iff (oa : oracle_comp spec α) (x : α × unit) :
   x ∈ (oa.default_simulate ⟪o⟫).support ↔ x.1 ∈ (oa.default_simulate' ⟪o⟫).support :=
 mem_support_simulate_iff o oa () x
-
-section return
-
-lemma support_simulate_return (a : α) (s : unit) :
-  (simulate ⟪o⟫ (return a) s).support = {(a, ())} := 
-by {induction s, refl}
-
-end return
-
-section bind
-
-@[simp]
-lemma support_simulate_bind (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) (s : unit) :
-  (simulate ⟪o⟫ (oa >>= ob) s).support =
-    ⋃ (x : α) (hx : (x, ()) ∈ (simulate ⟪o⟫ oa ()).support),
-      (simulate ⟪o⟫ (ob x) ()).support :=
-begin
-  rw [support_simulate_eq_preimage_default_simulate'],
-  sorry
-end
-
--- TODO: full API
-@[simp]
-lemma support_default_simulate'_bind (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) :
-  (default_simulate' ⟪o⟫ (oa >>= ob)).support =
-    ⋃ a ∈ (default_simulate' ⟪o⟫ oa).support, (default_simulate' ⟪o⟫ (ob a)).support :=
-begin
-  rw [default_simulate', simulate', support_map],
-  sorry,
-end
-
-end bind
-
-section query
-
-@[simp]
-lemma support_simulate_query (i : spec.ι) (t : spec.domain i) (s : unit) :
-  (simulate ⟪o⟫ (query i t) s).support = {x | x.1 ∈ (o i t).support} :=
-begin
-  refine s.rec _,
-  simp,
-  sorry,
-end
-
-@[simp]
-lemma support_default_simulate'_query (i : spec.ι) (t : spec.domain i) :
-  (default_simulate' ⟪o⟫ (query i t)).support = (o i t).support :=
-sorry
-
-end query
 
 end support
 

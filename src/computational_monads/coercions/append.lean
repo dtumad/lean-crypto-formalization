@@ -51,19 +51,9 @@ instance coe_append_right (α) : has_coe (oracle_comp spec α) (oracle_comp (spe
 lemma coe_append_right_def (oa : oracle_comp spec α) : (↑oa : oracle_comp (spec ++ spec') α) =
   oa.default_simulate' ⟪λ i t, let i' : (spec ++ spec').ι := sum.inl i in query i' t⟫ := rfl
 
-@[simp]
-lemma support_coe_append_right (oa : oracle_comp spec α) :
+@[simp] lemma support_coe_append_right (oa : oracle_comp spec α) :
   (↑oa : oracle_comp (spec ++ spec') α).support = oa.support :=
-begin
-  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t,
-  { simp only [coe_append_right_def, support_simulate',
-      simulate_return, support_return, set.image_singleton] },
-  { simp_rw [coe_append_right_def] at hoa hob,
-    simp_rw [support_bind, coe_append_right_def,
-      stateless_oracle.support_default_simulate'_bind, hoa, hob] },
-  { rw [coe_append_right_def, stateless_oracle.support_default_simulate'_query,
-      support_query, support_query] },
-end
+stateless_oracle.support_simulate'_eq_support _ _ (λ _ _, support_query _ _) ()
 
 section distribution_semantics
 

@@ -57,6 +57,9 @@ open distribution_semantics
 @[simp] lemma eval_dist_coe_coin_uniform_select :
   ⦃(↑oa : oracle_comp uniform_selecting α)⦄ = ⦃oa⦄ :=
 begin
+
+
+  rw [coe_coin_uniform_select.def],
   refine eval_dist_simulate'_eq_eval_dist _ oa () (λ i t s, pmf.ext $ λ x, _),
   erw [stateless_oracle.apply_eq, eval_dist_bind_return, pmf.map_comp, pmf.map_id],
   cases x;
