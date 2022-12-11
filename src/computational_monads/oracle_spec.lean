@@ -51,7 +51,7 @@ variables (spec : oracle_spec)
 /-- Class of `oracle_spec` that have decidable equality on the underlying types.
 This is needed for things like cacheing previous queries or checking for specific queries.
 It also allows for explicit calculation of the support of the computation (see `fin_support`)
-We choose the name `computable` to avoid confusion with `oracle_comp.decidable`.#check
+We choose the name `computable` to avoid confusion with `oracle_comp.decidable`.
 TODO: `decidable_spec`? -/
 class computable (spec : oracle_spec) :=
 (ι_decidable_eq : decidable_eq spec.ι)

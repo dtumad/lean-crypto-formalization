@@ -101,8 +101,6 @@ support_uniform_of_list v.1 (vector.not_empty_to_list v)
 lemma uniform_of_vector_apply (a : α) : uniform_of_vector v a = v.to_list.count a / ↑(n + 1) :=
 (uniform_of_list_apply v.1 _ a).trans (congr_arg (λ x, _ / x) (congr_arg coe v.length_coe))
 
-#check finset.card_eq_sum_ones
-
 lemma uniform_of_vector_eq_nth_map_uniform_of_fintype :
   uniform_of_vector v = pmf.map v.nth (uniform_of_fintype $ fin (n + 1)) :=
 pmf.ext (λ x, by calc uniform_of_vector v x
