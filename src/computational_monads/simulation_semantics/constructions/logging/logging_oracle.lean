@@ -18,14 +18,13 @@ open oracle_comp oracle_spec
 
 variables {α β γ : Type} {spec spec' spec'' : oracle_spec} 
   
-def logging_oracle (spec : oracle_spec) [spec.computable] :
-  sim_oracle spec spec (query_log spec) :=
+def logging_oracle (spec : oracle_spec) : sim_oracle spec spec (query_log spec) :=
 ⟪query | λ i t u, query_log.log_query i t u, query_log.init spec⟫
 
 namespace logging_oracle
 
 variables (a : α) (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) (i : spec.ι)
-  (t : spec.domain i) (log : query_log spec) [computable spec]
+  (t : spec.domain i) (log : query_log spec)
 
 @[simp] lemma apply : (logging_oracle spec) i (t, log) =
   query i t >>= λ u, return (u, log.log_query i t u) := rfl

@@ -121,15 +121,15 @@ class inductive decidable : Π {α : Type}, oracle_comp spec α → Type 1
 open decidable
 
 /-- Version of `decidable_eq_of_decidable` taking an explicit `decidable` argument -/
-def decidable_eq_of_decidable' [spec.computable] : Π {α : Type} {oa : oracle_comp spec α}
+def decidable_eq_of_decidable' : Π {α : Type} {oa : oracle_comp spec α}
   (h : decidable oa), decidable_eq α
 | _ _ (decidable_pure' α a h) := h
 | _ _ (decidable_bind' α β oa ob hoa hob) := decidable_eq_of_decidable' (hob (inhabited_base oa).1)
-| _ _ (decidable_query i t) := oracle_spec.computable.range_decidable_eq i
+| _ _ (decidable_query i t) := spec.range_decidable_eq i
 
 /-- Given a `decidable` instance on an `oracle_comp`, we can extract a
   `decidable_eq` instance on the resutlt type of the computation -/
-def decidable_eq_of_decidable [spec.computable] (oa : oracle_comp spec α) [h : oa.decidable] :
+def decidable_eq_of_decidable (oa : oracle_comp spec α) [h : oa.decidable] :
   decidable_eq α := decidable_eq_of_decidable' h
 
 instance decidable_return [h : decidable_eq α] (a : α) :

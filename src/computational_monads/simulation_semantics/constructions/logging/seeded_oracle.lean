@@ -29,7 +29,7 @@ variables {spec spec' spec'' : oracle_spec} {α β γ : Type}
 /-- Use the first element of the `seed` as the query result if inputs match.
   If the query values don't match then throw away the seed as computation has diverged.
   Using this with a log from a previous computation ensures they behave identically. -/
-def seeded_oracle (spec : oracle_spec) [computable spec] :
+def seeded_oracle (spec : oracle_spec) :
   sim_oracle spec spec (query_log spec) :=
 { default_state := query_log.init spec,
   o := λ i ⟨t, seed⟩, match seed.lookup_fst i t with
@@ -41,7 +41,6 @@ def seeded_oracle (spec : oracle_spec) [computable spec] :
 namespace seeded_oracle
 
 variables (log : query_log spec) (log' : query_log spec')
-variable [spec.computable]
 
 section simulate
 

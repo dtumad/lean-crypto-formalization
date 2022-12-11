@@ -47,7 +47,7 @@ end support
 
 section fin_support
 
-variables [decidable_eq α] [decidable_eq β] [computable spec]
+variables [decidable_eq α] [decidable_eq β]
   [finite_range spec] [decidable oa] [decidable ob]
 
 @[simp] lemma fin_support_prod : (oa ×ₘ ob).fin_support = oa.fin_support ×ˢ ob.fin_support :=

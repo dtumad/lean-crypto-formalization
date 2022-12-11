@@ -23,13 +23,12 @@ variables {α β γ : Type} {spec spec' spec'' : oracle_spec} {S S' : Type}
 /-- Oracle that responds uniformly at random to any new queries,
 but returns the same result to subsequent oracle queries.
 Masking is used to hide the irrelevent state of the `uniform_oracle` -/
-noncomputable def random_oracle (spec : oracle_spec) [spec.computable] [spec.finite_range] :
+noncomputable def random_oracle (spec : oracle_spec) [spec.finite_range] :
   sim_oracle spec uniform_selecting (query_log spec) :=
 ((uniform_oracle spec) ∘ₛ (caching_oracle spec)).mask_state (equiv.prod_punit (query_log spec))
 
 namespace random_oracle
 
-variable [spec.computable]
 variable [spec.finite_range]
 variables (log : query_log spec) (log' : query_log spec')
 

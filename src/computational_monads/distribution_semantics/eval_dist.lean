@@ -97,7 +97,7 @@ end support
 
 section fin_support
 
-variables [computable spec] (oa : oracle_comp spec α) [decidable oa] (x : α)
+variables (oa : oracle_comp spec α) [decidable oa] (x : α)
 
 lemma support_eval_dist_eq_fin_support : ⦃oa⦄.support = oa.fin_support :=
 (support_eval_dist oa).trans (coe_fin_support_eq_support oa).symm
@@ -192,7 +192,7 @@ lemma eval_dist_bind_apply_eq_sum [fintype α] : ⦃oa >>= ob⦄ y = ∑ x, ⦃o
 by simpa only [eval_dist_bind_apply_eq_tsum]
   using tsum_eq_sum (λ x hx, (hx $ finset.mem_univ x).elim)
 
-lemma eval_dist_bind_apply_eq_sum_fin_support [spec.computable] [oa.decidable] :
+lemma eval_dist_bind_apply_eq_sum_fin_support [oa.decidable] :
   ⦃oa >>= ob⦄ y = ∑ x in oa.fin_support, ⦃oa⦄ x * ⦃ob x⦄ y :=
 (eval_dist_bind_apply_eq_tsum oa ob y).trans (tsum_eq_sum $ λ a ha,
   by rw [(eval_dist_eq_zero_iff_not_mem_fin_support oa a).2 ha, zero_mul])
@@ -225,8 +225,7 @@ lemma eval_dist_bind_return_apply_eq_sum [fintype α] [decidable_eq β] :
 (eval_dist_bind_return_apply_eq_tsum oa f y).trans
   (tsum_eq_sum (λ x hx, (hx $ finset.mem_univ x).elim))
 
-lemma eval_dist_bind_return_apply_eq_sum_fin_support
-  [decidable_eq β] [spec.computable] [oa.decidable] :
+lemma eval_dist_bind_return_apply_eq_sum_fin_support [decidable_eq β] [oa.decidable] :
   ⦃oa >>= λ x, return (f x)⦄ y = ∑ x in oa.fin_support, ite (y = f x) (⦃oa⦄ x) 0 :=
 (eval_dist_bind_return_apply_eq_tsum oa f y).trans
   (tsum_eq_sum (λ x hx, by rw [eval_dist_eq_zero_of_not_mem_fin_support hx, if_t_t]))
@@ -273,7 +272,7 @@ lemma eval_dist_map_apply_eq_sum [fintype α] [decidable_eq β] :
   ⦃f <$> oa⦄ y = ∑ x, ite (y = f x) (⦃oa⦄ x) 0 :=
 eval_dist_bind_return_apply_eq_sum oa _ y
 
-lemma eval_dist_map_apply_eq_sum_fin_support [decidable_eq β] [spec.computable] [oa.decidable] :
+lemma eval_dist_map_apply_eq_sum_fin_support [decidable_eq β] [oa.decidable] :
   ⦃f <$> oa⦄ y = ∑ x in oa.fin_support, ite (y = f x) (⦃oa⦄ x) 0 :=
 eval_dist_bind_return_apply_eq_sum_fin_support oa _ y
 

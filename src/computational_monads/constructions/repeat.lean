@@ -30,7 +30,7 @@ def repeat (oa : oracle_comp spec α) : Π (n : ℕ), oracle_comp spec (vector �
 @[simp] lemma repeat_succ : oa.repeat (n + 1) =
   do { a ← oa, as ← repeat oa n, return (a ::ᵥ as) } := rfl
 
-instance repeat.decidable [spec.computable] [hoa : oa.decidable] : (oa.repeat n).decidable :=
+instance repeat.decidable [hoa : oa.decidable] : (oa.repeat n).decidable :=
 begin
   induction n with n hn,
   { exact oracle_comp.decidable_return vector.nil },

@@ -102,7 +102,7 @@ lemma simulate_query : simulate so (query i t) s = so i (t, s) := rfl
 @[simp]
 lemma simulate_map : simulate so (f <$> oa) s = prod.map f id <$> simulate so oa s := rfl
 
-instance simulate.decidable [spec.computable] [hoa : oa.decidable] [decidable_eq S]
+instance simulate.decidable [hoa : oa.decidable] [decidable_eq S]
   [h : ∀ i t s, (so i (t, s)).decidable] : (oa.simulate so s).decidable :=
 begin
   unfreezingI {induction oa using oracle_comp.induction_on
@@ -223,7 +223,7 @@ lemma simulate'_query : simulate' so (query i t) s = prod.fst <$> so i (t, s) :=
 lemma simulate'_map : simulate' so (f <$> oa) s =
   prod.fst <$> (prod.map f id <$> simulate so oa s) := rfl
 
-instance simulate'.decidable [spec.computable] [hoa : oa.decidable] [decidable_eq S]
+instance simulate'.decidable [hoa : oa.decidable] [decidable_eq S]
   [h : ∀ i t s, (so i (t, s)).decidable] : (oa.simulate' so s).decidable :=
 begin
   haveI : decidable_eq α := decidable_eq_of_decidable oa,

@@ -27,8 +27,7 @@ inductive poly_time_oracle_comp {spec : oracle_spec} :
 | poly_time_query {α : Type} (i : spec.ι) (f : α → spec.domain i) (hf : poly_time f) :
     poly_time_oracle_comp (λ a, query i (f a))
 -- For distributions, suffices to show there is a poly time implementation
-| poly_time_ext [spec.finite_range] [spec.computable]
-    {α β : Type} (f g : α → oracle_comp spec β)
+| poly_time_ext [spec.finite_range] {α β : Type} (f g : α → oracle_comp spec β)
     (h : ∀ a, f a ≃ₚ g a) (hf : poly_time_oracle_comp g) :
     poly_time_oracle_comp f
 

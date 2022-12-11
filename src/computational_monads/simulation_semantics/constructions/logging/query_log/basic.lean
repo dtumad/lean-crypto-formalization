@@ -44,8 +44,6 @@ end init
 
 section log_query
 
-variable [spec.computable]
-
 /-- Given a current query log, return the new log after adding a given oracle query -/
 def log_query (i : spec.ι) (t : spec.domain i) (u : spec.range i) : query_log spec :=
 λ j, if hi : i = j then hi.rec_on ((t, u) :: (log i)) else log j
@@ -106,8 +104,6 @@ end
 end log_query
 
 section not_queried
-
-variable [spec.computable]
 
 /- Returns whether a specific input has been previously logged. -/
 def not_queried (i : spec.ι) (t : spec.domain i) : Prop :=
@@ -171,8 +167,6 @@ end not_queried
 
 section map_at_index
 
-variable [spec.computable]
-
 /-- Apply a mapping function to the log corresponding to a particular index
   TODO: I think a lot of the above functions can use this as a helper -/
 def map_at_index (i : spec.ι)
@@ -226,8 +220,6 @@ end
 end map_at_index
 
 section drop_at_index
-
-variable [spec.computable]
 
 /-- Drop the given number of elements from the given log at the specified index. -/
 def drop_at_index (log : query_log spec) (i : spec.ι) (n : ℕ) : query_log spec :=
@@ -289,8 +281,6 @@ end
 end drop_at_index
 
 section remove_head
-
-variable [spec.computable]
 
 /-- remove the head of the index `i` log -/
 def remove_head (log : query_log spec) (i : spec.ι) :

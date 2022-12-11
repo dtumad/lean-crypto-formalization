@@ -25,8 +25,8 @@ open oracle_comp oracle_spec
 
 section commits
 
-variables {G X M : Type} [fintype G] [fintype X] [inhabited G] [inhabited X]
-  [decidable_eq G] [decidable_eq X] [decidable_eq M]
+variables {G X M : Type} [fintype G] [fintype X]
+  [decidable_eq G] [decidable_eq X]
   [add_group G] [algorithmic_homogenous_space G X] {n : ℕ}
 
 /-- Function used in signing to combine the random commitments with the resulting hash,
@@ -69,7 +69,6 @@ def hhs_signature (G X M : Type) (n : ℕ) [fintype G] [fintype X] [inhabited G]
       return (h = σ.map prod.snd) },
   random_oracle_spec := ((vector X n × M) ↦ₒ vector bool n),
   random_oracle_spec_finite_range := singleton_spec.finite_range _ _,
-  random_oracle_spec_computable := singleton_spec.computable _ _,
   decidable_eq_M := by apply_instance,
   decidable_eq_S := by apply_instance,
   inhabited_S := by apply_instance }

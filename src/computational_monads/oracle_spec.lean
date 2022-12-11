@@ -13,20 +13,25 @@ The `oracle_spec` type specifies an indexing set for the available oracles,
 and input and output types for each oracle. We also require that the range of the oracle
 is nonempty, so it has at least one possible output.
 
-We also define type classes `computable` and `finite_range` for `oracle_spec`.
-`computable` requires that we have `decidable_eq` instances on the involved types,
-and `finite_range` requires that each oracle's output type is a `fintype`.
-These will be used when defining `oracle_comp.fin_support` and `oracle_comp.eval_dist`.
+We also define a type class `finite_range` for `oracle_spec`,
+which requires that each oracle's output type is a `fintype`.
+These will be used when defining `oracle_comp.fin_support` and `oracle_comp.eval_dist`,
+as otherwise we can't define a finite uniform distribution to oracle queries.
 -/
 
 /-- Specification of the various oracles available to a computation.
 `ι` is an indexing set of oracles (i.e. `ι := ℕ` gives a different oracle for each `n : ℕ`).
 `domain range : ι → Type` give the input and output of the oracle corresponding to `i : ι`.
-We also require for the output types to be nonempty (ensuring `oracle_comp.support` is nonempty) -/
+We also require for the output types to be nonempty (ensuring `oracle_comp.support` is nonempty).
+`decidable_eq` instances are also required in order to define things like `fin_support` -/
 structure oracle_spec : Type 1 := 
 (ι : Type)
 (domain range : ι → Type)
 (range_inhabited (i : ι) : inhabited $ range i)
+(ι_decidable_eq : decidable_eq ι)
+(domain_decidable_eq (i : ι) : decidable_eq $ domain i)
+(range_decidable_eq (i : ι) : decidable_eq $ range i)
+
 
 /-- Example of a simple `oracle_spec` for a pair of oracles,
   each taking a `ℕ` as input, returning a value of type `ℕ` or `ℤ` respectively -/
@@ -37,6 +42,12 @@ example : oracle_spec :=
   range_inhabited := λ x, match x with
   | (sum.inl ()) := nat.inhabited
   | (sum.inr ()) := int.inhabited
+  end,
+  ι_decidable_eq := by apply_instance,
+  domain_decidable_eq := by apply_instance,
+  range_decidable_eq := λ x, match x with
+  | (sum.inl ()) := nat.decidable_eq
+  | (sum.inr ()) := int.decidable_eq
   end }
 
 namespace oracle_spec
@@ -48,24 +59,13 @@ spec.range_inhabited i
 
 variables (spec : oracle_spec)
 
-/-- Class of `oracle_spec` that have decidable equality on the underlying types.
-This is needed for things like cacheing previous queries or checking for specific queries.
-It also allows for explicit calculation of the support of the computation (see `fin_support`)
-We choose the name `computable` to avoid confusion with `oracle_comp.decidable`.
-TODO: `decidable_spec`? -/
-class computable (spec : oracle_spec) :=
-(ι_decidable_eq : decidable_eq spec.ι)
-(domain_decidable_eq (i : spec.ι) : decidable_eq $ spec.domain i)
-(range_decidable_eq (i : spec.ι) : decidable_eq $ spec.range i)
+instance ι_decidable_eq' : decidable_eq spec.ι := spec.ι_decidable_eq
 
-instance computable.ι_decidable_eq' [spec.computable] :
-  decidable_eq spec.ι := computable.ι_decidable_eq
+instance domain_decidable_eq' (i : spec.ι) :
+  decidable_eq (spec.domain i) := spec.domain_decidable_eq i
 
-instance computable.domain_decidable_eq' [spec.computable] (i : spec.ι) :
-  decidable_eq (spec.domain i) := computable.domain_decidable_eq i
-
-instance computable.range_decidable_eq' [spec.computable] (i : spec.ι) :
-  decidable_eq (spec.range i) := computable.range_decidable_eq i
+instance range_decidable_eq' (i : spec.ι) :
+  decidable_eq (spec.range i) := spec.range_decidable_eq i
 
 /-- Class of `oracle_spec` for which the output type of each oracle has is a finite type.
 In this case we can consider the distribution obtained by viewing each oracle as responding
@@ -81,21 +81,19 @@ end instances
 section singleton_spec
 
 /-- Access to a single oracle with input type `T` and output type `U`. -/
-@[simps] def singleton_spec (T U : Type) [hU : inhabited U] : oracle_spec :=
+@[simps] def singleton_spec (T U : Type) [hU : inhabited U]
+  [hT : decidable_eq T] [hU' : decidable_eq U] : oracle_spec :=
 { ι := unit,
   domain := λ _, T,
   range := λ _, U,
-  range_inhabited := λ _, hU }
+  range_inhabited := λ _, hU,
+  ι_decidable_eq := punit.decidable_eq,
+  domain_decidable_eq := λ _, hT,
+  range_decidable_eq := λ _, hU' }
 
 infixl` ↦ₒ `:25 := singleton_spec
 
-variables (T U : Type) [inhabited U]
-
-instance singleton_spec.computable [hT : decidable_eq T] [hU' : decidable_eq U] :
-  computable (T ↦ₒ U) :=
-{ ι_decidable_eq := punit.decidable_eq,
-  domain_decidable_eq := λ _, hT,
-  range_decidable_eq := λ _, hU' }
+variables (T U : Type) [inhabited U] [decidable_eq T] [decidable_eq U]
 
 instance singleton_spec.finite_range [hU : fintype U] : finite_range (T ↦ₒ U) :=
 { range_fintype := λ _, hU }
@@ -109,14 +107,12 @@ section empty_spec
 { ι := empty,
   domain := empty.elim,
   range := λ _, unit,
-  range_inhabited := λ _, by apply_instance }
-
-notation `[]ₒ` := empty_spec
-
-instance empty_spec.computable : computable []ₒ := 
-{ ι_decidable_eq := empty.decidable_eq,
+  range_inhabited := λ _, by apply_instance,
+  ι_decidable_eq := empty.decidable_eq,
   domain_decidable_eq := λ i, i.elim,
   range_decidable_eq := λ i, i.elim }
+
+notation `[]ₒ` := empty_spec
 
 instance empty_spec.finite_range : finite_range []ₒ :=
 { range_fintype := λ i, i.elim }
@@ -135,15 +131,12 @@ instance oracle_spec.has_append : has_append oracle_spec :=
   { ι := spec.ι ⊕ spec'.ι,
     domain := sum.elim spec.domain spec'.domain,
     range := sum.elim spec.range spec'.range,
-    range_inhabited := λ i, by induction i; simp; apply_instance } }
+    range_inhabited := λ i, by induction i; simp; apply_instance,
+    ι_decidable_eq := sum.decidable_eq spec.ι spec'.ι,
+    domain_decidable_eq := by refine (λ i, sum.rec_on i _ _); by apply_instance,
+    range_decidable_eq := by refine (λ i, sum.rec_on i _ _); by apply_instance } }
 
 variables (spec spec' : oracle_spec)
-
-instance append.computable [spec.computable] [spec'.computable] :
-  computable (spec ++ spec') :=
-{ ι_decidable_eq := sum.decidable_eq spec.ι spec'.ι,
-  domain_decidable_eq := by refine (λ i, sum.rec_on i _ _); exact computable.domain_decidable_eq,
-  range_decidable_eq := by refine (λ i, sum.rec_on i _ _); exact computable.range_decidable_eq }
 
 instance append.finite_range [spec.finite_range] [spec'.finite_range] :
   (spec ++ spec').finite_range :=
@@ -156,7 +149,7 @@ section coin_spec
 /-- Access to a single oracle, returning a `bool` to each oracle query.
 The probability distribution associated to the oracle will eventually be 50/50 for `tt` and `ff`,
 representing oracle access to a fair coin flip. -/
-@[simps, derive [finite_range, computable]]
+@[simps, derive finite_range]
 def coin_spec : oracle_spec := unit ↦ₒ bool
 
 @[simp] lemma card_range_coin_spec (i : unit) : fintype.card (coin_spec.range i) = 2 := rfl
@@ -172,11 +165,9 @@ avoiding a return type of the empty `fin 0` type. -/
 { ι := ℕ,
   domain := λ n, unit,
   range := λ n, fin (n + 1),
-  range_inhabited := λ n, by apply_instance }
-
-instance uniform_selecting.computable : computable uniform_selecting :=
-{ ι_decidable_eq := nat.decidable_eq,
-  domain_decidable_eq := λ _, by apply_instance,
+  range_inhabited := λ n, ⟨0⟩,
+  ι_decidable_eq := nat.decidable_eq,
+  domain_decidable_eq := λ _, punit.decidable_eq,
   range_decidable_eq := λ n, fin.decidable_eq (n + 1) }
 
 instance uniform_selecting.finite_range : finite_range uniform_selecting :=

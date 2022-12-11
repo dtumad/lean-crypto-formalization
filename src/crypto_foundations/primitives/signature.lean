@@ -49,7 +49,6 @@ structure signature :=
 -- Random oracles for the algorithms, with finite ranges and computablity requirements.
 (random_oracle_spec : oracle_spec)
 (random_oracle_spec_finite_range : random_oracle_spec.finite_range)
-(random_oracle_spec_computable : random_oracle_spec.computable)
 -- The actual algorithms of the signature scheme.
 (gen : unit → oracle_comp (uniform_selecting ++ random_oracle_spec) (PK × SK))
 (sign : PK × SK × M → oracle_comp (uniform_selecting ++ random_oracle_spec) S)
@@ -68,9 +67,6 @@ section oracle_instances
 instance random_oracle_spec.finite_range : sig.random_oracle_spec.finite_range :=
 sig.random_oracle_spec_finite_range
 
-instance random_oracle_spec.computable : sig.random_oracle_spec.computable :=
-sig.random_oracle_spec_computable
-
 instance decidable_eq_S' : decidable_eq sig.S := sig.decidable_eq_S
 
 instance decidable_eq_M' : decidable_eq sig.M := sig.decidable_eq_M
@@ -83,7 +79,7 @@ section oracles
 
 /-- Shorthand for the combination of the `uniform_selecting` oracle and the `random_oracles`,
   i.e. the oracles available to the signature algorithms themselves -/
-@[reducible, inline, derive finite_range, derive computable]
+@[reducible, inline, derive finite_range]
 def base_oracle_spec (sig : signature) : oracle_spec :=
 uniform_selecting ++ sig.random_oracle_spec
 
@@ -94,7 +90,7 @@ sim_oracle.mask_state (idₛ ++ₛ random_oracle sig.random_oracle_spec)
   (equiv.punit_prod (query_log sig.random_oracle_spec))
 
 /-- A signing oracle corresponding to a given signature scheme -/
-@[reducible, inline, derive computable]
+@[reducible, inline]
 def signing_oracle_spec (sig : signature) [inhabited sig.S] : oracle_spec :=
 (sig.M ↦ₒ sig.S)
 
@@ -152,7 +148,7 @@ section unforgeable
 
 /-- The adversary for the signing experiment has access to both the signature scheme's oracles,
   and a signing oracle that will be simulated with the hidden secret key. -/
-@[reducible, inline, derive computable]
+@[reducible, inline]
 def unforgeable_adversary_oracle_spec (sig : signature) : oracle_spec :=
 uniform_selecting ++ sig.random_oracle_spec ++ sig.signing_oracle_spec
 

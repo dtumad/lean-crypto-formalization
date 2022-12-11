@@ -19,7 +19,7 @@ This is often useful when composed with other oracles, such as in `random_oracle
 
 open oracle_comp oracle_spec
 
-variables {α β γ : Type} {spec spec' : oracle_spec} [computable spec]
+variables {α β γ : Type} {spec spec' : oracle_spec}
 
 /-- Computation that returns a currently cached value, or queries a new value if needed,
 returning both the result and the (potentially updated) cache.
@@ -34,8 +34,7 @@ match cache.lookup i t with
 end
 
 /-- Oracle for logging previous queries, and returning the same value for matching inputs -/
-def caching_oracle (spec : oracle_spec) [spec.computable] :
-  sim_oracle spec spec (query_log spec) :=
+def caching_oracle (spec : oracle_spec) : sim_oracle spec spec (query_log spec) :=
 { default_state := query_log.init spec,
   o := λ i ⟨t, log⟩, match log.lookup i t with
   | (some u) := return (u, log) -- Return the cached value if it already exists

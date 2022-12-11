@@ -22,14 +22,12 @@ section fork_cache
 Just wraps a call to `drop_at_index`, dropping everything if the input is `none`.
 The result contains exactly the back `i` elements. The choice to drop everything given a `none`
 input is just convention, but simplifies some proofs. -/
-def fork_cache [spec.computable] (log : query_log spec)
+def fork_cache (log : query_log spec)
   (i : spec.ι) (n : option ℕ) : query_log spec :=
 match n with
 | none := query_log.init spec
 | (some m) := log.drop_at_index i ((log i).length - m) -- The front values are most recent??
 end
-
-variable [spec.computable]
 
 @[simp] lemma fork_cache_init (i : spec.ι) (n : option ℕ) :
   (query_log.init spec).fork_cache i n = query_log.init spec :=
@@ -63,7 +61,7 @@ lemma to_seed_init (spec : oracle_spec) :
   (init spec).to_seed = init spec :=
 rfl
 
-lemma to_seed_log_query [spec.computable] (log : query_log spec)
+lemma to_seed_log_query (log : query_log spec)
   (i : spec.ι) (t : spec.domain i) (u : spec.range i) :
   (log.log_query i t u).to_seed = λ j, if hi : i = j
     then log.to_seed j ++ [hi.rec_on (t, u)] else log.to_seed j :=

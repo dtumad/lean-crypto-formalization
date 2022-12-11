@@ -106,7 +106,7 @@ end support
 
 section fin_support
 
-variables [computable spec'] [finite_range spec'] [decidable oa]
+variables [finite_range spec'] [decidable oa]
 
 
 

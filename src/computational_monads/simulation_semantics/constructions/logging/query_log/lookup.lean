@@ -14,7 +14,6 @@ This file defines functions for looking up values in a `query_log`.
 namespace query_log
 
 variables {spec : oracle_spec} (log : query_log spec)
-variable [spec.computable]
 
 section lookup
 
@@ -27,8 +26,7 @@ def lookup (log : query_log spec) (i : spec.ι) (t : spec.domain i) :
 ((log i).find $ (= t) ∘ prod.fst).map prod.snd
 
 @[simp]
-lemma lookup_init (spec : oracle_spec) [spec.computable]
-  (i : spec.ι) (t : spec.domain i) :
+lemma lookup_init (spec : oracle_spec) (i : spec.ι) (t : spec.domain i) :
   (init spec).lookup i t = none :=
 option.map_none'
 
@@ -101,8 +99,7 @@ match log i with
 | ((t', u)) :: _ := if t = t' then some u else none
 end
 
-lemma lookup_fst_init (spec : oracle_spec) [spec.computable]
-  (i : spec.ι) (t : spec.domain i) :
+lemma lookup_fst_init (spec : oracle_spec) (i : spec.ι) (t : spec.domain i) :
   (query_log.init spec).lookup_fst i t = none :=
 rfl
 
@@ -141,7 +138,7 @@ end lookup_fst
 section lookup_with_index
 
 /-- TODO: weird things with direction and with the carry over case on `r` -/
-def lookup_with_index [spec.computable] (log : query_log spec)
+def lookup_with_index (log : query_log spec)
   (i : spec.ι) (t : spec.domain i) : option (spec.range i × ℕ) :=
 (log i).foldr_with_index (λ n ⟨t', u⟩ r, if t' = t then some (u, n) else r) none
 
@@ -152,7 +149,7 @@ section get_index_of_input
 /-- Get the index of the first query with the given input `t`.
   Returns `none` if the input has never been queried
   TODO: check if the fold should be right or left-/
-def get_index_of_input [spec.computable] (log : query_log spec)
+def get_index_of_input (log : query_log spec)
   (i : spec.ι) (t : spec.domain i) : option ℕ :=
 (log i).foldr_with_index (λ n ⟨t', _⟩ m, if t' = t then some n else m) none
 
@@ -164,7 +161,7 @@ section update_query_result
 
 /-- Update the result of the first query to `t` to a new value.
 If the value was never queried then return the original log. -/
-def update_result_at_index [spec.computable] (log : query_log spec) (i : spec.ι)
+def update_result_at_index (log : query_log spec) (i : spec.ι)
   (t : spec.domain i) (u : spec.range i) : query_log spec :=
 match log.get_index_of_input i t with
 | none := log

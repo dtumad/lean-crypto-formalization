@@ -52,7 +52,7 @@ pmf.to_outer_measure_apply ⦃oa⦄ e
 lemma prob_event_eq_sum_indicator [fintype α] : ⦃e | oa⦄ = ∑ x, e.indicator ⦃oa⦄ x :=
 (prob_event_eq_tsum_indicator oa e).trans (tsum_eq_sum (λ x hx, (hx $ finset.mem_univ x).elim))
 
-lemma prob_event_eq_sum_fin_support_indicator [spec.computable] [oa.decidable] :
+lemma prob_event_eq_sum_fin_support_indicator [oa.decidable] :
   ⦃e | oa⦄ = ∑ x in oa.fin_support, e.indicator ⦃oa⦄ x :=
 (prob_event_eq_tsum_indicator oa e).trans (tsum_eq_sum $ λ a ha,
   set.indicator_apply_eq_zero.2 (λ _, eval_dist_eq_zero_of_not_mem_fin_support ha))
@@ -66,7 +66,7 @@ lemma prob_event_eq_sum_ite [fintype α] [decidable_pred e] :
 trans (prob_event_eq_sum_indicator oa e) (finset.sum_congr rfl $
   λ _ _, by {rw set.indicator, congr})
 
-lemma prob_event_eq_sum_fin_support_ite [decidable_pred e] [spec.computable] [oa.decidable] :
+lemma prob_event_eq_sum_fin_support_ite [decidable_pred e] [oa.decidable] :
   ⦃e | oa⦄ = ∑ x in oa.fin_support, ite (x ∈ e) (⦃oa⦄ x) 0 :=
 trans (prob_event_eq_sum_fin_support_indicator oa e) (finset.sum_congr rfl $
   λ _ _, by {rw set.indicator, congr})
@@ -162,7 +162,7 @@ by simp only [prob_event.def, eval_dist_bind, pmf.to_outer_measure_bind_apply]
 lemma prob_event_bind_eq_sum [fintype α] : ⦃e' | oa >>= ob⦄ = ∑ x, ⦃oa⦄ x * ⦃e' | ob x⦄ :=
 by simpa only [prob_event_bind_eq_tsum] using tsum_eq_sum (λ x hx, (hx $ finset.mem_univ x).elim)
 
-lemma prob_event_bind_eq_sum_fin_support [spec.computable] [spec.finite_range] [oa.decidable] :
+lemma prob_event_bind_eq_sum_fin_support [spec.finite_range] [oa.decidable] :
   ⦃e' | oa >>= ob⦄ = ∑ x in oa.fin_support, ⦃oa⦄ x * ⦃e' | ob x⦄ :=
 (prob_event_bind_eq_tsum oa ob e').trans (tsum_eq_sum (λ x hx,
   by rw [eval_dist_eq_zero_of_not_mem_fin_support hx, zero_mul]))
@@ -173,7 +173,7 @@ prob_event_bind_eq_tsum oa ob e'
 lemma prob_event_bind'_eq_sum [fintype α] : ⦃e' | bind' α β oa ob⦄ = ∑ x, ⦃oa⦄ x * ⦃e' | ob x⦄ :=
 prob_event_bind_eq_sum oa ob e'
 
-lemma prob_event_bind'_eq_sum_fin_support [spec.computable] [spec.finite_range] [oa.decidable] :
+lemma prob_event_bind'_eq_sum_fin_support [spec.finite_range] [oa.decidable] :
   ⦃e' | bind' α β oa ob⦄ = ∑ x in oa.fin_support, ⦃oa⦄ x * ⦃e' | ob x⦄ :=
 prob_event_bind_eq_sum_fin_support oa ob e'
 
@@ -261,7 +261,7 @@ end support
 
 section fin_support
 
-variables  [computable spec] (oa : oracle_comp spec α) [decidable oa]
+variables (oa : oracle_comp spec α) [decidable oa]
   (ob : α → oracle_comp spec β) (e e' : set α)
 
 lemma prob_event_eq_sum_fin_support [decidable_pred e] :

@@ -40,7 +40,7 @@ variables (oa : oracle_comp spec α)
 lemma apply_eq (i : spec.ι) (t : spec.domain i) (s : unit) :
   ⟪o⟫ i (t, s) = o i t >>= λ u, return (u, ()) := rfl
 
-instance decidable [spec.computable] [∀ i x, (o i x).decidable] (i : spec.ι)
+instance decidable [∀ i x, (o i x).decidable] (i : spec.ι)
   (x : spec.domain i × unit) : (⟪o⟫ i x).decidable :=
 tracking_oracle.decidable o _ _ i x
 
@@ -99,7 +99,7 @@ end support
 section fin_support
 
 -- TODO: this should generalize I think?
-lemma fin_support_apply [spec'.computable] [spec'.finite_range] [spec.computable]
+lemma fin_support_apply [spec'.finite_range]
   [∀ i x, (o i x).decidable]
   (i : spec.ι) (t : spec.domain i) (s : unit) (x : spec.range i × unit) :
   (⟪o⟫ i (t, s)).fin_support = finset.preimage (o i t).fin_support prod.fst
@@ -108,7 +108,7 @@ begin
   sorry,
 end
 
-lemma mem_fin_support_apply [spec'.computable] [spec'.finite_range] [spec.computable]
+lemma mem_fin_support_apply [spec'.finite_range]
   [∀ i x, (o i x).decidable]
   (i : spec.ι) (t : spec.domain i) (s : unit) (x : spec.range i × unit) :
   x ∈ (⟪o⟫ i (t, s)).fin_support ↔ x.1 ∈ (o i t).fin_support :=

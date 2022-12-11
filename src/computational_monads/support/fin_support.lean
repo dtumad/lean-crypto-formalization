@@ -20,21 +20,18 @@ The need for `oracle_comp.decidable` arises from the need to use `finset.bUnion`
 This could be avoided by including a `decidable_eq` requirement of the `pure'` constructor,
 but this partially destrays the monad structure of `oracle_comp`.
 
-We also require `spec.computable` and `spec.finite_range` instances for the `oracle_spec` itself.
-Without the `finite_range` instance, the support may be infinite,
-  so only `oracle_comp.support` will exist.
+We also require `spec.finite_range` instance for the `oracle_spec` itself,
+to ensure that the output has a finite number of possible outputs.
 -/
 
 namespace oracle_comp
 
 open oracle_spec decidable
 
-variables {α β γ : Type} {spec spec' : oracle_spec}
-  [computable spec] [computable spec'] [finite_range spec] [finite_range spec']
+variables {α β γ : Type} {spec spec' : oracle_spec} [finite_range spec] [finite_range spec']
 
-/-- Compute an explicit `finset` of the elements in `support`,
-  assuming `computable` and `finite_range` instances on the `spec`,
-  and a `decidable` instance on the `oracle_comp` itself. -/
+/-- Compute an explicit `finset` of the elements in `support`, a `finite_range` instance
+on the `spec`, and a `decidable` instance on the `oracle_comp` itself. -/
 def fin_support : Π {α : Type} (oa : oracle_comp spec α) [decidable oa], finset α
 | _ _ (decidable_pure' α a h) := {a}
 | _ _ (decidable_bind' α β oa ob hoa hob) := 
@@ -49,7 +46,7 @@ variables (oa : oracle_comp spec α) (oa' : oracle_comp spec' α) [decidable oa]
 
 /-- Correctness of `fin_support` with respect to `support`, i.e. the two are equal as `set`s -/
 theorem mem_fin_support_iff_mem_support : Π {α : Type} (oa : oracle_comp spec α)
-  [hoa : decidable oa] (a : α), a ∈ (@fin_support _ _ _ _ _ hoa) ↔ a ∈ oa.support
+  [hoa : decidable oa] (a : α), a ∈ (@fin_support _ _ _ _ hoa) ↔ a ∈ oa.support
 | _ _ (decidable_pure' α a h) α' :=
     by simp [finset.coe_singleton α, support, fin_support]
 | _ _ (decidable_bind' α β oa ob hoa hob) b :=
