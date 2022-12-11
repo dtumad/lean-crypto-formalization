@@ -6,7 +6,7 @@ Authors: Devon Tuma
 import computational_monads.simulation_semantics.simulate.support
 import computational_monads.support.prod
 import computational_monads.simulation_semantics.simulate.eval_dist
-
+ 
 /-!
 # Tracking Simulation Oracle
 
@@ -64,14 +64,11 @@ section support
   (λ u, (u, update_state x.2 i x.1 u)) '' (o i x.1).support :=
 set.ext (λ y, by rw [apply_eq, support_map])
 
-lemma mem_support_apply {y : spec.range i × S} : y ∈ (⟪o | update_state, default_state⟫ i x).support ↔
-  y.1 ∈ (o i x.1).support ∧ update_state x.2 i x.1 y.1 = y.2 :=
-begin
-  rw [support_apply],
-  cases x,
-  sorry,
-  
-end
+lemma mem_support_apply {y : spec.range i × S} :
+  y ∈ (⟪o | update_state, default_state⟫ i x).support ↔
+    y.1 ∈ (o i x.1).support ∧ update_state x.2 i x.1 y.1 = y.2 :=
+by simp only [support_apply, prod.eq_iff_fst_eq_snd_eq, set.mem_image,
+  and_comm (_ = y.fst), exists_eq_right_right]
 
 /-- If the oracle can take on any value then the first element of the support is unchanged -/
 theorem support_simulate'_eq_support (h : ∀ i t, (o i t).support = ⊤) :
@@ -89,12 +86,10 @@ support_simulate'_eq_support query update_state default_state oa s (λ _ _, rfl)
 theorem support_simulate'_eq_support_simulate' (h : ∀ i t, (o i t).support = (o' i t).support) :
   (simulate' ⟪o | update_state, default_state⟫ oa s).support =
     (simulate' ⟪o' | update_state', default_state'⟫ oa s').support :=
-begin
-  refine support_simulate'_eq_support_simulate' (λ i t t t', set.ext $ λ x, _) oa s s',
-  simp only [mem_support_apply, h, simulate'_query, support_map, support_apply, set.mem_image, set.mem_set_of_eq,
-    prod.exists, exists_and_distrib_right, exists_eq_right'],
-  sorry,
-end
+support_simulate'_eq_support_simulate' (λ i t t t', set.ext $ λ x,
+  by simp only [mem_support_apply, h, simulate'_query, support_map, support_apply, set.mem_image,
+    set.mem_set_of_eq, prod.exists, exists_and_distrib_right, exists_eq_right, exists_eq_right',
+    exists_eq_right_right, prod.eq_iff_fst_eq_snd_eq, and_comm (_ = x)]) oa s s'
 
 /-- The support of `simulate'` is independt of the tracking functions -/
 theorem support_simulate'_eq_support_simulate'_of_oracle_eq :
@@ -129,9 +124,8 @@ section fin_support
 lemma fin_support_apply [∀ i t, (o i t).decidable] [decidable_eq S] [spec'.finite_range] :
   (⟪o | update_state, default_state⟫ i x).fin_support =
     (o i x.1).fin_support.image (λ u, (u, update_state x.2 i x.1 u)) :=
-begin
-  sorry,
-end
+by simp only [fin_support_eq_iff_support_eq_coe, apply_eq, support_map,
+  finset.coe_image, coe_fin_support_eq_support]
 
 end fin_support
 

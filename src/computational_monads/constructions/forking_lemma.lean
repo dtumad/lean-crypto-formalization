@@ -8,7 +8,6 @@ import computational_monads.distribution_semantics.option
 import computational_monads.simulation_semantics.oracle_append
 import computational_monads.simulation_semantics.constructions.logging.random_oracle
 import computational_monads.simulation_semantics.constructions.logging.seeded_oracle
-import computational_monads.distribution_semantics.independence
 import computational_monads.simulation_semantics.constructions.identity_oracle
 
 /-!
