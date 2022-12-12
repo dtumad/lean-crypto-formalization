@@ -4,7 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
 import computational_monads.simulation_semantics.constructions.tracking_oracle
- 
+import computational_monads.simulation_semantics.simulate.subsingleton
+
 /-!
 # Stateless Oracles
 
@@ -34,64 +35,43 @@ namespace stateless_oracle
 variables (oa : oracle_comp spec α)
   (o : Π (i : spec.ι), spec.domain i → oracle_comp spec' (spec.range i))
   (o' : Π (i : spec.ι), spec.domain i → oracle_comp spec'' (spec.range i))
+  (i : spec.ι) (t : spec.domain i) (s s' : unit) (u : spec.range i)
 
-@[simp]
-lemma apply_eq (i : spec.ι) (t : spec.domain i) (s : unit) :
-  ⟪o⟫ i (t, s) = o i t >>= λ u, return (u, ()) := rfl
+@[simp] lemma apply_eq : ⟪o⟫ i (t, s) = o i t >>= λ u, return (u, ()) := rfl
 
-instance decidable [∀ i x, (o i x).decidable] (i : spec.ι)
-  (x : spec.domain i × unit) : (⟪o⟫ i x).decidable :=
+instance decidable [∀ i x, (o i x).decidable] (x : spec.domain i × unit) : (⟪o⟫ i x).decidable :=
 tracking_oracle.decidable o _ _ i x
 
 section support
 
-lemma support_apply (i : spec.ι) (t : spec.domain i) (s : unit) :
-  (⟪o⟫ i (t, s)).support = prod.fst ⁻¹' (o i t).support :=
-sorry
--- (tracking_oracle.support_apply o _ _ i (t, s)).trans
---   (by simp only [set.preimage, eq_iff_true_of_subsingleton, and_true])
+lemma support_apply : (⟪o⟫ i (t, s)).support = prod.fst ⁻¹' (o i t).support :=
+by simp only [apply_eq, support_bind_prod_mk_of_snd_subsingleton, set.image_id']
 
-lemma mem_support_apply_iff (i : spec.ι) (t : spec.domain i) (s s' : unit) (u : spec.range i) :
-  (u, s') ∈ (⟪o⟫ i (t, s)).support ↔ u ∈ (o i t).support :=
+lemma mem_support_apply_iff : (u, s') ∈ (⟪o⟫ i (t, s)).support ↔ u ∈ (o i t).support :=
 by simp only [apply_eq, support_bind, support_return, set.mem_Union, set.mem_singleton_iff,
   prod.mk.inj_iff, eq_iff_true_of_subsingleton, and_true, exists_prop, exists_eq_right']
 
-theorem support_simulate'_eq_support (h : ∀ i t, (o i t).support = ⊤) (u : unit) :
-  (simulate' ⟪o⟫ oa u).support = oa.support :=
-tracking_oracle.support_simulate'_eq_support o _ _ oa u h
+lemma support_simulate'_eq_support (h : ∀ i t, (o i t).support = ⊤) :
+  (simulate' ⟪o⟫ oa s).support = oa.support :=
+tracking_oracle.support_simulate'_eq_support o _ _ oa s h
 
-lemma support_simulate_eq_support_default_simulate (oa : oracle_comp spec α) (s : unit) :
-  (oa.simulate ⟪o⟫ s).support = (oa.default_simulate ⟪o⟫).support := punit_eq () s ▸ rfl
+lemma support_simulate'_eq_support_simulate' (h : ∀ i t, (o i t).support = (o' i t).support) :
+  (simulate' ⟪o⟫ oa s).support = (simulate' ⟪o'⟫ oa s').support :=
+tracking_oracle.support_simulate'_eq_support_simulate' o o' _ _ () () oa s s' h
 
-lemma support_simulate_eq_preimage_default_simulate' (oa : oracle_comp spec α) (s : unit) :
-  (oa.simulate ⟪o⟫ s).support = prod.fst ⁻¹' (oa.default_simulate' ⟪o⟫).support :=
-begin
-  rw [default_simulate', punit_eq ⟪o⟫.default_state s, simulate', support_map],
-  exact (set.preimage_image_eq _ prod.fst_injective).symm
-end
+lemma support_simulate_eq_preimage_support_simulate' :
+  (simulate ⟪o⟫ oa s).support = prod.fst ⁻¹' (default_simulate' ⟪o⟫ oa).support :=
+by simp only [default_simulate', punit_eq ⟪o⟫.default_state s, simulate', support_map,
+  (set.preimage_image_eq _ prod.fst_injective)]
 
-@[simp] lemma mem_support_simulate_iff (oa : oracle_comp spec α) (s : unit) (x : α × unit) :
-  x ∈ (oa.simulate ⟪o⟫ s).support ↔ x.1 ∈ (oa.default_simulate' ⟪o⟫).support :=
-by rw [support_simulate_eq_preimage_default_simulate', set.mem_preimage]
+lemma support_simulate_eq_support_simulate (h : ∀ i t, (o i t).support = (o' i t).support) :
+  (simulate ⟪o⟫ oa s).support = (simulate ⟪o'⟫ oa s').support :=
+support_simulate_eq_support_simulate_of_subsingleton oa ⟪o⟫ ⟪o'⟫ s s'
+  (λ i t, by rw [support_apply, support_apply, h])
 
-@[simp] lemma support_simulate' (oa : oracle_comp spec α) (s : unit) :
-  (oa.simulate' ⟪o⟫ s).support = (oa.default_simulate' ⟪o⟫).support :=
-congr_arg _ (congr_arg _ (punit_eq _ _))
-
-@[simp]
-lemma mem_support_simulate'_iff (oa : oracle_comp spec α) (s : unit) (x : α) :
-  x ∈ (oa.simulate' ⟪o⟫ s).support ↔ x ∈ (oa.default_simulate' ⟪o⟫).support :=
-by rw [support_simulate']
-
-@[simp]
-lemma support_default_simulate_eq_preimage (oa : oracle_comp spec α) :
-  (oa.default_simulate ⟪o⟫).support = prod.fst ⁻¹' (oa.default_simulate' ⟪o⟫).support :=
-support_simulate_eq_preimage_default_simulate' o oa ()
-
-@[simp]
-lemma mem_support_default_simulate_iff (oa : oracle_comp spec α) (x : α × unit) :
-  x ∈ (oa.default_simulate ⟪o⟫).support ↔ x.1 ∈ (oa.default_simulate' ⟪o⟫).support :=
-mem_support_simulate_iff o oa () x
+@[simp] lemma mem_support_simulate_iff (x : α × unit) :
+  x ∈ (simulate ⟪o⟫ oa s).support ↔ x.1 ∈ (default_simulate' ⟪o⟫ oa).support :=
+by rw [support_simulate_eq_preimage_support_simulate', set.mem_preimage]
 
 end support
 
@@ -117,13 +97,16 @@ end fin_support
 
 section distribution_semantics
 
-section eval_dist
-
-end eval_dist
-
 open distribution_semantics
 
-section equiv
+section eval_dist
+
+lemma eval_dist_apply [spec'.finite_range] : ⦃⟪o⟫ i (t, s)⦄ = ⦃o i t⦄.map (λ u, (u, ())) :=
+eval_dist_bind_return (o i t) (λ u, (u, ()))
+
+lemma eval_dist_simulate'_eq_eval_dist [spec.finite_range] [spec'.finite_range]
+  (h : ∀ i t, ⦃o i t⦄ = pmf.uniform_of_fintype (spec.range i)) : ⦃simulate' ⟪o⟫ oa s⦄ = ⦃oa⦄ :=
+tracking_oracle.eval_dist_simulate'_eq_eval_dist o _ _ oa s h
 
 -- TODO: put <$> in equiv versions, derive from `eval_dist` fact
 lemma simulate_equiv_simulate' [spec'.finite_range] (s : unit) :
@@ -168,7 +151,7 @@ calc simulate' ⟪o⟫ oa s ≃ₚ simulate' ⟪query⟫ oa s
     : simulate'_equiv_of_oracle_equiv oa s ho
   ... ≃ₚ oa : simulate'_query_equiv oa s
 
-end equiv
+end eval_dist
 
 section prob_event
 
@@ -178,6 +161,8 @@ end prob_event
 end distribution_semantics
 
 end stateless_oracle
+
+
 
 -- More lemmas we can prove about `tracking_oracle` with the definition of the `stateless_oracle`
 namespace tracking_oracle

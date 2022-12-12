@@ -24,7 +24,7 @@ but this construction allows seperation of the components that affect state inde
 
 open oracle_comp oracle_spec
 
-variables {α β γ : Type} {spec spec' : oracle_spec}
+variables {α β γ : Type} {spec spec' spec'': oracle_spec}
 
 /-- Oracle where the query result is indepenent of the current oracle state,
 although the new state may depend upon the previous state.
@@ -44,7 +44,8 @@ notation `⟪` o `|` update_state `,` default_state `⟫` :=
 
 namespace tracking_oracle
 
-variables {S S' : Type} (o o' : Π (i : spec.ι), spec.domain i → oracle_comp spec' (spec.range i))
+variables {S S' : Type} (o : Π (i : spec.ι), spec.domain i → oracle_comp spec' (spec.range i))
+  (o' : Π (i : spec.ι), spec.domain i → oracle_comp spec'' (spec.range i))
   (update_state : Π (s : S) (i : spec.ι), spec.domain i → spec.range i → S)
   (update_state' : Π (s : S') (i : spec.ι), spec.domain i → spec.range i → S')
   (default_state : S) (default_state' : S') (a : α) (i : spec.ι) (t : spec.domain i)
@@ -64,7 +65,7 @@ section support
   (λ u, (u, update_state x.2 i x.1 u)) '' (o i x.1).support :=
 set.ext (λ y, by rw [apply_eq, support_map])
 
-lemma mem_support_apply {y : spec.range i × S} :
+lemma mem_support_apply_iff {y : spec.range i × S} :
   y ∈ (⟪o | update_state, default_state⟫ i x).support ↔
     y.1 ∈ (o i x.1).support ∧ update_state x.2 i x.1 y.1 = y.2 :=
 by simp only [support_apply, prod.eq_iff_fst_eq_snd_eq, set.mem_image,
@@ -86,10 +87,10 @@ support_simulate'_eq_support query update_state default_state oa s (λ _ _, rfl)
 theorem support_simulate'_eq_support_simulate' (h : ∀ i t, (o i t).support = (o' i t).support) :
   (simulate' ⟪o | update_state, default_state⟫ oa s).support =
     (simulate' ⟪o' | update_state', default_state'⟫ oa s').support :=
-support_simulate'_eq_support_simulate' (λ i t t t', set.ext $ λ x,
-  by simp only [mem_support_apply, h, simulate'_query, support_map, support_apply, set.mem_image,
-    set.mem_set_of_eq, prod.exists, exists_and_distrib_right, exists_eq_right, exists_eq_right',
-    exists_eq_right_right, prod.eq_iff_fst_eq_snd_eq, and_comm (_ = x)]) oa s s'
+support_simulate'_eq_support_simulate' (λ i t s s', set.ext $ λ x,
+  by simp only [mem_support_apply_iff, h, simulate'_query, support_map, support_apply,
+    set.mem_image, set.mem_set_of_eq, prod.exists, exists_and_distrib_right, exists_eq_right,
+    exists_eq_right', exists_eq_right_right, prod.eq_iff_fst_eq_snd_eq, and_comm (_ = x)]) oa s s'
 
 /-- The support of `simulate'` is independt of the tracking functions -/
 theorem support_simulate'_eq_support_simulate'_of_oracle_eq :
@@ -148,15 +149,15 @@ eval_dist_simulate'_eq_eval_dist _ oa s (λ i t s, trans
 
 /-- Specific case of `eval_dist_simulate'_eq_eval_dist` for query.
 In particular if a tracking oracle *only* does tracking gives the same main output distribution. -/
-lemma eval_dist_simulate'_query_eq_eval_dist [spec.finite_range] :
+@[simp] lemma eval_dist_simulate'_query_eq_eval_dist [spec.finite_range] :
   ⦃simulate' ⟪query | update_state, default_state⟫ oa s⦄ = ⦃oa⦄ :=
 eval_dist_simulate'_eq_eval_dist query update_state default_state oa s (λ _ _, rfl)
 
-lemma eval_dist_simulate'_eq_eval_dist_simulate' [spec'.finite_range]
+lemma eval_dist_simulate'_eq_eval_dist_simulate' [spec'.finite_range] [spec''.finite_range]
   (h : ∀ i t, o i t ≃ₚ o' i t) : ⦃simulate' ⟪o | update_state, default_state⟫ oa s⦄ =
     ⦃simulate' ⟪o' | update_state', default_state'⟫ oa s'⦄ :=
 eval_dist_simulate'_eq_eval_dist_simulate' (λ i t s s',
-  by simp only [pmf.map_comp, tracking_oracle.apply_eq, eval_dist_map, h]) oa s s'
+  by simp [pmf.map_comp, tracking_oracle.apply_eq, eval_dist_map, h]) oa s s'
 
 /-- The first output of simulation under different `tracking_oracle` with the same oracle
 is the same regardless of if the tracking functions are different. -/
@@ -187,7 +188,7 @@ lemma prob_event_simulate'_query_eq_prob_event [spec.finite_range] [spec'.finite
   ⦃e | simulate' ⟪query | update_state, default_state⟫ oa s⦄ = ⦃e | oa⦄ :=
 prob_event_simulate'_eq_prob_event _ _ _ oa s e (λ _ _, rfl)
 
-lemma prob_event_simulate'_eq_prob_event_simulate' [spec'.finite_range]
+lemma prob_event_simulate'_eq_prob_event_simulate' [spec'.finite_range] [spec''.finite_range]
   (h : ∀ i t, o i t ≃ₚ o' i t) : ⦃e | simulate' ⟪o | update_state, default_state⟫ oa s⦄ =
     ⦃e | simulate' ⟪o' | update_state', default_state'⟫ oa s'⦄ :=
 prob_event_eq_of_eval_dist_eq (eval_dist_simulate'_eq_eval_dist_simulate' _ _ _ _ _ _ _ _ _ h) e

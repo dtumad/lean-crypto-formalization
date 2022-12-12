@@ -24,7 +24,7 @@ open_locale nnreal ennreal
 
 variables (so : sim_oracle spec spec' S) (so' : sim_oracle spec spec'' S')
 variables (a : α) (i : spec.ι) (t : spec.domain i)
-  (oa oa' : oracle_comp spec α) (ob ob' : α → oracle_comp spec β) (s : S) (f : α → β)
+  (oa oa' : oracle_comp spec α) (ob ob' : α → oracle_comp spec β) (s : S) (s' : S') (f : α → β)
 
 section support
 
@@ -33,7 +33,7 @@ section support
   (simulate so oa s).support = (default_simulate so oa).support :=
 subsingleton.elim so.default_state s ▸ rfl
 
-/-- If the state is a `subsingleton` type, suffices to use the support with `default_state` -/
+/-- Reduce to the default state for oracles with a subsingleton state type -/
 @[simp] lemma support_simulate'_eq_support_default_simulate' [subsingleton S] (s : S) :
   (simulate' so oa s).support = (default_simulate' so oa).support :=
 subsingleton.elim so.default_state s ▸ rfl
@@ -46,13 +46,14 @@ theorem support_simulate'_eq_support_of_subsingleton [subsingleton S] (s : S)
 support_simulate'_eq_support so oa s (λ i t s, subsingleton.elim so.default_state s ▸ h i t)
 
 /-- Given the state is `subsingleton`, the support of `simulate` is determined by `simulate'` -/
-lemma support_simulate_eq_image_support_simulate' [subsingleton S] :
-  (simulate so oa s).support = (λ x, (x, so.default_state)) '' (default_simulate' so oa).support :=
+lemma support_simulate_eq_preimage_support_simulate' [subsingleton S] :
+  (simulate so oa s).support = prod.fst ⁻¹' (default_simulate' so oa).support :=
 begin
-  have : (λ (x : α × S), (x.fst, so.default_state)) = id,
-  from funext (λ x, prod.eq_iff_fst_eq_snd_eq.2 ⟨rfl, subsingleton.elim _ x.2⟩),
-  rw [support_simulate', set.image_image, this, set.image_id,
-    support_simulate_eq_support_default_simulate],
+  sorry,
+  -- have : (λ (x : α × S), (x.fst, so.default_state)) = id,
+  -- from funext (λ x, prod.eq_iff_fst_eq_snd_eq.2 ⟨rfl, subsingleton.elim _ x.2⟩),
+  -- rw [support_simulate', set.image_image, this, set.image_id,
+  --   support_simulate_eq_support_default_simulate],
 end
 
 /-- Given the state is `subsingleton`, membership in `support` of `simulate` can be checked
@@ -61,9 +62,21 @@ lemma mem_support_simulate_iff_fst_mem_support_simulate' (x : α × S) [subsingl
   x ∈ (simulate so oa s).support ↔ x.fst ∈ (simulate' so oa s).support :=
 begin
   refine subsingleton.elim so.default_state s ▸ _,
-  rw [support_simulate_eq_image_support_simulate', set.mem_image],
-  exact ⟨λ h, let ⟨a, ha, hax⟩ := h in hax ▸ ha, λ h, ⟨x.1, h, prod.eq_iff_fst_eq_snd_eq.2
-    ⟨rfl, subsingleton.elim x.2 so.default_state ▸ rfl⟩⟩⟩
+  rw [support_simulate_eq_preimage_support_simulate', set.mem_preimage],
+end
+
+lemma support_simulate_eq_support_simulate_of_subsingleton [subsingleton S] (so : sim_oracle spec spec' S)
+  (so' : sim_oracle spec spec'' S) (s s' : S)
+  (h : ∀ i t, prod.fst '' (so i (t, so.default_state)).support =
+    prod.fst '' (so' i (t, so'.default_state)).support) :
+  (simulate so oa s).support = (simulate so' oa s').support :=
+begin
+  simp only [support_simulate_eq_preimage_support_simulate'],
+  refine congr_arg _ _,
+  refine support_simulate'_eq_support_simulate' _ oa _ _,
+  intros i t s s',
+  rw [subsingleton.elim s so.default_state, subsingleton.elim s' so'.default_state],
+  refine h i t,
 end
 
 end support

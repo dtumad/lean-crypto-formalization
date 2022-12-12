@@ -82,8 +82,8 @@ begin
   { simp only [h, simulate'_query, eval_dist_map, eval_dist_query] }
 end
 
-theorem eval_dist_simulate'_eq_eval_dist_simulate' [spec'.finite_range]
-  {so : sim_oracle spec spec' S} {so' : sim_oracle spec spec' S'}
+theorem eval_dist_simulate'_eq_eval_dist_simulate' [spec'.finite_range] [spec''.finite_range]
+  {so : sim_oracle spec spec' S} {so' : sim_oracle spec spec'' S'}
   (h : ∀ i t s s', ⦃so i (t, s)⦄.map prod.fst = ⦃so' i (t, s')⦄.map prod.fst)
   (oa : oracle_comp spec α) (s : S) (s' : S') :
   ⦃simulate' so oa s⦄ = ⦃simulate' so' oa s'⦄ :=
