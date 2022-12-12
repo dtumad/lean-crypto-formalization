@@ -52,7 +52,7 @@ lemma coe_append_right_def (oa : oracle_comp spec α) : (↑oa : oracle_comp (sp
 
 @[simp] lemma support_coe_append_right (oa : oracle_comp spec α) :
   (↑oa : oracle_comp (spec ++ spec') α).support = oa.support :=
-stateless_oracle.support_simulate'_eq_support _ _ (λ _ _, support_query _ _) ()
+stateless_oracle.support_simulate'_eq_support _ _ () (λ _ _, support_query _ _)
 
 section distribution_semantics
 
