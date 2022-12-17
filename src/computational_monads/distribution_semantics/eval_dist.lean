@@ -38,7 +38,9 @@ noncomputable def eval_dist {spec : oracle_spec} [h : spec.finite_range] :
 | _ (bind' α β oa ob) := pmf.bind (eval_dist oa) (λ a, eval_dist $ ob a)
 | _ (query i t) := pmf.uniform_of_fintype (spec.range i)
 
+
 notation `⦃` oa `⦄` := eval_dist oa -- ⁅oa⁆?? No duplicate syntax with parameters
+notation `⁅` oa `⁆` := eval_dist oa
 
 notation oa ` ≃ₚ ` oa' := ⦃oa⦄ = ⦃oa'⦄
 
