@@ -3,7 +3,7 @@ Copyright (c) 2022 Devon Tuma. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
-import computational_monads.coercions.append
+import computational_monads.simulation_semantics.oracle_append
 
 /-!
 # Coercions Between Simulation Oracles With Target Spec Coercions

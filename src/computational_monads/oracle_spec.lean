@@ -138,9 +138,21 @@ instance oracle_spec.has_append : has_append oracle_spec :=
 
 variables (spec spec' : oracle_spec)
 
-instance append.finite_range [spec.finite_range] [spec'.finite_range] :
+instance oracle_spec.append.finite_range [spec.finite_range] [spec'.finite_range] :
   (spec ++ spec').finite_range :=
 { range_fintype := by refine (λ i, sum.rec_on i _ _); exact finite_range.range_fintype }
+
+@[simp] lemma oracle_spec.append.domain_inl (i : spec.ι) :
+  (spec ++ spec').domain (sum.inl i) = spec.domain i := rfl
+
+@[simp] lemma oracle_spec.append.domain_inr (i : spec'.ι) :
+  (spec ++ spec').domain (sum.inr i) = spec'.domain i := rfl
+
+@[simp] lemma oracle_spec.append.range_inl (i : spec.ι) :
+  (spec ++ spec').range (sum.inl i) = spec.range i := rfl
+
+@[simp] lemma oracle_spec.append.range_inr (i : spec'.ι) :
+  (spec ++ spec').range (sum.inr i) = spec'.range i := rfl
 
 end append
 

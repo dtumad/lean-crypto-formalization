@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
 import computational_monads.simulation_semantics.simulate.basic
+import computational_monads.coercions.append
 
 /-!
 # Appending Simulation Oracles
@@ -82,6 +83,47 @@ begin
     simpa only [hx, eq_self_iff_true, and_true] using hu },
   { refine ⟨x.1, x.2.2, _⟩,
     simp only [← h.2, h.1, true_and, prod.mk.eta] }
+end
+
+
+-- NOTE: also useful, for ∘ₛ
+lemma support_simulate'_simulate'_eq_support_simulate' {spec spec' spec'' : oracle_spec}
+  {S S' S'' : Type} (so : sim_oracle spec spec' S) (so' : sim_oracle spec' spec'' S')
+  (so'' : sim_oracle spec spec'' S'') (s : S) (s' : S') (s'' : S'')
+  (oa : oracle_comp spec α) :
+  (simulate' so' (simulate' so oa s) s').support = (simulate' so'' oa s'').support :=
+begin
+  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t,
+  {
+    sorry,
+  },
+  {
+    sorry,
+  },
+  {
+    simp_rw [simulate'_query, simulate'_map, support_map, ← set.image_comp],
+    sorry,
+  }
+end
+
+@[simp]
+lemma support_simulate'_coe_append_right (so : sim_oracle spec spec'' S)
+  (so' : sim_oracle spec' spec'' S') (s : S × S') (oa : oracle_comp spec α) :
+  (simulate' (so ++ₛ so') ↑oa s).support = (simulate' so oa s.1).support :=
+begin
+  rw [coe_append_right.def],
+  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t,
+  {
+    simp [coe_append_right.def],
+    rw [support_return],
+    simp,
+  },
+  {
+    sorry,
+  },
+  {
+    sorry,
+  }
 end
 
 -- GOALS:

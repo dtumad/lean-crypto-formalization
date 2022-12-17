@@ -3,7 +3,6 @@ Copyright (c) 2022 Devon Tuma. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
-import computational_monads.simulation_semantics.oracle_append
 import computational_monads.simulation_semantics.constructions.identity_oracle
 import computational_monads.simulation_semantics.simulate.subsingleton
 import computational_monads.coercions.coin
@@ -46,40 +45,47 @@ section coe_append_right
 instance coe_append_right (α) : has_coe (oracle_comp spec α) (oracle_comp (spec ++ spec') α) :=
 { coe := default_simulate' ⟪λ i, let i' : (spec ++ spec').ι := sum.inl i in query i'⟫ }
 
+variable (oa : oracle_comp spec α)
+
 -- TODO: other versions of this
-lemma coe_append_right_def (oa : oracle_comp spec α) : (↑oa : oracle_comp (spec ++ spec') α) =
+lemma coe_append_right.def : (↑oa : oracle_comp (spec ++ spec') α) =
   oa.default_simulate' ⟪λ i t, let i' : (spec ++ spec').ι := sum.inl i in query i' t⟫ := rfl
 
-@[simp] lemma support_coe_append_right (oa : oracle_comp spec α) :
+instance coe_append_right.decidable [oa.decidable] :
+  (↑oa : oracle_comp (spec ++ spec') α).decidable :=
+begin
+  refine @simulate'.decidable _ _ _ _ _ oa () _ _ (λ i t s, _),
+  rw [stateless_oracle.apply_eq],
+  apply_instance,
+end
+
+section support
+
+/-- Coercing to an extra oracle on the right doesn't affect a computation's `support` -/
+@[simp] lemma support_coe_append_right :
   (↑oa : oracle_comp (spec ++ spec') α).support = oa.support :=
 stateless_oracle.support_simulate'_eq_support _ _ () (λ _ _, support_query _ _)
+
+/-- Coercing to an extra oracle on the right doesn't affect a computation's `fin_support`-/
+@[simp] lemma fin_support_coe_append_right [spec.finite_range] [spec'.finite_range] [oa.decidable] :
+  (↑oa : oracle_comp (spec ++ spec') α).fin_support = oa.fin_support :=
+by rw [fin_support_eq_fin_support_iff_support_eq_support, support_coe_append_right]
+
+end support
 
 section distribution_semantics
 
 open distribution_semantics
 
-lemma eval_dist_coe_append_right_return [spec.finite_range] [spec'.finite_range] (a : α) :
-  ⁅(↑(return a : oracle_comp spec α) : oracle_comp (spec ++ spec') α)⁆ =
-    ⁅(return a : oracle_comp (spec ++ spec') α)⁆ :=
-eval_dist_simulate'_return _ a _
+/-- Coercing to an extra oracle on the right doesn't affect a computation's `eval_dist` -/
+@[simp] lemma eval_dist_coe_append_right [spec.finite_range] [spec'.finite_range] :
+  ⁅(↑oa : oracle_comp (spec ++ spec') α)⁆ = ⁅oa⁆ :=
+stateless_oracle.eval_dist_simulate'_eq_eval_dist _ _ _ (λ i t, rfl)
 
-/-- The right hand simulation oracle is irrelevent to simulate an append right coercion -/
-@[simp]
-lemma eval_dist_simulate'_coe_append_right [spec.finite_range] [spec'.finite_range]
-  [spec''.finite_range] (oa : oracle_comp spec α) (so : sim_oracle spec spec'' S)
-  (so' : sim_oracle spec' spec'' S') (s : S × S') :
-  ⁅simulate' (so ++ₛ so') ↑oa s⁆ = ⁅simulate' so oa s.1⁆ :=
-begin
-  induction oa with α a α β oa ob i t,
-  { sorry },
-  { sorry },
-  { sorry }
-end
-
-lemma eval_dist_simulate_coe_append_right [spec''.finite_range] (oa : oracle_comp spec α)
-  (so : sim_oracle spec spec'' S) (so' : sim_oracle spec' spec'' S') (s : S × S') :
-  ⁅simulate (so ++ₛ so') ↑oa s⁆ = ⁅do {⟨a, s'⟩ ← simulate so oa s.1, return (a, s', s.2)}⁆ :=
-sorry
+/-- Coercing to an extra oracle on the right doesn't affect a computation's `prob_event` -/
+@[simp] lemma prob_event_coe_append_right [spec.finite_range] [spec'.finite_range] (e : set α) :
+  ⁅e | (↑oa : oracle_comp (spec ++ spec') α)⁆ = ⁅e | oa⁆ :=
+prob_event_eq_of_eval_dist_eq (eval_dist_coe_append_right _ _ oa) e
 
 end distribution_semantics
 

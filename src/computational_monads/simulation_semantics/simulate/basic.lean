@@ -195,7 +195,7 @@ def simulate' (so : sim_oracle spec spec' S) (oa : oracle_comp spec α) (s : S) 
 
 /-- Convenience definition to use the default state as the initial state for `simulate'`.
 Marked to be reduced and inlined, so the definition is essentially just notation. -/
-@[inline, reducible]
+@[inline, reducible, simp]
 def default_simulate' (so : sim_oracle spec spec' S) (oa : oracle_comp spec α) :
   oracle_comp spec' α := oa.simulate' so so.default_state
 
@@ -232,8 +232,7 @@ end
 
 section support
 
-@[simp]
-lemma support_simulate' : (simulate' so oa s).support =
+@[simp] lemma support_simulate' : (simulate' so oa s).support =
   prod.fst '' (simulate so oa s).support := by simp only [simulate', support_map]
 
 lemma mem_support_simulate'_iff_exists_state (a : α) :

@@ -57,20 +57,16 @@ open distribution_semantics
 @[simp] lemma eval_dist_coe_coin_uniform_select :
   ⁅(↑oa : oracle_comp uniform_selecting α)⁆ = ⁅oa⁆ :=
 begin
-
-
-  rw [coe_coin_uniform_select.def],
-  refine eval_dist_simulate'_eq_eval_dist _ oa () (λ i t s, pmf.ext $ λ x, _),
-  erw [stateless_oracle.apply_eq, eval_dist_bind_return, pmf.map_comp, pmf.map_id],
-  cases x;
-  simp only [eval_dist_uniform_select_vector_apply, vector.to_list_cons, vector.to_list_nil,
-    pmf.uniform_of_fintype_apply, card_range_coin_spec, list.count_cons, list.count_nil,
-    eq_self_iff_true, if_false, if_true, nat.cast_add, nat.cast_one, nat.cast_two, one_div]
+  refine stateless_oracle.eval_dist_simulate'_eq_eval_dist oa _ () (λ i t, pmf.ext (λ x, _)),
+  cases x; simp_rw [eval_dist_uniform_select_vector_apply, vector.to_list_cons,
+    list.count_cons, eq_self_iff_true, if_true, if_false, vector.to_list_nil,
+    list.count_nil, pmf.uniform_of_fintype_apply, nat.cast_one, coin_spec_range,
+    fintype.card_bool, nat.cast_succ, nat.cast_zero, zero_add, div_eq_mul_inv, one_mul]
 end
 
 @[simp] lemma prob_event_coe_coin_uniform_select (e : set α) :
   ⁅e | (↑oa : oracle_comp uniform_selecting α)⁆ = ⁅e | oa⁆ :=
-sorry -- prob_event_eq_of_eval_dist_eq (eval_dist_coe_coin_uniform_select oa) e
+prob_event_eq_of_eval_dist_eq (eval_dist_coe_coin_uniform_select oa) e
 
 end distribution_semantics
 
