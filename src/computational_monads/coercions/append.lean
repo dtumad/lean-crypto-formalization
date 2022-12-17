@@ -26,7 +26,7 @@ In particular, can coerce to any set of appended oracles assuming that:
 To match this we adopt both conventions in general, and use a standard ordering for all oracles.
 In particular we start with the basic finite oracles: `coin_spec ++ uniform_selecting ++ ...`,
   and then add additional oracles further in the list. This standard ordering allows most coercions
-  between oracles to happen automatically
+  between oracles to happen automatically.
 -/
 
 namespace oracle_comp
@@ -40,7 +40,7 @@ variables (spec spec' spec'' spec''' : oracle_spec)
 section coe_append_right
 
 /-- Coerce a computation to one with access to another oracle on the right,
-  forwarding the old queries to the left side of the combined set of oracles -/
+  forwarding the old queries to the left side of the combined set of oracles. -/
 @[priority std.priority.default-50]
 instance coe_append_right (α) : has_coe (oracle_comp spec α) (oracle_comp (spec ++ spec') α) :=
 { coe := default_simulate' ⟪λ i, let i' : (spec ++ spec').ι := sum.inl i in query i'⟫ }
@@ -58,22 +58,22 @@ begin
   apply_instance,
 end
 
-/-- Coercing to an extra oracle on the right doesn't affect a computation's `support` -/
+/-- Coercing to an extra oracle on the right doesn't affect a computation's `support`. -/
 @[simp] lemma support_coe_append_right :
   (↑oa : oracle_comp (spec ++ spec') α).support = oa.support :=
 stateless_oracle.support_simulate'_eq_support _ _ () (λ _ _, support_query _ _)
 
-/-- Coercing to an extra oracle on the right doesn't affect a computation's `fin_support`-/
+/-- Coercing to an extra oracle on the right doesn't affect a computation's `fin_support`. -/
 @[simp] lemma fin_support_coe_append_right [spec.finite_range] [spec'.finite_range] [oa.decidable] :
   (↑oa : oracle_comp (spec ++ spec') α).fin_support = oa.fin_support :=
 by rw [fin_support_eq_fin_support_iff_support_eq_support, support_coe_append_right]
 
-/-- Coercing to an extra oracle on the right doesn't affect a computation's `eval_dist` -/
+/-- Coercing to an extra oracle on the right doesn't affect a computation's `eval_dist`. -/
 @[simp] lemma eval_dist_coe_append_right [spec.finite_range] [spec'.finite_range] :
   ⁅(↑oa : oracle_comp (spec ++ spec') α)⁆ = ⁅oa⁆ :=
 stateless_oracle.eval_dist_simulate'_eq_eval_dist _ _ _ (λ i t, rfl)
 
-/-- Coercing to an extra oracle on the right doesn't affect a computation's `prob_event` -/
+/-- Coercing to an extra oracle on the right doesn't affect a computation's `prob_event`. -/
 @[simp] lemma prob_event_coe_append_right [spec.finite_range] [spec'.finite_range] (e : set α) :
   ⁅e | (↑oa : oracle_comp (spec ++ spec') α)⁆ = ⁅e | oa⁆ :=
 prob_event_eq_of_eval_dist_eq (eval_dist_coe_append_right _ _ oa) e
@@ -83,7 +83,7 @@ end coe_append_right
 section coe_append_left
 
 /-- Coerce a computation to one with access to another oracle on the left,
-  forwarding the old queries to the left side of the combined set of oracles -/
+  forwarding the old queries to the left side of the combined set of oracles. -/
 @[priority std.priority.default-51]
 instance coe_append_left (α) : has_coe (oracle_comp spec α) (oracle_comp (spec' ++ spec) α) :=
 { coe := default_simulate' ⟪λ i, let i' : (spec' ++ spec).ι := sum.inr i in query i'⟫ }
@@ -101,22 +101,22 @@ begin
   apply_instance,
 end
 
-/-- Coercing to an extra oracle on the left doesn't affect a computation's `support` -/
+/-- Coercing to an extra oracle on the left doesn't affect a computation's `support`. -/
 @[simp] lemma support_coe_append_left :
   (↑oa : oracle_comp (spec' ++ spec) α).support = oa.support :=
 stateless_oracle.support_simulate'_eq_support _ _ () (λ _ _, support_query _ _)
 
-/-- Coercing to an extra oracle on the left doesn't affect a computation's `fin_support`-/
+/-- Coercing to an extra oracle on the left doesn't affect a computation's `fin_support`. -/
 @[simp] lemma fin_support_coe_append_left [spec.finite_range] [spec'.finite_range] [oa.decidable] :
   (↑oa : oracle_comp (spec' ++ spec) α).fin_support = oa.fin_support :=
 by rw [fin_support_eq_fin_support_iff_support_eq_support, support_coe_append_left]
 
-/-- Coercing to an extra oracle on the left doesn't affect a computation's `eval_dist` -/
+/-- Coercing to an extra oracle on the left doesn't affect a computation's `eval_dist`. -/
 @[simp] lemma eval_dist_coe_append_left [spec.finite_range] [spec'.finite_range] :
   ⁅(↑oa : oracle_comp (spec' ++ spec) α)⁆ = ⁅oa⁆ :=
 stateless_oracle.eval_dist_simulate'_eq_eval_dist _ _ _ (λ i t, rfl)
 
-/-- Coercing to an extra oracle on the left doesn't affect a computation's `prob_event` -/
+/-- Coercing to an extra oracle on the left doesn't affect a computation's `prob_event`. -/
 @[simp] lemma prob_event_coe_append_left [spec.finite_range] [spec'.finite_range] (e : set α) :
   ⁅e | (↑oa : oracle_comp (spec' ++ spec) α)⁆ = ⁅e | oa⁆ :=
 prob_event_eq_of_eval_dist_eq (eval_dist_coe_append_left _ _ oa) e
@@ -147,24 +147,24 @@ begin
   apply_instance,
 end
 
-/-- Coercing to an extra oracle on the left doesn't affect a computation's `support` -/
+/-- Coercing to an extra oracle on the right doesn't affect a computation's `support`. -/
 @[simp] lemma support_coe_append_right_of_coe :
   (↑oa : oracle_comp (coe_spec' ++ spec) α).support = (↑oa : oracle_comp coe_spec' α).support :=
 by rw [coe_append_right_of_coe.def, support_coe_append_right]
 
-/-- Coercing to an extra oracle on the left doesn't affect a computation's `fin_support`-/
+/-- Coercing to an extra oracle on the right doesn't affect a computation's `fin_support`. -/
 @[simp] lemma fin_support_coe_append_right_of_coe [spec.finite_range] [coe_spec'.finite_range]
   [oa.decidable] [(↑oa : oracle_comp coe_spec' α).decidable] :
   (↑oa : oracle_comp (coe_spec' ++ spec) α).fin_support =
     (↑oa : oracle_comp coe_spec' α).fin_support :=
 by rw [fin_support_eq_fin_support_iff_support_eq_support, support_coe_append_right_of_coe]
 
-/-- Coercing to an extra oracle on the left doesn't affect a computation's `eval_dist` -/
+/-- Coercing to an extra oracle on the right doesn't affect a computation's `eval_dist`. -/
 @[simp] lemma eval_dist_coe_append_right_of_coe [spec.finite_range] [coe_spec'.finite_range] :
   ⁅(↑oa : oracle_comp (coe_spec' ++ spec) α)⁆ = ⁅(↑oa : oracle_comp coe_spec' α)⁆ :=
 stateless_oracle.eval_dist_simulate'_eq_eval_dist _ _ _ (λ i t, rfl)
 
-/-- Coercing to an extra oracle on the left doesn't affect a computation's `prob_event` -/
+/-- Coercing to an extra oracle on the right doesn't affect a computation's `prob_event`. -/
 @[simp] lemma prob_event_coe_append_right_of_coe [spec.finite_range] [coe_spec'.finite_range]
   (e : set α) : ⁅e | (↑oa : oracle_comp (coe_spec' ++ spec) α)⁆ =
     ⁅e | (↑oa : oracle_comp coe_spec' α)⁆ :=
@@ -174,7 +174,7 @@ end coe_append_right_of_coe
 
 section coe_right_side_append
 
-/-- Coerce the oracle on the right side of an existing set of appended oracles -/
+/-- Coerce the oracle on the right side of an existing set of appended oracles. -/
 @[priority std.priority.default+5]
 instance coe_right_side_append (α)
   [∀ α, has_coe (oracle_comp coe_spec α) (oracle_comp coe_spec' α)] :
@@ -210,25 +210,23 @@ begin
       (@coe_append_left.decidable _ _ _ _ (h _ (query i t))) _ }
 end
 
-/-- Coercing to an extra oracle on the right doesn't affect a computation's `support` -/
-@[simp] lemma support_coe_right_side_append :
+/-- If a coercion between two `oracle_spec`s preserves the `support` of oracle queries,
+then the extended coercion with a left appended oracle also preserves the `support`.  -/
+@[simp] lemma support_coe_right_side_append
+  (h : ∀ i t, (↑(query i t : oracle_comp coe_spec (coe_spec.range i)) :
+    oracle_comp coe_spec' (coe_spec.range i)).support = ⊤) :
   (↑oa : oracle_comp (spec ++ coe_spec') α).support = oa.support :=
 begin
   rw [coe_right_side_append.def],
   refine stateless_oracle.support_simulate'_eq_support _ _ () (λ i t, _),
-  cases i,
-  {
-    simp only [support_coe_append_right, support_query],
-  },
-  {
-    simp only [coe_coe, support_coe_append_left, set.top_eq_univ],
-    sorry
-  }
+  cases i; simp only [coe_coe, support_coe_append_left, support_coe_append_right,
+    support_query, set.top_eq_univ, h]
 end
--- stateless_oracle.support_simulate'_eq_support _ _ () (λ _ _, support_query _ _)
 
 -- /-- Coercing to an extra oracle on the right doesn't affect a computation's `fin_support`-/
--- @[simp] lemma fin_support_coe_right_side_append [spec.finite_range] [spec'.finite_range] [oa.decidable] :
+-- @[simp] lemma fin_support_coe_right_side_append [spec.finite_range] [spec'.finite_range] [oa.decidable]
+--   (h : ∀ i t, (↑(query i t : oracle_comp coe_spec (coe_spec.range i)) :
+--     oracle_comp coe_spec' (coe_spec.range i)).fin_support = ⊤) :
 --   (↑oa : oracle_comp (spec ++ spec') α).fin_support = oa.fin_support :=
 -- by rw [fin_support_eq_fin_support_iff_support_eq_support, support_coe_append_right]
 
