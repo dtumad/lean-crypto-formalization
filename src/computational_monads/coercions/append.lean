@@ -39,9 +39,12 @@ class is_sub_spec (spec spec' : oracle_spec) :=
 -- (domain_map {i : spec.ι} : spec.domain i → spec'.domain (index_map i))
 -- (range_wf (i : spec.ι) : spec.range i = spec'.range (index_map i))
 (to_fun (i : spec.ι) : spec.domain i → oracle_comp spec' (spec.range i))
--- (eval_dist_to_fun (i : spec.ι) (t : spec.domain i) : ⁅to_fun i t⁆ = ⁅query i t⁆)
+(support_to_fun : ∀ i t, (to_fun i t).support = (query i t).support)
+(eval_dist_to_fun [spec.finite_range] [spec'.finite_range] : ∀ i t, ⁅to_fun i t⁆ = ⁅query i t⁆)
 
-instance coe_sub_spec (spec spec' : oracle_spec) [h : is_sub_spec spec spec'] (α : Type) :
+infixl ` ⊂ₒ `:65 := is_sub_spec
+
+instance coe_sub_spec (spec spec' : oracle_spec) [h : spec ⊂ₒ spec'] (α : Type) :
   has_coe (oracle_comp spec α) (oracle_comp spec' α) :=
 { coe := default_simulate' ⟪λ i t, h.to_fun i t⟫ }
 -- { coe := default_simulate' ⟪λ i t, begin
@@ -49,13 +52,21 @@ instance coe_sub_spec (spec spec' : oracle_spec) [h : is_sub_spec spec spec'] (�
 --    refine query (h.index_map i) (h.domain_map t),
 -- end⟫ }
 
-def is_sub_spec_append_right (spec spec' : oracle_spec) :
-  is_sub_spec spec (spec ++ spec') :=
+def is_sub_spec_append_right (spec spec' : oracle_spec) : spec ⊂ₒ (spec ++ spec') :=
 {
-  to_fun := λ i t, @query (spec ++ spec') (sum.inl i) t
+  to_fun := λ i t, @query (spec ++ spec') (sum.inl i) t,
+  support_to_fun := begin
+    simp,
+  end,
+  eval_dist_to_fun := begin
+    intros hfr hfr' i t,
+    haveI := hfr, haveI := hfr',
+    simp,
+    congr,
+  end
 }
 
-lemma support_coe_sub_spec (spec spec' : oracle_spec) [h : is_sub_spec spec spec'] (α : Type)
+@[simp] lemma support_coe_sub_spec (spec spec' : oracle_spec) [h : spec ⊂ₒ spec'] (α : Type)
   (oa : oracle_comp spec α) : (↑oa : oracle_comp spec' α).support = oa.support :=
 begin
   refine stateless_oracle.support_simulate'_eq_support _ _ () _,

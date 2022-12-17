@@ -126,7 +126,7 @@ section append
 /-- Combine two specifications using a `sum` type to index the different specs.
 Given `spec spec' : oracle_spec`, `spec ++ spec'` gives access to the combined set of oracles,
 with `sum.inl` corresponding to the left oracle and `sum.inr` corresponding to the right oracle. -/
-instance oracle_spec.has_append : has_append oracle_spec :=
+instance has_append : has_append oracle_spec :=
 { append := λ spec spec', 
   { ι := spec.ι ⊕ spec'.ι,
     domain := sum.elim spec.domain spec'.domain,
@@ -138,20 +138,20 @@ instance oracle_spec.has_append : has_append oracle_spec :=
 
 variables (spec spec' : oracle_spec)
 
-instance oracle_spec.append.finite_range [spec.finite_range] [spec'.finite_range] :
+instance append.finite_range [spec.finite_range] [spec'.finite_range] :
   (spec ++ spec').finite_range :=
 { range_fintype := by refine (λ i, sum.rec_on i _ _); exact finite_range.range_fintype }
 
-@[simp] lemma oracle_spec.append.domain_inl (i : spec.ι) :
+@[simp] lemma append.domain_inl (i : spec.ι) :
   (spec ++ spec').domain (sum.inl i) = spec.domain i := rfl
 
-@[simp] lemma oracle_spec.append.domain_inr (i : spec'.ι) :
+@[simp] lemma append.domain_inr (i : spec'.ι) :
   (spec ++ spec').domain (sum.inr i) = spec'.domain i := rfl
 
-@[simp] lemma oracle_spec.append.range_inl (i : spec.ι) :
+@[simp] lemma append.range_inl (i : spec.ι) :
   (spec ++ spec').range (sum.inl i) = spec.range i := rfl
 
-@[simp] lemma oracle_spec.append.range_inr (i : spec'.ι) :
+@[simp] lemma append.range_inr (i : spec'.ι) :
   (spec ++ spec').range (sum.inr i) = spec'.range i := rfl
 
 end append
