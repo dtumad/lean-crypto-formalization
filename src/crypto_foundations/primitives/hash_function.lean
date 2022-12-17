@@ -55,6 +55,6 @@ structure collision_finding_adversary (H : hash_scheme K I O) :=
   of winning the `collision_finding_experiment` as the security parameter increases -/
 def collision_resistant (H : hash_scheme K I O) : Prop :=
 ∀ (adversary : collision_finding_adversary H),
-negligable (λ sp, ⦃(H sp).collision_finding_experiment (adversary.adv sp)⦄ tt)
+negligable (λ sp, ⁅(H sp).collision_finding_experiment (adversary.adv sp)⁆ tt)
 
 end hash_scheme

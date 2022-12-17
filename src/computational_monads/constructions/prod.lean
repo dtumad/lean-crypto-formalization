@@ -70,17 +70,17 @@ section eval_dist
 
 /-- Since the two computations run independently, the probability of an element
   is the product of the two individual probabilities-/
-@[simp] lemma eval_dist_prod_apply : ⦃oa ×ₘ ob⦄ x = ⦃oa⦄ x.1 * ⦃ob⦄ x.2 :=
-calc ⦃oa ×ₘ ob⦄ x = ∑' (a : α) (b : β), (⦃oa⦄ a * ⦃ob⦄ b) * (⦃return (a, b)⦄ x) :
+@[simp] lemma eval_dist_prod_apply : ⁅oa ×ₘ ob⁆ x = ⁅oa⁆ x.1 * ⁅ob⁆ x.2 :=
+calc ⁅oa ×ₘ ob⁆ x = ∑' (a : α) (b : β), (⁅oa⁆ a * ⁅ob⁆ b) * (⁅return (a, b)⁆ x) :
     by simp_rw [prod.def, eval_dist_bind_apply_eq_tsum, ← ennreal.tsum_mul_left, mul_assoc]
-  ... = ∑' (y : α × β), (⦃oa⦄ y.1 * ⦃ob⦄ y.2) * (⦃(return (y.1, y.2) : oracle_comp spec _)⦄ x) :
+  ... = ∑' (y : α × β), (⁅oa⁆ y.1 * ⁅ob⁆ y.2) * (⁅(return (y.1, y.2) : oracle_comp spec _)⁆ x) :
     by rw ← ennreal.tsum_prod
-  ... = (⦃oa⦄ x.1 * ⦃ob⦄ x.2) * (⦃(return (x.1, x.2) : oracle_comp spec _)⦄ x) :
+  ... = (⁅oa⁆ x.1 * ⁅ob⁆ x.2) * (⁅(return (x.1, x.2) : oracle_comp spec _)⁆ x) :
     tsum_eq_single x (λ y hy, by rw [prod.mk.eta, eval_dist_return_apply_of_ne hy.symm, mul_zero])
-  ... = ⦃oa⦄ x.1 * ⦃ob⦄ x.2 : by rw [prod.mk.eta, eval_dist_return_apply_self, mul_one]
+  ... = ⁅oa⁆ x.1 * ⁅ob⁆ x.2 : by rw [prod.mk.eta, eval_dist_return_apply_self, mul_one]
 
 @[simp] lemma eval_dist_prod_indicator_prod_apply :
-  (e ×ˢ e').indicator ⦃oa ×ₘ ob⦄ x = (e.indicator ⦃oa⦄ x.1) * (e'.indicator ⦃ob⦄ x.2) :=
+  (e ×ˢ e').indicator ⁅oa ×ₘ ob⁆ x = (e.indicator ⁅oa⁆ x.1) * (e'.indicator ⁅ob⁆ x.2) :=
 begin
   by_cases ha : x.1 ∈ e,
   { by_cases hb : x.2 ∈ e',
@@ -97,7 +97,7 @@ begin
 end
 
 lemma eval_dist_prod_indicator_preimage_fst_apply :
-  (prod.fst ⁻¹' e).indicator ⦃oa ×ₘ ob⦄ (a, b) = e.indicator ⦃oa⦄ a * ⦃ob⦄ b :=
+  (prod.fst ⁻¹' e).indicator ⁅oa ×ₘ ob⁆ (a, b) = e.indicator ⁅oa⁆ a * ⁅ob⁆ b :=
 begin
   by_cases ha : a ∈ e,
   { have : (a, b) ∈ (prod.fst ⁻¹' e : set (α × β)) := set.mem_preimage.2 ha,
@@ -109,7 +109,7 @@ begin
 end
 
 lemma eval_dist_prod_indicator_preimage_snd_apply :
-  (prod.snd ⁻¹' e').indicator ⦃oa ×ₘ ob⦄ (a, b) = ⦃oa⦄ a * e'.indicator ⦃ob⦄ b :=
+  (prod.snd ⁻¹' e').indicator ⁅oa ×ₘ ob⁆ (a, b) = ⁅oa⁆ a * e'.indicator ⁅ob⁆ b :=
 begin
   by_cases hb : b ∈ e',
   { have : (a, b) ∈ (prod.snd ⁻¹' e' : set (α × β)) := set.mem_preimage.2 hb,
@@ -124,39 +124,39 @@ end eval_dist
 
 section prob_event
 
-@[simp] lemma prob_event_prod_eq_mul : ⦃e ×ˢ e' | oa ×ₘ ob⦄ = ⦃e | oa⦄ * ⦃e' | ob⦄ :=
-calc ⦃e ×ˢ e' | oa ×ₘ ob⦄ = ∑' x, (e ×ˢ e').indicator ⦃oa ×ₘ ob⦄ x :
+@[simp] lemma prob_event_prod_eq_mul : ⁅e ×ˢ e' | oa ×ₘ ob⁆ = ⁅e | oa⁆ * ⁅e' | ob⁆ :=
+calc ⁅e ×ˢ e' | oa ×ₘ ob⁆ = ∑' x, (e ×ˢ e').indicator ⁅oa ×ₘ ob⁆ x :
     (prob_event_eq_tsum_indicator _ _)
-  ... = ∑' (x : α × β), e.indicator ⦃oa⦄ x.1 * e'.indicator ⇑⦃ob⦄ x.2 :
+  ... = ∑' (x : α × β), e.indicator ⁅oa⁆ x.1 * e'.indicator ⇑⁅ob⁆ x.2 :
     tsum_congr (λ x, eval_dist_prod_indicator_prod_apply oa ob e e' x)
-  ... = (∑' a, e.indicator ⦃oa⦄ a) * (∑' b, e'.indicator ⦃ob⦄ b) :
+  ... = (∑' a, e.indicator ⁅oa⁆ a) * (∑' b, e'.indicator ⁅ob⁆ b) :
     by simp_rw [← ennreal.tsum_mul_right, ← ennreal.tsum_mul_left, ← ennreal.tsum_prod]
-  ... = ⦃e | oa⦄ * ⦃e' | ob⦄ : by simp_rw [prob_event_eq_tsum_indicator]
+  ... = ⁅e | oa⁆ * ⁅e' | ob⁆ : by simp_rw [prob_event_eq_tsum_indicator]
 
 /-- If an event only cares about the first part of the computation,
 we can calculate the probability using only the first of the computations. -/
-@[simp] lemma prob_event_prod_preimage_fst : ⦃prod.fst ⁻¹' e | oa ×ₘ ob⦄ = ⦃e | oa⦄ :=
-calc ⦃prod.fst ⁻¹' e | oa ×ₘ ob⦄
-  = ∑' (x : α × β), (prod.fst ⁻¹' e).indicator ⇑⦃oa×ₘ ob⦄ (x.1, x.2) :
+@[simp] lemma prob_event_prod_preimage_fst : ⁅prod.fst ⁻¹' e | oa ×ₘ ob⁆ = ⁅e | oa⁆ :=
+calc ⁅prod.fst ⁻¹' e | oa ×ₘ ob⁆
+  = ∑' (x : α × β), (prod.fst ⁻¹' e).indicator ⇑⁅oa×ₘ ob⁆ (x.1, x.2) :
     by simp_rw [prob_event_eq_tsum_indicator, prod.mk.eta]
-  ... = ∑' a b, (prod.fst ⁻¹' e).indicator ⇑⦃oa×ₘ ob⦄ (a, b) :
-    @ennreal.tsum_prod α β (λ a b, (prod.fst ⁻¹' e).indicator ⇑⦃oa×ₘ ob⦄ (a, b))
-  ... = ∑' a, e.indicator ⦃oa⦄ a : by simp only [eval_dist_prod_indicator_preimage_fst_apply,
-    ennreal.tsum_mul_left, ⦃ob⦄.tsum_coe, mul_one]
-  ... = ⦃e | oa⦄ : by rw [prob_event_eq_tsum_indicator]
+  ... = ∑' a b, (prod.fst ⁻¹' e).indicator ⇑⁅oa×ₘ ob⁆ (a, b) :
+    @ennreal.tsum_prod α β (λ a b, (prod.fst ⁻¹' e).indicator ⇑⁅oa×ₘ ob⁆ (a, b))
+  ... = ∑' a, e.indicator ⁅oa⁆ a : by simp only [eval_dist_prod_indicator_preimage_fst_apply,
+    ennreal.tsum_mul_left, ⁅ob⁆.tsum_coe, mul_one]
+  ... = ⁅e | oa⁆ : by rw [prob_event_eq_tsum_indicator]
 
 /-- If an event only cares about the second part of the computation,
 we can calculate the probability using only the first of the computations. -/
-lemma prob_event_prod_preimage_snd : ⦃prod.snd ⁻¹' e' | oa ×ₘ ob⦄ = ⦃e' | ob⦄ :=
-calc ⦃prod.snd ⁻¹' e' | oa ×ₘ ob⦄
-  = ∑' (x : α × β), (prod.snd ⁻¹' e').indicator ⦃oa ×ₘ ob⦄ (x.1, x.2) :
+lemma prob_event_prod_preimage_snd : ⁅prod.snd ⁻¹' e' | oa ×ₘ ob⁆ = ⁅e' | ob⁆ :=
+calc ⁅prod.snd ⁻¹' e' | oa ×ₘ ob⁆
+  = ∑' (x : α × β), (prod.snd ⁻¹' e').indicator ⁅oa ×ₘ ob⁆ (x.1, x.2) :
     by simp_rw [prob_event_eq_tsum_indicator, prod.mk.eta]
-  ... = ∑' a b, (prod.snd ⁻¹' e').indicator ⦃oa ×ₘ ob⦄ (a, b) :
-    @ennreal.tsum_prod α β (λ a b, (prod.snd ⁻¹' e').indicator ⦃oa ×ₘ ob⦄ (a, b))
-  ... = ∑' b a, (prod.snd ⁻¹' e').indicator ⦃oa ×ₘ ob⦄ (a, b) : ennreal.tsum_comm
-  ... = ∑' b, e'.indicator ⦃ob⦄ b : by simp only [eval_dist_prod_indicator_preimage_snd_apply,
-    ennreal.tsum_mul_right, ⦃oa⦄.tsum_coe, one_mul]
-  ... = ⦃e' | ob⦄ : by rw [prob_event_eq_tsum_indicator]
+  ... = ∑' a b, (prod.snd ⁻¹' e').indicator ⁅oa ×ₘ ob⁆ (a, b) :
+    @ennreal.tsum_prod α β (λ a b, (prod.snd ⁻¹' e').indicator ⁅oa ×ₘ ob⁆ (a, b))
+  ... = ∑' b a, (prod.snd ⁻¹' e').indicator ⁅oa ×ₘ ob⁆ (a, b) : ennreal.tsum_comm
+  ... = ∑' b, e'.indicator ⁅ob⁆ b : by simp only [eval_dist_prod_indicator_preimage_snd_apply,
+    ennreal.tsum_mul_right, ⁅oa⁆.tsum_coe, one_mul]
+  ... = ⁅e' | ob⁆ : by rw [prob_event_eq_tsum_indicator]
 
 end prob_event
 

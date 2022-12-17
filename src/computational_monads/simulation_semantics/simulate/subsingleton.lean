@@ -91,10 +91,10 @@ section eval_dist
 
 @[simp]
 lemma eval_dist_simulate_eq_eval_dist_default_simulate [subsingleton S] (s : S) :
-  ⦃simulate so oa s⦄ = ⦃default_simulate so oa⦄ := subsingleton.elim so.default_state s ▸ rfl
+  ⁅simulate so oa s⁆ = ⁅default_simulate so oa⁆ := subsingleton.elim so.default_state s ▸ rfl
 
 lemma eval_dist_simulate'_eq_eval_dist_default_simulate' [subsingleton S] (s : S) :
-  ⦃simulate' so oa s⦄ = ⦃default_simulate' so oa⦄ := subsingleton.elim so.default_state s ▸ rfl
+  ⁅simulate' so oa s⁆ = ⁅default_simulate' so oa⁆ := subsingleton.elim so.default_state s ▸ rfl
 
 end eval_dist
 

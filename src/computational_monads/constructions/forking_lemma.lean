@@ -85,14 +85,14 @@ end simulate_from_seed
 section advantage
 
 def advantage (adv : forking_adversary T U α) : ℝ≥0∞ :=
-⦃ λ x, option.is_some x | simulate_choose_fork adv ⦄
+⁅ λ x, option.is_some x | simulate_choose_fork adv ⁆
 
 lemma advantage_eq_tsum (adv : forking_adversary T U α) :
-  adv.advantage = ∑' (i : fin adv.q), ⦃simulate_choose_fork adv⦄ (some i) :=
+  adv.advantage = ∑' (i : fin adv.q), ⁅simulate_choose_fork adv⁆ (some i) :=
 distribution_semantics.prob_event_is_some $ simulate_choose_fork adv
 
 lemma advantage_eq_sum (adv : forking_adversary T U α) :
-  adv.advantage = ∑ i, ⦃simulate_choose_fork adv⦄ (some i) :=
+  adv.advantage = ∑ i, ⁅simulate_choose_fork adv⁆ (some i) :=
 trans (advantage_eq_tsum adv) (tsum_fintype _)
 
 end advantage
@@ -132,24 +132,24 @@ open distribution_semantics
 
 /-- The probability of returning a given index is the independent value of getting it from both -/
 lemma eval_dist_fst_map_fork_apply (i : option $ fin adv.q) :
-  ⦃prod.fst <$> fork adv⦄ i = ⦃adv.simulate_choose_fork⦄ i ^ 2 :=
-calc ⦃prod.fst <$> fork adv⦄ i
-  = ⦃adv.simulate_choose_fork ×ₘ adv.simulate_choose_fork⦄ (i, i) : begin
+  ⁅prod.fst <$> fork adv⁆ i = ⁅adv.simulate_choose_fork⁆ i ^ 2 :=
+calc ⁅prod.fst <$> fork adv⁆ i
+  = ⁅adv.simulate_choose_fork ×ₘ adv.simulate_choose_fork⁆ (i, i) : begin
     sorry
   end
-  ... = ⦃adv.simulate_choose_fork⦄ i ^ 2 : begin
+  ... = ⁅adv.simulate_choose_fork⁆ i ^ 2 : begin
     rw [eval_dist_prod_apply, pow_two],
   end
 
 lemma eval_dist_fork_apply_some (i : (fin adv.q)) (x x' : α) (cache cache' : query_log (T ↦ₒ U)) :
-  ⦃fork adv⦄ (some i, x, cache, x', cache') =
-    ∑' (log : query_log uniform_selecting), ⦃adv.simulate_with_log⦄ (some i, x, log, cache)
-      * ⦃adv.simulate_from_seed log.to_seed (cache.fork_cache () (some i))⦄ (some i, x', cache') :=
+  ⁅fork adv⁆ (some i, x, cache, x', cache') =
+    ∑' (log : query_log uniform_selecting), ⁅adv.simulate_with_log⁆ (some i, x, log, cache)
+      * ⁅adv.simulate_from_seed log.to_seed (cache.fork_cache () (some i))⁆ (some i, x', cache') :=
 begin
-  calc ⦃fork adv⦄ (some i, x, cache, x', cache')
-    = ∑' (log : query_log uniform_selecting), ⦃adv.simulate_with_log⦄ (some i, x, log, cache)
-        * ⦃adv.simulate_from_seed log.to_seed (cache.fork_cache () (some i))
-        >>= λ o, return (ite (some i = o.fst) (some i) none, x, cache, o.snd.fst, o.snd.snd)⦄
+  calc ⁅fork adv⁆ (some i, x, cache, x', cache')
+    = ∑' (log : query_log uniform_selecting), ⁅adv.simulate_with_log⁆ (some i, x, log, cache)
+        * ⁅adv.simulate_from_seed log.to_seed (cache.fork_cache () (some i))
+        >>= λ o, return (ite (some i = o.fst) (some i) none, x, cache, o.snd.fst, o.snd.snd)⁆
                   (some i, x, cache, x', cache') :
     begin
       rw fork_def,
@@ -170,8 +170,8 @@ begin
         simp only [prod.eq_iff_fst_eq_snd_eq] at h,
         exact h.2.2.1 },
     end 
-    ... = ∑' (log : query_log uniform_selecting), ⦃adv.simulate_with_log⦄ (some i, x, log, cache)
-      * ⦃adv.simulate_from_seed log.to_seed (cache.fork_cache () (some i))⦄ (some i, x', cache') :
+    ... = ∑' (log : query_log uniform_selecting), ⁅adv.simulate_with_log⁆ (some i, x, log, cache)
+      * ⁅adv.simulate_from_seed log.to_seed (cache.fork_cache () (some i))⁆ (some i, x', cache') :
     begin
       refine tsum_congr (λ log, _),
       refine congr_arg (λ x, _ * x) _,
@@ -191,20 +191,20 @@ begin
     end
 end
 
-lemma prob_fork_eq_some : ⦃λ out, out.1.is_some | fork adv⦄ ≥ (adv.advantage ^ 2) / adv.q :=
-calc ⦃λ out, out.1.is_some | fork adv⦄
-  = ⦃ coe ∘ option.is_some | prod.fst <$> fork adv⦄ :
+lemma prob_fork_eq_some : ⁅λ out, out.1.is_some | fork adv⁆ ≥ (adv.advantage ^ 2) / adv.q :=
+calc ⁅λ out, out.1.is_some | fork adv⁆
+  = ⁅ coe ∘ option.is_some | prod.fst <$> fork adv⁆ :
     symm ((distribution_semantics.prob_event_map _ _ _))
-  ... = ∑' (j : fin adv.q), (⦃prod.fst <$> fork adv⦄ (some j)) :
+  ... = ∑' (j : fin adv.q), (⁅prod.fst <$> fork adv⁆ (some j)) :
     (distribution_semantics.prob_event_is_some $ prod.fst <$> fork adv)
-  ... = ∑' (j : fin adv.q), (⦃adv.simulate_choose_fork⦄ (some j)) ^ 2 :
+  ... = ∑' (j : fin adv.q), (⁅adv.simulate_choose_fork⁆ (some j)) ^ 2 :
     tsum_congr (λ j, eval_dist_fst_map_fork_apply _ _)
-  ... = ∑ j, (⦃adv.simulate_choose_fork⦄ (some j)) ^ 2 :
+  ... = ∑ j, (⁅adv.simulate_choose_fork⁆ (some j)) ^ 2 :
     tsum_fintype _
-  ... ≥ (∑ j, ⦃adv.simulate_choose_fork⦄ (some j)) ^ 2 /
+  ... ≥ (∑ j, ⁅adv.simulate_choose_fork⁆ (some j)) ^ 2 /
           (finset.univ : finset $ fin adv.q).card ^ 1 :
-    sorry --nnreal.pow_sum_div_card_le_sum_pow ⊤ (λ j, ⦃adv.simulate_choose_fork⦄ (some j)) 1
-  ... ≥ (∑ j, ⦃adv.simulate_choose_fork⦄ (some j)) ^ 2 / adv.q :
+    sorry --nnreal.pow_sum_div_card_le_sum_pow ⊤ (λ j, ⁅adv.simulate_choose_fork⁆ (some j)) 1
+  ... ≥ (∑ j, ⁅adv.simulate_choose_fork⁆ (some j)) ^ 2 / adv.q :
     sorry --by simp only [finset.card_fin, pow_one, ge_iff_le]
   ... = (adv.advantage ^ 2) / adv.q :
     by rw forking_adversary.advantage_eq_sum adv
@@ -281,7 +281,7 @@ section distribution_semantics
 open distribution_semantics
 
 lemma prob_event_forked_cache_differs :
-  ⦃forked_cache_differs | fork adv⦄ = 1 - (1 / fintype.card U) :=
+  ⁅forked_cache_differs | fork adv⁆ = 1 - (1 / fintype.card U) :=
 sorry
 
 lemma indep_event_forked_cache_differs_is_some :
@@ -301,16 +301,16 @@ def fork_success (o : option (fin n) × α × query_log (T ↦ₒ U) × α × qu
 o.1.is_some ∧ forked_cache_differs o
 
 /-- Probability that fork success holds is determined by adversary's initial advantage -/
-theorem prob_event_fork_success : ⦃fork_success | fork adv⦄
+theorem prob_event_fork_success : ⁅fork_success | fork adv⁆
   ≥ ((adv.advantage) ^ 2 / adv.q) - (1 / fintype.card U) :=
-calc ⦃fork_success | fork adv⦄
-  = ⦃λ o, o.1.is_some | fork adv⦄ * ⦃forked_cache_differs | fork adv⦄ : sorry
-  ... ≥ ⦃λ o, o.1.is_some | fork adv⦄ * (1 - 1 / fintype.card U) : begin
+calc ⁅fork_success | fork adv⁆
+  = ⁅λ o, o.1.is_some | fork adv⁆ * ⁅forked_cache_differs | fork adv⁆ : sorry
+  ... ≥ ⁅λ o, o.1.is_some | fork adv⁆ * (1 - 1 / fintype.card U) : begin
     -- TODO: this is just an independence statement of the `is_some` and `query_output_diff_at`
     -- Slight complication in that the output diff is only well defined if a `some` index is output
     sorry
   end
-  ... ≥ ⦃λ o, o.1.is_some | fork adv⦄ - (1 / fintype.card U) : begin
+  ... ≥ ⁅λ o, o.1.is_some | fork adv⁆ - (1 / fintype.card U) : begin
     sorry
     -- rw [mul_tsub, mul_one, mul_div, mul_one], 
     -- refine tsub_le_tsub_left _ _,

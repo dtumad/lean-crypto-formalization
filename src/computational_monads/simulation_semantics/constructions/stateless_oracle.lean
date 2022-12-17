@@ -101,11 +101,11 @@ open distribution_semantics
 
 section eval_dist
 
-lemma eval_dist_apply [spec'.finite_range] : ⦃⟪o⟫ i (t, s)⦄ = ⦃o i t⦄.map (λ u, (u, ())) :=
+lemma eval_dist_apply [spec'.finite_range] : ⁅⟪o⟫ i (t, s)⁆ = ⁅o i t⁆.map (λ u, (u, ())) :=
 eval_dist_bind_return (o i t) (λ u, (u, ()))
 
 lemma eval_dist_simulate'_eq_eval_dist [spec.finite_range] [spec'.finite_range]
-  (h : ∀ i t, ⦃o i t⦄ = pmf.uniform_of_fintype (spec.range i)) : ⦃simulate' ⟪o⟫ oa s⦄ = ⦃oa⦄ :=
+  (h : ∀ i t, ⁅o i t⁆ = pmf.uniform_of_fintype (spec.range i)) : ⁅simulate' ⟪o⟫ oa s⁆ = ⁅oa⁆ :=
 tracking_oracle.eval_dist_simulate'_eq_eval_dist o _ _ oa s h
 
 -- TODO: put <$> in equiv versions, derive from `eval_dist` fact

@@ -81,11 +81,11 @@ section eval_dist
 
 @[simp]
 lemma eval_dist_apply (i : spec.ι) (t : spec.domain i) :
-  ⦃idₛ i (t, s)⦄ = ⦃(λ u, (u, ())) <$> query i t⦄ :=
+  ⁅idₛ i (t, s)⁆ = ⁅(λ u, (u, ())) <$> query i t⁆ :=
 rfl
 
 -- @[simp]
--- theorem eval_dist_simulate : ⦃simulate idₛ oa s⦄ = ⦃(λ a, (a, ())) <$> oa⦄ :=
+-- theorem eval_dist_simulate : ⁅simulate idₛ oa s⁆ = ⁅(λ a, (a, ())) <$> oa⁆ :=
 -- begin
 --   induction oa with α a α β oa ob hoa hob i t generalizing s,
 --   { simp [punit_eq s (), pmf.pure_map] },

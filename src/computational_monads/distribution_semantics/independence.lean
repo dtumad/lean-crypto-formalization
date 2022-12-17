@@ -35,21 +35,21 @@ section indep_events
   Independence is defined using a measure with `measurable_space` `⊤`.
   Further lemmas are written to be independent of this. -/
 def indep_events (oa : oracle_comp spec α) (events events' : set (set α)) : Prop :=
-@probability_theory.indep_sets α ⊤ events events' (@pmf.to_measure α ⊤ ⦃oa⦄)
+@probability_theory.indep_sets α ⊤ events events' (@pmf.to_measure α ⊤ ⁅oa⁆)
 
 variables (events events' : set (set α))
 
 lemma indep_events_iff_indep_sets (oa : oracle_comp spec α) (es es' : set (set α)) :
-  indep_events oa es es' ↔ @probability_theory.indep_sets α ⊤ es es' (@pmf.to_measure α ⊤ ⦃oa⦄) :=
+  indep_events oa es es' ↔ @probability_theory.indep_sets α ⊤ es es' (@pmf.to_measure α ⊤ ⁅oa⁆) :=
 iff.rfl
 
 lemma indep_events_iff : indep_events oa events events' ↔
-  ∀ e e', e ∈ events → e' ∈ events' → ⦃e ∩ e' | oa⦄ = ⦃e | oa⦄ * ⦃e' | oa⦄ :=
+  ∀ e e', e ∈ events → e' ∈ events' → ⁅e ∩ e' | oa⁆ = ⁅e | oa⁆ * ⁅e' | oa⁆ :=
 by simp_rw [indep_events_iff_indep_sets, probability_theory.indep_sets,
   prob_event_eq_to_measure_apply]
 
 lemma prob_event_inter_eq_mul_of_indep_events (h : indep_events oa events events')
-  (he : e ∈ events) (he' : e' ∈ events') : ⦃ e ∩ e' | oa ⦄ = ⦃ e | oa ⦄ * ⦃ e' | oa ⦄ :=
+  (he : e ∈ events) (he' : e' ∈ events') : ⁅ e ∩ e' | oa ⁆ = ⁅ e | oa ⁆ * ⁅ e' | oa ⁆ :=
 (indep_events_iff oa events events').1 h e e' he he'
 
 end indep_events
@@ -65,18 +65,18 @@ lemma indep_event_iff_indep_events : indep_event oa e e' ↔ indep_events oa {e}
 iff.rfl
 
 lemma indep_event_iff_indep_set : indep_event oa e e' ↔
-  @probability_theory.indep_set α ⊤ e e' (@pmf.to_measure α ⊤ ⦃oa⦄) :=
+  @probability_theory.indep_set α ⊤ e e' (@pmf.to_measure α ⊤ ⁅oa⁆) :=
 by rw [indep_event_iff_indep_events, indep_events_iff_indep_sets,
   probability_theory.indep_set_iff_indep_sets_singleton]; apply measurable_space.measurable_set_top
 
-lemma indep_event_iff : indep_event oa e e' ↔ ⦃e ∩ e' | oa⦄ = ⦃ e | oa ⦄ * ⦃ e' | oa ⦄ :=
+lemma indep_event_iff : indep_event oa e e' ↔ ⁅e ∩ e' | oa⁆ = ⁅ e | oa ⁆ * ⁅ e' | oa ⁆ :=
 begin
   simp_rw [indep_event_iff_indep_set, prob_event_eq_to_measure_apply],
   exact probability_theory.indep_set_iff_measure_inter_eq_mul trivial trivial _,
 end
 
 lemma prob_event_inter_eq_mul_of_indep_event (h : indep_event oa e e') :
-  ⦃ e ∩ e' | oa ⦄ = ⦃ e | oa ⦄ * ⦃ e' | oa ⦄ :=
+  ⁅ e ∩ e' | oa ⁆ = ⁅ e | oa ⁆ * ⁅ e' | oa ⁆ :=
 (indep_event_iff oa e e').1 h
 
 end indep_event

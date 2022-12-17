@@ -105,19 +105,19 @@ variable [spec.finite_range]
 /-- The probability of getting `xs` after `oa.repeat n` is the product of the probability
 of getting each individual output, since each computation runs independently. -/
 @[simp] lemma eval_dist_repeat_apply [decidable_eq α] :
-  ⦃oa.repeat m⦄ xs = (xs.map ⦃oa⦄).to_list.prod :=
+  ⁅oa.repeat m⁆ xs = (xs.map ⁅oa⁆).to_list.prod :=
 begin
   induction m with m hm,
   { simp only [vector.eq_nil xs, repeat_zero oa, eval_dist_return, pmf.pure_apply,
       if_true, vector.map_nil, vector.to_list_nil, list.prod_nil, eq_self_iff_true] },
   { obtain ⟨x, xs, rfl⟩ := vector.exists_eq_cons xs,
-    calc ⦃oa.repeat m.succ⦄ (x ::ᵥ xs)
-      = ∑' (y : α) (ys : vector α m), ite (x ::ᵥ xs = y ::ᵥ ys) (⦃oa⦄ y * ⦃oa.repeat m⦄ ys) 0 :
+    calc ⁅oa.repeat m.succ⁆ (x ::ᵥ xs)
+      = ∑' (y : α) (ys : vector α m), ite (x ::ᵥ xs = y ::ᵥ ys) (⁅oa⁆ y * ⁅oa.repeat m⁆ ys) 0 :
         begin
           simp only [oa.repeat_succ, eval_dist_bind_apply_eq_tsum, eval_dist_return_apply,
             mul_ite, mul_one, mul_zero, ← ennreal.tsum_mul_left],
         end
-      ... = ite (x ::ᵥ xs = x ::ᵥ xs) (⦃oa⦄ x * ⦃oa.repeat m⦄ xs) 0 : 
+      ... = ite (x ::ᵥ xs = x ::ᵥ xs) (⁅oa⁆ x * ⁅oa.repeat m⁆ xs) 0 : 
         begin
           rw ← ennreal.tsum_prod,
           refine trans (tsum_eq_single (x, xs) (λ y_ys h, if_neg _)) rfl,
@@ -125,7 +125,7 @@ begin
               vector.eq_cons_iff, not_and, vector.head_cons, vector.tail_cons] at h ⊢,
           exact λ h', ne.symm (h h'.symm),
         end
-      ... = (vector.map ⦃oa⦄ (x ::ᵥ xs)).to_list.prod :
+      ... = (vector.map ⁅oa⁆ (x ::ᵥ xs)).to_list.prod :
         begin
           refine (trans (if_pos rfl) _),
           simp only [hm, list.map, vector.to_list_map, vector.to_list_cons, list.prod_cons]

@@ -60,10 +60,10 @@ variable [spec.finite_range]
 
 section eval_dist
 
-@[simp] lemma eval_dist_simulate' : ⦃simulate' (logging_oracle spec) oa log⦄ = ⦃oa⦄ :=
+@[simp] lemma eval_dist_simulate' : ⁅simulate' (logging_oracle spec) oa log⁆ = ⁅oa⁆ :=
 tracking_oracle.eval_dist_simulate'_query_eq_eval_dist _ _ oa log
 
-lemma eval_dist_default_simulate' : ⦃default_simulate' (logging_oracle spec) oa⦄ = ⦃oa⦄ :=
+lemma eval_dist_default_simulate' : ⁅default_simulate' (logging_oracle spec) oa⁆ = ⁅oa⁆ :=
 logging_oracle.eval_dist_simulate' oa (query_log.init spec)
 
 end eval_dist

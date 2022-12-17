@@ -30,8 +30,8 @@ lemma eval_dist_simulate_eq_induction [spec'.finite_range]
   (h_ret : ∀ α a s, pr α (return a) s = pmf.pure (a, s))
   (h_bind : ∀ α β (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) s,
     pr β (oa >>= ob) s = (pr α oa s).bind (λ x, pr β (ob x.1) x.2))
-  (h_query : ∀ i t s, pr (spec.range i) (query i t) s = ⦃so i (t, s)⦄) :
-  ⦃simulate so oa s⦄ = pr α oa s :=
+  (h_query : ∀ i t s, pr (spec.range i) (query i t) s = ⁅so i (t, s)⁆) :
+  ⁅simulate so oa s⁆ = pr α oa s :=
 begin
   induction oa using oracle_comp.induction_on with α a' α β oa ob hoa hob i t generalizing s,
   { simp only [h_ret, simulate_return, eval_dist_return] },
@@ -49,8 +49,8 @@ lemma eval_dist_simulate_apply_eq_induction [spec'.finite_range]
   (h_ret' : ∀ α a a' s s', a ≠ a' ∨ s ≠ s' → pr α (return a) s (a', s') = 0)
   (h_bind : ∀ α β (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) s b s',
     pr β (oa >>= ob) s (b, s') = ∑' (a : α) (t : S), (pr α oa s (a, t)) * (pr β (ob a) t (b, s')))
-  (h_query : ∀ i t s u s', pr (spec.range i) (query i t) s (u, s') = ⦃so i (t, s)⦄ (u, s')) :
-  ⦃simulate so oa s⦄ (a, s') = pr α oa s (a, s') :=
+  (h_query : ∀ i t s u s', pr (spec.range i) (query i t) s (u, s') = ⁅so i (t, s)⁆ (u, s')) :
+  ⁅simulate so oa s⁆ (a, s') = pr α oa s (a, s') :=
 begin 
   induction oa using oracle_comp.induction_on with α a' α β oa ob hoa hob i t generalizing s s',
   { rw [eval_dist_simulate_return, pmf.pure_apply],
@@ -68,8 +68,8 @@ end
 /-- If the first result of oracle queries is uniformly distributed,
 then the distribution under `simulate'` is unchanged. -/
 theorem eval_dist_simulate'_eq_eval_dist [spec.finite_range] [spec'.finite_range]
-  (h : ∀ i t s, ⦃so i (t, s)⦄.map prod.fst = pmf.uniform_of_fintype (spec.range i)) :
-  ⦃simulate' so oa s⦄ = ⦃oa⦄ :=
+  (h : ∀ i t s, ⁅so i (t, s)⁆.map prod.fst = pmf.uniform_of_fintype (spec.range i)) :
+  ⁅simulate' so oa s⁆ = ⁅oa⁆ :=
 begin
   induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t generalizing s,
   { simp only [simulate'_return, eval_dist_map_return, eval_dist_return] },
@@ -84,23 +84,23 @@ end
 
 theorem eval_dist_simulate'_eq_eval_dist_simulate' [spec'.finite_range] [spec''.finite_range]
   {so : sim_oracle spec spec' S} {so' : sim_oracle spec spec'' S'}
-  (h : ∀ i t s s', ⦃so i (t, s)⦄.map prod.fst = ⦃so' i (t, s')⦄.map prod.fst)
+  (h : ∀ i t s s', ⁅so i (t, s)⁆.map prod.fst = ⁅so' i (t, s')⁆.map prod.fst)
   (oa : oracle_comp spec α) (s : S) (s' : S') :
-  ⦃simulate' so oa s⦄ = ⦃simulate' so' oa s'⦄ :=
+  ⁅simulate' so oa s⁆ = ⁅simulate' so' oa s'⁆ :=
 begin
   induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t generalizing s s',
   { simp only [simulate'_return, eval_dist_map_return] },
   { refine pmf.ext (λ b, _),
     simp only [eval_dist_simulate'_bind_apply],
     refine tsum_congr (λ a, _),
-    calc ∑' (t : S), ⦃simulate so oa s⦄ (a, t) * ⦃simulate' so (ob a) t⦄ b
-      = ∑' (t : S), ⦃simulate so oa s⦄ (a, t) * ⦃simulate' so' (ob a) s'⦄ b :
+    calc ∑' (t : S), ⁅simulate so oa s⁆ (a, t) * ⁅simulate' so (ob a) t⁆ b
+      = ∑' (t : S), ⁅simulate so oa s⁆ (a, t) * ⁅simulate' so' (ob a) s'⁆ b :
         tsum_congr (λ t, congr_arg (λ x, _ * x) $ by rw hob a t s')
-      ... = (∑' (t' : S'), ⦃simulate so' oa s'⦄ (a, t')) * ⦃simulate' so' (ob a) s'⦄ b :
+      ... = (∑' (t' : S'), ⁅simulate so' oa s'⁆ (a, t')) * ⁅simulate' so' (ob a) s'⁆ b :
         by simp_rw [ennreal.tsum_mul_right, ← eval_dist_simulate'_apply, hoa s s']
-      ... = ∑' (t' : S'), ⦃simulate so' oa s'⦄ (a, t') * ⦃simulate' so (ob a) s⦄ b :
+      ... = ∑' (t' : S'), ⁅simulate so' oa s'⁆ (a, t') * ⁅simulate' so (ob a) s⁆ b :
         by rw [ennreal.tsum_mul_right, hob]
-      ... = ∑' (t' : S'), ⦃simulate so' oa s'⦄ (a, t') * ⦃simulate' so' (ob a) t'⦄ b :
+      ... = ∑' (t' : S'), ⁅simulate so' oa s'⁆ (a, t') * ⁅simulate' so' (ob a) t'⁆ b :
         tsum_congr (λ t, congr_arg (λ x, _ * x) $ by rw hob) },
   { simpa only [simulate'_query, eval_dist_map] using h i t s s' },
 end

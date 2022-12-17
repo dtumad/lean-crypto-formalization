@@ -137,33 +137,33 @@ open distribution_semantics
 section eval_dist
 
 @[simp] lemma eval_dist_apply [spec'.finite_range] :
-  ⦃⟪o | update_state, default_state⟫ i (t, s)⦄ = ⦃o i t⦄.map (λ u, (u, update_state s i t u)) :=
+  ⁅⟪o | update_state, default_state⟫ i (t, s)⁆ = ⁅o i t⁆.map (λ u, (u, update_state s i t u)) :=
 by rw [apply_eq, eval_dist_map]
 
 /-- If the oracle has uniform distribution, then the distribution under `simulate'` is unchanged -/
 theorem eval_dist_simulate'_eq_eval_dist [spec.finite_range] [spec'.finite_range]
-  (h : ∀ i t, ⦃o i t⦄ = pmf.uniform_of_fintype (spec.range i)) :
-  ⦃simulate' ⟪o | update_state, default_state⟫ oa s⦄ = ⦃oa⦄ :=
+  (h : ∀ i t, ⁅o i t⁆ = pmf.uniform_of_fintype (spec.range i)) :
+  ⁅simulate' ⟪o | update_state, default_state⟫ oa s⁆ = ⁅oa⁆ :=
 eval_dist_simulate'_eq_eval_dist _ oa s (λ i t s, trans 
-  (by simpa [eval_dist_apply, pmf.map_comp] using pmf.map_id ⦃o i t⦄) (h i t))
+  (by simpa [eval_dist_apply, pmf.map_comp] using pmf.map_id ⁅o i t⁆) (h i t))
 
 /-- Specific case of `eval_dist_simulate'_eq_eval_dist` for query.
 In particular if a tracking oracle *only* does tracking gives the same main output distribution. -/
 @[simp] lemma eval_dist_simulate'_query_eq_eval_dist [spec.finite_range] :
-  ⦃simulate' ⟪query | update_state, default_state⟫ oa s⦄ = ⦃oa⦄ :=
+  ⁅simulate' ⟪query | update_state, default_state⟫ oa s⁆ = ⁅oa⁆ :=
 eval_dist_simulate'_eq_eval_dist query update_state default_state oa s (λ _ _, rfl)
 
 lemma eval_dist_simulate'_eq_eval_dist_simulate' [spec'.finite_range] [spec''.finite_range]
-  (h : ∀ i t, o i t ≃ₚ o' i t) : ⦃simulate' ⟪o | update_state, default_state⟫ oa s⦄ =
-    ⦃simulate' ⟪o' | update_state', default_state'⟫ oa s'⦄ :=
+  (h : ∀ i t, o i t ≃ₚ o' i t) : ⁅simulate' ⟪o | update_state, default_state⟫ oa s⁆ =
+    ⁅simulate' ⟪o' | update_state', default_state'⟫ oa s'⁆ :=
 eval_dist_simulate'_eq_eval_dist_simulate' (λ i t s s',
   by simp [pmf.map_comp, tracking_oracle.apply_eq, eval_dist_map, h]) oa s s'
 
 /-- The first output of simulation under different `tracking_oracle` with the same oracle
 is the same regardless of if the tracking functions are different. -/
 theorem eval_dist_simulate'_eq_eval_dist_simulate'_of_oracle_eq [spec'.finite_range] :
-  ⦃simulate' ⟪o | update_state, default_state⟫ oa s⦄ =
-    ⦃simulate' ⟪o | update_state', default_state'⟫ oa s'⦄ :=
+  ⁅simulate' ⟪o | update_state, default_state⟫ oa s⁆ =
+    ⁅simulate' ⟪o | update_state', default_state'⟫ oa s'⁆ :=
 eval_dist_simulate'_eq_eval_dist_simulate' o o _ _ _ _ oa s s' (λ _ _, rfl)
 
 end eval_dist
@@ -173,31 +173,31 @@ section prob_event
 variable (e : set α)
 
 @[simp] lemma prob_event_apply [spec'.finite_range] (e : set (spec.range i × S)) :
-  ⦃e | ⟪o | update_state, default_state⟫ i (t, s)⦄ =
-    ⦃λ u, (u, update_state s i t u) ∈ e | o i t⦄ :=
+  ⁅e | ⟪o | update_state, default_state⟫ i (t, s)⁆ =
+    ⁅λ u, (u, update_state s i t u) ∈ e | o i t⁆ :=
 by simpa only [apply_eq, prob_event_map]
 
 lemma prob_event_simulate'_eq_prob_event [spec.finite_range] [spec'.finite_range]
-  (h : ∀ i t, ⦃o i t⦄ = pmf.uniform_of_fintype (spec.range i)) :
-  ⦃e | simulate' ⟪o | update_state, default_state⟫ oa s⦄ = ⦃e | oa⦄ :=
+  (h : ∀ i t, ⁅o i t⁆ = pmf.uniform_of_fintype (spec.range i)) :
+  ⁅e | simulate' ⟪o | update_state, default_state⟫ oa s⁆ = ⁅e | oa⁆ :=
 prob_event_eq_of_eval_dist_eq (eval_dist_simulate'_eq_eval_dist _ _ _ _ _ h) e
 
 /-- Specific case of `eval_dist_simulate'_eq_eval_dist` for query.
 In particular if a tracking oracle *only* does tracking gives the same main output distribution. -/
 lemma prob_event_simulate'_query_eq_prob_event [spec.finite_range] [spec'.finite_range] :
-  ⦃e | simulate' ⟪query | update_state, default_state⟫ oa s⦄ = ⦃e | oa⦄ :=
+  ⁅e | simulate' ⟪query | update_state, default_state⟫ oa s⁆ = ⁅e | oa⁆ :=
 prob_event_simulate'_eq_prob_event _ _ _ oa s e (λ _ _, rfl)
 
 lemma prob_event_simulate'_eq_prob_event_simulate' [spec'.finite_range] [spec''.finite_range]
-  (h : ∀ i t, o i t ≃ₚ o' i t) : ⦃e | simulate' ⟪o | update_state, default_state⟫ oa s⦄ =
-    ⦃e | simulate' ⟪o' | update_state', default_state'⟫ oa s'⦄ :=
+  (h : ∀ i t, o i t ≃ₚ o' i t) : ⁅e | simulate' ⟪o | update_state, default_state⟫ oa s⁆ =
+    ⁅e | simulate' ⟪o' | update_state', default_state'⟫ oa s'⁆ :=
 prob_event_eq_of_eval_dist_eq (eval_dist_simulate'_eq_eval_dist_simulate' _ _ _ _ _ _ _ _ _ h) e
 
 /-- The first output of simulation under different `tracking_oracle` with the same oracle
 is the same regardless of if the tracking functions are different. -/
 theorem prob_event_simulate'_eq_eval_dist_simulate'_of_oracle_eq [spec'.finite_range] :
-  ⦃e | simulate' ⟪o | update_state, default_state⟫ oa s⦄ =
-    ⦃e | simulate' ⟪o | update_state', default_state'⟫ oa s'⦄ :=
+  ⁅e | simulate' ⟪o | update_state, default_state⟫ oa s⁆ =
+    ⁅e | simulate' ⟪o | update_state', default_state'⟫ oa s'⁆ :=
 prob_event_simulate'_eq_prob_event_simulate' o o _ _ _ _ oa s s' e (λ _ _, rfl)
 
 end prob_event

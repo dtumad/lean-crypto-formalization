@@ -50,10 +50,10 @@ do { x₁ ←$ᵗ X, x₂ ←$ᵗ X, g ← adversary.adv (x₁, x₂), return (g
 
 /-- Vectorization advantage of an adversary in the vectorization experiment. -/
 noncomputable def advantage (adversary : vectorization_adversary G X) : ℝ≥0∞ :=
-⦃ (=) tt | experiment adversary ⦄
+⁅ (=) tt | experiment adversary ⁆
 
 lemma advantage_eq_tsum (adversary : vectorization_adversary G X) : adversary.advantage =
-  (∑' x₁ x₂, ⦃(=) (x₁ -ᵥ x₂) | adversary.adv (x₁, x₂)⦄) / (fintype.card X) ^ 2 :=
+  (∑' x₁ x₂, ⁅(=) (x₁ -ᵥ x₂) | adversary.adv (x₁, x₂)⁆) / (fintype.card X) ^ 2 :=
 begin
   rw [advantage, experiment, prob_event_uniform_select_fintype_apply_bind],
   
@@ -79,7 +79,7 @@ do{ x₁ ←$ᵗ X, x₂ ←$ᵗ X, x₃ ←$ᵗ X, x₄ ← adversary.adv (x₁
 
 /-- Parallelization advantage of an adversary in parallelization experiment -/
 noncomputable def advantage (adversary : adversary G X) : ℝ≥0∞ :=
-⦃ (=) tt | experiment adversary ⦄
+⁅ (=) tt | experiment adversary ⁆
 
 end parallelization
 

@@ -55,7 +55,7 @@ section distribution_semantics
 open distribution_semantics
 
 @[simp] lemma eval_dist_coe_coin_uniform_select :
-  ⦃(↑oa : oracle_comp uniform_selecting α)⦄ = ⦃oa⦄ :=
+  ⁅(↑oa : oracle_comp uniform_selecting α)⁆ = ⁅oa⁆ :=
 begin
 
 
@@ -69,7 +69,7 @@ begin
 end
 
 @[simp] lemma prob_event_coe_coin_uniform_select (e : set α) :
-  ⦃e | (↑oa : oracle_comp uniform_selecting α)⦄ = ⦃e | oa⦄ :=
+  ⁅e | (↑oa : oracle_comp uniform_selecting α)⁆ = ⁅e | oa⁆ :=
 sorry -- prob_event_eq_of_eval_dist_eq (eval_dist_coe_coin_uniform_select oa) e
 
 end distribution_semantics

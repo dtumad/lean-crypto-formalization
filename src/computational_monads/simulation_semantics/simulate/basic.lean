@@ -150,30 +150,30 @@ variable [spec'.finite_range]
 
 section eval_dist
 
-lemma eval_dist_simulate_return : ⦃simulate so (return a) s⦄ = pmf.pure (a, s) := rfl
+lemma eval_dist_simulate_return : ⁅simulate so (return a) s⁆ = pmf.pure (a, s) := rfl
 
-lemma eval_dist_simulate_pure' : ⦃simulate so (pure' α a) s⦄ = pmf.pure (a, s) := rfl
+lemma eval_dist_simulate_pure' : ⁅simulate so (pure' α a) s⁆ = pmf.pure (a, s) := rfl
 
-lemma eval_dist_simulate_pure : ⦃simulate so (pure a) s⦄ = pmf.pure (a, s) := rfl
+lemma eval_dist_simulate_pure : ⁅simulate so (pure a) s⁆ = pmf.pure (a, s) := rfl
 
 @[simp]
-lemma eval_dist_simulate_bind : ⦃simulate so (oa >>= ob) s⦄ =
-  (⦃simulate so oa s⦄).bind (λ x, ⦃simulate so (ob x.1) x.2⦄) :=
+lemma eval_dist_simulate_bind : ⁅simulate so (oa >>= ob) s⁆ =
+  (⁅simulate so oa s⁆).bind (λ x, ⁅simulate so (ob x.1) x.2⁆) :=
 (congr_arg _ $ simulate_bind so oa ob s).trans (eval_dist_bind _ _)
 
-lemma eval_dist_simulate_bind' : ⦃simulate so (bind' α β oa ob) s⦄ =
-  (⦃simulate so oa s⦄).bind (λ x, ⦃simulate so (ob x.1) x.2⦄) :=
+lemma eval_dist_simulate_bind' : ⁅simulate so (bind' α β oa ob) s⁆ =
+  (⁅simulate so oa s⁆).bind (λ x, ⁅simulate so (ob x.1) x.2⁆) :=
 eval_dist_simulate_bind so oa ob s
 
-lemma eval_dist_simulate_query : ⦃simulate so (query i t) s⦄ = ⦃so i (t, s)⦄ := rfl
+lemma eval_dist_simulate_query : ⁅simulate so (query i t) s⁆ = ⁅so i (t, s)⁆ := rfl
 
-lemma eval_dist_simulate_map : ⦃simulate so (f <$> oa) s⦄ =
-  ⦃simulate so oa s⦄.map (prod.map f id) := by rw [simulate_map, eval_dist_map]
+lemma eval_dist_simulate_map : ⁅simulate so (f <$> oa) s⁆ =
+  ⁅simulate so oa s⁆.map (prod.map f id) := by rw [simulate_map, eval_dist_map]
 
 /-- Write the `eval_dist` of a simulation as a double summation over the possible
 intermediate outputs and states of the computation. -/
-lemma eval_dist_simulate_bind_apply_eq_tsum_tsum (x : β × S) : ⦃simulate so (oa >>= ob) s⦄ x =
-  ∑' (a : α) (s' : S), ⦃simulate so oa s⦄ (a, s') * ⦃simulate so (ob a) s'⦄ x :=
+lemma eval_dist_simulate_bind_apply_eq_tsum_tsum (x : β × S) : ⁅simulate so (oa >>= ob) s⁆ x =
+  ∑' (a : α) (s' : S), ⁅simulate so oa s⁆ (a, s') * ⁅simulate so (ob a) s'⁆ x :=
 by rw [simulate_bind, eval_dist_prod_bind]
 
 end eval_dist
@@ -278,13 +278,13 @@ variable [spec'.finite_range]
 section eval_dist
 
 @[simp]
-lemma eval_dist_simulate' : ⦃simulate' so oa s⦄ = ⦃simulate so oa s⦄.map prod.fst :=
+lemma eval_dist_simulate' : ⁅simulate' so oa s⁆ = ⁅simulate so oa s⁆.map prod.fst :=
 eval_dist_map _ prod.fst
 
 /-- Express the probability of `simulate'` returning a specific value
 as the sum over all possible output states of the probability of `simulate` return it -/
 lemma eval_dist_simulate'_apply :
-  ⦃simulate' so oa s⦄ a = ∑' (s' : S), ⦃simulate so oa s⦄ (a, s') :=
+  ⁅simulate' so oa s⁆ a = ∑' (s' : S), ⁅simulate so oa s⁆ (a, s') :=
 begin
   rw [eval_dist_simulate', pmf.map_apply],
   refine (tsum_prod_eq_tsum_snd a $ λ s a' ha', _).trans (tsum_congr (λ s', _)),
@@ -292,33 +292,33 @@ begin
   { simp only [eq_self_iff_true, if_true] }
 end
 
-lemma eval_dist_simulate'_return : ⦃simulate' so (return a) s⦄ = pmf.pure a :=
+lemma eval_dist_simulate'_return : ⁅simulate' so (return a) s⁆ = pmf.pure a :=
 by simp only [simulate'_return, eval_dist_map, eval_dist_return, pmf.map_pure]
 
-lemma eval_dist_simulate'_pure' : ⦃simulate' so (pure' α a) s⦄ = pmf.pure a :=
+lemma eval_dist_simulate'_pure' : ⁅simulate' so (pure' α a) s⁆ = pmf.pure a :=
 eval_dist_simulate'_return so a s
 
-lemma eval_dist_simulate'_pure : ⦃simulate' so (pure a) s⦄ = pmf.pure a :=
+lemma eval_dist_simulate'_pure : ⁅simulate' so (pure a) s⁆ = pmf.pure a :=
 eval_dist_simulate'_return so a s
 
-lemma eval_dist_simulate'_bind : ⦃simulate' so (oa >>= ob) s⦄ =
-  ⦃simulate so oa s⦄.bind (λ x, ⦃simulate' so (ob x.1) x.2⦄) :=
+lemma eval_dist_simulate'_bind : ⁅simulate' so (oa >>= ob) s⁆ =
+  ⁅simulate so oa s⁆.bind (λ x, ⁅simulate' so (ob x.1) x.2⁆) :=
 by simp only [simulate'_bind, eval_dist_map_bind, eval_dist_bind, eval_dist_map,
   eval_dist_simulate', eq_self_iff_true, pmf.map_bind]
 
-lemma eval_dist_simulate'_bind_apply (b : β) : ⦃simulate' so (oa >>= ob) s⦄ b
-  = ∑' (a : α) (s' : S), ⦃simulate so oa s⦄ (a, s') * ⦃simulate' so (ob a) s'⦄ b :=
+lemma eval_dist_simulate'_bind_apply (b : β) : ⁅simulate' so (oa >>= ob) s⁆ b
+  = ∑' (a : α) (s' : S), ⁅simulate so oa s⁆ (a, s') * ⁅simulate' so (ob a) s'⁆ b :=
 by rw [eval_dist_simulate'_bind, pmf.bind_apply, tsum_prod'
   ennreal.summable (λ _, ennreal.summable)]
 
-lemma eval_dist_simulate'_bind' : ⦃simulate' so (bind' α β oa ob) s⦄ =
-  ⦃simulate so oa s⦄.bind (λ x, ⦃simulate' so (ob x.1) x.2⦄) := eval_dist_simulate'_bind _ _ _ s
+lemma eval_dist_simulate'_bind' : ⁅simulate' so (bind' α β oa ob) s⁆ =
+  ⁅simulate so oa s⁆.bind (λ x, ⁅simulate' so (ob x.1) x.2⁆) := eval_dist_simulate'_bind _ _ _ s
 
-lemma eval_dist_simulate'_query : ⦃simulate' so (query i t) s⦄ = ⦃so i (t, s)⦄.map prod.fst :=
+lemma eval_dist_simulate'_query : ⁅simulate' so (query i t) s⁆ = ⁅so i (t, s)⁆.map prod.fst :=
 by simp only [simulate'_query, eval_dist_map]
 
 @[simp]
-lemma eval_dist_simulate'_map : ⦃simulate' so (f <$> oa) s⦄ = ⦃simulate' so oa s⦄.map f :=
+lemma eval_dist_simulate'_map : ⁅simulate' so (f <$> oa) s⁆ = ⁅simulate' so oa s⁆.map f :=
 by simp_rw [eval_dist_simulate', eval_dist_simulate_map, pmf.map_comp, prod.map_fst']
 
 end eval_dist
