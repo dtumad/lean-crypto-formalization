@@ -20,22 +20,19 @@ open oracle_comp oracle_spec
 variables {α β : Type} {spec spec' spec'' : oracle_spec}
   (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) (s : unit)
 
-def identity_oracle (spec : oracle_spec) : sim_oracle spec spec unit :=
-⟪query⟫
+@[inline, reducible]
+def identity_oracle (spec : oracle_spec) : sim_oracle spec spec unit := ⟪query⟫
 
--- TODO: should the notation take the `oracle_spec` as an arg?
 notation `idₛ` := identity_oracle _
 
 namespace identity_oracle
 
-@[simp]
-lemma apply (i : spec.ι) (t : spec.domain i) (s : unit) :
+@[simp] lemma apply (i : spec.ι) (t : spec.domain i) (s : unit) :
   (idₛ) i (t, s) = query i t >>= λ u, return (u, ()) := rfl
 
 section support
 
-@[simp]
-lemma support_apply (i : spec.ι) (t : spec.domain i) :
+@[simp] lemma support_apply (i : spec.ι) (t : spec.domain i) :
   ((idₛ) i (t, s)).support = {u | u.1 ∈ (query i t).support} :=
 begin
   simp only [apply, support_bind, support_return, set.Union_true,
@@ -44,30 +41,16 @@ begin
     ⟨x.1, prod.eq_iff_fst_eq_snd_eq.2 ⟨rfl, punit_eq () x.snd⟩⟩),
 end
 
-@[simp]
-theorem support_simulate : (simulate idₛ oa s).support = {x | x.1 ∈ oa.support} :=
-begin
-  induction oa with α a α β oa ob hoa hob i t generalizing s,
-  { ext x,
-    simp [prod.eq_iff_fst_eq_snd_eq, support_simulate_return,
-      punit_eq x.snd (), punit_eq () s] },
-  { ext x,    
-    simp only [hoa, hob, unique.exists_iff, bind'_eq_bind, simulate_bind, support_bind,
-      set.mem_set_of_eq, set.mem_Union, prod.exists] },
-  { rw [simulate_query, support_apply] }
-end
+@[simp] lemma support_simulate' : (simulate' idₛ oa s).support = oa.support :=
+stateless_oracle.support_simulate'_eq_support _ query s (λ _ _, rfl)
 
-lemma mem_support_simulate_iff (x : α × unit) :
+@[simp] theorem support_simulate : (simulate idₛ oa s).support = prod.fst ⁻¹' oa.support :=
+(stateless_oracle.support_simulate_eq_preimage_support_simulate' _ _ _).trans
+  (congr_arg _ $ support_simulate' oa ())
+
+@[simp] lemma mem_support_simulate_iff (x : α × unit) :
   x ∈ (simulate idₛ oa s).support ↔ x.1 ∈ oa.support :=
-by rw [support_simulate, set.mem_set_of]
-
-@[simp]
-lemma support_simulate' : (simulate' idₛ oa s).support = oa.support :=
-begin
-  ext x,
-  simp only [support_simulate', support_simulate, set.mem_image, set.mem_set_of_eq,
-    unique.exists_iff, prod.exists, exists_and_distrib_right, exists_eq_right],
-end
+by rw [support_simulate, set.mem_preimage]
 
 end support
 
