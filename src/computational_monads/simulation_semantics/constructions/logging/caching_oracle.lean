@@ -48,7 +48,7 @@ variables (oa oa' : oracle_comp spec α) (i : spec.ι) (t : spec.domain i) (u : 
 
 @[simp] lemma apply_eq : (caching_oracle spec) i (t, log) = option.rec_on (log.lookup i t)
   (query i t >>= λ u, return (u, log.log_query i t u)) (λ u, return (u, log)) :=
-by {simp only [caching_oracle, sim_oracle.has_coe_to_fun_def], induction log.lookup i t; refl }
+by {simp only [caching_oracle, sim_oracle.has_coe_to_fun.def], induction log.lookup i t; refl }
 
 lemma apply_eq_of_lookup_eq_none (hlog : log.lookup i t = none) :
   (caching_oracle spec) i (t, log) = (query i t >>= λ u, return (u, log.log_query i t u)) :=
