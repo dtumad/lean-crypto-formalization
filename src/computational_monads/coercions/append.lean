@@ -31,49 +31,6 @@ In particular we start with the basic finite oracles: `coin_spec ++ uniform_sele
 
 namespace oracle_comp
 
-section subset_test
-
-/-- Relation defining an inclusion of one set of oracles into another. -/
-class is_sub_spec (spec spec' : oracle_spec) :=
--- (index_map : spec.ι → spec'.ι)
--- (domain_map {i : spec.ι} : spec.domain i → spec'.domain (index_map i))
--- (range_wf (i : spec.ι) : spec.range i = spec'.range (index_map i))
-(to_fun (i : spec.ι) : spec.domain i → oracle_comp spec' (spec.range i))
-(support_to_fun : ∀ i t, (to_fun i t).support = (query i t).support)
-(eval_dist_to_fun : ∀ i t, ⁅to_fun i t⁆ = ⁅query i t⁆)
-
-infixl ` ⊂ₒ `:65 := is_sub_spec
-
-instance coe_sub_spec (spec spec' : oracle_spec) [h : spec ⊂ₒ spec'] (α : Type) :
-  has_coe (oracle_comp spec α) (oracle_comp spec' α) :=
-{ coe := default_simulate' ⟪λ i t, h.to_fun i t⟫ }
--- { coe := default_simulate' ⟪λ i t, begin
---    refine (h.range_wf i).symm.rec_on _,
---    refine query (h.index_map i) (h.domain_map t),
--- end⟫ }
-
-def is_sub_spec_append_right (spec spec' : oracle_spec) : spec ⊂ₒ (spec ++ spec') :=
-{
-  to_fun := λ i t, @query (spec ++ spec') (sum.inl i) t,
-  support_to_fun := begin
-    simp,
-  end,
-  eval_dist_to_fun := begin
-    intros i t,
-    refl,
-  end
-}
-
-@[simp] lemma support_coe_sub_spec (spec spec' : oracle_spec) [h : spec ⊂ₒ spec'] (α : Type)
-  (oa : oracle_comp spec α) : (↑oa : oracle_comp spec' α).support = oa.support :=
-begin
-  refine stateless_oracle.support_simulate'_eq_support _ _ () _,
-  intros i t,
-  sorry,
-end
-
-end subset_test
-
 open oracle_spec distribution_semantics 
 
 variables (spec spec' spec'' spec''' : oracle_spec)

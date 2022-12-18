@@ -153,6 +153,10 @@ end eval_dist
 
 section prob_event
 
+lemma prob_event_simulate'_eq_prob_event
+  (h : ∀ i t, ⁅o i t⁆ = pmf.uniform_of_fintype (spec.range i)) (e : set α) :
+  ⁅e | simulate' ⟪o⟫ oa s⁆ = ⁅e | oa⁆ :=
+prob_event_eq_of_eval_dist_eq (eval_dist_simulate'_eq_eval_dist oa o s h) e
 
 end prob_event
 
