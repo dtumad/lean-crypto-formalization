@@ -19,8 +19,6 @@ We define `simulate'` to be simulation followed by discarding the state.
 This is useful for things like a random oracle, where the final log isn't relevant in general.
 -/
 
-open_locale big_operators ennreal
-
 variables {α β γ : Type} {spec spec' spec'' : oracle_spec} {S S' : Type}
 
 /-- Specifies a way to simulate a set of oracles using another set of oracles. 
@@ -45,7 +43,7 @@ instance has_coe_to_fun : has_coe_to_fun (sim_oracle spec spec' S)
   (λ so, Π (i : spec.ι), spec.domain i × S → oracle_comp spec' (spec.range i × S)) :=
 { coe := λ so, so.o }
 
-lemma has_coe_to_fun_def (so : sim_oracle spec spec' S) (i : spec.ι)
+lemma has_coe_to_fun.def (so : sim_oracle spec spec' S) (i : spec.ι)
   (x : spec.domain i × S) : so i x = so.o i x := rfl
 
 def inhabited_state (so : sim_oracle spec spec' S) : inhabited S := ⟨so.default_state⟩
@@ -57,6 +55,7 @@ end sim_oracle
 
 namespace oracle_comp
 
+open_locale big_operators ennreal
 open oracle_spec distribution_semantics
 
 variables (so : sim_oracle spec spec' S) (so' : sim_oracle spec spec'' S')
@@ -79,30 +78,21 @@ Marked to be reduced and inlined, so the definition is essentially just notation
 def default_simulate (so : sim_oracle spec spec' S) (oa : oracle_comp spec α) :
   oracle_comp spec' (α × S) := simulate so oa so.default_state
 
--- TODO: seems like simp tags here get applied more eagerly, prob bad
--- Problem being that simp starts with inner most terms
--- Could also try using simp attributes to decide which simp lemmas to use
--- i.e. we should have a `unfold_simulate_simps`
--- On the other hand maybe this just indicates the lower level simp lemmas aren't goode enough
-@[simp]
-lemma simulate_return : simulate so (return a) s = return (a, s) := rfl
+@[simp] lemma simulate_return : simulate so (return a) s = return (a, s) := rfl
 
 lemma simulate_pure' : simulate so (pure' α a) s = return (a, s) := rfl
 
 lemma simulate_pure : simulate so (pure a) s = return (a, s) := rfl
 
-@[simp]
-lemma simulate_bind : simulate so (oa >>= ob) s =
+@[simp] lemma simulate_bind : simulate so (oa >>= ob) s =
   simulate so oa s >>= λ x, simulate so (ob x.1) x.2 := rfl
 
 lemma simulate_bind' : simulate so (bind' α β oa ob) s =
   simulate so oa s >>= λ x, simulate so (ob x.1) x.2 := rfl
 
-@[simp]
-lemma simulate_query : simulate so (query i t) s = so i (t, s) := rfl
+@[simp] lemma simulate_query : simulate so (query i t) s = so i (t, s) := rfl
 
-@[simp]
-lemma simulate_map : simulate so (f <$> oa) s = prod.map f id <$> simulate so oa s := rfl
+@[simp] lemma simulate_map : simulate so (f <$> oa) s = prod.map f id <$> simulate so oa s := rfl
 
 instance simulate.decidable [hoa : oa.decidable] [decidable_eq S]
   [h : ∀ i t s, (so i (t, s)).decidable] : (oa.simulate so s).decidable :=
@@ -130,7 +120,7 @@ lemma support_simulate_pure : (simulate so (pure a) s).support = {(a, s)} := rfl
 lemma support_simulate_bind : (simulate so (oa >>= ob) s).support =
   ⋃ x ∈ (simulate so oa s).support, (simulate so (ob $ prod.fst x) x.2).support := rfl
 
-lemma mem_support_simulate_bind (x : β × S) : x ∈ (simulate so (oa >>= ob) s).support ↔
+lemma mem_support_simulate_bind_iff (x : β × S) : x ∈ (simulate so (oa >>= ob) s).support ↔
   ∃ (a : α) (s' : S), (a, s') ∈ (simulate so oa s).support ∧ x ∈ (simulate so (ob a) s').support :=
 by simp_rw [support_simulate_bind, set.mem_Union, prod.exists, exists_prop]
 
@@ -144,6 +134,12 @@ lemma support_simulate_map : (simulate so (f <$> oa) s).support =
 
 end support
 
+section fin_support
+
+
+
+end fin_support
+
 section eval_dist
 
 lemma eval_dist_simulate_return : ⁅simulate so (return a) s⁆ = pmf.pure (a, s) := rfl
@@ -152,8 +148,7 @@ lemma eval_dist_simulate_pure' : ⁅simulate so (pure' α a) s⁆ = pmf.pure (a,
 
 lemma eval_dist_simulate_pure : ⁅simulate so (pure a) s⁆ = pmf.pure (a, s) := rfl
 
-@[simp]
-lemma eval_dist_simulate_bind : ⁅simulate so (oa >>= ob) s⁆ =
+@[simp] lemma eval_dist_simulate_bind : ⁅simulate so (oa >>= ob) s⁆ =
   (⁅simulate so oa s⁆).bind (λ x, ⁅simulate so (ob x.1) x.2⁆) :=
 (congr_arg _ $ simulate_bind so oa ob s).trans (eval_dist_bind _ _)
 
@@ -228,18 +223,15 @@ lemma simulate'_pure' : simulate' so (pure' α a) s = prod.fst <$> (return (a, s
 
 lemma simulate'_pure : simulate' so (pure a) s = prod.fst <$> (return (a, s)) := rfl
 
-@[simp]
-lemma simulate'_bind : simulate' so (oa >>= ob) s =
+@[simp] lemma simulate'_bind : simulate' so (oa >>= ob) s =
   prod.fst <$> (simulate so oa s >>= λ x, simulate so (ob x.1) x.2) := rfl
 
 lemma simulate'_bind' : simulate' so (bind' α β oa ob) s =
   prod.fst <$> (simulate so oa s >>= λ x, simulate so (ob x.1) x.2) := rfl
 
-@[simp]
-lemma simulate'_query : simulate' so (query i t) s = prod.fst <$> so i (t, s) := rfl
+@[simp] lemma simulate'_query : simulate' so (query i t) s = prod.fst <$> so i (t, s) := rfl
 
-@[simp]
-lemma simulate'_map : simulate' so (f <$> oa) s =
+@[simp] lemma simulate'_map : simulate' so (f <$> oa) s =
   prod.fst <$> (prod.map f id <$> simulate so oa s) := rfl
 
 instance simulate'.decidable [hoa : oa.decidable] [decidable_eq S]
@@ -279,8 +271,7 @@ support_simulate'_bind so oa ob s
 lemma support_simulate'_query : (simulate' so (query i t) s).support =
   prod.fst '' (so i (t, s)).support := by simp only [simulate'_query, support_map]
 
-@[simp] -- TODO: of why more specific simp lemmas are maybe better
-lemma support_simulate'_map : (simulate' so (f <$> oa) s).support =
+@[simp] lemma support_simulate'_map : (simulate' so (f <$> oa) s).support =
   f '' (simulate' so oa s).support :=
 by simp only [simulate', support_map, support_simulate_map, set.image_image, prod.map_fst]
 
