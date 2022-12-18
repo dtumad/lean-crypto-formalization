@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
 import computational_monads.simulation_semantics.simulate.basic
-import computational_monads.coercions.append
+import computational_monads.coercions.sub_spec
 
 /-!
 # Appending Simulation Oracles
@@ -111,19 +111,7 @@ lemma support_simulate'_coe_append_right (so : sim_oracle spec spec'' S)
   (so' : sim_oracle spec' spec'' S') (s : S × S') (oa : oracle_comp spec α) :
   (simulate' (so ++ₛ so') ↑oa s).support = (simulate' so oa s.1).support :=
 begin
-  rw [coe_append_right.def],
-  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t,
-  {
-    simp [coe_append_right.def],
-    rw [support_return],
-    simp,
-  },
-  {
-    sorry,
-  },
-  {
-    sorry,
-  }
+  sorry
 end
 
 -- GOALS:

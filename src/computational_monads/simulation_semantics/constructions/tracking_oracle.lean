@@ -22,7 +22,7 @@ In many cases this definition will be composed with an oracle with result depend
 but this construction allows seperation of the components that affect state independently.
 -/
 
-open oracle_comp oracle_spec
+open oracle_comp oracle_spec distribution_semantics
 
 variables {α β γ : Type} {spec spec' spec'': oracle_spec}
 
@@ -130,10 +130,6 @@ by simp only [fin_support_eq_iff_support_eq_coe, apply_eq, support_map,
 
 end fin_support
 
-section distribution_semantics
-
-open distribution_semantics
-
 section eval_dist
 
 @[simp] lemma eval_dist_apply :
@@ -201,7 +197,5 @@ theorem prob_event_simulate'_eq_eval_dist_simulate'_of_oracle_eq :
 prob_event_simulate'_eq_prob_event_simulate' o o _ _ _ _ oa s s' e (λ _ _, rfl)
 
 end prob_event
-
-end distribution_semantics
 
 end tracking_oracle

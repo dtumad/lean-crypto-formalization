@@ -16,7 +16,7 @@ This is used for example in coercing from a computation with one set of oracles
 to one with some superset of those oracles, using the simulation function to pass upwards.
 -/
 
-open oracle_comp oracle_spec
+open oracle_comp oracle_spec distribution_semantics
 
 variables {α β : Type} {spec spec' spec'' : oracle_spec}
 
@@ -36,21 +36,23 @@ variables (oa : oracle_comp spec α)
   (o : Π (i : spec.ι), spec.domain i → oracle_comp spec' (spec.range i))
   (o' : Π (i : spec.ι), spec.domain i → oracle_comp spec'' (spec.range i))
   (i : spec.ι) (t : spec.domain i) (s s' : unit) (u : spec.range i)
+  (x : spec.domain i × unit) (y : spec.range i × unit)
 
-@[simp] lemma apply_eq : ⟪o⟫ i (t, s) = o i t >>= λ u, return (u, ()) := rfl
+@[simp] lemma apply_eq : ⟪o⟫ i x = o i x.1 >>= λ u, return (u, ()) := by {cases x, refl}
 
 instance decidable [∀ i x, (o i x).decidable] (x : spec.domain i × unit) : (⟪o⟫ i x).decidable :=
 tracking_oracle.decidable o _ _ i x
 
 section support
 
-lemma support_apply : (⟪o⟫ i (t, s)).support = prod.fst ⁻¹' (o i t).support :=
+lemma support_apply : (⟪o⟫ i x).support = prod.fst ⁻¹' (o i x.1).support :=
 by simp only [apply_eq, support_bind_prod_mk_of_snd_subsingleton, set.image_id']
 
-lemma mem_support_apply_iff : (u, s') ∈ (⟪o⟫ i (t, s)).support ↔ u ∈ (o i t).support :=
-by simp only [apply_eq, support_bind, support_return, set.mem_Union, set.mem_singleton_iff,
-  prod.mk.inj_iff, eq_iff_true_of_subsingleton, and_true, exists_prop, exists_eq_right']
+lemma mem_support_apply_iff : y ∈ (⟪o⟫ i (t, s)).support ↔ y.1 ∈ (o i t).support :=
+by cases y; simp only [apply_eq, support_bind, support_return, set.mem_Union, prod.mk.inj_iff,
+  set.mem_singleton_iff, eq_iff_true_of_subsingleton, and_true, exists_prop, exists_eq_right']
 
+/-- If the oracle function can take on any possible output, simulation doesn't affect `support`. -/
 lemma support_simulate'_eq_support (h : ∀ i t, (o i t).support = ⊤) :
   (simulate' ⟪o⟫ oa s).support = oa.support :=
 tracking_oracle.support_simulate'_eq_support o _ _ oa s h
@@ -59,6 +61,8 @@ lemma support_simulate'_eq_support_simulate' (h : ∀ i t, (o i t).support = (o'
   (simulate' ⟪o⟫ oa s).support = (simulate' ⟪o'⟫ oa s').support :=
 tracking_oracle.support_simulate'_eq_support_simulate' o o' _ _ () () oa s s' h
 
+/-- The `support` of `simulate` is the preimage of the support of `simulate'`,
+as there is only one possible internal state for the oracle. -/
 lemma support_simulate_eq_preimage_support_simulate' :
   (simulate ⟪o⟫ oa s).support = prod.fst ⁻¹' (default_simulate' ⟪o⟫ oa).support :=
 by simp only [default_simulate', punit_eq ⟪o⟫.default_state s, simulate', support_map,
@@ -69,98 +73,80 @@ lemma support_simulate_eq_support_simulate (h : ∀ i t, (o i t).support = (o' i
 support_simulate_eq_support_simulate_of_subsingleton oa ⟪o⟫ ⟪o'⟫ s s'
   (λ i t, by rw [support_apply, support_apply, h])
 
-@[simp] lemma mem_support_simulate_iff (x : α × unit) :
-  x ∈ (simulate ⟪o⟫ oa s).support ↔ x.1 ∈ (default_simulate' ⟪o⟫ oa).support :=
+@[simp] lemma mem_support_simulate_iff (y : α × unit) :
+  y ∈ (simulate ⟪o⟫ oa s).support ↔ y.1 ∈ (default_simulate' ⟪o⟫ oa).support :=
 by rw [support_simulate_eq_preimage_support_simulate', set.mem_preimage]
 
 end support
 
 section fin_support
 
--- TODO: this should generalize I think?
-lemma fin_support_apply [∀ i x, (o i x).decidable]
-  (i : spec.ι) (t : spec.domain i) (s : unit) (x : spec.range i × unit) :
-  (⟪o⟫ i (t, s)).fin_support = finset.preimage (o i t).fin_support prod.fst
-    (λ y hy z hz h, prod.eq_iff_fst_eq_snd_eq.2 ⟨h, punit_eq _ _⟩) :=
-begin
-  sorry,
-end
+variable [∀ i x, (o i x).decidable]
 
-lemma mem_fin_support_apply [∀ i x, (o i x).decidable]
-  (i : spec.ι) (t : spec.domain i) (s : unit) (x : spec.range i × unit) :
-  x ∈ (⟪o⟫ i (t, s)).fin_support ↔ x.1 ∈ (o i t).fin_support :=
+-- TODO: this should generalize I think?
+lemma fin_support_apply : (⟪o⟫ i x).fin_support = finset.preimage (o i t).fin_support prod.fst
+  (λ y hy z hz h, prod.eq_iff_fst_eq_snd_eq.2 ⟨h, punit_eq _ _⟩) :=
+sorry
+
+lemma mem_fin_support_apply : y ∈ (⟪o⟫ i x).fin_support ↔ y.1 ∈ (o i x.1).fin_support :=
 sorry
 
 end fin_support
 
-section distribution_semantics
-
-open distribution_semantics
-
 section eval_dist
 
-lemma eval_dist_apply : ⁅⟪o⟫ i (t, s)⁆ = ⁅o i t⁆.map (λ u, (u, ())) :=
-eval_dist_bind_return (o i t) (λ u, (u, ()))
+lemma eval_dist_apply : ⁅⟪o⟫ i x⁆ = ⁅o i x.1⁆.map (λ u, (u, ())) :=
+by rw [apply_eq, eval_dist_bind_return]
 
+/-- If the oracle responds uniformly to queries, then simulation doesn't affect `eval_dist`. -/
 lemma eval_dist_simulate'_eq_eval_dist
   (h : ∀ i t, ⁅o i t⁆ = pmf.uniform_of_fintype (spec.range i)) : ⁅simulate' ⟪o⟫ oa s⁆ = ⁅oa⁆ :=
 tracking_oracle.eval_dist_simulate'_eq_eval_dist o _ _ oa s h
 
--- TODO: put <$> in equiv versions, derive from `eval_dist` fact
-lemma simulate_equiv_simulate' (s : unit) :
-  simulate ⟪o⟫ oa s ≃ₚ (simulate' ⟪o⟫ oa s >>= λ a, return (a, ())) :=
-sorry
--- calc simulate ⟪o⟫ oa s ≃ₚ simulate ⟪o⟫ oa s >>= return : symm (eval_dist_bind_return _)
---   ... ≃ₚ simulate ⟪o⟫ oa s >>= λ x, return (x.1, x.2) : by simp only [prod.mk.eta]
---   ... ≃ₚ simulate ⟪o⟫ oa s >>= λ x, return (x.1, ()) : 
---     eval_dist_bind_eq_of_eval_dist_eq _ (λ x, by simp [punit_eq x.snd ()])
---   ... ≃ₚ simulate' ⟪o⟫ oa s >>= λ a, return (a, ()) : by rw [simulate', bind_map_equiv]
+lemma eval_dist_simulate'_eq_eval_dist_simulate' (h : ∀ i t, ⁅o i t⁆ = ⁅o' i t⁆) :
+  ⁅simulate' ⟪o⟫ oa s⁆ = ⁅simulate' ⟪o'⟫ oa s'⁆ :=
+tracking_oracle.eval_dist_simulate'_eq_eval_dist_simulate' o o' _ _ _ _ oa s s' h
 
-lemma simulate'_equiv_of_oracle_equiv
-  {o : Π (i : spec.ι), spec.domain i → oracle_comp spec' (spec.range i)}
-  {o' : Π (i : spec.ι), spec.domain i → oracle_comp spec'' (spec.range i)}
-  (s : unit) (h : ∀ (i : spec.ι) (t : spec.domain i), o i t ≃ₚ o' i t) :
-  simulate' ⟪o⟫ oa s ≃ₚ simulate' ⟪o'⟫ oa s :=
-begin
-  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t generalizing s,
-  sorry, sorry, sorry
-  -- { simp only [simulate'_return, map_return_equiv, eval_dist_return] },
-  -- { calc simulate' ⟪o⟫ (oa >>= ob) s
-  --     ≃ₚ simulate ⟪o⟫ oa s >>= λ x, simulate' ⟪o⟫ (ob x.1) x.2 :
-    --simulate'_bind_equiv ⟪o⟫ oa ob _
-  --     ... ≃ₚ simulate ⟪o'⟫ oa s >>= λ x, simulate' ⟪o'⟫ (ob x.1) x.2 : begin
-  --       simp [simulate_equiv_simulate', hoa],
-  --       -- congr,
-  --       simpa [hob],
-  --     end
-  --     ... ≃ₚ simulate' ⟪o'⟫ (oa >>= ob) s : symm (simulate'_bind_equiv ⟪o'⟫ oa ob _) },
-  -- { simp_rw [simulate'_query_equiv, stateless_oracle.apply_eq, fst_map_bind_mk_equiv],
-  --   exact map_equiv_of_equiv _ (h i t), },
-end 
+/-- The `eval_dist` of `simulate` is the result of mapping the `eval_dist` of `simulate'`
+under the map adding on a default `()` value for the internal state. -/
+lemma eval_dist_simulate_eq_map_eval_dist_simulate' :
+  ⁅simulate ⟪o⟫ oa s⁆ = ⁅simulate' ⟪o⟫ oa s⁆.map (λ x, (x, ())) :=
+by simp only [eval_dist_simulate_eq_map_eval_dist_simulate'_of_subsingleton, punit_eq s ()]
 
-lemma simulate'_query_equiv (s : unit) :
-  simulate' ⟪query⟫ oa s ≃ₚ oa :=
-tracking_oracle.eval_dist_simulate'_query_eq_eval_dist _ _ oa s
+lemma eval_dist_simulate_eq_eval_dist_simulate (h : ∀ i t, ⁅o i t⁆ = ⁅o' i t⁆) :
+  ⁅simulate ⟪o⟫ oa s⁆ = ⁅simulate ⟪o'⟫ oa s'⁆ :=
+by simp only [eval_dist_simulate_eq_map_eval_dist_simulate',
+  eval_dist_simulate'_eq_eval_dist_simulate' oa o o' s s' h]
 
-lemma simulate'_query_equiv_of_equiv (s : unit)
-  (ho : ∀ (i : spec.ι) (t : spec.domain i), o i t ≃ₚ query i t) :
-  simulate' ⟪o⟫ oa s ≃ₚ oa :=
-calc simulate' ⟪o⟫ oa s ≃ₚ simulate' ⟪query⟫ oa s
-    : simulate'_equiv_of_oracle_equiv oa s ho
-  ... ≃ₚ oa : simulate'_query_equiv oa s
+lemma eval_dist_simulate_apply_eq_eval_dist_simulate'_apply (x : α × unit) :
+  ⁅simulate ⟪o⟫ oa s⁆ x = ⁅simulate' ⟪o⟫ oa s⁆ x.1 :=
+eval_dist_simulate_apply_eq_eval_dist_simulate'_apply_of_subsingleton ⟪o⟫ oa s x
 
 end eval_dist
 
 section prob_event
 
+lemma prob_event_apply (e : set $ spec.range i × unit) :
+  ⁅e | ⟪o⟫ i x⁆ = ⁅(λ x, (x, ())) ⁻¹' e | o i x.1⁆ :=
+by rw [apply_eq, prob_event_bind_return]
+
+/-- If the oracle function responds uniformly, then simulation doesn't affect `prob_event`. -/
 lemma prob_event_simulate'_eq_prob_event
   (h : ∀ i t, ⁅o i t⁆ = pmf.uniform_of_fintype (spec.range i)) (e : set α) :
   ⁅e | simulate' ⟪o⟫ oa s⁆ = ⁅e | oa⁆ :=
 prob_event_eq_of_eval_dist_eq (eval_dist_simulate'_eq_eval_dist oa o s h) e
 
-end prob_event
+lemma prob_event_simulate'_eq_prob_event_simulate' (h : ∀ i t, ⁅o i t⁆ = ⁅o' i t⁆) (e : set α) :
+  ⁅e | simulate' ⟪o⟫ oa s⁆ = ⁅e | simulate' ⟪o'⟫ oa s'⁆ :=
+prob_event_eq_of_eval_dist_eq (eval_dist_simulate'_eq_eval_dist_simulate' oa o o' s s' h) e
 
-end distribution_semantics
+lemma prob_event_simulate (e : set $ α × unit) :
+  ⁅e | simulate ⟪o⟫ oa s⁆ = ⁅prod.fst '' e | simulate' ⟪o⟫ oa s⁆ :=
+begin
+  sorry
+end
+
+end prob_event
 
 end stateless_oracle
 
@@ -221,7 +207,8 @@ lemma simulate'_equiv_of_equiv (h : ∀ i t, o i t ≃ₚ o' i t) :
     simulate' ⟪o' | update_state', default_state'⟫ oa s' :=
 calc simulate' ⟪o | update_state, default_state⟫ oa s
   ≃ₚ simulate' ⟪o⟫ oa () : simulate'_equiv_stateless_oracle o update_state default_state s oa
-  ... ≃ₚ simulate' ⟪o'⟫ oa () : stateless_oracle.simulate'_equiv_of_oracle_equiv oa () h
+  ... ≃ₚ simulate' ⟪o'⟫ oa () :
+    stateless_oracle.eval_dist_simulate'_eq_eval_dist_simulate' _ _ _ _ _ h
   ... ≃ₚ simulate' ⟪o' | update_state', default_state'⟫ oa s' :
     symm (simulate'_equiv_stateless_oracle o' update_state' default_state' _ _)
 
