@@ -68,10 +68,10 @@ def hhs_signature (G X M : Type) (n : ℕ) [fintype G] [fintype X] [inhabited G]
   do{ (h : vector bool n) ← query₂ () (retrieve_commits x₀ pk σ, m),
       return (h = σ.map prod.snd) },
   random_oracle_spec := ((vector X n × M) ↦ₒ vector bool n),
-  random_oracle_spec_finite_range := singleton_spec.finite_range _ _,
   decidable_eq_M := by apply_instance,
   decidable_eq_S := by apply_instance,
-  inhabited_S := by apply_instance }
+  inhabited_S := by apply_instance,
+  fintype_S := by apply_instance }
 
 namespace hhs_signature 
 

@@ -47,8 +47,7 @@ end support
 
 section fin_support
 
-variables [decidable_eq α] [decidable_eq β]
-  [finite_range spec] [decidable oa] [decidable ob]
+variables [decidable_eq α] [decidable_eq β] [decidable oa] [decidable ob]
 
 @[simp] lemma fin_support_prod : (oa ×ₘ ob).fin_support = oa.fin_support ×ˢ ob.fin_support :=
 by simp only [fin_support_eq_iff_support_eq_coe, support_prod,
@@ -63,8 +62,6 @@ end fin_support
 section distribution_semantics
 
 open distribution_semantics
-
-variable [spec.finite_range]
 
 section eval_dist
 

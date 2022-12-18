@@ -25,14 +25,14 @@ namespace distribution_semantics
 open oracle_comp oracle_spec
 open_locale big_operators ennreal
 
-variables {α β γ : Type} {spec : oracle_spec} [finite_range spec]
+variables {α β γ : Type} {spec : oracle_spec}
 
 /- Big step semantics for a computation with finite range oracles
 The result of queries is assumed to be uniform over the oracle's codomain,
   independent of the given domain values in each query.
 Usually the `spec` when calling this would just be `coin_oracle` or `uniform_selecting`,
 However it can be any more general things as well, e.g. a dice rolling oracle -/
-noncomputable def eval_dist {spec : oracle_spec} [h : spec.finite_range] :
+noncomputable def eval_dist {spec : oracle_spec} :
   Π {α : Type} (oa : oracle_comp spec α), pmf α
 | _ (pure' α a) := pmf.pure a
 | _ (bind' α β oa ob) := pmf.bind (eval_dist oa) (λ a, eval_dist $ ob a)
@@ -42,10 +42,6 @@ noncomputable def eval_dist {spec : oracle_spec} [h : spec.finite_range] :
 notation `⁅` oa `⁆` := eval_dist oa
 
 notation oa ` ≃ₚ ` oa' := ⁅oa⁆ = ⁅oa'⁆
-
--- variables (a : α) (oa oa' : oracle_comp spec α) (ob ob' : α → oracle_comp spec β)
---   (oc oc' : α → β → oracle_comp spec γ) (i : spec.ι) (t : spec.domain i) (u : spec.range i)
---   (f : α → β) (g : β → γ) (x x' : α) (y y' : β) (z z' : γ)
 
 section support
 

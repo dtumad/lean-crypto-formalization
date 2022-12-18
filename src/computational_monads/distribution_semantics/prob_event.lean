@@ -21,7 +21,7 @@ namespace distribution_semantics
 open oracle_comp oracle_spec
 open_locale big_operators ennreal
 
-variables {α β γ : Type} {spec spec' : oracle_spec} [finite_range spec] [finite_range spec']
+variables {α β γ : Type} {spec spec' : oracle_spec}
 
 /-- Probability of a predicate holding after running a particular experiment.
 Defined in terms of the outer measure associated to the corresponding `pmf` by `eval_dist`. -/
@@ -162,7 +162,7 @@ by simp only [prob_event.def, eval_dist_bind, pmf.to_outer_measure_bind_apply]
 lemma prob_event_bind_eq_sum [fintype α] : ⁅e' | oa >>= ob⁆ = ∑ x, ⁅oa⁆ x * ⁅e' | ob x⁆ :=
 by simpa only [prob_event_bind_eq_tsum] using tsum_eq_sum (λ x hx, (hx $ finset.mem_univ x).elim)
 
-lemma prob_event_bind_eq_sum_fin_support [spec.finite_range] [oa.decidable] :
+lemma prob_event_bind_eq_sum_fin_support [oa.decidable] :
   ⁅e' | oa >>= ob⁆ = ∑ x in oa.fin_support, ⁅oa⁆ x * ⁅e' | ob x⁆ :=
 (prob_event_bind_eq_tsum oa ob e').trans (tsum_eq_sum (λ x hx,
   by rw [eval_dist_eq_zero_of_not_mem_fin_support hx, zero_mul]))
@@ -173,7 +173,7 @@ prob_event_bind_eq_tsum oa ob e'
 lemma prob_event_bind'_eq_sum [fintype α] : ⁅e' | bind' α β oa ob⁆ = ∑ x, ⁅oa⁆ x * ⁅e' | ob x⁆ :=
 prob_event_bind_eq_sum oa ob e'
 
-lemma prob_event_bind'_eq_sum_fin_support [spec.finite_range] [oa.decidable] :
+lemma prob_event_bind'_eq_sum_fin_support [oa.decidable] :
   ⁅e' | bind' α β oa ob⁆ = ∑ x in oa.fin_support, ⁅oa⁆ x * ⁅e' | ob x⁆ :=
 prob_event_bind_eq_sum_fin_support oa ob e'
 

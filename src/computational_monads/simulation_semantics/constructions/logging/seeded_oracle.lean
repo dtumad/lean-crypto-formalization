@@ -50,8 +50,8 @@ end simulate
 section eval_dist
 
 -- Log and run, run from seed, return original output -> looks like just logging
-lemma eval_dist_seeded_oracle_fst [spec.finite_range]
-  (oa : oracle_comp spec α) (i : spec.ι) (choose_fork : α → query_log spec → option ℕ) :
+lemma eval_dist_seeded_oracle_fst (oa : oracle_comp spec α) (i : spec.ι)
+  (choose_fork : α → query_log spec → option ℕ) :
 ⁅do{ ⟨a, log⟩ ← simulate (logging_oracle spec) oa (query_log.init spec),
       seed ← return (log.fork_cache i $ choose_fork a log).to_seed,
       ⟨a', log'⟩ ← simulate (seeded_oracle spec) oa seed,
@@ -60,8 +60,8 @@ lemma eval_dist_seeded_oracle_fst [spec.finite_range]
 sorry
 
 -- Log and run, run from seed, return new output -> looks like just logging
-lemma eval_dist_seeded_oracle_snd [spec.finite_range]
-  (oa : oracle_comp spec α) (i : spec.ι) (choose_fork : α → query_log spec → option ℕ) :
+lemma eval_dist_seeded_oracle_snd (oa : oracle_comp spec α) (i : spec.ι)
+  (choose_fork : α → query_log spec → option ℕ) :
 ⁅do{ ⟨a, log⟩ ← simulate (logging_oracle spec) oa (query_log.init spec),
       seed ← return (log.fork_cache i $ choose_fork a log).to_seed,
       ⟨a', log'⟩ ← simulate (seeded_oracle spec) oa (seed),
@@ -70,8 +70,8 @@ lemma eval_dist_seeded_oracle_snd [spec.finite_range]
 sorry
 
 -- The log values match up until the point where the log was forked
-lemma seeded_oracle_log_eq_log [spec.finite_range]
-  (oa : oracle_comp spec α) (i : spec.ι) (choose_fork : α → query_log spec → option ℕ) :
+lemma seeded_oracle_log_eq_log (oa : oracle_comp spec α) (i : spec.ι)
+  (choose_fork : α → query_log spec → option ℕ) :
 do{ ⟨a, log⟩ ← simulate (logging_oracle spec) oa (query_log.init spec),
     seed ← return (log.fork_cache i $ choose_fork a log).to_seed,
     ⟨a', log'⟩ ← simulate (seeded_oracle spec) oa (seed),

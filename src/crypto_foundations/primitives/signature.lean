@@ -45,9 +45,10 @@ structure signature :=
 (decidable_eq_S : decidable_eq S)
 -- There exists at least one signature (in particular we can define a signing oracle)
 (inhabited_S : inhabited S)
+-- There are a finite number of possible signatures
+(fintype_S : fintype S)
 -- Random oracles for the algorithms, with finite ranges and computablity requirements.
 (random_oracle_spec : oracle_spec)
-(random_oracle_spec_finite_range : random_oracle_spec.finite_range)
 -- The actual algorithms of the signature scheme.
 (gen : unit → oracle_comp (uniform_selecting ++ random_oracle_spec) (PK × SK))
 (sign : PK × SK × M → oracle_comp (uniform_selecting ++ random_oracle_spec) S)
@@ -63,14 +64,13 @@ variable (sig : signature)
 
 section oracle_instances
 
-instance random_oracle_spec.finite_range : sig.random_oracle_spec.finite_range :=
-sig.random_oracle_spec_finite_range
-
 instance decidable_eq_S' : decidable_eq sig.S := sig.decidable_eq_S
 
 instance decidable_eq_M' : decidable_eq sig.M := sig.decidable_eq_M
 
 instance inhabited_S' : inhabited sig.S := sig.inhabited_S
+
+instance fintype_S' : fintype sig.S := sig.fintype_S
 
 end oracle_instances
 
@@ -78,7 +78,7 @@ section oracles
 
 /-- Shorthand for the combination of the `uniform_selecting` oracle and the `random_oracles`,
   i.e. the oracles available to the signature algorithms themselves -/
-@[reducible, inline, derive finite_range]
+@[reducible, inline]
 def base_oracle_spec (sig : signature) : oracle_spec :=
 uniform_selecting ++ sig.random_oracle_spec
 

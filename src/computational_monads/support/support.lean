@@ -130,7 +130,7 @@ by simp only [support_map_bind, set.mem_Union, set.mem_image, exists_prop]
 end map
 
 /-- If the range of `spec` is a `fintype` then the support is a finite set. -/
-theorem support_finite [spec.finite_range] (oa : oracle_comp spec α) : oa.support.finite :=
+theorem support_finite (oa : oracle_comp spec α) : oa.support.finite :=
 begin
   induction oa with α a α β oa ob hoa hob i t,
   { exact set.finite_singleton a },
@@ -138,7 +138,7 @@ begin
   { exact set.finite_univ }
 end
 
-noncomputable instance support.fintype [spec.finite_range] (oa : oracle_comp spec α) :
+noncomputable instance support.fintype (oa : oracle_comp spec α) :
   fintype oa.support := (support_finite oa).fintype
 
 /-- Since the range of oracles in an `oracle_spec` are required to be nonempty,

@@ -78,8 +78,7 @@ end support
 section fin_support
 
 -- TODO: this should generalize I think?
-lemma fin_support_apply [spec'.finite_range]
-  [∀ i x, (o i x).decidable]
+lemma fin_support_apply [∀ i x, (o i x).decidable]
   (i : spec.ι) (t : spec.domain i) (s : unit) (x : spec.range i × unit) :
   (⟪o⟫ i (t, s)).fin_support = finset.preimage (o i t).fin_support prod.fst
     (λ y hy z hz h, prod.eq_iff_fst_eq_snd_eq.2 ⟨h, punit_eq _ _⟩) :=
@@ -87,8 +86,7 @@ begin
   sorry,
 end
 
-lemma mem_fin_support_apply [spec'.finite_range]
-  [∀ i x, (o i x).decidable]
+lemma mem_fin_support_apply [∀ i x, (o i x).decidable]
   (i : spec.ι) (t : spec.domain i) (s : unit) (x : spec.range i × unit) :
   x ∈ (⟪o⟫ i (t, s)).fin_support ↔ x.1 ∈ (o i t).fin_support :=
 sorry
@@ -101,15 +99,15 @@ open distribution_semantics
 
 section eval_dist
 
-lemma eval_dist_apply [spec'.finite_range] : ⁅⟪o⟫ i (t, s)⁆ = ⁅o i t⁆.map (λ u, (u, ())) :=
+lemma eval_dist_apply : ⁅⟪o⟫ i (t, s)⁆ = ⁅o i t⁆.map (λ u, (u, ())) :=
 eval_dist_bind_return (o i t) (λ u, (u, ()))
 
-lemma eval_dist_simulate'_eq_eval_dist [spec.finite_range] [spec'.finite_range]
+lemma eval_dist_simulate'_eq_eval_dist
   (h : ∀ i t, ⁅o i t⁆ = pmf.uniform_of_fintype (spec.range i)) : ⁅simulate' ⟪o⟫ oa s⁆ = ⁅oa⁆ :=
 tracking_oracle.eval_dist_simulate'_eq_eval_dist o _ _ oa s h
 
 -- TODO: put <$> in equiv versions, derive from `eval_dist` fact
-lemma simulate_equiv_simulate' [spec'.finite_range] (s : unit) :
+lemma simulate_equiv_simulate' (s : unit) :
   simulate ⟪o⟫ oa s ≃ₚ (simulate' ⟪o⟫ oa s >>= λ a, return (a, ())) :=
 sorry
 -- calc simulate ⟪o⟫ oa s ≃ₚ simulate ⟪o⟫ oa s >>= return : symm (eval_dist_bind_return _)
@@ -118,7 +116,7 @@ sorry
 --     eval_dist_bind_eq_of_eval_dist_eq _ (λ x, by simp [punit_eq x.snd ()])
 --   ... ≃ₚ simulate' ⟪o⟫ oa s >>= λ a, return (a, ()) : by rw [simulate', bind_map_equiv]
 
-lemma simulate'_equiv_of_oracle_equiv [spec'.finite_range] [spec''.finite_range] 
+lemma simulate'_equiv_of_oracle_equiv
   {o : Π (i : spec.ι), spec.domain i → oracle_comp spec' (spec.range i)}
   {o' : Π (i : spec.ι), spec.domain i → oracle_comp spec'' (spec.range i)}
   (s : unit) (h : ∀ (i : spec.ι) (t : spec.domain i), o i t ≃ₚ o' i t) :
@@ -140,11 +138,11 @@ begin
   --   exact map_equiv_of_equiv _ (h i t), },
 end 
 
-lemma simulate'_query_equiv [spec.finite_range] (s : unit) :
+lemma simulate'_query_equiv (s : unit) :
   simulate' ⟪query⟫ oa s ≃ₚ oa :=
 tracking_oracle.eval_dist_simulate'_query_eq_eval_dist _ _ oa s
 
-lemma simulate'_query_equiv_of_equiv [spec.finite_range] [spec'.finite_range] (s : unit)
+lemma simulate'_query_equiv_of_equiv (s : unit)
   (ho : ∀ (i : spec.ι) (t : spec.domain i), o i t ≃ₚ query i t) :
   simulate' ⟪o⟫ oa s ≃ₚ oa :=
 calc simulate' ⟪o⟫ oa s ≃ₚ simulate' ⟪query⟫ oa s
@@ -189,9 +187,8 @@ section distribution_semantics
 open distribution_semantics
 
 /-- The first output of a tracking oracle is equivalent to using just the stateless oracle -/
-theorem simulate'_equiv_stateless_oracle [spec'.finite_range] :
-  simulate' ⟪o | update_state, default_state⟫ oa s ≃ₚ
-    simulate' ⟪o⟫ oa () :=
+theorem simulate'_equiv_stateless_oracle :
+  simulate' ⟪o | update_state, default_state⟫ oa s ≃ₚ simulate' ⟪o⟫ oa () :=
 begin
   sorry
   -- induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t generalizing s,
@@ -215,7 +212,7 @@ begin
 end
 
 /-- The first ouptput of a tracking oracle is indepenedent of the actual tracking functions -/
-lemma simulate'_equiv_of_equiv [spec'.finite_range] (h : ∀ i t, o i t ≃ₚ o' i t) :
+lemma simulate'_equiv_of_equiv (h : ∀ i t, o i t ≃ₚ o' i t) :
   simulate' ⟪o | update_state, default_state⟫ oa s ≃ₚ
     simulate' ⟪o' | update_state', default_state'⟫ oa s' :=
 calc simulate' ⟪o | update_state, default_state⟫ oa s

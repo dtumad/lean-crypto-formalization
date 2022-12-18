@@ -141,8 +141,6 @@ section distribution_semantics
 
 open distribution_semantics
 
-variable [spec''.finite_range]
-
 section eval_dist
 
 end eval_dist

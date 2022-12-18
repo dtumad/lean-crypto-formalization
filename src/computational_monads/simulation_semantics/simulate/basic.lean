@@ -146,8 +146,6 @@ section distribution_semantics
 
 open distribution_semantics
 
-variable [spec'.finite_range]
-
 section eval_dist
 
 lemma eval_dist_simulate_return : ⁅simulate so (return a) s⁆ = pmf.pure (a, s) := rfl
@@ -271,8 +269,6 @@ end support
 section distribution_semantics
 
 open distribution_semantics
-
-variable [spec'.finite_range]
 
 section eval_dist
 

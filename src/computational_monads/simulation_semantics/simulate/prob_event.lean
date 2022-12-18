@@ -22,7 +22,7 @@ variables (so : sim_oracle spec spec' S) (so' : sim_oracle spec spec'' S')
   (a : α) (i : spec.ι) (t : spec.domain i) (oa oa' : oracle_comp spec α)
   (ob ob' : α → oracle_comp spec β) (s : S) (f : α → β)
 
-lemma prob_event_simulate_eq_induction [spec'.finite_range]
+lemma prob_event_simulate_eq_induction
   {pr_e : Π (α : Type), oracle_comp spec α → S → set (α × S) → ℝ≥0}
   (so : sim_oracle spec spec' S) (oa : oracle_comp spec α) (s : S)
   -- (h_ret : ∀ α a s, pr α (return a) s = pmf.pure (a, s))

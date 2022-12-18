@@ -100,8 +100,6 @@ section distribution_semantics
 
 open distribution_semantics
 
-variable [spec.finite_range]
-
 /-- The probability of getting `xs` after `oa.repeat n` is the product of the probability
 of getting each individual output, since each computation runs independently. -/
 @[simp] lemma eval_dist_repeat_apply [decidable_eq α] :

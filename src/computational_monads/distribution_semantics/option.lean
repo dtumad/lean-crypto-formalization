@@ -14,7 +14,6 @@ General lemmas about probability computations involving `option`
 namespace distribution_semantics
 
 variables {α β γ : Type} {spec spec' : oracle_spec}
-variable [spec.finite_range]
 
 section eval_dist
 

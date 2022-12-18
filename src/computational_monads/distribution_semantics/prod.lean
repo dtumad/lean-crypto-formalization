@@ -17,7 +17,7 @@ open oracle_spec distribution_semantics
 open_locale big_operators ennreal
 
 
-variables {α β γ δ : Type} {spec spec' : oracle_spec} [finite_range spec] [finite_range spec']
+variables {α β γ δ : Type} {spec spec' : oracle_spec}
 
 section eval_dist
 

@@ -25,8 +25,6 @@ open_locale big_operators nnreal ennreal
 variables {α β γ ι : Type} {spec spec' : oracle_spec} 
   (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) (a a' : α)
   (e e' : set α) (e'' : set β)
-variable [spec.finite_range]
-variable [spec'.finite_range]
 
 section indep_events
 

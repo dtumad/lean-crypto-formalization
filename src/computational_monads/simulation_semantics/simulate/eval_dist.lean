@@ -24,8 +24,7 @@ variables (so : sim_oracle spec spec' S) (so' : sim_oracle spec spec'' S')
 
 /-- Lemma for inductively proving the support of a simulation is a specific function of the input.
 Often this is simpler than induction on the computation itself, especially the case of `bind` -/
-lemma eval_dist_simulate_eq_induction [spec'.finite_range]
-  {pr : Π (α : Type), oracle_comp spec α → S → (pmf (α × S))}
+lemma eval_dist_simulate_eq_induction {pr : Π (α : Type), oracle_comp spec α → S → (pmf (α × S))}
   (so : sim_oracle spec spec' S) (oa : oracle_comp spec α) (s : S)
   (h_ret : ∀ α a s, pr α (return a) s = pmf.pure (a, s))
   (h_bind : ∀ α β (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) s,
@@ -42,7 +41,7 @@ end
 /-- Lemma for inductively proving that the distribution associated to a simulation
 is a specific function. Gives more explicit criteria than induction on the computation.
 In particular this automatically splits the cases for `return` and the `prod` in the `bind` sum. -/
-lemma eval_dist_simulate_apply_eq_induction [spec'.finite_range]
+lemma eval_dist_simulate_apply_eq_induction
   {pr : Π (α : Type), oracle_comp spec α → S → α × S → ℝ≥0∞}
   (so : sim_oracle spec spec' S) (oa : oracle_comp spec α) (s : S) (a : α) (s' : S)
   (h_ret : ∀ α a s, pr α (return a) s (a, s) = 1)
@@ -67,7 +66,7 @@ end
 
 /-- If the first result of oracle queries is uniformly distributed,
 then the distribution under `simulate'` is unchanged. -/
-theorem eval_dist_simulate'_eq_eval_dist [spec.finite_range] [spec'.finite_range]
+theorem eval_dist_simulate'_eq_eval_dist
   (h : ∀ i t s, ⁅so i (t, s)⁆.map prod.fst = pmf.uniform_of_fintype (spec.range i)) :
   ⁅simulate' so oa s⁆ = ⁅oa⁆ :=
 begin
@@ -82,7 +81,7 @@ begin
   { simp only [h, simulate'_query, eval_dist_map, eval_dist_query] }
 end
 
-theorem eval_dist_simulate'_eq_eval_dist_simulate' [spec'.finite_range] [spec''.finite_range]
+theorem eval_dist_simulate'_eq_eval_dist_simulate'
   {so : sim_oracle spec spec' S} {so' : sim_oracle spec spec'' S'}
   (h : ∀ i t s s', ⁅so i (t, s)⁆.map prod.fst = ⁅so' i (t, s')⁆.map prod.fst)
   (oa : oracle_comp spec α) (s : S) (s' : S') :

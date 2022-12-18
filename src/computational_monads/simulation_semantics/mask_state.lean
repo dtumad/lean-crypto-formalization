@@ -106,17 +106,11 @@ end support
 
 section fin_support
 
-variables [finite_range spec'] [decidable oa]
-
-
-
 end fin_support
 
 section distribution_semantics
 
 open distribution_semantics
-
-variable [spec'.finite_range]
 
 section eval_dist
 

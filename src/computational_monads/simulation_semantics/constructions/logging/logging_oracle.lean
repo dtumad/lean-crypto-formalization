@@ -56,8 +56,6 @@ section distribution_semantics
 
 open distribution_semantics
 
-variable [spec.finite_range]
-
 section eval_dist
 
 @[simp] lemma eval_dist_simulate' : ⁅simulate' (logging_oracle spec) oa log⁆ = ⁅oa⁆ :=

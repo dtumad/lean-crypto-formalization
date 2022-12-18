@@ -16,13 +16,13 @@ by responding uniformly at random to any query.
 
 open oracle_comp oracle_spec ennreal
 
-variables {α β : Type} {spec : oracle_spec} [finite_range spec]
+variables {α β : Type} {spec : oracle_spec}
 
-noncomputable def uniform_oracle (spec : oracle_spec) [spec.finite_range] : 
+noncomputable def uniform_oracle (spec : oracle_spec) : 
   sim_oracle spec uniform_selecting unit :=
 ⟪λ i t, $ᵗ (spec.range i)⟫
 
-lemma uniform_oracle.def (spec : oracle_spec) [spec.finite_range] :
+lemma uniform_oracle.def (spec : oracle_spec) :
   uniform_oracle spec = ⟪λ i t, $ᵗ (spec.range i)⟫ := rfl
 
 namespace uniform_oracle
