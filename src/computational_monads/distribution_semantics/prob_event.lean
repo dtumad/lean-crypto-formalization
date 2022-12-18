@@ -124,8 +124,9 @@ variables (a : α) (e : set α)
   ⁅e | (return a : oracle_comp spec α)⁆ = ite (a ∈ e) 1 0 :=
 by { simp only [prob_event.def, eval_dist_return, pmf.to_outer_measure_pure_apply], congr }
 
-lemma prob_event_return_eq_indicator [decidable_pred e] : ⁅e | (return a : oracle_comp spec α)⁆ =
-  e.indicator (λ _, 1) a := by simp only [prob_event_return, set.indicator_apply]
+lemma prob_event_return_eq_indicator :
+  ⁅e | (return a : oracle_comp spec α)⁆ = e.indicator (λ _, 1) a := 
+by rw [prob_event.def, eval_dist_return, pmf.to_outer_measure_pure_apply, set.indicator]
 
 lemma prob_event_pure' [decidable_pred e] :
   ⁅e | (pure' α a : oracle_comp spec α)⁆ = ite (a ∈ e) 1 0 :=

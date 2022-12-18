@@ -19,7 +19,7 @@ We define `simulate'` to be simulation followed by discarding the state.
 This is useful for things like a random oracle, where the final log isn't relevant in general.
 -/
 
-open_locale nnreal ennreal
+open_locale big_operators ennreal
 
 variables {α β γ : Type} {spec spec' spec'' : oracle_spec} {S S' : Type}
 
@@ -57,6 +57,8 @@ end sim_oracle
 
 namespace oracle_comp
 
+open oracle_spec distribution_semantics
+
 variables (so : sim_oracle spec spec' S) (so' : sim_oracle spec spec'' S')
   (a : α) (i : spec.ι) (t : spec.domain i) (oa oa' : oracle_comp spec α)
   (ob ob' : α → oracle_comp spec β) (s : S) (f : α → β)
@@ -73,7 +75,7 @@ def simulate {spec spec' : oracle_spec} (so : sim_oracle spec spec' S) :
 
 /-- Convenience definition to use the default state as the initial state for `simulate`.
 Marked to be reduced and inlined, so the definition is essentially just notation. -/
-@[inline, reducible]
+@[inline, reducible, simp]
 def default_simulate (so : sim_oracle spec spec' S) (oa : oracle_comp spec α) :
   oracle_comp spec' (α × S) := simulate so oa so.default_state
 
@@ -142,10 +144,6 @@ lemma support_simulate_map : (simulate so (f <$> oa) s).support =
 
 end support
 
-section distribution_semantics
-
-open distribution_semantics
-
 section eval_dist
 
 lemma eval_dist_simulate_return : ⁅simulate so (return a) s⁆ = pmf.pure (a, s) := rfl
@@ -171,17 +169,42 @@ lemma eval_dist_simulate_map : ⁅simulate so (f <$> oa) s⁆ =
 /-- Write the `eval_dist` of a simulation as a double summation over the possible
 intermediate outputs and states of the computation. -/
 lemma eval_dist_simulate_bind_apply_eq_tsum_tsum (x : β × S) : ⁅simulate so (oa >>= ob) s⁆ x =
-  ∑' (a : α) (s' : S), ⁅simulate so oa s⁆ (a, s') * ⁅simulate so (ob a) s'⁆ x :=
+  ∑' a s', ⁅simulate so oa s⁆ (a, s') * ⁅simulate so (ob a) s'⁆ x :=
 by rw [simulate_bind, eval_dist_prod_bind]
+
+lemma eval_dist_simulate_bind_apply_eq_sum_sum [fintype α] [fintype S] (x : β × S) :
+  ⁅simulate so (oa >>= ob) s⁆ x = ∑ a s', ⁅simulate so oa s⁆ (a, s') * ⁅simulate so (ob a) s'⁆ x :=
+by simp only [simulate_bind, eval_dist_bind_apply_eq_sum, ← @finset.sum_product ℝ≥0∞ S α _
+  finset.univ finset.univ (λ y, ⁅simulate so oa s⁆ (y.1, y.2) * ⁅simulate so (ob y.1) y.2⁆ x),
+  finset.univ_product_univ, prod.mk.eta]
 
 end eval_dist
 
 section prob_event
 
+lemma prob_event_simulate_return (e : set (α × S)) :
+  ⁅e | simulate so (return a) s⁆ = e.indicator (λ _, 1) (a, s) :=
+prob_event_return_eq_indicator (a, s) e
+
+lemma prob_event_simulate_bind_eq_tsum_tsum (e : set (β × S)) : ⁅e | simulate so (oa >>= ob) s⁆ =
+  ∑' a s', ⁅simulate so oa s⁆ (a, s') * ⁅e | simulate so (ob a) s'⁆ :=
+by simp_rw [simulate_bind, prob_event_bind_eq_tsum, ← ennreal.tsum_prod, prod.mk.eta]
+
+lemma prob_event_simulate_bind_eq_sum_sum [fintype α] [fintype S] (e : set (β × S)) :
+  ⁅e | simulate so (oa >>= ob) s⁆ =
+    ∑ a s', ⁅simulate so oa s⁆ (a, s') * ⁅e | simulate so (ob a) s'⁆ :=
+by simp only [simulate_bind, prob_event_bind_eq_sum, ← @finset.sum_product ℝ≥0∞ S α _ finset.univ
+  finset.univ (λ x, ⁅simulate so oa s⁆ (x.1, x.2) * ⁅e | simulate so (ob x.1) x.2⁆),
+  finset.univ_product_univ, prod.mk.eta]
+
+lemma prob_event_simulate_query (e : set (spec.range i × S)) :
+  ⁅e | simulate so (query i t) s⁆ = ⁅e | so i (t, s)⁆ := rfl
+
+lemma prob_event_simulate_map (e : set (β × S)) :
+  ⁅e | simulate so (f <$> oa) s⁆ = ⁅prod.map f id ⁻¹' e | simulate so oa s⁆ :=
+by rw [simulate_map, prob_event_map]
 
 end prob_event
-
-end distribution_semantics
 
 end simulate
 
@@ -199,9 +222,7 @@ def default_simulate' (so : sim_oracle spec spec' S) (oa : oracle_comp spec α) 
 
 lemma simulate'_def : simulate' so oa s = prod.fst <$> oa.simulate so s := rfl
 
--- TODO: these especially might be weird with simp lemmas? again maybe a lower level problem though
-@[simp]
-lemma simulate'_return : simulate' so (return a) s = prod.fst <$> (return (a, s)) := rfl
+@[simp] lemma simulate'_return : simulate' so (return a) s = prod.fst <$> (return (a, s)) := rfl
 
 lemma simulate'_pure' : simulate' so (pure' α a) s = prod.fst <$> (return (a, s)) := rfl
 
@@ -247,8 +268,7 @@ support_simulate'_return so s a
 lemma support_simulate'_pure (a : α) : (simulate' so (pure a) s).support = {a} :=
 support_simulate'_return so s a
 
-@[simp]
-lemma support_simulate'_bind : (simulate' so (oa >>= ob) s).support =
+@[simp] lemma support_simulate'_bind : (simulate' so (oa >>= ob) s).support =
   ⋃ x ∈ (simulate so oa s).support, (simulate' so (ob $ prod.fst x) x.snd).support :=
 by simp [set.image_Union]
 
@@ -266,20 +286,14 @@ by simp only [simulate', support_map, support_simulate_map, set.image_image, pro
 
 end support
 
-section distribution_semantics
-
-open distribution_semantics
-
 section eval_dist
 
-@[simp]
-lemma eval_dist_simulate' : ⁅simulate' so oa s⁆ = ⁅simulate so oa s⁆.map prod.fst :=
+@[simp] lemma eval_dist_simulate' : ⁅simulate' so oa s⁆ = ⁅simulate so oa s⁆.map prod.fst :=
 eval_dist_map _ prod.fst
 
 /-- Express the probability of `simulate'` returning a specific value
 as the sum over all possible output states of the probability of `simulate` return it -/
-lemma eval_dist_simulate'_apply :
-  ⁅simulate' so oa s⁆ a = ∑' (s' : S), ⁅simulate so oa s⁆ (a, s') :=
+lemma eval_dist_simulate'_apply : ⁅simulate' so oa s⁆ a = ∑' s', ⁅simulate so oa s⁆ (a, s') :=
 begin
   rw [eval_dist_simulate', pmf.map_apply],
   refine (tsum_prod_eq_tsum_snd a $ λ s a' ha', _).trans (tsum_congr (λ s', _)),
@@ -312,20 +326,51 @@ lemma eval_dist_simulate'_bind' : ⁅simulate' so (bind' α β oa ob) s⁆ =
 lemma eval_dist_simulate'_query : ⁅simulate' so (query i t) s⁆ = ⁅so i (t, s)⁆.map prod.fst :=
 by simp only [simulate'_query, eval_dist_map]
 
-@[simp]
-lemma eval_dist_simulate'_map : ⁅simulate' so (f <$> oa) s⁆ = ⁅simulate' so oa s⁆.map f :=
+@[simp] lemma eval_dist_simulate'_map : ⁅simulate' so (f <$> oa) s⁆ = ⁅simulate' so oa s⁆.map f :=
 by simp_rw [eval_dist_simulate', eval_dist_simulate_map, pmf.map_comp, prod.map_fst']
 
 end eval_dist
 
 section prob_event
 
+lemma prob_event_simulate' (e : set α) :
+  ⁅e | simulate' so oa s⁆ = ⁅prod.fst ⁻¹' e | simulate so oa s⁆ :=
+by rw [simulate', prob_event_map]
+
+lemma prob_event_simulate'_return_eq_indicator (e : set α) :
+  ⁅e | simulate' so (return a) s⁆ = e.indicator (λ _, 1) a :=
+begin
+  rw [prob_event_simulate', prob_event_simulate_return],
+  by_cases ha : a ∈ e,
+  { have : (a, s) ∈ (prod.fst ⁻¹' e : set (α × S)) := ha,
+    rw [set.indicator_of_mem ha, set.indicator_of_mem this] },
+  { have : (a, s) ∉ (prod.fst ⁻¹' e : set (α × S)) := ha,
+    rw [set.indicator_of_not_mem ha, set.indicator_of_not_mem this] }
+end
+
+lemma prob_event_simulate'_return_eq_ite (e : set α) [decidable_pred (∈ e)] :
+  ⁅e | simulate' so (return a) s⁆ = ite (a ∈ e) 1 0 :=
+by {rw [prob_event_simulate'_return_eq_indicator, set.indicator], congr}
+
+lemma prob_event_simulate'_bind_eq_tsum_tsum (e : set β) : ⁅e | simulate' so (oa >>= ob) s⁆ =
+  ∑' a s', ⁅simulate so oa s⁆ (a, s') * ⁅e | simulate' so (ob a) s'⁆ :=
+by simp_rw [prob_event_simulate', prob_event_simulate_bind_eq_tsum_tsum]
+
+lemma prob_event_simulate'_bind_eq_sum_sum [fintype α] [fintype S] (e : set β) :
+  ⁅e | simulate' so (oa >>= ob) s⁆ =
+    ∑ a s', ⁅simulate so oa s⁆ (a, s') * ⁅e | simulate' so (ob a) s'⁆ :=
+by simp_rw [prob_event_simulate', prob_event_simulate_bind_eq_sum_sum]
+
+lemma prob_event_simulate'_query (e : set (spec.range i)) :
+  ⁅e | simulate' so (query i t) s⁆ = ⁅prod.fst ⁻¹' e | so i (t, s)⁆ :=
+by rw [prob_event_simulate', prob_event_simulate_query]
+
+lemma prob_event_simulate'_map (e : set β) :
+  ⁅e | simulate' so (f <$> oa) s⁆ = ⁅(f ∘ prod.fst) ⁻¹' e | simulate so oa s⁆ :=
+by simpa only [prob_event_simulate', prob_event_simulate_map, ← set.preimage_comp]
 
 end prob_event
 
-end distribution_semantics
-
 end simulate'
-
 
 end oracle_comp
