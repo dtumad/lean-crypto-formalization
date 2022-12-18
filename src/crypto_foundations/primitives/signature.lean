@@ -4,12 +4,11 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
 import computational_monads.simulation_semantics.constructions.logging.random_oracle
-import computational_monads.coercions.sub_spec
 import computational_monads.simulation_semantics.constructions.identity_oracle
+import computational_monads.simulation_semantics.oracle_append
 import computational_monads.asymptotics.polynomial_time
 import computational_monads.asymptotics.negligable
 import computational_monads.asymptotics.queries_at_most
-import computational_monads.simulation_semantics.oracle_append
 
 /-!
 # Cryptographic Signature Schemes

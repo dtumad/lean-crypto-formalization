@@ -4,9 +4,9 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
 import computational_monads.simulation_semantics.simulate.support
-import computational_monads.support.prod
 import computational_monads.simulation_semantics.simulate.eval_dist
- 
+import computational_monads.support.prod
+
 /-!
 # Tracking Simulation Oracle
 
@@ -21,8 +21,6 @@ For simplicity the update state function rather than having oracle access.
 In many cases this definition will be composed with an oracle with result depending on the state,
 but this construction allows seperation of the components that affect state independently.
 -/
-
-open oracle_comp oracle_spec distribution_semantics
 
 variables {α β γ : Type} {spec spec' spec'': oracle_spec}
 
@@ -43,6 +41,9 @@ notation `⟪` o `|` update_state `,` default_state `⟫` :=
   tracking_oracle o update_state default_state
 
 namespace tracking_oracle
+
+open_locale big_operators ennreal
+open oracle_comp oracle_spec distribution_semantics
 
 variables {S S' : Type} (o : Π (i : spec.ι), spec.domain i → oracle_comp spec' (spec.range i))
   (o' : Π (i : spec.ι), spec.domain i → oracle_comp spec'' (spec.range i))
@@ -140,7 +141,7 @@ by rw [apply_eq, eval_dist_map]
 theorem eval_dist_simulate'_eq_eval_dist
   (h : ∀ i t, ⁅o i t⁆ = pmf.uniform_of_fintype (spec.range i)) :
   ⁅simulate' ⟪o | update_state, default_state⟫ oa s⁆ = ⁅oa⁆ :=
-eval_dist_simulate'_eq_eval_dist _ oa s (λ i t s, trans 
+eval_dist_simulate'_eq_eval_dist _ oa s (λ i t s, trans
   (by simpa [eval_dist_apply, pmf.map_comp] using pmf.map_id ⁅o i t⁆) (h i t))
 
 /-- Specific case of `eval_dist_simulate'_eq_eval_dist` for query.

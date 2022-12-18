@@ -11,7 +11,10 @@ import computational_monads.coercions.sim_oracle
 /-!
 # Hard Homogeneous Spaces
 
-This file builds up the definition of a hard homogeneous space.
+This file builds up the definition of a hard homogeneous space, an extension of a group action
+on some set such that the action of each group element defines a bijection.
+We use mathlib's `add_torsor` type class to represent the bijection property,
+and further extend this with various assumptions about run times of computations.
 
 `algorithmic_homogeneous_space` requires the group operations to be efficiently computable.
 `hard_homogeneous_space` further requires vectorization and parallelization are hard.
@@ -31,7 +34,7 @@ class algorithmic_homogenous_space (G X : Type) [fintype G] [fintype X]
 (poly_time_eq_X : poly_time (λ x, x.1 = x.2 : X × X → bool))
 (poly_time_rnd_G : poly_time_oracle_comp (λ (_ : unit), $ᵗ G)) 
 
-section computational_advantages
+namespace algorithmic_homogenous_space
 
 variables {G X : Type} [fintype G] [fintype X] [decidable_eq G] [decidable_eq X]
   [add_group G] [algorithmic_homogenous_space G X]
@@ -90,7 +93,9 @@ noncomputable def advantage (adversary : adversary G X) : ℝ≥0∞ :=
 
 end parallelization
 
-end computational_advantages
+end algorithmic_homogenous_space
+
+open algorithmic_homogenous_space
 
 /-- A `hard_homogenous_space` is a -/
 class hard_homogenous_space (G X : ℕ → Type) [∀ n, fintype $ G n] [∀ n, fintype $ X n]

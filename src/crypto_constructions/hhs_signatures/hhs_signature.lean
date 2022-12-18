@@ -73,7 +73,7 @@ def hhs_signature (G X M : Type) (n : ℕ) [fintype G] [fintype X] [inhabited G]
   inhabited_S := by apply_instance,
   fintype_S := by apply_instance }
 
-namespace hhs_signature 
+namespace hhs_signature
 
 variables {G X M : Type} [fintype G] [fintype X] [inhabited G] [inhabited X]
   [decidable_eq G] [decidable_eq X] [decidable_eq M]
@@ -371,10 +371,12 @@ calc ⁅fork_success | fork (forking_adversary_reduction pk x₀ adversary)⁆
     end
   ... ≥ (adversary.advantage ^ 2 / (adversary.query_bound)) - (1 / 2 ^ n) :
     sorry
-  
+
 end fork_reduction
 
 section vectorization_reduction
+
+open algorithmic_homogenous_space
 
 def vectorization_of_signatures (σ σ' : vector (G × bool) n) : G :=
 (σ.to_list.zip σ'.to_list).foldr (λ ⟨⟨g₀, b⟩, ⟨g₁, b'⟩⟩ g,
@@ -437,7 +439,7 @@ calc (vectorization_adversary_reduction adversary).advantage
       have : (↑(fintype.card X) : nnreal) ^ 2 ≠ 0 := sorry,
       sorry,
       -- erw [inv_mul_cancel this, one_mul],
-    end 
+    end
 
 end vectorization_reduction
 
@@ -458,6 +460,8 @@ def hhs_signature_scheme (G X : ℕ → Type) (M : Type)
 namespace hhs_signature_scheme
 
 section unforgeable
+
+open algorithmic_homogenous_space
 
 variables (G X : ℕ → Type) (M : Type)
   [∀ n, fintype $ G n] [∀ n, fintype $ X n] [∀ n, inhabited $ G n] [∀ n, inhabited $ X n]
