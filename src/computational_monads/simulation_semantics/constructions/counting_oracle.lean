@@ -33,9 +33,12 @@ section support
 
 @[simp] lemma support_apply (i : spec.ι) (x : spec.domain i × ℕ) :
   (counting_oracle spec i x).support = {y | x.2 + 1 = y.2} :=
-sorry
--- by simp only [counting_oracle, tracking_oracle.support_apply,
---   support_query, set.top_eq_univ, set.mem_univ, true_and]
+begin
+  refine trans (tracking_oracle.support_apply query _ 0 i x) _,
+  ext x,
+  simp only [prod.eq_iff_fst_eq_snd_eq, support_query, set.top_eq_univ, set.image_univ,
+    set.mem_range, exists_eq_left, set.mem_set_of_eq],
+end
 
 end support
 

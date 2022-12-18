@@ -17,9 +17,8 @@ This file builds up the definition of a hard homogeneous space.
 `hard_homogeneous_space` further requires vectorization and parallelization are hard.
 -/
 
-open_locale nnreal ennreal
-
-open oracle_comp oracle_spec
+open_locale big_operators ennreal 
+open oracle_comp oracle_spec distribution_semantics
 
 /-- An `algorithmic_homogenous_space` is a homogenous space where operations are all `poly_time`.
   Uses mathlib's definition of an `add_torsor`, which is a bijective group action -/
@@ -46,23 +45,31 @@ namespace vectorization_adversary
 /-- Analogue of Discrete-logarithm asumption game -/
 noncomputable def experiment (adversary : vectorization_adversary G X) :
   oracle_comp uniform_selecting bool :=
-do { x₁ ←$ᵗ X, x₂ ←$ᵗ X, g ← adversary.adv (x₁, x₂), return (g = x₁ -ᵥ x₂) }
+do {x₁ ←$ᵗ X, x₂ ←$ᵗ X, g ← adversary.adv (x₁, x₂), return (g = x₁ -ᵥ x₂)}
 
 /-- Vectorization advantage of an adversary in the vectorization experiment. -/
 noncomputable def advantage (adversary : vectorization_adversary G X) : ℝ≥0∞ :=
-⁅ (=) tt | experiment adversary ⁆
+⁅(=) tt | experiment adversary⁆
 
+/-- The adversary's advantage at vectorization is the average over all possible pairs of points
+of their advantage at vectorizing those specific points. -/
 lemma advantage_eq_tsum (adversary : vectorization_adversary G X) : adversary.advantage =
   (∑' x₁ x₂, ⁅(=) (x₁ -ᵥ x₂) | adversary.adv (x₁, x₂)⁆) / (fintype.card X) ^ 2 :=
-begin
-  rw [advantage, experiment, prob_event_uniform_select_fintype_apply_bind],
-  
-  -- refine tsum_congr (λ x₁, _),
-  -- rw [prob_event_uniform_select_fintype_apply_bind],
-  -- simp_rw [div_eq_mul_inv, ← nnreal.tsum_mul_right],
-  -- refine tsum_congr (λ x₂, _),
-  sorry,
-end
+calc adversary.advantage = ⁅(=) tt | experiment adversary⁆ : rfl
+  ... = ⁅experiment adversary⁆ tt : by rw [prob_event_eq_eq_eval_dist]
+  ... = ((fintype.card X)⁻¹ ^ 2) * (∑' x₁ x₂, ⁅adversary.adv (x₁, x₂)⁆ (x₁ -ᵥ x₂)) :
+  begin
+    simp only [experiment, eval_dist_bind_apply_eq_tsum ($ᵗ X), pow_two, ← mul_assoc,
+      eval_dist_uniform_select_fintype_apply, ennreal.tsum_mul_left],
+    refine congr_arg (λ x, _ * x) (tsum_congr (λ x₁, tsum_congr (λ x₂, _))),
+    refine (eval_dist_bind_return_apply_eq_single (adversary.adv (x₁, x₂)) _ (x₁ -ᵥ x₂) tt) _ _,
+    { simp only [ne.def, bool.tt_eq_to_bool_iff, imp_self, forall_const] },
+    { simp only [eq_self_iff_true, to_bool_true_eq_tt] }
+  end
+  ... = (∑' x₁ x₂, ⁅adversary.adv (x₁, x₂)⁆ (x₁ -ᵥ x₂)) / (fintype.card X) ^ 2 :
+    by rw [div_eq_mul_inv, ennreal.inv_pow, mul_comm]
+  ... = (∑' x₁ x₂, ⁅(=) (x₁ -ᵥ x₂) | adversary.adv (x₁, x₂)⁆) / (fintype.card X) ^ 2 :
+    by simp_rw [prob_event_eq_eq_eval_dist]
 
 end vectorization_adversary
 

@@ -69,7 +69,8 @@ begin
   induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i' t' generalizing s,
   { rw [support_simulate_return, set.mem_singleton_iff] at hx,
     exact hx.symm ▸ hs },
-  { rw [mem_support_simulate_bind] at hx,
+  { 
+    rw [mem_support_simulate_bind_iff] at hx,
     obtain ⟨a, s', ha, ha'⟩ := hx,
     exact hob a x s' (hoa (a, s') s hs ha) ha' },
   { exact hso i' t' s x hx hs }

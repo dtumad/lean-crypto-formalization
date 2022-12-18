@@ -75,15 +75,15 @@ instance fintype_S' : fintype sig.S := sig.fintype_S
 
 end oracle_instances
 
-section oracles
+section oracle_spec
 
 /-- Shorthand for the combination of the `uniform_selecting` oracle and the `random_oracles`,
   i.e. the oracles available to the signature algorithms themselves -/
 @[reducible, inline]
-def base_oracle_spec (sig : signature) : oracle_spec :=
-uniform_selecting ++ sig.random_oracle_spec
+def base_oracle_spec (sig : signature) : oracle_spec := uniform_selecting ++ sig.random_oracle_spec
 
-/-- Simulate the basic oracles for the signature, using a random oracle in the natural way -/
+/-- Simulate the basic oracles for the signature, using `random_oracle` to simulate the
+random oracle and preserving the `uniform_selecting` oracle as is. -/
 noncomputable def base_oracle (sig : signature) :
   sim_oracle sig.base_oracle_spec uniform_selecting (query_log sig.random_oracle_spec) :=
 sim_oracle.mask_state (idₛ ++ₛ random_oracle sig.random_oracle_spec)
@@ -91,8 +91,7 @@ sim_oracle.mask_state (idₛ ++ₛ random_oracle sig.random_oracle_spec)
 
 /-- A signing oracle corresponding to a given signature scheme -/
 @[reducible, inline]
-def signing_oracle_spec (sig : signature) [inhabited sig.S] : oracle_spec :=
-(sig.M ↦ₒ sig.S)
+def signing_oracle_spec (sig : signature) [inhabited sig.S] : oracle_spec := sig.M ↦ₒ sig.S
 
 /-- Simulate a computation with access to a `signing_oracle_spec` to one with `base_oracle_spec`,
   using the provided public/secret keys to answer queries for signatures.
@@ -102,7 +101,7 @@ def signing_oracle (sig : signature) (pk : sig.PK) (sk : sig.SK) :
 sim_oracle.mask_state (⟪λ _ m, sig.sign (pk, sk, m)⟫ ∘ₛ (logging_oracle (sig.M ↦ₒ sig.S)))
   (equiv.prod_punit (query_log (signing_oracle_spec sig)))
 
-end oracles
+end oracle_spec
 
 section complete
 
@@ -111,18 +110,29 @@ section complete
   and the uniform selection oracle just forwards its query on. -/
 noncomputable def completeness_experiment (sig : signature) (m : sig.M) :
   oracle_comp uniform_selecting bool :=
-default_simulate' sig.base_oracle 
-  (do {(pk, sk) ← sig.gen (), σ ← sig.sign (pk, sk, m), sig.verify (pk, m, σ)})
+default_simulate' sig.base_oracle (do {
+  (pk, sk) ← sig.gen (),
+  σ ← sig.sign (pk, sk, m),
+  sig.verify (pk, m, σ)
+})
 
-@[simp]
-lemma support_completeness_experiment (m : sig.M) :
-  (completeness_experiment sig m).support = ⋃ (pk : sig.PK) (sk : sig.SK) (σ : sig.S)
-    (log log' : query_log sig.random_oracle_spec)
-    (hk : ((pk, sk), log) ∈ (default_simulate sig.base_oracle $ sig.gen ()).support)
-    (hσ : (σ, log') ∈ (simulate sig.base_oracle (sig.sign (pk, sk, m)) log).support),
-      (simulate' sig.base_oracle (sig.verify (pk, m, σ)) log').support :=
+lemma completeness_experiment.def (m : sig.M) : sig.completeness_experiment m = default_simulate'
+  sig.base_oracle (do {k ← sig.gen (), σ ← sig.sign (k.1, k.2, m), sig.verify (k.1, m, σ)}) :=
 begin
   sorry
+end
+
+@[simp] lemma support_completeness_experiment (m : sig.M) :
+  (completeness_experiment sig m).support = ⋃ (pk : sig.PK) (sk : sig.SK) (σ : sig.S)
+    (cache cache' : query_log sig.random_oracle_spec)
+    (hk : ((pk, sk), cache) ∈ (default_simulate sig.base_oracle $ sig.gen ()).support)
+    (hσ : (σ, cache') ∈ (simulate sig.base_oracle (sig.sign (pk, sk, m)) cache).support),
+      (simulate' sig.base_oracle (sig.verify (pk, m, σ)) cache').support :=
+begin
+  ext x,
+  simp only [completeness_experiment.def, default_simulate',
+    support_simulate'_bind, set.mem_Union],
+  sorry,
 end
 
 /-- Signature is complete if for any possible message, the generated signature is valid,
@@ -179,7 +189,7 @@ do{ ((m, s), _, log) ← (default_simulate (idₛ ++ₛ signing_oracle sig pk sk
 noncomputable def experiment (sig : signature) (adversary : unforgeable_adversary sig) :
   oracle_comp uniform_selecting bool :=
 default_simulate' (idₛ ++ₛ random_oracle sig.random_oracle_spec)
-(do{ (pk, sk) ← sig.gen (),
+(do { (pk, sk) ← sig.gen (),
       (m, σ, log) ← adversary.simulate pk sk,
       b ← sig.verify (pk, m, σ),
       return (if log.not_queried () m then b else ff) })

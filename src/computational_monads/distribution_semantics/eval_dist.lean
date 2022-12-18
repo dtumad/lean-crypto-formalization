@@ -213,9 +213,13 @@ by { rw [eval_dist_bind_return, pmf.map_apply], exact (tsum_congr $ λ _, by con
 
 lemma eval_dist_bind_return_apply_eq_tsum_preimage :
   ⁅oa >>= λ x, return (f x)⁆ y = ∑' x, (f ⁻¹' {y}).indicator ⁅oa⁆ x :=
-sorry
--- by { rw [eval_dist_bind_return, pmf.map_apply], exact (tsum_congr $ λ _, by congr) }
-
+begin
+  rw [eval_dist_bind_return, pmf.map_apply],
+  refine tsum_congr (λ x, _),
+  split_ifs with hx,
+  { simp only [hx, set.indicator_of_mem, set.mem_preimage, set.mem_singleton] },
+  { refine (set.indicator_of_not_mem (by simpa using ne.symm hx) _).symm }
+end
 
 lemma eval_dist_bind_return_apply_eq_sum [fintype α] [decidable_eq β] :
   ⁅oa >>= λ x, return (f x)⁆ y = ∑ x, ite (y = f x) (⁅oa⁆ x) 0 :=
@@ -229,6 +233,15 @@ lemma eval_dist_bind_return_apply_eq_sum_fin_support [decidable_eq β] [oa.decid
 
 @[simp] lemma eval_dist_bind_return_id : ⁅oa >>= return⁆ = ⁅oa⁆ :=
 (eval_dist_bind_return oa id).trans (by rw [pmf.map_id])
+
+lemma eval_dist_bind_return_apply_eq_single (hx : ∀ x' ≠ x, y ≠ f x') (hy : y = f x) :
+  ⁅oa >>= λ x, return (f x)⁆ y = ⁅oa⁆ x :=
+begin
+  rw [eval_dist_bind_return, pmf.map_apply],
+  refine (tsum_eq_single x $ λ x' hx', _).trans (by rw [hy, eq_self_iff_true, if_true]),
+  rw [ite_eq_right_iff],
+  exact λ hy', (hx x' hx' hy').elim,
+end
 
 end bind
 
