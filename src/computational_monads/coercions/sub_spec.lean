@@ -57,7 +57,7 @@ by simp only [fin_support_eq_iff_support_eq_coe, finset.top_eq_univ,
 
 @[simp] lemma eval_dist_to_fun (i : spec.ι) (t : spec.domain i) :
   ⁅h.to_fun i t⁆ = pmf.uniform_of_fintype (spec.range i) :=
-by rw [h.eval_dist_to_fun', eval_dist_query] 
+by rw [h.eval_dist_to_fun', eval_dist_query]
 
 @[simp] lemma prob_event_to_fun (i : spec.ι) (t : spec.domain i) (e : set (spec.range i)) :
   ⁅e | h.to_fun i t⁆ = ⁅e | query i t⁆ :=
@@ -84,7 +84,7 @@ simulate'.decidable _ oa ()
 @[simp] lemma support_coe_sub_spec (oa : oracle_comp spec α) :
   (↑oa : oracle_comp spec' α).support = oa.support :=
 stateless_oracle.support_simulate'_eq_support _ _ ()
-  (λ i t, is_sub_spec.support_to_fun spec spec' i t)  
+  (λ i t, is_sub_spec.support_to_fun spec spec' i t)
 
 @[simp] lemma fin_support_coe_sub_spec [∀ i t, (@is_sub_spec.to_fun spec spec' _ i t).decidable]
   (oa : oracle_comp spec α) [oa.decidable] :
@@ -94,12 +94,12 @@ by rw [fin_support_eq_fin_support_iff_support_eq_support, support_coe_sub_spec]
 @[simp] lemma eval_dist_coe_sub_spec (oa : oracle_comp spec α) :
   ⁅(↑oa : oracle_comp spec' α)⁆ = ⁅oa⁆ :=
 stateless_oracle.eval_dist_simulate'_eq_eval_dist _ _ ()
-  (λ i t, is_sub_spec.eval_dist_to_fun spec spec' i t)  
+  (λ i t, is_sub_spec.eval_dist_to_fun spec spec' i t)
 
 @[simp] lemma prob_event_coe_sub_spec (oa : oracle_comp spec α) (e : set α) :
   ⁅e | (↑oa : oracle_comp spec' α)⁆ = ⁅e | oa⁆ :=
 stateless_oracle.prob_event_simulate'_eq_prob_event _ _ ()
-  (λ i t, is_sub_spec.eval_dist_to_fun spec spec' i t) e  
+  (λ i t, is_sub_spec.eval_dist_to_fun spec spec' i t) e
 
 end oracle_comp
 
@@ -269,7 +269,7 @@ example (oa : oracle_comp ((spec ++ spec') ++ (spec'' ++ coe_spec')) α) :
   oracle_comp (spec ++ spec' ++ spec'' ++ coe_spec') α := ↑oa
 
 /-- coercion makes it possible to mix computations on individual oracles -/
-example {spec : oracle_spec} : oracle_comp (uniform_selecting ++ spec) bool := 
+example {spec : oracle_spec} : oracle_comp (uniform_selecting ++ spec) bool :=
 do { n ←$[0..10], b ← coin, if n ≤ 3 ∧ b = tt then return ff else coin }
 
 end examples
