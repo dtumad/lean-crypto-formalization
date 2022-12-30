@@ -104,7 +104,8 @@ section uniform_select_vector
 
 notation `$ᵛ` v := uniform_select_vector v
 
-variables [decidable_eq α] {n : ℕ} (v : vector α (n + 1)) (ob : α → oracle_comp uniform_selecting β) (x : α) (y : β)
+variables [decidable_eq α] {n : ℕ} (v : vector α (n + 1))
+  (ob : α → oracle_comp uniform_selecting β) (x : α) (y : β)
 
 section support
 
@@ -131,7 +132,7 @@ by simp only [support_uniform_select_vector, vector.to_list_singleton,
 begin
   rw [fin_support_eq_iff_support_eq_coe, finset.coe_image, support_uniform_select_vector],
   exact set.ext (λ a, by simp only [vector.mem_iff_nth, set.mem_set_of_eq,
-    finset.coe_univ, set.image_univ, set.mem_range]), 
+    finset.coe_univ, set.image_univ, set.mem_range]),
 end
 
 lemma fin_support_uniform_select_vector_eq_to_finset : ($ᵛ v).fin_support = v.to_list.to_finset :=
@@ -304,7 +305,7 @@ begin
     vector.to_list_mk, nat.succ_pred_eq_of_pos (list.length_pos_of_ne_nil h)],
 end
 
-end distribution_semantics 
+end distribution_semantics
 
 end uniform_select_list
 
@@ -312,7 +313,7 @@ section uniform_select_finset
 
 /-- We can sample randomly from a `finset` by converting to a list and then sampling that. -/
 @[derive decidable] noncomputable def uniform_select_finset [decidable_eq α]
-  (bag : finset α) (h : bag.nonempty) : oracle_comp uniform_selecting α := 
+  (bag : finset α) (h : bag.nonempty) : oracle_comp uniform_selecting α :=
 uniform_select_list bag.to_list (finset.nonempty.not_empty_to_list h)
 
 notation `$ˢ` := uniform_select_finset

@@ -7,8 +7,6 @@ import probability.probability_mass_function.uniform
 import to_mathlib.pmf_stuff
 import algebra.big_operators.fin
 
--- TODO: PR to make `of_multiset` into `uniform_of_multiset` since it selects uniformly from members
-
 /-!
 # Uniform constructions on pmf
 -/
@@ -52,7 +50,8 @@ calc (uniform_of_list l h).to_outer_measure t
   ... = (∑ x in l.to_finset, (l.filter t).count x) / l.length : begin
     refine congr_arg (λ x, x / (l.length : ℝ≥0∞)) (tsum_eq_sum $ λ y hy, _),
     rw [list.mem_to_finset] at hy,
-    simpa only [nat.cast_eq_zero, list.count_eq_zero, list.mem_filter, not_and] using (false.elim ∘ hy),
+    simpa only [nat.cast_eq_zero, list.count_eq_zero, list.mem_filter, not_and]
+      using (false.elim ∘ hy),
   end
   ... = (∑ x in (l.to_finset.filter t), ↑(l.count x)) / l.length : begin
     refine congr_arg (λ x, x / (l.length : ℝ≥0∞)) _,
@@ -106,12 +105,14 @@ lemma uniform_of_vector_eq_nth_map_uniform_of_fintype :
 pmf.ext (λ x, by calc uniform_of_vector v x
   = v.to_list.count x / n.succ : uniform_of_vector_apply v x
   ... = ↑(∑ i, ite (x = v.nth i) 1 0) / n.succ :
-    by rw [← fin.card_filter_univ_eq_vector_nth_eq_count, finset.card_eq_sum_ones, finset.sum_filter]
+    by rw [← fin.card_filter_univ_eq_vector_nth_eq_count,
+      finset.card_eq_sum_ones, finset.sum_filter]
   ... = (∑ i, ite (x = v.nth i) 1 0) / n.succ : by simp only [finset.sum_boole, nat.cast_id]
   ... = (∑' i, ite (x = v.nth i) 1 0) / n.succ :
     congr_arg (λ z, z / (n.succ : ℝ≥0∞)) (tsum_eq_sum $ λ y hy, (hy $ finset.mem_univ y).elim).symm
   ... = pmf.map v.nth (uniform_of_fintype $ fin n.succ) x :
-    by simp only [div_eq_mul_inv, ←ennreal.tsum_mul_right, boole_mul, map_apply, uniform_of_fintype_apply, fintype.card_fin])
+    by simp only [div_eq_mul_inv, ←ennreal.tsum_mul_right, boole_mul, map_apply,
+      uniform_of_fintype_apply, fintype.card_fin])
 
 section measure
 
@@ -133,7 +134,7 @@ end uniform_of_vector
 
 end pmf
 
-lemma sum_ite_eq_nth {β : Type} [add_comm_monoid_with_one β] 
+lemma sum_ite_eq_nth {β : Type} [add_comm_monoid_with_one β]
   (a : α) {n : ℕ} (v : vector α n) :
   ∑ i, ite (v.nth i = a) (1 : β) 0 = ↑(v.to_list.count a) :=
 begin
@@ -154,5 +155,6 @@ lemma tsum_ite_eq_vector_nth {β : Type} [add_comm_monoid_with_one β]
   [topological_space β] [t2_space β] {n : ℕ} (v : vector α n) (a : α) :
   ∑' (i : fin n), ite (v.nth i = a) (1 : β) 0 = ↑(v.to_list.count a) :=
 calc ∑' (i : fin n), ite (v.nth i = a) (1 : β) 0
-  = ∑ (i : fin n), ite (v.nth i = a) (1 : β) 0 : tsum_eq_sum (λ _ hb, (hb $ finset.mem_univ _).elim)
+  = ∑ (i : fin n), ite (v.nth i = a) (1 : β) 0 :
+    tsum_eq_sum (λ _ hb, (hb $ finset.mem_univ _).elim)
   ... = (v.to_list.count a) : (sum_ite_eq_nth a v)

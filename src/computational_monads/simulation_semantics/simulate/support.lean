@@ -49,15 +49,9 @@ lemma support_simulate'_eq_induction {supp : Π (α : Type), oracle_comp spec α
   (simulate' so oa s).support = supp α oa s :=
 begin
   induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t generalizing s,
-  {
-    simp only [h_ret, simulate'_return, support_map, support_return, set.image_singleton],
-  },
-  {
-    simp only [h_bind, ←hob, simulate'_bind, support_map_bind, support_simulate'],
-  },
-  {
-    simp only [h_query, simulate'_query, support_map],
-  }
+  { simp only [h_ret, simulate'_return, support_map, support_return, set.image_singleton] },
+  { simp only [h_bind, ←hob, simulate'_bind, support_map_bind, support_simulate'] },
+  { simp only [h_query, simulate'_query, support_map] }
 end
 
 /-- Given a property `P` of oracle states, if any query call to the oracle preserves it,
@@ -69,8 +63,7 @@ begin
   induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i' t' generalizing s,
   { rw [support_simulate_return, set.mem_singleton_iff] at hx,
     exact hx.symm ▸ hs },
-  { 
-    rw [mem_support_simulate_bind_iff] at hx,
+  { rw [mem_support_simulate_bind_iff] at hx,
     obtain ⟨a, s', ha, ha'⟩ := hx,
     exact hob a x s' (hoa (a, s') s hs ha) ha' },
   { exact hso i' t' s x hx hs }
@@ -136,7 +129,7 @@ theorem support_simulate'_eq_support_simulate'
   (h : ∀ i t s s', prod.fst '' (so i (t, s)).support = prod.fst '' (so' i (t, s')).support)
   (oa : oracle_comp spec α) (s : S) (s' : S') :
   (simulate' so oa s).support = (simulate' so' oa s').support :=
-begin 
+begin
   induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t generalizing s s',
   { simp only [simulate'_return, support_map, support_return, set.image_singleton] },
   { ext x,
@@ -158,23 +151,15 @@ begin
   { simpa only [support_simulate'_query] using h i t s s' }
 end
 
-lemma support_simulate_eq_support_simulate (so : sim_oracle spec spec' S)
-  (so' : sim_oracle spec spec'' S) (h : ∀ i t s s', (so i (t, s)).support = (so' i (t, s')).support) :
+lemma support_simulate_eq_support_simulate
+  (so : sim_oracle spec spec' S) (so' : sim_oracle spec spec'' S)
+  (h : ∀ i t s s', (so i (t, s)).support = (so' i (t, s')).support) :
   (simulate so oa s).support = (simulate so' oa s).support :=
 begin
-  apply support_simulate_eq_induction,
-  {
-    simp only [simulate_return, support_return, eq_self_iff_true, forall_3_true_iff],
-  },
-  {
-    intros,
-    simp only [simulate_bind, support_bind, eq_self_iff_true],
-    
-  },
-  {
-    intros i t s,
-    rw [simulate_query, h],
-  }
+  refine support_simulate_eq_induction so oa s _ (λ _ _ _ _ _, _) (λ _ _ _, _),
+  { simp only [simulate_return, support_return, eq_self_iff_true, forall_3_true_iff] },
+  { simp only [simulate_bind, support_bind, eq_self_iff_true] },
+  { rw [simulate_query, h]  }
 end
 
 theorem support_simulate_simulate_eq_support_simulate (so so' : sim_oracle spec spec' S)

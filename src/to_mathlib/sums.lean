@@ -42,8 +42,8 @@ end tsum_prod
 -- NOTE: PR open
 section extract
 
-lemma finset.sum_eq_tsum_indicator {α β : Type*} [add_comm_monoid β] [topological_space β] [t2_space β]
-  (f : α → β) (s : finset α) : ∑ x in s, f x = ∑' x, set.indicator ↑s f x :=
+lemma finset.sum_eq_tsum_indicator {α β : Type*} [add_comm_monoid β] [topological_space β]
+  [t2_space β] (f : α → β) (s : finset α) : ∑ x in s, f x = ∑' x, set.indicator ↑s f x :=
 have ∀ x ∉ s, set.indicator ↑s f x = 0,
 from λ x hx, set.indicator_apply_eq_zero.2 (λ hx', (hx $ finset.mem_coe.1 hx').elim),
 (finset.sum_congr rfl (λ x hx, (set.indicator_apply_eq_self.2 $
@@ -76,7 +76,7 @@ lemma has_sum.ite_eq_extract' {α β : Type*} [topological_space α] [add_comm_m
 begin
   refine (add_zero a).symm.trans (hf.update' b 0 _),
   convert hf',
-  exact funext (f.update_apply b 0),  
+  exact funext (f.update_apply b 0),
 end
 
 /-- Version of `tsum_ite_eq_extract` for `add_comm_monoid` rather than `add_comm_group`.
@@ -121,7 +121,7 @@ begin
     obtain ⟨y, hy⟩ := hx.1,
     refine set.mem_range.2 ⟨⟨y, function.mem_support.2 (hy.symm ▸ hx.2)⟩, hy⟩ },
   convert λ x, if_neg (option.some_ne_none _),
-end 
+end
 
 lemma nnreal.tsum_option {f : option α → ℝ≥0} (hf : summable f) :
   tsum f = f none + ∑' (a : α), f (some a) :=

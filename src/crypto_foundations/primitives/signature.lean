@@ -22,7 +22,7 @@ Completeness is defined to be the property that any result of gen and sign passe
 Note that this doesn't allow for negligable failure, as some literature does.
 
 Unforgeable is defined to be the property that any adversary with access to a signing oracle
-cannot forge a valid message/signature pair with more than negligable advantage. 
+cannot forge a valid message/signature pair with more than negligable advantage.
 
 Note that the schemes assume algorithms have access to a shared random oracle.
 Signature schemes that don't need this can provide the empty spec `[]ₒ`,
@@ -32,7 +32,7 @@ Signature schemes that don't need this can provide the empty spec `[]ₒ`,
 open_locale ennreal nnreal
 open oracle_comp oracle_spec distribution_semantics
 
-/-- Signature on messages `M`, public and secret keys `PK` and `SK`, signatures of type `S`. 
+/-- Signature on messages `M`, public and secret keys `PK` and `SK`, signatures of type `S`.
   We model the algorithms as having access to a uniform selection oracle,
     and a set of random oracles that the algorithm has access to.
   If not in the random oracle model, can just take `random_oracles := []ₒ`, the empty `oracle_spec`
@@ -109,11 +109,10 @@ section complete
   and the uniform selection oracle just forwards its query on. -/
 noncomputable def completeness_experiment (sig : signature) (m : sig.M) :
   oracle_comp uniform_selecting bool :=
-default_simulate' sig.base_oracle (do {
-  (pk, sk) ← sig.gen (),
-  σ ← sig.sign (pk, sk, m),
-  sig.verify (pk, m, σ)
-})
+default_simulate' sig.base_oracle
+(do { (pk, sk) ← sig.gen (),
+      σ ← sig.sign (pk, sk, m),
+      sig.verify (pk, m, σ) })
 
 lemma completeness_experiment.def (m : sig.M) : sig.completeness_experiment m = default_simulate'
   sig.base_oracle (do {k ← sig.gen (), σ ← sig.sign (k.1, k.2, m), sig.verify (k.1, m, σ)}) :=
@@ -178,7 +177,7 @@ Runs the adversary with a signing oracle based on the provided public/secret key
   returning the results of the adversary, and a log of the queries made by the adversary
  -/
 def simulate (pk : sig.PK) (sk : sig.SK) :
-  oracle_comp sig.base_oracle_spec (sig.M × sig.S × query_log (sig.M ↦ₒ sig.S)) := 
+  oracle_comp sig.base_oracle_spec (sig.M × sig.S × query_log (sig.M ↦ₒ sig.S)) :=
 do{ ((m, s), _, log) ← (default_simulate (idₛ ++ₛ signing_oracle sig pk sk) (adversary.adv pk)),
     return (m, s, log) }
 

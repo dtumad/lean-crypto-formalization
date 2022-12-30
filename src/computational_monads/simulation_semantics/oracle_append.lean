@@ -20,7 +20,7 @@ using pattern matching on queries to decide which `sim_oracle` to call.
 open oracle_comp oracle_spec
 
 variables {spec spec' spec'' spec''' : oracle_spec} {α β γ : Type} {S S' : Type}
-  
+
 namespace sim_oracle
 
 def oracle_append (so : sim_oracle spec spec'' S) (so' : sim_oracle spec' spec'' S') :
@@ -93,16 +93,9 @@ lemma support_simulate'_simulate'_eq_support_simulate' {spec spec' spec'' : orac
   (simulate' so' (simulate' so oa s) s').support = (simulate' so'' oa s'').support :=
 begin
   induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t,
-  {
-    sorry,
-  },
-  {
-    sorry,
-  },
-  {
-    simp_rw [simulate'_query, simulate'_map, support_map, ← set.image_comp],
-    sorry,
-  }
+  sorry,
+  sorry,
+  sorry
 end
 
 @[simp]

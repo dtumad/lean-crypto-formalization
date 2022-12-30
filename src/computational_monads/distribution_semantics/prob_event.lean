@@ -129,7 +129,7 @@ variables (a : α) (e : set α)
 by { simp only [prob_event.def, eval_dist_return, pmf.to_outer_measure_pure_apply], congr }
 
 lemma prob_event_return_eq_indicator :
-  ⁅e | (return a : oracle_comp spec α)⁆ = e.indicator (λ _, 1) a := 
+  ⁅e | (return a : oracle_comp spec α)⁆ = e.indicator (λ _, 1) a :=
 by rw [prob_event.def, eval_dist_return, pmf.to_outer_measure_pure_apply, set.indicator]
 
 lemma prob_event_pure' [decidable_pred e] :
@@ -246,8 +246,8 @@ prob_event_eq_prob_event_of_inter_support_eq oa (by rw [set.inter_assoc, set.int
 
 /-- Given a `finset` containing the `support` of some `oracle_comp`,
   it suffices to take `finset.sum` over that instead of a `tsum` -/
-theorem prob_event_eq_sum_of_support_subset [decidable_pred e] (s : finset α) (hs : oa.support ⊆ s) :
-  ⁅e | oa⁆ = ∑ x in s, ite (x ∈ e) (⁅oa⁆ x) 0 :=
+theorem prob_event_eq_sum_of_support_subset [decidable_pred e] (s : finset α)
+  (hs : oa.support ⊆ s) : ⁅e | oa⁆ = ∑ x in s, ite (x ∈ e) (⁅oa⁆ x) 0 :=
 trans (prob_event_eq_tsum_ite oa e) (tsum_eq_sum (λ x hx,
   by rw [eval_dist_eq_zero_of_not_mem_support (λ hx', hx $ finset.mem_coe.1 (hs hx')), if_t_t]))
 

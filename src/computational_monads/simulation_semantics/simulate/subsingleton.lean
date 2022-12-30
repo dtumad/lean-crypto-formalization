@@ -59,8 +59,8 @@ begin
   rw [support_simulate_eq_preimage_support_simulate', set.mem_preimage],
 end
 
-lemma support_simulate_eq_support_simulate_of_subsingleton [subsingleton S] (so : sim_oracle spec spec' S)
-  (so' : sim_oracle spec spec'' S) (s s' : S)
+lemma support_simulate_eq_support_simulate_of_subsingleton [subsingleton S]
+  (so : sim_oracle spec spec' S) (so' : sim_oracle spec spec'' S) (s s' : S)
   (h : ∀ i t, prod.fst '' (so i (t, so.default_state)).support =
     prod.fst '' (so' i (t, so'.default_state)).support) :
   (simulate so oa s).support = (simulate so' oa s').support :=
