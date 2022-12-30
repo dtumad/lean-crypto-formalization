@@ -157,7 +157,7 @@ instance is_sub_spec_left_side_append (spec sub_spec super_spec : oracle_spec)
   end,
   eval_dist_to_fun' := λ i, match i with
   | (sum.inl i) := λ t, (eval_dist_coe_sub_spec _ _ (h.to_fun i t)).trans
-    ((h.eval_dist_to_fun' i t).trans rfl)
+      ((h.eval_dist_to_fun' i t).trans rfl)
   | (sum.inr i) := λ t, rfl
   end }
 

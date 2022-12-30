@@ -15,7 +15,7 @@ using the coercion to respond to oracle queries in the new set of oracles.
 
 namespace oracle_comp
 
-open oracle_spec distribution_semantics 
+open oracle_spec distribution_semantics
 
 variables (spec spec' spec'' spec''' : oracle_spec)
   (coe_spec coe_spec' coe_spec'' coe_spec''' : oracle_spec)
@@ -26,7 +26,7 @@ section coe_sim_oracle
 /-- Use a coercion on the resulting type of a simulation to coerce the simulation oracle itself.
   This allows for greater flexibility when specifying the simulation oracle when
     both the initial and final `oracle_spec` are some appended set of oracles -/
-instance [∀ α, has_coe (oracle_comp coe_spec α) (oracle_comp coe_spec' α)] :
+instance [coe_spec ⊂ₒ coe_spec'] :
   has_coe (sim_oracle spec coe_spec S) (sim_oracle spec coe_spec' S) :=
 { coe := λ so, {default_state := so.default_state, o := λ i x, ↑(so i x)} }
 

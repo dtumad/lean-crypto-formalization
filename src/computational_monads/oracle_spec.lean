@@ -6,26 +6,33 @@ Authors: Devon Tuma
 import data.fintype.card
 
 /-!
-# Specification of Oracle Access
+# Specification of Oracle Access For a Computation
 
 This file defines a type to represent the set of oracles available to a computation.
 The `oracle_spec` type specifies an indexing set for the available oracles,
 and input and output types for each oracle. We also require that the range of the oracle
 is nonempty so it has at least one possible output, and that the range of the oracle
-is finite so that each particular oracle has a finite number of outputs.
+is finite so that each *particular* oracle has a finite number of outputs.
 
-We choose to include the typeclasses in the structure rather than as further typeclasses on
-the `oracle_spec` structure for simplicity, but generally these could be seperated.
+We choose to include `decidable_eq` assumptions for the types in the structure rather than
+as further typeclasses on `oracle_spec` for simplicity, but generally these could be seperated.
+
+We also define a number of basic constructions for common oracles:
+- `singleton_spec` represents a single oracle with a specified input and output type.
+- `empty_spec` represents a lack of any oracles.
+- `append` represents bringing together two sets of oracles into one combined set of oracles.
+- `coin_spec` represents access to a coin flipping oracle
+- `uniform_selecting` represents access to a uniformly random oracle on a numeric range.
 -/
 
 /-- Specification of the various oracles available to a computation.
 `ι` is an indexing set of oracles (i.e. `ι := ℕ` gives a different oracle for each `n : ℕ`).
-`domain range : ι → Type` give the input and output of the oracle corresponding to `i : ι`.
+`domain range : ι → Type` give the input and output types of the oracle corresponding to an index.
 We also require for the output types to be nonempty (ensuring `oracle_comp.support` is nonempty).
-`decidable_eq` and `fintype` instances are also required for each oracle index,
-in order to define things like `fin_support`. Note that this is only required *per index*,
-the number of oracle outputs may be infinite, it must only be finite for any specific index. -/
-structure oracle_spec : Type 1 := 
+`decidable_eq` and `fintype` instances are also required for each oracle index, in order
+to define things like `fin_support`. Note that this is only required *per index*, the
+total number of oracle outputs may be infinite, it must only be finite for any *specific* index. -/
+structure oracle_spec : Type 1 :=
 (ι : Type)
 (domain range : ι → Type)
 (range_inhabited (i : ι) : inhabited $ range i)
@@ -35,8 +42,8 @@ structure oracle_spec : Type 1 :=
 (range_fintype (i : ι) : fintype $ range i)
 
 /-- Example of a simple `oracle_spec` for a pair of oracles,
-each taking a `ℕ` as input, returning a value of type `fin 100` or `bool` respectively.
-In practice the instances will usually be derived automatically or using the tactic system,
+each taking a natural `n : ℕ` as input, returning a value of type `fin 100` or `bool` respectively.
+In practice the instances like `range_inhabited` will usually be derived automatically,
 but we expand them here to show the explicit definitions.  -/
 example : oracle_spec :=
 { ι := unit ⊕ unit,
@@ -81,9 +88,10 @@ end instances
 
 section singleton_spec
 
-/-- Access to a single oracle with input type `T` and output type `U`. -/
-@[simps] def singleton_spec (T U : Type) [hU : inhabited U]
-  [hT : decidable_eq T] [hU' : decidable_eq U] [hU'' : fintype U] : oracle_spec :=
+/-- `oracle_spec` representing access to a single oracle with input type `T` and output type `U`.
+We use the `unit` type as the index since there is exactly one unique oracle available. -/
+@[simps] def singleton_spec (T U : Type) [hU : inhabited U] [hT : decidable_eq T]
+  [hU' : decidable_eq U] [hU'' : fintype U] : oracle_spec :=
 { ι := unit,
   domain := λ _, T,
   range := λ _, U,
@@ -95,11 +103,17 @@ section singleton_spec
 
 infixl` ↦ₒ `:25 := singleton_spec
 
+variables (T U : Type) [inhabited U] [decidable_eq T] [decidable_eq U] [fintype U]
+
+instance singleton_spec_ι_subsingleton : subsingleton (T ↦ₒ U).ι := punit.subsingleton
+
 end singleton_spec
 
 section empty_spec
- 
-/-- No access to any oracles. Represented by an empty indexing set via the `empty` type. -/
+
+/-- No access to any oracles. Represented by an empty indexing set via the `empty` type.
+Since `empty` is uninhabited, it isn't possible to construct a query to this oracle,
+and therefore any computation with this `oracle_spec` can be evaluated explicitly (`run_comp`). -/
 @[simps] def empty_spec : oracle_spec :=
 { ι := empty,
   domain := empty.elim,
@@ -112,6 +126,8 @@ section empty_spec
 
 notation `[]ₒ` := empty_spec
 
+instance empty_spec_ι_subsingleton : subsingleton []ₒ.ι := empty.subsingleton
+
 end empty_spec
 
 instance inhabited : inhabited oracle_spec := ⟨[]ₒ⟩
@@ -122,7 +138,7 @@ section append
 Given `spec spec' : oracle_spec`, `spec ++ spec'` gives access to the combined set of oracles,
 with `sum.inl` corresponding to the left oracle and `sum.inr` corresponding to the right oracle. -/
 instance has_append : has_append oracle_spec :=
-{ append := λ spec spec', 
+{ append := λ spec spec',
   { ι := spec.ι ⊕ spec'.ι,
     domain := sum.elim spec.domain spec'.domain,
     range := sum.elim spec.range spec'.range,
@@ -179,4 +195,4 @@ avoiding a return type of the empty `fin 0` type. -/
 
 end uniform_selecting
 
-end oracle_spec 
+end oracle_spec
