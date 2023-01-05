@@ -21,9 +21,9 @@ This is useful for things like a random oracle, where the final log isn't releva
 
 variables {α β γ : Type} {spec spec' spec'' : oracle_spec} {S S' : Type}
 
-/-- Specifies a way to simulate a set of oracles using another set of oracles. 
+/-- Specifies a way to simulate a set of oracles using another set of oracles.
   e.g. using uniform random selection to simulate a hash oracle
-  
+
   `default_state` can be provided as a standard initial state for simulation.
   Used when calling `default_simulate` or `default_simulate'` -/
 structure sim_oracle (spec spec' : oracle_spec) (S : Type) :=
@@ -132,6 +132,15 @@ lemma support_simulate_query : (simulate so (query i t) s).support = (so i (t, s
 lemma support_simulate_map : (simulate so (f <$> oa) s).support =
   prod.map f id '' (simulate so oa s).support := by rw [simulate_map, support_map]
 
+#check map_bind
+
+lemma support_simulate_map_bind (g : β → γ) : (simulate so (g <$> (oa >>= ob)) s).support
+  = (simulate so (oa >>= λ x, g <$> (ob x)) s).support :=
+begin
+  sorry
+
+end
+
 end support
 
 section fin_support
@@ -217,6 +226,7 @@ def default_simulate' (so : sim_oracle spec spec' S) (oa : oracle_comp spec α) 
 
 lemma simulate'_def : simulate' so oa s = prod.fst <$> oa.simulate so s := rfl
 
+-- TODO: these should have a special simp category, to not be eagerly applied
 @[simp] lemma simulate'_return : simulate' so (return a) s = prod.fst <$> (return (a, s)) := rfl
 
 lemma simulate'_pure' : simulate' so (pure' α a) s = prod.fst <$> (return (a, s)) := rfl

@@ -127,6 +127,9 @@ lemma mem_support_map_bind_iff : c ∈ (g <$> (oa >>= ob)).support ↔
   ∃ a ∈ oa.support, ∃ b ∈ (ob a).support, g b = c :=
 by simp only [support_map_bind, set.mem_Union, set.mem_image, exists_prop]
 
+lemma support_bind_map {spec : oracle_spec} {α β γ : Type} (oa : oracle_comp spec α) (f : α → β) (ob : β → oracle_comp spec γ) :
+  ((f <$> oa) >>= ob).support = (oa >>= ob ∘ f).support := sorry
+
 end map
 
 /-- If the range of `spec` is a `fintype` then the support is a finite set. -/
