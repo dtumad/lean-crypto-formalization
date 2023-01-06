@@ -21,7 +21,7 @@ open oracle_comp oracle_spec
 
 variables {spec spec' spec'' spec''' : oracle_spec} {α β γ : Type} {S S' : Type}
 
-namespace sim_oracle
+namespace sim_oracle -- TODO: `oracle_append` namespace?
 
 def oracle_append (so : sim_oracle spec spec'' S) (so' : sim_oracle spec' spec'' S') :
   sim_oracle (spec ++ spec') spec'' (S × S') :=
@@ -98,13 +98,27 @@ begin
   sorry
 end
 
-@[simp]
-lemma support_simulate'_coe_append_right (so : sim_oracle spec spec'' S)
+@[simp] lemma support_simulate_coe_append_right (so : sim_oracle spec spec'' S)
   (so' : sim_oracle spec' spec'' S') (s : S × S') (oa : oracle_comp spec α) :
-  (simulate' (so ++ₛ so') ↑oa s).support = (simulate' so oa s.1).support :=
-begin
-  sorry
-end
+  (simulate (so ++ₛ so') ↑oa s).support =
+    {x | (x.1, x.2.1) ∈ (simulate so oa s.1).support ∧ x.2.2 = s.2} :=
+calc (simulate (so ++ₛ so') ↑oa s).support =
+  (simulate (so ++ₛ so') ↑oa ((λ s₁, (s₁, s.2)) s.1)).support :
+    by simp only [prod.mk.eta]
+  ... = prod.map id (λ x, (x, s.2)) '' (simulate so oa s.1).support :
+    begin
+      refine support_simulate_coe_sub_spec _ _ _ so (so ++ₛ so') _ _ _ (λ i t s, _),
+      simp only [is_sub_spec_append_right_apply, simulate_query, oracle_append_apply_inl,
+        support_bind_return, prod.map, id.def],
+    end
+  ... = {x | (x.1, x.2.1) ∈ (simulate so oa s.1).support ∧ x.2.2 = s.2} :
+    begin
+      ext x,
+      simp only [set.mem_set_of, set.mem_image, prod.eq_iff_fst_eq_snd_eq,
+        prod_map, id.def, prod.exists],
+      refine ⟨λ h, let ⟨a, s₁, h, ha, hs₁, hs⟩ := h in ⟨ha ▸ hs₁ ▸ h, hs.symm⟩,
+        λ h, ⟨x.1, x.2.1, h.1, rfl, rfl, h.2.symm⟩⟩,
+    end
 
 -- GOALS:
 -- ??? simulate prop holds on both oracles -> holds on appended oracle

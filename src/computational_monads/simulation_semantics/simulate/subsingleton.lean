@@ -26,10 +26,10 @@ variables (so : sim_oracle spec spec' S) (so' : sim_oracle spec spec'' S')
 variables (a : α) (i : spec.ι) (t : spec.domain i)
   (oa oa' : oracle_comp spec α) (ob ob' : α → oracle_comp spec β) (s : S) (s' : S') (f : α → β)
 
-@[simp] lemma simulate_eq_default_simulate [subsingleton S] :
+lemma simulate_eq_default_simulate [subsingleton S] :
   simulate so oa s = default_simulate so oa := subsingleton.elim so.default_state s ▸ rfl
 
-@[simp] lemma simulate'_eq_default_simulate' [subsingleton S] :
+lemma simulate'_eq_default_simulate' [subsingleton S] :
   simulate' so oa s = default_simulate' so oa := subsingleton.elim so.default_state s ▸ rfl
 
 section support
