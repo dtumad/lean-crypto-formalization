@@ -134,8 +134,6 @@ section simulate
 variables {S S' : Type} {spec''' : oracle_spec} (so : sim_oracle spec spec''' S) (so' : sim_oracle spec' spec'' S')
   (s : S) (f : S → S')
 
--- lemma support_simulate_coe_sub_spec_return (a : α)
-
 @[simp] lemma support_simulate_coe_sub_spec_return (s' : S') (a : α) :
   (simulate so' (↑(return a : oracle_comp spec α) : oracle_comp spec' α) s').support = {(a, s')} :=
 by rw [coe_sub_spec_return, simulate_map, simulate_return, support_map, support_return,
@@ -158,16 +156,12 @@ begin
   refl,
 end
 
--- set_option trace.class_instances
-
 @[simp] lemma support_simulate_coe_sub_spec_query (s' : S') (i : spec.ι) (t : spec.domain i) :
   (simulate so' (↑(query i t) : oracle_comp spec' (spec.range i)) s').support =
     (simulate so' (h.to_fun i t) s').support :=
-begin
-  simp [coe_sub_spec_def, support_return],
-  simp_rw [support_return],
-  simp,
-end
+by simp_rw [coe_sub_spec_def, default_simulate', simulate'_query, stateless_oracle.apply_eq,
+  support_simulate_map, support_simulate_bind, support_simulate_return, set.image_Union,
+  set.image_singleton, prod.map_mk, id.def, prod.mk.eta, set.bUnion_of_singleton]
 
 lemma support_simulate_coe_sub_spec (oa : oracle_comp spec α)
   (hf' : ∀ i t s, (simulate so' (h.to_fun i t) (f s)).support =
@@ -177,56 +171,19 @@ lemma support_simulate_coe_sub_spec (oa : oracle_comp spec α)
     (prod.map id f) '' (simulate so oa s).support :=
 begin
   induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t generalizing s,
-  {
-    rw [support_simulate_coe_sub_spec_return, simulate_return, support_return, set.image_singleton,
-      prod_map, id.def],
-  },
-  {
-    calc (simulate so' ↑(oa >>= ob) (f s)).support
-      = (simulate so' ↑oa (f s) >>=
-              λ (x : α × S'), simulate so' (↑(ob x.1)) x.2).support :
-        support_simulate_coe_sub_spec_bind _ _ _ _ _ _ _
-      ... = prod.map id f '' (simulate so oa s >>=
-              λ (x : α × S), simulate so (ob x.1) x.2).support :
-        begin
-          simp_rw [support_bind, hoa],
-
-
-          ext y,
-          simp only [set.mem_image, set.mem_Union],
-          refine ⟨λ h, _, λ h, _⟩,
-          {
-            obtain ⟨⟨a, s''⟩, ⟨m, hm⟩, hn⟩ := h,
-            rw [prod.eq_iff_fst_eq_snd_eq] at hm,
-            have : s'' = f m.2 := begin
-              exact hm.2.2.symm,
-            end,
-            simp_rw [this, hob, set.mem_image] at hn,
-            obtain ⟨b, hb, hb'⟩ := hn,
-            refine ⟨b, ⟨m, hm.1, hm.2.1.symm ▸ hb⟩, hb'⟩,
-          },
-          {
-            obtain ⟨x, ⟨z, hz, hzx⟩, hx'⟩ := h,
-            refine ⟨prod.map id f z, ⟨z, hz, rfl⟩, _⟩,
-            specialize hob z.1 z.2,
-            simp_rw [prod_map, id.def, hob, ← hx', set.mem_image],
-            refine ⟨x, hzx, rfl⟩,
-          }
-
-        end
-      ... = ⋃ (x : α × S) (hx : x ∈ (simulate so oa s).support),
-          prod.map id f '' (simulate so (ob x.1) x.2).support :
-        by simp only [support_bind, set.image_Union]
-      ... = prod.map id f '' (simulate so (oa >>= ob) s).support :
-        by simp_rw [support_simulate_bind, set.image_Union]
-  },
-  {
-
-    simp_rw [coe_sub_spec_query, simulate_map, support_map,
-      simulate_bind, simulate_return, support_bind, support_return, set.image_Union],
-    simp only [prod_map, id.def, set.image_singleton, prod.mk.eta, set.bUnion_of_singleton],
-    exact hf' i t s,
-  }
+  { rw [support_simulate_coe_sub_spec_return, simulate_return, support_return, set.image_singleton,
+      prod_map, id.def] },
+  { simp_rw [support_simulate_coe_sub_spec_bind, support_bind, hoa, set.mem_image, prod_map,
+      id.def, prod.exists, set.Union_exists, support_simulate_bind, set.image_Union],
+    ext x,
+    simp only [set.mem_Union, hob],
+    split,
+    { rintro ⟨y, a, s', ⟨ha, rfl⟩, h⟩,
+      refine ⟨(a, s'), ha, hob a s' ▸ h⟩ },
+    { rintro ⟨y, hy, h⟩,
+      refine ⟨(y.1, f y.2), y.1, y.2, ⟨(@prod.mk.eta _ _ y).symm ▸ hy, rfl⟩,
+        (hob y.1 y.2).symm ▸ h⟩ } },
+  { rw [support_simulate_coe_sub_spec_query, hf', support_simulate_query] }
 end
 
 end simulate
