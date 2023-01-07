@@ -41,13 +41,19 @@ variables (spec) (a x : α)
 
 lemma mem_support_return_iff : x ∈ (return a : oracle_comp spec α).support ↔ x = a := iff.rfl
 
+lemma mem_support_return_self : x ∈ (return x : oracle_comp spec α).support := set.mem_singleton x
+
 lemma support_pure' : (pure' α a : oracle_comp spec α).support = {a} := rfl
 
 lemma mem_support_pure'_iff : x ∈ (pure' α a : oracle_comp spec α).support ↔ x = a := iff.rfl
 
+lemma mem_support_pure'_self : x ∈ (pure' α x : oracle_comp spec α).support := set.mem_singleton x
+
 lemma support_pure : (pure a : oracle_comp spec α).support = {a} := rfl
 
 lemma mem_support_pure_iff : x ∈ (pure a : oracle_comp spec α).support ↔ x = a := iff.rfl
+
+lemma mem_support_pure_self : x ∈ (pure x : oracle_comp spec α).support := set.mem_singleton x
 
 end return
 
@@ -65,8 +71,7 @@ lemma support_bind' : (bind' α β oa ob).support = ⋃ α ∈ oa.support, (ob �
 lemma mem_support_bind'_iff : y ∈ (bind' α β oa ob).support ↔
   ∃ x ∈ oa.support, y ∈ (ob x).support := by simp_rw [support_bind', set.mem_Union]
 
-lemma support_return_bind :
-  (return a >>= ob).support = (ob a).support :=
+lemma support_return_bind : (return a >>= ob).support = (ob a).support :=
 by simp only [support_bind, mem_support_return_iff, set.Union_Union_eq_left]
 
 lemma mem_support_return_bind_iff :
@@ -93,7 +98,7 @@ variables (i : spec.ι) (t : spec.domain i) (u : spec.range i)
 
 @[simp] lemma support_query : (query i t).support = ⊤ := rfl
 
-lemma mem_support_query_iff : u ∈ (query i t).support := set.mem_univ u
+lemma mem_support_query : u ∈ (query i t).support := set.mem_univ u
 
 lemma support_query_bind : (query i t >>= oa).support = ⋃ u, (oa u).support :=
 by simp only [support_bind, set.Union_true]
@@ -106,12 +111,12 @@ end query
 section map
 
 variables (f : α → β) (g : β → γ) (oa : oracle_comp spec α)
-  (ob : α → oracle_comp spec β) (a x : α) (b y : β) (c : γ)
+  (ob : α → oracle_comp spec β) (oc : β → oracle_comp spec γ) (a x : α) (y : β) (z : γ)
 
 @[simp] lemma support_map : (f <$> oa).support = f '' oa.support := support_bind_return oa f
 
-lemma mem_support_map_iff : b ∈ (f <$> oa).support ↔ ∃ a ∈ oa.support, f a = b :=
-mem_support_bind_return_iff oa f b
+lemma mem_support_map_iff : y ∈ (f <$> oa).support ↔ ∃ x ∈ oa.support, f x = y :=
+mem_support_bind_return_iff oa f y
 
 lemma support_map_return : (f <$> (return a : oracle_comp spec α)).support = {f a} :=
 by simp only [support_map, support_return, set.image_singleton]
@@ -123,12 +128,19 @@ by simp only [support_map, support_return, set.image_singleton, set.mem_singleto
   ⋃ a ∈ oa.support, g '' (ob a).support :=
 by simp_rw [support_map, support_bind, set.image_Union]
 
-lemma mem_support_map_bind_iff : c ∈ (g <$> (oa >>= ob)).support ↔
-  ∃ a ∈ oa.support, ∃ b ∈ (ob a).support, g b = c :=
+lemma mem_support_map_bind_iff : z ∈ (g <$> (oa >>= ob)).support ↔
+  ∃ x ∈ oa.support, ∃ y ∈ (ob x).support, g y = z :=
 by simp only [support_map_bind, set.mem_Union, set.mem_image, exists_prop]
 
-lemma support_bind_map {spec : oracle_spec} {α β γ : Type} (oa : oracle_comp spec α) (f : α → β) (ob : β → oracle_comp spec γ) :
-  ((f <$> oa) >>= ob).support = (oa >>= ob ∘ f).support := sorry
+lemma support_bind_map : ((f <$> oa) >>= oc).support =
+  ⋃ a ∈ oa.support, (oc (f a)).support :=
+by simp only [support_bind, support_map, set.mem_image,
+  set.Union_exists, set.bUnion_and', set.Union_Union_eq_right]
+
+lemma mem_support_bind_map_iff : z ∈ ((f <$> oa) >>= oc).support ↔
+  ∃ x ∈ oa.support, z ∈ (oc (f x)).support :=
+by simp only [support_bind, set.mem_Union, support_map, set.mem_image,
+  set.Union_exists, set.bUnion_and', set.Union_Union_eq_right]
 
 end map
 
@@ -141,18 +153,28 @@ begin
   { exact set.finite_univ }
 end
 
-noncomputable instance support.fintype (oa : oracle_comp spec α) :
-  fintype oa.support := (support_finite oa).fintype
+noncomputable instance support.coe_sort_fintype (oa : oracle_comp spec α) :
+  fintype ↥(oa.support) := (support_finite oa).fintype
 
 /-- Since the range of oracles in an `oracle_spec` are required to be nonempty,
 we naturally get that the `support` of an `oracle_comp` is nonempty. -/
 theorem support_nonempty (oa : oracle_comp spec α) : oa.support.nonempty :=
 begin
-  induction oa with α a α β oa ob hoa hob i t,
+  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t,
   { exact set.singleton_nonempty a },
   { simp only [bind'_eq_bind, support_bind, set.nonempty_bUnion, exists_prop],
     exact let ⟨a, ha⟩ := hoa in ⟨a, ha, hob a⟩ },
   { simp only [support_query, set.top_eq_univ, set.univ_nonempty] }
+end
+
+instance support.coe_sort_inhabited (oa : oracle_comp spec α) : inhabited ↥(oa.support) :=
+begin
+  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t,
+  { exact ⟨⟨a, mem_support_pure_self spec a⟩⟩ },
+  { refine ⟨⟨(hob hoa.1).1.1, _⟩⟩,
+    simp only [subtype.val_eq_coe, bind'_eq_bind, support_bind, set.mem_Union, exists_prop],
+    exact ⟨hoa.1.1, hoa.1.2, (hob hoa.1).1.2⟩ },
+  { exact ⟨⟨default, mem_support_query i t default⟩⟩ }
 end
 
 /-- Should be able to automatically derive the support for most simple computations -/

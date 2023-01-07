@@ -18,7 +18,7 @@ open oracle_comp oracle_spec ennreal
 
 variables {α β : Type} {spec : oracle_spec}
 
-noncomputable def uniform_oracle (spec : oracle_spec) : 
+noncomputable def uniform_oracle (spec : oracle_spec) :
   sim_oracle spec uniform_selecting unit :=
 ⟪λ i t, $ᵗ (spec.range i)⟫
 
@@ -32,7 +32,7 @@ variables (oa : oracle_comp spec α) (i : spec.ι) (t : spec.domain i) (u : unit
 @[simp] lemma apply_eq : uniform_oracle spec i (t, u) =
   $ᵗ (spec.range i) >>= λ u, return (u, ()) := rfl
 
-noncomputable instance decidable : oracle_comp.decidable (uniform_oracle spec i (t, u)) :=
+noncomputable instance decidable_apply : oracle_comp.decidable (uniform_oracle spec i (t, u)) :=
 stateless_oracle.decidable _ i (t, u)
 
 section support

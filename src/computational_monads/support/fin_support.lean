@@ -31,7 +31,7 @@ variables {α β γ : Type} {spec spec' : oracle_spec}
 assuming a `decidable` instance on the `oracle_comp` itself (for `finset.bUnion`). -/
 def fin_support : Π {α : Type} (oa : oracle_comp spec α) [decidable oa], finset α
 | _ _ (decidable_pure' α a h) := {a}
-| _ _ (decidable_bind' α β oa ob hoa hob) := 
+| _ _ (decidable_bind' α β oa ob hoa hob) :=
   have hβ : decidable_eq β := decidable_eq_of_decidable' (hob $ (inhabited_base oa).1),
   @finset.bUnion α β hβ (@fin_support α oa hoa) (λ a, @fin_support β (ob a) (hob a))
 | _ _ (decidable_query i t) := finset.univ
@@ -80,22 +80,31 @@ end support
 
 section return
 
-variables (a a' : α) [decidable_eq α]
+variables (a x : α) [decidable_eq α]
 
 @[simp] lemma fin_support_return : (return a : oracle_comp spec α).fin_support = {a} := rfl
 
-lemma mem_fin_support_return_iff : a' ∈ (return a : oracle_comp spec α).fin_support ↔ a' = a :=
+lemma mem_fin_support_return_iff : x ∈ (return a : oracle_comp spec α).fin_support ↔ x = a :=
 finset.mem_singleton
 
-@[simp] lemma fin_support_pure' : (@pure' spec α a).fin_support = {a} := rfl
+lemma mem_fin_support_return_self : x ∈ (return x : oracle_comp spec α).fin_support :=
+finset.mem_singleton_self x
 
-lemma mem_fin_support_pure'_iff : a' ∈ (@pure' spec α a).fin_support ↔ a' = a :=
+@[simp] lemma fin_support_pure' : (pure' α a : oracle_comp spec α).fin_support = {a} := rfl
+
+lemma mem_fin_support_pure'_iff : x ∈ (pure' α a : oracle_comp spec α).fin_support ↔ x = a :=
 finset.mem_singleton
+
+lemma mem_fin_support_pure'_self : x ∈ (pure' α x : oracle_comp spec α).fin_support :=
+finset.mem_singleton_self x
 
 lemma fin_support_pure : (pure a : oracle_comp spec α).fin_support = {a} := rfl
 
-lemma mem_fin_support_pure_iff : a' ∈ (pure a : oracle_comp spec α).fin_support ↔ a' = a :=
+lemma mem_fin_support_pure_iff : x ∈ (pure a : oracle_comp spec α).fin_support ↔ x = a :=
 finset.mem_singleton
+
+lemma mem_fin_support_pure_self : x ∈ (pure x : oracle_comp spec α).fin_support :=
+finset.mem_singleton_self x
 
 end return
 
@@ -114,7 +123,7 @@ lemma mem_fin_support_bind_iff : y ∈ (oa >>= ob).fin_support ↔
 by rw [fin_support_bind, finset.mem_bUnion]
 
 @[simp] lemma fin_support_bind' : (bind' α β oa ob).fin_support = @finset.bUnion α β
-  (decidable_eq_of_decidable (bind' α β oa ob)) oa.fin_support (λ a, (ob a).fin_support) :=
+  (decidable_eq_of_decidable (oa >>= ob)) oa.fin_support (λ a, (ob a).fin_support) :=
 fin_support_bind oa ob
 
 lemma mem_fin_support_bind'_iff : y ∈ (bind' α β oa ob).fin_support ↔
@@ -166,14 +175,23 @@ end query
 section map
 
 variables [decidable_eq β] [decidable_eq γ] (oa : oracle_comp spec α) [decidable oa]
-  (ob : α → oracle_comp spec β) [∀ a, decidable (ob a)] (f : α → β) (g : β → γ) (b : β) (c : γ)
+  (ob : α → oracle_comp spec β) [∀ a, decidable (ob a)] (oc : β → oracle_comp spec γ)
+  [∀ b, decidable (oc b)] (f : α → β) (g : β → γ) (a x : α) (y : β) (z : γ)
 
 @[simp] lemma fin_support_map : (f <$> oa).fin_support = oa.fin_support.image f :=
 by rw [fin_support_eq_iff_support_eq_coe, finset.coe_image,
   support_map, coe_fin_support_eq_support]
 
-lemma mem_fin_support_map_iff : b ∈ (f <$> oa).fin_support ↔ ∃ a ∈ oa.fin_support, f a = b :=
+lemma mem_fin_support_map_iff : y ∈ (f <$> oa).fin_support ↔ ∃ x ∈ oa.fin_support, f x = y :=
 by rw [fin_support_map, finset.mem_image]
+
+lemma fin_support_map_return [decidable_eq α] :
+  (f <$> (return a : oracle_comp spec α)).fin_support = {f a} :=
+by simp only [fin_support_map, fin_support_return, finset.image_singleton]
+
+lemma mem_fin_support_map_return_iff [decidable_eq α] :
+  y ∈ (f <$> (return a : oracle_comp spec α)).support ↔ y = f a :=
+by simp only [support_map, support_return, set.image_singleton, set.mem_singleton_iff]
 
 @[simp] lemma fin_support_map_bind : (g <$> (oa >>= ob)).fin_support =
   @finset.bUnion α γ (decidable_eq_of_decidable (g <$> (oa >>= ob)))
@@ -181,9 +199,17 @@ by rw [fin_support_map, finset.mem_image]
 by simp_rw [fin_support_eq_iff_support_eq_coe, finset.coe_bUnion, finset.coe_image,
   coe_fin_support_eq_support, support_map_bind]
 
-lemma mem_fin_support_map_bind_iff : c ∈ (g <$> (oa >>= ob)).fin_support ↔
-  ∃ a ∈ oa.fin_support, ∃ b ∈ (ob a).fin_support, g b = c :=
+lemma mem_fin_support_map_bind_iff : z ∈ (g <$> (oa >>= ob)).fin_support ↔
+  ∃ x ∈ oa.fin_support, ∃ y ∈ (ob x).fin_support, g y = z :=
 by simp only [fin_support_map_bind, finset.mem_bUnion, finset.mem_image]
+
+@[simp] lemma fin_support_bind_map : ((f <$> oa) >>= oc).fin_support = @finset.bUnion α γ
+  (decidable_eq_of_decidable ((f <$> oa) >>= oc)) oa.fin_support (λ a, (oc (f a)).fin_support) :=
+by simp only [finset.image_bUnion, fin_support_bind, fin_support_map]
+
+lemma mem_fin_support_bind_map_iff : z ∈ ((f <$> oa) >>= oc).fin_support ↔
+  ∃ x ∈ oa.fin_support, z ∈ (oc (f x)).fin_support :=
+by simp only [fin_support_bind_map, finset.mem_bUnion]
 
 end map
 

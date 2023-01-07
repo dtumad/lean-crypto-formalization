@@ -30,39 +30,13 @@ def oracle_compose (so : sim_oracle spec spec' S) (so' : sim_oracle spec' spec''
 -- We use `notation` over `infixl` to swap the arguments without invoking `function.comp`.
 notation so' `∘ₛ` so := oracle_compose so so'
 
+namespace oracle_compose
+
 variables (so : sim_oracle spec spec' S) (so' : sim_oracle spec' spec'' S')
 
-lemma oracle_compose_apply_index (i : spec.ι) (s : S × S') : (so' ∘ₛ so) i =
+lemma apply_eq (i : spec.ι) (s : S × S') : (so' ∘ₛ so) i =
   λ x, simulate so' (so i (x.1, x.2.1)) x.2.2 >>= λ u_s, return (u_s.1.1, u_s.1.2, u_s.2) := rfl
 
-section support
-
-end support
-
-section fin_support
-
-end fin_support
-
-section distribution_semantics
-
-open distribution_semantics
-
-section eval_dist
-
-end eval_dist
-
-section prob_event
-
-end prob_event
-
-section indep_events
-
-end indep_events
-
-section indep_event
-
-end indep_event
-
-end distribution_semantics
+end oracle_compose
 
 end sim_oracle

@@ -3,7 +3,7 @@ Copyright (c) 2022 Devon Tuma. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
-import computational_monads.coercions.sub_spec
+import computational_monads.coercions.instances
 
 /-!
 # Appending Simulation Oracles
@@ -33,13 +33,15 @@ def oracle_append (so : sim_oracle spec spec'' S) (so' : sim_oracle spec' spec''
 
 infixl ` ++ₛ `:65 := oracle_append
 
+namespace oracle_append
+
 variables (so : sim_oracle spec spec'' S) (so' : sim_oracle spec' spec'' S')
   (oa : oracle_comp (spec ++ spec') α) (ob : α → oracle_comp (spec ++ spec') β) (a : α)
   (i : spec.ι) (i' : spec'.ι) (t : spec.domain i) (t' : spec'.domain i') (s : S × S')
   (x : spec.domain i × S × S') (x' : spec'.domain i' × S × S')
 
 @[simp]
-lemma oracle_append_apply_inl : (so ++ₛ so') (sum.inl i) x =
+lemma apply_inl_eq : (so ++ₛ so') (sum.inl i) x =
   do {u_s' ← so i (x.1, x.2.1), return (u_s'.1, u_s'.2, x.2.2)} :=
 begin
   cases x with t s, cases s with s₁ s₂,
@@ -48,7 +50,7 @@ begin
 end
 
 @[simp]
-lemma oracle_append_apply_inr : (so ++ₛ so') (sum.inr i') x' =
+lemma apply_inr_eq : (so ++ₛ so') (sum.inr i') x' =
   do {u_s' ← so' i' (x'.1, x'.2.2), return (u_s'.1, x'.2.1, u_s'.2)} :=
 begin
   cases x' with t s, cases s with s₁ s₂,
@@ -58,11 +60,11 @@ end
 
 section support
 
-lemma support_oracle_append_apply_inl : ((so ++ₛ so') (sum.inl i) (t, s)).support =
+lemma support_apply_inl : ((so ++ₛ so') (sum.inl i) (t, s)).support =
   {x | (x.1, x.2.1) ∈ (so i (t, s.1)).support ∧ x.2.2 = s.2} :=
 begin
   ext x,
-  simp only [oracle_append_apply_inl, support_bind, support_return, set.mem_Union,
+  simp only [apply_inl_eq, support_bind, support_return, set.mem_Union,
     set.mem_singleton_iff, exists_prop, prod.exists, set.mem_set_of_eq],
   refine ⟨λ h, _, λ h, _⟩,
   { obtain ⟨u, s', hu, hx⟩ := h,
@@ -71,11 +73,11 @@ begin
     simp only [← h.2, h.1, true_and, prod.mk.eta] }
 end
 
-lemma support_oracle_append_apply_inr : ((so ++ₛ so') (sum.inr i') (t', s)).support =
+lemma support_apply_inr : ((so ++ₛ so') (sum.inr i') (t', s)).support =
   {x | (x.1, x.2.2) ∈ (so' i' (t', s.2)).support ∧ x.2.1 = s.1} :=
 begin
   ext x,
-  simp only [oracle_append_apply_inr, support_bind, support_return, set.mem_Union,
+  simp only [apply_inr_eq, support_bind, support_return, set.mem_Union,
     set.mem_singleton_iff, exists_prop, prod.exists, set.mem_set_of_eq],
   refine ⟨λ h, _, λ h, _⟩,
   { obtain ⟨u, s', hu, hx⟩ := h,
@@ -84,73 +86,35 @@ begin
     simp only [← h.2, h.1, true_and, prod.mk.eta] }
 end
 
-
--- NOTE: also useful, for ∘ₛ
-lemma support_simulate'_simulate'_eq_support_simulate' {spec spec' spec'' : oracle_spec}
-  {S S' S'' : Type} (so : sim_oracle spec spec' S) (so' : sim_oracle spec' spec'' S')
-  (so'' : sim_oracle spec spec'' S'') (s : S) (s' : S') (s'' : S'')
-  (oa : oracle_comp spec α) :
-  (simulate' so' (simulate' so oa s) s').support = (simulate' so'' oa s'').support :=
-begin
-  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t,
-  sorry,
-  sorry,
-  sorry
-end
-
-@[simp] lemma support_simulate_coe_append_right (so : sim_oracle spec spec'' S)
-  (so' : sim_oracle spec' spec'' S') (s : S × S') (oa : oracle_comp spec α) :
-  (simulate (so ++ₛ so') ↑oa s).support =
-    {x | (x.1, x.2.1) ∈ (simulate so oa s.1).support ∧ x.2.2 = s.2} :=
-calc (simulate (so ++ₛ so') ↑oa s).support =
-  (simulate (so ++ₛ so') ↑oa ((λ s₁, (s₁, s.2)) s.1)).support :
-    by simp only [prod.mk.eta]
-  ... = prod.map id (λ x, (x, s.2)) '' (simulate so oa s.1).support :
-    begin
-      refine support_simulate_coe_sub_spec _ _ _ so (so ++ₛ so') _ _ _ (λ i t s, _),
-      simp only [is_sub_spec_append_right_apply, simulate_query, oracle_append_apply_inl,
-        support_bind_return, prod.map, id.def],
-    end
-  ... = {x | (x.1, x.2.1) ∈ (simulate so oa s.1).support ∧ x.2.2 = s.2} :
-    begin
-      ext x,
-      simp only [set.mem_set_of, set.mem_image, prod.eq_iff_fst_eq_snd_eq,
-        prod_map, id.def, prod.exists],
-      refine ⟨λ h, let ⟨a, s₁, h, ha, hs₁, hs⟩ := h in ⟨ha ▸ hs₁ ▸ h, hs.symm⟩,
-        λ h, ⟨x.1, x.2.1, h.1, rfl, rfl, h.2.symm⟩⟩,
-    end
-
--- GOALS:
--- ??? simulate prop holds on both oracles -> holds on appended oracle
--- state prop holds on first oracles -> holds for first state value
--- state prop holds on second oracle -> holds for second state value
-
 end support
 
-section fin_support
+section coe_append_right
 
-end fin_support
+/-- Coercing a computation on `spec` to one on `spec ++ spec'`, and then simulating with
+two independent oracles `so ++ₛ so'` has the same support as simulating the original with `so`,
+modulo the extra oracle state for the right oracle, which remains unchanged during simulation. -/
+@[simp] lemma support_simulate_coe_append_right (s : S × S') (oa : oracle_comp spec α) :
+  (simulate (so ++ₛ so') ↑oa s).support =
+    (λ (x : α × S), (x.1, x.2, s.2)) '' (simulate so oa s.1).support :=
+calc (simulate (so ++ₛ so') ↑oa s).support =
+    (simulate (so ++ₛ so') ↑oa ((λ s₁, (s₁, s.2)) s.1)).support : by simp only [prod.mk.eta]
+    ... = prod.map id (λ s₁, (s₁, s.2)) '' (simulate so oa s.1).support : begin
+      refine (support_simulate_coe_sub_spec so (so ++ₛ so') s.1 oa _ (λ i t s, _)),
+      simp_rw [is_sub_spec_append_right_apply, simulate_query, apply_inl_eq,
+        support_bind_return, prod_map, id.def],
+    end
+    ... = (λ (x : α × S), (x.1, x.2, s.2)) '' (simulate so oa s.1).support : rfl
 
-section distribution_semantics
+/-- Coercing a computation on `spec` to one on `spec ++ spec'`, and then simulating with
+two independent oracles `so ++ₛ so'` has the same support as simulating the original with `so`,
+if we use `simulate'` to ignore the final oracle state of the two `sim_oracle`s. -/
+@[simp] lemma support_simulate'_coe_append_right (so : sim_oracle spec spec'' S)
+  (so' : sim_oracle spec' spec'' S') (s : S × S') (oa : oracle_comp spec α) :
+  (simulate' (so ++ₛ so') ↑oa s).support = (simulate' so oa s.1).support :=
+set.ext (λ x, by simp only [support_simulate', support_simulate_coe_append_right, set.image_image])
 
-open distribution_semantics
+end coe_append_right
 
-section eval_dist
-
-end eval_dist
-
-section prob_event
-
-end prob_event
-
-section indep_events
-
-end indep_events
-
-section indep_event
-
-end indep_event
-
-end distribution_semantics
+end oracle_append
 
 end sim_oracle
