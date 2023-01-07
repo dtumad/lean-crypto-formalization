@@ -403,7 +403,6 @@ variables (α) [fintype α] [nonempty α] [decidable_eq α]
 
 section support
 
--- TODO: this isn't working properly with `simp`
 @[simp] lemma support_uniform_select_fintype : ($ᵗ α).support = ⊤ :=
 by rw [uniform_select_fintype, support_uniform_select_finset,
   set.top_eq_univ, finset.coe_eq_univ]

@@ -269,7 +269,7 @@ end query
 
 section map
 
-variables (oa : oracle_comp spec α) (ob : α → oracle_comp spec β)
+variables (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) (oc : β → oracle_comp spec γ)
   (f : α → β) (g : β → γ) (x : α) (y : β)
 
 @[simp] lemma eval_dist_map : ⁅f <$> oa⁆ = ⁅oa⁆.map f := eval_dist_bind oa (pure ∘ f)
@@ -291,6 +291,9 @@ by simp [eval_dist_map, pmf.map_pure]
 
 lemma eval_dist_map_bind : ⁅g <$> (oa >>= ob)⁆ = ⁅oa⁆.bind (λ x, ⁅ob x⁆.map g) :=
 by simp only [eval_dist_map, eval_dist_bind, pmf.map_bind]
+
+lemma eval_dist_bind_map : ⁅(f <$> oa) >>= oc⁆ = (⁅oa⁆.map f).bind (λ y, ⁅oc y⁆) :=
+by simp only [eval_dist_bind, eval_dist_map]
 
 end map
 

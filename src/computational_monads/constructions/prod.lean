@@ -26,6 +26,8 @@ def prod (oa : oracle_comp spec α) (ob : oracle_comp spec β) :
 
 infixr `×ₘ` : 100 := oracle_comp.prod
 
+
+
 variables (oa : oracle_comp spec α) (ob : oracle_comp spec β)
   (e : set α) (e' : set β) (a : α) (b : β) (x : α × β)
 

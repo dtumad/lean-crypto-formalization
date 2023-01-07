@@ -133,7 +133,7 @@ lemma mem_support_map_bind_iff : z ∈ (g <$> (oa >>= ob)).support ↔
 by simp only [support_map_bind, set.mem_Union, set.mem_image, exists_prop]
 
 lemma support_bind_map : ((f <$> oa) >>= oc).support =
-  ⋃ a ∈ oa.support, (oc (f a)).support :=
+  ⋃ x ∈ oa.support, (oc (f x)).support :=
 by simp only [support_bind, support_map, set.mem_image,
   set.Union_exists, set.bUnion_and', set.Union_Union_eq_right]
 

@@ -60,7 +60,7 @@ open oracle_spec distribution_semantics
 
 variables (so : sim_oracle spec spec' S) (so' : sim_oracle spec spec'' S')
   (a : α) (i : spec.ι) (t : spec.domain i) (oa oa' : oracle_comp spec α)
-  (ob ob' : α → oracle_comp spec β) (s : S) (f : α → β)
+  (ob ob' : α → oracle_comp spec β) (oc : β → oracle_comp spec γ) (s : S) (f : α → β)
 
 section simulate
 
@@ -131,15 +131,6 @@ lemma support_simulate_query : (simulate so (query i t) s).support = (so i (t, s
 
 lemma support_simulate_map : (simulate so (f <$> oa) s).support =
   prod.map f id '' (simulate so oa s).support := by rw [simulate_map, support_map]
-
-#check map_bind
-
-lemma support_simulate_map_bind (g : β → γ) : (simulate so (g <$> (oa >>= ob)) s).support
-  = (simulate so (oa >>= λ x, g <$> (ob x)) s).support :=
-begin
-  sorry
-
-end
 
 end support
 

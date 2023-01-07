@@ -21,7 +21,29 @@ open oracle_spec
 
 variables (so : sim_oracle spec spec' S) (so' : sim_oracle spec spec'' S')
   (a : α) (i : spec.ι) (t : spec.domain i) (oa oa' : oracle_comp spec α)
-  (ob ob' : α → oracle_comp spec β) (s : S) (f : α → β)
+  (ob ob' : α → oracle_comp spec β) (oc : β → oracle_comp spec γ) (s : S) (f : α → β)
+
+
+lemma support_simulate_map_bind (g : β → γ) : (simulate so (g <$> (oa >>= ob)) s).support
+  = (simulate so (oa >>= λ x, g <$> (ob x)) s).support :=
+begin
+  sorry
+end
+
+lemma support_simulate_map_bind' (g : β → γ) : (simulate so (g <$> (oa >>= ob)) s).support =
+  ⋃ x ∈ (simulate so oa s).support, prod.map g id '' (simulate so (ob $ prod.fst x) x.2).support :=
+by simp only [support_simulate_map, support_simulate_bind, set.image_Union]
+
+-- TODO: can't be a simp lemma unless simulate doesn't auto unfold?
+lemma support_simulate_bind_map : (simulate so ((f <$> oa) >>= oc) s).support
+  = ⋃ x ∈ (simulate so oa s).support, (simulate so (oc (f $ prod.fst x)) x.2).support :=
+begin
+  refine set.ext (λ z, _),
+  simp only [support_simulate_bind, support_simulate_map, set.mem_image, set.Union_exists,
+    set.Union_and, set.mem_Union],
+  exact ⟨λ h, let ⟨x, y, hy, hxy, hx⟩ := h in ⟨y, hy, by simpa only [← hxy] using hx⟩,
+    λ h, let ⟨x, hx, hz⟩ := h in ⟨(f x.1, x.2), x, hx, rfl, hz⟩⟩,
+end
 
 /-- Lemma for inductively proving the support of a simulation is a specific function of the input.
 Often this is simpler than induction on the computation itself, especially the case of `bind`. -/

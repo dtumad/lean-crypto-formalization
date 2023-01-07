@@ -74,7 +74,7 @@ namespace oracle_comp
 open oracle_spec distribution_semantics
 
 /-- Given a `is_sub_spec` instance between `sub_spec` and `super_spec`, we can coerce a computation
-with oracles `sub_spec` to one with oracles `super_spec` by simulating with `is_sub_spec.to_fun`.-/
+with oracles `sub_spec` to one with `super_spec` by simulating with `is_sub_spec.to_fun`. -/
 instance coe_sub_spec (sub_spec super_spec : oracle_spec) [h : sub_spec ⊂ₒ super_spec] (α : Type) :
   has_coe (oracle_comp sub_spec α) (oracle_comp super_spec α) :=
 {coe := default_simulate' ⟪λ i t, h.to_fun i t⟫}
@@ -94,7 +94,7 @@ instance coe_sub_spec.decidable [∀ i t, (@is_sub_spec.to_fun sub_spec super_sp
   (oa : oracle_comp sub_spec α) [oa.decidable] : (↑oa : oracle_comp super_spec α).decidable :=
 simulate'.decidable _ oa ()
 
-@[simp] lemma coe_sub_spec_return : (↑(return a : oracle_comp sub_spec α) : oracle_comp super_spec α) =
+lemma coe_sub_spec_return : (↑(return a : oracle_comp sub_spec α) : oracle_comp super_spec α) =
   prod.fst <$> return (a, ()) := rfl
 
 lemma coe_sub_spec_bind : (↑(oa >>= ob) : oracle_comp super_spec β) =
@@ -128,7 +128,7 @@ stateless_oracle.prob_event_simulate'_eq_prob_event _ _ ()
 
 end coe_sub_spec
 
-section simulate_coe_spec
+section simulate_coe_sub_spec
 
 variables {sub_spec super_spec spec : oracle_spec} [h : sub_spec ⊂ₒ super_spec] {S S' : Type}
   (so : sim_oracle sub_spec spec S) (so' : sim_oracle super_spec spec S')
@@ -136,19 +136,34 @@ variables {sub_spec super_spec spec : oracle_spec} [h : sub_spec ⊂ₒ super_sp
   (i : sub_spec.ι) (t : sub_spec.domain i)
 include h
 
+section support
+
 @[simp] lemma support_simulate_coe_sub_spec_return :
-  (simulate so' (↑(return a : oracle_comp sub_spec α) : oracle_comp super_spec α) s').support = {(a, s')} :=
+  (simulate so' (return a : oracle_comp sub_spec α) s').support = {(a, s')} :=
 by rw [coe_sub_spec_return, simulate_map, simulate_return, support_map, support_return,
   set.image_singleton, prod.map, id.def]
 
+@[simp] lemma support_simulate'_coe_sub_spec_return :
+  (simulate' so' (return a : oracle_comp sub_spec α) s').support = {a} :=
+by simp only [support_simulate', support_simulate_coe_sub_spec_return, set.image_singleton]
+
 @[simp] lemma support_simulate_coe_sub_spec_bind :
   (simulate so' (↑(oa >>= ob) : oracle_comp super_spec β) s').support =
-    (simulate so' ↑oa s' >>= λ (x : α × S'), simulate so' ↑(ob x.1) x.2).support :=
-begin
-  simp_rw [coe_sub_spec_def, default_simulate', simulate', simulate_bind,
-    support_simulate_map_bind, simulate_bind, simulate_map, support_bind_map, support_bind],
-  simpa only [simulate_eq_default_simulate, set.mem_Union],
-end
+    ⋃ x ∈ (simulate so' (↑oa : oracle_comp super_spec α) s').support,
+      (simulate so' ↑(ob $ prod.fst x) x.2).support :=
+calc (simulate so' (↑(oa >>= ob) : oracle_comp super_spec β) s').support =
+  (simulate so' ↑oa s' >>= λ (x : α × S'), simulate so' ↑(ob x.1) x.2).support :
+    by simp_rw [coe_sub_spec_def, default_simulate', simulate', simulate_bind,
+      support_simulate_map_bind', simulate_map, support_bind_map, support_map,
+      simulate_eq_default_simulate, prod.map_snd, prod.map_fst, id.def]
+  ... = ⋃ x ∈ (simulate so' (↑oa : oracle_comp super_spec α) s').support,
+    (simulate so' ↑(ob $ prod.fst x) x.2).support : by rw [support_bind]
+
+@[simp] lemma support_simulate'_coe_sub_spec_bind :
+  (simulate' so' (↑(oa >>= ob) : oracle_comp super_spec β) s').support =
+    ⋃ x ∈ (simulate so' (↑oa : oracle_comp super_spec α) s').support,
+      (simulate' so' ↑(ob $ prod.fst x) x.2).support :=
+by simp only [support_simulate', support_simulate_coe_sub_spec_bind, set.image_Union]
 
 @[simp] lemma support_simulate_coe_sub_spec_query :
   (simulate so' (↑(query i t) : oracle_comp super_spec (sub_spec.range i)) s').support =
@@ -158,11 +173,11 @@ by simp_rw [coe_sub_spec_def, default_simulate', simulate'_query, stateless_orac
   set.image_singleton, prod.map_mk, id.def, prod.mk.eta, set.bUnion_of_singleton]
 
 /-- Given two simulation oracles `so : sim_oracle spec spec'' S` and
-  `so' : sim_oracle spec' spec'' : S'` with the starting specs satisfying `spec ⊂ₒ spec'`,
-  and a function `f : S → S'` between their states, if simulating the sub-spec coersion function
-  with the second oracle looks like simulating with the first oracle then applying `f`,
-  then simulating the coercion of any computation with the second oracle has the same support as
-  simulating the uncoerced computation with the first oracle and mapping by `f`. -/
+`so' : sim_oracle spec' spec'' : S'` with the starting specs satisfying `spec ⊂ₒ spec'`,
+and a function `f : S → S'` between their states, if simulating the sub-spec coersion function
+with the second oracle looks like simulating with the first oracle then applying `f`,
+then simulating the coercion of any computation with the second oracle has the same support as
+simulating the uncoerced computation with the first oracle and mapping by `f`. -/
 lemma support_simulate_coe_sub_spec (f : S → S')
   (hf' : ∀ i t s, (simulate so' (h.to_fun i t) (f s)).support =
     prod.map id f '' (so i (t, s)).support) :
@@ -170,50 +185,48 @@ lemma support_simulate_coe_sub_spec (f : S → S')
     (prod.map id f) '' (simulate so oa s).support :=
 begin
   induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t generalizing s,
-  { rw [support_simulate_coe_sub_spec_return, simulate_return, support_return, set.image_singleton,
-      prod_map, id.def] },
-  { simp_rw [support_simulate_coe_sub_spec_bind, support_bind, hoa, set.mem_image, prod_map,
-      id.def, prod.exists, set.Union_exists, support_simulate_bind, set.image_Union],
-    ext x,
-    simp only [set.mem_Union, hob],
-    split,
-    { rintro ⟨y, a, s', ⟨ha, rfl⟩, h⟩,
-      refine ⟨(a, s'), ha, hob a s' ▸ h⟩ },
-    { rintro ⟨y, hy, h⟩,
-      refine ⟨(y.1, f y.2), y.1, y.2, ⟨(@prod.mk.eta _ _ y).symm ▸ hy, rfl⟩,
-        (hob y.1 y.2).symm ▸ h⟩ } },
+  { simpa only [support_simulate_coe_sub_spec_return,
+      support_simulate_return, set.image_singleton] },
+  { simp_rw [support_simulate_coe_sub_spec_bind, hoa, support_simulate_bind,
+      set.image_Union, ← hob],
+    ext y,
+    simp_rw [set.mem_Union],
+    refine ⟨λ h, let ⟨x, ⟨y', hy', hxy⟩, hx⟩ := h in ⟨y', hy', by simpa only [← hxy] using hx⟩,
+      λ h, let ⟨x, hy, hx⟩ := h in ⟨(x.1, f x.2), ⟨x, hy, rfl⟩, hx⟩⟩ },
   { rw [support_simulate_coe_sub_spec_query, hf', support_simulate_query] }
 end
 
+/-- Version of `support_simulate_coe_sub_spec` for `simulate'`. In this case we get exact equality,
+between the support of the simulations, since the oracle states are irrelevent. -/
 lemma support_simulate'_coe_sub_spec (f : S → S')
-  (hf' : ∀ i t s, (simulate' so' (h.to_fun i t) (f s)).support =
-    prod.fst '' (so i (t, s)).support):
+  (hf' : ∀ i t s, (simulate so' (h.to_fun i t) (f s)).support =
+    prod.map id f '' (so i (t, s)).support) :
   (simulate' so' (↑oa : oracle_comp super_spec α) (f s)).support =
     (simulate' so oa s).support :=
+by simp only [support_simulate_coe_sub_spec so so' s oa f hf',
+  set.image_image, support_simulate', prod_map, id.def]
+
+end support
+
+section eval_dist
+
+@[simp] lemma eval_dist_simulate_coe_sub_spec_return :
+  ⁅simulate so' (return a : oracle_comp sub_spec α) s'⁆ = pmf.pure (a, s') :=
+by simp only [coe_sub_spec_return, simulate_map, simulate_return, eval_dist_map, eval_dist_return,
+  pmf.map_pure, prod.map_mk, id.def]
+
+@[simp] lemma eval_dist_simulate_coe_sub_spec_bind :
+  ⁅simulate so' (oa >>= ob : oracle_comp sub_spec β) s'⁆ =
+    ⁅simulate so' (↑oa : oracle_comp super_spec α) s'⁆.bind
+      (λ x, ⁅simulate so' ↑(ob $ prod.fst x) x.2⁆) :=
 begin
-  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t generalizing s,
-  { simp [support_simulate', support_simulate_coe_sub_spec_return, simulate_return, support_return, set.image_singleton,
-      prod_map, id.def, set.image_image], },
-  { sorry,
-    -- simp_rw [support_simulate_coe_sub_spec_bind, support_bind, hoa, set.mem_image, prod_map,
-    --   id.def, prod.exists, set.Union_exists, support_simulate_bind, set.image_Union],
-    -- ext x,
-    -- simp only [set.mem_Union, hob],
-    -- split,
-    -- { rintro ⟨y, a, s', ⟨ha, rfl⟩, h⟩,
-    --   refine ⟨(a, s'), ha, hob a s' ▸ h⟩ },
-    -- { rintro ⟨y, hy, h⟩,
-    --   refine ⟨(y.1, f y.2), y.1, y.2, ⟨(@prod.mk.eta _ _ y).symm ▸ hy, rfl⟩,
-    --     (hob y.1 y.2).symm ▸ h⟩ }
-        },
-  {
-    rw [support_simulate', support_simulate_coe_sub_spec_query],
-    specialize hf' i t,
-    simp only [simulate', support_map] at hf' ⊢,
-    rw [hf', simulate_query],
-  }
+  rw [coe_sub_spec_bind], sorry,
 end
 
-end simulate_coe_spec
+
+end eval_dist
+
+
+end simulate_coe_sub_spec
 
 end oracle_comp

@@ -138,7 +138,6 @@ end
   note that this definition doesn't allow for negligable failure of signing -/
 def complete (sig : signature) := ∀ (m : sig.M), ⁅completeness_experiment sig m⁆ tt = 1
 
--- TODO: fix like above
 lemma complete_iff_signatures_support_subset :
   sig.complete ↔ ∀ (m : sig.M) (pk : sig.PK) (sk : sig.SK) (σ : sig.S)
     (log log' : query_log sig.random_oracle_spec),
@@ -192,8 +191,7 @@ default_simulate' (idₛ ++ₛ random_oracle sig.random_oracle_spec)
       b ← sig.verify (pk, m, σ),
       return (if log.not_queried () m then b else ff) })
 
-/-- Adversaries success at forging a signature.
-  TODO: maybe this doesn't need an independent definition -/
+/-- Adversaries success at forging a signature. -/
 noncomputable def advantage {sig : signature} (adversary : unforgeable_adversary sig) : ℝ≥0∞ :=
 ⁅(= tt) | adversary.experiment sig⁆
 

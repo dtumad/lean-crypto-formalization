@@ -86,7 +86,6 @@ end uniform_of_list
 
 section uniform_of_vector
 
--- TODO: this is a better definition and makes lists more natural
 noncomputable def uniform_of_vector {n : ℕ} (v : vector α (n + 1)) : pmf α :=
 uniform_of_list v.1 (vector.not_empty_to_list v)
 

@@ -21,7 +21,7 @@ open oracle_comp oracle_spec
 
 variables {spec spec' spec'' spec''' : oracle_spec} {α β γ : Type} {S S' : Type}
 
-namespace sim_oracle -- TODO: `oracle_append` namespace?
+namespace sim_oracle
 
 def oracle_append (so : sim_oracle spec spec'' S) (so' : sim_oracle spec' spec'' S') :
   sim_oracle (spec ++ spec') spec'' (S × S') :=
