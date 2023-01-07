@@ -8,9 +8,15 @@ import computational_monads.distribution_semantics.independence
 /-!
 # Pairwise Oracle Computations
 
-This file defines a construction for running two computations,
-returning both results together in a pair as a `prod` type.
-`oa ×ₘ ob` represents the computation running both independently and returning both results.
+This file defines a construction `oracle_comp.product` for running two computations independently,
+returning both results together as a pair.
+We use the notation `oa ×ₘ ob` to represent this monadic product operation.
+In theory this could be defined as a specialization of a construction on monads in general,
+but that doesn't currently exist in mathlib.
+
+We show that the support is set product of the two individual supports,
+and that the probability of an output is the product of the individual probabilities for each
+component (similarly for the probability of an event.)
 -/
 
 namespace oracle_comp
@@ -20,26 +26,23 @@ open_locale ennreal big_operators
 
 variables {α β γ : Type} {spec spec' : oracle_spec}
 
--- TODO: `product`??
-def prod (oa : oracle_comp spec α) (ob : oracle_comp spec β) :
+def product (oa : oracle_comp spec α) (ob : oracle_comp spec β) :
   oracle_comp spec (α × β) := do {a ← oa, b ← ob, return (a, b)}
 
-infixr `×ₘ` : 100 := oracle_comp.prod
-
-
+infixr `×ₘ` : 100 := oracle_comp.product
 
 variables (oa : oracle_comp spec α) (ob : oracle_comp spec β)
   (e : set α) (e' : set β) (a : α) (b : β) (x : α × β)
 
-lemma prod.def : oa ×ₘ ob = do {a ← oa, b ← ob, return (a, b)} := rfl
+lemma product.def : oa ×ₘ ob = do {a ← oa, b ← ob, return (a, b)} := rfl
 
-instance prod.decidable [decidable_eq α] [decidable_eq β] [decidable oa] [decidable ob] :
-  decidable (oa ×ₘ ob) := by {unfold prod, apply_instance}
+instance product.decidable [decidable_eq α] [decidable_eq β] [decidable oa] [decidable ob] :
+  decidable (oa ×ₘ ob) := by {unfold product, apply_instance}
 
 section support
 
 @[simp] lemma support_prod : (oa ×ₘ ob).support = oa.support ×ˢ ob.support :=
-set.ext (λ x, by simp only [prod.def, prod.eq_iff_fst_eq_snd_eq, support_bind, support_bind_return,
+set.ext (λ x, by simp only [product.def, prod.eq_iff_fst_eq_snd_eq, support_bind, support_bind_return,
   set.mem_Union, set.mem_image, exists_eq_right_right, exists_prop, set.mem_prod])
 
 lemma mem_support_prod_iff : x ∈ (oa ×ₘ ob).support ↔ x.1 ∈ oa.support ∧ x.2 ∈ ob.support :=
@@ -71,7 +74,7 @@ section eval_dist
   is the product of the two individual probabilities-/
 @[simp] lemma eval_dist_prod_apply : ⁅oa ×ₘ ob⁆ x = ⁅oa⁆ x.1 * ⁅ob⁆ x.2 :=
 calc ⁅oa ×ₘ ob⁆ x = ∑' (a : α) (b : β), (⁅oa⁆ a * ⁅ob⁆ b) * (⁅return (a, b)⁆ x) :
-    by simp_rw [prod.def, eval_dist_bind_apply_eq_tsum, ← ennreal.tsum_mul_left, mul_assoc]
+    by simp_rw [product.def, eval_dist_bind_apply_eq_tsum, ← ennreal.tsum_mul_left, mul_assoc]
   ... = ∑' (y : α × β), (⁅oa⁆ y.1 * ⁅ob⁆ y.2) * (⁅(return (y.1, y.2) : oracle_comp spec _)⁆ x) :
     by rw ← ennreal.tsum_prod
   ... = (⁅oa⁆ x.1 * ⁅ob⁆ x.2) * (⁅(return (x.1, x.2) : oracle_comp spec _)⁆ x) :
