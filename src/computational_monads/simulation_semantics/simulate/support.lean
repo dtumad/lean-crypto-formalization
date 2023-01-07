@@ -163,7 +163,6 @@ begin
         mem_support_simulate'_iff_exists_state] at this,
       obtain ⟨t', ht'⟩ := this,
       exact ⟨(a, t'), ht', hob a t t' ▸ hob'⟩ },
-    -- TODO: This is basically the same as the above, maybe simplify somehow
     { obtain ⟨⟨a, t⟩, hoa', hob'⟩ := h,
       have : ∃ u, (a, u) ∈ (simulate so' oa s').support := ⟨t, hoa'⟩,
       rw [← mem_support_simulate'_iff_exists_state, ← hoa s s',
@@ -193,6 +192,7 @@ begin
   { simp only [simulate_return, support_bind_return, support_return, set.image_singleton] },
   { intros α β oa ob s,
     ext x,
+
     sorry },
   { exact h }
 end

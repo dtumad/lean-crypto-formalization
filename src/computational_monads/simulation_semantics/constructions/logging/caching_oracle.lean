@@ -44,7 +44,7 @@ def caching_oracle (spec : oracle_spec) : sim_oracle spec spec (query_log spec) 
 namespace caching_oracle
 
 variables (oa oa' : oracle_comp spec α) (i : spec.ι) (t : spec.domain i) (u : spec.range i)
-  (log : query_log spec) --naming → cache
+  (log : query_log spec) (x : spec.range i × query_log spec) --TODO: naming → cache
 
 @[simp] lemma apply_eq : (caching_oracle spec) i (t, log) = option.rec_on (log.lookup i t)
   (query i t >>= λ u, return (u, log.log_query i t u)) (λ u, return (u, log)) :=
@@ -79,14 +79,21 @@ begin
       prod.eq_iff_fst_eq_snd_eq, set.mem_singleton_iff, set.mem_set_of_eq] }
 end
 
--- TODO: mem version, remove set.mem_set_of_eq below
 lemma support_apply_of_not_queried (hlog : log.not_queried i t) :
   ((caching_oracle spec) i (t, log)).support = {x | x.2 = log.log_query i t x.1} :=
 by rw [support_apply, if_pos hlog]
 
-lemma support_apply_of_not_not_queried (hlog : ¬ log.not_queried i t) :
+lemma mem_support_apply_iff_of_not_queried (hlog : log.not_queried i t) :
+  x ∈ ((caching_oracle spec) i (t, log)).support ↔ x.2 = log.log_query i t x.1 :=
+by rw [support_apply_of_not_queried i t log hlog, set.mem_set_of_eq]
+
+lemma support_apply_of_queried (hlog : ¬ log.not_queried i t) :
   ((caching_oracle spec) i (t, log)).support = {x | some x.1 = log.lookup i t ∧ x.2 = log} :=
 by rw [support_apply, if_neg hlog]
+
+lemma mem_support_apply_iff_of_queried (hlog : ¬ log.not_queried i t) :
+  x ∈ ((caching_oracle spec) i (t, log)).support ↔ some x.1 = log.lookup i t ∧ x.2 = log :=
+by rw [support_apply_of_queried i t log hlog, set.mem_set_of_eq]
 
 /-- If the initial cache has `nodup` for some oracle, then so does the final cache. -/
 lemma nodup_simulate (hlog : (log i).nodup) (x : α × query_log spec)
@@ -95,10 +102,10 @@ begin
   refine support_state_simulate_induction (caching_oracle spec) (λ log, (log i).nodup)
     log hlog oa x hx (λ i t log x hx hlog, _),
   by_cases h : log.not_queried i t,
-  { rw [support_apply_of_not_queried _ _ _ h, set.mem_set_of_eq] at hx,
+  { rw [mem_support_apply_iff_of_not_queried _ _ _ _ h] at hx,
     rw [hx, query_log.nodup_log_query_apply_iff _ _ _ _ _ hlog],
     exact or.inr ((log.not_queried_iff_not_mem _ _).1 h _) },
-  { rw [support_apply_of_not_not_queried _ _ _ h, set.mem_set_of_eq] at hx,
+  { rw [mem_support_apply_iff_of_queried _ _ _ _ h] at hx,
     exact hx.2.symm ▸ hlog }
 end
 
@@ -121,7 +128,7 @@ begin
         (log.lookup_eq_none_iff_not_queried _ _).2 h)) },
     { exact hlog },
     { exact hlog } },
-  { rw [support_apply_of_not_not_queried _ _ _ h, set.mem_set_of_eq] at hx,
+  { rw [mem_support_apply_iff_of_queried _ _ _ _ h] at hx,
     exact hx.2.symm ▸ hlog }
 end
 
@@ -134,7 +141,7 @@ begin
   rw [← ne.def, option.ne_none_iff_exists'] at h,
   refine let ⟨u, hu⟩ := h in option.some_ne_none u ((lookup_simulate_eq_some_of_lookup_eq_some
     oa i t u log x hx hu).symm.trans hx'),
-end 
+end
 
 /-- For any query fresh to the initial cache, if there is some output such that query has a cached
 value, then there are also outputs with any other possible cached value. -/
@@ -172,7 +179,7 @@ lemma length_cache_apply_of_not_not_queried (hlog : ¬ log.not_queried i t)
   (x : spec.range i × query_log spec) (hx : x ∈ ((caching_oracle spec) i (t, log)).support) :
   (x.2 i).length = (log i).length :=
 begin
-  rw [support_apply_of_not_not_queried i t log hlog, set.mem_set_of_eq] at hx,
+  rw [mem_support_apply_iff_of_queried _ _ _ _ hlog] at hx,
   refine congr_arg list.length (congr_fun hx.2 i)
 end
 
@@ -185,9 +192,9 @@ begin
     (λ log', (log i).length ≤ (log' i).length) log le_rfl oa
       x hx (λ i' t log' x' hx' hlog', le_trans hlog' _),
   by_cases hlog'' : log'.not_queried i' t,
-  { rw [support_apply_of_not_queried _ _ _ hlog'', set.mem_set_of_eq] at hx',
+  { rw [support_apply_of_not_queried _ _ _ hlog''] at hx',
     exact hx'.symm ▸ log'.length_apply_le_lenght_log_query_apply i' t x'.1 i },
-  { rw [support_apply_of_not_not_queried _ _ _ hlog'', set.mem_set_of_eq] at hx',
+  { rw [mem_support_apply_iff_of_queried _ _ _ _ hlog''] at hx',
     rw [hx'.2] }
 end
 
@@ -244,15 +251,15 @@ begin
   { simp_rw [set.mem_Union] at h,
     obtain ⟨y, hy, hy'⟩ := h,
     by_cases hlog : log.not_queried i t,
-    { rw [support_apply_of_not_queried i t log hlog, set.mem_set_of_eq] at ⊢ hy,
+    { rw [mem_support_apply_iff_of_not_queried _ _ _ _ hlog] at ⊢ hy,
       have : ¬ y.2.not_queried i t := sorry,
-      rw [support_apply_of_not_not_queried i t y.2 this, set.mem_set_of_eq] at hy',
+      rw [mem_support_apply_iff_of_queried _ _ _ _ this] at hy',
       refine hy'.2.trans _,
       have : x.1 = y.1 := sorry,
       rw [hy, this] },
-    { rw [support_apply_of_not_not_queried i t log hlog, set.mem_set_of_eq] at ⊢ hy,
+    { rw [mem_support_apply_iff_of_queried _ _ _ _ hlog] at ⊢ hy,
       have : ¬ y.2.not_queried i t := sorry,
-      rw [support_apply_of_not_not_queried i t y.2 this, set.mem_set_of_eq] at hy',
+      rw [mem_support_apply_iff_of_queried _ _ _ _ this] at hy',
       refine ⟨trans (hy'.1.trans _) hy.1, hy'.2.trans hy.2⟩,
       rw [hy.2],
       exact symm hy.1 } },
