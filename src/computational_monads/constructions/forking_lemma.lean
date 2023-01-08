@@ -3,7 +3,7 @@ Copyright (c) 2022 Devon Tuma. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
-import computational_monads.constructions.prod
+import computational_monads.constructions.product
 import computational_monads.distribution_semantics.option
 import computational_monads.simulation_semantics.oracle_append
 import computational_monads.simulation_semantics.constructions.logging.random_oracle
@@ -16,7 +16,7 @@ import computational_monads.simulation_semantics.constructions.identity_oracle
 This file defines a version of the forking lemma, constructing a computation
 that "rewinds" a computation to a particular query, and then reruns it.
 The result is a pair of outputs, for which the beginning of the corresponding
-computations match, in terms of the queries logged to the oracles. 
+computations match, in terms of the queries logged to the oracles.
 -/
 
 noncomputable theory
@@ -100,7 +100,7 @@ end advantage
 end forking_adversary
 
 variables {T U α : Type} [inhabited U] [fintype U] [decidable_eq T] [decidable_eq U]
-  [decidable_eq α] {n : ℕ} (adv : forking_adversary T U α) 
+  [decidable_eq α] {n : ℕ} (adv : forking_adversary T U α)
 
 /-- Run computation twice, using the same random information for both,
   responding differently to a query specified by `choose_fork`,
@@ -169,7 +169,7 @@ begin
         intros log log' h _ _,
         simp only [prod.eq_iff_fst_eq_snd_eq] at h,
         exact h.2.2.1 },
-    end 
+    end
     ... = ∑' (log : query_log uniform_selecting), ⁅adv.simulate_with_log⁆ (some i, x, log, cache)
       * ⁅adv.simulate_from_seed log.to_seed (cache.fork_cache () (some i))⁆ (some i, x', cache') :
     begin
@@ -222,7 +222,7 @@ begin
   -- simp only [fork, support_bind, set.mem_Union, exists_prop, prod.exists, return_eq_pure,
   --   support_pure_bind, support_pure, set.mem_singleton_iff] at h,
   -- obtain ⟨y, log₀, cache₀, hy, y', cache₀', hy', h⟩ := h,
-  
+
   -- have : adv.choose_fork y cache₀ = adv.choose_fork y' cache₀' := begin
   --   by_contradiction h',
   --   simp only [h', if_false] at h,
@@ -312,7 +312,7 @@ calc ⁅fork_success | fork adv⁆
   end
   ... ≥ ⁅λ o, o.1.is_some | fork adv⁆ - (1 / fintype.card U) : begin
     sorry
-    -- rw [mul_tsub, mul_one, mul_div, mul_one], 
+    -- rw [mul_tsub, mul_one, mul_div, mul_one],
     -- refine tsub_le_tsub_left _ _,
     -- have : 0 < (fintype.card U : ℝ≥0) := nat.cast_pos.2 fintype.card_pos,
     -- rw div_le_div_right this,

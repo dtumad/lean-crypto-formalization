@@ -299,7 +299,8 @@ by simpa only [prob_event_eq_to_measure_apply] using
 lemma prob_event_eq_prob_event_inter_add_prob_event_diff {e s : set α} :
   ⁅e | oa⁆ = ⁅e ∩ s | oa⁆ + ⁅e \ s | oa⁆ :=
 trans (by rw [set.inter_union_diff]) (prob_event_union_eq_of_disjoint oa $
-  set.disjoint_of_subset_left (set.inter_subset_right _ _) (set.disjoint_diff))
+  set.disjoint_of_subset_left (set.inter_subset_right _ _)
+    (by rw [set.disjoint_iff, set.inter_diff_self]))
 
 end sets
 
