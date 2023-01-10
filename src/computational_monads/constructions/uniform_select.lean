@@ -110,7 +110,7 @@ variables [decidable_eq α] {n : ℕ} (v : vector α (n + 1))
 section support
 
 @[simp] lemma support_uniform_select_vector : ($ᵛ v).support = {a | a ∈ v.to_list} :=
-(support_map v.nth $[0..n]).trans (set.ext (λ a, by simp only [vector.mem_iff_nth,
+(support_map $[0..n] v.nth).trans (set.ext (λ a, by simp only [vector.mem_iff_nth,
   support_uniform_fin, set.top_eq_univ, set.image_univ, set.mem_range, set.mem_set_of_eq]))
 
 lemma support_uniform_select_vector_eq_coe_to_finset :

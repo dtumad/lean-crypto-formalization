@@ -5,7 +5,7 @@ Authors: Devon Tuma
 -/
 import to_mathlib.pmf_stuff
 import probability.probability_mass_function.uniform
-import computational_monads.support.fin_support
+import computational_monads.support.monad
 
 /-!
 # Distribution Semantics for Oracle Computations`

@@ -12,7 +12,7 @@ import to_mathlib.general
 This file gives an alternative definition of the support of an `oracle_comp`.
 Instead of a `set` as with `oracle_comp.support`, we introduce a definition
   `oracle_comp.fin_support` which gives the support as a `finset`.
-The resulting `fin_set` is equal to `oracle_comp.support` when coerced to a `set`,
+The resulting `finset` is equal to `oracle_comp.support` when coerced to a `set`,
   see `fin_support_eq_support`.
 
 This requires a number of decidability hypotheses for the computation itself.
@@ -80,7 +80,7 @@ end support
 
 section return
 
-variables (a x : α) [decidable_eq α]
+variables [decidable_eq α] (a x : α)
 
 @[simp] lemma fin_support_return : (return a : oracle_comp spec α).fin_support = {a} := rfl
 
@@ -111,7 +111,7 @@ end return
 section bind
 
 variables (oa : oracle_comp spec α) (ob : α → oracle_comp spec β)
-  [decidable oa] [∀ a, decidable (ob a)] (f : α → β) (x a : α) (y : β)
+  [decidable oa] [∀ a, decidable (ob a)] (y : β)
 
 @[simp] lemma fin_support_bind : (oa >>= ob).fin_support = @finset.bUnion α β
   (decidable_eq_of_decidable (oa >>= ob)) oa.fin_support (λ a, (ob a).fin_support) :=
@@ -130,112 +130,16 @@ lemma mem_fin_support_bind'_iff : y ∈ (bind' α β oa ob).fin_support ↔
   ∃ x ∈ oa.fin_support, y ∈ (ob x).fin_support :=
 mem_fin_support_bind_iff oa ob y
 
-lemma fin_support_return_bind [decidable_eq α] :
-  (return a >>= ob).fin_support = (ob a).fin_support :=
-by simp only [fin_support_bind, fin_support_return, finset.singleton_bUnion]
-
-lemma mem_fin_support_return_bind_iff [decidable_eq α] :
-  y ∈ (return a >>= ob).fin_support ↔ y ∈ (ob a).fin_support :=
-by rw [fin_support_return_bind]
-
-@[simp] lemma fin_support_bind_return [decidable_eq β] :
-  (oa >>= λ a, return (f a)).fin_support = oa.fin_support.image f :=
-by rw [fin_support_eq_iff_support_eq_coe, support_bind_return,
-  finset.coe_image, coe_fin_support_eq_support]
-
-lemma mem_fin_support_bind_return_iff [decidable_eq β] :
-  y ∈ (oa >>= λ a, return (f a)).fin_support ↔ ∃ x ∈ oa.fin_support, f x = y :=
-by simp only [fin_support_bind_return, finset.mem_image]
-
-@[simp] lemma fin_support_bind_return_id [decidable_eq α] :
-  (oa >>= return).fin_support = oa.fin_support :=
-(fin_support_bind_return oa id).trans finset.image_id
-
 end bind
 
 section query
 
 variables (i : spec.ι) (t : spec.domain i) (u : spec.range i)
-  (oa : spec.range i → oracle_comp spec α) [∀ u, decidable (oa u)] (x : α)
 
 @[simp] lemma fin_support_query : (query i t).fin_support = ⊤ := rfl
 
 lemma mem_fin_support_query : u ∈ (query i t).fin_support := finset.mem_univ u
 
-lemma fin_support_query_bind [decidable_eq α] :
-  (query i t >>= oa).fin_support = finset.bUnion finset.univ (λ u, (oa u).fin_support) :=
-by {simp only [fin_support_bind, fin_support_query, finset.top_eq_univ], congr}
-
-lemma mem_fin_support_query_bind_iff [decidable_eq α] :
-  x ∈ (query i t >>= oa).fin_support ↔ ∃ t, x ∈ (oa t).fin_support :=
-by simp only [fin_support_query_bind, finset.mem_bUnion, finset.mem_univ, exists_true_left]
-
 end query
-
-section map
-
-variables [decidable_eq β] [decidable_eq γ] (oa : oracle_comp spec α) [decidable oa]
-  (ob : α → oracle_comp spec β) [∀ a, decidable (ob a)] (oc : β → oracle_comp spec γ)
-  [∀ b, decidable (oc b)] (f : α → β) (g : β → γ) (a x : α) (y : β) (z : γ)
-
-@[simp] lemma fin_support_map : (f <$> oa).fin_support = oa.fin_support.image f :=
-by rw [fin_support_eq_iff_support_eq_coe, finset.coe_image,
-  support_map, coe_fin_support_eq_support]
-
-lemma mem_fin_support_map_iff : y ∈ (f <$> oa).fin_support ↔ ∃ x ∈ oa.fin_support, f x = y :=
-by rw [fin_support_map, finset.mem_image]
-
-lemma fin_support_map_return [decidable_eq α] :
-  (f <$> (return a : oracle_comp spec α)).fin_support = {f a} :=
-by simp only [fin_support_map, fin_support_return, finset.image_singleton]
-
-lemma mem_fin_support_map_return_iff [decidable_eq α] :
-  y ∈ (f <$> (return a : oracle_comp spec α)).support ↔ y = f a :=
-by simp only [support_map, support_return, set.image_singleton, set.mem_singleton_iff]
-
-@[simp] lemma fin_support_map_bind : (g <$> (oa >>= ob)).fin_support =
-  @finset.bUnion α γ (decidable_eq_of_decidable (g <$> (oa >>= ob)))
-    oa.fin_support (λ a, (ob a).fin_support.image g) :=
-by simp_rw [fin_support_eq_iff_support_eq_coe, finset.coe_bUnion, finset.coe_image,
-  coe_fin_support_eq_support, support_map_bind]
-
-lemma mem_fin_support_map_bind_iff : z ∈ (g <$> (oa >>= ob)).fin_support ↔
-  ∃ x ∈ oa.fin_support, ∃ y ∈ (ob x).fin_support, g y = z :=
-by simp only [fin_support_map_bind, finset.mem_bUnion, finset.mem_image]
-
-@[simp] lemma fin_support_bind_map : ((f <$> oa) >>= oc).fin_support = @finset.bUnion α γ
-  (decidable_eq_of_decidable ((f <$> oa) >>= oc)) oa.fin_support (λ a, (oc (f a)).fin_support) :=
-by simp only [finset.image_bUnion, fin_support_bind, fin_support_map]
-
-lemma mem_fin_support_bind_map_iff : z ∈ ((f <$> oa) >>= oc).fin_support ↔
-  ∃ x ∈ oa.fin_support, z ∈ (oc (f x)).fin_support :=
-by simp only [fin_support_bind_map, finset.mem_bUnion]
-
-end map
-
-section image
-
-variables [decidable_eq β] (oa : oracle_comp spec α) [decidable oa] (f : α → β) (b : β)
-
-lemma coe_image_fin_support_eq_image_support :
-  (oa.fin_support.image f : set β) = f '' oa.support :=
-by simp only [finset.coe_image, coe_fin_support_eq_support]
-
-lemma image_fin_support_eq_iff_image_support_eq_coe (s : finset β) :
-  oa.fin_support.image f = s ↔ f '' oa.support = ↑s :=
-by rw [← coe_image_fin_support_eq_image_support, finset.coe_eq_coe_iff]
-
-lemma mem_image_fin_support_iff_mem_image_support :
-  b ∈ oa.fin_support.image f ↔ b ∈ f '' oa.support :=
-by rw [← finset.mem_coe, coe_image_fin_support_eq_image_support]
-
-end image
-
-@[simp] lemma fin_support_bind_ite [decidable_eq β] (oa : oracle_comp spec α) [oa.decidable]
-  (p : α → Prop) [decidable_pred p] (f : α → β) (g : α → β) :
-  (oa >>= λ a, return (if p a then f a else g a)).fin_support =
-    ((oa.fin_support.filter p).image f) ∪ ((oa.fin_support.filter (not ∘ p)).image g) :=
-by simp only [fin_support_eq_iff_support_eq_coe, support_bind_ite, finset.coe_union,
-  finset.coe_image, finset.coe_filter, coe_fin_support_eq_support]
 
 end oracle_comp

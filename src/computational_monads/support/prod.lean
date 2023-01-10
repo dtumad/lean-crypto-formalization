@@ -3,7 +3,7 @@ Copyright (c) 2022 Devon Tuma. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
-import computational_monads.support.fin_support
+import computational_monads.support.monad
 
 /-!
 # Support of Computations Involving Prod
@@ -27,7 +27,7 @@ lemma support_bind_prod_mk : (oa >>= λ a, return (f a, g a)).support =
   (λ a, (f a, g a)) '' oa.support := support_bind_return oa _
 
 lemma support_map_prod_mk : ((λ a, (f a, g a) : α → β × γ) <$> oa).support =
-  (λ a, (f a, g a)) '' oa.support := support_map _ oa
+  (λ a, (f a, g a)) '' oa.support := support_map oa _
 
 lemma mem_support_bind_prod_mk (x : β × γ) :
   x ∈ (oa >>= λ a, return (f a, g a)).support ↔ ∃ y ∈ oa.support, f y = x.1 ∧ g y = x.2 :=
@@ -41,7 +41,7 @@ lemma mem_support_bind_prod_mk_id_fst (x : α × γ) :
   x ∈ (oa >>= λ a, return (a, g a)).support ↔ x.1 ∈ oa.support ∧ g x.1 = x.2 :=
 calc x ∈ (oa >>= λ a, return (a, g a)).support
   ↔ ∃ y, y ∈ oa.support ∧ y = x.1 ∧ g y = x.2 : by simp_rw [mem_support_bind_prod_mk, exists_prop]
-  ... ↔ ∃ y, y = x.1 ∧ y ∈ oa.support ∧ g y = x.2 : 
+  ... ↔ ∃ y, y = x.1 ∧ y ∈ oa.support ∧ g y = x.2 :
     exists_congr (λ y, by simp_rw [and_comm (y ∈ oa.support), and_assoc])
   ... ↔ x.1 ∈ oa.support ∧ g x.1 = x.2 : exists_eq_left
 
@@ -86,12 +86,12 @@ by simp only [mem_fin_support_iff_mem_support, mem_support_bind_prod_mk_id_snd]
 lemma mem_fin_support_bind_prod_mk_fst [decidable_eq β] [decidable_eq γ] (x : β × γ) :
   x ∈ (oa >>= λ a, return (f a, c)).fin_support ↔ x.1 ∈ oa.fin_support.image f ∧ x.2 = c :=
 by simp only [mem_fin_support_iff_mem_support, mem_support_bind_prod_mk_fst,
-  mem_image_fin_support_iff_mem_image_support]
+  set.mem_image, finset.mem_image, exists_prop]
 
 lemma mem_fin_support_bind_prod_mk_snd [decidable_eq β] [decidable_eq γ] (x : β × γ) :
   x ∈ (oa >>= λ a, return (b, g a)).fin_support ↔ x.1 = b ∧ x.2 ∈ oa.fin_support.image g :=
 by simp only [mem_fin_support_iff_mem_support, mem_support_bind_prod_mk_snd,
-  mem_image_fin_support_iff_mem_image_support]
+  set.mem_image, finset.mem_image, exists_prop]
 
 end fin_support
 
