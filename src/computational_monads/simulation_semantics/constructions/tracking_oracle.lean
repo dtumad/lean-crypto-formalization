@@ -5,6 +5,7 @@ Authors: Devon Tuma
 -/
 import computational_monads.simulation_semantics.simulate.support
 import computational_monads.simulation_semantics.simulate.eval_dist
+import computational_monads.simulation_semantics.simulate.subsingleton
 import computational_monads.support.prod
 
 /-!
