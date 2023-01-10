@@ -20,7 +20,7 @@ and further extend this with various assumptions about run times of computations
 `hard_homogeneous_space` further requires vectorization and parallelization are hard.
 -/
 
-open_locale big_operators ennreal 
+open_locale big_operators ennreal
 open oracle_comp oracle_spec distribution_semantics
 
 /-- An `algorithmic_homogenous_space` is a homogenous space where operations are all `poly_time`.
@@ -32,15 +32,15 @@ class algorithmic_homogenous_space (G X : Type) [fintype G] [fintype X]
 (poly_time_vadd : poly_time (λ x, x.1 +ᵥ x.2 : G × X → X))
 (poly_time_eq_G : poly_time (λ x, x.1 = x.2 : G × G → bool))
 (poly_time_eq_X : poly_time (λ x, x.1 = x.2 : X × X → bool))
-(poly_time_rnd_G : poly_time_oracle_comp (λ (_ : unit), $ᵗ G)) 
+(poly_time_rnd_G : poly_time_oracle_comp (λ (_ : unit), $ᵗ G))
 
 namespace algorithmic_homogenous_space
 
 variables {G X : Type} [fintype G] [fintype X] [decidable_eq G] [decidable_eq X]
   [add_group G] [algorithmic_homogenous_space G X]
-  
+
 structure vectorization_adversary (G X : Type) : Type 1 :=
-(adv : X × X → oracle_comp uniform_selecting G)
+(adv : X × X → oracle_comp uniform_selecting G) -- TODO: name `adv` -> `alg`?
 -- (adv_poly_time : poly_time_oracle_comp adv)
 
 namespace vectorization_adversary
@@ -65,7 +65,7 @@ calc adversary.advantage = ⁅(=) tt | experiment adversary⁆ : rfl
     simp only [experiment, eval_dist_bind_apply_eq_tsum ($ᵗ X), pow_two, ← mul_assoc,
       eval_dist_uniform_select_fintype_apply, ennreal.tsum_mul_left],
     refine congr_arg (λ x, _ * x) (tsum_congr (λ x₁, tsum_congr (λ x₂, _))),
-    refine (eval_dist_bind_return_apply_eq_single (adversary.adv (x₁, x₂)) _ (x₁ -ᵥ x₂) tt) _ _,
+    refine (eval_dist_bind_return_apply_eq_single (adversary.adv (x₁, x₂)) _ tt (x₁ -ᵥ x₂)) _ _,
     { simp only [ne.def, bool.tt_eq_to_bool_iff, imp_self, forall_const] },
     { simp only [eq_self_iff_true, to_bool_true_eq_tt] }
   end
