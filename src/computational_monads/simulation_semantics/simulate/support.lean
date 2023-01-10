@@ -23,14 +23,9 @@ variables (so : sim_oracle spec spec' S) (so' : sim_oracle spec spec'' S')
   (a : α) (i : spec.ι) (t : spec.domain i) (oa oa' : oracle_comp spec α)
   (ob ob' : α → oracle_comp spec β) (oc : β → oracle_comp spec γ) (s : S) (f : α → β)
 
+section monad
 
-lemma support_simulate_map_bind (g : β → γ) : (simulate so (g <$> (oa >>= ob)) s).support
-  = (simulate so (oa >>= λ x, g <$> (ob x)) s).support :=
-begin
-  sorry
-end
-
-lemma support_simulate_map_bind' (g : β → γ) : (simulate so (g <$> (oa >>= ob)) s).support =
+lemma support_simulate_map_bind (g : β → γ) : (simulate so (g <$> (oa >>= ob)) s).support =
   ⋃ x ∈ (simulate so oa s).support, prod.map g id '' (simulate so (ob $ prod.fst x) x.2).support :=
 by simp only [support_simulate_map, support_simulate_bind, set.image_Union]
 
@@ -44,6 +39,10 @@ begin
   exact ⟨λ h, let ⟨x, y, hy, hxy, hx⟩ := h in ⟨y, hy, by simpa only [← hxy] using hx⟩,
     λ h, let ⟨x, hx, hz⟩ := h in ⟨(f x.1, x.2), x, hx, rfl, hz⟩⟩,
 end
+
+end monad
+
+section induction
 
 /-- Lemma for inductively proving the support of a simulation is a specific function of the input.
 Often this is simpler than induction on the computation itself, especially the case of `bind`. -/
@@ -90,6 +89,8 @@ begin
     exact hob a x s' (hoa (a, s') s hs ha) ha' },
   { exact hso i' t' s x hx hs }
 end
+
+end induction
 
 /-- Since `support` assumes any possible query result, `simulate` will never reduce the support.
 In particular the support of a simulation lies in the pullback of the original support. -/
@@ -195,19 +196,6 @@ begin
 
     sorry },
   { exact h }
-end
-
-/-- If the state has at most one elements, we can express the support of `simulate` in terms
-of only `simulate'`. For example in a `stateless_oracle` or `uniform_oracle`. -/
-lemma support_simulate_eq_support_simulate'_of_subsingleton [subsingleton S]
-  (so : sim_oracle spec spec' S) : (simulate so oa s).support =
-    {x | x.1 ∈ (simulate' so oa s).support} :=
-begin
-  refine set.ext (λ x, _),
-  rw [set.mem_set_of, support_simulate', set.mem_image],
-  refine ⟨λ h, ⟨x, h, rfl⟩, λ h, _⟩,
-  obtain ⟨y, hy, h⟩ := h,
-  rwa [← @prod.mk.eta _ _ x, ← h, subsingleton.elim x.2 y.2, prod.mk.eta],
 end
 
 end oracle_comp

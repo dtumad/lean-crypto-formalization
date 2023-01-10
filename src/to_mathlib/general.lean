@@ -5,11 +5,13 @@ Authors: Devon Tuma
 -/
 import probability.probability_mass_function.basic
 
-/-! 
+/-!
 # Misc Lemmas That Ideally Should Port to Mathlib
 -/
 
 variables {α β γ : Type*}
+
+open_locale ennreal
 
 lemma finset.count_to_list [decidable_eq α] (s : finset α) (a : α) :
   s.to_list.count a = ite (a ∈ s) 1 0 :=
@@ -20,3 +22,6 @@ begin
   refine ⟨λ h, finset.ext (λ x, _), λ h, congr_arg coe h⟩,
   rw [← finset.mem_coe, ← finset.mem_coe, h],
 end
+
+lemma ennreal.tsum_prod' {f : α × β → ℝ≥0∞} : ∑' p : α × β, f p = ∑' a b, f (a, b) :=
+tsum_prod' ennreal.summable $ λ _, ennreal.summable

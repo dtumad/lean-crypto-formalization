@@ -1,20 +1,19 @@
-# This is currently failing *I think* because of something in leanprover-contrib
-# on:
-#   schedule:
-#     - cron: '0 2 * * *'
+on:
+  schedule:
+    - cron: '0 2 * * *'
 
-# jobs:
-#   # Upgrade Lean and Mathlib nightly, failing if the new build fails.
-#   upgrade_lean:
-#     name: Bump Lean and dependency versions
-#     runs-on: ubuntu-latest
-#     steps:
-#       - name: checkout project
-#         uses: actions/checkout@v2
-#       - name: upgrade Lean and dependencies
-#         uses: leanprover-contrib/lean-upgrade-action@master
-#         with:
-#           repo: ${{ github.repository }}
-#           access-token: ${{ secrets.GITHUB_TOKEN }}
-#       - name: update version branches
-#         uses: leanprover-contrib/update-versions-action@master
+jobs:
+  # Upgrade Lean and Mathlib nightly, failing if the new build fails.
+  upgrade_lean:
+    name: Bump Lean and dependency versions
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout project
+        uses: actions/checkout@v2
+      - name: upgrade Lean and dependencies
+        uses: leanprover-contrib/lean-upgrade-action@master
+        with:
+          repo: ${{ github.repository }}
+          access-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: update version branches
+        uses: leanprover-contrib/update-versions-action@master

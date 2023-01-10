@@ -43,6 +43,12 @@ variables (oa : oracle_comp spec α)
 instance decidable [∀ i x, (o i x).decidable] (x : spec.domain i × unit) : (⟪o⟫ i x).decidable :=
 tracking_oracle.decidable o _ _ i x
 
+lemma simulate_eq_default_simulate : simulate ⟪o⟫ oa s = default_simulate ⟪o⟫ oa :=
+simulate_eq_default_simulate ⟪o⟫ oa s
+
+lemma simulate'_eq_default_simulate' : simulate' ⟪o⟫ oa s = default_simulate' ⟪o⟫ oa :=
+simulate'_eq_default_simulate' ⟪o⟫ oa s
+
 section support
 
 lemma support_apply : (⟪o⟫ i x).support = prod.fst ⁻¹' (o i x.1).support :=

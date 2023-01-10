@@ -50,6 +50,20 @@ begin
     (prod.eq_iff_fst_eq_snd_eq.2 ⟨h', subsingleton.elim y.2 x.2⟩) ▸ h⟩),
 end
 
+/-- If the state has at most one elements, we can express the support of `simulate` in terms
+of only `simulate'`. For example in a `stateless_oracle` or `uniform_oracle`.
+TODO: above is basically the same statement -/
+lemma support_simulate_eq_support_simulate'_of_subsingleton [subsingleton S]
+  (so : sim_oracle spec spec' S) : (simulate so oa s).support =
+    {x | x.1 ∈ (simulate' so oa s).support} :=
+begin
+  refine set.ext (λ x, _),
+  rw [set.mem_set_of, support_simulate', set.mem_image],
+  refine ⟨λ h, ⟨x, h, rfl⟩, λ h, _⟩,
+  obtain ⟨y, hy, h⟩ := h,
+  rwa [← @prod.mk.eta _ _ x, ← h, subsingleton.elim x.2 y.2, prod.mk.eta],
+end
+
 /-- Given the state is `subsingleton`, membership in `support` of `simulate` can be checked
 by just checking that the first component is in the support of `simulate'` -/
 lemma mem_support_simulate_iff_fst_mem_support_simulate' (x : α × S) [subsingleton S] :

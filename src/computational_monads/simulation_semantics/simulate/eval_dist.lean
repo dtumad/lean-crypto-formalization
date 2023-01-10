@@ -22,6 +22,26 @@ variables (so : sim_oracle spec spec' S) (so' : sim_oracle spec spec'' S')
   (a : α) (i : spec.ι) (t : spec.domain i) (oa oa' : oracle_comp spec α)
   (ob ob' : α → oracle_comp spec β) (s : S) (f : α → β)
 
+section monad
+
+lemma eval_dist_simulate_map_bind (g : β → γ) :
+  ⁅simulate so (g <$> (oa >>= ob)) s⁆ =
+    ⁅simulate so oa s⁆.bind (λ x, ⁅simulate so (ob x.1) x.2⁆.map (prod.map g id)) :=
+by simp only [simulate_map, simulate_bind, eval_dist_map, eval_dist_bind, pmf.map_bind]
+
+lemma eval_dist_simulate_map_bind' (g : β → γ) :
+  ⁅simulate so (g <$> (oa >>= ob)) s⁆ =
+    ⁅simulate so oa s⁆.bind (λ x, ⁅prod.map g id <$> simulate so (ob x.1) x.2⁆) :=
+by simp only [simulate_map, simulate_bind, eval_dist_map, eval_dist_bind, pmf.map_bind]
+
+lemma eval_dist_simulate_map_bind_apply [decidable_eq γ] [decidable_eq S]
+  (g : β → γ) (z : γ × S) : ⁅simulate so (g <$> (oa >>= ob)) s⁆ z =
+    ∑' (x : α × S), ⁅simulate so oa s⁆ x * ∑' (y : β),
+      ite (z.1 = g y) (⁅simulate so (ob x.1) x.2⁆ (y, z.2)) 0 :=
+by simp only [eval_dist_simulate_map_bind', pmf.bind_apply, eval_dist_map_prod_map_id_right_apply]
+
+end monad
+
 /-- Lemma for inductively proving the support of a simulation is a specific function of the input.
 Often this is simpler than induction on the computation itself, especially the case of `bind` -/
 lemma eval_dist_simulate_eq_induction {pr : Π (α : Type), oracle_comp spec α → S → (pmf (α × S))}
@@ -50,7 +70,7 @@ lemma eval_dist_simulate_apply_eq_induction
     pr β (oa >>= ob) s (b, s') = ∑' (a : α) (t : S), (pr α oa s (a, t)) * (pr β (ob a) t (b, s')))
   (h_query : ∀ i t s u s', pr (spec.range i) (query i t) s (u, s') = ⁅so i (t, s)⁆ (u, s')) :
   ⁅simulate so oa s⁆ (a, s') = pr α oa s (a, s') :=
-begin 
+begin
   induction oa using oracle_comp.induction_on with α a' α β oa ob hoa hob i t generalizing s s',
   { rw [eval_dist_simulate_return, pmf.pure_apply],
     split_ifs with has,
@@ -64,8 +84,9 @@ begin
   { rw [eval_dist_simulate_query, h_query] },
 end
 
-/-- If the first result of oracle queries is uniformly distributed,
-then the distribution under `simulate'` is unchanged. -/
+/-- If the main output of oracle queries is uniformly distributed (ignoring the oracle state),
+then the output distribution under `simulate'` is exactly the original distribution,
+since we define `eval_dist` to be uniform on oracle calls. -/
 theorem eval_dist_simulate'_eq_eval_dist
   (h : ∀ i t s, ⁅so i (t, s)⁆.map prod.fst = pmf.uniform_of_fintype (spec.range i)) :
   ⁅simulate' so oa s⁆ = ⁅oa⁆ :=
@@ -81,6 +102,9 @@ begin
   { simp only [h, simulate'_query, eval_dist_map, eval_dist_query] }
 end
 
+/-- Given two simulation oracles `so` and `so'`, if the output distribution of oracle queries
+(ignoring the output state) is the same for any input and pair of initial oracle states,
+then the output distribution of simulating a computation is the same for both. -/
 theorem eval_dist_simulate'_eq_eval_dist_simulate'
   {so : sim_oracle spec spec' S} {so' : sim_oracle spec spec'' S'}
   (h : ∀ i t s s', ⁅so i (t, s)⁆.map prod.fst = ⁅so' i (t, s')⁆.map prod.fst)
