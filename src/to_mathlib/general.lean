@@ -22,6 +22,3 @@ begin
   refine ⟨λ h, finset.ext (λ x, _), λ h, congr_arg coe h⟩,
   rw [← finset.mem_coe, ← finset.mem_coe, h],
 end
-
-lemma ennreal.tsum_prod' {f : α × β → ℝ≥0∞} : ∑' p : α × β, f p = ∑' a b, f (a, b) :=
-tsum_prod' ennreal.summable $ λ _, ennreal.summable
