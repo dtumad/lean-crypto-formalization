@@ -88,7 +88,7 @@ by rw [mem_support_repeat_succ_iff oa (x ::ᵥ xs), vector.head_cons, vector.tai
 
 lemma mem_support_of_mem_of_support_repeat
   (hxs : xs ∈ (repeat oa m).support) (hx : x ∈ xs.to_list) : x ∈ oa.support :=
-by { rw mem_support_repeat_iff_forall at hxs, exact hxs x hx } 
+by { rw mem_support_repeat_iff_forall at hxs, exact hxs x hx }
 
 end support
 
@@ -97,8 +97,6 @@ section fin_support
 end fin_support
 
 section distribution_semantics
-
-open distribution_semantics
 
 /-- The probability of getting `xs` after `oa.repeat n` is the product of the probability
 of getting each individual output, since each computation runs independently. -/
@@ -111,11 +109,9 @@ begin
   { obtain ⟨x, xs, rfl⟩ := vector.exists_eq_cons xs,
     calc ⁅oa.repeat m.succ⁆ (x ::ᵥ xs)
       = ∑' (y : α) (ys : vector α m), ite (x ::ᵥ xs = y ::ᵥ ys) (⁅oa⁆ y * ⁅oa.repeat m⁆ ys) 0 :
-        begin
-          simp only [oa.repeat_succ, eval_dist_bind_apply_eq_tsum, eval_dist_return_apply,
-            mul_ite, mul_one, mul_zero, ← ennreal.tsum_mul_left],
-        end
-      ... = ite (x ::ᵥ xs = x ::ᵥ xs) (⁅oa⁆ x * ⁅oa.repeat m⁆ xs) 0 : 
+        by simp only [oa.repeat_succ, eval_dist_bind_apply_eq_tsum, eval_dist_return_apply,
+          mul_ite, mul_one, mul_zero, ← ennreal.tsum_mul_left]
+      ... = ite (x ::ᵥ xs = x ::ᵥ xs) (⁅oa⁆ x * ⁅oa.repeat m⁆ xs) 0 :
         begin
           rw ← ennreal.tsum_prod,
           refine trans (tsum_eq_single (x, xs) (λ y_ys h, if_neg _)) rfl,

@@ -15,7 +15,7 @@ using the coercion to respond to oracle queries in the new set of oracles.
 
 namespace oracle_comp
 
-open oracle_spec distribution_semantics
+open oracle_spec
 
 variables (spec spec' spec'' spec''' : oracle_spec)
   (coe_spec coe_spec' coe_spec'' coe_spec''' : oracle_spec)

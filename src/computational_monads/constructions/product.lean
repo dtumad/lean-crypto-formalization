@@ -66,8 +66,6 @@ end fin_support
 
 section distribution_semantics
 
-open distribution_semantics
-
 section eval_dist
 
 /-- Since the two computations run independently, the probability of an element

@@ -20,10 +20,9 @@ The mapping respects the monadic structures on `pmf` and `oracle_comp`,
   sending `return` to `pmf.pure` and `>>=` to `pmf.bind`.
 -/
 
--- TODO: why was this made a namespace?
-namespace distribution_semantics
+namespace oracle_comp
 
-open oracle_comp oracle_spec
+open oracle_spec
 open_locale big_operators ennreal
 
 variables {α β γ : Type} {spec : oracle_spec}
@@ -57,8 +56,7 @@ begin
 end
 
 @[simp] lemma eval_dist_eq_zero_iff_not_mem_support : ⁅oa⁆ x = 0 ↔ x ∉ oa.support :=
-(pmf.apply_eq_zero_iff ⁅oa⁆ x).trans
-  (iff_of_eq $ congr_arg not (congr_arg (has_mem.mem x) $ support_eval_dist oa))
+by rw [pmf.apply_eq_zero_iff, support_eval_dist]
 
 @[simp] lemma eval_dist_ne_zero_iff_mem_support : ⁅oa⁆ x ≠ 0 ↔ x ∈ oa.support :=
 by rw [ne.def, eval_dist_eq_zero_iff_not_mem_support, set.not_not_mem]
@@ -156,8 +154,8 @@ lemma eval_dist_pure_apply [decidable_eq α] :
 
 @[simp] lemma eval_dist_return_apply_eq_one_iff :
   ⁅(return a : oracle_comp spec α)⁆ x = 1 ↔ x = a :=
-by simpa only [eval_dist_return, pmf.apply_eq_one_iff, pmf.support_pure,
-  set.singleton_eq_singleton_iff] using eq_comm
+by rw [pmf.apply_eq_one_iff, support_eval_dist, support_return,
+  set.singleton_eq_singleton_iff, eq_comm]
 
 @[simp] lemma eval_dist_return_apply_eq_zero_iff :
   ⁅(return a : oracle_comp spec α)⁆ x = 0 ↔ x ≠ a :=
@@ -166,8 +164,7 @@ by simp only [eval_dist_return, pmf.apply_eq_zero_iff, pmf.support_pure, set.mem
 lemma eval_dist_return_apply_self : ⁅(return a : oracle_comp spec α)⁆ a = 1 :=
 by rw [eval_dist_return_apply_eq_one_iff]
 
-lemma eval_dist_return_apply_of_ne {a x} (h : x ≠ a) :
-  ⁅(return a : oracle_comp spec α)⁆ x = 0 :=
+lemma eval_dist_return_apply_of_ne {a x} (h : x ≠ a) : ⁅(return a : oracle_comp spec α)⁆ x = 0 :=
 by simpa only [eval_dist_return, pmf.pure_apply, ite_eq_right_iff]
 
 end return
@@ -197,6 +194,14 @@ lemma eval_dist_bind_apply_eq_sum_fin_support [oa.decidable] :
 lemma eval_dist_bind_eq_of_eval_dist_eq (hoa : ⁅oa⁆ = ⁅oa'⁆)
   (hob : ∀ a, ⁅ob a⁆ = ⁅ob' a⁆) : ⁅oa >>= ob⁆ = ⁅oa' >>= ob'⁆ :=
 by simp_rw [eval_dist_bind, hoa, hob]
+
+lemma eval_dist_bind_apply_eq_zero_iff :
+  ⁅oa >>= ob⁆ y = 0 ↔ ∀ x ∈ oa.support, y ∉ (ob x).support :=
+by simp_rw [pmf.apply_eq_zero_iff, support_eval_dist, support_bind, set.mem_Union, not_exists]
+
+lemma eval_dist_bind_apply_eq_one_iff :
+  ⁅oa >>= ob⁆ y = 1 ↔ ∀ x ∈ oa.support, (ob x).support ⊆ {y} :=
+by simp only [eval_dist_bind, pmf.bind_apply_eq_one_iff, support_eval_dist]
 
 end bind
 
@@ -240,4 +245,4 @@ begin
       ne.def, eval_dist_eq_zero_iff_not_mem_support, set.not_not_mem, set.mem_set_of_eq, true_and] }
 end
 
-end distribution_semantics
+end oracle_comp

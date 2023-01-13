@@ -89,7 +89,7 @@ def advantage (adv : forking_adversary T U α) : ℝ≥0∞ :=
 
 lemma advantage_eq_tsum (adv : forking_adversary T U α) :
   adv.advantage = ∑' (i : fin adv.q), ⁅simulate_choose_fork adv⁆ (some i) :=
-distribution_semantics.prob_event_is_some $ simulate_choose_fork adv
+prob_event_is_some $ simulate_choose_fork adv
 
 lemma advantage_eq_sum (adv : forking_adversary T U α) :
   adv.advantage = ∑ i, ⁅simulate_choose_fork adv⁆ (some i) :=
@@ -127,8 +127,6 @@ begin
 end
 
 section distribution_semantics
-
-open distribution_semantics
 
 /-- The probability of returning a given index is the independent value of getting it from both -/
 lemma eval_dist_fst_map_fork_apply (i : option $ fin adv.q) :
@@ -175,7 +173,7 @@ begin
     begin
       refine tsum_congr (λ log, _),
       refine congr_arg (λ x, _ * x) _,
-      refine trans (eval_dist_bind_return_apply_eq_tsum_preimage _ _ _) _,
+      refine trans (eval_dist_bind_return_apply_eq_tsum_indicator _ _ _) _,
       refine trans (tsum_eq_single (some i, x', cache') _) _,
       { intros o ho,
         simp only [prod.mk.eta, set.indicator_apply_eq_zero, set.mem_preimage,
@@ -194,9 +192,9 @@ end
 lemma prob_fork_eq_some : ⁅λ out, out.1.is_some | fork adv⁆ ≥ (adv.advantage ^ 2) / adv.q :=
 calc ⁅λ out, out.1.is_some | fork adv⁆
   = ⁅ coe ∘ option.is_some | prod.fst <$> fork adv⁆ :
-    symm ((distribution_semantics.prob_event_map _ _ _))
+    symm ((prob_event_map _ _ _))
   ... = ∑' (j : fin adv.q), (⁅prod.fst <$> fork adv⁆ (some j)) :
-    (distribution_semantics.prob_event_is_some $ prod.fst <$> fork adv)
+    (prob_event_is_some $ prod.fst <$> fork adv)
   ... = ∑' (j : fin adv.q), (⁅adv.simulate_choose_fork⁆ (some j)) ^ 2 :
     tsum_congr (λ j, eval_dist_fst_map_fork_apply _ _)
   ... = ∑ j, (⁅adv.simulate_choose_fork⁆ (some j)) ^ 2 :
@@ -278,8 +276,6 @@ query_log.query_output_diff_at o.2.2.1 o.2.2.2.2 () (option.rec_on o.1 0 coe)
 
 section distribution_semantics
 
-open distribution_semantics
-
 lemma prob_event_forked_cache_differs :
   ⁅forked_cache_differs | fork adv⁆ = 1 - (1 / fintype.card U) :=
 sorry
@@ -312,11 +308,6 @@ calc ⁅fork_success | fork adv⁆
   end
   ... ≥ ⁅λ o, o.1.is_some | fork adv⁆ - (1 / fintype.card U) : begin
     sorry
-    -- rw [mul_tsub, mul_one, mul_div, mul_one],
-    -- refine tsub_le_tsub_left _ _,
-    -- have : 0 < (fintype.card U : ℝ≥0) := nat.cast_pos.2 fintype.card_pos,
-    -- rw div_le_div_right this,
-    -- refine distribution_semantics.prob_event_le_one _ _,
   end
   ... ≥ ((adv.advantage) ^ 2 / adv.q) - (1 / fintype.card U) :
     tsub_le_tsub (prob_fork_eq_some adv) le_rfl

@@ -35,7 +35,7 @@ variables {α β γ : Type}
 
 namespace oracle_spec
 
-open oracle_comp distribution_semantics
+open oracle_comp
 
 /-- Relation defining an inclusion of one set of oracles into another, where the mapping
 doesn't affect the underlying probability distribution of the computation. -/
@@ -71,7 +71,7 @@ end oracle_spec
 
 namespace oracle_comp
 
-open oracle_spec distribution_semantics
+open oracle_spec
 
 /-- Given a `is_sub_spec` instance between `sub_spec` and `super_spec`, we can coerce a computation
 with oracles `sub_spec` to one with `super_spec` by simulating with `is_sub_spec.to_fun`. -/
@@ -209,8 +209,6 @@ by simp only [support_simulate_coe_sub_spec so so' s oa f hf,
 end support
 
 section eval_dist
-
-open_locale classical
 
 @[simp] lemma eval_dist_simulate_coe_sub_spec_return :
   ⁅simulate so' ↑(return a : oracle_comp sub_spec α) s'⁆ = pmf.pure (a, s') :=

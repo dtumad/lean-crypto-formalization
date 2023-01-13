@@ -17,12 +17,12 @@ Defines to types of independence for events after an `oracle_comp`,
 We also prove a number of lemmas for probabilities of independent events.
 -/
 
-namespace distribution_semantics
+namespace oracle_comp
 
 open oracle_comp
 open_locale big_operators nnreal ennreal
 
-variables {α β γ ι : Type} {spec spec' : oracle_spec} 
+variables {α β γ ι : Type} {spec spec' : oracle_spec}
   (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) (a a' : α)
   (e e' : set α) (e'' : set β)
 
@@ -79,4 +79,4 @@ lemma prob_event_inter_eq_mul_of_indep_event (h : indep_event oa e e') :
 
 end indep_event
 
-end distribution_semantics
+end oracle_comp

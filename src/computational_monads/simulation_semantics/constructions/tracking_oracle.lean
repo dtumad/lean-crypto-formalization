@@ -44,7 +44,7 @@ notation `⟪` o `|` update_state `,` default_state `⟫` :=
 namespace tracking_oracle
 
 open_locale big_operators ennreal
-open oracle_comp oracle_spec distribution_semantics
+open oracle_comp oracle_spec
 
 variables {S S' : Type} (o : Π (i : spec.ι), spec.domain i → oracle_comp spec' (spec.range i))
   (o' : Π (i : spec.ι), spec.domain i → oracle_comp spec'' (spec.range i))

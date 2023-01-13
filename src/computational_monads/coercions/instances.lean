@@ -41,7 +41,7 @@ variables {α β γ : Type}
 
 namespace oracle_spec
 
-open oracle_comp distribution_semantics
+open oracle_comp
 
 /-- coerce a coin flip into a uniform random selection of a `bool` -/
 @[priority std.priority.default+100]

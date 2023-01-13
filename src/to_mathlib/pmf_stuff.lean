@@ -7,7 +7,7 @@ import to_mathlib.sums
 import probability.probability_mass_function.uniform
 
 /-!
-# Lemmas about probability mass functions to move to mathlib 
+# Lemmas about probability mass functions to move to mathlib
 -/
 
 open_locale measure_theory nnreal ennreal big_operators classical
@@ -39,6 +39,34 @@ pmf.pure_map _ _
 @[simp] lemma pmf.bind_const {α β : Type*} (p : pmf α) (q : pmf β) : (p.bind $ λ _, q) = q :=
 pmf.ext (λ x, by rw [pmf.bind_apply, ennreal.tsum_mul_right, pmf.tsum_coe, one_mul])
 
+lemma pmf.support_nonempty {α : Type*} (p : pmf α) : p.support.nonempty :=
+begin
+  refine set.nonempty_def.2 (by_contra $ λ h, _),
+  simp only [pmf.mem_support_iff, not_exists, not_not] at h,
+  have : ∑' x, p x = 0 := by simp_rw [h, tsum_zero],
+  refine zero_ne_one (this.symm.trans p.tsum_coe),
+end
+
+lemma pmf.support_ne_empty {α : Type*} (p : pmf α) : p.support ≠ ∅ :=
+begin
+  rw [← set.nonempty_iff_ne_empty],
+  exact p.support_nonempty
+end
+
+lemma pmf.bind_apply_eq_one_iff {α β : Type*} (p : pmf α) (q : α → pmf β) (y : β) :
+  (p.bind q) y = 1 ↔ ∀ x ∈ p.support, (q x).support ⊆ {y} :=
+begin
+  rw [pmf.apply_eq_one_iff],
+  rw [pmf.support_bind],
+  refine ⟨λ h x hx y' hy', h ▸ ⟨x, hx, hy'⟩, λ h, set.ext $ λ y',
+    ⟨λ hy', let ⟨x, hx, hxy⟩ := hy' in h x hx hxy, λ hy', _⟩⟩,
+  obtain ⟨x, hx⟩ := p.support_nonempty,
+  refine ⟨x, hx, _⟩,
+  specialize h x hx,
+  simp [set.subset_singleton_iff_eq, (q x).support_ne_empty] at h,
+  simpa [h] using hy',
+end
+
 end monad
 
 -- NOTE: PR open
@@ -49,10 +77,8 @@ lemma pmf.to_measure_apply_ne_top {α : Type*} [measurable_space α] (p : pmf α
 
 lemma pmf.to_outer_measure_apply_ne_top {α : Type*} (p : pmf α) (s : set α) :
   p.to_outer_measure s ≠ ⊤ :=
-begin
-  refine λ h, (@pmf.to_measure_apply_ne_top α ⊤ p s) (le_antisymm le_top $
-    le_trans (le_of_eq h.symm) (@pmf.to_outer_measure_apply_le_to_measure_apply α ⊤ p s)),
-end
+λ h, (@pmf.to_measure_apply_ne_top α ⊤ p s) (le_antisymm le_top $
+  le_trans (le_of_eq h.symm) (@pmf.to_outer_measure_apply_le_to_measure_apply α ⊤ p s))
 
 end measure
 

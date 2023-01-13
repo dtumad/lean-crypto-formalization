@@ -16,7 +16,7 @@ This is used for example in coercing from a computation with one set of oracles
 to one with some superset of those oracles, using the simulation function to pass upwards.
 -/
 
-open oracle_comp oracle_spec distribution_semantics
+open oracle_comp oracle_spec
 
 variables {α β : Type} {spec spec' spec'' : oracle_spec}
 
@@ -179,8 +179,6 @@ end
 end support
 
 section distribution_semantics
-
-open distribution_semantics
 
 /-- The first output of a tracking oracle is equivalent to using just the stateless oracle -/
 theorem simulate'_equiv_stateless_oracle :

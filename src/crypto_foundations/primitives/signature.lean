@@ -30,7 +30,7 @@ Signature schemes that don't need this can provide the empty spec `[]ₒ`,
 -/
 
 open_locale ennreal nnreal
-open oracle_comp oracle_spec distribution_semantics
+open oracle_comp oracle_spec
 
 /-- Signature on messages `M`, public and secret keys `PK` and `SK`, signatures of type `S`.
   We model the algorithms as having access to a uniform selection oracle,

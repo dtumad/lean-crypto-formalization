@@ -16,9 +16,9 @@ If the support is decidable (or the event is a `finset`),
 we can instead give an expression in terms of `finset.sum`.
 -/
 
-namespace distribution_semantics
+namespace oracle_comp
 
-open oracle_comp oracle_spec
+open oracle_spec
 open_locale big_operators ennreal
 
 variables {α β γ : Type} {spec spec' : oracle_spec}
@@ -88,11 +88,12 @@ lemma prob_event_le_one : ⁅e | oa⁆ ≤ 1 :=
 (⁅oa⁆.to_outer_measure.mono (set.subset_univ e)).trans
   (le_of_eq $ (⁅oa⁆.to_outer_measure_apply_eq_one_iff _).2 (set.subset_univ ⁅oa⁆.support))
 
-/-- If the intersection of a set `e'` contains all elements of `e` that have non-zero
+/-- If the a set `e'` contains all elements of `e` that have non-zero
 probability under `⁅oa⁆` then the probability of `e'` is at least as big as that of `e`. -/
 lemma prob_event_mono {e e'} (h : (e ∩ oa.support) ⊆ e') : ⁅e | oa⁆ ≤ ⁅e' | oa⁆ :=
 pmf.to_outer_measure_mono ⁅oa⁆ (by simpa only [support_eval_dist])
 
+/-- Weaker version of `prob_event_mono` when the subset holds without intersection `support`. -/
 lemma prob_event_mono' {e e'} (h : e ⊆ e') : ⁅e | oa⁆ ≤ ⁅e' | oa⁆ :=
 prob_event_mono oa (trans (set.inter_subset_left _ _) h)
 
@@ -304,4 +305,4 @@ trans (by rw [set.inter_union_diff]) (prob_event_union_eq_of_disjoint oa $
 
 end sets
 
-end distribution_semantics
+end oracle_comp

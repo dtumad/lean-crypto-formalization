@@ -110,8 +110,6 @@ end fin_support
 
 section distribution_semantics
 
-open distribution_semantics
-
 section eval_dist
 
 @[simp]

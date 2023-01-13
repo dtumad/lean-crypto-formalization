@@ -16,8 +16,7 @@ This aligns with `pmf.support` for the distribution semantics of `oracle_comp.ev
 For `return` we set the support to be the singleton set of the return value.
 For `>>=` we set the support to be the union over the support of the first computation
 of the support of the second computation with that output as its input.
-For `query` we simply set the support to be the set of all elements in the oracle's output type.
--/
+For `query` we simply set the support to be the set of all elements in the oracle's output type. -/
 
 namespace oracle_comp
 
@@ -59,8 +58,8 @@ variable {spec}
 
 @[simp] lemma support_bind : (oa >>= ob).support = ⋃ α ∈ oa.support, (ob α).support := rfl
 
-lemma mem_support_bind_iff : y ∈ (oa >>= ob).support ↔
-  ∃ x ∈ oa.support, y ∈ (ob x).support := by simp_rw [support_bind, set.mem_Union]
+lemma mem_support_bind_iff : y ∈ (oa >>= ob).support ↔ ∃ x ∈ oa.support, y ∈ (ob x).support :=
+by simp_rw [support_bind, set.mem_Union]
 
 lemma support_bind' : (bind' α β oa ob).support = ⋃ α ∈ oa.support, (ob α).support := rfl
 

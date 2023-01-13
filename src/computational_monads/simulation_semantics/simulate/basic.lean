@@ -56,7 +56,7 @@ end sim_oracle
 namespace oracle_comp
 
 open_locale big_operators ennreal
-open oracle_spec distribution_semantics
+open oracle_spec
 
 variables (so : sim_oracle spec spec' S) (so' : sim_oracle spec spec'' S')
   (a : α) (i : spec.ι) (t : spec.domain i) (oa oa' : oracle_comp spec α)

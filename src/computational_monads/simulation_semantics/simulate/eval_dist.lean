@@ -15,7 +15,7 @@ variables {α β γ : Type} {spec spec' spec'' : oracle_spec} {S S' : Type}
 
 namespace oracle_comp
 
-open oracle_spec distribution_semantics
+open oracle_spec
 open_locale nnreal ennreal
 
 variables (so : sim_oracle spec spec' S) (so' : sim_oracle spec spec'' S')

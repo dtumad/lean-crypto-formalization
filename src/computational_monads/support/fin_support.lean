@@ -41,7 +41,7 @@ section support
 variables (oa : oracle_comp spec α) (oa' : oracle_comp spec' α) [decidable oa] [decidable oa']
   (a : α) (s : finset α)
 
-/-- Correctness of `fin_support` with respect to `support`, i.e. the two are equal as `set`s -/
+/-- Correctness of `fin_support` with respect to `support`, i.e. the two are equal as `set` -/
 theorem mem_fin_support_iff_mem_support : Π {α : Type} (oa : oracle_comp spec α)
   [hoa : decidable oa] (a : α), a ∈ (@fin_support _ _ _ hoa) ↔ a ∈ oa.support
 | _ _ (decidable_pure' α a h) α' :=

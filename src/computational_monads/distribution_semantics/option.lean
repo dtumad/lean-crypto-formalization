@@ -11,7 +11,7 @@ import computational_monads.distribution_semantics.prob_event
 General lemmas about probability computations involving `option`
 -/
 
-namespace distribution_semantics
+namespace oracle_comp
 
 variables {α β γ : Type} {spec spec' : oracle_spec}
 
@@ -50,4 +50,4 @@ calc ⁅e | oa⁆
 
 end prob_event
 
-end distribution_semantics 
+end oracle_comp

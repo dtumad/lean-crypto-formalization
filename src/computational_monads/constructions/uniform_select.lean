@@ -61,8 +61,6 @@ end support
 
 section distribution_semantics
 
-open distribution_semantics
-
 @[simp] lemma eval_dist_uniform_fin : ⁅$[0..n]⁆ = pmf.uniform_of_fintype (fin $ n + 1) := rfl
 
 lemma eval_dist_uniform_fin_apply : ⁅$[0..m]⁆ i = m.succ⁻¹ :=
@@ -154,8 +152,6 @@ lemma fin_support_uniform_select_vector_singleton (v : vector α 1) :
 end support
 
 section distribution_semantics
-
-open distribution_semantics
 
 @[simp] lemma eval_dist_uniform_select_vector : ⁅$ᵛ v⁆ = pmf.uniform_of_vector v :=
 by rw [uniform_select_vector, pmf.uniform_of_vector_eq_nth_map_uniform_of_fintype,
@@ -253,8 +249,6 @@ end support
 
 section distribution_semantics
 
-open distribution_semantics
-
 lemma eval_dist_uniform_select_list_nil (h : ¬ ([] : list α).empty) (p : pmf α) :
   ⁅$ˡ [] h⁆ = p := false.elim (h rfl)
 
@@ -346,8 +340,6 @@ end support
 
 section distribution_semantics
 
-open distribution_semantics
-
 @[simp] lemma eval_dist_uniform_select_finset : ⁅$ˢ bag h⁆ = pmf.uniform_of_finset bag h :=
 by rw [uniform_select_finset, eval_dist_uniform_select_list,
   pmf.uniform_of_finset_eq_uniform_of_list_to_list]
@@ -420,8 +412,6 @@ by simp only [fin_support_uniform_select_fintype, finset.mem_univ]
 end support
 
 section distribution_semantics
-
-open distribution_semantics
 
 @[simp] lemma eval_dist_uniform_select_fintype : ⁅$ᵗ α⁆ = pmf.uniform_of_fintype α :=
 by rw [uniform_select_fintype, eval_dist_uniform_select_finset, pmf.uniform_of_fintype]

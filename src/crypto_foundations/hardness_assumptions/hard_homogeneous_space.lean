@@ -21,7 +21,7 @@ and further extend this with various assumptions about run times of computations
 -/
 
 open_locale big_operators ennreal
-open oracle_comp oracle_spec distribution_semantics
+open oracle_comp oracle_spec
 
 /-- An `algorithmic_homogenous_space` is a homogenous space where operations are all `poly_time`.
   Uses mathlib's definition of an `add_torsor`, which is a bijective group action -/
@@ -65,9 +65,8 @@ calc adversary.advantage = ⁅(=) tt | experiment adversary⁆ : rfl
     simp only [experiment, eval_dist_bind_apply_eq_tsum ($ᵗ X), pow_two, ← mul_assoc,
       eval_dist_uniform_select_fintype_apply, ennreal.tsum_mul_left],
     refine congr_arg (λ x, _ * x) (tsum_congr (λ x₁, tsum_congr (λ x₂, _))),
-    refine (eval_dist_bind_return_apply_eq_single (adversary.adv (x₁, x₂)) _ tt (x₁ -ᵥ x₂)) _ _,
-    { simp only [ne.def, bool.tt_eq_to_bool_iff, imp_self, forall_const] },
-    { simp only [eq_self_iff_true, to_bool_true_eq_tt] }
+    refine (eval_dist_bind_return_apply_eq_single (adversary.adv (x₁, x₂)) _ tt (x₁ -ᵥ x₂)) _,
+    simp only [set.preimage, set.mem_singleton_iff, to_bool_iff, set.set_of_eq_eq_singleton],
   end
   ... = (∑' x₁ x₂, ⁅adversary.adv (x₁, x₂)⁆ (x₁ -ᵥ x₂)) / (fintype.card X) ^ 2 :
     by rw [div_eq_mul_inv, ennreal.inv_pow, mul_comm]

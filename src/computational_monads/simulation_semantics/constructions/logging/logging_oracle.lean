@@ -16,8 +16,8 @@ log the input and output of each query.
 
 open oracle_comp oracle_spec
 
-variables {α β γ : Type} {spec spec' spec'' : oracle_spec} 
-  
+variables {α β γ : Type} {spec spec' spec'' : oracle_spec}
+
 def logging_oracle (spec : oracle_spec) : sim_oracle spec spec (query_log spec) :=
 ⟪query | λ i t u, query_log.log_query i t u, query_log.init spec⟫
 
@@ -53,8 +53,6 @@ support_simulate' oa (query_log.init spec)
 end support
 
 section distribution_semantics
-
-open distribution_semantics
 
 section eval_dist
 

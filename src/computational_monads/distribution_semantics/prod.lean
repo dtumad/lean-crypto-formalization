@@ -13,9 +13,8 @@ General lemmas about probability computations involving `prod`
 
 namespace oracle_comp
 
-open oracle_spec distribution_semantics
+open oracle_spec
 open_locale big_operators ennreal
-
 
 variables {α β γ δ : Type} {spec spec' : oracle_spec}
   (oa : oracle_comp spec (α × β)) (oc : α × β → oracle_comp spec γ)
