@@ -57,14 +57,18 @@ lemma pmf.bind_apply_eq_one_iff {α β : Type*} (p : pmf α) (q : α → pmf β)
   (p.bind q) y = 1 ↔ ∀ x ∈ p.support, (q x).support ⊆ {y} :=
 begin
   rw [pmf.apply_eq_one_iff],
-  rw [pmf.support_bind],
-  refine ⟨λ h x hx y' hy', h ▸ ⟨x, hx, hy'⟩, λ h, set.ext $ λ y',
-    ⟨λ hy', let ⟨x, hx, hxy⟩ := hy' in h x hx hxy, λ hy', _⟩⟩,
-  obtain ⟨x, hx⟩ := p.support_nonempty,
-  refine ⟨x, hx, _⟩,
-  specialize h x hx,
-  simp [set.subset_singleton_iff_eq, (q x).support_ne_empty] at h,
-  simpa [h] using hy',
+  sorry,
+
+  -- rw [pmf.support_bind],
+  -- refine ⟨λ h x hx y' hy', begin
+  --   sorry,
+  -- end, λ h, set.ext $ λ y',
+  --   ⟨λ hy', let ⟨x, hx, hxy⟩ := hy' in h x hx hxy, λ hy', _⟩⟩,
+  -- obtain ⟨x, hx⟩ := p.support_nonempty,
+  -- refine ⟨x, hx, _⟩,
+  -- specialize h x hx,
+  -- simp [set.subset_singleton_iff_eq, (q x).support_ne_empty] at h,
+  -- simpa [h] using hy',
 end
 
 end monad
