@@ -53,22 +53,50 @@ begin
   exact p.support_nonempty
 end
 
+lemma pmf.support_subset_singleton_iff {α : Type*} (p : pmf α) (x : α) (hx : x ∈ p.support) :
+  p.support ⊆ {x} ↔ p.support = {x} :=
+begin
+  refine ⟨λ h, _, λ h, _⟩,
+  {
+    refine set.subset.antisymm h (λ x' hx', hx'.symm ▸ hx),
+  },
+  {
+    rw [h],
+  }
+end
+
 lemma pmf.bind_apply_eq_one_iff {α β : Type*} (p : pmf α) (q : α → pmf β) (y : β) :
   (p.bind q) y = 1 ↔ ∀ x ∈ p.support, (q x).support ⊆ {y} :=
 begin
-  rw [pmf.apply_eq_one_iff],
-  sorry,
+  rw [pmf.apply_eq_one_iff, pmf.support_bind],
+  refine ⟨λ h x hx y' hy', _, λ h, set.subset.antisymm _ _⟩,
+  {
+    rw ← h,
+    simp only [set.mem_Union],
+    refine ⟨x, hx, hy'⟩,
+  },
+  {
+    rintro y' ⟨s, ⟨x, hx⟩, hs⟩,
+    simp only [] at hx,
+    rw ← hx at hs,
+    simp only [set.mem_Union] at hs,
+    obtain ⟨hx, hx'⟩ := hs,
+    refine h x hx hx',
+  },
+  {
+    intros y' hy',
+    rw [set.mem_singleton_iff] at hy',
 
-  -- rw [pmf.support_bind],
-  -- refine ⟨λ h x hx y' hy', begin
-  --   sorry,
-  -- end, λ h, set.ext $ λ y',
-  --   ⟨λ hy', let ⟨x, hx, hxy⟩ := hy' in h x hx hxy, λ hy', _⟩⟩,
-  -- obtain ⟨x, hx⟩ := p.support_nonempty,
-  -- refine ⟨x, hx, _⟩,
-  -- specialize h x hx,
-  -- simp [set.subset_singleton_iff_eq, (q x).support_ne_empty] at h,
-  -- simpa [h] using hy',
+    obtain ⟨rfl⟩ := hy',
+    clear hy',
+    simp only [set.mem_Union],
+    obtain ⟨x, hx⟩ := p.support_nonempty,
+    obtain ⟨y', hy'⟩ := (q x).support_nonempty,
+    specialize h x hx hy',
+    refine ⟨x, hx, _⟩,
+    rw [set.mem_singleton_iff] at h,
+    refine h ▸ hy'
+  }
 end
 
 end monad

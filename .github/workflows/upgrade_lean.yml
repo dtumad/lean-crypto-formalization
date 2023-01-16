@@ -10,10 +10,10 @@ jobs:
     steps:
       - name: checkout project
         uses: actions/checkout@v2
-      - name: upgrade Lean and dependencies
-        uses: leanprover-contrib/lean-upgrade-action@master
-        with:
-          repo: ${{ github.repository }}
-          access-token: ${{ secrets.GITHUB_TOKEN }}
-      - name: update version branches
-        uses: leanprover-contrib/update-versions-action@master
+      # - name: upgrade Lean and dependencies
+      #   uses: leanprover-contrib/lean-upgrade-action@master
+      #   with:
+      #     repo: ${{ github.repository }}
+      #     access-token: ${{ secrets.GITHUB_TOKEN }}
+      # - name: update version branches
+      #   uses: leanprover-contrib/update-versions-action@master
