@@ -39,80 +39,12 @@ end
 
 end tsum_prod
 
--- NOTE: PR open
-section extract
-
-lemma finset.sum_eq_tsum_indicator {α β : Type*} [add_comm_monoid β] [topological_space β]
-  [t2_space β] (f : α → β) (s : finset α) : ∑ x in s, f x = ∑' x, set.indicator ↑s f x :=
-have ∀ x ∉ s, set.indicator ↑s f x = 0,
-from λ x hx, set.indicator_apply_eq_zero.2 (λ hx', (hx $ finset.mem_coe.1 hx').elim),
-(finset.sum_congr rfl (λ x hx, (set.indicator_apply_eq_self.2 $
-  λ hx', (hx' $ finset.mem_coe.2 hx).elim).symm)).trans (tsum_eq_sum this).symm
-
-/-- Version of `tsum_ite_eq_extract` for `add_comm_monoid` rather than `add_comm_group`.
-Rather than showing that `f.update` has a specific sum in terms of `has_sum`,
-it gives a relationship between the sums of `f` and `f.update` given that both exist. -/
-lemma has_sum.update' {α β : Type*} [topological_space α] [add_comm_monoid α] [t2_space α]
-  [has_continuous_add α] {f : β → α} {a a' : α} (hf : has_sum f a)
-  (b : β) (x : α) (hf' : has_sum (f.update b x) a') : a + x = a' + f b :=
-begin
-  have : ∀ b', f b' + ite (b' = b) x 0 = f.update b x b' + ite (b' = b) (f b) 0,
-  { intro b',
-    split_ifs with hb',
-    { simpa only [function.update_apply, hb', eq_self_iff_true] using add_comm (f b) x },
-    { simp only [function.update_apply, hb', if_false] } },
-  have h := hf.add ((has_sum_ite_eq b x)),
-  simp_rw this at h,
-  exact h.unique (hf'.add (has_sum_ite_eq b (f b)))
-end
-
-/-- Version of `tsum_ite_eq_extract` for `add_comm_monoid` rather than `add_comm_group`.
-Rather than showing that the `ite` expression has a specific sum in terms of `has_sum`,
-it gives a relationship between the sums of `f` and `ite (n = b) 0 (f n)` given that both exist. -/
-lemma has_sum.ite_eq_extract' {α β : Type*} [topological_space α] [add_comm_monoid α] [t2_space α]
-  [has_continuous_add α] {f : β → α} {a : α} (hf : has_sum f a)
-  (b : β) (a' : α) (hf' : has_sum (λ n, ite (n = b) 0 (f n)) a') :
-  a = a' + f b :=
-begin
-  refine (add_zero a).symm.trans (hf.update' b 0 _),
-  convert hf',
-  exact funext (f.update_apply b 0),
-end
-
-/-- Version of `tsum_ite_eq_extract` for `add_comm_monoid` rather than `add_comm_group`.
-Requires a different convergence assumption involving `function.update` -/
-lemma tsum_ite_eq_extract' {α β : Type*} [topological_space α] [add_comm_monoid α] [t2_space α]
-  [has_continuous_add α] {f : β → α} (b : β) (hf : summable (f.update b 0)) :
-  ∑' x, f x = f b + ∑' x, ite (x = b) 0 (f x) :=
-calc ∑' x, f x = ∑' x, ((ite (x = b) (f x) 0) + (f.update b 0 x)) :
-    tsum_congr (λ n, by split_ifs; simp [function.update_apply, h])
-  ... = ∑' x, ite (x = b) (f x) 0 + ∑' x, f.update b 0 x :
-    tsum_add ⟨ite (b = b) (f b) 0, has_sum_single b (λ b hb, if_neg hb)⟩ (hf)
-  ... = (ite (b = b) (f b) 0) + ∑' x, f.update b 0 x :
-    by { congr, exact (tsum_eq_single b (λ b' hb', if_neg hb')) }
-  ... = f b + ∑' x, ite (x = b) 0 (f x) :
-    by simp only [function.update, eq_self_iff_true, if_true, eq_rec_constant, dite_eq_ite]
-
-lemma nnreal.tsum_ite_eq_extract {f : β → ℝ≥0} (hf : summable f) (b : β) :
-  ∑' x, f x = f b + ∑' x, ite (x = b) 0 (f x) :=
-begin
-  refine tsum_ite_eq_extract' b (nnreal.summable_of_le (λ b', _) hf),
-  rw [function.update_apply],
-  split_ifs; simp only [zero_le', le_rfl]
-end
-
-lemma ennreal.tsum_ite_eq_extract {f : β → ℝ≥0∞} (b : β) :
-  ∑' x, f x = f b + ∑' x, ite (x = b) 0 (f x) :=
-tsum_ite_eq_extract' b ennreal.summable
-
-end extract
-
 section option
 
 lemma ennreal.tsum_option (f : option α → ℝ≥0∞) :
   tsum f = f none + ∑' a, f (some a) :=
 begin
-  refine trans (ennreal.tsum_ite_eq_extract none) _,
+  refine trans (ennreal.tsum_eq_add_tsum_ite none) _,
   refine congr_arg (λ x, f none + x) _,
   refine (tsum_eq_tsum_of_ne_zero_bij (λ a, some a.1) _ (λ x hx, _) _),
   { simp only [subtype.val_eq_coe, imp_self, set_coe.forall, implies_true_iff] },
@@ -128,7 +60,7 @@ lemma nnreal.tsum_option {f : option α → ℝ≥0} (hf : summable f) :
 calc ∑' (x : option α), f x
   = f none + ∑' (x : option α), ite (x = none) 0 (f x) :
   begin
-    convert @nnreal.tsum_ite_eq_extract (option α) f hf none,
+    convert @nnreal.tsum_eq_add_tsum_ite (option α) f hf none,
     ext x, split_ifs,
     refl, refl,
   end

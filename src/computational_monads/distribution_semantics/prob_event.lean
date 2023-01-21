@@ -76,7 +76,7 @@ trans (prob_event_eq_sum_fin_support_indicator oa e) (finset.sum_congr rfl $
   λ _ _, by {rw set.indicator, congr})
 
 lemma prob_event_coe_finset_eq_sum (e : finset α) : ⁅↑e | oa⁆ = ∑ x in e, ⁅oa⁆ x :=
-by rw [prob_event_eq_tsum_indicator, finset.sum_eq_tsum_indicator]
+by rw [prob_event_eq_tsum_indicator, sum_eq_tsum_indicator]
 
 end sums
 
