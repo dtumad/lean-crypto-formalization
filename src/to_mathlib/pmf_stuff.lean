@@ -47,24 +47,6 @@ begin
   refine zero_ne_one (this.symm.trans p.tsum_coe),
 end
 
-lemma pmf.support_ne_empty {α : Type*} (p : pmf α) : p.support ≠ ∅ :=
-begin
-  rw [← set.nonempty_iff_ne_empty],
-  exact p.support_nonempty
-end
-
-lemma pmf.support_subset_singleton_iff {α : Type*} (p : pmf α) (x : α) (hx : x ∈ p.support) :
-  p.support ⊆ {x} ↔ p.support = {x} :=
-begin
-  refine ⟨λ h, _, λ h, _⟩,
-  {
-    refine set.subset.antisymm h (λ x' hx', hx'.symm ▸ hx),
-  },
-  {
-    rw [h],
-  }
-end
-
 lemma pmf.bind_apply_eq_one_iff {α β : Type*} (p : pmf α) (q : α → pmf β) (y : β) :
   (p.bind q) y = 1 ↔ ∀ x ∈ p.support, (q x).support ⊆ {y} :=
 begin
@@ -101,19 +83,7 @@ end
 
 end monad
 
--- NOTE: PR open
-section measure
-
-lemma pmf.to_measure_apply_ne_top {α : Type*} [measurable_space α] (p : pmf α) (s : set α) :
-  p.to_measure s ≠ ⊤ := measure_theory.measure_ne_top p.to_measure s
-
-lemma pmf.to_outer_measure_apply_ne_top {α : Type*} (p : pmf α) (s : set α) :
-  p.to_outer_measure s ≠ ⊤ :=
-λ h, (@pmf.to_measure_apply_ne_top α ⊤ p s) (le_antisymm le_top $
-  le_trans (le_of_eq h.symm) (@pmf.to_outer_measure_apply_le_to_measure_apply α ⊤ p s))
-
-end measure
-
+-- NOTE: new PR open
 section union
 
 lemma pmf.measurable_set_to_outer_measure_caratheodory (p : pmf α) (s : set α) :
@@ -165,6 +135,5 @@ calc p.map prod.snd b = ∑' (b' : β) (a : α), ite (b = b') (p (a, b')) 0 :
   ... = ∑' (a : α), ite (b = b) (p (a, b)) 0 :
     tsum_eq_single _ (λ a' ha', by simp only [ne.symm ha', if_false, tsum_zero])
   ... = ∑' (a : α), p (a, b) : by simp only [eq_self_iff_true, if_true]
-
 
 end prod
