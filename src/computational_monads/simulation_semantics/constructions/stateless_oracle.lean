@@ -58,21 +58,24 @@ lemma mem_support_apply_iff : y ∈ (⟪o⟫ i (t, s)).support ↔ y.1 ∈ (o i 
 by cases y; simp only [apply_eq, support_bind, support_return, set.mem_Union, prod.mk.inj_iff,
   set.mem_singleton_iff, eq_iff_true_of_subsingleton, and_true, exists_prop, exists_eq_right']
 
+/-- The `support` of `simulate` is the preimage of the support of `simulate'`,
+as there is only one possible internal state for the oracle. -/
+lemma support_simulate_eq_preimage_support_simulate' :
+  (simulate ⟪o⟫ oa s).support = prod.fst ⁻¹' (simulate' ⟪o⟫ oa ()).support :=
+support_simulate_eq_preimage_support_simulate' ⟪o⟫ oa s
+
 /-- If the oracle function can take on any possible output, simulation doesn't affect `support`. -/
 lemma support_simulate'_eq_support (h : ∀ i t, (o i t).support = ⊤) :
   (simulate' ⟪o⟫ oa s).support = oa.support :=
 tracking_oracle.support_simulate'_eq_support o _ _ oa s h
 
+lemma support_simulate_eq_preimage_support (h : ∀ i t, (o i t).support = ⊤) :
+  (simulate ⟪o⟫ oa s).support = prod.fst ⁻¹' oa.support :=
+tracking_oracle.support_simulate_eq_preimage_support_of_subsingleton o _ _ oa s h
+
 lemma support_simulate'_eq_support_simulate' (h : ∀ i t, (o i t).support = (o' i t).support) :
   (simulate' ⟪o⟫ oa s).support = (simulate' ⟪o'⟫ oa s').support :=
 tracking_oracle.support_simulate'_eq_support_simulate' o o' _ _ () () oa s s' h
-
-/-- The `support` of `simulate` is the preimage of the support of `simulate'`,
-as there is only one possible internal state for the oracle. -/
-lemma support_simulate_eq_preimage_support_simulate' :
-  (simulate ⟪o⟫ oa s).support = prod.fst ⁻¹' (default_simulate' ⟪o⟫ oa).support :=
-by simp only [default_simulate', punit_eq ⟪o⟫.default_state s, simulate', support_map,
-  (set.preimage_image_eq _ prod.fst_injective)]
 
 lemma support_simulate_eq_support_simulate (h : ∀ i t, (o i t).support = (o' i t).support) :
   (simulate ⟪o⟫ oa s).support = (simulate ⟪o'⟫ oa s').support :=
@@ -80,7 +83,7 @@ support_simulate_eq_support_simulate_of_subsingleton oa ⟪o⟫ ⟪o'⟫ s s'
   (λ i t, by rw [support_apply, support_apply, h])
 
 @[simp] lemma mem_support_simulate_iff (y : α × unit) :
-  y ∈ (simulate ⟪o⟫ oa s).support ↔ y.1 ∈ (default_simulate' ⟪o⟫ oa).support :=
+  y ∈ (simulate ⟪o⟫ oa s).support ↔ y.1 ∈ (simulate' ⟪o⟫ oa ()).support :=
 by rw [support_simulate_eq_preimage_support_simulate', set.mem_preimage]
 
 end support

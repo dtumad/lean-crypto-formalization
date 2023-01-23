@@ -87,7 +87,7 @@ section coe_sub_spec
 
 variables (sub_spec super_spec : oracle_spec) [h : sub_spec ⊂ₒ super_spec]
   (a : α) (oa : oracle_comp sub_spec α) (ob : α → oracle_comp sub_spec β)
-  (i : sub_spec.ι) (t : sub_spec.domain i)
+  (i : sub_spec.ι) (t : sub_spec.domain i) (e : set α)
 include h
 
 instance coe_sub_spec.decidable [∀ i t, (@is_sub_spec.to_fun sub_spec super_spec h i t).decidable]
@@ -122,7 +122,7 @@ stateless_oracle.eval_dist_simulate'_eq_eval_dist _ _ ()
   (λ i t, is_sub_spec.eval_dist_to_fun sub_spec super_spec i t)
 
 /-- `prob_event` is unchanged after coercing a computation via a sub-spec instance. -/
-@[simp] lemma prob_event_coe_sub_spec (e : set α) : ⁅e | (↑oa : oracle_comp super_spec α)⁆ = ⁅e | oa⁆ :=
+@[simp] lemma prob_event_coe_sub_spec : ⁅e | (↑oa : oracle_comp super_spec α)⁆ = ⁅e | oa⁆ :=
 stateless_oracle.prob_event_simulate'_eq_prob_event _ _ ()
   (λ i t, is_sub_spec.eval_dist_to_fun sub_spec super_spec i t) e
 
@@ -178,19 +178,17 @@ and a function `f : S → S'` between their states, if the support after simulat
 sub-spec coersion function with the second oracle looks like the support after simulating with the
 first oracle then applying `f`, then simulating the coercion of any computation with the second
 oracle has the same support as simulating the uncoerced computation and mapping by `f`. -/
-lemma support_simulate_coe_sub_spec (f : S → S')
-  (hf : ∀ i t s, (simulate so' (h.to_fun i t) (f s)).support =
-    prod.map id f '' (so i (t, s)).support) :
+lemma support_simulate_coe_sub_spec (f : S → S') (hf : ∀ i t s,
+  (simulate so' (h.to_fun i t) (f s)).support = prod.map id f '' (so i (t, s)).support) :
   (simulate so' (↑oa : oracle_comp super_spec α) (f s)).support =
     (prod.map id f) '' (simulate so oa s).support :=
 begin
   induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t generalizing s,
   { simpa only [support_simulate_coe_sub_spec_return,
       support_simulate_return, set.image_singleton] },
-  { simp_rw [support_simulate_coe_sub_spec_bind, hoa, support_simulate_bind,
-      set.image_Union, ← hob],
-    ext y,
-    simp_rw [set.mem_Union],
+  { ext y,
+    simp_rw [support_simulate_coe_sub_spec_bind, hoa, support_simulate_bind,
+      set.image_Union, ← hob, set.mem_Union],
     refine ⟨λ h, let ⟨x, ⟨y', hy', hxy⟩, hx⟩ := h in ⟨y', hy', by simpa only [← hxy] using hx⟩,
       λ h, let ⟨x, hy, hx⟩ := h in ⟨(x.1, f x.2), ⟨x, hy, rfl⟩, hx⟩⟩ },
   { rw [support_simulate_coe_sub_spec_query, hf, support_simulate_query] }
@@ -198,15 +196,19 @@ end
 
 /-- Version of `support_simulate_coe_sub_spec` for `simulate'`. In this case we get exact equality
 between the support of the simulations, since the oracle states are irrelevent. -/
-lemma support_simulate'_coe_sub_spec (f : S → S')
-  (hf : ∀ i t s, (simulate so' (h.to_fun i t) (f s)).support =
-    prod.map id f '' (so i (t, s)).support) :
-  (simulate' so' (↑oa : oracle_comp super_spec α) (f s)).support =
-    (simulate' so oa s).support :=
+lemma support_simulate'_coe_sub_spec (f : S → S') (hf : ∀ i t s,
+  (simulate so' (h.to_fun i t) (f s)).support = prod.map id f '' (so i (t, s)).support) :
+  (simulate' so' (↑oa : oracle_comp super_spec α) (f s)).support = (simulate' so oa s).support :=
 by simp only [support_simulate_coe_sub_spec so so' s oa f hf,
   set.image_image, support_simulate', prod_map, id.def]
 
 end support
+
+section fin_support
+
+
+
+end fin_support
 
 section eval_dist
 
@@ -221,27 +223,17 @@ by simp only [coe_sub_spec_return, simulate_map, simulate_return, eval_dist_map,
 calc ⁅simulate so' (↑(oa >>= ob) : oracle_comp super_spec β) s'⁆
   = ⁅simulate so' (default_simulate ⟪h.to_fun⟫ oa) s'⁆.bind (λ (x : (α × unit) × S'),
       ⁅simulate so' (simulate ⟪h.to_fun⟫ (ob x.1.1) x.1.2) x.2⁆.map (prod.map prod.fst id)) :
-    begin
-      simp only [coe_sub_spec_bind, simulate_map, simulate_bind, eval_dist_map, eval_dist_bind, pmf.map_bind],
-    end
-   ... = (⁅simulate so' (default_simulate ⟪h.to_fun⟫ oa) s'⁆.map (prod.map prod.fst id)).bind
-      (λ (x : α × S'), ⁅simulate so' (default_simulate ⟪h.to_fun⟫ (ob x.1)) x.2⁆.map (prod.map prod.fst id)) :
-    begin
-      rw [pmf.bind_map],
-      refine congr_arg (λ _, pmf.bind _ _) (funext $ λ x, _),
-      simp only [function.comp_app, prod_map, id.def, stateless_oracle.simulate_eq_default_simulate],
-    end
+    by simp only [coe_sub_spec_bind, simulate_map, simulate_bind,
+      eval_dist_map, eval_dist_bind, pmf.map_bind]
+  ... = (⁅simulate so' (default_simulate ⟪h.to_fun⟫ oa) s'⁆.map (prod.map prod.fst id)).bind
+      (λ x, ⁅simulate so' (default_simulate ⟪h.to_fun⟫ (ob x.1)) x.2⁆.map (prod.map prod.fst id)) :
+    symm (trans (pmf.bind_map _ _ _) (congr_arg (λ _, pmf.bind _ _) (funext $ λ x, by simp only
+      [function.comp_app, prod_map, id.def, stateless_oracle.simulate_eq_default_simulate])))
   ... = ⁅simulate so' (default_simulate' ⟪h.to_fun⟫ oa) s'⁆.bind (λ (x : α × S'),
       ⁅simulate so' (default_simulate ⟪h.to_fun⟫ (ob x.1)) x.2⁆.map (prod.map prod.fst id)) :
-    begin
-      rw [default_simulate', simulate', eval_dist_simulate_map],
-    end
+    by rw [default_simulate', simulate', eval_dist_simulate_map]
   ... = ⁅simulate so' ↑oa s'⁆.bind (λ (x : α × S'), ⁅simulate so' ↑(ob $ prod.fst x) x.2⁆) :
-    begin
-      simp [coe_sub_spec_def],
-      refine congr_arg (λ _, pmf.bind _ _) (funext $ λ x, _),
-      rw [simulate', eval_dist_simulate_map],
-    end
+    by simp only [coe_sub_spec_def, simulate', eval_dist_simulate_map, default_simulate']
 
 @[simp] lemma eval_dist_simulate_coe_sub_spec_query :
   ⁅simulate so' (↑(query i t) : oracle_comp super_spec _) s'⁆ =
@@ -255,8 +247,8 @@ and a function `f : S → S'` between their states, if the distribution after si
 sub-spec coersion function with the second oracle looks like the distribution after simulating with
 the first oracle then applying `f`, then simulating the coercion of any computation with the second
 oracle has the same distribution as simulating the uncoerced computation and mapping by `f`. -/
-lemma eval_dist_simulate_coe_sub_spec (f : S → S')
-  (hf : ∀ i t s, ⁅simulate so' (h.to_fun i t) (f s)⁆ = pmf.map (prod.map id f) ⁅so i (t, s)⁆) :
+lemma eval_dist_simulate_coe_sub_spec (f : S → S') (hf : ∀ i t s,
+  ⁅simulate so' (h.to_fun i t) (f s)⁆ = pmf.map (prod.map id f) ⁅so i (t, s)⁆) :
   ⁅simulate so' (↑oa : oracle_comp super_spec α) (f s)⁆ =
     ⁅simulate so oa s⁆.map (prod.map id f) :=
 begin
@@ -271,14 +263,34 @@ end
 
 /-- Version of `eval_dist_simulate_coe_sub_spec` for `simulate'`. In this case we get exact
 equality between the distributions of the simulations, since the oracle states are irrelevent. -/
-lemma eval_dist_simulate'_coe_sub_spec (f : S → S')
-  (hf : ∀ i t s, ⁅simulate so' (h.to_fun i t) (f s)⁆ = pmf.map (prod.map id f) ⁅so i (t, s)⁆) :
+lemma eval_dist_simulate'_coe_sub_spec (f : S → S') (hf : ∀ i t s,
+  ⁅simulate so' (h.to_fun i t) (f s)⁆ = pmf.map (prod.map id f) ⁅so i (t, s)⁆) :
   ⁅simulate' so' (↑oa : oracle_comp super_spec α) (f s)⁆ = ⁅simulate' so oa s⁆ :=
 by simp only [eval_dist_simulate', eval_dist_simulate_coe_sub_spec so so' s oa f hf, pmf.map_comp,
   prod.map_fst', function.comp.left_id]
 
 end eval_dist
 
+section prob_event
+
+/-- Extension of `eval_dist_simulate_coe_sub_spec` to `prob_event`. We keep the same hypothesis
+about `eval_dist` rather than a one in terms of `prob_event` for simplicity. -/
+lemma prob_event_simulate_coe_sub_spec (e : set (α × S')) (f : S → S') (hf : ∀ i t s,
+  ⁅simulate so' (h.to_fun i t) (f s)⁆ = pmf.map (prod.map id f) ⁅so i (t, s)⁆) :
+  ⁅e | simulate so' (↑oa : oracle_comp super_spec α) (f s)⁆ =
+    ⁅e | prod.map id f <$> simulate so oa s⁆ :=
+by simp_rw [prob_event_eq_tsum_indicator, eval_dist_map,
+  eval_dist_simulate_coe_sub_spec so so' s oa f hf]
+
+/-- Extension of `eval_dist_simulate'_coe_sub_spec` to `prob_event`. We keep the same hypothesis
+about `eval_dist` rather than a one in terms of `prob_event` for simplicity. -/
+lemma prob_event_simulate'_coe_sub_spec (e : set α) (f : S → S') (hf : ∀ i t s,
+  ⁅simulate so' (h.to_fun i t) (f s)⁆ = pmf.map (prod.map id f) ⁅so i (t, s)⁆) :
+  ⁅e | simulate' so' (↑oa : oracle_comp super_spec α) (f s)⁆ = ⁅e | simulate' so oa s⁆ :=
+by simpa only [prob_event_simulate', prob_event_simulate_coe_sub_spec so so' s oa _ f hf,
+  prob_event_map, set.preimage_preimage, prod.map_fst]
+
+end prob_event
 
 end simulate_coe_sub_spec
 

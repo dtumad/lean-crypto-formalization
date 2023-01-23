@@ -364,13 +364,13 @@ by simp only [uniform_select_finset, eval_dist_uniform_select_list_bind_apply_eq
 by { rw [prob_event.def, eval_dist_uniform_select_finset,
   to_outer_measure_uniform_of_finset_apply], congr }
 
-lemma prob_event_uniform_select_finset_bind_apply_eq_tsum (e : set β) :
+lemma prob_event_uniform_select_finset_bind_eq_tsum (e : set β) :
   ⁅e | ($ˢ bag h) >>= ob⁆ = (∑' x, ite (x ∈ bag) ⁅e | ob x⁆ 0) / bag.card :=
 by simp only [uniform_select_finset, prob_event_uniform_select_list_bind_eq_tsum,
   finset.count_to_list, finset.to_list_to_finset, nat.cast_ite, algebra_map.coe_one,
   algebra_map.coe_zero, boole_mul, finset.sum_ite_mem, finset.inter_self, finset.length_to_list]
 
-lemma prob_event_uniform_select_finset_bind_apply_eq_sum (e : set β) :
+lemma prob_event_uniform_select_finset_bind_eq_sum (e : set β) :
   ⁅e | $ˢ bag h >>= ob⁆ = (∑ x in bag, ⁅e | ob x⁆) / bag.card :=
 by simp only [uniform_select_finset, prob_event_uniform_select_list_bind_eq_sum,
   finset.count_to_list, finset.to_list_to_finset, nat.cast_ite, algebra_map.coe_one,
@@ -429,19 +429,19 @@ lemma eval_dist_uniform_select_fintype_bind_apply_eq_sum :
 by simp only [uniform_select_fintype, eval_dist_uniform_select_finset_bind_apply_eq_sum,
   finset.mem_univ, if_true, finset.card_univ]
 
-@[simp] lemma prob_event_uniform_select_fintype_apply (e : set α) [decidable_pred e] :
+@[simp] lemma prob_event_uniform_select_fintype (e : set α) [decidable_pred e] :
   ⁅e | $ᵗ α⁆ = fintype.card e / fintype.card α :=
 by { simp only [prob_event.def, eval_dist_uniform_select_fintype,
   to_outer_measure_uniform_of_fintype_apply, finset.mem_univ, if_true, finset.card_univ], congr }
 
-lemma prob_event_uniform_select_fintype_bind_apply_eq_tsum (e : set β) :
+lemma prob_event_uniform_select_fintype_bind_eq_tsum (e : set β) :
   ⁅e | $ᵗ α >>= ob⁆ = (∑' a, ⁅e | ob a⁆) / fintype.card α :=
-by simp only [uniform_select_fintype, prob_event_uniform_select_finset_bind_apply_eq_tsum,
+by simp only [uniform_select_fintype, prob_event_uniform_select_finset_bind_eq_tsum,
   finset.mem_univ, if_true, finset.card_univ]
 
-lemma prob_event_uniform_select_fintype_apply_bind (e : set β) :
+lemma prob_event_uniform_select_fintype_bind_eq_sum (e : set β) :
   ⁅e | $ᵗ α >>= ob⁆ = (∑ a, ⁅e | ob a⁆) / fintype.card α :=
-by simp only [uniform_select_fintype, prob_event_uniform_select_finset_bind_apply_eq_sum,
+by simp only [uniform_select_fintype, prob_event_uniform_select_finset_bind_eq_sum,
   finset.mem_univ, if_true, finset.card_univ]
 
 end distribution_semantics

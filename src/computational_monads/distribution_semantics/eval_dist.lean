@@ -215,6 +215,10 @@ variables (i : spec.ι) (t : spec.domain i) (u : spec.range i)
 lemma eval_dist_query_apply : ⁅query i t⁆ u = 1 / (fintype.card $ spec.range i) :=
 by simp only [eval_dist_query, pmf.uniform_of_fintype_apply, one_div]
 
+lemma eval_dist_query_apply_pos : 0 < ⁅query i t⁆ u :=
+by simp only [eval_dist_query_apply, one_div, ennreal.inv_pos,
+  ne.def, ennreal.nat_ne_top, not_false_iff]
+
 end query
 
 /-- Right the `eval_dist` of bind as a sum over another type,

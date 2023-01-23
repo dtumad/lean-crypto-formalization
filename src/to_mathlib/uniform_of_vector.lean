@@ -17,6 +17,13 @@ open_locale classical big_operators nnreal ennreal
 
 namespace pmf
 
+lemma to_outer_measure_uniform_of_fintype_apply' [fintype α] [nonempty α] (e : set α) :
+  (pmf.uniform_of_fintype α).to_outer_measure e = (finset.univ.filter e).card / fintype.card α :=
+begin
+  rw [to_outer_measure_uniform_of_fintype_apply], sorry
+
+end
+
 -- NOTE: PR opened for this
 section uniform_of_list
 

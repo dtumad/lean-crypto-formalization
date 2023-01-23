@@ -43,6 +43,8 @@ namespace oracle_spec
 
 open oracle_comp
 
+section coin_spec_uniform_selecting
+
 /-- coerce a coin flip into a uniform random selection of a `bool` -/
 @[priority std.priority.default+100]
 instance is_sub_spec_coin_spec_uniform_selecting : is_sub_spec coin_spec uniform_selecting :=
@@ -55,6 +57,8 @@ instance is_sub_spec_coin_spec_uniform_selecting : is_sub_spec coin_spec uniform
 @[simp] lemma is_sub_spec_coin_uniform_selecting_apply (i t : unit) :
   (oracle_spec.is_sub_spec_coin_spec_uniform_selecting).to_fun i t =
     $ᵛ (tt ::ᵥ ff ::ᵥ vector.nil) := rfl
+
+end coin_spec_uniform_selecting
 
 /-- Coerce a computation to one with access to another oracle on the left,
 forwarding the old queries to the left side of the combined set of oracles. -/
