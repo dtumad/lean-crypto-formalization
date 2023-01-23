@@ -41,7 +41,10 @@ by simp_rw [eval_dist_bind, eval_dist_return, pmf.bind_pure_comp]
 lemma eval_dist_bind_return_apply_eq_tsum [decidable_eq β] :
   ⁅oa >>= λ x, return (f x)⁆ y = ∑' x, ite (y = f x) (⁅oa⁆ x) 0 :=
 begin
-  sorry
+  rw [eval_dist_bind_return, pmf.map_apply],
+  congr,
+  refine funext (λ x, _),
+  congr,
 end
 
 -- TODO: gross proof
@@ -155,11 +158,13 @@ by simp only [eval_dist_map_bind', eval_dist_bind_apply_eq_tsum,
 
 lemma eval_dist_map_bind_apply_eq_sum [fintype α] [fintype β] [decidable_eq γ] :
   ⁅g <$> (oa >>= ob)⁆ z = ∑ (x : α) (y : β), ⁅oa⁆ x * (ite (z = g y) (⁅ob x⁆ y) 0) :=
-sorry
+by simp_rw [eval_dist_map_bind', eval_dist_bind_apply_eq_sum,
+  eval_dist_map_apply_eq_sum, ← finset.mul_sum]
 
 lemma eval_dist_map_bind_apply_eq_sum_fin_support [decidable oa] [∀ x, decidable (ob x)] [decidable_eq γ] :
   ⁅g <$> (oa >>= ob)⁆ z = ∑ x in oa.fin_support, ∑ y in (ob x).fin_support, ⁅oa⁆ x * (ite (z = g y) (⁅ob x⁆ y) 0) :=
-sorry
+by simp_rw [eval_dist_map_bind', eval_dist_bind_apply_eq_sum_fin_support,
+  eval_dist_map_apply_eq_sum_fin_support, ← finset.mul_sum]
 
 end map_bind
 

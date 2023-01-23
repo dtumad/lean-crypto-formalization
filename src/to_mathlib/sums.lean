@@ -10,7 +10,7 @@ import topology.algebra.infinite_sum
 # Lemmas about Sums that fit better in mathlib
 -/
 
-open_locale nnreal ennreal big_operators classical
+open_locale nnreal ennreal big_operators
 
 variables {α β γ : Type*}
 
@@ -55,7 +55,7 @@ begin
   convert λ x, if_neg (option.some_ne_none _),
 end
 
-lemma nnreal.tsum_option {f : option α → ℝ≥0} (hf : summable f) :
+lemma nnreal.tsum_option [decidable_eq α] {f : option α → ℝ≥0} (hf : summable f) :
   tsum f = f none + ∑' (a : α), f (some a) :=
 calc ∑' (x : option α), f x
   = f none + ∑' (x : option α), ite (x = none) 0 (f x) :

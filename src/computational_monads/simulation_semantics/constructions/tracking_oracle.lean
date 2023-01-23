@@ -67,6 +67,12 @@ section support
   (λ u, (u, update_state x.2 i x.1 u)) '' (o i x.1).support :=
 set.ext (λ y, by rw [apply_eq, support_map])
 
+lemma fin_support_apply [∀ i t, (o i t).decidable] [decidable_eq S] :
+  (⟪o | update_state, default_state⟫ i x).fin_support =
+    (o i x.1).fin_support.image (λ u, (u, update_state x.2 i x.1 u)) :=
+by simp only [fin_support_eq_iff_support_eq_coe, apply_eq, support_map,
+  finset.coe_image, coe_fin_support_eq_support]
+
 lemma mem_support_apply_iff {y : spec.range i × S} :
   y ∈ (⟪o | update_state, default_state⟫ i x).support ↔
     y.1 ∈ (o i x.1).support ∧ update_state x.2 i x.1 y.1 = y.2 :=
@@ -121,16 +127,6 @@ support_simulate_eq_preimage_support_of_subsingleton query _ _ oa s (λ _ _, rfl
 end subsingleton
 
 end support
-
-section fin_support
-
-lemma fin_support_apply [∀ i t, (o i t).decidable] [decidable_eq S] :
-  (⟪o | update_state, default_state⟫ i x).fin_support =
-    (o i x.1).fin_support.image (λ u, (u, update_state x.2 i x.1 u)) :=
-by simp only [fin_support_eq_iff_support_eq_coe, apply_eq, support_map,
-  finset.coe_image, coe_fin_support_eq_support]
-
-end fin_support
 
 section eval_dist
 
