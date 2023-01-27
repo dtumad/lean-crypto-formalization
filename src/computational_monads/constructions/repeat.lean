@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
 import data.vector.mem
+import computational_monads.constructions.product
 import computational_monads.distribution_semantics.prob_event
 
 /-!
@@ -25,6 +26,7 @@ def repeat (oa : oracle_comp spec α) : Π (n : ℕ), oracle_comp spec (vector �
 | 0 := return vector.nil
 | (n + 1) := do { a ← oa, as ← repeat n, return (a ::ᵥ as) }
 
+-- TODO: I think this should not be simp? this should be a general policy?
 @[simp] lemma repeat_zero : oa.repeat 0 = return vector.nil := rfl
 
 @[simp] lemma repeat_succ : oa.repeat (n + 1) =
@@ -98,6 +100,26 @@ end fin_support
 
 section distribution_semantics
 
+lemma repeat_succ_equiv_map_product : oa.repeat (n + 1) ≃ₚ
+  (λ (x : α × vector α n), x.1 ::ᵥ x.2) <$> (oa ×ₘ oa.repeat n) :=
+begin
+  rw [repeat_succ, map_eq_bind_return_comp, prod_bind_equiv_bind_bind],
+
+end
+
+lemma eval_dist_repeat_apply_zero (v : vector α 0) : ⁅oa.repeat 0⁆ v = 1 :=
+by simp only [repeat_zero, eval_dist_return, pmf.pure_apply, eq_iff_true_of_subsingleton, if_true]
+
+lemma eval_dist_repeat_apply_succ (v : vector α m.succ) :
+  ⁅oa.repeat m.succ⁆ v = ⁅oa⁆ v.head * ⁅oa.repeat m⁆ v.tail :=
+begin
+  rw [repeat_succ_equiv_map_product],
+  have := eval_dist_map_apply_eq_single (oa ×ₘ oa.repeat m)
+    (λ (x : α × vector α m), x.1 ::ᵥ x.2) v (v.head, v.tail),
+  rw [this, eval_dist_prod_apply],
+  sorry
+end
+
 /-- The probability of getting `xs` after `oa.repeat n` is the product of the probability
 of getting each individual output, since each computation runs independently. -/
 @[simp] lemma eval_dist_repeat_apply [decidable_eq α] :
@@ -125,23 +147,6 @@ begin
           simp only [hm, list.map, vector.to_list_map, vector.to_list_cons, list.prod_cons]
         end }
 end
-
--- begin
---   induction n with n hn,
---   { simp only [vector.eq_nil as, repeat_zero oa, eval_dist_return, pmf.pure_apply,
---       if_true, vector.map_nil, vector.to_list_nil, list.prod_nil, eq_self_iff_true] },
---   { simp_rw [repeat, eval_dist_bind_apply_eq_tsum, ← ennreal.tsum_mul_left],
---     simp [hn],
---     refine trans (tsum_tsum_eq_single _ as.head as.tail _ _) _,
---     { refine λ a h, _,
---       simp only [(vector.ne_cons_iff a as as.tail).2 (or.inl $ ne.symm h), if_false] },
---     { refine λ a as' h, _,
---       simp only [(vector.ne_cons_iff a as as').2 (or.inr $ ne.symm h), if_false] },
---     { split_ifs,
---       { rw [h, vector.to_list_cons, list.map_cons, list.prod_cons],
---         rw [vector.head_cons, vector.tail_cons] },
---       { exact false.elim (h $ symm $ vector.cons_head_tail as) } } }
--- end
 
 end distribution_semantics
 

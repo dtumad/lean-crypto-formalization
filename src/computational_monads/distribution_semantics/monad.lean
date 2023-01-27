@@ -84,7 +84,7 @@ lemma eval_dist_bind_return_apply_eq_sum_fin_support_indicator [oa.decidable] [d
 
 /-- If a function `f` returns `y` iff the input is `x`, then the probability of outputting
 `y` after running a computation and applying `f` is the probability of outputting `x`-/
-lemma eval_dist_bind_return_apply_eq_single [decidable_eq β]
+lemma eval_dist_bind_return_apply_eq_single
   (x : α) (hx : f ⁻¹' {y} = {x}) : ⁅oa >>= λ x, return (f x)⁆ y = ⁅oa⁆ x :=
 begin
   simp only [eval_dist_bind_return_apply_eq_tsum_indicator, hx],
@@ -105,7 +105,7 @@ variables (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) (oc : β 
 lemma eval_dist_map_apply_eq_tsum [decidable_eq β] : ⁅f <$> oa⁆ y = ∑' x, ite (y = f x) (⁅oa⁆ x) 0 :=
 eval_dist_bind_return_apply_eq_tsum oa f y
 
-lemma eval_dist_map_apply_eq_tsum_indicator [decidable_eq β] : ⁅f <$> oa⁆ y = ∑' x, (f ⁻¹' {y}).indicator ⁅oa⁆ x :=
+lemma eval_dist_map_apply_eq_tsum_indicator : ⁅f <$> oa⁆ y = ∑' x, (f ⁻¹' {y}).indicator ⁅oa⁆ x :=
 eval_dist_bind_return_apply_eq_tsum_indicator oa f y
 
 lemma eval_dist_map_apply_eq_sum [fintype α] [decidable_eq β] : ⁅f <$> oa⁆ y = ∑ x, ite (y = f x) (⁅oa⁆ x) 0 :=
@@ -127,7 +127,7 @@ eval_dist_bind_return_apply_eq_sum_fin_support_indicator oa f y
 
 /-- If a function `f` returns `y` iff the input is `x`, then the probability of outputting
 `y` after running a computation and applying `f` is the probability of outputting `x`-/
-lemma eval_dist_map_apply_eq_single [decidable_eq β] (x : α) (hx : f ⁻¹' {y} = {x}) :
+lemma eval_dist_map_apply_eq_single  (x : α) (hx : f ⁻¹' {y} = {x}) :
   ⁅f <$> oa⁆ y = ⁅oa⁆ x := eval_dist_bind_return_apply_eq_single oa f y x hx
 
 end map

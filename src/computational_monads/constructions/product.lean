@@ -79,6 +79,12 @@ calc ⁅oa ×ₘ ob⁆ x = ∑' (a : α) (b : β), (⁅oa⁆ a * ⁅ob⁆ b) * (
     tsum_eq_single x (λ y hy, by rw [prod.mk.eta, eval_dist_return_apply_of_ne hy.symm, mul_zero])
   ... = ⁅oa⁆ x.1 * ⁅ob⁆ x.2 : by rw [prod.mk.eta, eval_dist_return_apply_self, mul_one]
 
+lemma prod_bind_equiv_bind_bind (oc : α × β → oracle_comp spec γ) :
+  oa ×ₘ ob >>= oc ≃ₚ do {a ← oa, b ← ob, oc (a, b)} :=
+begin
+  sorry
+end
+
 @[simp] lemma eval_dist_prod_indicator_prod_apply :
   (e ×ˢ e').indicator ⁅oa ×ₘ ob⁆ x = (e.indicator ⁅oa⁆ x.1) * (e'.indicator ⁅ob⁆ x.2) :=
 begin
