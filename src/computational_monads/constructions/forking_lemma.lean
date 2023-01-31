@@ -136,7 +136,7 @@ calc ⁅prod.fst <$> fork adv⁆ i
     sorry
   end
   ... = ⁅adv.simulate_choose_fork⁆ i ^ 2 : begin
-    rw [eval_dist_prod_apply, pow_two],
+    rw [eval_dist_product_apply, pow_two],
   end
 
 lemma eval_dist_fork_apply_some (i : (fin adv.q)) (x x' : α) (cache cache' : query_log (T ↦ₒ U)) :

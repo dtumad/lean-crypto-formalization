@@ -139,6 +139,9 @@ variables (a x : α)
 
 @[simp] lemma eval_dist_return : ⁅(return a : oracle_comp spec α)⁆ = pmf.pure a := rfl
 
+lemma eval_dist_return_apply_eq_indicator :
+  ⁅(return a : oracle_comp spec α)⁆ x = set.indicator {a} (λ _, 1) x := rfl
+
 lemma eval_dist_return_apply [decidable_eq α] :
   ⁅(return a : oracle_comp spec α)⁆ x = ite (x = a) 1 0 := by convert rfl
 

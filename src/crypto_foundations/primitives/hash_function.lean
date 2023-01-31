@@ -15,8 +15,7 @@ This file defines a basic version of a hash function.
 
 open oracle_comp oracle_spec
 
-/-- `keygen` takes in a security parameter and outputs a key bundled with the parameter
-  `hash` takes a `hash_key` and a string in the input space to a string in the output space -/
+/-- TODO -/
 structure hash_function (K I O : Type) :=
 (keygen : unit → oracle_comp coin_spec K)
 (hash : K × I → O)
@@ -31,7 +30,7 @@ variables [decidable_eq O]
 
 /-- The security game for collision resistance as a probabalistic function. -/
 def collision_finding_experiment (h : hash_function K I O)
-  (adversary : K → oracle_comp coin_spec (I × I)) : oracle_comp coin_spec bool := 
+  (adversary : K → oracle_comp coin_spec (I × I)) : oracle_comp coin_spec bool :=
 do{ k ← (h.keygen ()),
     xs ← (adversary k),
     return (h.hash (k, xs.1) = h.hash (k, xs.2)) }

@@ -48,6 +48,10 @@ lemma mem_support_uniform_fin_iff : i ∈ support $[0..m] :=
 @[simp] lemma support_uniform_fin_bind : ($[0..m] >>= oa).support = ⋃ i, (oa i).support :=
 by simp only [support_bind, set.Union_true]
 
+end support
+
+section fin_support
+
 @[simp] lemma fin_support_uniform_fin : fin_support $[0..n] = finset.univ := fin_support_query n ()
 
 lemma mem_fin_support_uniform_fin : i ∈ fin_support $[0..m] :=
@@ -57,9 +61,9 @@ lemma fin_support_uniform_fin_bind [decidable_eq α] [∀ i, (oa i).decidable] :
   ($[0..m] >>= oa).fin_support = finset.bUnion finset.univ (λ i, (oa i).fin_support) :=
 by {rw [fin_support_bind, fin_support_uniform_fin], congr}
 
-end support
+end fin_support
 
-section distribution_semantics
+section eval_dist
 
 @[simp] lemma eval_dist_uniform_fin : ⁅$[0..n]⁆ = pmf.uniform_of_fintype (fin $ n + 1) := rfl
 
@@ -73,6 +77,10 @@ by simp only [eval_dist_bind_apply_eq_tsum, div_eq_mul_inv, ← ennreal.tsum_mul
 lemma eval_dist_uniform_fin_bind_apply_eq_sum : ⁅$[0..m] >>= oa⁆ x = (∑ i, ⁅oa i⁆ x) / m.succ :=
 by simp only [eval_dist_bind_apply_eq_sum, div_eq_mul_inv, ← finset.sum_mul, one_mul,
   eval_dist_uniform_fin_apply, mul_comm (m.succ⁻¹ : ℝ≥0∞), fin_support_uniform_fin]
+
+end eval_dist
+
+section prob_event
 
 @[simp] lemma prob_event_uniform_fin (e : set (fin $ m + 1)) [decidable_pred e] :
   ⁅e | $[0..m]⁆ = (fintype.card e) / (m + 1) :=
@@ -89,7 +97,7 @@ lemma prob_event_uniform_fin_bind_apply_eq_sum (e : set α) :
 by simp only [prob_event_bind_eq_sum, div_eq_mul_inv, ← finset.sum_mul, one_mul,
   eval_dist_uniform_fin_apply, mul_comm (m.succ⁻¹ : ℝ≥0∞), fin_support_uniform_fin]
 
-end distribution_semantics
+end prob_event
 
 end uniform_fin
 
@@ -126,6 +134,10 @@ lemma support_uniform_select_vector_singleton (v : vector α 1) : ($ᵛ v).suppo
 by simp only [support_uniform_select_vector, vector.to_list_singleton,
   list.mem_singleton, set.set_of_eq_eq_singleton]
 
+end support
+
+section fin_support
+
 @[simp] lemma fin_support_uniform_select_vector : ($ᵛ v).fin_support = finset.univ.image v.nth :=
 begin
   rw [fin_support_eq_iff_support_eq_coe, finset.coe_image, support_uniform_select_vector],
@@ -149,9 +161,9 @@ lemma fin_support_uniform_select_vector_singleton (v : vector α 1) :
   ($ᵛ v).fin_support = {v.head} := by rw [fin_support_eq_iff_support_eq_coe,
     support_uniform_select_vector_singleton, finset.coe_singleton]
 
-end support
+end fin_support
 
-section distribution_semantics
+section eval_dist
 
 @[simp] lemma eval_dist_uniform_select_vector : ⁅$ᵛ v⁆ = pmf.uniform_of_vector v :=
 by rw [uniform_select_vector, pmf.uniform_of_vector_eq_nth_map_uniform_of_fintype,
@@ -176,6 +188,10 @@ begin
   rw [list.count_eq_zero_of_not_mem (λ h, hx $ list.mem_to_finset.2 h), nat.cast_zero, zero_mul],
 end
 
+end eval_dist
+
+section prob_event
+
 @[simp] lemma prob_event_uniform_select_vector (e : set α) [decidable_pred e] :
   ⁅e | $ᵛ v⁆ = (v.to_list.countp e) / n.succ :=
 by { rw [prob_event.def, eval_dist_uniform_select_vector,
@@ -197,7 +213,7 @@ begin
   rw [list.count_eq_zero_of_not_mem (λ h, hx $ list.mem_to_finset.2 h), nat.cast_zero, zero_mul],
 end
 
-end distribution_semantics
+end prob_event
 
 end uniform_select_vector
 
@@ -238,6 +254,10 @@ by simp only [support_uniform_select_list, list.coe_to_finset]
 lemma mem_support_uniform_select_list_iff : x ∈ ($ˡ xs h).support ↔ x ∈ xs :=
 by rw [oracle_comp.support_uniform_select_list, set.mem_set_of_eq]
 
+end support
+
+section fin_support
+
 @[simp] lemma fin_support_uniform_select_list : ($ˡ xs h).fin_support = xs.to_finset :=
 (fin_support_eq_iff_support_eq_coe _ _).2 (set.ext $ λ x, by simp only [finset.mem_coe,
   support_uniform_select_list, set.mem_set_of_eq, list.mem_to_finset])
@@ -245,9 +265,9 @@ by rw [oracle_comp.support_uniform_select_list, set.mem_set_of_eq]
 lemma mem_fin_support_uniform_select_list_iff : x ∈ ($ˡ xs h).fin_support ↔ x ∈ xs :=
 by rw [fin_support_uniform_select_list, list.mem_to_finset]
 
-end support
+end fin_support
 
-section distribution_semantics
+section eval_dist
 
 lemma eval_dist_uniform_select_list_nil (h : ¬ ([] : list α).empty) (p : pmf α) :
   ⁅$ˡ [] h⁆ = p := false.elim (h rfl)
@@ -278,6 +298,10 @@ begin
     vector.to_list_mk, nat.succ_pred_eq_of_pos (list.length_pos_of_ne_nil h)],
 end
 
+end eval_dist
+
+section prob_event
+
 @[simp] lemma prob_event_uniform_select_list (e : set α) [decidable_pred e] :
   ⁅e | $ˡ xs h⁆ = xs.countp e / xs.length :=
 by { rw [prob_event.def, eval_dist_uniform_select_list,
@@ -299,7 +323,7 @@ begin
     vector.to_list_mk, nat.succ_pred_eq_of_pos (list.length_pos_of_ne_nil h)],
 end
 
-end distribution_semantics
+end prob_event
 
 end uniform_select_list
 
@@ -330,15 +354,19 @@ by simp only [uniform_select_finset, support_uniform_select_list,
 lemma mem_support_uniform_select_finset_iff : x ∈ ($ˢ bag h).support ↔ x ∈ bag :=
 by rw [support_uniform_select_finset, finset.mem_coe]
 
+end support
+
+section fin_support
+
 @[simp] lemma fin_support_uniform_select_finset : ($ˢ bag h).fin_support = bag :=
 by rw [fin_support_eq_iff_support_eq_coe, support_uniform_select_finset]
 
 lemma mem_fin_support_uniform_select_finset_iff : x ∈ ($ˢ bag h).fin_support ↔ x ∈ bag :=
 by rw [fin_support_uniform_select_finset]
 
-end support
+end fin_support
 
-section distribution_semantics
+section eval_dist
 
 @[simp] lemma eval_dist_uniform_select_finset : ⁅$ˢ bag h⁆ = pmf.uniform_of_finset bag h :=
 by rw [uniform_select_finset, eval_dist_uniform_select_list,
@@ -359,6 +387,10 @@ by simp only [uniform_select_finset, eval_dist_uniform_select_list_bind_apply_eq
   finset.count_to_list, finset.to_list_to_finset, nat.cast_ite, algebra_map.coe_one,
   algebra_map.coe_zero, boole_mul, finset.sum_ite_mem, finset.inter_self, finset.length_to_list]
 
+end eval_dist
+
+section prob_event
+
 @[simp] lemma prob_event_uniform_select_finset (e : set α) [decidable_pred e] :
   ⁅e | $ˢ bag h⁆ = (bag.filter (∈ e)).card / bag.card :=
 by { rw [prob_event.def, eval_dist_uniform_select_finset,
@@ -376,7 +408,7 @@ by simp only [uniform_select_finset, prob_event_uniform_select_list_bind_eq_sum,
   finset.count_to_list, finset.to_list_to_finset, nat.cast_ite, algebra_map.coe_one,
   algebra_map.coe_zero, boole_mul, finset.sum_ite_mem, finset.inter_self, finset.length_to_list]
 
-end distribution_semantics
+end prob_event
 
 end uniform_select_finset
 
@@ -402,6 +434,10 @@ by rw [uniform_select_fintype, support_uniform_select_finset,
 lemma mem_support_uniform_select_fintype : x ∈ ($ᵗ α).support :=
 by simp only [support_uniform_select_fintype]
 
+end support
+
+section fin_support
+
 @[simp] lemma fin_support_uniform_select_fintype : ($ᵗ α).fin_support = finset.univ :=
 by rw [fin_support_eq_iff_support_eq_coe, support_uniform_select_fintype,
   set.top_eq_univ, finset.coe_univ]
@@ -409,9 +445,9 @@ by rw [fin_support_eq_iff_support_eq_coe, support_uniform_select_fintype,
 lemma mem_fin_support_uniform_select_fintype : x ∈ ($ᵗ α).fin_support :=
 by simp only [fin_support_uniform_select_fintype, finset.mem_univ]
 
-end support
+end fin_support
 
-section distribution_semantics
+section eval_dist
 
 @[simp] lemma eval_dist_uniform_select_fintype : ⁅$ᵗ α⁆ = pmf.uniform_of_fintype α :=
 by rw [uniform_select_fintype, eval_dist_uniform_select_finset, pmf.uniform_of_fintype]
@@ -429,6 +465,10 @@ lemma eval_dist_uniform_select_fintype_bind_apply_eq_sum :
 by simp only [uniform_select_fintype, eval_dist_uniform_select_finset_bind_apply_eq_sum,
   finset.mem_univ, if_true, finset.card_univ]
 
+end eval_dist
+
+section prob_event
+
 @[simp] lemma prob_event_uniform_select_fintype (e : set α) [decidable_pred e] :
   ⁅e | $ᵗ α⁆ = fintype.card e / fintype.card α :=
 by { simp only [prob_event.def, eval_dist_uniform_select_fintype,
@@ -444,7 +484,7 @@ lemma prob_event_uniform_select_fintype_bind_eq_sum (e : set β) :
 by simp only [uniform_select_fintype, prob_event_uniform_select_finset_bind_eq_sum,
   finset.mem_univ, if_true, finset.card_univ]
 
-end distribution_semantics
+end prob_event
 
 end uniform_select_fintype
 

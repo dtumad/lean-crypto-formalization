@@ -77,3 +77,14 @@ calc ∑' (x : option α), f x
 end
 
 end option
+
+section vector
+
+lemma tsum_vector_succ [add_comm_monoid β] [topological_space β]
+  (n : ℕ) (f : vector α n.succ → β) :
+  ∑' (xs' : vector α n.succ), f xs' = ∑' (x : α) (xs : vector α n), f (x ::ᵥ xs) :=
+begin
+  sorry
+end
+
+end vector

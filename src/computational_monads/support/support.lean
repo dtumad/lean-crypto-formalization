@@ -103,6 +103,12 @@ begin
   { exact ⟨⟨default, mem_support_query i t default⟩⟩ }
 end
 
+lemma support_eq_singleton_iff_forall : oa.support = {x} ↔ ∀ x' ∈ oa.support, x' = x :=
+by simp only [set.eq_singleton_iff_nonempty_unique_mem, oa.support_nonempty, true_and]
+
+lemma support_eq_singleton_iff_subset : oa.support = {x} ↔ oa.support ⊆ {x} :=
+by simp only [support_eq_singleton_iff_forall, set.subset_singleton_iff]
+
 /-- Should be able to automatically derive the support for most simple computations -/
 example :
 do{ β ← coin, β' ← coin,

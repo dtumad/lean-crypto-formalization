@@ -127,8 +127,17 @@ eval_dist_bind_return_apply_eq_sum_fin_support_indicator oa f y
 
 /-- If a function `f` returns `y` iff the input is `x`, then the probability of outputting
 `y` after running a computation and applying `f` is the probability of outputting `x`-/
-lemma eval_dist_map_apply_eq_single  (x : α) (hx : f ⁻¹' {y} = {x}) :
+lemma eval_dist_map_apply_eq_single (x : α) (hx : f ⁻¹' {y} = {x}) :
   ⁅f <$> oa⁆ y = ⁅oa⁆ x := eval_dist_bind_return_apply_eq_single oa f y x hx
+
+lemma eval_dist_map_apply_eq_single' (x : α) (hx : ∀ x', f x' = y ↔ x' = x) :
+  ⁅f <$> oa⁆ y = ⁅oa⁆ x :=
+begin
+  refine eval_dist_bind_return_apply_eq_single oa f y x _,
+  ext z,
+  simp,
+  exact hx z,
+end
 
 end map
 

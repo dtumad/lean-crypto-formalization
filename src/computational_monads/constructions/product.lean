@@ -70,7 +70,7 @@ section eval_dist
 
 /-- Since the two computations run independently, the probability of an element
   is the product of the two individual probabilities-/
-@[simp] lemma eval_dist_prod_apply : ⁅oa ×ₘ ob⁆ x = ⁅oa⁆ x.1 * ⁅ob⁆ x.2 :=
+@[simp] lemma eval_dist_product_apply : ⁅oa ×ₘ ob⁆ x = ⁅oa⁆ x.1 * ⁅ob⁆ x.2 :=
 calc ⁅oa ×ₘ ob⁆ x = ∑' (a : α) (b : β), (⁅oa⁆ a * ⁅ob⁆ b) * (⁅return (a, b)⁆ x) :
     by simp_rw [product.def, eval_dist_bind_apply_eq_tsum, ← ennreal.tsum_mul_left, mul_assoc]
   ... = ∑' (y : α × β), (⁅oa⁆ y.1 * ⁅ob⁆ y.2) * (⁅(return (y.1, y.2) : oracle_comp spec _)⁆ x) :
@@ -93,7 +93,7 @@ begin
     { have : x ∈ (e ×ˢ e') := ⟨ha, hb⟩,
       rw [set.indicator_apply_eq_self.2 (λ h, (h this).elim),
         set.indicator_apply_eq_self.2 (λ h, (h ha).elim),
-        set.indicator_apply_eq_self.2 (λ h, (h hb).elim), eval_dist_prod_apply] },
+        set.indicator_apply_eq_self.2 (λ h, (h hb).elim), eval_dist_product_apply] },
     { have : x ∉ (e ×ˢ e') := λ h, hb h.2,
       rw [set.indicator_apply_eq_zero.2 (λ h, (this h).elim),
         set.indicator_apply_eq_zero.2 (λ h, (hb h).elim), mul_zero] } },
@@ -108,7 +108,7 @@ begin
   by_cases ha : a ∈ e,
   { have : (a, b) ∈ (prod.fst ⁻¹' e : set (α × β)) := set.mem_preimage.2 ha,
     rw [set.indicator_apply_eq_self.2 (λ h, (h this).elim),
-      set.indicator_apply_eq_self.2 (λ h, (h ha).elim), eval_dist_prod_apply] },
+      set.indicator_apply_eq_self.2 (λ h, (h ha).elim), eval_dist_product_apply] },
   { have : (a, b) ∉ (prod.fst ⁻¹' e : set (α × β)) := λ h, ha (set.mem_preimage.2 h),
     rw [set.indicator_apply_eq_zero.2 (λ h, (this h).elim),
       set.indicator_apply_eq_zero.2 (λ h, (ha h).elim), zero_mul] }
@@ -120,7 +120,7 @@ begin
   by_cases hb : b ∈ e',
   { have : (a, b) ∈ (prod.snd ⁻¹' e' : set (α × β)) := set.mem_preimage.2 hb,
     rw [set.indicator_apply_eq_self.2 (λ h, (h this).elim),
-      set.indicator_apply_eq_self.2 (λ h, (h hb).elim), eval_dist_prod_apply] },
+      set.indicator_apply_eq_self.2 (λ h, (h hb).elim), eval_dist_product_apply] },
   { have : (a, b) ∉ (prod.snd ⁻¹' e' : set (α × β)) := λ h, hb (set.mem_preimage.2 h),
     rw [set.indicator_apply_eq_zero.2 (λ h, (this h).elim),
       set.indicator_apply_eq_zero.2 (λ h, (hb h).elim), mul_zero] }

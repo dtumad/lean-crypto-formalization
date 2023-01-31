@@ -38,10 +38,10 @@ lemma prob_event_eq_to_measure_apply (oa : oracle_comp spec α) (event : set α)
 (@pmf.to_measure_apply_eq_to_outer_measure_apply α ⊤ ⁅oa⁆ event
   measurable_space.measurable_set_top).symm
 
-lemma prob_event_singleton_eq_eval_dist (oa : oracle_comp spec α) (x : α) :
+@[simp] lemma prob_event_singleton_eq_eval_dist (oa : oracle_comp spec α) (x : α) :
   ⁅{x} | oa⁆ = ⁅oa⁆ x := by rw [prob_event.def, pmf.to_outer_measure_apply_singleton]
 
-lemma prob_event_eq_eq_eval_dist (oa : oracle_comp spec α) (x : α) :
+@[simp] lemma prob_event_eq_eq_eval_dist (oa : oracle_comp spec α) (x : α) :
   ⁅(=) x | oa⁆ = ⁅oa⁆ x :=
 trans (congr_arg (λ s, ⁅s | oa⁆) (set.ext $ λ y, eq_comm)) (prob_event_singleton_eq_eval_dist oa x)
 
@@ -129,7 +129,8 @@ variables (a : α) (e : set α)
   ⁅e | (return a : oracle_comp spec α)⁆ = ite (a ∈ e) 1 0 :=
 by { simp only [prob_event.def, eval_dist_return, pmf.to_outer_measure_pure_apply], congr }
 
-lemma prob_event_return_eq_indicator :
+-- TODO: there's some simp issues with decidability
+@[simp] lemma prob_event_return_eq_indicator :
   ⁅e | (return a : oracle_comp spec α)⁆ = e.indicator (λ _, 1) a :=
 by rw [prob_event.def, eval_dist_return, pmf.to_outer_measure_pure_apply, set.indicator]
 
