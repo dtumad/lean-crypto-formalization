@@ -21,3 +21,5 @@ lemma vector.cons_eq_cons {n : ℕ} (x y : α) (xs ys : vector α n) :
   x ::ᵥ xs = y ::ᵥ ys ↔ x = y ∧ xs = ys :=
 ⟨λ h, have x = y ∧ xs.to_list = ys.to_list, by simpa only [vector.to_list_cons]
   using congr_arg vector.to_list h, ⟨this.1, vector.eq _ _ this.2⟩, λ h, h.1 ▸ h.2 ▸ rfl⟩
+
+-- lemma vector.zip_with_comp {n : ℕ} (f : α → β) (g : β → γ) (v : vector α n) :

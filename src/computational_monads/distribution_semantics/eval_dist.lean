@@ -40,7 +40,17 @@ noncomputable def eval_dist {spec : oracle_spec} :
 
 notation `⁅` oa `⁆` := eval_dist oa
 
+-- TODO: this stuff
+
+notation `⁅=` x `|` oa `⁆` := ⁅oa⁆ x
+
 notation oa ` ≃ₚ ` oa' := ⁅oa⁆ = ⁅oa'⁆
+
+lemma eval_dist.ext (oa oa' : oracle_comp spec α) (h : ∀ x, ⁅= x | oa⁆ = ⁅= x | oa'⁆) :
+  ⁅oa⁆ = ⁅oa'⁆ := pmf.ext h
+
+lemma eval_dist.ext_iff (oa oa' : oracle_comp spec α) :
+  ⁅oa⁆ = ⁅oa'⁆ ↔ ∀ x, ⁅= x | oa⁆ = ⁅= x | oa'⁆ := ⟨λ h _, h ▸ rfl, eval_dist.ext oa oa'⟩
 
 section support
 
