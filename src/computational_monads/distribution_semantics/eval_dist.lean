@@ -40,8 +40,7 @@ noncomputable def eval_dist {spec : oracle_spec} :
 
 notation `⁅` oa `⁆` := eval_dist oa
 
--- TODO: this stuff
-
+-- TODO: this stuff, could even use `prob_|_eq_|` naming for things with this?
 notation `⁅=` x `|` oa `⁆` := ⁅oa⁆ x
 
 notation oa ` ≃ₚ ` oa' := ⁅oa⁆ = ⁅oa'⁆

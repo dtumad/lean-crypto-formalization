@@ -230,6 +230,14 @@ lemma prob_event_map_return : ⁅e | f <$> (return a : oracle_comp spec α)⁆ =
   ⁅e | (return (f a) : oracle_comp spec β)⁆ :=
 prob_event_eq_of_eval_dist_eq (by rw [eval_dist_map_return, eval_dist_return]) e
 
+lemma prob_event_map_bind : ⁅e' | g <$> (oa >>= ob)⁆ = ⁅e' | oa >>= λ x, g <$> (ob x)⁆ :=
+begin
+  refine prob_event_eq_of_eval_dist_apply_eq _ _,
+  intros x hx,
+  rw [eval_dist_map_bind'],
+
+end
+
 end map
 
 section support
