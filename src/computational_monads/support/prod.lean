@@ -149,4 +149,24 @@ end fin_support
 
 end bind_prod_mk_subsingleton
 
+section map_fst_snd
+
+section support
+
+lemma mem_support_map_fst_iff (oab : oracle_comp spec (α × β)) (x : α) :
+  x ∈ (prod.fst <$> oab).support ↔ ∃ y, (x, y) ∈ oab.support :=
+by simp only [support_map, set.mem_image, prod.exists, exists_and_distrib_right, exists_eq_right]
+
+lemma mem_support_map_snd_iff (oab : oracle_comp spec (α × β)) (y : β) :
+  y ∈ (prod.snd <$> oab).support ↔ ∃ x, (x, y) ∈ oab.support :=
+by simp only [support_map, set.mem_image, prod.exists, exists_and_distrib_right, exists_eq_right]
+
+end support
+
+section fin_support
+
+end fin_support
+
+end map_fst_snd
+
 end oracle_comp

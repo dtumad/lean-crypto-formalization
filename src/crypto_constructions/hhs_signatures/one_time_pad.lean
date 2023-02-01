@@ -34,7 +34,7 @@ variables {n : ℕ}
 @[simp] lemma decrypt_apply (c k : vector bool n) :
   (one_time_pad n).decrypt (c, k) = c.zip_with bxor k := rfl
 
-lemma complete (n : ℕ) : (one_time_pad n).complete :=
+theorem complete (n : ℕ) : (one_time_pad n).complete :=
 begin
   refine (one_time_pad n).complete_iff.mpr (λ m k hk, _),
   rw [decrypt_apply, encrypt_apply],

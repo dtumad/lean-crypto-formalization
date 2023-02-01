@@ -39,6 +39,12 @@ pmf.pure_map _ _
 @[simp] lemma pmf.bind_const {α β : Type*} (p : pmf α) (q : pmf β) : (p.bind $ λ _, q) = q :=
 pmf.ext (λ x, by rw [pmf.bind_apply, ennreal.tsum_mul_right, pmf.tsum_coe, one_mul])
 
+@[simp] lemma pmf.map_const {α β : Type*} (p : pmf α) (b : β) :
+  p.map (function.const α b) = pmf.pure b :=
+begin
+  simp only [pmf.map, pmf.bind_const, function.comp_const],
+end
+
 lemma pmf.support_nonempty {α : Type*} (p : pmf α) : p.support.nonempty :=
 begin
   refine set.nonempty_def.2 (by_contra $ λ h, _),
