@@ -6,6 +6,7 @@ Authors: Devon Tuma
 import computational_monads.distribution_semantics.monad
 import computational_monads.distribution_semantics.independence
 import computational_monads.constructions.uniform_select
+import computational_monads.constructions.product
 import computational_monads.support.prod
 import computational_monads.asymptotics.polynomial_time
 
@@ -20,8 +21,7 @@ open_locale classical big_operators
 
 /-- A symmetric-key encryption algorithm is a set of functions `gen`, `encrypt`, and `decrypt`.
 The types `M`, `K`, and `C` are the types of the messages, keys, and ciphertexts respectively.
-We assume that the `keygen` has access to a random selection oracle,
-while `encrypt` and `decrypt` are deterministic. -/
+We assume that the `keygen` has a random selection oracle, and the other two are deterministic. -/
 structure symm_enc_alg (M K C : Type) :=
 (keygen : unit → oracle_comp uniform_selecting K)
 (encrypt : M × K → C)
@@ -35,19 +35,7 @@ namespace symm_enc_alg
 
 variables {M K C : Type} (se_alg : symm_enc_alg M K C)
 
--- lemma eval_dist_keygen_encrypt_apply' (m : M) (c : C) :
---   ⁅= c | do {k ← se_alg.keygen (), return (se_alg.encrypt (m, k))}⁆ =
---     ∑' (k : K), if c = se_alg.encrypt (m, k) then ⁅= k | se_alg.keygen ()⁆ else 0 :=
--- by rw [eval_dist_bind_return_apply_eq_tsum]
-
--- lemma eval_dist_keygen_encrypt_apply (m_dist : oracle_comp se_alg.spec M) (c : C) :
---   ⁅= c | do {m ← m_dist, k ← se_alg.keygen (), return (se_alg.encrypt (m, k))}⁆ =
---     ∑' (m : M) (k : K), if c = se_alg.encrypt (m, k)
---       then ⁅= m | m_dist⁆ * ⁅= k | se_alg.keygen ()⁆ else 0 :=
--- by simp_rw [eval_dist_bind_apply_eq_tsum, eval_dist_return_apply,
---   ← ennreal.tsum_mul_left,  mul_ite, mul_one, mul_zero]
-
-/-- Rewrite completeness in terms of the encryption and decryption functions being inverses. -/
+/-- Write completeness in terms of the encryption and decryption functions being inverses. -/
 lemma right_inverse_encrypt_decrypt : ∀ k ∈ (se_alg.keygen ()).support,
   function.right_inverse (λ m, se_alg.encrypt (m, k)) (λ c, se_alg.decrypt (c, k)) :=
 λ k hk m, se_alg.complete m k hk
@@ -60,6 +48,7 @@ lemma decrypt_surjective (k : K) (hk : k ∈ (se_alg.keygen ()).support) :
   (λ m, se_alg.decrypt (m, k)).surjective :=
 function.right_inverse.surjective (se_alg.right_inverse_encrypt_decrypt k hk)
 
+/-- Due to completeness there must be at least as many ciphertexts as plaintexts. -/
 theorem card_message_le_card_cipher [fintype M] [fintype C] :
   fintype.card M ≤ fintype.card C :=
 let ⟨k, hk⟩ := (se_alg.keygen ()).support_nonempty in -- keygen has at least one possible output
@@ -156,9 +145,36 @@ lemma left_inverse_encrypt_decrypt : ∀ k ∈ (se_alg.keygen ()).support,
   function.left_inverse (λ m, se_alg.encrypt (m, k)) (λ c, se_alg.decrypt (c, k)) :=
 λ k hk c, (se_alg.decrypt_bijective hmk hkc k hk).1 (by simp only [se_alg.complete _ k hk])
 
-theorem exists_key_of_perfect_secrecy (h : se_alg.perfect_secrecy)
-  (m : M) (c : C) : ∃ k ∈ (se_alg.keygen ()).support,
-    c = se_alg.encrypt (m, k) :=
+lemma eval_dist_key_eq_eval_dist_cipher_of_perfect_secrecy (h : se_alg.perfect_secrecy)
+  (m_dist : oracle_comp uniform_selecting M) (k : K) (c : C) :
+  ⁅= k | se_alg.keygen ()⁆ = ⁅= c | prod.snd <$> se_alg.mgen_encrypt m_dist⁆ :=
+begin
+  suffices : ∀ m, ⁅= m | m_dist⁆ * ⁅= k | se_alg.keygen ()⁆ =
+    ⁅= m | m_dist⁆ * ⁅= c | prod.snd <$> se_alg.mgen_encrypt m_dist⁆,
+  from sorry,
+  intro m,
+  calc ⁅= m | m_dist⁆ * ⁅= k | se_alg.keygen ()⁆ =
+    ⁅= (m, k) | m_dist ×ₘ se_alg.keygen ()⁆ : by rw [eval_dist_product_apply]
+    ... = ⁅= (m, c) | (λ (x : M × K), (x.1, se_alg.encrypt (x.1, x.2))) <$> (m_dist ×ₘ se_alg.keygen ())⁆ :
+    begin
+
+      refine symm _,
+      apply eval_dist_map_apply_eq_single,
+      ext x,
+      cases x,
+      simp [prod.eq_iff_fst_eq_snd_eq],
+      rintro rfl,
+    end
+    ... = ⁅= (m, c) | se_alg.mgen_encrypt m_dist⁆ :
+      by simp_rw [product, eval_dist_map, eval_dist_bind,
+        pmf.map_bind, eval_dist_return, pmf.map_pure]
+
+    ... = ⁅= m | m_dist⁆ * ⁅= c | prod.snd <$> se_alg.mgen_encrypt m_dist⁆ :
+      (se_alg.perfect_secrecy_iff.1 h) m_dist m c
+end
+
+theorem exists_key_of_perfect_secrecy (h : se_alg.perfect_secrecy) (m : M) (c : C) :
+  ∃ k ∈ (se_alg.keygen ()).support, c = se_alg.encrypt (m, k) :=
 begin
   haveI : nonempty M := ⟨m⟩, -- Can't represent a uniform distribution on an empty type.
   suffices : 0 < ⁅= (m, c) | se_alg.mgen_encrypt ($ᵗ M)⁆,
@@ -172,58 +188,55 @@ begin
     exact ⟨se_alg.decrypt (c, k), k, hk, se_alg.left_inverse_encrypt_decrypt hmk hkc k hk c⟩ }
 end
 
--- theorem key_unique_of_perfect_secrecy
+theorem key_unique_of_perfect_secrecy (h : se_alg.perfect_secrecy) (m : M) (k k' : K)
+  (hk : k ∈ (se_alg.keygen ()).support) (hk' : k' ∈ (se_alg.keygen ()).support)
+  (h : se_alg.encrypt (m, k) = se_alg.encrypt (m, k')) : k = k' :=
+begin
+  sorry
+end
 
 /-- Assuming that the message, key, and ciphertext spaces all have the same size,
 any system with perfect secrecy must generate keys uniformly at random. -/
-theorem eval_dist_keygen_eq_uniform_of_perfect_secrecy (h : se_alg.perfect_secrecy) (k : K) :
+theorem eval_dist_keygen_eq_uniform_of_perfect_secrecy [nonempty M] [nonempty C]
+  (h : se_alg.perfect_secrecy) (k : K) :
   ⁅= k | se_alg.keygen ()⁆ = (fintype.card K)⁻¹ :=
 calc ⁅= k | se_alg.keygen ()⁆ =
-  (∑' (c : C), ⁅= k | se_alg.keygen ()⁆) * (fintype.card C)⁻¹ :
-    sorry
-  ... = (fintype.card C)⁻¹ : sorry
+  (fintype.card C)⁻¹ * ((fintype.card C) * ⁅= k | se_alg.keygen ()⁆) : sorry
+  ... = (fintype.card C)⁻¹ * (∑' (c : C), ⁅= k | se_alg.keygen ()⁆) :
+    by simp only [tsum_fintype, finset.sum_const, fintype.card, ←mul_assoc, nsmul_eq_mul]
+  ... = (fintype.card C)⁻¹ * (∑' (c : C), ⁅= c | prod.snd <$> se_alg.mgen_encrypt ($ᵗ M)⁆) :
+    begin
+      refine congr_arg (λ x, (fintype.card C)⁻¹ * x) _, sorry
+    end
+  ... = (fintype.card C)⁻¹ : by rw [pmf.tsum_coe, mul_one]
   ... = (fintype.card K)⁻¹ : by rw hkc
 
 
 
-lemma perfect_secrecy_iff_of_equal_card : se_alg.perfect_secrecy ↔
+lemma perfect_secrecy_iff_of_equal_card [nonempty M] [nonempty C] :
+  se_alg.perfect_secrecy ↔
   (∀ k, ⁅= k | se_alg.keygen ()⁆ = (fintype.card K)⁻¹) ∧
     (∀ m c, ∃! k, k ∈ (se_alg.keygen ()).support ∧ c = se_alg.encrypt (m, k)) :=
 begin
   split,
-  { refine λ h, ⟨se_alg.eval_dist_keygen_eq_uniform_of_perfect_secrecy hmk hkc h,
-      λ m c, sorry⟩,
-  },
-  {
-    rintro ⟨h_keygen, h_encrypt⟩,
-    rw [perfect_secrecy_iff],
-    intros m_dist m c,
-    obtain ⟨k, ⟨⟨hk, rfl⟩, hk'⟩⟩ := h_encrypt m c,
-
+  { refine λ h, ⟨se_alg.eval_dist_keygen_eq_uniform_of_perfect_secrecy hmk hkc h, λ m c, _⟩,
+    obtain ⟨k, hk, hkm⟩ := se_alg.exists_key_of_perfect_secrecy hmk hkc h m c,
+    exact ⟨k, ⟨hk, hkm⟩, λ k' hk', se_alg.key_unique_of_perfect_secrecy
+      hmk hkc h m k' k hk'.1 hk (hk'.2.symm.trans hkm)⟩ },
+  { rw [perfect_secrecy_iff],
+    rintros ⟨h_keygen, h_encrypt⟩ m_dist m c,
+    obtain ⟨k, ⟨⟨hkₛ, rfl⟩, hk⟩⟩ := h_encrypt m c,
     calc ⁅= (m, se_alg.encrypt (m, k)) | se_alg.mgen_encrypt m_dist⁆ =
       ∑' k', if se_alg.encrypt (m, k) = se_alg.encrypt (m, k')
-        then ⁅= m | m_dist⁆ * ⁅= k' | se_alg.keygen ()⁆ else 0 :
-          by rw [eval_dist_mgen_encrypt_apply]
+        then ⁅= m | m_dist⁆ * ⁅= k' | se_alg.keygen ()⁆ else 0 : by rw eval_dist_mgen_encrypt_apply
       ... = ∑' k', if k = k' then ⁅= m | m_dist⁆ * ⁅= k' | se_alg.keygen ()⁆ else 0 :
-      begin
-        refine tsum_congr (λ k', symm _),
-        by_cases hk0 : k' ∈ (se_alg.keygen ()).support,
-        {
-          specialize hk' k',
-          rw [ite_eq_iff'],
-          refine ⟨λ hk'', by rw [hk'', eq_self_iff_true, if_true], λ hkn, symm _⟩,
-          rw ite_eq_right_iff,
-          intro hk'',
-          specialize hk' ⟨hk0, hk''⟩,
-          refine false.elim (hkn hk'.symm)
-        },
-        {
-          have this : ⁅= k' | se_alg.keygen ()⁆ = 0,
-          by rwa [eval_dist_eq_zero_iff_not_mem_support],
-          simp_rw [this, mul_zero, if_t_t],
-        }
-
-      end
+        begin
+          refine tsum_congr (λ k', symm _),
+          by_cases hk0 : k' ∈ (se_alg.keygen ()).support,
+          { exact ite_eq_iff'.2 ⟨λ hk'', by rw [hk'', eq_self_iff_true, if_true], λ hkn, symm $
+              ite_eq_right_iff.2 $ λ hk'', false.elim (hkn (hk k' ⟨hk0, hk''⟩).symm)⟩ },
+          { simp_rw [(eval_dist_eq_zero_iff_not_mem_support _ _).2 hk0, mul_zero, if_t_t] }
+        end
       ... = if k = k then ⁅= m | m_dist⁆ * ⁅= k | se_alg.keygen ()⁆ else 0 :
         tsum_eq_single k (λ k' hk', by simp_rw [hk'.symm, if_false])
       ... = ⁅= m | m_dist⁆ * ⁅= k | se_alg.keygen ()⁆ : if_pos rfl
@@ -231,28 +244,14 @@ begin
         by rw [ennreal.tsum_mul_right, ⁅m_dist⁆.tsum_coe, one_mul]
       ... = ⁅= m | m_dist⁆ * ∑' m', ⁅= (m', se_alg.encrypt (m, k)) | se_alg.mgen_encrypt m_dist⁆ :
         begin
-          refine congr_arg (λ x, _ * x) _,
+          refine congr_arg (λ x, _ * x) (tsum_congr (λ m', symm _)),
           simp_rw [eval_dist_mgen_encrypt_apply],
-          refine tsum_congr (λ m', symm _),
-          have := h_encrypt m' (se_alg.encrypt (m, k)),
-          obtain ⟨k', hks', hke'⟩ := this,
+          obtain ⟨k', hks', hke'⟩ := h_encrypt m' (se_alg.encrypt (m, k)),
           refine trans (tsum_eq_single k' $ λ kd hkd, _) _,
-          {
-            by_cases hkds : kd ∈ (se_alg.keygen ()).support,
-            {
-              specialize hke' kd,
-              refine ite_eq_right_iff.2 (λ hkkd, false.elim (hkd $ hke' ⟨hkds, hkkd⟩)),
-            },
-            {
-              have this : ⁅= kd | se_alg.keygen ()⁆ = 0,
-              by rwa [eval_dist_eq_zero_iff_not_mem_support],
-              simp_rw [this, mul_zero, if_t_t],
-            }
-
-          },
-          {
-            simp_rw [hks'.2, eq_self_iff_true, if_true, h_keygen],
-          }
+          { by_cases hkds : kd ∈ (se_alg.keygen ()).support,
+            { exact ite_eq_right_iff.2 (λ hkkd, false.elim (hkd $ hke' kd ⟨hkds, hkkd⟩)) },
+            { simp_rw [(eval_dist_eq_zero_iff_not_mem_support _ _).2 hkds, mul_zero, if_t_t] } },
+          { simp_rw [hks'.2, eq_self_iff_true, if_true, h_keygen] }
         end
       ... = ⁅= m | m_dist⁆ * ⁅= se_alg.encrypt (m, k) | prod.snd <$> se_alg.mgen_encrypt m_dist⁆ :
         begin
