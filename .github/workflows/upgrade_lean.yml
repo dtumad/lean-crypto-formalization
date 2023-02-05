@@ -5,8 +5,8 @@ on:
 jobs:
   # Upgrade Lean and Mathlib nightly, failing if the new build fails.
   upgrade_lean:
-    name: Bump Lean and dependency versions
     runs-on: ubuntu-latest
+    name: Bump Lean and dependency versions
     steps:
       - name: checkout project
         uses: actions/checkout@v2
