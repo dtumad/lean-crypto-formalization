@@ -33,6 +33,15 @@ structure symm_enc_alg (M K C : Type) :=
 
 namespace symm_enc_alg
 
+/-- Alias the plain text type of the algorithm for convenience-/
+@[inline, reducible] def M {M K C : Type} (se_alg : symm_enc_alg M K C) : Type := M
+
+/-- Alias the key type of the algorithm for convenience-/
+@[inline, reducible] def K {M K C : Type} (se_alg : symm_enc_alg M K C) : Type := K
+
+/-- Alias the cipher text type of the algorithm for convenience-/
+@[inline, reducible] def C {M K C : Type} (se_alg : symm_enc_alg M K C) : Type := C
+
 variables {M K C : Type} (se_alg : symm_enc_alg M K C)
 
 /-- Write completeness in terms of the encryption and decryption functions being inverses. -/
@@ -145,6 +154,19 @@ lemma left_inverse_encrypt_decrypt : ∀ k ∈ (se_alg.keygen ()).support,
   function.left_inverse (λ m, se_alg.encrypt (m, k)) (λ c, se_alg.decrypt (c, k)) :=
 λ k hk c, (se_alg.decrypt_bijective hmk hkc k hk).1 (by simp only [se_alg.complete _ k hk])
 
+lemma encrypt_decrypt_eq_iff (c : C) (k k' : K) (hk : k ∈ (se_alg.keygen ()).support) :
+  se_alg.encrypt (se_alg.decrypt (c, k), k') = c ↔ k' = k :=
+begin
+  refine ⟨λ hk, _, λ hk, _⟩,
+  {
+    sorry,
+  },
+  {
+    rw [hk],
+    apply left_inverse_encrypt_decrypt; assumption
+  }
+end
+
 lemma eval_dist_key_eq_eval_dist_cipher_of_perfect_secrecy (h : se_alg.perfect_secrecy)
   (m_dist : oracle_comp uniform_selecting M) (k : K) (c : C)
   (h' : se_alg.decrypt (c, k) ∈ m_dist.support) :
@@ -152,19 +174,30 @@ lemma eval_dist_key_eq_eval_dist_cipher_of_perfect_secrecy (h : se_alg.perfect_s
 begin
   suffices : ⁅= se_alg.decrypt (c, k) | m_dist⁆ * ⁅= k | se_alg.keygen ()⁆ =
     ⁅= se_alg.decrypt (c, k) | m_dist⁆ * ⁅= c | prod.snd <$> se_alg.mgen_encrypt m_dist⁆,
-  from sorry,
+  from begin
+    rwa [ennreal.mul_eq_mul_left _ (pmf.apply_ne_top _ _)] at this,
+    rw [eval_dist_ne_zero_iff_mem_support],
+    exact h',
+  end,
   let m := se_alg.decrypt (c, k),
   calc ⁅= m | m_dist⁆ * ⁅= k | se_alg.keygen ()⁆ =
     ⁅= (m, k) | m_dist ×ₘ se_alg.keygen ()⁆ : by rw [eval_dist_product_apply]
     ... = ⁅= (m, c) | (λ (x : M × K), (x.1, se_alg.encrypt (x.1, x.2))) <$> (m_dist ×ₘ se_alg.keygen ())⁆ :
     begin
       refine symm _,
-      apply eval_dist_map_apply_eq_single,
-      refine set.ext (λ x, x.rec $ λ m' k', _),
-      simp only [prod.eq_iff_fst_eq_snd_eq, set.mem_preimage, set.mem_singleton_iff, and.congr_right_iff],
-      intro h,
-      simp only [h, m],
-      sorry,
+      by_cases hkk : k ∈ (se_alg.keygen ()).support,
+      {
+        apply eval_dist_map_apply_eq_single,
+        refine set.ext (λ x, x.rec $ λ m' k', _),
+        simp only [prod.eq_iff_fst_eq_snd_eq, set.mem_preimage, set.mem_singleton_iff, and.congr_right_iff],
+        intro h,
+        simp only [h, m],
+        apply encrypt_decrypt_eq_iff; assumption
+
+      },
+      {
+        sorry
+      }
     end
     ... = ⁅= (m, c) | se_alg.mgen_encrypt m_dist⁆ :
       by simp_rw [product, eval_dist_map, eval_dist_bind,
