@@ -143,6 +143,9 @@ eval_dist_bind_return_apply_eq_single' oa f y x hx h
 lemma eval_dist_map_apply_eq_single (x : α) (hx : f ⁻¹' {y} = {x}) :
   ⁅f <$> oa⁆ y = ⁅oa⁆ x := eval_dist_bind_return_apply_eq_single oa f y x hx
 
+lemma eval_dist_map_apply_of_injective (x : α) (hf : f.injective) : ⁅f <$> oa⁆ (f x) = ⁅oa⁆ x :=
+eval_dist_map_apply_eq_single' oa f (f x) x rfl (λ x' hx' hxf, hf hxf)
+
 end map
 
 section map_return
