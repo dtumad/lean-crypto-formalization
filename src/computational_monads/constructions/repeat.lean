@@ -182,8 +182,8 @@ lemma eval_dist_repeat_succ_apply :
 calc ⁅oa.repeat m.succ⁆ xsₛ = ⁅(λ (x : α × vector α m), x.1 ::ᵥ x.2) <$> (oa ×ₘ oa.repeat m)⁆ xsₛ :
     by rw eval_dist_repeat_succ' oa m
   ... = ⁅oa ×ₘ oa.repeat m⁆ (xsₛ.head, xsₛ.tail) :
-    eval_dist_map_apply_eq_single' _ _ xsₛ (xsₛ.head, xsₛ.tail) (by simp only [eq_comm,
-      vector.eq_cons_iff, prod.mk.inj_iff, prod.eq_iff_fst_eq_snd_eq, iff_self, imp_true_iff])
+    eval_dist_map_apply_eq_single' _ _ xsₛ (xsₛ.head, xsₛ.tail) (xsₛ.cons_head_tail)
+      (λ x hx hx', by rw [← hx', vector.head_cons, vector.tail_cons, prod.mk.eta])
   ... = ⁅oa⁆ xsₛ.head * ⁅oa.repeat m⁆ xsₛ.tail : by rw eval_dist_product_apply
 
 lemma eval_dist_map_nth_repeat (i : fin m) :

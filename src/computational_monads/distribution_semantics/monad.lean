@@ -82,10 +82,19 @@ lemma eval_dist_bind_return_apply_eq_sum_fin_support_indicator [oa.decidable] [d
 @[simp] lemma eval_dist_bind_return_id : ⁅oa >>= return⁆ = ⁅oa⁆ :=
 (eval_dist_bind_return oa id).trans (by rw [pmf.map_id])
 
+lemma eval_dist_bind_return_apply_eq_single' (x : α) (hx : f x = y)
+  (h : ∀ x' ∈ oa.support, f x' = y → x' = x) : ⁅oa >>= λ x, return (f x)⁆ y = ⁅oa⁆ x :=
+begin
+  rw [eval_dist_bind_return_apply_eq_tsum_indicator],
+  refine trans (tsum_eq_single x $ λ x' hx', set.indicator_apply_eq_zero.2 _) _,
+  { exact λ hx'', eval_dist_eq_zero_of_not_mem_support (λ hxs, hx' (h x' hxs hx'')) },
+  { simp only [set.mem_preimage, set.mem_singleton_iff, hx, set.indicator_of_mem] }
+end
+
 /-- If a function `f` returns `y` iff the input is `x`, then the probability of outputting
 `y` after running a computation and applying `f` is the probability of outputting `x`-/
-lemma eval_dist_bind_return_apply_eq_single
-  (x : α) (hx : f ⁻¹' {y} = {x}) : ⁅oa >>= λ x, return (f x)⁆ y = ⁅oa⁆ x :=
+lemma eval_dist_bind_return_apply_eq_single (x : α) (hx : f ⁻¹' {y} = {x}) :
+  ⁅oa >>= λ x, return (f x)⁆ y = ⁅oa⁆ x :=
 begin
   simp only [eval_dist_bind_return_apply_eq_tsum_indicator, hx],
   refine trans (tsum_eq_single x _) (by simp only [set.indicator_of_mem, set.mem_singleton]),
@@ -125,19 +134,14 @@ eval_dist_bind_return_apply_eq_sum_fin_support_indicator oa f y
 
 @[simp] lemma eval_dist_map_id : ⁅id <$> oa⁆ = ⁅oa⁆ := by rw [eval_dist_map, ⁅oa⁆.map_id]
 
+lemma eval_dist_map_apply_eq_single' (x : α) (hx : f x = y)
+  (h : ∀ x' ∈ oa.support, f x' = y → x' = x) : ⁅f <$> oa⁆ y = ⁅oa⁆ x :=
+eval_dist_bind_return_apply_eq_single' oa f y x hx h
+
 /-- If a function `f` returns `y` iff the input is `x`, then the probability of outputting
 `y` after running a computation and applying `f` is the probability of outputting `x`-/
 lemma eval_dist_map_apply_eq_single (x : α) (hx : f ⁻¹' {y} = {x}) :
   ⁅f <$> oa⁆ y = ⁅oa⁆ x := eval_dist_bind_return_apply_eq_single oa f y x hx
-
-lemma eval_dist_map_apply_eq_single' (x : α) (hx : ∀ x', f x' = y ↔ x' = x) :
-  ⁅f <$> oa⁆ y = ⁅oa⁆ x :=
-begin
-  refine eval_dist_bind_return_apply_eq_single oa f y x _,
-  ext z,
-  simp,
-  exact hx z,
-end
 
 end map
 
