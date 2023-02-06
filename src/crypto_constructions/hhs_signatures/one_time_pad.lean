@@ -5,8 +5,9 @@ Authors: Devon Tuma
 -/
 import crypto_foundations.primitives.symm_enc
 import computational_monads.constructions.repeat
-import data.vector.zip
 import computational_monads.coercions.instances
+
+import data.vector.zip
 
 /-!
 # Symmetric-Key Encryption Schemes
@@ -40,8 +41,7 @@ variables {n : ℕ}
 theorem perfect_secrecy (n : ℕ) : (one_time_pad n).perfect_secrecy :=
 begin
   refine ((one_time_pad n).perfect_secrecy_iff_of_equal_card rfl rfl).2 ⟨λ v, _, λ m c, _⟩,
-  {
-    calc ⁅= v | (one_time_pad n).keygen ()⁆ = (list.map ⁅coin⁆ v.to_list).prod :
+  { calc ⁅= v | (one_time_pad n).keygen ()⁆ = (list.map ⁅coin⁆ v.to_list).prod :
         by rw [keygen_apply, eval_dist_repeat_apply, vector.to_list_map, eval_dist_coe_sub_spec]
       ... = 2⁻¹ ^ (list.map ⁅coin⁆ v.to_list).length :
         list.prod_eq_pow_card _ 2⁻¹ (λ x hx, let ⟨y, hy⟩ := list.mem_map.1 hx in
@@ -52,9 +52,9 @@ begin
   { refine ⟨vector.zip_with bxor m c, ⟨_, _⟩, λ k hk, _⟩,
     { simp only [keygen_apply, mem_support_repeat_iff_forall, support_coe_sub_spec, coin,
         support_query, set.top_eq_univ, set.mem_univ, imp_true_iff] },
-    { refine vector.ext (λ i, by simp only [encrypt_apply, vector.zip_with_nth,
+    { exact vector.ext (λ i, by simp only [encrypt_apply, vector.zip_with_nth,
         ← bool.bxor_assoc, bxor_self, bool.bxor_ff_left]) },
-    { refine vector.ext (λ i, by simp only [hk.2, ←bool.bxor_assoc, encrypt_apply,
+    { exact vector.ext (λ i, by simp only [hk.2.symm, ← bool.bxor_assoc, encrypt_apply,
         vector.zip_with_nth, bxor_self, bool.bxor_ff_left]) } }
 end
 

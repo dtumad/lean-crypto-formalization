@@ -67,14 +67,14 @@ lemma indep_event_iff_indep_set : indep_event oa e e' ↔
 by rw [indep_event_iff_indep_events, indep_events_iff_indep_sets,
   probability_theory.indep_set_iff_indep_sets_singleton]; apply measurable_space.measurable_set_top
 
-lemma indep_event_iff : indep_event oa e e' ↔ ⁅e ∩ e' | oa⁆ = ⁅ e | oa ⁆ * ⁅ e' | oa ⁆ :=
+lemma indep_event_iff : indep_event oa e e' ↔ ⁅e ∩ e' | oa⁆ = ⁅e | oa⁆ * ⁅e' | oa⁆ :=
 begin
   simp_rw [indep_event_iff_indep_set, prob_event_eq_to_measure_apply],
   exact probability_theory.indep_set_iff_measure_inter_eq_mul trivial trivial _,
 end
 
 lemma prob_event_inter_eq_mul_of_indep_event (h : indep_event oa e e') :
-  ⁅ e ∩ e' | oa ⁆ = ⁅ e | oa ⁆ * ⁅ e' | oa ⁆ :=
+  ⁅e ∩ e' | oa⁆ = ⁅e | oa⁆ * ⁅e' | oa⁆ :=
 (indep_event_iff oa e e').1 h
 
 end indep_event
