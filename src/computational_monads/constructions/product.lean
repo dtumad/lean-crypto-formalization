@@ -110,7 +110,7 @@ begin
     rw [set.indicator_apply_eq_self.2 (λ h, (h this).elim),
       set.indicator_apply_eq_self.2 (λ h, (h ha).elim), eval_dist_product_apply] },
   { have : (a, b) ∉ (prod.fst ⁻¹' e : set (α × β)) := λ h, ha (set.mem_preimage.2 h),
-    rw [set.indicator_apply_eq_zero.2 (λ h, (this h).elim),
+    rw [set.indicator_apply_eq_zero.2 (λ  h, (this h).elim),
       set.indicator_apply_eq_zero.2 (λ h, (ha h).elim), zero_mul] }
 end
 
@@ -132,6 +132,10 @@ lemma eval_dist_map_fst_product_apply [decidable_eq γ] (f : α × β → γ) (x
 begin
   sorry
 end
+
+lemma eval_dist_map_product' (f : α × β → γ) :
+  ⁅f <$> oa ×ₘ ob⁆ = ⁅oa >>= λ a, ob >>= λ b, return $ f (a, b)⁆ :=
+sorry
 
 end eval_dist
 

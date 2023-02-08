@@ -108,23 +108,24 @@ lemma exists_key_of_mem_support_mgen_and_encrypt (m : M) (c : C)
     ∃ k ∈ (se_alg.keygen ()).support, se_alg.encrypt (m, k) = c :=
 ((se_alg.mem_support_mgen_and_encrypt_iff m_dist m c).1 h).2
 
+/-- The distribution associated to `mgen_and_encrypt` is the same as that associated to
+running `m_dist` and `keygen` independently, and mapping according to the `encrypt` function. -/
 lemma eval_dist_mgen_and_encrypt : ⁅se_alg.mgen_and_encrypt m_dist⁆ =
   ⁅(λ x, (prod.fst x, se_alg.encrypt x)) <$> (m_dist ×ₘ se_alg.keygen ())⁆ :=
-begin
-  sorry,
-end
+by rw [eval_dist_map_product']
 
-/-- The probability of getting a particular output `x` from `mgen_and_encrypt` is the sum over possible
-keys such that encrypt `x.1` to `x.2`, of the probability of getting that key,
-weighted by the probability of getting `x.1` from the message distribution. -/
+/-- The probability of getting a particular output `(m, c)` from `mgen_and_encrypt` is the sum over
+possible keys that encrypt `m` to `c` of the probability of getting that key,
+weighted by the probability of getting `m` from the message distribution. -/
 lemma eval_dist_mgen_and_encrypt_apply (m : M) (c : C) :
   ⁅= (m, c) | se_alg.mgen_and_encrypt m_dist⁆ =
     ∑' (k : K), if c = se_alg.encrypt (m, k)
       then ⁅= m | m_dist⁆ * ⁅= k | se_alg.keygen ()⁆ else 0 :=
 by rw [eval_dist_mgen_and_encrypt, eval_dist_map_fst_product_apply]
 
-/-- The message portion of the output of `mgen_and_encrypt m_dist` still has distribution `m_dist`. -/
-lemma eval_dist_fst_map_mgen_and_encrypt : ⁅prod.fst <$> se_alg.mgen_and_encrypt m_dist⁆ = ⁅m_dist⁆ :=
+/-- The message portion of the output of `mgen_and_encrypt` follows the message distribution. -/
+lemma eval_dist_fst_map_mgen_and_encrypt :
+  ⁅prod.fst <$> se_alg.mgen_and_encrypt m_dist⁆ = ⁅m_dist⁆ :=
 by simp only [pmf.map_comp, eval_dist_map, eval_dist_bind, eval_dist_bind_return,
   pmf.map_bind, prod.fst_comp_mk, pmf.map_const, pmf.bind_pure]
 
@@ -139,7 +140,7 @@ the probability of getting `c` from encrypting a message drawn from `message_dis
 is the same as the probability of getting `c` from encrypting the fixed `m`. -/
 def perfect_secrecy (se_alg : symm_enc_alg M K C) : Prop :=
 ∀ (m_dist : oracle_comp uniform_selecting M) (m : M) (c : C),
-  indep_event (se_alg.mgen_and_encrypt m_dist) (prod.fst ⁻¹' {m}) (prod.snd ⁻¹' {c})
+  (se_alg.mgen_and_encrypt m_dist).indep_event (prod.fst ⁻¹' {m}) (prod.snd ⁻¹' {c})
 
 /-- Restate perfect secrecy in terms of explicit probabilities instead of indepent events.
 A symmetric encryption algorithm has perfect secrecy iff the probability of getting a given
@@ -165,21 +166,20 @@ include hmk hkc
 
 /-- If all spaces have the same size we can get bijectivity of encrypt not just injectivity. -/
 lemma encrypt_bijective_of_equal_card (k : K) (hk : k ∈ (se_alg.keygen ()).support) :
-  (λ m, se_alg.encrypt (m, k)).bijective :=
+  (λ m, se_alg.encrypt (m, k) : M → C).bijective :=
 (fintype.bijective_iff_injective_and_card _).2
   ⟨se_alg.encrypt_injective k hk, hmk.trans hkc⟩
 
 /-- If all spaces have the same size we can get bijectivity of decrypt not just surjectivity. -/
 lemma decrypt_bijective_of_equal_card (k : K) (hk : k ∈ (se_alg.keygen ()).support) :
-  (λ c, se_alg.decrypt (c, k)).bijective :=
+  (λ c, se_alg.decrypt (c, k) : C → M).bijective :=
 (fintype.bijective_iff_surjective_and_card _).2
   ⟨se_alg.decrypt_surjective k hk, symm $ hmk.trans hkc⟩
 
 /-- If all spaces are the same size then encryption and decryption are also left inverses. -/
 lemma left_inverse_encrypt_decrypt : ∀ k ∈ (se_alg.keygen ()).support,
   function.left_inverse (λ m, se_alg.encrypt (m, k)) (λ c, se_alg.decrypt (c, k)) :=
-λ k hk c, (se_alg.decrypt_bijective_of_equal_card hmk hkc k hk).1
-  (by simp only [se_alg.complete _ k hk])
+λ k hk c, (se_alg.decrypt_bijective_of_equal_card hmk hkc k hk).1 (se_alg.complete _ _ hk)
 
 /-- Reverse version of completeness, i.e. encrypting a decryption gives the initial value. -/
 lemma complete' (c : C) (k : K) (hk : k ∈ (se_alg.keygen ()).support) :
@@ -191,11 +191,11 @@ section perfect_secrecy
 /-- Given perfect secrecy and matching cardinatlities, every message-ciphertext pair must
 give rise to a key that encrypts that message to that ciphertext. -/
 theorem exists_unique_key_of_perfect_secrecy (h : se_alg.perfect_secrecy) (m : M) (c : C) :
-  ∃! k, k ∈ (se_alg.keygen ()).support ∧ se_alg.encrypt (m, k) = c :=
+  ∃! (k : K), k ∈ (se_alg.keygen ()).support ∧ se_alg.encrypt (m, k) = c :=
 begin
   -- We first show regular existence, and then extend to uniqueness after.
   have hmc : ∀ m c, ∃ k, k ∈ (se_alg.keygen ()).support ∧ se_alg.encrypt (m, k) = c,
-  { intros m c,
+  { clear m c, intros m c,
     haveI : nonempty M := ⟨m⟩,
     -- If the message and ciphertext have non-zero probability, there must be an encryption key.
     suffices : 0 < ⁅= (m, c) | se_alg.mgen_and_encrypt ($ᵗ M)⁆,
@@ -223,6 +223,7 @@ begin
   -- If the support is as large as the entire space `K`, it must be the whole space `K`.
   suffices : fintype.card K ≤ (se_alg.keygen ()).support.to_finset.card,
   from set.to_finset_eq_univ.1 (finset.eq_univ_of_card _ $ antisymm (finset.card_le_univ _) this),
+  -- Need to handle the case of `M` being an empty type seperately.
   by_cases hM : nonempty M,
   { refine hM.elim (λ m, _),
     calc fintype.card K = fintype.card C : hkc
@@ -241,7 +242,7 @@ lemma mem_support_keygen (h : se_alg.perfect_secrecy) (k : K) : k ∈ (se_alg.ke
 /-- If all spaces have the same size we can get bijectivity of encrypt not just injectivity,
 where encryption is viewed as a function on keys with a fixed message. -/
 lemma encrypt_key_bijective_of_perfect_secrecy (h : se_alg.perfect_secrecy) (m : M) :
-  (λ k, se_alg.encrypt (m, k)).bijective :=
+  (λ k, se_alg.encrypt (m, k) : K → C).bijective :=
 (function.bijective_iff_exists_unique _).2 $
   λ c, let ⟨k, hk, h'⟩ := se_alg.exists_unique_key_of_perfect_secrecy hmk hkc h m c
     in ⟨k, hk.2, λ k' hk', h' k' ⟨se_alg.mem_support_keygen hmk hkc h k', hk'⟩⟩
@@ -249,7 +250,7 @@ lemma encrypt_key_bijective_of_perfect_secrecy (h : se_alg.perfect_secrecy) (m :
 /-- If all spaces have the same size we can get bijectivity of encrypt not just injectivity,
 where decryption is viewed as a function on keys with a fixed ciphertext. -/
 lemma decrypt_key_bijective_of_perfect_secrecy (h : se_alg.perfect_secrecy) (c : C) :
-  (λ k, se_alg.decrypt (c, k)).bijective :=
+  (λ k, se_alg.decrypt (c, k) : K → M).bijective :=
 (function.bijective_iff_exists_unique _).2
   (λ m, let ⟨k, hk, h'⟩ := se_alg.exists_unique_key_of_perfect_secrecy hmk hkc h m c
     in ⟨k, hk.2 ▸ se_alg.complete m k hk.1, λ k' hk', h' k' ⟨se_alg.mem_support_keygen
@@ -278,7 +279,7 @@ lemma eval_dist_ciphertext_eq_eval_dist_key_of_perfect_secrecy
   (k : K) (c : C) (h' : se_alg.decrypt (c, k) ∈ m_dist.support) :
   ⁅= c | prod.snd <$> se_alg.mgen_and_encrypt m_dist⁆ = ⁅= k | se_alg.keygen ()⁆ :=
 begin
-  -- We introduce a the probability of the decryption, in order to make use of perfect secrecy.
+  -- Multiply by the probability of getting the decryption, in order to use perfect secrecy
   let m := se_alg.decrypt (c, k),
   suffices : ⁅= m | m_dist⁆ * ⁅= k | se_alg.keygen ()⁆ =
     ⁅= m | m_dist⁆ * ⁅= c | prod.snd <$> se_alg.mgen_and_encrypt m_dist⁆,
@@ -310,15 +311,19 @@ any system with perfect secrecy must generate keys uniformly at random. -/
 theorem eval_dist_keygen_eq_uniform_of_perfect_secrecy [nonempty M] [nonempty C]
   (h : se_alg.perfect_secrecy) (k : K) : ⁅= k | se_alg.keygen ()⁆ = (fintype.card K)⁻¹ :=
 calc ⁅= k | se_alg.keygen ()⁆ = 1 * ⁅= k | se_alg.keygen ()⁆ : (one_mul _).symm
+  -- Introduce a copy of `fintype.card C` by multiplying by its inverse.
   ... = ((fintype.card C)⁻¹ * (fintype.card C)) * ⁅= k | se_alg.keygen ()⁆ :
     congr_arg (λ x, x * ⁅= k | se_alg.keygen ()⁆) ((ennreal.inv_mul_cancel (nat.cast_ne_zero.2
       fintype.card_ne_zero) $ by simp only [ne.def, ennreal.nat_ne_top, not_false_iff]).symm)
+  -- Multiplication by `fintype.card C` is equivalent to summing over `C` itself.
   ... = (fintype.card C)⁻¹ * (∑' (c : C), ⁅= k | se_alg.keygen ()⁆) :
     by simp only [tsum_fintype, finset.sum_const, fintype.card, ←mul_assoc, nsmul_eq_mul]
+  -- For any `c : C`, the probability of getting `c` is equal to getting `k` (by above).
   ... = (fintype.card C)⁻¹ * (∑' (c : C), ⁅= c | prod.snd <$> se_alg.mgen_and_encrypt ($ᵗ M)⁆) :
     congr_arg (λ x, (fintype.card C)⁻¹ * x) (tsum_congr $ λ c, symm $
       se_alg.eval_dist_ciphertext_eq_eval_dist_key_of_perfect_secrecy hmk hkc h _ k c
         (mem_support_uniform_select_fintype _ _))
+  -- The sum over all `c : C` of the probability of getting that value is just `1`.
   ... = (fintype.card C)⁻¹ : by rw [pmf.tsum_coe, mul_one]
   ... = (fintype.card K)⁻¹ : by rw hkc
 
