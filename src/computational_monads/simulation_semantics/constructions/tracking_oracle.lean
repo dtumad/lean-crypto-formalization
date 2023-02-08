@@ -25,6 +25,23 @@ but this construction allows seperation of the components that affect state inde
 
 variables {α β γ : Type} {spec spec' spec'': oracle_spec}
 
+structure tracking_sim_oracle (spec spec' : oracle_spec) (S : Type)
+  extends sim_oracle spec spec' S :=
+(default_state := default_state)
+(answer_query : Π (i : spec.ι), spec.domain i → oracle_comp spec' (spec.range i))
+(update_state : Π (s : S) (i : spec.ι), spec.domain i → spec.range i → S)
+(o := λ i x, (λ u, (u, update_state x.2 i x.1 u)) <$> (answer_query i x.1))
+
+structure stateless_sim_oracle (spec spec' : oracle_spec)
+  extends tracking_sim_oracle spec spec' unit :=
+(default_state := ())
+(answer_query := answer_query)
+(update_state := λ _ _ _ _, ())
+(o := λ i x, (λ u, (u, ())) <$> (answer_query i x.1))
+
+def identi_o (spec : oracle_spec) : stateless_sim_oracle spec spec :=
+{ answer_query := λ i t, oracle_comp.query i t }
+
 /-- Oracle where the query result is indepenent of the current oracle state,
 although the new state may depend upon the previous state.
 For example a logging oracle that just tracks the input and output of queries.
