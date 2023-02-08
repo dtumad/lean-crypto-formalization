@@ -33,16 +33,22 @@ structure symm_enc_alg (M K C : Type) :=
 
 namespace symm_enc_alg
 
+variables {M K C : Type}
+
 /-- Alias the plain text type of the algorithm for convenience-/
-@[inline, reducible] def M {M K C : Type} (se_alg : symm_enc_alg M K C) : Type := M
+@[inline, reducible] def M (se_alg : symm_enc_alg M K C) : Type := M
 
 /-- Alias the key type of the algorithm for convenience-/
-@[inline, reducible] def K {M K C : Type} (se_alg : symm_enc_alg M K C) : Type := K
+@[inline, reducible] def K (se_alg : symm_enc_alg M K C) : Type := K
 
 /-- Alias the cipher text type of the algorithm for convenience-/
-@[inline, reducible] def C {M K C : Type} (se_alg : symm_enc_alg M K C) : Type := C
+@[inline, reducible] def C (se_alg : symm_enc_alg M K C) : Type := C
 
-variables {M K C : Type} (se_alg : symm_enc_alg M K C)
+-- /-- Encrypt a message and key pair, preserving the message -/
+-- @[inline, reducible] def m_encrypt (se_alg : symm_enc_alg M K C) : M × K → M × C :=
+-- λ x, (x.1, se_alg.encrypt x)
+
+variables (se_alg : symm_enc_alg M K C)
 
 /-- Write completeness in terms of the encryption and decryption functions being inverses. -/
 lemma right_inverse_encrypt_decrypt : ∀ k ∈ (se_alg.keygen ()).support,
@@ -63,54 +69,66 @@ theorem card_message_le_card_ciphertext [fintype M] [fintype C] :
 let ⟨k, hk⟩ := (se_alg.keygen ()).support_nonempty in -- keygen has at least one possible output
   fintype.card_le_of_injective _ (se_alg.encrypt_injective k hk)
 
-section mgen_encrypt
+section mgen_and_encrypt
 
 /-- Computation that given a message distribution `m_dist`, will draw a message `m` from the
 distribution, generate a key `k` using `keygen`, and calculate the resulting ciphertext `c`.
 The computation returns both the chosen message and the resulting ciphertext. -/
-@[inline, reducible] def mgen_encrypt (m_dist : oracle_comp uniform_selecting M) :
-  oracle_comp uniform_selecting (M × C) :=
-do {m ← m_dist,
+@[inline, reducible] def mgen_and_encrypt (m_dist : oracle_comp uniform_selecting M) :
+  oracle_comp uniform_selecting (M × C) := do {
+    m ← m_dist,
     k ← se_alg.keygen (),
-    return (m, se_alg.encrypt (m, k))}
+    return (m, se_alg.encrypt (m, k))
+  }
 
 variable (m_dist : oracle_comp uniform_selecting M)
 
-/-- support of `mgen_encrypt` is the union over possible messages and keys of the encryption. -/
-@[simp] lemma support_mgen_encrypt : (se_alg.mgen_encrypt m_dist).support =
+/-- Possible outputs of `mgen_and_encrypt` as a union over possible messages and keys. -/
+lemma support_mgen_and_encrypt' : (se_alg.mgen_and_encrypt m_dist).support =
   ⋃ m ∈ m_dist.support, ⋃ k ∈ (se_alg.keygen ()).support, {(m, se_alg.encrypt (m, k))} :=
-by simp_rw [support_bind, support_return]
+by simp only [support_bind, support_return]
 
-lemma mem_support_mgen_encrypt_iff (m : M) (c : C) :
-  (m, c) ∈ (se_alg.mgen_encrypt m_dist).support ↔ m ∈ m_dist.support ∧
-    ∃ k ∈ (se_alg.keygen ()).support, se_alg.encrypt (m, k) = c :=
+/-- Possible outputs of `mgen_and_encrypt` as a union over messages of the image of keys. -/
+@[simp] lemma support_mgen_and_encrypt : (se_alg.mgen_and_encrypt m_dist).support =
+  ⋃ m ∈ m_dist.support, (λ k, (m, se_alg.encrypt (m, k))) '' (se_alg.keygen ()).support :=
+by simp only [support_bind, support_bind_return]
+
+/-- `(m, c)` is a possible output of `mgen_and_encrypt` iff `m` is a possible output of `m_dist`
+and there exists a key in the output of `keygen` that encrypts `m` to `c`. -/
+lemma mem_support_mgen_and_encrypt_iff (m : M) (c : C) :
+  (m, c) ∈ (se_alg.mgen_and_encrypt m_dist).support ↔
+    m ∈ m_dist.support ∧ ∃ k ∈ (se_alg.keygen ()).support, se_alg.encrypt (m, k) = c :=
 by simp_rw [support_bind, support_return, set.mem_Union, set.mem_singleton_iff,
   prod.eq_iff_fst_eq_snd_eq, exists_and_distrib_left, exists_prop, exists_eq_left', @eq_comm _ c]
 
-lemma exists_key_of_mem_support_mgen_encrypt (m : M) (c : C)
-  (h : (m, c) ∈ (se_alg.mgen_encrypt m_dist).support) :
+/-- Given an output `(m, c)` of `mgen_and_encrypt`, there exists a key `k` in `keygen`'s support
+such that `k` encrypts `m` to `c`. -/
+lemma exists_key_of_mem_support_mgen_and_encrypt (m : M) (c : C)
+  (h : (m, c) ∈ (se_alg.mgen_and_encrypt m_dist).support) :
     ∃ k ∈ (se_alg.keygen ()).support, se_alg.encrypt (m, k) = c :=
-((se_alg.mem_support_mgen_encrypt_iff m_dist m c).1 h).2
+((se_alg.mem_support_mgen_and_encrypt_iff m_dist m c).1 h).2
 
-/-- The probability of getting a particular output `x` from `mgen_encrypt` is the sum over possible
-keys such that encrypt `x.1` to `x.2`, of the probability of getting that key,
-weighted by the probability of getting `x.1` from the message distribution. -/
-lemma eval_dist_mgen_encrypt_apply (m : M) (c : C) : ⁅= (m, c) | se_alg.mgen_encrypt m_dist⁆ =
-  ∑' (k : K), if c = se_alg.encrypt (m, k) then ⁅= m | m_dist⁆ * ⁅= k | se_alg.keygen ()⁆ else 0 :=
+lemma eval_dist_mgen_and_encrypt : ⁅se_alg.mgen_and_encrypt m_dist⁆ =
+  ⁅(λ x, (prod.fst x, se_alg.encrypt x)) <$> (m_dist ×ₘ se_alg.keygen ())⁆ :=
 begin
-  simp only [←ennreal.tsum_mul_left, eval_dist_bind, eval_dist_bind_return, pmf.bind_apply,
-    pmf.map_apply, mul_ite, mul_zero],
-  refine trans (tsum_eq_single m $ λ m hm, _) (tsum_congr $ λ k, _),
-  { simp_rw [prod.eq_iff_fst_eq_snd_eq, hm.symm, false_and, if_false, tsum_zero] },
-  { simp_rw [prod.eq_iff_fst_eq_snd_eq, eq_self_iff_true, true_and] }
+  sorry,
 end
 
-/-- The message portion of the output of `mgen_encrypt m_dist` still has distribution `m_dist`. -/
-lemma eval_dist_fst_map_mgen_encrypt : ⁅prod.fst <$> se_alg.mgen_encrypt m_dist⁆ = ⁅m_dist⁆ :=
+/-- The probability of getting a particular output `x` from `mgen_and_encrypt` is the sum over possible
+keys such that encrypt `x.1` to `x.2`, of the probability of getting that key,
+weighted by the probability of getting `x.1` from the message distribution. -/
+lemma eval_dist_mgen_and_encrypt_apply (m : M) (c : C) :
+  ⁅= (m, c) | se_alg.mgen_and_encrypt m_dist⁆ =
+    ∑' (k : K), if c = se_alg.encrypt (m, k)
+      then ⁅= m | m_dist⁆ * ⁅= k | se_alg.keygen ()⁆ else 0 :=
+by rw [eval_dist_mgen_and_encrypt, eval_dist_map_fst_product_apply]
+
+/-- The message portion of the output of `mgen_and_encrypt m_dist` still has distribution `m_dist`. -/
+lemma eval_dist_fst_map_mgen_and_encrypt : ⁅prod.fst <$> se_alg.mgen_and_encrypt m_dist⁆ = ⁅m_dist⁆ :=
 by simp only [pmf.map_comp, eval_dist_map, eval_dist_bind, eval_dist_bind_return,
   pmf.map_bind, prod.fst_comp_mk, pmf.map_const, pmf.bind_pure]
 
-end mgen_encrypt
+end mgen_and_encrypt
 
 section perfect_secrecy
 
@@ -121,22 +139,22 @@ the probability of getting `c` from encrypting a message drawn from `message_dis
 is the same as the probability of getting `c` from encrypting the fixed `m`. -/
 def perfect_secrecy (se_alg : symm_enc_alg M K C) : Prop :=
 ∀ (m_dist : oracle_comp uniform_selecting M) (m : M) (c : C),
-  indep_event (se_alg.mgen_encrypt m_dist) (prod.fst ⁻¹' {m}) (prod.snd ⁻¹' {c})
+  indep_event (se_alg.mgen_and_encrypt m_dist) (prod.fst ⁻¹' {m}) (prod.snd ⁻¹' {c})
 
 /-- Restate perfect secrecy in terms of explicit probabilities instead of indepent events.
 A symmetric encryption algorithm has perfect secrecy iff the probability of getting a given
 message-ciphertext after generating a key and encrypting is the probability of drawing the message
 times the probability of getting that ciphertext from any message, for any message distribution. -/
 theorem perfect_secrecy_iff : se_alg.perfect_secrecy ↔ ∀ (m_dist : oracle_comp uniform_selecting M)
-  (m : M) (c : C), ⁅= (m, c) | se_alg.mgen_encrypt m_dist⁆ =
-    ⁅= m | m_dist⁆ * ⁅= c | prod.snd <$> se_alg.mgen_encrypt m_dist⁆ :=
+  (m : M) (c : C), ⁅= (m, c) | se_alg.mgen_and_encrypt m_dist⁆ =
+    ⁅= m | m_dist⁆ * ⁅= c | prod.snd <$> se_alg.mgen_and_encrypt m_dist⁆ :=
 begin
   refine forall_congr (λ m_dist, (forall_congr (λ m, forall_congr (λ c, _)))),
   have this : prod.fst ⁻¹' {m} ∩ prod.snd ⁻¹' {c} = ({(m, c)} : set (M × C)),
   by {ext x, simp only [prod.eq_iff_fst_eq_snd_eq, set.mem_inter_iff,
     set.mem_preimage, set.mem_singleton_iff]},
   simp only [indep_event_iff, ← prob_event_map, prob_event_singleton_eq_eval_dist,
-    eval_dist_fst_map_mgen_encrypt, this],
+    eval_dist_fst_map_mgen_and_encrypt, this],
 end
 
 section equal_card
@@ -180,14 +198,14 @@ begin
   { intros m c,
     haveI : nonempty M := ⟨m⟩,
     -- If the message and ciphertext have non-zero probability, there must be an encryption key.
-    suffices : 0 < ⁅= (m, c) | se_alg.mgen_encrypt ($ᵗ M)⁆,
-    from let ⟨k, hk, hk'⟩ := se_alg.exists_key_of_mem_support_mgen_encrypt
+    suffices : 0 < ⁅= (m, c) | se_alg.mgen_and_encrypt ($ᵗ M)⁆,
+    from let ⟨k, hk, hk'⟩ := se_alg.exists_key_of_mem_support_mgen_and_encrypt
       ($ᵗ M) m c ((eval_dist_pos_iff_mem_support _ _).1 this) in ⟨k, hk, hk'⟩,
     -- It suffices to show that such a key exists for *some* message, rather than exactly `m`.
     suffices : ∃ m' k, k ∈ (se_alg.keygen ()).support ∧ se_alg.encrypt (m', k) = c,
     by simpa only [(se_alg.perfect_secrecy_iff.1 h) ($ᵗ M) m c, ennreal.mul_pos_iff, true_and,
       eval_dist_pos_iff_mem_support, mem_support_uniform_select_fintype, mem_support_map_snd_iff,
-      mem_support_mgen_encrypt_iff, mem_support_uniform_select_fintype M, exists_prop],
+      mem_support_mgen_and_encrypt_iff, mem_support_uniform_select_fintype M, exists_prop],
     -- We can choose an arbitrary key, and then take the message to be the decrypted ciphertext.
     obtain ⟨k, hk⟩ := (se_alg.keygen ()).support_nonempty,
     exact ⟨se_alg.decrypt (c, k), k, hk, se_alg.left_inverse_encrypt_decrypt hmk hkc k hk c⟩ },
@@ -258,12 +276,12 @@ have hk' : k' ∈ (se_alg.keygen ()).support := (se_alg.mem_support_keygen hmk h
 lemma eval_dist_ciphertext_eq_eval_dist_key_of_perfect_secrecy
   (h : se_alg.perfect_secrecy) (m_dist : oracle_comp uniform_selecting M)
   (k : K) (c : C) (h' : se_alg.decrypt (c, k) ∈ m_dist.support) :
-  ⁅= c | prod.snd <$> se_alg.mgen_encrypt m_dist⁆ = ⁅= k | se_alg.keygen ()⁆ :=
+  ⁅= c | prod.snd <$> se_alg.mgen_and_encrypt m_dist⁆ = ⁅= k | se_alg.keygen ()⁆ :=
 begin
   -- We introduce a the probability of the decryption, in order to make use of perfect secrecy.
   let m := se_alg.decrypt (c, k),
   suffices : ⁅= m | m_dist⁆ * ⁅= k | se_alg.keygen ()⁆ =
-    ⁅= m | m_dist⁆ * ⁅= c | prod.snd <$> se_alg.mgen_encrypt m_dist⁆,
+    ⁅= m | m_dist⁆ * ⁅= c | prod.snd <$> se_alg.mgen_and_encrypt m_dist⁆,
   from ((ennreal.mul_eq_mul_left (eval_dist_ne_zero_of_not_mem_support h')
     (pmf.apply_ne_top _ _)).1 this).symm,
   -- Extend the encryption function to include a side message, preserving injectivity.
@@ -279,10 +297,10 @@ begin
       symm (eval_dist_product_apply _ _ _)
     ... = ⁅= f (m, k) | f <$> (m_dist ×ₘ se_alg.keygen ())⁆ :
       (eval_dist_map_apply_of_injective _ f (m, k) hf').symm
-    ... = ⁅= (m, c) | se_alg.mgen_encrypt m_dist⁆ :
+    ... = ⁅= (m, c) | se_alg.mgen_and_encrypt m_dist⁆ :
       by simp_rw [hf, product, eval_dist_map, eval_dist_bind,
         pmf.map_bind, eval_dist_return, pmf.map_pure]
-    ... = ⁅= m | m_dist⁆ * ⁅= c | prod.snd <$> se_alg.mgen_encrypt m_dist⁆ :
+    ... = ⁅= m | m_dist⁆ * ⁅= c | prod.snd <$> se_alg.mgen_and_encrypt m_dist⁆ :
       (se_alg.perfect_secrecy_iff.1 h) m_dist m c
 end
 
@@ -297,7 +315,7 @@ calc ⁅= k | se_alg.keygen ()⁆ = 1 * ⁅= k | se_alg.keygen ()⁆ : (one_mul 
       fintype.card_ne_zero) $ by simp only [ne.def, ennreal.nat_ne_top, not_false_iff]).symm)
   ... = (fintype.card C)⁻¹ * (∑' (c : C), ⁅= k | se_alg.keygen ()⁆) :
     by simp only [tsum_fintype, finset.sum_const, fintype.card, ←mul_assoc, nsmul_eq_mul]
-  ... = (fintype.card C)⁻¹ * (∑' (c : C), ⁅= c | prod.snd <$> se_alg.mgen_encrypt ($ᵗ M)⁆) :
+  ... = (fintype.card C)⁻¹ * (∑' (c : C), ⁅= c | prod.snd <$> se_alg.mgen_and_encrypt ($ᵗ M)⁆) :
     congr_arg (λ x, (fintype.card C)⁻¹ * x) (tsum_congr $ λ c, symm $
       se_alg.eval_dist_ciphertext_eq_eval_dist_key_of_perfect_secrecy hmk hkc h _ k c
         (mem_support_uniform_select_fintype _ _))
@@ -318,10 +336,10 @@ begin
   { rw [perfect_secrecy_iff],
     rintros ⟨h_keygen, h_encrypt⟩ m_dist m c,
     obtain ⟨k, ⟨⟨_, hc⟩, hk⟩⟩ := h_encrypt m c,
-    have : ∀ m', ⁅= (m', c) | se_alg.mgen_encrypt m_dist⁆ =
+    have : ∀ m', ⁅= (m', c) | se_alg.mgen_and_encrypt m_dist⁆ =
       ⁅= m' | m_dist⁆ * ⁅= k | se_alg.keygen ()⁆ :=
     begin
-      refine λ m', (se_alg.eval_dist_mgen_encrypt_apply _ _ _).trans _,
+      refine λ m', (se_alg.eval_dist_mgen_and_encrypt_apply _ _ _).trans _,
       obtain ⟨k', hks, hke⟩ := h_encrypt m' c,
       refine trans (tsum_eq_single k' $ λ k'' hk'', _) _,
       { by_cases hks' : k'' ∈ (se_alg.keygen ()).support,
@@ -329,13 +347,13 @@ begin
         { simp_rw [(eval_dist_eq_zero_iff_not_mem_support _ _).2 hks', mul_zero, if_t_t] } },
       { simp_rw [hks.2, eq_self_iff_true, if_true, h_keygen] },
     end,
-    calc ⁅= (m, c) | se_alg.mgen_encrypt m_dist⁆ =
+    calc ⁅= (m, c) | se_alg.mgen_and_encrypt m_dist⁆ =
       ⁅= m | m_dist⁆ * ⁅= k | se_alg.keygen ()⁆ : this m
       ... = ⁅= m | m_dist⁆ * ∑' m', ⁅= m' | m_dist⁆ * ⁅= k | se_alg.keygen ()⁆ :
         by rw [ennreal.tsum_mul_right, ⁅m_dist⁆.tsum_coe, one_mul]
-      ... = ⁅= m | m_dist⁆ * ∑' m', ⁅= (m', c) | se_alg.mgen_encrypt m_dist⁆ :
+      ... = ⁅= m | m_dist⁆ * ∑' m', ⁅= (m', c) | se_alg.mgen_and_encrypt m_dist⁆ :
         congr_arg (λ x, _ * x) (tsum_congr $ λ m', (this m').symm)
-      ... = ⁅= m | m_dist⁆ * ⁅= c | prod.snd <$> se_alg.mgen_encrypt m_dist⁆ :
+      ... = ⁅= m | m_dist⁆ * ⁅= c | prod.snd <$> se_alg.mgen_and_encrypt m_dist⁆ :
         begin
           simp_rw [eval_dist_map_apply_eq_tsum, ennreal.tsum_prod', ← hc],
           exact congr_arg (λ x, _ * x) (tsum_congr (λ m', symm $ trans

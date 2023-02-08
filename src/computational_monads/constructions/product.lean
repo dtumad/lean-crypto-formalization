@@ -126,6 +126,13 @@ begin
       set.indicator_apply_eq_zero.2 (λ h, (hb h).elim), mul_zero] }
 end
 
+lemma eval_dist_map_fst_product_apply [decidable_eq γ] (f : α × β → γ) (x : α × γ) :
+  ⁅= x | (λ (x : α × β), (prod.fst x, f x)) <$> oa ×ₘ ob⁆ =
+    ∑' (b : β), if x.2 = f (a, b) then ⁅= x.1 | oa⁆ * ⁅= b | ob⁆ else 0 :=
+begin
+  sorry
+end
+
 end eval_dist
 
 section prob_event
