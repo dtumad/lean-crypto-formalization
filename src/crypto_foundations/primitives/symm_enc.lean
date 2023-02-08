@@ -305,7 +305,6 @@ begin
       (se_alg.perfect_secrecy_iff.1 h) m_dist m c
 end
 
-
 /-- Assuming that the message, key, and ciphertext spaces all have the same size,
 any system with perfect secrecy must generate keys uniformly at random. -/
 theorem eval_dist_keygen_eq_uniform_of_perfect_secrecy [nonempty M] [nonempty C]
