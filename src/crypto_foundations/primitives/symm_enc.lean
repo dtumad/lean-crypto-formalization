@@ -7,6 +7,7 @@ import computational_monads.distribution_semantics.independence
 import computational_monads.constructions.uniform_select
 import computational_monads.constructions.product
 import computational_monads.support.prod
+import computational_monads.asymptotics.polynomial_time
 
 /-!
 # Symmetric-Key Encryption Schemes
@@ -25,9 +26,10 @@ structure symm_enc_alg (M K C : Type) :=
 (encrypt : M × K → C)
 (decrypt : C × K → M)
 -- (keygen_poly_time : poly_time_oracle_comp keygen)
--- (encrypt_poly_time : poly_time_oracle_comp encrypt)
--- (decrypt_poly_time : poly_time_oracle_comp decrypt)
-(complete : ∀ (m : M), ∀ k ∈ (keygen ()).support, decrypt (encrypt (m, k), k) = m)
+-- (encrypt_poly_time : poly_time encrypt)
+-- (decrypt_poly_time : poly_time decrypt)
+(complete : ∀ (m : M), ∀ k ∈ (keygen ()).support,
+  decrypt (encrypt (m, k), k) = m)
 
 namespace symm_enc_alg
 
@@ -48,25 +50,26 @@ lemma right_inverse_encrypt_decrypt : ∀ k ∈ (se_alg.keygen ()).support,
 λ k hk m, se_alg.complete m k hk
 
 lemma encrypt_injective (k : K) (hk : k ∈ (se_alg.keygen ()).support) :
-  (λ m, se_alg.encrypt (m, k)).injective :=
+  (λ m, se_alg.encrypt (m, k) : M → C).injective :=
 function.right_inverse.injective (se_alg.right_inverse_encrypt_decrypt k hk)
 
 lemma decrypt_surjective (k : K) (hk : k ∈ (se_alg.keygen ()).support) :
-  (λ m, se_alg.decrypt (m, k)).surjective :=
+  (λ m, se_alg.decrypt (m, k) : C → M).surjective :=
 function.right_inverse.surjective (se_alg.right_inverse_encrypt_decrypt k hk)
 
 /-- Due to completeness there must be at least as many ciphertexts as plaintexts. -/
-theorem card_message_le_card_cipher [fintype M] [fintype C] :
+theorem card_message_le_card_ciphertext [fintype M] [fintype C] :
   fintype.card M ≤ fintype.card C :=
 let ⟨k, hk⟩ := (se_alg.keygen ()).support_nonempty in -- keygen has at least one possible output
   fintype.card_le_of_injective _ (se_alg.encrypt_injective k hk)
 
 section mgen_encrypt
 
-/-- Computation that given a message `m`, generates a key `k`, and then encrypts the message,
-returning both the generated message and the generated ciphertext `c`. -/
-@[inline, reducible] def mgen_encrypt (se_alg : symm_enc_alg M K C)
-  (m_dist : oracle_comp uniform_selecting M) : oracle_comp uniform_selecting (M × C) :=
+/-- Computation that given a message distribution `m_dist`, will draw a message `m` from the
+distribution, generate a key `k` using `keygen`, and calculate the resulting ciphertext `c`.
+The computation returns both the chosen message and the resulting ciphertext. -/
+@[inline, reducible] def mgen_encrypt (m_dist : oracle_comp uniform_selecting M) :
+  oracle_comp uniform_selecting (M × C) :=
 do {m ← m_dist,
     k ← se_alg.keygen (),
     return (m, se_alg.encrypt (m, k))}
