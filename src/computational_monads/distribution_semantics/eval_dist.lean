@@ -8,7 +8,7 @@ import probability.probability_mass_function.uniform
 import computational_monads.support.monad
 
 /-!
-# Distribution Semantics for Oracle Computations`
+# Distribution Semantics for Oracle Computations
 
 Big-step semantics for `oracle_comp`, associating a probability distribution to a computation.
 For the purpose of this we assume that each oracle query has a uniform resulting distribution,
