@@ -1,5 +1,5 @@
 [package]
-name = "crypto-formalization"
+name = "lean-crypto-formalization"
 version = "0.16.18"
 lean_version = "leanprover-community/lean:3.50.3"
 path = "src"
