@@ -24,14 +24,12 @@ variables (so : sim_oracle spec spec' S) (so' : sim_oracle spec spec'' S')
 
 section monad
 
-lemma eval_dist_simulate_map_bind (g : β → γ) :
-  ⁅simulate so (g <$> (oa >>= ob)) s⁆ =
-    ⁅simulate so oa s⁆.bind (λ x, ⁅simulate so (ob x.1) x.2⁆.map (prod.map g id)) :=
+lemma eval_dist_simulate_map_bind (g : β → γ) : ⁅simulate so (g <$> (oa >>= ob)) s⁆ =
+  ⁅simulate so oa s⁆.bind (λ x, ⁅simulate so (ob x.1) x.2⁆.map (prod.map g id)) :=
 by simp only [simulate_map, simulate_bind, eval_dist_map, eval_dist_bind, pmf.map_bind]
 
-lemma eval_dist_simulate_map_bind' (g : β → γ) :
-  ⁅simulate so (g <$> (oa >>= ob)) s⁆ =
-    ⁅simulate so oa s⁆.bind (λ x, ⁅prod.map g id <$> simulate so (ob x.1) x.2⁆) :=
+lemma eval_dist_simulate_map_bind' (g : β → γ) : ⁅simulate so (g <$> (oa >>= ob)) s⁆ =
+  ⁅simulate so oa s⁆.bind (λ x, ⁅prod.map g id <$> simulate so (ob x.1) x.2⁆) :=
 by simp only [simulate_map, simulate_bind, eval_dist_map, eval_dist_bind, pmf.map_bind]
 
 lemma eval_dist_simulate_map_bind_apply [decidable_eq γ] [decidable_eq S]

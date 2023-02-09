@@ -43,6 +43,8 @@ notation `⁅` oa `⁆` := eval_dist oa
 -- TODO: this stuff, could even use `prob_|_eq_|` naming for things with this?
 notation `⁅=` x `|` oa `⁆` := ⁅oa⁆ x
 
+-- TODO: This could be a seperate definition, with `dist_equiv.support`,`dist_equiv.eval_dist`, etc
+-- Feels only super helpful in the case of having some specialized tactics?
 notation oa ` ≃ₚ ` oa' := ⁅oa⁆ = ⁅oa'⁆
 
 lemma eval_dist.ext (oa oa' : oracle_comp spec α) (h : ∀ x, ⁅= x | oa⁆ = ⁅= x | oa'⁆) :

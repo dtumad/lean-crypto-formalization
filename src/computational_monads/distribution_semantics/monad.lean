@@ -17,7 +17,7 @@ namespace oracle_comp
 open oracle_spec
 open_locale big_operators ennreal
 
-variables {α β γ : Type} {spec : oracle_spec}
+variables {α β γ : Type} {spec spec' : oracle_spec}
 
 section return_bind
 
@@ -111,6 +111,9 @@ variables (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) (oc : β 
 
 @[simp] lemma eval_dist_map : ⁅f <$> oa⁆ = ⁅oa⁆.map f := eval_dist_bind oa (pure ∘ f)
 
+lemma eval_dist_map_comp' : ⁅g <$> (f <$> oa)⁆ = ⁅(g ∘ f) <$> oa⁆ :=
+by simp only [eval_dist_map, pmf.map_comp]
+
 lemma eval_dist_map_apply_eq_tsum [decidable_eq β] : ⁅f <$> oa⁆ y = ∑' x, ite (y = f x) (⁅oa⁆ x) 0 :=
 eval_dist_bind_return_apply_eq_tsum oa f y
 
@@ -145,6 +148,10 @@ lemma eval_dist_map_apply_eq_single (x : α) (hx : f ⁻¹' {y} = {x}) :
 
 lemma eval_dist_map_apply_of_injective (x : α) (hf : f.injective) : ⁅f <$> oa⁆ (f x) = ⁅oa⁆ x :=
 eval_dist_map_apply_eq_single' oa f (f x) x rfl (λ x' hx' hxf, hf hxf)
+
+lemma map_equiv_congr {f f' : α → β} {oa : oracle_comp spec α} {oa' : oracle_comp spec' α}
+  (hf : ∀ x, f x = f' x) (hoa : oa ≃ₚ oa') : (f <$> oa) ≃ₚ (f' <$> oa') :=
+by simp only [eval_dist_map, hoa, (funext hf : f = f')]
 
 end map
 

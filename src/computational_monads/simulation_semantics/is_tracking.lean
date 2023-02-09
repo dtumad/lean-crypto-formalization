@@ -32,28 +32,30 @@ that represent the behaviour of the oracle result and state update respectively.
 class is_tracking (so : sim_oracle spec spec' S) :=
 (query_f : Π (i : spec.ι), spec.domain i → oracle_comp spec' (spec.range i))
 (state_f : Π (s : S) (i : spec.ι), spec.domain i → spec.range i → S)
-(eval_dist_apply : ∀ (i : spec.ι) (t : spec.domain i) (s : S),
-  ⁅so i (t, s)⁆ = ⁅(λ u, (u, state_f s i t u)) <$> query_f i t⁆)
+(apply_equiv_state_f_map_query_f : ∀ (i : spec.ι) (t : spec.domain i) (s : S),
+  so i (t, s) ≃ₚ (λ u, (u, state_f s i t u)) <$> query_f i t)
+
+variables (so : sim_oracle spec spec' S) (i : spec.ι)
+  (t t' : spec.domain i) (s s' : S) (u u' : spec.range i)
 
 /-- Alias to be able to refer to the query function from the `sim_oracle` namespace. -/
-@[inline, reducible] def answer_query (so : sim_oracle spec spec' S) [hso : so.is_tracking]
-  (i : spec.ι) (t : spec.domain i) : oracle_comp spec' (spec.range i) := hso.query_f i t
+@[inline, reducible] def answer_query [hso : so.is_tracking] (i : spec.ι) (t : spec.domain i) :
+  oracle_comp spec' (spec.range i) := hso.query_f i t
 
 /-- Alias to be able to refer to the state update function from the `sim_oracle` namespace. -/
-@[inline, reducible] def update_state (so : sim_oracle spec spec' S) [hso : so.is_tracking]
-  (s : S) (i : spec.ι) (t : spec.domain i) (u : spec.range i) : S := hso.state_f s i t u
+@[inline, reducible] def update_state [hso : so.is_tracking] (s : S) (i : spec.ι)
+  (t : spec.domain i) (u : spec.range i) : S := hso.state_f s i t u
 
 namespace is_tracking
 
-variables (so : sim_oracle spec spec' S) [hso : so.is_tracking]
-  (i : spec.ι) (t t' : spec.domain i) (s s' : S) (u u' : spec.range i)
+variable [hso : so.is_tracking]
 include hso
 
 section support
 
 lemma support_apply' : (so i (t, s)).support =
   ((λ u, (u, so.update_state s i t u)) <$> so.answer_query i t).support :=
-by simp_rw [← support_eval_dist, hso.eval_dist_apply]
+by simp_rw [← support_eval_dist, hso.apply_equiv_state_f_map_query_f]
 
 @[simp] lemma support_apply : (so i (t, s)).support =
   (λ u, (u, so.update_state s i t u)) '' (so.answer_query i t).support :=
@@ -74,6 +76,30 @@ by rw [fin_support_eq_fin_support_iff_support_eq_support, support_apply']
 by rw [fin_support_apply', fin_support_map]
 
 end fin_support
+
+section eval_dist
+
+lemma eval_dist_apply' : ⁅so i (t, s)⁆ =
+  ⁅(λ u, (u, so.update_state s i t u)) <$> so.answer_query i t⁆ :=
+apply_equiv_state_f_map_query_f i t s
+
+@[simp] lemma eval_dist_apply : ⁅so i (t, s)⁆ =
+  ⁅so.answer_query i t⁆.map (λ u, (u, so.update_state s i t u)) :=
+by rw [eval_dist_apply', eval_dist_map]
+
+end eval_dist
+
+section prob_event
+
+lemma prob_event_apply' (e : set (spec.range i × S)) : ⁅e | so i (t, s)⁆ =
+  ⁅e | (λ u, (u, so.update_state s i t u)) <$> so.answer_query i t⁆ :=
+prob_event_eq_of_eval_dist_eq (eval_dist_apply' so i t s) e
+
+@[simp] lemma prob_event_apply (e : set (spec.range i × S)) : ⁅e | so i (t, s)⁆ =
+  ⁅(λ u, (u, so.update_state s i t u)) ⁻¹' e | so.answer_query i t⁆ :=
+by rw [prob_event_apply', prob_event_map]
+
+end prob_event
 
 end is_tracking
 
