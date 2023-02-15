@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
 import to_mathlib.general
-import topology.algebra.infinite_sum
+import topology.algebra.infinite_sum.real
 
 /-!
 # Lemmas about Sums that fit better in mathlib
