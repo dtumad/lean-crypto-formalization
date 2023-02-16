@@ -3,7 +3,6 @@ on:
     - cron: '0 2 * * *'
 
 jobs:
-  # Upgrade Lean and Mathlib nightly, failing if the new build fails.
   upgrade_lean:
     runs-on: ubuntu-latest
     name: Bump Lean and dependency versions
