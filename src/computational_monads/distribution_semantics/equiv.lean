@@ -43,7 +43,11 @@ infix ` ≃ₚₑ ` : 50 := dist_equiv
 /-- Show that -/
 lemma dist_equiv.ext (h : ∀ x, ⁅oa⁆ x = ⁅oa'⁆ x) : oa ≃ₚₑ oa' := pmf.ext h
 
+lemma dist_equiv.support_eq (h : oa ≃ₚₑ oa') : oa.support = oa'.support :=
+(oa.support_eval_dist).symm.trans ((congr_arg pmf.support h).trans oa'.support_eval_dist)
+
 namespace dist_equiv
+
 
 
 end dist_equiv
