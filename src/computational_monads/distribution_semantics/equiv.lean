@@ -15,7 +15,7 @@ Such an equivalence implies equality of `support`, `fin_support`, `eval_dist`, a
 This is especially usefull when it's necessary to avoid "leaving" computations,
 as regular probability lemmas will move into the realm of `pmf`, which is sometimes not preferable.
 
-As an example, distribution wise we have that `⁅g <$> f <$> oa⁆ = ⁅oa⁆.map (g ∘ f)`,
+As an example, distribution-wise we have that `⁅g <$> f <$> oa⁆ = ⁅oa⁆.map (g ∘ f)`,
 while the equivalence would give `g <$> f <$> oa ≃ₚ (g ∘ f) <$> oa`.
 While the former is more specific, it can cause problems when other parts of the proof rely on
 using induction on the computation, as this doesn't translate well into `pmf`.
@@ -46,11 +46,17 @@ lemma dist_equiv.ext (h : ∀ x, ⁅oa⁆ x = ⁅oa'⁆ x) : oa ≃ₚₑ oa' :=
 lemma dist_equiv.support_eq (h : oa ≃ₚₑ oa') : oa.support = oa'.support :=
 (oa.support_eval_dist).symm.trans ((congr_arg pmf.support h).trans oa'.support_eval_dist)
 
-namespace dist_equiv
+lemma dist_equiv.fin_support_eq [oa.decidable] [oa'.decidable] (h : oa ≃ₚₑ oa') :
+  oa.fin_support = oa'.fin_support :=
+(fin_support_eq_fin_support_iff_support_eq_support oa oa').2 h.support_eq
 
+lemma dist_equiv.eval_dist_eq (h : oa ≃ₚₑ oa') : ⁅oa⁆ = ⁅oa'⁆ := h
 
+lemma dist_equiv.eval_dist_apply_eq (h : oa ≃ₚₑ oa') (x : α) : ⁅= x | oa⁆ = ⁅= x | oa'⁆ :=
+congr_fun (congr_arg _ h) x
 
-end dist_equiv
+lemma dist_equiv.prob_event_eq (h : oa ≃ₚₑ oa') (e : set α) : ⁅e | oa⁆ = ⁅e | oa'⁆ :=
+prob_event_eq_of_eval_dist_eq h.eval_dist_eq e
 
 end oracle_comp
 
