@@ -13,8 +13,6 @@ Defines to types of independence for events after an `oracle_comp`,
   corresponding to mathlibs two measure-theoretic indepence definitions.
 `indep_events` says that all events in a set are independent of each other.
 `indep_event` says that two particular events are independent for the computation.
-
-We also prove a number of lemmas for probabilities of independent events.
 -/
 
 namespace oracle_comp
@@ -23,8 +21,9 @@ open oracle_comp
 open_locale big_operators nnreal ennreal
 
 variables {α β γ ι : Type} {spec spec' : oracle_spec}
-  (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) (a a' : α)
-  (e e' : set α) (e'' : set β)
+  (oa : oracle_comp spec α) (oa' : oracle_comp spec' α)
+  (ob : α → oracle_comp spec β) (ob' : α → oracle_comp spec' β)
+  (a a' : α) (e e' : set α) (e'' : set β)
 
 section indep_events
 
@@ -45,6 +44,10 @@ lemma indep_events_iff : indep_events oa events events' ↔
   ∀ e e', e ∈ events → e' ∈ events' → ⁅e ∩ e' | oa⁆ = ⁅e | oa⁆ * ⁅e' | oa⁆ :=
 by simp_rw [indep_events_iff_indep_sets, probability_theory.indep_sets,
   prob_event_eq_to_measure_apply]
+
+lemma indep_events_iff_of_eval_dist_eq (h : ⁅oa⁆ = ⁅oa'⁆) :
+  oa.indep_events events events' ↔ oa'.indep_events events events' :=
+by simp only [indep_events_iff, prob_event, h]
 
 lemma prob_event_inter_eq_mul_of_indep_events (h : indep_events oa events events')
   (he : e ∈ events) (he' : e' ∈ events') : ⁅ e ∩ e' | oa ⁆ = ⁅ e | oa ⁆ * ⁅ e' | oa ⁆ :=
@@ -72,6 +75,10 @@ begin
   simp_rw [indep_event_iff_indep_set, prob_event_eq_to_measure_apply],
   exact probability_theory.indep_set_iff_measure_inter_eq_mul trivial trivial _,
 end
+
+lemma indep_event_iff_of_eval_dist_eq (h : ⁅oa⁆ = ⁅oa'⁆) :
+  oa.indep_event e e' ↔ oa'.indep_event e e' :=
+by simp only [indep_event_iff, prob_event, h]
 
 lemma prob_event_inter_eq_mul_of_indep_event (h : indep_event oa e e') :
   ⁅e ∩ e' | oa⁆ = ⁅e | oa⁆ * ⁅e' | oa⁆ :=

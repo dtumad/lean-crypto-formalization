@@ -25,7 +25,7 @@ namespace oracle_comp
 open oracle_spec
 open_locale big_operators ennreal
 
-variables {α β γ : Type} {spec : oracle_spec}
+variables {α β γ : Type} {spec spec' : oracle_spec}
 
 /- Big step semantics for a computation with finite range oracles
 The result of queries is assumed to be uniform over the oracle's codomain,
@@ -166,6 +166,16 @@ lemma eval_dist_pure : ⁅(pure a : oracle_comp spec α)⁆ = pmf.pure a := rfl
 lemma eval_dist_pure_apply [decidable_eq α] :
   ⁅(pure a : oracle_comp spec α)⁆ x = ite (x = a) 1 0 := by convert rfl
 
+lemma eval_dist_return_eq_iff (p : pmf α) :
+  ⁅(return a : oracle_comp spec α)⁆ = p ↔ ∀ x ≠ a, p x = 0 :=
+by rw [eval_dist_return, pmf.pure_eq_iff]
+
+lemma eval_dist_return_apply_eq_iff (y : ℝ≥0∞) :
+  ⁅(return a : oracle_comp spec α)⁆ x = y ↔ (x = a ∧ y = 1) ∨ (x ≠ a ∧ y = 0) :=
+by simp_rw [eval_dist_return_apply_eq_indicator, set.indicator, ite_eq_iff,
+  set.mem_singleton_iff, @eq_comm ℝ≥0∞ 1, @eq_comm ℝ≥0∞ 0]
+
+-- TODO: a lemma like this will never be used by simp, need to change at least one part
 @[simp] lemma eval_dist_return_apply_eq_one_iff :
   ⁅(return a : oracle_comp spec α)⁆ x = 1 ↔ x = a :=
 by rw [pmf.apply_eq_one_iff, support_eval_dist, support_return,

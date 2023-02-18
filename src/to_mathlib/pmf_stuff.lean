@@ -14,7 +14,22 @@ open_locale measure_theory nnreal ennreal big_operators classical
 
 variables {α β γ : Type*}
 
--- NOTE: PR open
+lemma pmf.support_nonempty {α : Type*} (p : pmf α) : p.support.nonempty :=
+begin
+  refine set.nonempty_def.2 (by_contra $ λ h, _),
+  simp only [pmf.mem_support_iff, not_exists, not_not] at h,
+  have : ∑' x, p x = 0 := by simp_rw [h, tsum_zero],
+  refine zero_ne_one (this.symm.trans p.tsum_coe),
+end
+
+lemma pmf.ext_iff (p q : pmf α) : p = q ↔ ∀ x, p x = q x :=
+⟨λ h x, congr_fun (congr_arg _ h) x, pmf.ext⟩
+
+lemma pmf.pure_eq_iff (a : α) (p : pmf α) : pmf.pure a = p ↔ ∀ x ≠ a, p x = 0 :=
+(pmf.ext_iff _ p).trans ⟨λ h x hx, (h x).symm.trans (if_neg hx), λ h x, ite_eq_iff'.2 ⟨λ hxa,
+  p.tsum_coe.symm.trans (tsum_eq_single x (λ y hy, h y (hxa ▸ hy))), λ hxa, symm $ h x hxa⟩⟩
+
+-- NOTE: PR open ??? TODO: did I close this??
 section monad
 
 @[simp]
@@ -43,14 +58,6 @@ pmf.ext (λ x, by rw [pmf.bind_apply, ennreal.tsum_mul_right, pmf.tsum_coe, one_
   p.map (function.const α b) = pmf.pure b :=
 begin
   simp only [pmf.map, pmf.bind_const, function.comp_const],
-end
-
-lemma pmf.support_nonempty {α : Type*} (p : pmf α) : p.support.nonempty :=
-begin
-  refine set.nonempty_def.2 (by_contra $ λ h, _),
-  simp only [pmf.mem_support_iff, not_exists, not_not] at h,
-  have : ∑' x, p x = 0 := by simp_rw [h, tsum_zero],
-  refine zero_ne_one (this.symm.trans p.tsum_coe),
 end
 
 lemma pmf.bind_apply_eq_one_iff {α β : Type*} (p : pmf α) (q : α → pmf β) (y : β) :
