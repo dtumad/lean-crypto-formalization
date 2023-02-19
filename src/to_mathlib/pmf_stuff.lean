@@ -95,9 +95,13 @@ begin
 end
 
 end monad
-
--- NOTE: new PR open
 section union
+
+
+
+lemma pmf.to_outer_measure_apply_union_add_inter (p : pmf α) (s t : set α) :
+  p.to_outer_measure (s ∪ t) + p.to_outer_measure (s ∩ t) =
+    p.to_outer_measure s + p.to_outer_measure t := sorry
 
 lemma pmf.measurable_set_to_outer_measure_caratheodory (p : pmf α) (s : set α) :
   measurable_set[p.to_outer_measure.caratheodory] s :=
@@ -108,10 +112,20 @@ lemma pmf.to_measure_apply_Union {α : Type*} [measurable_space α] (p : pmf α)
   p.to_measure (⋃ n, f n) = ∑' n, p.to_measure (f n) :=
 p.to_measure.m_Union hf h
 
+lemma pmf.to_measure_apply_union {α : Type*} [measurable_space α] (p : pmf α)
+  {s t : set α} (hs : measurable_set s) (hs' : measurable_set t) (h : disjoint s t) :
+  p.to_measure (s ∪ t) = p.to_measure s + p.to_measure t :=
+sorry
+
 lemma pmf.to_outer_measure_apply_Union {α : Type*} (p : pmf α) {f : ℕ → set α}
   (h : pairwise (disjoint on f)) : p.to_outer_measure (⋃ n, f n) = ∑' n, p.to_outer_measure (f n) :=
 measure_theory.outer_measure.Union_eq_of_caratheodory _
   (λ n, pmf.measurable_set_to_outer_measure_caratheodory _ (f n)) h
+
+lemma pmf.to_outer_measure_apply_union {α : Type*} (p : pmf α) {s t : set α}
+  (h : disjoint s t) : p.to_outer_measure (s ∪ t) = p.to_outer_measure s + p.to_outer_measure t :=
+sorry
+
 
 end union
 
@@ -150,3 +164,19 @@ calc p.map prod.snd b = ∑' (b' : β) (a : α), ite (b = b') (p (a, b')) 0 :
   ... = ∑' (a : α), p (a, b) : by simp only [eq_self_iff_true, if_true]
 
 end prod
+
+section outer_measure
+
+lemma pmf.to_outer_measure_apply_insert (p : pmf α) (x : α) (s : set α) :
+  p.to_outer_measure (insert x s) = p x + p.to_outer_measure (s \ {x}) :=
+begin
+  rw [← set.union_singleton], sorry
+  -- rw [pmf.to_outer_measure_apply_Union]
+end
+
+lemma pmf.to_outer_measure_apply_diff (p : pmf α) (s t : set α) :
+  p.to_outer_measure (s \ t) = p.to_outer_measure s - p.to_outer_measure (s ∩ t) :=
+sorry
+
+
+end outer_measure

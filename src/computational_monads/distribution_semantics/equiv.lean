@@ -91,24 +91,6 @@ lemma dist_equiv.indep_event_iff (h : oa ≃ₚₑ oa') (e e' : set α) :
   oa.indep_event e e' ↔ oa'.indep_event e e' :=
 indep_event_iff_of_eval_dist_eq oa oa' e e' h
 
-section return
-
-/-- `return a` has the same distribution as `oa` iff outputs besides `a` have `0` probability. -/
-lemma return_dist_equiv_iff (spec : oracle_spec) (a : α) (oa : oracle_comp spec' α) :
-  (return a : oracle_comp spec α) ≃ₚₑ oa ↔ ∀ x ≠ a, ⁅= x | oa⁆ = 0 :=
-by rw [dist_equiv, eval_dist_return_eq_iff]
-
-@[simp] lemma return_dist_equiv_return_iff (spec spec' : oracle_spec) (a a' : α) :
-  (return a : oracle_comp spec α) ≃ₚₑ (return a' : oracle_comp spec' α) ↔ a = a' :=
-begin
-  simp only [return_dist_equiv_iff, eval_dist_return_apply_eq_zero_iff],
-  refine ⟨λ h, _, λ h x hx, h ▸ hx⟩,
-  simpa only [ne.def, imp_not_comm, eq_self_iff_true, not_not,
-    true_implies_iff, @eq_comm _ a' a] using h a',
-end
-
-end return
-
 section bind
 
 /-- If two computations `oa` and `oa'` are distributionally equivalent to each other,

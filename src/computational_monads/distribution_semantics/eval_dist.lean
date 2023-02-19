@@ -166,30 +166,10 @@ lemma eval_dist_pure : ⁅(pure a : oracle_comp spec α)⁆ = pmf.pure a := rfl
 lemma eval_dist_pure_apply [decidable_eq α] :
   ⁅(pure a : oracle_comp spec α)⁆ x = ite (x = a) 1 0 := by convert rfl
 
-lemma eval_dist_return_eq_iff (p : pmf α) :
-  ⁅(return a : oracle_comp spec α)⁆ = p ↔ ∀ x ≠ a, p x = 0 :=
-by rw [eval_dist_return, pmf.pure_eq_iff]
-
-lemma eval_dist_return_apply_eq_iff (y : ℝ≥0∞) :
-  ⁅(return a : oracle_comp spec α)⁆ x = y ↔ (x = a ∧ y = 1) ∨ (x ≠ a ∧ y = 0) :=
-by simp_rw [eval_dist_return_apply_eq_indicator, set.indicator, ite_eq_iff,
-  set.mem_singleton_iff, @eq_comm ℝ≥0∞ 1, @eq_comm ℝ≥0∞ 0]
-
--- TODO: a lemma like this will never be used by simp, need to change at least one part
-@[simp] lemma eval_dist_return_apply_eq_one_iff :
-  ⁅(return a : oracle_comp spec α)⁆ x = 1 ↔ x = a :=
-by rw [pmf.apply_eq_one_iff, support_eval_dist, support_return,
-  set.singleton_eq_singleton_iff, eq_comm]
-
-@[simp] lemma eval_dist_return_apply_eq_zero_iff :
-  ⁅(return a : oracle_comp spec α)⁆ x = 0 ↔ x ≠ a :=
-by simp only [eval_dist_return, pmf.apply_eq_zero_iff, pmf.support_pure, set.mem_singleton_iff]
-
-lemma eval_dist_return_apply_self : ⁅(return a : oracle_comp spec α)⁆ a = 1 :=
-by rw [eval_dist_return_apply_eq_one_iff]
-
-lemma eval_dist_return_apply_of_ne {a x} (h : x ≠ a) : ⁅(return a : oracle_comp spec α)⁆ x = 0 :=
-by simpa only [eval_dist_return, pmf.pure_apply, ite_eq_right_iff]
+-- lemma eval_dist_return_apply_eq_iff (y : ℝ≥0∞) :
+--   ⁅(return a : oracle_comp spec α)⁆ x = y ↔ (x = a ∧ y = 1) ∨ (x ≠ a ∧ y = 0) :=
+-- by simp_rw [eval_dist_return_apply_eq_indicator, set.indicator, ite_eq_iff,
+--   set.mem_singleton_iff, @eq_comm ℝ≥0∞ 1, @eq_comm ℝ≥0∞ 0]
 
 end return
 

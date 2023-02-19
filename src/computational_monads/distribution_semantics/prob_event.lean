@@ -3,7 +3,7 @@ Copyright (c) 2022 Devon Tuma. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
-import computational_monads.distribution_semantics.monad
+import computational_monads.distribution_semantics.eval_dist
 
 /-!
 # Probability of Events
@@ -37,6 +37,9 @@ lemma prob_event_eq_to_measure_apply (oa : oracle_comp spec α) (event : set α)
   ⁅event | oa⁆ = (@pmf.to_measure α ⊤ ⁅oa⁆ event) :=
 (@pmf.to_measure_apply_eq_to_outer_measure_apply α ⊤ ⁅oa⁆ event
   measurable_space.measurable_set_top).symm
+
+lemma prob_event_empty (oa : oracle_comp spec α) : ⁅∅ | oa⁆ = 0 :=
+⁅oa⁆.to_outer_measure.empty
 
 @[simp] lemma prob_event_singleton_eq_eval_dist (oa : oracle_comp spec α) (x : α) :
   ⁅{x} | oa⁆ = ⁅oa⁆ x := by rw [prob_event.def, pmf.to_outer_measure_apply_singleton]
@@ -79,6 +82,14 @@ lemma prob_event_coe_finset_eq_sum (e : finset α) : ⁅↑e | oa⁆ = ∑ x in 
 by rw [prob_event_eq_tsum_indicator, sum_eq_tsum_indicator]
 
 end sums
+
+lemma prob_event_diff (oa : oracle_comp spec α) (e e' : set α) :
+  ⁅e \ e' | oa⁆ = ⁅e | oa⁆ - ⁅e ∩ e' | oa⁆ :=
+by simp only [prob_event.def, pmf.to_outer_measure_apply_diff]
+
+@[simp] lemma prob_event_insert (oa : oracle_comp spec α) (x : α) (e : set α) :
+  ⁅insert x e | oa⁆ = ⁅= x | oa⁆ + ⁅e \ {x} | oa⁆ :=
+by simp only [prob_event.def, pmf.to_outer_measure_apply_insert]
 
 section order
 
@@ -148,14 +159,6 @@ by { simp only [prob_event.def, eval_dist_return, pmf.to_outer_measure_pure_appl
 lemma prob_event_pure_eq_indicator [decidable_pred e] : ⁅e | (pure a : oracle_comp spec α)⁆ =
   e.indicator (λ _, 1) a := by simp only [prob_event_return, set.indicator_apply]
 
-@[simp] lemma prob_event_return_eq_one_iff : ⁅e | (return a : oracle_comp spec α)⁆ = 1 ↔ a ∈ e :=
-by rw [prob_event.def, eval_dist_return, pmf.to_outer_measure_apply_eq_one_iff,
-  pmf.support_pure, set.singleton_subset_iff]
-
-@[simp] lemma prob_event_return_eq_zero_iff : ⁅e | (return a : oracle_comp spec α)⁆ = 0 ↔ a ∉ e :=
-by rw [prob_event.def, eval_dist_return, pmf.to_outer_measure_apply_eq_zero_iff,
-  pmf.support_pure, set.disjoint_singleton_left]
-
 end return
 
 section bind
@@ -185,14 +188,14 @@ lemma prob_event_bind'_eq_sum_fin_support [oa.decidable] :
 prob_event_bind_eq_sum_fin_support oa ob e'
 
 @[simp] lemma prob_event_return_bind : ⁅e' | return a >>= ob⁆ = ⁅e' | ob a⁆ :=
-prob_event_eq_of_eval_dist_eq (eval_dist_return_bind a ob) e'
+sorry --prob_event_eq_of_eval_dist_eq (eval_dist_return_bind a ob) e'
 
 @[simp] lemma prob_event_bind_return : ⁅e' | oa >>= λ a, return (f a)⁆ = ⁅f ⁻¹' e' | oa⁆ :=
 show ⁅e' | f <$> oa⁆ = ⁅f ⁻¹' e' | oa⁆,
-by simp only [prob_event.def, eval_dist_map, pmf.to_outer_measure_map_apply]
+by sorry --by simp only [prob_event.def, eval_dist_map, pmf.to_outer_measure_map_apply]
 
 @[simp] lemma prob_event_bind_return_id : ⁅e | oa >>= return⁆ = ⁅e | oa⁆ :=
-prob_event_eq_of_eval_dist_eq (eval_dist_bind_return_id oa) e
+sorry --prob_event_eq_of_eval_dist_eq (eval_dist_bind_return_id oa) e
 
 end bind
 
@@ -224,17 +227,17 @@ variables (a : α) (oa : oracle_comp spec α) (ob : α → oracle_comp spec β)
   (f : α → β) (g : β → γ) (e : set β) (e' : set γ)
 
 @[simp] lemma prob_event_map : ⁅e | f <$> oa⁆ = ⁅f ⁻¹' e | oa⁆ :=
-by simp only [prob_event.def, eval_dist_map, pmf.to_outer_measure_map_apply]
+sorry --by simp only [prob_event.def, eval_dist_map, pmf.to_outer_measure_map_apply]
 
 lemma prob_event_map_return : ⁅e | f <$> (return a : oracle_comp spec α)⁆ =
   ⁅e | (return (f a) : oracle_comp spec β)⁆ :=
-prob_event_eq_of_eval_dist_eq (by rw [eval_dist_map_return, eval_dist_return]) e
+sorry --prob_event_eq_of_eval_dist_eq (by rw [eval_dist_map_return, eval_dist_return]) e
 
 lemma prob_event_map_bind : ⁅e' | g <$> (oa >>= ob)⁆ = ⁅e' | oa >>= λ x, g <$> (ob x)⁆ :=
 begin
   refine prob_event_eq_of_eval_dist_apply_eq _ _,
-  intros x hx,
-  rw [eval_dist_map_bind'],
+  intros x hx, sorry
+  -- rw [eval_dist_map_bind'],
 
 end
 
