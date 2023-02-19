@@ -97,12 +97,6 @@ end
 end monad
 section union
 
-
-
-lemma pmf.to_outer_measure_apply_union_add_inter (p : pmf α) (s t : set α) :
-  p.to_outer_measure (s ∪ t) + p.to_outer_measure (s ∩ t) =
-    p.to_outer_measure s + p.to_outer_measure t := sorry
-
 lemma pmf.measurable_set_to_outer_measure_caratheodory (p : pmf α) (s : set α) :
   measurable_set[p.to_outer_measure.caratheodory] s :=
 p.to_outer_measure_caratheodory.symm ▸ measurable_space.measurable_set_top
@@ -113,9 +107,9 @@ lemma pmf.to_measure_apply_Union {α : Type*} [measurable_space α] (p : pmf α)
 p.to_measure.m_Union hf h
 
 lemma pmf.to_measure_apply_union {α : Type*} [measurable_space α] (p : pmf α)
-  {s t : set α} (hs : measurable_set s) (hs' : measurable_set t) (h : disjoint s t) :
+  {s t : set α} (ht : measurable_set t) (h : disjoint s t) :
   p.to_measure (s ∪ t) = p.to_measure s + p.to_measure t :=
-sorry
+measure_theory.measure_union h ht
 
 lemma pmf.to_outer_measure_apply_Union {α : Type*} (p : pmf α) {f : ℕ → set α}
   (h : pairwise (disjoint on f)) : p.to_outer_measure (⋃ n, f n) = ∑' n, p.to_outer_measure (f n) :=
@@ -124,8 +118,21 @@ measure_theory.outer_measure.Union_eq_of_caratheodory _
 
 lemma pmf.to_outer_measure_apply_union {α : Type*} (p : pmf α) {s t : set α}
   (h : disjoint s t) : p.to_outer_measure (s ∪ t) = p.to_outer_measure s + p.to_outer_measure t :=
-sorry
+begin
+  sorry
+end
 
+lemma pmf.to_measure_apply_union_add_inter [measurable_space α]
+  (p : pmf α) (s t : set α) (h : measurable_set t) :
+  p.to_measure (s ∪ t) + p.to_measure (s ∩ t) = p.to_measure s + p.to_measure t :=
+measure_theory.measure_union_add_inter s h
+
+lemma pmf.to_outer_measure_apply_union_add_inter (p : pmf α) (s t : set α) :
+  p.to_outer_measure (s ∪ t) + p.to_outer_measure (s ∩ t) =
+    p.to_outer_measure s + p.to_outer_measure t :=
+begin
+  sorry
+end
 
 end union
 

@@ -27,7 +27,6 @@ lemma return_dist_equiv_iff (oa : oracle_comp spec' α) :
   (return a : oracle_comp spec α) ≃ₚₑ oa ↔ ∀ x ≠ a, ⁅= x | oa⁆ = 0 :=
 by rw [dist_equiv, eval_dist_return, pmf.pure_eq_iff]
 
--- TODO: simp?
 lemma eval_dist_return_eq_iff (p : pmf α) :
   ⁅(return a : oracle_comp spec α)⁆ = p ↔ ∀ x ≠ a, p x = 0 :=
 by rw [eval_dist_return, pmf.pure_eq_iff]
@@ -65,7 +64,7 @@ section return_eq_zero_iff
 variables (spec : oracle_spec) (a : α)
 
 /-- `x` has probability of `0` of being the output of `return a` iff `x ≠ a`. -/
-@[simp] lemma eval_dist_return_apply_eq_zero_iff (x : α) :
+lemma eval_dist_return_apply_eq_zero_iff (x : α) :
   ⁅(return a : oracle_comp spec α)⁆ x = 0 ↔ x ≠ a :=
 by simp only [eval_dist_return, pmf.apply_eq_zero_iff, pmf.support_pure, set.mem_singleton_iff]
 
@@ -85,9 +84,8 @@ variables (spec spec' : oracle_spec) (a a' : α)
   (return a : oracle_comp spec α) ≃ₚₑ (return a' : oracle_comp spec' α) ↔ a = a' :=
 begin
   simp only [return_dist_equiv_iff, eval_dist_return_apply_eq_zero_iff],
-  refine ⟨λ h, _, λ h x hx, h ▸ hx⟩,
-  simpa only [ne.def, imp_not_comm, eq_self_iff_true, not_not,
-    true_implies_iff, @eq_comm _ a' a] using h a',
+  exact ⟨λ h, by simpa only [ne.def, imp_not_comm, eq_self_iff_true, not_not,
+    true_implies_iff, @eq_comm _ a' a] using h a', λ h x hx, h ▸ hx⟩,
 end
 
 lemma eval_dist_return_eq_eval_dist_return_iff :
@@ -157,18 +155,12 @@ variables (spec : oracle_spec) (a : α)
 @[simp] lemma indep_events_return (es es' : set (set α)) :
   (return a : oracle_comp spec α).indep_events es es' :=
 begin
-  rw [indep_events_iff],
-  intros e e' he he',
+  refine (indep_events_iff _ _ _).2 (λ e e' he he', _),
   simp only [indep_event_iff, prob_event_return_eq_indicator, set.indicator],
   by_cases ha : a ∈ e ∩ e',
-  {
-    simp only [ha, ha.1, ha.2, if_true, mul_one],
-  },
-  {
-    simp only [ha, if_false],
-    refine (mul_eq_zero.2 _).symm,
-    simpa only [ite_eq_right_iff, one_ne_zero, imp_false, ← not_and_distrib] using ha,
-  },
+  { simp only [ha, ha.1, ha.2, if_true, mul_one] },
+  { refine trans (by simp only [ha, if_false]) (mul_eq_zero.2 _).symm,
+    simpa only [ite_eq_right_iff, one_ne_zero, imp_false, ← not_and_distrib] using ha },
 end
 
 /-- Any pair of events are independent with respect to the computation `return a`. -/
