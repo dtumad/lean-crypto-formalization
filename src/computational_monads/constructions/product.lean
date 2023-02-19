@@ -3,7 +3,7 @@ Copyright (c) 2022 Devon Tuma. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
-import computational_monads.distribution_semantics.independence
+import computational_monads.distribution_semantics.monad
 
 /-!
 # Pairwise Oracle Computations
@@ -76,7 +76,7 @@ calc ⁅oa ×ₘ ob⁆ x = ∑' (a : α) (b : β), (⁅oa⁆ a * ⁅ob⁆ b) * (
   ... = ∑' (y : α × β), (⁅oa⁆ y.1 * ⁅ob⁆ y.2) * (⁅(return (y.1, y.2) : oracle_comp spec _)⁆ x) :
     by rw ← ennreal.tsum_prod
   ... = (⁅oa⁆ x.1 * ⁅ob⁆ x.2) * (⁅(return (x.1, x.2) : oracle_comp spec _)⁆ x) :
-    tsum_eq_single x (λ y hy, by rw [prod.mk.eta, eval_dist_return_apply_of_ne hy.symm, mul_zero])
+    tsum_eq_single x (λ y hy, by rw [prod.mk.eta, eval_dist_return_apply_of_ne _ hy.symm, mul_zero])
   ... = ⁅oa⁆ x.1 * ⁅ob⁆ x.2 : by rw [prod.mk.eta, eval_dist_return_apply_self, mul_one]
 
 lemma prod_bind_equiv_bind_bind (oc : α × β → oracle_comp spec γ) :
