@@ -128,6 +128,14 @@ prob_event_return_of_not_mem spec (set.not_mem_diff_of_mem h)
 lemma prob_event_return_diff_self (e : set α) : ⁅e \ {a} | (return a : oracle_comp spec α)⁆ = 0 :=
 prob_event_diff_of_mem spec e (set.mem_singleton a)
 
+lemma prob_event_inter_of_not_mem_left (e e' : set α) (h : a ∉ e) :
+  ⁅e ∩ e' | (return a : oracle_comp spec α)⁆ = 0 :=
+prob_event_return_of_not_mem spec (λ h', h h'.1)
+
+lemma prob_event_inter_of_not_mem_right (e e' : set α) (h : a ∉ e') :
+  ⁅e ∩ e' | (return a : oracle_comp spec α)⁆ = 0 :=
+prob_event_return_of_not_mem spec (λ h', h h'.2)
+
 end return_of_ne
 
 section return_self

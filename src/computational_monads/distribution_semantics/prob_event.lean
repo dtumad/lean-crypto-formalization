@@ -272,8 +272,14 @@ trans (prob_event_bind_eq_tsum oa ob e) (tsum_eq_sum (λ x hx,
 @[simp] lemma prob_event_eq_zero_iff_disjoint_support : ⁅e | oa⁆ = 0 ↔ disjoint oa.support e :=
 by rw [prob_event.def, pmf.to_outer_measure_apply_eq_zero_iff, support_eval_dist]
 
+lemma prob_event_eq_zero_of_dijoint_support (h : disjoint oa.support e) : ⁅e | oa⁆ = 0 :=
+(oa.prob_event_eq_zero_iff_disjoint_support e).2 h
+
 @[simp] lemma prob_event_eq_one_iff_support_subset : ⁅e | oa⁆ = 1 ↔ oa.support ⊆ e :=
 by rw [prob_event.def, pmf.to_outer_measure_apply_eq_one_iff, support_eval_dist]
+
+lemma prob_event_eq_one_of_support_subset (h : oa.support ⊆ e) : ⁅e | oa⁆ = 1 :=
+(oa.prob_event_eq_one_iff_support_subset e).2 h
 
 end support
 

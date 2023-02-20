@@ -4,6 +4,9 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
 import computational_monads.distribution_semantics.return
+import computational_monads.distribution_semantics.bind
+import computational_monads.distribution_semantics.query
+
 
 /-!
 # Probability Distributions of Monadic Oracle Constructions
