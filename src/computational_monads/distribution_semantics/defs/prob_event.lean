@@ -10,10 +10,13 @@ import computational_monads.distribution_semantics.defs.eval_dist
 
 This file defines the probability of some event holding after running a computation.
 The definition is in terms of the `measure` associated to the `pmf` given by `eval_dist`.
+We also introduce the notation `⁅e | oa⁆` for the probability of the output of `oa` being in `e`.
+It also allows for writing `⁅λ x, p x | oa⁆` for the probability of `p` holding on the output.
 
 This definition is equivalent to one in terms of summations, in particular an infinite `tsum`.
-If the support is decidable (or the event is a `finset`),
-we can instead give an expression in terms of `finset.sum`.
+If the support or event is a `finset`, we can also write it in terms of `finset.sum`.
+In the extreme cases of the probability being `0` or `1`, we can also work purely in terms
+of `support`, with it being either disjoint from or a subset of the event respectively.
 -/
 
 namespace oracle_comp

@@ -113,13 +113,5 @@ sorry
 
 end bind
 
-section query
-
-@[simp] lemma query_dist_equiv_query (i : spec.ι) (t t' : spec.domain i) :
-  query i t ≃ₚₑ query i t' :=
-dist_equiv.ext (λ u, (eval_dist_query_apply i t u).trans (eval_dist_query_apply i t' u).symm)
-
-end query
-
 end oracle_comp
 
