@@ -5,7 +5,7 @@ Authors: Devon Tuma
 -/
 import data.vector.mem
 import computational_monads.constructions.product
-import computational_monads.distribution_semantics.prob_event
+import computational_monads.distribution_semantics.defs.prob_event
 
 /-!
 # Repeated Independent Runs of an Oracle Computation

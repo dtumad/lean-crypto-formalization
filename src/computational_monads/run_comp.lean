@@ -12,6 +12,8 @@ This file defines a function `run_comp` for "running" an `oracle_comp` that does
 any oracles, where `empty_spec` is used to represent the lack of available oracles.
 In this case the `oracle_comp.query` constructor can't be called, and so we can eliminate this
 case and perform the natural reduction on other computations.
+
+TODO: Should be possible to generalize this to use `random_gen`, allowing greater flexibility.
 -/
 
 namespace oracle_comp
