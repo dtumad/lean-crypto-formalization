@@ -166,11 +166,6 @@ lemma eval_dist_pure : ⁅(pure a : oracle_comp spec α)⁆ = pmf.pure a := rfl
 lemma eval_dist_pure_apply [decidable_eq α] :
   ⁅(pure a : oracle_comp spec α)⁆ x = ite (x = a) 1 0 := by convert rfl
 
--- lemma eval_dist_return_apply_eq_iff (y : ℝ≥0∞) :
---   ⁅(return a : oracle_comp spec α)⁆ x = y ↔ (x = a ∧ y = 1) ∨ (x ≠ a ∧ y = 0) :=
--- by simp_rw [eval_dist_return_apply_eq_indicator, set.indicator, ite_eq_iff,
---   set.mem_singleton_iff, @eq_comm ℝ≥0∞ 1, @eq_comm ℝ≥0∞ 0]
-
 end return
 
 section bind

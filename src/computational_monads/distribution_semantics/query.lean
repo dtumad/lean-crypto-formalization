@@ -57,9 +57,4 @@ lemma eval_dist_query_apply_eq_eval_dist_query_apply_iff (t : spec.domain i) (t'
     fintype.card (spec.range i) = fintype.card (spec'.range i') :=
 by simp only [eval_dist_query_apply, one_div, inv_inj, nat.cast_inj]
 
-lemma indep_event_query (t : spec.domain i) (e e' : set (spec.range i))
-  [decidable_pred e] [decidable_pred e'] :
-  (query i t).indep_event e e' ↔ e.subsingleton ∧ e'.subsingleton :=
-sorry
-
 end oracle_comp
