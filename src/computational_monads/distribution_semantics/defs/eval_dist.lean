@@ -170,8 +170,8 @@ end return
 
 section bind
 
-variables (a : α) (oa oa' : oracle_comp spec α) (ob ob' : α → oracle_comp spec β)
-  (f : α → β) (x : α) (y : β)
+variables (a : α) (oa oa' : oracle_comp spec α) (ob ob' : α → oracle_comp spec β) (f : α → β)
+  (x : α) (y : β)
 
 @[simp] lemma eval_dist_bind : ⁅oa >>= ob⁆ = ⁅oa⁆.bind (λ x, ⁅ob x⁆) :=
 by rw [← bind'_eq_bind, eval_dist]
