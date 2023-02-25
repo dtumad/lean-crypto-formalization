@@ -44,50 +44,50 @@ def dist_equiv (oa : oracle_comp spec α) (oa' : oracle_comp spec' α) : Prop :=
 
 variables {oa : oracle_comp spec α} {oa' : oracle_comp spec' α} {oa'' : oracle_comp spec'' α}
 
-infix ` ≃ₚₑ ` : 50 := dist_equiv
+infix ` ≃ₚ ` : 50 := dist_equiv
 
-lemma dist_equiv.def : oa ≃ₚₑ oa' ↔ ⁅oa⁆ = ⁅oa'⁆ := iff.rfl
+lemma dist_equiv.def : oa ≃ₚ oa' ↔ ⁅oa⁆ = ⁅oa'⁆ := iff.rfl
 
 /-- Show that two computations are equivalent by showing every output has the same probability. -/
-lemma dist_equiv.ext (h : ∀ x, ⁅= x | oa⁆ = ⁅= x | oa'⁆) : oa ≃ₚₑ oa' := pmf.ext h
+lemma dist_equiv.ext (h : ∀ x, ⁅= x | oa⁆ = ⁅= x | oa'⁆) : oa ≃ₚ oa' := pmf.ext h
 
 lemma dist_equiv.ext_iff (oa : oracle_comp spec α) (oa' : oracle_comp spec' α) :
-  oa ≃ₚₑ oa' ↔ ∀ x, ⁅= x | oa⁆ = ⁅= x | oa'⁆ :=
+  oa ≃ₚ oa' ↔ ∀ x, ⁅= x | oa⁆ = ⁅= x | oa'⁆ :=
 ⟨λ h x, congr_fun (congr_arg _ h) x, dist_equiv.ext⟩
 
-instance dist_equiv.is_refl : is_refl (oracle_comp spec α) dist_equiv := ⟨λ x, rfl⟩
+@[refl] instance dist_equiv.is_refl : is_refl (oracle_comp spec α) dist_equiv := ⟨λ x, rfl⟩
 
 /-- More general than regular `symm`, the two computations may have different `oracle_spec`. -/
-lemma dist_equiv.symm (h : oa ≃ₚₑ oa') : oa' ≃ₚₑ oa := h.symm
+lemma dist_equiv.symm (h : oa ≃ₚ oa') : oa' ≃ₚ oa := h.symm
 
 instance dist_equiv.is_symm : is_symm (oracle_comp spec α) dist_equiv := ⟨λ oa oa' h, h.symm⟩
 
 /-- More general than regular `trans`, the three computations may have different `oracle_spec`. -/
-lemma dist_equiv.trans (h : oa ≃ₚₑ oa') (h' : oa' ≃ₚₑ oa'') : oa ≃ₚₑ oa'' := h.trans h'
+@[trans] lemma dist_equiv.trans (h : oa ≃ₚ oa') (h' : oa' ≃ₚ oa'') : oa ≃ₚ oa'' := h.trans h'
 
 instance dist_equiv.is_trans : is_trans (oracle_comp spec α) dist_equiv :=
 ⟨λ oa oa' oa'' h h', h.trans h'⟩
 
-lemma dist_equiv.support_eq (h : oa ≃ₚₑ oa') : oa.support = oa'.support :=
+lemma dist_equiv.support_eq (h : oa ≃ₚ oa') : oa.support = oa'.support :=
 (oa.support_eval_dist).symm.trans ((congr_arg pmf.support h).trans oa'.support_eval_dist)
 
-lemma dist_equiv.fin_support_eq [oa.decidable] [oa'.decidable] (h : oa ≃ₚₑ oa') :
+lemma dist_equiv.fin_support_eq [oa.decidable] [oa'.decidable] (h : oa ≃ₚ oa') :
   oa.fin_support = oa'.fin_support :=
 (fin_support_eq_fin_support_iff_support_eq_support oa oa').2 h.support_eq
 
-lemma dist_equiv.eval_dist_eq (h : oa ≃ₚₑ oa') : ⁅oa⁆ = ⁅oa'⁆ := h
+lemma dist_equiv.eval_dist_eq (h : oa ≃ₚ oa') : ⁅oa⁆ = ⁅oa'⁆ := h
 
-lemma dist_equiv.eval_dist_apply_eq (h : oa ≃ₚₑ oa') (x : α) : ⁅= x | oa⁆ = ⁅= x | oa'⁆ :=
+lemma dist_equiv.eval_dist_apply_eq (h : oa ≃ₚ oa') (x : α) : ⁅= x | oa⁆ = ⁅= x | oa'⁆ :=
 congr_fun (congr_arg _ h) x
 
-lemma dist_equiv.prob_event_eq (h : oa ≃ₚₑ oa') (e : set α) : ⁅e | oa⁆ = ⁅e | oa'⁆ :=
+lemma dist_equiv.prob_event_eq (h : oa ≃ₚ oa') (e : set α) : ⁅e | oa⁆ = ⁅e | oa'⁆ :=
 prob_event_eq_of_eval_dist_eq h.eval_dist_eq e
 
-lemma dist_equiv.indep_events_iff (h : oa ≃ₚₑ oa') (es es' : set (set α)) :
+lemma dist_equiv.indep_events_iff (h : oa ≃ₚ oa') (es es' : set (set α)) :
   oa.indep_events es es' ↔ oa'.indep_events es es' :=
 indep_events_iff_of_eval_dist_eq oa oa' es es' h
 
-lemma dist_equiv.indep_event_iff (h : oa ≃ₚₑ oa') (e e' : set α) :
+lemma dist_equiv.indep_event_iff (h : oa ≃ₚ oa') (e e' : set α) :
   oa.indep_event e e' ↔ oa'.indep_event e e' :=
 indep_event_iff_of_eval_dist_eq oa oa' e e' h
 
@@ -97,18 +97,18 @@ section bind
 and computations `ob` and `ob'` are equivalent for any input that is an output of `oa`,
 then the sequential computations `oa >>= ob` and `oa' >>= ob'` are equivalent. -/
 lemma bind_dist_equiv_bind_of_dist_equiv (oa : oracle_comp spec α) (ob : α → oracle_comp spec β)
-  (oa' : oracle_comp spec' α) (ob' : α → oracle_comp spec' β) (h : oa ≃ₚₑ oa')
-  (h' : ∀ x ∈ oa.support, ob x ≃ₚₑ ob' x) : (oa >>= ob) ≃ₚₑ (oa' >>= ob') :=
+  (oa' : oracle_comp spec' α) (ob' : α → oracle_comp spec' β) (h : oa ≃ₚ oa')
+  (h' : ∀ x ∈ oa.support, ob x ≃ₚ ob' x) : (oa >>= ob) ≃ₚ (oa' >>= ob') :=
 sorry
 
 lemma bind_dist_equiv_bind_of_dist_equiv_left (oa : oracle_comp spec α)
-  (ob : α → oracle_comp spec β) (oa' : oracle_comp spec α) (h : oa ≃ₚₑ oa') :
-  (oa >>= ob) ≃ₚₑ (oa' >>= ob) :=
+  (ob : α → oracle_comp spec β) (oa' : oracle_comp spec α) (h : oa ≃ₚ oa') :
+  (oa >>= ob) ≃ₚ (oa' >>= ob) :=
 sorry
 
 lemma bind_dist_equiv_bind_of_dist_equiv_right (oa : oracle_comp spec α)
   (ob : α → oracle_comp spec β) (ob' : α → oracle_comp spec β)
-  (h' : ∀ x, ob x ≃ₚₑ ob' x) : (oa >>= ob) ≃ₚₑ (oa >>= ob') :=
+  (h' : ∀ x, ob x ≃ₚ ob' x) : (oa >>= ob) ≃ₚ (oa >>= ob') :=
 sorry
 
 end bind

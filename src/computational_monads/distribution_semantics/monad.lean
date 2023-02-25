@@ -154,7 +154,7 @@ eval_dist_map_apply_eq_single' oa f (f x) x rfl (λ x' hx' hxf, hf hxf)
 
 lemma map_equiv_congr {f f' : α → β} {oa : oracle_comp spec α} {oa' : oracle_comp spec' α}
   (hf : ∀ x, f x = f' x) (hoa : oa ≃ₚ oa') : (f <$> oa) ≃ₚ (f' <$> oa') :=
-by simp only [eval_dist_map, hoa, (funext hf : f = f')]
+dist_equiv.ext (λ x, by simp only [eval_dist_map, hoa.eval_dist_eq, (funext hf : f = f')])
 
 end map
 

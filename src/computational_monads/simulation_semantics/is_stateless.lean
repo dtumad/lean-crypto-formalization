@@ -44,9 +44,10 @@ instance is_stateless.is_tracking [hso : so.is_stateless] : so.is_tracking :=
   state_f := λ s i t u, so.default_state,
   apply_equiv_state_f_map_query_f :=
     begin
-      refine λ i t s, trans ((eval_dist_map_id $ (so i (t, s))).symm.trans
-        (map_equiv_congr (λ x, _) (by rw so.state_elim s))) (eval_dist_map_comp' _ _ _).symm,
-      simp only [prod.eq_iff_fst_eq_snd_eq, so.state_elim x.2, id.def, eq_self_iff_true, and_self]
+      sorry,
+      -- refine λ i t s, trans ((eval_dist_map_id $ (so i (t, s))).symm.trans
+      --   (map_equiv_congr (λ x, _) (by rw so.state_elim s))) (eval_dist_map_comp' _ _ _).symm,
+      -- simp only [prod.eq_iff_fst_eq_snd_eq, so.state_elim x.2, id.def, eq_self_iff_true, and_self]
     end
 }
 

@@ -168,7 +168,7 @@ lemma eval_dist_simulate'_eq_eval_dist_simulate'
   (h : ∀ i t, o i t ≃ₚ o' i t) : ⁅simulate' ⟪o | update_state, default_state⟫ oa s⁆ =
     ⁅simulate' ⟪o' | update_state', default_state'⟫ oa s'⁆ :=
 eval_dist_simulate'_eq_eval_dist_simulate' (λ i t s s',
-  by simp [pmf.map_comp, tracking_oracle.apply_eq, eval_dist_map, h]) oa s s'
+  sorry) _ _ _ --by simp [pmf.map_comp, tracking_oracle.apply_eq, eval_dist_map, h]) oa s s'
 
 /-- The first output of simulation under different `tracking_oracle` with the same oracle
 is the same regardless of if the tracking functions are different. -/

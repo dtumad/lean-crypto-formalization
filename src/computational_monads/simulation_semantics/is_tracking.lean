@@ -55,7 +55,7 @@ section support
 
 lemma support_apply' : (so i (t, s)).support =
   ((λ u, (u, so.update_state s i t u)) <$> so.answer_query i t).support :=
-by simp_rw [← support_eval_dist, hso.apply_equiv_state_f_map_query_f]
+by simp_rw [← support_eval_dist, (hso.apply_equiv_state_f_map_query_f _ _ _).eval_dist_eq]
 
 @[simp] lemma support_apply : (so i (t, s)).support =
   (λ u, (u, so.update_state s i t u)) '' (so.answer_query i t).support :=

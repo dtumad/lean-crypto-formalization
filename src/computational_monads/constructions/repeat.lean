@@ -171,7 +171,7 @@ by simp only [repeat_zero, eval_dist_return, pmf.pure_apply, eq_iff_true_of_subs
 
 lemma eval_dist_repeat_succ' :
   ⁅oa.repeat n.succ⁆ = ⁅(λ (x : α × vector α n), x.1 ::ᵥ x.2) <$> (oa ×ₘ oa.repeat n)⁆ :=
-by rw [repeat_succ, map_eq_bind_return_comp, prod_bind_equiv_bind_bind]
+by rw [repeat_succ, map_eq_bind_return_comp, (prod_bind_equiv_bind_bind _ _ _).eval_dist_eq]
 
 @[simp] lemma eval_dist_repeat_succ :
   ⁅oa.repeat n.succ⁆ = ⁅oa ×ₘ oa.repeat n⁆.map (λ x, x.1 ::ᵥ x.2) :=

@@ -40,12 +40,12 @@ noncomputable def eval_dist {spec : oracle_spec} :
 
 notation `⁅` oa `⁆` := eval_dist oa
 
--- TODO: this stuff, could even use `prob_|_eq_|` naming for things with this?
+-- TODO: Should the naming convention be different (`eval_dist_bind_apply` -> `prob_eq_bind`)
+-- KINDA big undertaking.
 notation `⁅=` x `|` oa `⁆` := ⁅oa⁆ x
 
--- TODO: This could be a seperate definition, with `dist_equiv.support`,`dist_equiv.eval_dist`, etc
--- Feels only super helpful in the case of having some specialized tactics?
-notation oa ` ≃ₚ ` oa' := ⁅oa⁆ = ⁅oa'⁆
+-- -- TODO: DELETE THIS
+-- notation oa ` ≃ₚ ` oa' := ⁅oa⁆ = ⁅oa'⁆
 
 lemma eval_dist.ext (oa oa' : oracle_comp spec α) (h : ∀ x, ⁅= x | oa⁆ = ⁅= x | oa'⁆) :
   ⁅oa⁆ = ⁅oa'⁆ := pmf.ext h
@@ -101,6 +101,7 @@ lemma eval_dist_pos_of_mem_support (h : x ∈ oa.support) : 0 < ⁅oa⁆ x :=
 
 end support
 
+-- TODO: merging these sections would probably be good very being maintainable.
 section fin_support
 
 variables (oa : oracle_comp spec α) [decidable oa] (x : α)

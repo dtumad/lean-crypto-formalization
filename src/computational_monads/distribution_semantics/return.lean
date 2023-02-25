@@ -24,7 +24,7 @@ variables (spec : oracle_spec) {spec' : oracle_spec} (a : α)
 
 /-- `return a` has the same distribution as `oa` iff outputs besides `a` have `0` probability. -/
 lemma return_dist_equiv_iff (oa : oracle_comp spec' α) :
-  (return a : oracle_comp spec α) ≃ₚₑ oa ↔ ∀ x ≠ a, ⁅= x | oa⁆ = 0 :=
+  (return a : oracle_comp spec α) ≃ₚ oa ↔ ∀ x ≠ a, ⁅= x | oa⁆ = 0 :=
 by rw [dist_equiv, eval_dist_return, pmf.pure_eq_iff]
 
 lemma eval_dist_return_eq_iff (p : pmf α) :
@@ -81,7 +81,7 @@ variables (spec spec' : oracle_spec) (a a' : α)
 
 /-- Two `return` computations are distributionally equivalent iff they return the same value. -/
 @[simp] lemma return_dist_equiv_return_iff :
-  (return a : oracle_comp spec α) ≃ₚₑ (return a' : oracle_comp spec' α) ↔ a = a' :=
+  (return a : oracle_comp spec α) ≃ₚ (return a' : oracle_comp spec' α) ↔ a = a' :=
 begin
   simp only [return_dist_equiv_iff, eval_dist_return_apply_eq_zero_iff],
   exact ⟨λ h, by simpa only [ne.def, imp_not_comm, eq_self_iff_true, not_not,

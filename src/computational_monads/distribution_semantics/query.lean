@@ -48,7 +48,7 @@ lemma prob_event_query_pos_iff (t : spec.domain i) (e : set (spec.range i)) :
 pos_iff_ne_zero.trans (by simp only [ne.def, prob_event_query_eq_zero_iff])
 
 @[simp] lemma query_dist_equiv_query (t t' : spec.domain i) :
-  query i t ≃ₚₑ query i t' := dist_equiv.def.2 rfl
+  query i t ≃ₚ query i t' := dist_equiv.def.2 rfl
 
 lemma eval_dist_query_eq_eval_dist_query (t t' : spec.domain i) : ⁅query i t⁆ = ⁅query i t⁆ := rfl
 
