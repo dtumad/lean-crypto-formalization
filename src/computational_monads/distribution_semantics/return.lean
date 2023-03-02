@@ -42,6 +42,22 @@ by rw [prob_event_return_eq_indicator, set.indicator, ite_eq_iff, @eq_comm ℝ�
 
 end return_eq_iff
 
+section return_eq_zero_iff
+
+variables (spec : oracle_spec) (a : α)
+
+/-- `x` has probability of `0` of being the output of `return a` iff `x ≠ a`. -/
+lemma eval_dist_return_apply_eq_zero_iff (x : α) :
+  ⁅(return a : oracle_comp spec α)⁆ x = 0 ↔ x ≠ a :=
+by simp only [eval_dist_return, pmf.apply_eq_zero_iff, pmf.support_pure, set.mem_singleton_iff]
+
+@[simp] lemma prob_event_return_eq_zero_iff (e : set α) :
+  ⁅e | (return a : oracle_comp spec α)⁆ = 0 ↔ a ∉ e :=
+by rw [prob_event.def, eval_dist_return, pmf.to_outer_measure_apply_eq_zero_iff,
+  pmf.support_pure, set.disjoint_singleton_left]
+
+end return_eq_zero_iff
+
 section return_eq_one_iff
 
 variables (spec : oracle_spec) (a : α)
@@ -58,22 +74,6 @@ by rw [prob_event.def, eval_dist_return, pmf.to_outer_measure_apply_eq_one_iff,
   pmf.support_pure, set.singleton_subset_iff]
 
 end return_eq_one_iff
-
-section return_eq_zero_iff
-
-variables (spec : oracle_spec) (a : α)
-
-/-- `x` has probability of `0` of being the output of `return a` iff `x ≠ a`. -/
-lemma eval_dist_return_apply_eq_zero_iff (x : α) :
-  ⁅(return a : oracle_comp spec α)⁆ x = 0 ↔ x ≠ a :=
-by simp only [eval_dist_return, pmf.apply_eq_zero_iff, pmf.support_pure, set.mem_singleton_iff]
-
-@[simp] lemma prob_event_return_eq_zero_iff (e : set α) :
-  ⁅e | (return a : oracle_comp spec α)⁆ = 0 ↔ a ∉ e :=
-by rw [prob_event.def, eval_dist_return, pmf.to_outer_measure_apply_eq_zero_iff,
-  pmf.support_pure, set.disjoint_singleton_left]
-
-end return_eq_zero_iff
 
 section return_eq_return_iff
 

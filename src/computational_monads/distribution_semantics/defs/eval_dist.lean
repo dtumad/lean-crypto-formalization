@@ -44,14 +44,11 @@ notation `⁅` oa `⁆` := eval_dist oa
 -- KINDA big undertaking.
 notation `⁅=` x `|` oa `⁆` := ⁅oa⁆ x
 
--- -- TODO: DELETE THIS
--- notation oa ` ≃ₚ ` oa' := ⁅oa⁆ = ⁅oa'⁆
+lemma eval_dist.ext (oa : oracle_comp spec α) (p : pmf α)
+  (h : ∀ x, ⁅= x | oa⁆ = p x) : ⁅oa⁆ = p := pmf.ext h
 
-lemma eval_dist.ext (oa oa' : oracle_comp spec α) (h : ∀ x, ⁅= x | oa⁆ = ⁅= x | oa'⁆) :
-  ⁅oa⁆ = ⁅oa'⁆ := pmf.ext h
-
-lemma eval_dist.ext_iff (oa oa' : oracle_comp spec α) :
-  ⁅oa⁆ = ⁅oa'⁆ ↔ ∀ x, ⁅= x | oa⁆ = ⁅= x | oa'⁆ := ⟨λ h _, h ▸ rfl, eval_dist.ext oa oa'⟩
+lemma eval_dist.ext_iff (oa : oracle_comp spec α) (p : pmf α) :
+  ⁅oa⁆ = p ↔ ∀ x, ⁅= x | oa⁆ = p x := pmf.ext_iff _ _
 
 section support
 
@@ -84,6 +81,7 @@ by rw [pos_iff_ne_zero, eval_dist_ne_zero_iff_mem_support]
 
 variables {oa} {x}
 
+-- TODO: cumbersome naming
 lemma eval_dist_eq_zero_of_not_mem_support (h : x ∉ oa.support) : ⁅oa⁆ x = 0 :=
 (eval_dist_eq_zero_iff_not_mem_support oa x).2 h
 
@@ -194,14 +192,6 @@ lemma eval_dist_bind_apply_eq_sum_fin_support [oa.decidable] :
 lemma eval_dist_bind_eq_of_eval_dist_eq (hoa : ⁅oa⁆ = ⁅oa'⁆)
   (hob : ∀ a, ⁅ob a⁆ = ⁅ob' a⁆) : ⁅oa >>= ob⁆ = ⁅oa' >>= ob'⁆ :=
 by simp_rw [eval_dist_bind, hoa, hob]
-
-lemma eval_dist_bind_apply_eq_zero_iff :
-  ⁅oa >>= ob⁆ y = 0 ↔ ∀ x ∈ oa.support, y ∉ (ob x).support :=
-by simp_rw [pmf.apply_eq_zero_iff, support_eval_dist, support_bind, set.mem_Union, not_exists]
-
-lemma eval_dist_bind_apply_eq_one_iff :
-  ⁅oa >>= ob⁆ y = 1 ↔ ∀ x ∈ oa.support, (ob x).support ⊆ {y} :=
-by simp only [eval_dist_bind, pmf.bind_apply_eq_one_iff, support_eval_dist]
 
 end bind
 

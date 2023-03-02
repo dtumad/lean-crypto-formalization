@@ -91,27 +91,5 @@ lemma dist_equiv.indep_event_iff (h : oa ≃ₚ oa') (e e' : set α) :
   oa.indep_event e e' ↔ oa'.indep_event e e' :=
 indep_event_iff_of_eval_dist_eq oa oa' e e' h
 
-section bind
-
-/-- If two computations `oa` and `oa'` are distributionally equivalent to each other,
-and computations `ob` and `ob'` are equivalent for any input that is an output of `oa`,
-then the sequential computations `oa >>= ob` and `oa' >>= ob'` are equivalent. -/
-lemma bind_dist_equiv_bind_of_dist_equiv (oa : oracle_comp spec α) (ob : α → oracle_comp spec β)
-  (oa' : oracle_comp spec' α) (ob' : α → oracle_comp spec' β) (h : oa ≃ₚ oa')
-  (h' : ∀ x ∈ oa.support, ob x ≃ₚ ob' x) : (oa >>= ob) ≃ₚ (oa' >>= ob') :=
-sorry
-
-lemma bind_dist_equiv_bind_of_dist_equiv_left (oa : oracle_comp spec α)
-  (ob : α → oracle_comp spec β) (oa' : oracle_comp spec α) (h : oa ≃ₚ oa') :
-  (oa >>= ob) ≃ₚ (oa' >>= ob) :=
-sorry
-
-lemma bind_dist_equiv_bind_of_dist_equiv_right (oa : oracle_comp spec α)
-  (ob : α → oracle_comp spec β) (ob' : α → oracle_comp spec β)
-  (h' : ∀ x, ob x ≃ₚ ob' x) : (oa >>= ob) ≃ₚ (oa >>= ob') :=
-sorry
-
-end bind
-
 end oracle_comp
 
