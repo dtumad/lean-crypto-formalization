@@ -13,11 +13,16 @@ import computational_monads.support.monad
 Big-step semantics for `oracle_comp`, associating a probability distribution to a computation.
 For the purpose of this we assume that each oracle query has a uniform resulting distribution,
 giving correct semantics for oracles like a `coin_oracle` or `uniform_selecting` oracle.
+More general oracles need to first be simulated using `oracle_comp.simulate`,
+in order to give the oracle's semantics in terms of simpler oracles like a coin oracle.
 
-The resulting type is given by a `pmf`, the mathlib def of a probability mass function,
+The resulting type is given by a `pmf`, the mathlib definition of a probability mass function,
 given by a regular function into `ℝ≥0∞` combined with a proof that it has sum `1`.
-The mapping respects the monadic structures on `pmf` and `oracle_comp`,
-  sending `return` to `pmf.pure` and `>>=` to `pmf.bind`.
+The mapping respects monadic structures, sending `return` to `pmf.pure` and `>>=` to `pmf.bind`.
+
+Note that the mapping is neither injective nor surjective onto `pmf`.
+For example the computations `oa >>= λ _, return 5` and `return 5` both map to `pmf.pure 5`,
+and the resulting distribution will always have rational values for probability masses.
 -/
 
 namespace oracle_comp
@@ -27,11 +32,13 @@ open_locale big_operators ennreal
 
 variables {α β γ : Type} {spec spec' : oracle_spec}
 
-/- Big step semantics for a computation with finite range oracles
-The result of queries is assumed to be uniform over the oracle's codomain,
-  independent of the given domain values in each query.
+/- Big step semantics for a computation with access to a set of oracles.
+We assume that query results are uniformly distributed regardless of oracle inputs.
 Usually the `spec` when calling this would just be `coin_oracle` or `uniform_selecting`,
-However it can be any more general things as well, e.g. a dice rolling oracle -/
+as oracles like these are expected to return values essentially randomly.
+For more complex oracles such as a random oracle which may not always respond randomly,
+simulation semantics (`oracle_comp.simulate`) can be used to reduce the oracles of the computation.
+This will give a new computation which only calls some uniform oracle,  -/
 noncomputable def eval_dist {spec : oracle_spec} :
   Π {α : Type} (oa : oracle_comp spec α), pmf α
 | _ (pure' α a) := pmf.pure a
@@ -40,8 +47,6 @@ noncomputable def eval_dist {spec : oracle_spec} :
 
 notation `⁅` oa `⁆` := eval_dist oa
 
--- TODO: Should the naming convention be different (`eval_dist_bind_apply` -> `prob_eq_bind`)
--- KINDA big undertaking.
 notation `⁅=` x `|` oa `⁆` := ⁅oa⁆ x
 
 lemma eval_dist.ext (oa : oracle_comp spec α) (p : pmf α)
@@ -81,7 +86,7 @@ by rw [pos_iff_ne_zero, eval_dist_ne_zero_iff_mem_support]
 
 variables {oa} {x}
 
--- TODO: cumbersome naming
+-- TODO: cumbersome naming `--> eval_dist_eq_zero`, `eval_dist_ne_zero`, ...
 lemma eval_dist_eq_zero_of_not_mem_support (h : x ∉ oa.support) : ⁅oa⁆ x = 0 :=
 (eval_dist_eq_zero_iff_not_mem_support oa x).2 h
 
@@ -149,18 +154,27 @@ variables (a x : α)
 
 @[simp] lemma eval_dist_return : ⁅(return a : oracle_comp spec α)⁆ = pmf.pure a := rfl
 
-lemma eval_dist_return_apply_eq_indicator :
+/-- In general the probability of getting `x` from `return a` is based on `set.indicator`. -/
+@[simp] lemma eval_dist_return_apply_eq_indicator :
   ⁅(return a : oracle_comp spec α)⁆ x = set.indicator {a} (λ _, 1) x := rfl
 
-lemma eval_dist_return_apply [decidable_eq α] :
+/-- Given a decidable equality instance, the probability of `x` from `return a` can be given by
+a simple if-then statement rather than by `set.indicator`. -/
+@[simp] lemma eval_dist_return_apply [decidable_eq α] :
   ⁅(return a : oracle_comp spec α)⁆ x = ite (x = a) 1 0 := by convert rfl
 
 lemma eval_dist_pure' : ⁅(pure' α a : oracle_comp spec α)⁆ = pmf.pure a := rfl
+
+lemma eval_dist_pure'_apply_eq_indicator :
+  ⁅(pure' α a : oracle_comp spec α)⁆ x = set.indicator {a} (λ _, 1) x := rfl
 
 lemma eval_dist_pure'_apply [decidable_eq α] :
   ⁅(pure' α a : oracle_comp spec α)⁆ x = ite (x = a) 1 0 := by convert rfl
 
 lemma eval_dist_pure : ⁅(pure a : oracle_comp spec α)⁆ = pmf.pure a := rfl
+
+lemma eval_dist_pure_apply_eq_indicator :
+  ⁅(pure a : oracle_comp spec α)⁆ x = set.indicator {a} (λ _, 1) x := rfl
 
 lemma eval_dist_pure_apply [decidable_eq α] :
   ⁅(pure a : oracle_comp spec α)⁆ x = ite (x = a) 1 0 := by convert rfl
@@ -189,10 +203,6 @@ lemma eval_dist_bind_apply_eq_sum_fin_support [oa.decidable] :
 (eval_dist_bind_apply_eq_tsum oa ob y).trans (tsum_eq_sum $ λ a ha,
   by rw [(eval_dist_eq_zero_iff_not_mem_fin_support oa a).2 ha, zero_mul])
 
-lemma eval_dist_bind_eq_of_eval_dist_eq (hoa : ⁅oa⁆ = ⁅oa'⁆)
-  (hob : ∀ a, ⁅ob a⁆ = ⁅ob' a⁆) : ⁅oa >>= ob⁆ = ⁅oa' >>= ob'⁆ :=
-by simp_rw [eval_dist_bind, hoa, hob]
-
 end bind
 
 section query
@@ -206,33 +216,5 @@ lemma eval_dist_query_apply : ⁅query i t⁆ u = 1 / (fintype.card $ spec.range
 by simp only [eval_dist_query, pmf.uniform_of_fintype_apply, one_div]
 
 end query
-
-/-- Right the `eval_dist` of bind as a sum over another type,
-using a map that is both injective and surjective on corresponding supports -/
-lemma helper {oa : oracle_comp spec α}
-  {ob : α → oracle_comp spec β} {b : β} (g : γ → α)
-  (h : ∀ x ∈ oa.support, b ∈ (ob x).support → x ∈ set.range g)
-  (hg : ∀ x y, g x = g y → g x ∈ oa.support → b ∈ (ob (g x)).support → x = y) :
-  ⁅oa >>= ob⁆ b = ∑' (c : γ), ⁅oa⁆ (g c) * ⁅ob (g c)⁆ b :=
-begin
-  rw [eval_dist_bind_apply_eq_tsum],
-  refine tsum_eq_tsum_of_ne_zero_bij (g ∘ coe) _ _ (λ _, rfl),
-  { intros x y h,
-    have := x.2,
-    simp only [subtype.val_eq_coe, function.support_mul, set.mem_inter_iff, function.mem_support,
-      ne.def, eval_dist_eq_zero_iff_not_mem_support, set.not_not_mem] at this,
-    refine hg ↑x ↑y h this.1 this.2 },
-  { intros x hx,
-    simp only [function.support_mul, set.mem_inter_iff, function.mem_support, ne.def,
-      eval_dist_eq_zero_iff_not_mem_support, set.not_not_mem] at hx,
-    specialize h x hx.1 hx.2,
-    rw [set.mem_range] at h,
-    obtain ⟨y, hy⟩ := h,
-    rw [← hy, set.range_comp, set.mem_image],
-    refine ⟨y, _, rfl⟩,
-    rw [subtype.range_coe_subtype],
-    simp only [hy, hx, function.support_mul, set.mem_inter_iff, function.mem_support,
-      ne.def, eval_dist_eq_zero_iff_not_mem_support, set.not_not_mem, set.mem_set_of_eq, true_and] }
-end
 
 end oracle_comp
