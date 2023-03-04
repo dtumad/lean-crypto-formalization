@@ -179,7 +179,7 @@ begin
       { intros o ho,
         simp only [prod.mk.eta, set.indicator_apply_eq_zero, set.mem_preimage,
           set.mem_singleton_iff, prod.mk.inj_iff, eq_self_iff_true,
-            true_and, eval_dist_eq_zero_iff_not_mem_support, and_imp],
+            true_and, eval_dist_eq_zero_iff, and_imp],
         intros ho' ho'',
         by_cases hi : some i = o.fst,
         { exact (ho $ prod.eq_iff_fst_eq_snd_eq.2 ⟨hi.symm, ho''⟩).elim },

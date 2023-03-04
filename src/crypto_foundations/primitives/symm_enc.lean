@@ -200,11 +200,11 @@ begin
     -- If the message and ciphertext have non-zero probability, there must be an encryption key.
     suffices : 0 < ⁅= (m, c) | se_alg.mgen_and_encrypt ($ᵗ M)⁆,
     from let ⟨k, hk, hk'⟩ := se_alg.exists_key_of_mem_support_mgen_and_encrypt
-      ($ᵗ M) m c ((eval_dist_pos_iff_mem_support _ _).1 this) in ⟨k, hk, hk'⟩,
+      ($ᵗ M) m c ((eval_dist_pos_iff _ _).1 this) in ⟨k, hk, hk'⟩,
     -- It suffices to show that such a key exists for *some* message, rather than exactly `m`.
     suffices : ∃ m' k, k ∈ (se_alg.keygen ()).support ∧ se_alg.encrypt (m', k) = c,
     by simpa only [(se_alg.perfect_secrecy_iff.1 h) ($ᵗ M) m c, ennreal.mul_pos_iff, true_and,
-      eval_dist_pos_iff_mem_support, mem_support_uniform_select_fintype, mem_support_map_snd_iff,
+      eval_dist_pos_iff, mem_support_uniform_select_fintype, mem_support_map_snd_iff,
       mem_support_mgen_and_encrypt_iff, mem_support_uniform_select_fintype M, exists_prop],
     -- We can choose an arbitrary key, and then take the message to be the decrypted ciphertext.
     obtain ⟨k, hk⟩ := (se_alg.keygen ()).support_nonempty,
@@ -348,7 +348,7 @@ begin
       refine trans (tsum_eq_single k' $ λ k'' hk'', _) _,
       { by_cases hks' : k'' ∈ (se_alg.keygen ()).support,
         { exact ite_eq_right_iff.2 (λ hkkd, false.elim (hk'' $ hke k'' ⟨hks', hkkd.symm⟩)) },
-        { simp_rw [(eval_dist_eq_zero_iff_not_mem_support _ _).2 hks', mul_zero, if_t_t] } },
+        { simp_rw [(eval_dist_eq_zero_iff _ _).2 hks', mul_zero, if_t_t] } },
       { simp_rw [hks.2, eq_self_iff_true, if_true, h_keygen] },
     end,
     calc ⁅= (m, c) | se_alg.mgen_and_encrypt m_dist⁆ =

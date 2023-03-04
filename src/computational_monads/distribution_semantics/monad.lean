@@ -101,7 +101,7 @@ lemma eval_dist_bind_return_apply_eq_single (x : α) (hx : f ⁻¹' {y} = {x}) :
 begin
   simp only [eval_dist_bind_return_apply_eq_tsum_indicator, hx],
   refine trans (tsum_eq_single x _) (by simp only [set.indicator_of_mem, set.mem_singleton]),
-  simp only [set.indicator_apply_eq_zero, eval_dist_eq_zero_iff_not_mem_support],
+  simp only [set.indicator_apply_eq_zero, eval_dist_eq_zero_iff],
   refine (λ _ h h', (h h').elim),
 end
 

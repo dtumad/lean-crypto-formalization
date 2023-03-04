@@ -305,7 +305,7 @@ lemma prob_event_eq_eval_dist {x} (hx : x ∈ e)
   (h : ∀ y ≠ x, y ∈ e → y ∉ oa.support) : ⁅e | oa⁆ = ⁅oa⁆ x :=
 begin
   refine (prob_event_eq_tsum_indicator oa e).trans (trans (tsum_eq_single x $ λ y hy, _) _),
-  { simpa only [set.indicator_apply_eq_zero, eval_dist_eq_zero_iff_not_mem_support] using h y hy },
+  { simpa only [set.indicator_apply_eq_zero, eval_dist_eq_zero_iff] using h y hy },
   { simp only [set.indicator_apply_eq_self, hx, not_true, false_implies_iff] }
 end
 
