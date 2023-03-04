@@ -80,8 +80,8 @@ begin
   refine tsum_congr (λ x, _),
   by_cases hx : x ∈ oa.support,
   { rw [ha.eval_dist_eq, (hb x hx).eval_dist_eq] },
-  { simp only [zero_mul, eval_dist_eq_zero_of_not_mem_support hx,
-      eval_dist_eq_zero_of_not_mem_support (ha.support_eq ▸ hx : x ∉ oa'.support)] }
+  { simp only [zero_mul, eval_dist_eq_zero hx,
+      eval_dist_eq_zero (ha.support_eq ▸ hx : x ∉ oa'.support)] }
 end
 
 lemma bind_dist_equiv_bind_of_dist_equiv_left (oa : oracle_comp spec α)

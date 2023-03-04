@@ -120,7 +120,7 @@ begin
   by_cases hx : x ∈ oa.support,
   { rw [(set.indicator_apply_eq_self.2 $ λ hxe', (hxe' hxe).elim)],
     exact h x hx },
-  { simp only [eval_dist_eq_zero_of_not_mem_support hx, zero_le'] }
+  { simp only [eval_dist_eq_zero hx, zero_le'] }
 end
 
 /-- If the `eval_dist` agrees on all elements of the support, then `prob_event` agrees as well. -/
@@ -265,12 +265,12 @@ prob_event_eq_prob_event_of_inter_support_eq oa (by rw [set.inter_assoc, set.int
 theorem prob_event_eq_sum_of_support_subset [decidable_pred e] (s : finset α)
   (hs : oa.support ⊆ s) : ⁅e | oa⁆ = ∑ x in s, ite (x ∈ e) (⁅oa⁆ x) 0 :=
 trans (prob_event_eq_tsum_ite oa e) (tsum_eq_sum (λ x hx,
-  by rw [eval_dist_eq_zero_of_not_mem_support (λ hx', hx $ finset.mem_coe.1 (hs hx')), if_t_t]))
+  by rw [eval_dist_eq_zero (λ hx', hx $ finset.mem_coe.1 (hs hx')), if_t_t]))
 
 theorem prob_event_bind_eq_sum_of_support_subset (e : set β) (s : finset α) (hs : oa.support ⊆ s) :
   ⁅e | oa >>= ob⁆ = ∑ x in s, ⁅oa⁆ x * ⁅e | ob x⁆ :=
 trans (prob_event_bind_eq_tsum oa ob e) (tsum_eq_sum (λ x hx,
-  by rw [eval_dist_eq_zero_of_not_mem_support (λ h, hx (hs h)), zero_mul]))
+  by rw [eval_dist_eq_zero (λ h, hx (hs h)), zero_mul]))
 
 @[simp] lemma prob_event_eq_zero_iff_disjoint_support : ⁅e | oa⁆ = 0 ↔ disjoint oa.support e :=
 by rw [prob_event.def, pmf.to_outer_measure_apply_eq_zero_iff, support_eval_dist]

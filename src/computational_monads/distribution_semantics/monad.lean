@@ -90,7 +90,7 @@ lemma eval_dist_bind_return_apply_eq_single' (x : α) (hx : f x = y)
 begin
   rw [eval_dist_bind_return_apply_eq_tsum_indicator],
   refine trans (tsum_eq_single x $ λ x' hx', set.indicator_apply_eq_zero.2 _) _,
-  { exact λ hx'', eval_dist_eq_zero_of_not_mem_support (λ hxs, hx' (h x' hxs hx'')) },
+  { exact λ hx'', eval_dist_eq_zero (λ hxs, hx' (h x' hxs hx'')) },
   { simp only [set.mem_preimage, set.mem_singleton_iff, hx, set.indicator_of_mem] }
 end
 

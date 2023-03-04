@@ -283,7 +283,7 @@ begin
   let m := se_alg.decrypt (c, k),
   suffices : ⁅= m | m_dist⁆ * ⁅= k | se_alg.keygen ()⁆ =
     ⁅= m | m_dist⁆ * ⁅= c | prod.snd <$> se_alg.mgen_and_encrypt m_dist⁆,
-  from ((ennreal.mul_eq_mul_left (eval_dist_ne_zero_of_not_mem_support h')
+  from ((ennreal.mul_eq_mul_left (eval_dist_ne_zero h')
     (pmf.apply_ne_top _ _)).1 this).symm,
   -- Extend the encryption function to include a side message, preserving injectivity.
   let f : M × K → M × C := λ x, (x.1, se_alg.encrypt (x.1, x.2)),

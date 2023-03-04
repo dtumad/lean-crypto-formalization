@@ -57,7 +57,9 @@ lemma eval_dist.ext_iff (oa : oracle_comp spec α) (p : pmf α) :
 
 @[simp] lemma eval_dist_return : ⁅(return a : oracle_comp spec α)⁆ = pmf.pure a := rfl
 
-/-- In general the probability of getting `x` from `return a` is based on `set.indicator`. -/
+/-- The probability of getting `x` from `return a` is `1` if `x = a` and `0` if `x ≠ a`.
+In general this probability is defined in terms of `set.indicator` applied to a singleton set,
+since a definition in terms of if-then-else requires decidable equality of the type `α`. -/
 @[simp] lemma eval_dist_return_apply_eq_indicator :
   ⁅(return a : oracle_comp spec α)⁆ x = set.indicator {a} (λ _, 1) x := rfl
 
@@ -134,7 +136,7 @@ by rw [ne.def, eval_dist_eq_zero_iff, set.not_not_mem]
 lemma eval_dist_eq_one_iff : ⁅oa⁆ x = 1 ↔ oa.support = {x} :=
 by rw [pmf.apply_eq_one_iff, support_eval_dist oa]
 
-@[simp] lemma eval_dist_eq_one_iff_support_subset_singleton : ⁅oa⁆ x = 1 ↔ oa.support ⊆ {x} :=
+@[simp] lemma eval_dist_eq_one_iff' : ⁅oa⁆ x = 1 ↔ oa.support ⊆ {x} :=
 (eval_dist_eq_one_iff oa x).trans
   (set.nonempty.subset_singleton_iff $ support_nonempty oa).symm
 
@@ -144,19 +146,19 @@ by rw [pos_iff_ne_zero, eval_dist_ne_zero_iff]
 variables {oa} {x}
 
 -- TODO: cumbersome naming `--> eval_dist_eq_zero`, `eval_dist_ne_zero`, ...
-lemma eval_dist_eq_zero_of_not_mem_support (h : x ∉ oa.support) : ⁅oa⁆ x = 0 :=
+lemma eval_dist_eq_zero (h : x ∉ oa.support) : ⁅oa⁆ x = 0 :=
 (eval_dist_eq_zero_iff oa x).2 h
 
-lemma eval_dist_ne_zero_of_not_mem_support (h : x ∈ oa.support) : ⁅oa⁆ x ≠ 0 :=
+lemma eval_dist_ne_zero (h : x ∈ oa.support) : ⁅oa⁆ x ≠ 0 :=
 (eval_dist_ne_zero_iff oa x).2 h
 
-lemma eval_dist_eq_one_of_support_eq_singleton (h : oa.support = {x}) : ⁅oa⁆ x = 1 :=
+lemma eval_dist_eq_one (h : oa.support = {x}) : ⁅oa⁆ x = 1 :=
 (eval_dist_eq_one_iff oa x).2 h
 
-lemma eval_dist_eq_one_of_support_subset_singleton (h : oa.support ⊆ {x}) : ⁅oa⁆ x = 1 :=
-(eval_dist_eq_one_iff_support_subset_singleton oa x).2 h
+lemma eval_dist_eq_one' (h : oa.support ⊆ {x}) : ⁅oa⁆ x = 1 :=
+(eval_dist_eq_one_iff' oa x).2 h
 
-lemma eval_dist_pos_of_mem_support (h : x ∈ oa.support) : 0 < ⁅oa⁆ x :=
+lemma eval_dist_pos (h : x ∈ oa.support) : 0 < ⁅oa⁆ x :=
 (eval_dist_pos_iff oa x).2 h
 
 end support
@@ -181,7 +183,7 @@ by rw [fin_support_eq_iff_support_eq_coe, finset.coe_singleton,
 
 lemma eval_dist_eq_one_iff_fin_support_subset_singleton : ⁅oa⁆ x = 1 ↔ oa.fin_support ⊆ {x} :=
 by rw [fin_support_subset_iff_support_subset_coe, finset.coe_singleton,
-  eval_dist_eq_one_iff_support_subset_singleton]
+  eval_dist_eq_one_iff']
 
 lemma eval_dist_pos_iff_mem_fin_support : 0 < ⁅oa⁆ x ↔ x ∈ oa.fin_support :=
 by rw [mem_fin_support_iff_mem_support, eval_dist_pos_iff]
