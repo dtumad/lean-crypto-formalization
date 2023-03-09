@@ -98,6 +98,6 @@ lemma eval_dist_bind_apply_eq_sum_fin_support (oa : oracle_comp spec α)
   (ob : α → oracle_comp spec β) (y : β) [oa.decidable] :
   ⁅oa >>= ob⁆ y = ∑ x in oa.fin_support, ⁅oa⁆ x * ⁅ob x⁆ y :=
 (eval_dist_bind_apply_eq_tsum oa ob y).trans (tsum_eq_sum $ λ a ha,
-  by rw [(eval_dist_eq_zero_iff_not_mem_fin_support oa a).2 ha, zero_mul])
+  by rw [(eval_dist_eq_zero_iff' oa a).2 ha, zero_mul])
 
 end oracle_comp

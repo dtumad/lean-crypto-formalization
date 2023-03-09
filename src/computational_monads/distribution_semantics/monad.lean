@@ -74,13 +74,13 @@ lemma eval_dist_bind_return_apply_eq_sum_indicator [fintype α] [decidable_eq β
 lemma eval_dist_bind_return_apply_eq_sum_fin_support [oa.decidable] [decidable_eq β] :
   ⁅oa >>= λ x, return (f x)⁆ y = ∑ x in oa.fin_support, ite (y = f x) (⁅oa⁆ x) 0 :=
 (eval_dist_bind_return_apply_eq_tsum oa f y).trans
-  (tsum_eq_sum (λ x hx, by rw [eval_dist_eq_zero_of_not_mem_fin_support hx, if_t_t]))
+  (tsum_eq_sum (λ x hx, by rw [eval_dist_eq_zero' hx, if_t_t]))
 
 lemma eval_dist_bind_return_apply_eq_sum_fin_support_indicator [oa.decidable] [decidable_eq β] :
   ⁅oa >>= λ x, return (f x)⁆ y = ∑ x in oa.fin_support, (f ⁻¹' {y}).indicator ⁅oa⁆ x :=
 (eval_dist_bind_return_apply_eq_tsum_indicator oa f y).trans
   (tsum_eq_sum (λ x hx, by simp_rw [set.indicator_apply_eq_zero,
-    eval_dist_eq_zero_iff_not_mem_fin_support, hx, not_false_iff, imp_true_iff]))
+    eval_dist_eq_zero_iff', hx, not_false_iff, imp_true_iff]))
 
 @[simp] lemma eval_dist_bind_return_id : ⁅oa >>= return⁆ = ⁅oa⁆ :=
 (eval_dist_bind_return oa id).trans (by rw [pmf.map_id])
@@ -220,7 +220,7 @@ lemma eval_dist_bind_map_apply_eq_sum_fin_support [decidable oa] :
 begin
   rw [eval_dist_bind_map, pmf.bind_apply],
   refine tsum_eq_sum (λ x hx, _),
-  simp only [mul_eq_zero, eval_dist_eq_zero_iff_not_mem_fin_support],
+  simp only [mul_eq_zero, eval_dist_eq_zero_iff'],
   exact or.inl hx,
 end
 

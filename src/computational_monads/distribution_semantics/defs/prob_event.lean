@@ -64,8 +64,8 @@ lemma prob_event_eq_sum_indicator [fintype α] : ⁅e | oa⁆ = ∑ x, e.indicat
 
 lemma prob_event_eq_sum_fin_support_indicator [oa.decidable] :
   ⁅e | oa⁆ = ∑ x in oa.fin_support, e.indicator ⁅oa⁆ x :=
-(prob_event_eq_tsum_indicator oa e).trans (tsum_eq_sum $ λ a ha,
-  set.indicator_apply_eq_zero.2 (λ _, eval_dist_eq_zero_of_not_mem_fin_support ha))
+(prob_event_eq_tsum_indicator oa e).trans (tsum_eq_sum $
+  λ a ha, set.indicator_apply_eq_zero.2 (λ _, eval_dist_eq_zero' ha))
 
 /-- Probability of an event in terms of a decidable `ite` sum-/
 lemma prob_event_eq_tsum_ite [decidable_pred e] : ⁅e | oa⁆ = ∑' x, ite (x ∈ e) (⁅oa⁆ x) 0 :=
@@ -177,8 +177,7 @@ by simpa only [prob_event_bind_eq_tsum] using tsum_eq_sum (λ x hx, (hx $ finset
 
 lemma prob_event_bind_eq_sum_fin_support [oa.decidable] :
   ⁅e' | oa >>= ob⁆ = ∑ x in oa.fin_support, ⁅oa⁆ x * ⁅e' | ob x⁆ :=
-(prob_event_bind_eq_tsum oa ob e').trans (tsum_eq_sum (λ x hx,
-  by rw [eval_dist_eq_zero_of_not_mem_fin_support hx, zero_mul]))
+(prob_event_bind_eq_tsum _ _ _).trans (tsum_eq_sum (λ x h, by rw [eval_dist_eq_zero' h, zero_mul]))
 
 @[simp] lemma prob_event_bind'_eq_tsum : ⁅e' | bind' α β oa ob⁆ = ∑' x, ⁅oa⁆ x * ⁅e' | ob x⁆ :=
 prob_event_bind_eq_tsum oa ob e'
