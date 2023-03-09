@@ -11,6 +11,7 @@ import probability.probability_mass_function.uniform
 -/
 
 open_locale measure_theory nnreal ennreal big_operators classical
+open measure_theory
 
 variables {α β γ : Type*}
 
@@ -184,6 +185,5 @@ end
 lemma pmf.to_outer_measure_apply_diff (p : pmf α) (s t : set α) :
   p.to_outer_measure (s \ t) = p.to_outer_measure s - p.to_outer_measure (s ∩ t) :=
 sorry
-
 
 end outer_measure
