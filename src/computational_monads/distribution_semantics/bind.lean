@@ -44,11 +44,12 @@ section bind_eq_zero_iff
 
 variables (oa : oracle_comp spec α) (ob : α → oracle_comp spec β)
 
-lemma eval_dist_bind_apply_eq_zero_iff (y : β) :
+-- TODO!: Making something like this a simp lemma requires a special "eval_dist" simp class
+@[simp] lemma eval_dist_bind_apply_eq_zero_iff (y : β) :
   ⁅= y | oa >>= ob⁆ = 0 ↔ ∀ x ∈ oa.support, y ∉ (ob x).support :=
 by simp_rw [pmf.apply_eq_zero_iff, support_eval_dist, support_bind, set.mem_Union, not_exists]
 
-lemma prob_event_bind_eq_zero_iff (e : set β) :
+@[simp] lemma prob_event_bind_eq_zero_iff (e : set β) :
   ⁅e | oa >>= ob⁆ = 0 ↔ ∀ x ∈ oa.support, disjoint (ob x).support e :=
 by simp only [prob_event_eq_zero_iff_disjoint_support, support_bind, set.disjoint_Union_left]
 
@@ -58,21 +59,38 @@ section bind_eq_one_iff
 
 variables (oa : oracle_comp spec α) (ob : α → oracle_comp spec β)
 
-lemma eval_dist_bind_apply_eq_one_iff (y : β) :
+@[simp] lemma eval_dist_bind_apply_eq_one_iff (y : β) :
   ⁅= y | oa >>= ob⁆ = 1 ↔ ∀ x ∈ oa.support, (ob x).support ⊆ {y} :=
 by simp only [eval_dist_bind, pmf.bind_apply_eq_one_iff, support_eval_dist]
 
-lemma prob_event_bind_eq_one_iff (e : set β) :
+@[simp] lemma prob_event_bind_eq_one_iff (e : set β) :
   ⁅e | oa >>= ob⁆ = 1 ↔ ∀ x ∈ oa.support, (ob x).support ⊆ e :=
 by simp only [prob_event_eq_one_iff_support_subset, support_bind, set.Union_subset_iff]
 
 end bind_eq_one_iff
 
+section fin_support
+
+lemma eval_dist_bind_apply_eq_sum_fin_support (oa : oracle_comp spec α)
+  (ob : α → oracle_comp spec β) (y : β) [oa.decidable] :
+  ⁅= y | oa >>= ob⁆ = ∑ x in oa.fin_support, ⁅= x | oa⁆* ⁅= y | ob x⁆ :=
+(eval_dist_bind_apply_eq_tsum oa ob y).trans (tsum_eq_sum $ λ a ha,
+  by rw [(eval_dist_eq_zero_iff' oa a).2 ha, zero_mul])
+
+-- lemma prob_event_bind_eq_sum_fin_support (oa : oracle_comp spec α)
+--   (ob : α → oracle_comp spec β) (e : set β) [oa.decidable] :
+--   ⁅e | oa >>= ob⁆ = ∑ x in oa.fin_support, ⁅= x | oa⁆ * ⁅e | ob x⁆ :=
+-- begin
+--   sorry
+-- end
+
+end fin_support
+
 /-- If two computations `oa` and `oa'` are distributionally equivalent to each other,
 and computations `ob` and `ob'` are equivalent for any input that is an output of `oa`,
 then the sequential computations `oa >>= ob` and `oa' >>= ob'` are equivalent. -/
-lemma bind_dist_equiv_bind_of_dist_equiv (oa : oracle_comp spec α) (ob : α → oracle_comp spec β)
-  (oa' : oracle_comp spec' α) (ob' : α → oracle_comp spec' β) (ha : oa ≃ₚ oa')
+lemma bind_dist_equiv_bind_of_dist_equiv {oa : oracle_comp spec α} {ob : α → oracle_comp spec β}
+  {oa' : oracle_comp spec' α} {ob' : α → oracle_comp spec' β} (ha : oa ≃ₚ oa')
   (hb : ∀ x ∈ oa.support, ob x ≃ₚ ob' x) : (oa >>= ob) ≃ₚ (oa' >>= ob') :=
 begin
   refine dist_equiv.ext (λ y, _),
@@ -87,17 +105,11 @@ end
 lemma bind_dist_equiv_bind_of_dist_equiv_left (oa : oracle_comp spec α)
   (ob : α → oracle_comp spec β) (oa' : oracle_comp spec α) (h : oa ≃ₚ oa') :
   (oa >>= ob) ≃ₚ (oa' >>= ob) :=
-sorry
+bind_dist_equiv_bind_of_dist_equiv h (λ _ _, rfl)
 
 lemma bind_dist_equiv_bind_of_dist_equiv_right (oa : oracle_comp spec α)
   (ob : α → oracle_comp spec β) (ob' : α → oracle_comp spec β)
   (h' : ∀ x ∈ oa.support, ob x ≃ₚ ob' x) : (oa >>= ob) ≃ₚ (oa >>= ob') :=
-sorry
-
-lemma eval_dist_bind_apply_eq_sum_fin_support (oa : oracle_comp spec α)
-  (ob : α → oracle_comp spec β) (y : β) [oa.decidable] :
-  ⁅oa >>= ob⁆ y = ∑ x in oa.fin_support, ⁅oa⁆ x * ⁅ob x⁆ y :=
-(eval_dist_bind_apply_eq_tsum oa ob y).trans (tsum_eq_sum $ λ a ha,
-  by rw [(eval_dist_eq_zero_iff' oa a).2 ha, zero_mul])
+bind_dist_equiv_bind_of_dist_equiv rfl h'
 
 end oracle_comp
