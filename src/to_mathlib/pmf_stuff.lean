@@ -15,51 +15,14 @@ open measure_theory
 
 variables {α β γ : Type*}
 
-lemma pmf.support_nonempty {α : Type*} (p : pmf α) : p.support.nonempty :=
-begin
-  refine set.nonempty_def.2 (by_contra $ λ h, _),
-  simp only [pmf.mem_support_iff, not_exists, not_not] at h,
-  have : ∑' x, p x = 0 := by simp_rw [h, tsum_zero],
-  refine zero_ne_one (this.symm.trans p.tsum_coe),
-end
-
-lemma pmf.ext_iff (p q : pmf α) : p = q ↔ ∀ x, p x = q x :=
-⟨λ h x, congr_fun (congr_arg _ h) x, pmf.ext⟩
-
-lemma pmf.pure_eq_iff (a : α) (p : pmf α) : pmf.pure a = p ↔ ∀ x ≠ a, p x = 0 :=
-(pmf.ext_iff _ p).trans ⟨λ h x hx, (h x).symm.trans (if_neg hx), λ h x, ite_eq_iff'.2 ⟨λ hxa,
-  p.tsum_coe.symm.trans (tsum_eq_single x (λ y hy, h y (hxa ▸ hy))), λ hxa, symm $ h x hxa⟩⟩
-
--- NOTE: PR open ??? TODO: did I close this??
 section monad
 
-@[simp]
-lemma pmf.map_bind {α β γ : Type*} (p : pmf α) (q : α → pmf β) (f : β → γ) :
-  (p.bind q).map f = p.bind (λ a, (q a).map f) :=
-by simp_rw [pmf.map, pmf.bind_bind]
-
-@[simp] lemma pmf.bind_map {α β γ : Type*} (p : pmf α) (f : α → β) (q : β → pmf γ) :
-  (p.map f).bind q = p.bind (q ∘ f) :=
-begin
-  rw [pmf.map],
-  rw [pmf.bind_bind],
-  refine congr_arg _ _,
-  refine funext (λ a, _),
-  rw pmf.pure_bind,
-end
+lemma pmf.pure_eq_iff (a : α) (p : pmf α) : pmf.pure a = p ↔ ∀ x ≠ a, p x = 0 :=
+(pmf.ext_iff).trans ⟨λ h x hx, (h x).symm.trans (if_neg hx), λ h x, ite_eq_iff'.2 ⟨λ hxa,
+  p.tsum_coe.symm.trans (tsum_eq_single x (λ y hy, h y (hxa ▸ hy))), λ hxa, symm $ h x hxa⟩⟩
 
 @[simp] lemma pmf.map_pure {α β : Type*} (f : α → β) (a : α) :
-  (pmf.pure a).map f = pmf.pure (f a) :=
-pmf.pure_map _ _
-
-@[simp] lemma pmf.bind_const {α β : Type*} (p : pmf α) (q : pmf β) : (p.bind $ λ _, q) = q :=
-pmf.ext (λ x, by rw [pmf.bind_apply, ennreal.tsum_mul_right, pmf.tsum_coe, one_mul])
-
-@[simp] lemma pmf.map_const {α β : Type*} (p : pmf α) (b : β) :
-  p.map (function.const α b) = pmf.pure b :=
-begin
-  simp only [pmf.map, pmf.bind_const, function.comp_const],
-end
+  (pmf.pure a).map f = pmf.pure (f a) := pmf.pure_map _ _
 
 lemma pmf.bind_apply_eq_one_iff {α β : Type*} (p : pmf α) (q : α → pmf β) (y : β) :
   (p.bind q) y = 1 ↔ ∀ x ∈ p.support, (q x).support ⊆ {y} :=
@@ -96,6 +59,7 @@ begin
 end
 
 end monad
+
 section union
 
 lemma pmf.measurable_set_to_outer_measure_caratheodory (p : pmf α) (s : set α) :

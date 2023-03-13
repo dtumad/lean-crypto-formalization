@@ -49,11 +49,9 @@ notation `⁅=` x `|` oa `⁆` := ⁅oa⁆ x
 variables {α β : Type} {spec : oracle_spec} (a : α) (oa : oracle_comp spec α)
   (ob : α → oracle_comp spec β) (i : spec.ι) (t : spec.domain i) (u : spec.range i) (x : α) (y : β)
 
-lemma eval_dist.ext (oa : oracle_comp spec α) (p : pmf α)
-  (h : ∀ x, ⁅= x | oa⁆ = p x) : ⁅oa⁆ = p := pmf.ext h
+lemma eval_dist.ext (p : pmf α) (h : ∀ x, ⁅= x | oa⁆ = p x) : ⁅oa⁆ = p := pmf.ext h
 
-lemma eval_dist.ext_iff (oa : oracle_comp spec α) (p : pmf α) :
-  ⁅oa⁆ = p ↔ ∀ x, ⁅= x | oa⁆ = p x := pmf.ext_iff _ _
+lemma eval_dist.ext_iff (p : pmf α) : ⁅oa⁆ = p ↔ ∀ x, ⁅= x | oa⁆ = p x := pmf.ext_iff
 
 section return
 
