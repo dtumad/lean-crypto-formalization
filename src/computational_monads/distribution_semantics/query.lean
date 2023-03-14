@@ -18,6 +18,39 @@ open_locale big_operators ennreal
 
 variables {α β γ : Type} {spec spec': oracle_spec} (i : spec.ι) (i' : spec'.ι)
 
+section query_eq_iff
+
+/-- A computation is distributionally equivalent to query iff all outcomes are equally likely. -/
+lemma query_dist_equiv_iff (t : spec.domain i) (oa : oracle_comp spec' (spec.range i)) :
+  query i t ≃ₚ oa ↔ ∀ u u', ⁅= u | oa⁆ = ⁅= u' | oa⁆ :=
+begin
+  sorry,
+end
+
+-- lemma eval_dist_query_eq_iff (t : spec.domain i) (p : pmf (spec.range i)) :
+--   ⁅query i t⁆ = p ↔ ∀ x x', p x = p x' :=
+-- begin
+--   rw [eval_dist_query],
+--   simp [pmf.ext_iff],
+-- end
+
+lemma eval_dist_query_apply_eq_iff (t : spec.domain i) (u : spec.range i) (r : ℝ≥0∞) :
+  ⁅= u | query i t⁆ = r ↔ ↑(fintype.card $ spec.range i) = r⁻¹ :=
+by rw [eval_dist_query_apply_eq_inv, inv_eq_iff_eq_inv]
+
+lemma eval_dist_query_apply_eq_iff_mul_eq_one (t : spec.domain i) (u : spec.range i) (r : ℝ≥0∞) :
+  ⁅= u | query i t⁆ = r ↔ r * (fintype.card $ spec.range i) = 1 :=
+begin
+  rw [eval_dist_query_apply_eq_iff],
+  sorry,
+end
+
+end query_eq_iff
+
+lemma prob_event_coe_finset (t : spec.domain i) (e : finset (spec.range i)) :
+  ⁅↑e | query i t⁆ = e.card / (fintype.card (spec.range i)) :=
+by simp_rw [prob_event_query, finset.coe_sort_coe, fintype.card_coe]
+
 lemma eval_dist_query_apply_ne_zero (t : spec.domain i) (u : spec.range i) :
   ⁅= u | query i t⁆ ≠ 0 :=
 by simp only [eval_dist_query_apply, one_div, ne.def, ennreal.inv_eq_zero,
@@ -27,16 +60,6 @@ lemma prob_event_query_eq_zero_iff (t : spec.domain i) (e : set (spec.range i)) 
   ⁅e | query i t⁆ = 0 ↔ e = ∅ :=
 by rw [prob_event_eq_zero_iff_disjoint_support, support_query, set.top_eq_univ, set.univ_disjoint]
 
-lemma eval_dist_query_apply_eq_iff (t : spec.domain i) (u : spec.range i) (r : ℝ≥0∞) :
-  ⁅= u | query i t⁆ = r ↔ r⁻¹ = ↑(fintype.card $ spec.range i) :=
-by rw [eval_dist_query_apply_eq_inv, inv_eq_iff_inv_eq]
-
-lemma eval_dist_query_apply_eq_iff_mul_eq_one (t : spec.domain i) (u : spec.range i) (r : ℝ≥0∞) :
-  ⁅= u | query i t⁆ = r ↔ r * (fintype.card $ spec.range i) = 1 :=
-begin
-  rw [eval_dist_query_apply_eq_iff],
-  sorry,
-end
 
 lemma eval_dist_query_apply_eq_one_iff (t : spec.domain i) (u : spec.range i) :
   ⁅= u | query i t⁆ = 1 ↔ fintype.card (spec.range i) = 1 :=
@@ -61,11 +84,16 @@ pos_iff_ne_zero.trans (by simp only [ne.def, prob_event_query_eq_zero_iff])
 @[simp] lemma query_dist_equiv_query (t t' : spec.domain i) :
   query i t ≃ₚ query i t' := dist_equiv.def.2 rfl
 
-lemma eval_dist_query_eq_eval_dist_query (t t' : spec.domain i) : ⁅query i t⁆ = ⁅query i t⁆ := rfl
+lemma eval_dist_query_eq_eval_dist_query (t t' : spec.domain i) : ⁅query i t⁆ = ⁅query i t'⁆ := rfl
 
 lemma eval_dist_query_apply_eq_eval_dist_query_apply_iff (t : spec.domain i) (t' : spec'.domain i')
   (u : spec.range i) (u' : spec'.range i') : ⁅= u | query i t⁆ = ⁅= u' | query i' t'⁆ ↔
     fintype.card (spec.range i) = fintype.card (spec'.range i') :=
 by simp only [eval_dist_query_apply, one_div, inv_inj, nat.cast_inj]
+
+-- lemma prob_event_query_eq_prob_event_query_iff (t : spec.domain i) (t' : spec'.domain i')
+--   (e : set (spec.range i)) (e' : set (spec'.range i')) : ⁅e | query i t⁆ = ⁅e' | query i' t'⁆ ↔
+
+
 
 end oracle_comp
