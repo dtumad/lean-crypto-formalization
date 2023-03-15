@@ -116,6 +116,10 @@ lemma mem_support_of_mem_of_support_repeat (hxs : xs ∈ (oa.repeat m).support)
   (hx : x ∈ xs.to_list) : x ∈ oa.support :=
 by { rw mem_support_repeat_iff_forall at hxs, exact hxs x hx }
 
+lemma repeat_mem_support_repeat {oa : oracle_comp spec α} {x : α} (n : ℕ) (hx : x ∈ oa.support) :
+  vector.repeat x n ∈ (oa.repeat n).support :=
+by { rw [mem_support_repeat_iff_forall], exact (λ y hy, (list.eq_of_mem_repeat hy).symm ▸ hx) }
+
 end support
 
 section fin_support

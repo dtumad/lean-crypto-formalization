@@ -23,6 +23,12 @@ and do-notation for specifying longer computations.
 
 We additionally define a `decidable` typeclass for computations for which return values
 all have `decidable_eq` instances, which will later be used to define `fin_support`.
+
+Note that we don't have a constructor for unbounded recursion such as a fixpoint.
+This creates issues with the distributional semantics since without termination it may not exist.
+In theory this could be solved by introducing a typeclass for finite computation,
+and only defining distributions on computations with such an instance.
+However without a clear use case, we avoid doing this for simplicity.
 -/
 
 variables {α β γ : Type} {spec spec' : oracle_spec}
@@ -36,6 +42,12 @@ inductive oracle_comp (spec : oracle_spec) : Type → Type 1
 | query (i : spec.ι) (t : spec.domain i) : oracle_comp (spec.range i)
 
 namespace oracle_comp
+
+instance nonempty (spec : oracle_spec) (α : Type) [h : nonempty α] :
+  nonempty (oracle_comp spec α) := h.elim (λ x, ⟨pure' α x⟩)
+
+instance inhabited (spec : oracle_spec) (α : Type) [h : inhabited α] :
+  inhabited (oracle_comp spec α) := ⟨pure' α default⟩
 
 /-- Simple computation for qurying a coin-flipping oracle for a single result. -/
 @[reducible, inline] def coin : oracle_comp coin_spec bool := query () ()
@@ -83,11 +95,11 @@ begin
   { exact h_query i t }
 end
 
-/-- Check that the induction principal works properly -/
+/-- Check that the induction principal works properly. -/
 example (oa : oracle_comp spec α) : true := by induction oa using oracle_comp.induction_on; trivial
 
 /-- Constructing an `oracle_comp` implies the existence of some element of the underlying type.
-  The assumption that the range of the oracles is `inhabited` is the key point for this -/
+  The assumption that the range of the oracles is `inhabited` is the key point for this. -/
 def inhabited_base (oa : oracle_comp spec α) : inhabited α :=
 begin
   induction oa with α a α β oa ob hoa hob i t,
@@ -96,21 +108,20 @@ begin
   { exact ⟨arbitrary (spec.range i)⟩ }
 end
 
-/-- Shorthand for querying the left side of two available oracles -/
+/-- Shorthand for querying the left side of two available oracles. -/
 @[inline, reducible] def query₁ {spec spec' : oracle_spec}
   (i : spec.ι) (t : spec.domain i) : oracle_comp (spec ++ spec') (spec.range i) :=
 @query (spec ++ spec') (sum.inl i) t
 
-/-- Shorthand for querying the right side of two available oracles -/
+/-- Shorthand for querying the right side of two available oracles. -/
 @[inline, reducible] def query₂ {spec spec' : oracle_spec}
   (i : spec'.ι) (t : spec'.domain i) : oracle_comp (spec ++ spec') (spec'.range i) :=
 @query (spec ++ spec') (sum.inr i) t
 
 section decidable
 
-/-- Inductive definition for computations that only return values of types
-with `decidable_eq` instances. In this case we can explicitly calculate the `support`
-as a `finset` rather than a `set`.
+/-- Inductive definition for computations that only return values of types with `decidable_eq`.
+In this case we can explicitly calculate the `support` as a `finset` rather than a `set`.
 TODO: this seems like bad naming? overlaps? `decidable_comp`? -/
 class inductive decidable : Π {α : Type}, oracle_comp spec α → Type 1
 | decidable_pure' (α : Type) (a : α) (h : decidable_eq α) : decidable (pure' α a)
@@ -155,21 +166,21 @@ instance decidable_query (i : spec.ι) (t : spec.domain i) :
 
 instance decidable_coin : decidable coin := decidable_query _ _
 
-def decidable_of_decidable_bind_fst {oa : oracle_comp spec α} {ob : α → oracle_comp spec β}
-  : Π (h : decidable (oa >>= ob)), oa.decidable
+def decidable_of_decidable_bind_fst {oa : oracle_comp spec α} {ob : α → oracle_comp spec β} :
+  Π (h : decidable (oa >>= ob)), oa.decidable
 | (decidable_bind' α β _ _ hoa hob) := hoa
 
-def decidable_of_decidable_bind_snd {oa : oracle_comp spec α} {ob : α → oracle_comp spec β} (a : α)
-  : Π (h : decidable (oa >>= ob)), (ob a).decidable
+def decidable_of_decidable_bind_snd {oa : oracle_comp spec α} {ob : α → oracle_comp spec β}
+  (a : α) : Π (h : decidable (oa >>= ob)), (ob a).decidable
 | (decidable_bind' α β _ _ hoa hob) := hob a
 
 end decidable
 
 /-- Simple computations should have automatic decidable instances -/
 example :
-do{ b ← coin, b' ← coin,
+do {b ← coin, b' ← coin,
     x ← return (b && b'),
     y ← return (b || b'),
-    return (if x then 1 else if y then 2 else 3) }.decidable := by apply_instance
+    return (if x then 1 else if y then 2 else 3)}.decidable := by apply_instance
 
 end oracle_comp

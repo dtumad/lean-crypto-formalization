@@ -9,7 +9,8 @@ import computational_monads.coercions.sub_spec
 # Sub-Spec Instances for Common Sets of Oracles
 
 This file defines `is_sub_spec` instances for common coercions.
-The first is a coercion from `coin_spec` to `uniform_selecting`,
+The first is a coercion from `empty_spec` to any other `oracle_spec` (since there are no queries).
+Another is a simple coercion from `coin_spec` to `uniform_selecting`,
 by selecting the coin result from a uniform selection between `0` and `1`.
 
 We also define a number of coercions involving append.
@@ -43,9 +44,22 @@ namespace oracle_spec
 
 open oracle_comp
 
+section empty_spec
+
+/-- Coerce a computation with no oracles to one with any potential set of oracles. -/
+@[priority std.priority.default+101]
+instance is_sub_spec_empty_spec (spec : oracle_spec) : is_sub_spec []ₒ spec :=
+{ to_fun := λ i, empty.elim i,
+  eval_dist_to_fun' := λ i, empty.elim i }
+
+@[simp] lemma is_sub_spec_empty_spec_apply (spec : oracle_spec) (i : empty) (t : unit) :
+  (oracle_spec.is_sub_spec_empty_spec spec).to_fun i t = return default := i.elim
+
+end empty_spec
+
 section coin_spec_uniform_selecting
 
-/-- coerce a coin flip into a uniform random selection of a `bool` -/
+/-- Coerce a coin flip into a uniform random selection of a `bool` -/
 @[priority std.priority.default+100]
 instance is_sub_spec_coin_spec_uniform_selecting : is_sub_spec coin_spec uniform_selecting :=
 { to_fun := λ i t, $ᵛ (tt ::ᵥ ff ::ᵥ vector.nil),

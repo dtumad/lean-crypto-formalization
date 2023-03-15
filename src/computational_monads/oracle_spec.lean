@@ -116,7 +116,7 @@ Since `empty` is uninhabited, it isn't possible to construct a query to this ora
 and therefore any computation with this `oracle_spec` can be evaluated explicitly (`run_comp`). -/
 @[simps] def empty_spec : oracle_spec :=
 { ι := empty,
-  domain := empty.elim,
+  domain := λ _, unit,
   range := λ _, unit,
   range_inhabited := λ _, by apply_instance,
   ι_decidable_eq := empty.decidable_eq,
@@ -126,7 +126,11 @@ and therefore any computation with this `oracle_spec` can be evaluated explicitl
 
 notation `[]ₒ` := empty_spec
 
-instance empty_spec_ι_subsingleton : subsingleton []ₒ.ι := empty.subsingleton
+instance empty_spec_ι_subsingleton : subsingleton empty_spec.ι := empty.subsingleton
+
+-- instance empty_spec_domain_unique (i : empty_spec.ι) : unique (empty_spec.domain i) := punit.unique
+
+-- instance empty_spec_range_unique (i : empty_spec.ι) : unique (empty_spec.range i) := punit.unique
 
 end empty_spec
 
