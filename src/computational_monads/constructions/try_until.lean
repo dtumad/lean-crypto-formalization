@@ -66,15 +66,33 @@ by rw [try_until_zero, support_map, support_return, set.image_singleton,
 lemma mem_support_try_until_zero_iff (x : option α) : x ∈ (oa.try_until p 0).support ↔ x = none :=
 by rw [support_try_until_zero, set.mem_singleton_iff]
 
-/-- Failure to find an result satisfying `p` is possible iff there is some output with `¬ p x`. -/
+/-- `oa.try_until p n` can fail to find a result iff there's an output `x` of `oa` with `¬ p x`. -/
 lemma none_mem_support_try_until_succ_iff :
   none ∈ (oa.try_until p n.succ).support ↔ ∃ x ∈ oa.support, ¬ p x :=
 begin
   simp only [try_until, mem_support_map_iff, list.find_eq_none],
-  exact ⟨λ h, let ⟨xs, hxs, hp⟩ := h in ⟨xs.head, mem_support_of_mem_of_support_repeat oa _ _ hxs
+  exact ⟨λ h, let ⟨xs, hxs, hp⟩ := h in ⟨xs.head, mem_support_of_mem_of_support_repeat hxs
     xs.head_mem, hp _ xs.head_mem⟩, λ h, let ⟨x, hx, hp⟩ := h in ⟨vector.repeat x n.succ,
       repeat_mem_support_repeat n.succ hx, λ y hy, (list.eq_of_mem_repeat hy).symm ▸ hp⟩⟩
 end
+
+lemma none_not_mem_support_try_until (hx : ∀ x ∈ oa.support, p x) :
+  none ∉ (oa.try_until p n.succ).support :=
+mt (none_mem_support_try_until_succ_iff oa p n).1 (by simpa only [not_exists, not_not] using hx)
+
+/-- The possible successful results of `oa.try_until p n` are outputs `x` of `oa` with `p x`. -/
+lemma some_mem_support_try_until_succ_iff (x : α) :
+  some x ∈ (oa.try_until p n.succ).support ↔ x ∈ oa.support ∧ p x :=
+begin
+  simp only [try_until, mem_support_map_iff],
+  refine ⟨λ h, let ⟨xs, hxs, hp⟩ := h in ⟨mem_support_of_mem_of_support_repeat hxs
+    (list.find_mem hp), list.find_some hp⟩, λ h, ⟨vector.repeat x n.succ, repeat_mem_support_repeat
+      _ h.1, by simp only [vector.repeat, vector.to_list, list.find_repeat, h.2, if_true]⟩⟩,
+end
+
+lemma some_mem_support_try_until_succ {x : α} (hx : x ∈ oa.support) (h : p x) :
+  some x ∈ (oa.try_until p n.succ).support :=
+(some_mem_support_try_until_succ_iff oa p n x).2 ⟨hx, h⟩
 
 /-- If at least one result of `oa` doesn't satisfy `p` then the result of `oa.try_until p n.succ`
 is either `none` (in the case of failure) or `some x` for some output `x` of `oa` with `p x`. -/
@@ -99,19 +117,14 @@ end
 
 /-- If all results of `oa` satisfy `p`, then `oa.try_until p n.succ` will just return `some x`,
 for some `x ∈ oa.support`(in particular the result of the first of the `n.succ` runs). -/
-lemma support_try_until_succ_of_forall_pos (h : ∀ x ∈ oa.support, p x) :
+lemma support_try_until_succ_of_forall_pos (hp : ∀ x ∈ oa.support, p x) :
   (oa.try_until p n.succ).support = option.some '' oa.support :=
 begin
-  refine set.ext (λ y, _),
-  rw [try_until, support_map, support_repeat_eq_forall],
-  simp only [set.mem_image, set.mem_set_of_eq],
-  refine ⟨λ h, _, λ h, _⟩,
-  {
-    sorry,
-  },
-  {
-    sorry,
-  }
+  refine set.ext (λ y, ⟨λ h, _, λ h, _⟩),
+  { cases y with y,
+    { exact false.elim (none_not_mem_support_try_until oa p n hp h) },
+    { exact ⟨y, mem_support_of_some_mem_support_try_until oa p _ y h, rfl⟩ } },
+  { exact let ⟨x, hx⟩ := h in hx.2 ▸ some_mem_support_try_until_succ oa p _ hx.1 (hp x hx.1) }
 end
 
 end support

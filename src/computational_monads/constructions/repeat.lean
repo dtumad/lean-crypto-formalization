@@ -112,8 +112,8 @@ lemma cons_mem_support_repeat_succ_iff : (x ::ᵥ xs) ∈ (oa.repeat m.succ).sup
 by rw [mem_support_repeat_succ_iff oa, vector.head_cons, vector.tail_cons]
 
 /-- If a vector is in the support of `oa.repeat m` then any of its members is in `oa.support`. -/
-lemma mem_support_of_mem_of_support_repeat (hxs : xs ∈ (oa.repeat m).support)
-  (hx : x ∈ xs.to_list) : x ∈ oa.support :=
+lemma mem_support_of_mem_of_support_repeat {oa : oracle_comp spec α} {x : α} {xs : vector α m}
+  (hxs : xs ∈ (oa.repeat m).support) (hx : x ∈ xs.to_list) : x ∈ oa.support :=
 by { rw mem_support_repeat_iff_forall at hxs, exact hxs x hx }
 
 lemma repeat_mem_support_repeat {oa : oracle_comp spec α} {x : α} (n : ℕ) (hx : x ∈ oa.support) :

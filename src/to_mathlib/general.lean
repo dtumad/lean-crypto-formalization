@@ -38,6 +38,12 @@ begin
   { exact (list.mem_repeat_succ n x y).1 hy }
 end
 
+lemma list.find_repeat (x : α) (n : ℕ) (p : α → Prop) [decidable_pred p] :
+  (list.repeat x n).find p = if p x then some x else none :=
+begin
+  sorry,
+end
+
 lemma vector.mem_repeat_succ (n : ℕ) (x y : α) :
   y ∈ (vector.repeat x n.succ).to_list ↔ y = x :=
 begin
