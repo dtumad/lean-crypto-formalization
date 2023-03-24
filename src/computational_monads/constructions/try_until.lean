@@ -106,12 +106,12 @@ begin
   { simp only [set.mem_image, set.mem_set_of_eq, list.find_eq_none, set.mem_insert_iff,
       eq_self_iff_true, and_false, exists_false, or_false, iff_true],
     refine ⟨vector.repeat x n.succ, λ y hy, _, λ y hy, _⟩;
-    { rw [vector.repeat, vector.to_list, list.mem_repeat_succ] at hy,
+    { rw [vector.repeat, vector.to_list, list.mem_repeat_succ_iff] at hy,
       simpa only [hy] } },
   { simp only [set.mem_image, set.mem_set_of_eq, set.mem_insert_iff, exists_eq_right, false_or],
     refine ⟨λ h, let ⟨xs, hxs⟩ := h in ⟨hxs.1 _ (list.find_mem hxs.2), list.find_some hxs.2⟩,
     λ h, ⟨vector.repeat y n.succ, λ z hz, _, list.find_cons_of_pos _ h.2⟩⟩,
-    rw [vector.repeat, vector.to_list, list.mem_repeat_succ] at hz,
+    rw [vector.repeat, vector.to_list, list.mem_repeat_succ_iff] at hz,
     exact hz.symm ▸ h.1 }
 end
 

@@ -40,6 +40,9 @@ by simp only [list.mem_repeat_iff, ne.def, ne_self_iff_false, false_and, not_fal
 lemma list.mem_repeat_succ_iff (y : α) : y ∈ (list.repeat x n.succ) ↔ y = x :=
 by simp only [list.mem_repeat_iff, ne.def, nat.succ_ne_zero, not_false_iff, true_and]
 
+lemma list.eq_of_mem_repeat {x y : α} {n : ℕ} (hy : y ∈ (list.repeat x n)) : y = x :=
+sorry
+
 @[simp] lemma list.nth_repeat_eq_none_iff (m : ℕ) : (list.repeat x n).nth m = none ↔ n < m :=
 sorry
 
