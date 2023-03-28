@@ -26,18 +26,6 @@ section list_stuff
 
 variables (x : α) (n : ℕ)
 
-section add
-
-lemma list.repeat_add (x : α) (m n : ℕ) :
-  list.repeat x (n + m) = list.repeat x n ++ list.repeat x m :=
-begin
-  induction n with n hn,
-  { rw [list.repeat, zero_add, list.nil_append] },
-  { rw [nat.succ_add, list.repeat, hn, ← list.cons_append, list.repeat] }
-end
-
-end add
-
 section mem
 
 /-- Only `x` is a member of `list.repeat x n` (unless `n = 0` which has no members). -/
@@ -107,8 +95,6 @@ by simp_rw [list.find_repeat, ite_eq_iff, and_assoc, eq_comm, and_false, or_fals
 
 end find
 
-section all
-
 @[simp] lemma list.all₂_repeat_iff (p : α → Prop) : (list.repeat x n).all₂ p ↔ n = 0 ∨ p x :=
 by simp [list.all₂_iff_forall, lt_iff_not_le, or_iff_not_imp_left]
 
@@ -117,35 +103,57 @@ by simp [list.all₂_iff_forall, lt_iff_not_le, or_iff_not_imp_left]
 begin
   induction n with n hn,
   { refl },
-  {
-    rw [list.repeat, list.all, list.foldr_cons],
-    rw [list.all] at hn,
-    rw [hn],
-    simp,
-    split_ifs,
-    simp,
-    simp,
-
-  }
+  { simp only [nat.succ_ne_zero, if_false, list.repeat, list.all, list.foldr_cons],
+    by_cases hn' : n = 0,
+    { rw [hn', list.repeat, list.foldr, band_tt] },
+    { exact (congr_arg ((&&) (p x)) (hn.trans (if_neg hn'))).trans (band_self (p x)) } }
 end
 
-end all
+@[simp] lemma list.reverse_repeat : (list.repeat x n).reverse = list.repeat x n :=
+begin
+  refine list.ext_le (list.length_reverse _) (λ m hm hm', _),
+  rw [list.nth_le_repeat, list.nth_le_reverse' _ m, list.nth_le_repeat],
+  exact lt_of_le_of_lt tsub_le_self (tsub_lt_self (lt_of_le_of_lt zero_le' hm') zero_lt_one),
+end
 
-section reverse
+@[simp] lemma list.rotate_repeat (m : ℕ) : (list.repeat x n).rotate m = list.repeat x n :=
+begin
+  refine list.ext_le (list.length_rotate _ _) (λ m hm hm', _),
+  rw [list.nth_le_repeat, list.nth_le_rotate, list.nth_le_repeat],
+end
 
--- lemma list.reverse_repeat
+@[simp] lemma list.concat_self_repeat : (list.repeat x n).concat x = list.repeat x (n + 1) :=
+by rw [list.concat_eq_reverse_cons, list.reverse_repeat, ← list.repeat, list.reverse_repeat]
 
-end reverse
-
-section map
-
-lemma list.map_repeat (f : α → β) : (list.repeat x n).map f = list.repeat (f x) n :=
+@[simp] lemma list.map_repeat (f : α → β) : (list.repeat x n).map f = list.repeat (f x) n :=
 begin
   induction n with n hn,
-  { refl },
-  { refine (list.map_cons f x _).trans (congr_arg ((::) (f x)) hn) }
+  { exact rfl },
+  { exact (list.map_cons f x _).trans (congr_arg ((::) (f x)) hn) }
 end
 
-end map
+@[simp] lemma list.filter_repeat (p : α → Prop) [decidable_pred p] :
+  (list.repeat x n).filter p = if p x then list.repeat x n else [] :=
+begin
+  induction n with n hn,
+  { exact (if_t_t _ []).symm },
+  { split_ifs with hp; simp [hp, hn] }
+end
+
+lemma list.repeat_add (m : ℕ) :
+  list.repeat x (n + m) = list.repeat x n ++ list.repeat x m :=
+begin
+  induction n with n hn,
+  { rw [list.repeat, zero_add, list.nil_append] },
+  { rw [nat.succ_add, list.repeat, hn, ← list.cons_append, list.repeat] }
+end
+
+lemma list.repeat_sub (m : ℕ) :
+  list.repeat x (n - m) = (list.repeat x n).drop m :=
+begin
+  refine list.ext_le _ (λ m hm hm', _),
+  { simp_rw [list.length_drop, list.length_repeat] },
+  { simp_rw [list.nth_le_drop', list.nth_le_repeat] }
+end
 
 end list_stuff
