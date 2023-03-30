@@ -37,8 +37,21 @@ namespace oracle_spec
 
 open oracle_comp
 
+/-- Example of a computation that naturally should work, but doesn't without `sub_spec` coercions.
+The fundamental issue being that the type system doesn't have a sense of "additional" oracles.
+In this case, performing a validity check on the adversaries results isn't easily possible.
+Note the actual version is commented out, only the un-checked version will compile. -/
+example {regular_spec adversary_spec : oracle_spec}
+  (adversary : oracle_comp (regular_spec ++ adversary_spec) α)
+  (validity_check : α → oracle_comp regular_spec bool) :
+  oracle_comp (regular_spec ++ adversary_spec) (option α) :=
+-- do { x ← adversary, b ← validity_check x, return (if b = tt then some x else none) }
+do { x ← adversary, return x }
+
 /-- Relation defining an inclusion of one set of oracles into another, where the mapping
-doesn't affect the underlying probability distribution of the computation. -/
+doesn't affect the underlying probability distribution of the computation.
+Informally, `sub_spec ⊂ₒ super_spec` means that for any query to an oracle of `sub_spec`,
+it can be perfectly simulated by a computation using the oracles of `super_spec`. -/
 class is_sub_spec (sub_spec super_spec : oracle_spec) :=
 (to_fun (i : sub_spec.ι) (t : sub_spec.domain i) : oracle_comp super_spec (sub_spec.range i))
 (eval_dist_to_fun' : ∀ i t, ⁅to_fun i t⁆ = ⁅query i t⁆)
@@ -77,7 +90,7 @@ open oracle_spec
 with oracles `sub_spec` to one with `super_spec` by simulating with `is_sub_spec.to_fun`. -/
 instance coe_sub_spec (sub_spec super_spec : oracle_spec) [h : sub_spec ⊂ₒ super_spec] (α : Type) :
   has_coe (oracle_comp sub_spec α) (oracle_comp super_spec α) :=
-{coe := default_simulate' ⟪λ i t, h.to_fun i t⟫}
+{coe := λ oa, default_simulate' ⟪λ i t, h.to_fun i t⟫ oa}
 
 lemma coe_sub_spec_def {sub_spec super_spec : oracle_spec} [h : sub_spec ⊂ₒ super_spec]
   (oa : oracle_comp sub_spec α) : (↑oa : oracle_comp super_spec α) =

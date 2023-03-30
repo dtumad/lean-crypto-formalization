@@ -59,7 +59,8 @@ end empty_spec
 
 section coin_spec_uniform_selecting
 
-/-- Coerce a coin flip into a uniform random selection of a `bool` -/
+/-- Coerce a coin flip into a uniform random selection of a `bool`.
+Use uniform selection from the vector `[tt, ff]` to get constructiveness. -/
 @[priority std.priority.default+100]
 instance is_sub_spec_coin_spec_uniform_selecting : is_sub_spec coin_spec uniform_selecting :=
 { to_fun := λ i t, $ᵛ (tt ::ᵥ ff ::ᵥ vector.nil),
