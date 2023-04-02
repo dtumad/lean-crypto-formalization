@@ -17,14 +17,6 @@ open_locale classical big_operators nnreal ennreal
 
 namespace pmf
 
-lemma to_outer_measure_uniform_of_fintype_apply' [fintype α] [nonempty α] (e : set α) [decidable_pred (∈ e)] :
-  (pmf.uniform_of_fintype α).to_outer_measure e = (finset.univ.filter (∈ e)).card / fintype.card α :=
-begin
-  rw [to_outer_measure_uniform_of_fintype_apply, fintype.card_of_finset],
-  congr,
-end
-
--- NOTE: PR opened for this
 section uniform_of_list
 
 noncomputable def uniform_of_list (l : list α) (h : ¬ l.empty) : pmf α :=
@@ -49,7 +41,7 @@ lemma uniform_of_list_apply_of_not_mem (a : α) (ha : a ∉ l) : uniform_of_list
 section measure
 
 @[simp] lemma to_outer_measure_uniform_of_list_apply (t : set α) :
-  (uniform_of_list l h).to_outer_measure t = l.countp t / l.length :=
+  (uniform_of_list l h).to_outer_measure t = l.countp (∈ t) / l.length :=
 calc (uniform_of_list l h).to_outer_measure t
   = (∑' x, (l.filter t).count x) / l.length : by simpa only [uniform_of_list,
     to_outer_measure_of_multiset_apply, list.length, multiset.quot_mk_to_coe, multiset.coe_filter,
@@ -70,7 +62,7 @@ calc (uniform_of_list l h).to_outer_measure t
         not_and, hxt, not_false_iff, imp_true_iff] }
   end
   ... = ↑(∑ x in (l.to_finset.filter t), l.count x) / l.length : by rw nat.cast_sum
-  ... = l.countp t / l.length : by rw [finset.sum_filter_count_eq_countp]
+  ... = l.countp (∈ t) / l.length : by rw [finset.sum_filter_count_eq_countp]; refl
 
 @[simp]
 lemma to_measure_uniform_of_list_apply (t : set α) [measurable_space α] (ht : measurable_set t) :
@@ -79,15 +71,6 @@ lemma to_measure_uniform_of_list_apply (t : set α) [measurable_space α] (ht : 
   (to_outer_measure_uniform_of_list_apply l h t)
 
 end measure
-
--- NOTE : NOT IN PR
-lemma uniform_of_finset_eq_uniform_of_list_to_list (s : finset α) (h : s.nonempty) :
-  uniform_of_finset s h = uniform_of_list s.to_list (finset.nonempty.not_empty_to_list h) :=
-begin
-  ext x,
-  simp only [finset.count_to_list, div_eq_mul_inv, uniform_of_finset_apply, uniform_of_list_apply,
-    nat.cast_ite, nat.cast_one, nat.cast_zero, finset.length_to_list, boole_mul],
-end
 
 end uniform_of_list
 
@@ -138,29 +121,37 @@ end measure
 
 end uniform_of_vector
 
-end pmf
-
-lemma sum_ite_eq_nth {β : Type} [add_comm_monoid_with_one β]
-  (a : α) {n : ℕ} (v : vector α n) :
-  ∑ i, ite (v.nth i = a) (1 : β) 0 = ↑(v.to_list.count a) :=
+lemma uniform_of_finset_eq_uniform_of_list_to_list (s : finset α) (h : s.nonempty) :
+  uniform_of_finset s h = uniform_of_list s.to_list (finset.nonempty.not_empty_to_list h) :=
 begin
-  induction n with n hn,
-  { simp [vector.eq_nil v] },
-  { obtain ⟨x, xs, hxs⟩ := vector.exists_eq_cons v,
-    suffices : ite (x = a) 1 0 + (list.count a xs.to_list : β) =
-      ite (x = a) ((list.count a xs.to_list) + 1) (list.count a xs.to_list),
-    by simpa only [hxs, fin.sum_univ_succ, vector.to_list_cons, list.count_cons,
-      vector.nth_cons_zero, @eq_comm _ a, hn xs, fin.coe_eq_cast_succ, fin.coe_succ_eq_succ,
-      vector.nth_cons_succ, nat.cast_ite, nat.cast_succ] using this,
-    split_ifs,
-    { exact add_comm _ _ },
-    { exact zero_add _ } }
+  ext x,
+  simp only [finset.count_to_list, div_eq_mul_inv, uniform_of_finset_apply, uniform_of_list_apply,
+    nat.cast_ite, nat.cast_one, nat.cast_zero, finset.length_to_list, boole_mul],
 end
 
-lemma tsum_ite_eq_vector_nth {β : Type} [add_comm_monoid_with_one β]
-  [topological_space β] [t2_space β] {n : ℕ} (v : vector α n) (a : α) :
-  ∑' (i : fin n), ite (v.nth i = a) (1 : β) 0 = ↑(v.to_list.count a) :=
-calc ∑' (i : fin n), ite (v.nth i = a) (1 : β) 0
-  = ∑ (i : fin n), ite (v.nth i = a) (1 : β) 0 :
-    tsum_eq_sum (λ _ hb, (hb $ finset.mem_univ _).elim)
-  ... = (v.to_list.count a) : (sum_ite_eq_nth a v)
+end pmf
+
+-- lemma sum_ite_eq_nth {β : Type} [add_comm_monoid_with_one β]
+--   (a : α) {n : ℕ} (v : vector α n) :
+--   ∑ i, ite (v.nth i = a) (1 : β) 0 = ↑(v.to_list.count a) :=
+-- begin
+--   induction n with n hn,
+--   { simp [vector.eq_nil v] },
+--   { obtain ⟨x, xs, hxs⟩ := vector.exists_eq_cons v,
+--     suffices : ite (x = a) 1 0 + (list.count a xs.to_list : β) =
+--       ite (x = a) ((list.count a xs.to_list) + 1) (list.count a xs.to_list),
+--     by simpa only [hxs, fin.sum_univ_succ, vector.to_list_cons, list.count_cons,
+--       vector.nth_cons_zero, @eq_comm _ a, hn xs, fin.coe_eq_cast_succ, fin.coe_succ_eq_succ,
+--       vector.nth_cons_succ, nat.cast_ite, nat.cast_succ] using this,
+--     split_ifs,
+--     { exact add_comm _ _ },
+--     { exact zero_add _ } }
+-- end
+
+-- lemma tsum_ite_eq_vector_nth {β : Type} [add_comm_monoid_with_one β]
+--   [topological_space β] [t2_space β] {n : ℕ} (v : vector α n) (a : α) :
+--   ∑' (i : fin n), ite (v.nth i = a) (1 : β) 0 = ↑(v.to_list.count a) :=
+-- calc ∑' (i : fin n), ite (v.nth i = a) (1 : β) 0
+--   = ∑ (i : fin n), ite (v.nth i = a) (1 : β) 0 :
+--     tsum_eq_sum (λ _ hb, (hb $ finset.mem_univ _).elim)
+--   ... = (v.to_list.count a) : (sum_ite_eq_nth a v)

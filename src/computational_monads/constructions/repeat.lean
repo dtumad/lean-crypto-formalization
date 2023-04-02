@@ -99,7 +99,7 @@ begin
     vector.head_cons, vector.tail_cons, set.mem_image],
   refine ⟨λ h, ⟨x, h.1, xs, h.2, rfl⟩, λ h, _⟩,
   obtain ⟨y, hy, ys, hys, h⟩ := h,
-  rw [vector.cons_eq_cons] at h,
+  rw [vector.eq_cons_iff, vector.head_cons, vector.tail_cons] at h,
   refine ⟨h.1 ▸ hy, h.2 ▸ hys⟩,
 end
 
@@ -116,9 +116,9 @@ lemma mem_support_of_mem_of_support_repeat {oa : oracle_comp spec α} {x : α} {
   (hxs : xs ∈ (oa.repeat m).support) (hx : x ∈ xs.to_list) : x ∈ oa.support :=
 by { rw mem_support_repeat_iff_forall at hxs, exact hxs x hx }
 
-lemma repeat_mem_support_repeat {oa : oracle_comp spec α} {x : α} (n : ℕ) (hx : x ∈ oa.support) :
-  vector.repeat x n ∈ (oa.repeat n).support :=
-by { rw [mem_support_repeat_iff_forall], exact (λ y hy, (list.eq_of_mem_repeat hy).symm ▸ hx) }
+lemma replicate_mem_support_repeat {oa : oracle_comp spec α} {x : α} (n : ℕ) (hx : x ∈ oa.support) :
+  vector.replicate n x ∈ (oa.repeat n).support :=
+by { rw [mem_support_repeat_iff_forall], exact (λ y hy, (list.eq_of_mem_replicate hy).symm ▸ hx) }
 
 end support
 
@@ -154,9 +154,9 @@ begin
           refine tsum_tsum_eq_single _ x xs (λ y hy, mul_eq_zero_of_right _ $
             set.indicator_apply_eq_zero.2 (λ h, (hy _).elim)) (λ y ys hys, mul_eq_zero_of_right _ $
             set.indicator_apply_eq_zero.2 (λ h, (hys _).elim)),
-          { rw [set.mem_singleton_iff, vector.cons_eq_cons] at h,
+          { rw [set.mem_singleton_iff, vector.eq_cons_iff, vector.head_cons, vector.tail_cons] at h,
             exact h.1.symm },
-          { rw [set.mem_singleton_iff, vector.cons_eq_cons] at h,
+          { rw [set.mem_singleton_iff, vector.eq_cons_iff, vector.head_cons, vector.tail_cons] at h,
             exact h.2.symm }
         end
       ... = ⁅oa⁆ x * ⁅oa.repeat m⁆ xs :

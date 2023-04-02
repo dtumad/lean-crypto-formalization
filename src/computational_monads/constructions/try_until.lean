@@ -66,14 +66,19 @@ by rw [try_until_zero, support_map, support_return, set.image_singleton,
 lemma mem_support_try_until_zero_iff (x : option α) : x ∈ (oa.try_until p 0).support ↔ x = none :=
 by rw [support_try_until_zero, set.mem_singleton_iff]
 
+#check vector.replicate
+
 /-- `oa.try_until p n` can fail to find a result iff there's an output `x` of `oa` with `¬ p x`. -/
 lemma none_mem_support_try_until_succ_iff :
   none ∈ (oa.try_until p n.succ).support ↔ ∃ x ∈ oa.support, ¬ p x :=
 begin
   simp only [try_until, mem_support_map_iff, list.find_eq_none],
   exact ⟨λ h, let ⟨xs, hxs, hp⟩ := h in ⟨xs.head, mem_support_of_mem_of_support_repeat hxs
-    xs.head_mem, hp _ xs.head_mem⟩, λ h, let ⟨x, hx, hp⟩ := h in ⟨vector.repeat x n.succ,
-      repeat_mem_support_repeat n.succ hx, λ y hy, (list.eq_of_mem_repeat hy).symm ▸ hp⟩⟩
+    xs.head_mem, hp _ xs.head_mem⟩, λ h,
+
+    let ⟨x, hx, hp⟩ := h in ⟨vector.replicate n.succ x,
+      replicate_mem_support_repeat n.succ hx, λ y hy, (list.eq_of_mem_replicate hy).symm ▸ hp⟩
+  ⟩
 end
 
 lemma none_not_mem_support_try_until (hx : ∀ x ∈ oa.support, p x) :
@@ -86,12 +91,11 @@ lemma some_mem_support_try_until_succ_iff (x : α) :
 begin
   simp only [try_until, mem_support_map_iff],
   refine ⟨λ h, let ⟨xs, hxs, hp⟩ := h in ⟨mem_support_of_mem_of_support_repeat hxs
-    (list.find_mem hp), list.find_some hp⟩, λ h, ⟨vector.repeat x n.succ, repeat_mem_support_repeat
-      _ h.1, _⟩,
-
-      ⟩,
-  simp only [vector.repeat, list.find_repeat, vector.to_list, h.2],
-  simp only [nat.succ_pos', and_self, if_true]
+    (list.find_mem hp), list.find_some hp⟩, λ h, ⟨vector.replicate n.succ x,
+      replicate_mem_support_repeat _ h.1, _⟩⟩,
+  sorry,
+  -- simp only [vector.repeat, list.find_repeat, vector.to_list, h.2],
+  -- simp only [nat.succ_pos', and_self, if_true]
 end
 
 lemma some_mem_support_try_until_succ {x : α} (hx : x ∈ oa.support) (h : p x) :
@@ -109,14 +113,16 @@ begin
   cases y with y,
   { simp only [set.mem_image, set.mem_set_of_eq, list.find_eq_none, set.mem_insert_iff,
       eq_self_iff_true, and_false, exists_false, or_false, iff_true],
-    refine ⟨vector.repeat x n.succ, λ y hy, _, λ y hy, _⟩;
-    { rw [vector.repeat, vector.to_list, list.mem_repeat_succ_iff] at hy,
-      simpa only [hy] } },
+    refine ⟨vector.replicate n.succ x, λ y hy, _, λ y hy, _⟩;
+    { sorry
+      } },
   { simp only [set.mem_image, set.mem_set_of_eq, set.mem_insert_iff, exists_eq_right, false_or],
     refine ⟨λ h, let ⟨xs, hxs⟩ := h in ⟨hxs.1 _ (list.find_mem hxs.2), list.find_some hxs.2⟩,
-    λ h, ⟨vector.repeat y n.succ, λ z hz, _, list.find_cons_of_pos _ h.2⟩⟩,
-    rw [vector.repeat, vector.to_list, list.mem_repeat_succ_iff] at hz,
-    exact hz.symm ▸ h.1 }
+    λ h, ⟨vector.replicate n.succ y, λ z hz, _, list.find_cons_of_pos _ h.2⟩⟩,
+    sorry,
+    -- rw [vector.repeat, vector.to_list, list.mem_repeat_succ_iff] at hz,
+    -- exact hz.symm ▸ h.1
+    }
 end
 
 /-- If all results of `oa` satisfy `p`, then `oa.try_until p n.succ` will just return `some x`,
