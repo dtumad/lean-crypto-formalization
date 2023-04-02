@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
 import probability.probability_mass_function.uniform
-import to_mathlib.pmf_stuff
+-- import to_mathlib.pmf_stuff
 import algebra.big_operators.fin
 
 /-!
@@ -40,32 +40,23 @@ lemma uniform_of_list_apply_of_not_mem (a : α) (ha : a ∉ l) : uniform_of_list
 
 section measure
 
-@[simp] lemma to_outer_measure_uniform_of_list_apply (t : set α) :
-  (uniform_of_list l h).to_outer_measure t = l.countp (∈ t) / l.length :=
-calc (uniform_of_list l h).to_outer_measure t
-  = (∑' x, (l.filter t).count x) / l.length : by simpa only [uniform_of_list,
-    to_outer_measure_of_multiset_apply, list.length, multiset.quot_mk_to_coe, multiset.coe_filter,
-    multiset.coe_count, multiset.coe_card]
-  ... = (∑ x in l.to_finset, (l.filter t).count x) / l.length : begin
-    refine congr_arg (λ x, x / (l.length : ℝ≥0∞)) (tsum_eq_sum $ λ y hy, _),
-    rw [list.mem_to_finset] at hy,
-    simpa only [nat.cast_eq_zero, list.count_eq_zero, list.mem_filter, not_and]
-      using (false.elim ∘ hy),
-  end
-  ... = (∑ x in (l.to_finset.filter t), ↑(l.count x)) / l.length : begin
-    refine congr_arg (λ x, x / (l.length : ℝ≥0∞)) _,
-    rw [finset.sum_filter],
-    refine finset.sum_congr rfl (λ x hx, _),
-    split_ifs with hxt,
-    { exact congr_arg coe (list.count_filter hxt) },
-    { simp only [nat.cast_eq_zero, list.count_eq_zero, list.mem_filter,
-        not_and, hxt, not_false_iff, imp_true_iff] }
-  end
-  ... = ↑(∑ x in (l.to_finset.filter t), l.count x) / l.length : by rw nat.cast_sum
-  ... = l.countp (∈ t) / l.length : by rw [finset.sum_filter_count_eq_countp]; refl
+variable (t : set α)
 
-@[simp]
-lemma to_measure_uniform_of_list_apply (t : set α) [measurable_space α] (ht : measurable_set t) :
+@[simp] lemma to_outer_measure_uniform_of_list_apply :
+  (uniform_of_list l h).to_outer_measure t = l.countp (∈ t) / l.length :=
+begin
+  suffices : ∑ x in l.to_finset, (l.filter (∈ t)).count x =
+    ∑ x in (l.to_finset.filter (∈ t)), l.count x,
+  { simp only [uniform_of_list, to_outer_measure_of_multiset_apply, list.length,
+      multiset.quot_mk_to_coe, multiset.coe_filter, multiset.coe_count, multiset.coe_card,
+      ← finset.sum_filter_count_eq_countp, ← this, nat.cast_sum],
+    refine congr_arg (λ x, x / (l.length : ℝ≥0∞)) (tsum_eq_sum (λ x hx, _)),
+    simp [(λ h, hx (list.mem_to_finset.2 h) : x ∉ l)] },
+  rw [finset.sum_filter],
+  refine finset.sum_congr rfl (λ x hx, by split_ifs with hxt; simp [hxt]),
+end
+
+@[simp] lemma to_measure_uniform_of_list_apply [measurable_space α] (ht : measurable_set t) :
   (uniform_of_list l h).to_measure t = l.countp t / l.length :=
 (to_measure_apply_eq_to_outer_measure_apply _ t ht).trans
   (to_outer_measure_uniform_of_list_apply l h t)
@@ -120,14 +111,6 @@ lemma to_measure_uniform_of_vector_apply (t : set α) [measurable_space α] (ht 
 end measure
 
 end uniform_of_vector
-
-lemma uniform_of_finset_eq_uniform_of_list_to_list (s : finset α) (h : s.nonempty) :
-  uniform_of_finset s h = uniform_of_list s.to_list (finset.nonempty.not_empty_to_list h) :=
-begin
-  ext x,
-  simp only [finset.count_to_list, div_eq_mul_inv, uniform_of_finset_apply, uniform_of_list_apply,
-    nat.cast_ite, nat.cast_one, nat.cast_zero, finset.length_to_list, boole_mul],
-end
 
 end pmf
 

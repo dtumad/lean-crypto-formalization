@@ -369,8 +369,9 @@ end fin_support
 section eval_dist
 
 @[simp] lemma eval_dist_uniform_select_finset : ⁅$ˢ bag h⁆ = pmf.uniform_of_finset bag h :=
-by rw [uniform_select_finset, eval_dist_uniform_select_list,
-  pmf.uniform_of_finset_eq_uniform_of_list_to_list]
+(pmf.ext $ λ x, by simp only [uniform_select_finset, div_eq_mul_inv, eval_dist_uniform_select_list,
+  uniform_of_list_apply, finset.count_to_list, nat.cast_ite, algebra_map.coe_one,
+  char_p.cast_eq_zero, finset.length_to_list, boole_mul, uniform_of_finset_apply])
 
 lemma eval_dist_uniform_select_finset_apply : ⁅$ˢ bag h⁆ x = ite (x ∈ bag) bag.card⁻¹ 0 :=
 by { rw [eval_dist_uniform_select_finset, pmf.uniform_of_finset_apply], congr }
