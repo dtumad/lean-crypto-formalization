@@ -98,15 +98,20 @@ end
 /-- Check that the induction principal works properly. -/
 example (oa : oracle_comp spec α) : true := by induction oa using oracle_comp.induction_on; trivial
 
+set_option eqn_compiler.lemmas false
+
+/-- Given some computation `oa : oracle_comp spec α`, we can construct a "default" output `x : α`,
+using the `default` value for each of the oracle output types (since they are `inhabited`). -/
+def default_result : Π {α : Type}, oracle_comp spec α → α
+| _ (pure' α a) := a
+| _ (bind' α β oa ob) := default_result (ob $ default_result oa)
+| _ (query i t) := default
+
+set_option eqn_compiler.lemmas true
+
 /-- Constructing an `oracle_comp` implies the existence of some element of the underlying type.
   The assumption that the range of the oracles is `inhabited` is the key point for this. -/
-def inhabited_base (oa : oracle_comp spec α) : inhabited α :=
-begin
-  induction oa with α a α β oa ob hoa hob i t,
-  { exact ⟨a⟩ },
-  { exact let ⟨a⟩ := hoa in hob a },
-  { exact ⟨arbitrary (spec.range i)⟩ }
-end
+def base_inhabited (oa : oracle_comp spec α) : inhabited α := ⟨oa.default_result⟩
 
 /-- Shorthand for querying the left side of two available oracles. -/
 @[inline, reducible] def query₁ {spec spec' : oracle_spec}
@@ -135,7 +140,7 @@ open decidable
 def decidable_eq_of_decidable' : Π {α : Type} {oa : oracle_comp spec α}
   (h : decidable oa), decidable_eq α
 | _ _ (decidable_pure' α a h) := h
-| _ _ (decidable_bind' α β oa ob hoa hob) := decidable_eq_of_decidable' (hob (inhabited_base oa).1)
+| _ _ (decidable_bind' α β oa ob hoa hob) := decidable_eq_of_decidable' (hob (base_inhabited oa).1)
 | _ _ (decidable_query i t) := spec.range_decidable_eq i
 
 /-- Given a `decidable` instance on an `oracle_comp`, we can extract a

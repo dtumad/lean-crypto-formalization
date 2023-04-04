@@ -181,7 +181,7 @@ variables [decidable_eq β] [decidable oa] [∀ y, decidable (oc y)]
 
 @[simp] lemma fin_support_bind_map : ((f <$> oa) >>= oc).fin_support = @finset.bUnion α γ
   (decidable_eq_of_decidable ((f <$> oa) >>= oc)) oa.fin_support (λ a, (oc (f a)).fin_support) :=
-by simp only [finset.image_bUnion, fin_support_bind, fin_support_map]
+by simp only [finset.image_bUnion, fin_support_bind, fin_support_map]; congr
 
 lemma mem_fin_support_bind_map_iff : z ∈ ((f <$> oa) >>= oc).fin_support ↔
   ∃ x ∈ oa.fin_support, z ∈ (oc (f x)).fin_support :=
