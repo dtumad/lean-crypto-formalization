@@ -188,4 +188,29 @@ do {b ← coin, b' ← coin,
     y ← return (b || b'),
     return (if x then 1 else if y then 2 else 3)}.decidable := by apply_instance
 
+#check tactic.induction
+
+
+
 end oracle_comp
+
+section induction_tactic
+
+open interactive (parse)
+open lean.parser (ident)
+open lean.parser (tk)
+
+meta def oracle_comp.default_induction (h : parse ident) :
+  tactic (list (name × list expr × list (name × expr))) :=
+do { oa ← tactic.get_local h,
+  tactic.induction oa [`α, `a, `α, `β, `oa, `ob, `hoa, `hob, `i, `t] `oracle_comp.induction_on }
+
+meta def my_first_tactic (h : ℕ) : tactic unit := tactic.trace "Hello, World."
+
+example (oa : oracle_comp spec α) : ℕ :=
+begin
+  oracle_comp.default_induction `oa,
+  repeat {sorry}
+end
+
+end induction_tactic
