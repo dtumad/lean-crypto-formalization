@@ -3,10 +3,9 @@ Copyright (c) 2023 Devon Tuma. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
-import computational_monads.distribution_semantics.defs.independence
+import computational_monads.distribution_semantics.prod
 import computational_monads.constructions.uniform_select
 import computational_monads.constructions.product
-import computational_monads.support.prod
 import computational_monads.asymptotics.polynomial_time
 
 /-!
