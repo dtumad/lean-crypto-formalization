@@ -21,6 +21,9 @@ lemma pmf.pure_eq_iff (a : α) (p : pmf α) : pmf.pure a = p ↔ ∀ x ≠ a, p 
 (pmf.ext_iff).trans ⟨λ h x hx, (h x).symm.trans (if_neg hx), λ h x, ite_eq_iff'.2 ⟨λ hxa,
   p.tsum_coe.symm.trans (tsum_eq_single x (λ y hy, h y (hxa ▸ hy))), λ hxa, symm $ h x hxa⟩⟩
 
+lemma pmf.eq_pure_iff (a : α) (p : pmf α) : p = pmf.pure a ↔ ∀ x ≠ a, p x = 0 :=
+by rw [@eq_comm _ p, pmf.pure_eq_iff]
+
 @[simp] lemma pmf.map_pure {α β : Type*} (f : α → β) (a : α) :
   (pmf.pure a).map f = pmf.pure (f a) := pmf.pure_map _ _
 

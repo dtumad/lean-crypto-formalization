@@ -27,6 +27,14 @@ lemma return_dist_equiv_iff (oa : oracle_comp spec' α) :
   (return a : oracle_comp spec α) ≃ₚ oa ↔ ∀ x ≠ a, ⁅= x | oa⁆ = 0 :=
 by rw [dist_equiv, eval_dist_return, pmf.pure_eq_iff]
 
+lemma support_return_eq_iff (s : set α) :
+  (return a : oracle_comp spec α).support = s ↔ a ∈ s ∧ ∀ x ∈ s, x = a :=
+by rw [support_return, @eq_comm _ {a} s, set.eq_singleton_iff_unique_mem]
+
+lemma fin_support_return_eq_iff (s : finset α) :
+  (return a : oracle_comp spec α).fin_support = s ↔ a ∈ s ∧ ∀ x ∈ s, x = a :=
+by simp_rw [fin_support_eq_iff_support_eq_coe, support_return_eq_iff, finset.mem_coe]
+
 lemma eval_dist_return_eq_iff (p : pmf α) :
   ⁅(return a : oracle_comp spec α)⁆ = p ↔ ∀ x ≠ a, p x = 0 :=
 by rw [eval_dist_return, pmf.pure_eq_iff]
@@ -45,6 +53,14 @@ end return_eq_iff
 section return_eq_zero_iff
 
 variables (spec : oracle_spec) (a : α)
+
+lemma not_mem_support_return_iff (x : α) :
+  x ∉ (return a : oracle_comp spec α).support ↔ x ≠ a :=
+by rw [support_return, set.mem_singleton_iff]
+
+lemma not_mem_fin_support_return_iff (x : α) :
+  x ∉ (return a : oracle_comp spec α).fin_support ↔ x ≠ a :=
+by simp only [fin_support_return, finset.mem_singleton]
 
 /-- `x` has probability of `0` of being the output of `return a` iff `x ≠ a`. -/
 lemma eval_dist_return_apply_eq_zero_iff (x : α) :
@@ -88,6 +104,14 @@ begin
     true_implies_iff, @eq_comm _ a' a] using h a', λ h x hx, h ▸ hx⟩,
 end
 
+lemma support_return_eq_support_return_iff :
+  (return a : oracle_comp spec α).support = (return a' : oracle_comp spec' α).support ↔ a = a' :=
+by simp only [support_return, set.singleton_eq_singleton_iff]
+
+lemma fin_support_return_eq_fin_support_return_iff : (return a : oracle_comp spec α).fin_support =
+  (return a' : oracle_comp spec' α).fin_support ↔ a = a' :=
+by simp only [fin_support_return, finset.singleton_inj]
+
 lemma eval_dist_return_eq_eval_dist_return_iff :
   ⁅(return a : oracle_comp spec α)⁆ = ⁅(return a' : oracle_comp spec' α)⁆ ↔ a = a' :=
 return_dist_equiv_return_iff spec spec' a a'
@@ -111,6 +135,13 @@ end return_eq_return_iff
 section return_of_ne
 
 variables (spec : oracle_spec) {a : α}
+
+lemma not_mem_support_of_ne {x : α} (h : x ≠ a) : x ∉ (return a : oracle_comp spec α).support :=
+by simp only [h, support_return, set.mem_singleton_iff, not_false_iff]
+
+lemma not_mem_fin_support_of_ne {x : α} (h : x ≠ a) :
+  x ∉ (return a : oracle_comp spec α).fin_support :=
+by simp only [h, fin_support_return, finset.mem_singleton, not_false_iff]
 
 /-- The probability of getting a value besides `a` from `return a` is `0`. -/
 lemma eval_dist_return_apply_of_ne {x : α} (h : x ≠ a) :

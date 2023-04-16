@@ -163,7 +163,7 @@ section map_return
 variables (a : α) (f : α → β)
 
 lemma eval_dist_map_return : ⁅f <$> (return a : oracle_comp spec α)⁆ = pmf.pure (f a) :=
-by simp [eval_dist_map, pmf.map_pure]
+by simp only [eval_dist_map, eval_dist_return, pmf.map_pure]
 
 end map_return
 
