@@ -11,6 +11,6 @@ import data.finset.basic
 
 variables {α β γ : Type*}
 
-@[simp] lemma finset.count_to_list [decidable_eq α] (s : finset α) (a : α) :
-  s.to_list.count a = ite (a ∈ s) 1 0 :=
+@[simp] lemma finset.count_to_list [decidable_eq α] (s : finset α) (x : α) :
+  s.to_list.count x = ite (x ∈ s) 1 0 :=
 by simp_rw [list.count_eq_of_nodup s.nodup_to_list, finset.mem_to_list]
