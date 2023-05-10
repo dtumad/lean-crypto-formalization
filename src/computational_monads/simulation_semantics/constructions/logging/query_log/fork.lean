@@ -44,22 +44,18 @@ end fork_cache
 
 section to_seed
 
-/-- Wrapping function that just reverses every list in the given `query_log`. 
+/-- Wrapping function that just reverses every list in the given `query_log`.
   Intended to turn a log into something that can be used as a seed for a computation.
   Needed because the logging function adds the new queries to the front of the list  -/
 def to_seed (log : query_log spec) :
   query_log spec :=
 λ i, (log i).reverse
 
-@[simp]
-lemma to_seed_apply (log : query_log spec) (i : spec.ι) :
-  log.to_seed i = (log i).reverse :=
-rfl
+@[simp] lemma to_seed_apply (log : query_log spec) (i : spec.ι) :
+  log.to_seed i = (log i).reverse := rfl
 
-@[simp]
-lemma to_seed_init (spec : oracle_spec) :
-  (init spec).to_seed = init spec :=
-rfl
+@[simp] lemma to_seed_init (spec : oracle_spec) :
+  (init spec).to_seed = init spec := rfl
 
 lemma to_seed_log_query (log : query_log spec)
   (i : spec.ι) (t : spec.domain i) (u : spec.range i) :
