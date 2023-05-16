@@ -41,6 +41,18 @@ end tsum_prod
 
 section option
 
+lemma tsum_option_eq_extract_none {α β : Type*} [add_comm_group α] [topological_space α]
+  [topological_add_group α] [t2_space α] [decidable_eq β]
+  (f : option β → α) (hf : summable f) : tsum f = f none + ∑' x, f (some x) :=
+begin
+  have := (tsum_eq_add_tsum_ite hf none),
+  refine trans this (congr_arg ((+) (f none)) _),
+  sorry,
+
+  -- refine (tsum_eq_tsum_of_ne_zero_bij (λ a, some a.1) _ (λ x hx, _) _),
+  -- refine congr_arg (λ x, f none + x) _,
+end
+
 lemma ennreal.tsum_option (f : option α → ℝ≥0∞) :
   tsum f = f none + ∑' a, f (some a) :=
 begin
