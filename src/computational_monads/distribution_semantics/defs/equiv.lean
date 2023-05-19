@@ -71,8 +71,7 @@ instance dist_equiv.is_trans : is_trans (oracle_comp spec α) dist_equiv :=
 lemma dist_equiv.support_eq (h : oa ≃ₚ oa') : oa.support = oa'.support :=
 (oa.support_eval_dist).symm.trans ((congr_arg pmf.support h).trans oa'.support_eval_dist)
 
-lemma dist_equiv.fin_support_eq [oa.decidable] [oa'.decidable] (h : oa ≃ₚ oa') :
-  oa.fin_support = oa'.fin_support :=
+lemma dist_equiv.fin_support_eq (h : oa ≃ₚ oa') : oa.fin_support = oa'.fin_support :=
 (fin_support_eq_fin_support_iff_support_eq_support oa oa').2 h.support_eq
 
 lemma dist_equiv.eval_dist_eq (h : oa ≃ₚ oa') : ⁅oa⁆ = ⁅oa'⁆ := h

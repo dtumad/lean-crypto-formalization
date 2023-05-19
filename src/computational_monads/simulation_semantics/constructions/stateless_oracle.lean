@@ -40,9 +40,6 @@ variables (oa : oracle_comp spec α)
 
 @[simp] lemma apply_eq : ⟪o⟫ i x = o i x.1 >>= λ u, return (u, ()) := by {cases x, refl}
 
-instance decidable [∀ i x, (o i x).decidable] (x : spec.domain i × unit) : (⟪o⟫ i x).decidable :=
-tracking_oracle.decidable o _ _ i x
-
 lemma simulate_eq_default_simulate : simulate ⟪o⟫ oa s = default_simulate ⟪o⟫ oa :=
 simulate_eq_default_simulate ⟪o⟫ oa s
 
@@ -89,8 +86,6 @@ by rw [support_simulate_eq_preimage_support_simulate', set.mem_preimage]
 end support
 
 section fin_support
-
-variable [∀ i x, (o i x).decidable]
 
 -- TODO: this should generalize I think?
 lemma fin_support_apply : (⟪o⟫ i x).fin_support = finset.preimage (o i t).fin_support prod.fst

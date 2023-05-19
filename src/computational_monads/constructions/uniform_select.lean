@@ -30,7 +30,7 @@ section uniform_fin
 
 /-- Randomly choose a number `0 ≤ i < n` by querying the uniform selection oracle.
   We implicitly use a `succ` call for the resulting type since `fin 0` is unihabited as a type -/
-@[derive decidable] def uniform_fin (n : ℕ) : oracle_comp uniform_selecting (fin $ n + 1) :=
+def uniform_fin (n : ℕ) : oracle_comp uniform_selecting (fin $ n + 1) :=
 query n ()
 
 notation `$[0..` n `]` := uniform_fin n
@@ -57,7 +57,7 @@ section fin_support
 lemma mem_fin_support_uniform_fin : i ∈ fin_support $[0..m] :=
 (fin_support_uniform_fin i) ▸ finset.mem_univ i
 
-lemma fin_support_uniform_fin_bind [decidable_eq α] [∀ i, (oa i).decidable] :
+lemma fin_support_uniform_fin_bind [decidable_eq α] :
   ($[0..m] >>= oa).fin_support = finset.bUnion finset.univ (λ i, (oa i).fin_support) :=
 by {rw [fin_support_bind, fin_support_uniform_fin], congr}
 
@@ -105,7 +105,7 @@ section uniform_select_vector
 
 /-- Randomly select an element of a vector by using `uniform_of_fin`.
   Again we need to use `succ` for the vectors type to avoid sampling an empty vector -/
-@[derive decidable] def uniform_select_vector [decidable_eq α] {n : ℕ} (v : vector α (n + 1)) :
+def uniform_select_vector [decidable_eq α] {n : ℕ} (v : vector α (n + 1)) :
   oracle_comp uniform_selecting α := v.nth <$> $[0..n]
 
 notation `$ᵛ` v := uniform_select_vector v
@@ -220,7 +220,7 @@ end uniform_select_vector
 section uniform_select_list
 
 /-- If a list isn't empty, we can convert it to a vector and then sample from it.-/
-@[derive decidable] def uniform_select_list [decidable_eq α] (xs : list α) (h : ¬ xs.empty) :
+def uniform_select_list [decidable_eq α] (xs : list α) (h : ¬ xs.empty) :
   oracle_comp uniform_selecting α :=
 let v : vector α (xs.length.pred.succ) := ⟨xs, symm $ nat.succ_pred_eq_of_pos
   (list.length_pos_of_ne_nil (λ h', h $ list.empty_iff_eq_nil.2 h'))⟩ in uniform_select_vector v
@@ -330,7 +330,7 @@ end uniform_select_list
 section uniform_select_finset
 
 /-- We can sample randomly from a `finset` by converting to a list and then sampling that. -/
-@[derive decidable] noncomputable def uniform_select_finset [decidable_eq α]
+noncomputable def uniform_select_finset [decidable_eq α]
   (bag : finset α) (h : bag.nonempty) : oracle_comp uniform_selecting α :=
 uniform_select_list bag.to_list (finset.nonempty.not_empty_to_list h)
 
@@ -417,7 +417,7 @@ section uniform_select_fintype
 
 /-- We can select randomly from a fintyp by using the `finset` corresponding to the `fintype`.
   Again we need to use axiom of choice so this operation is noncomputable. -/
-@[derive decidable] noncomputable def uniform_select_fintype (α : Type) [fintype α] [nonempty α]
+noncomputable def uniform_select_fintype (α : Type) [fintype α] [nonempty α]
   [decidable_eq α] : oracle_comp uniform_selecting α :=
 uniform_select_finset finset.univ finset.univ_nonempty
 

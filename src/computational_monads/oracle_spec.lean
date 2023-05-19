@@ -32,17 +32,120 @@ We also require for the output types to be nonempty (ensuring `oracle_comp.suppo
 `decidable_eq` and `fintype` instances are also required for each oracle index, in order
 to define things like `fin_support`. Note that this is only required *per index*, the
 total number of oracle outputs may be infinite, it must only be finite for any *specific* index. -/
-structure oracle_spec : Type 1 :=
+structure oracle_spec :=
 (ι : Type)
 (domain range : ι → Type)
-(range_inhabited (i : ι) : inhabited $ range i)
+-- Type class instances. These could eventually be seperated for more generality.
 (ι_decidable_eq : decidable_eq ι)
-(domain_decidable_eq (i : ι) : decidable_eq $ domain i)
-(range_decidable_eq (i : ι) : decidable_eq $ range i)
-(range_fintype (i : ι) : fintype $ range i)
+(domain_decidable_eq : ∀ i, decidable_eq $ domain i)
+(range_decidable_eq : ∀ i, decidable_eq $ range i)
+(range_inhabited : ∀ i, inhabited $ range i)
+(range_fintype : ∀ i, fintype $ range i)
 
-/-- Example of a simple `oracle_spec` for a pair of oracles,
-each taking a natural `n : ℕ` as input, returning a value of type `fin 100` or `bool` respectively.
+namespace oracle_spec
+
+instance ι.decidable_eq' (spec : oracle_spec) : decidable_eq spec.ι := spec.ι_decidable_eq
+
+instance domain.decidable_eq' {spec : oracle_spec} (i : spec.ι) :
+  decidable_eq (spec.domain i) := spec.domain_decidable_eq i
+
+instance range.decidable_eq' {spec : oracle_spec} (i : spec.ι) :
+  decidable_eq (spec.range i) := spec.range_decidable_eq i
+
+instance range.inhabited {spec : oracle_spec} (i : spec.ι) :
+  inhabited (spec.range i) := spec.range_inhabited i
+
+instance range.fintype' {spec : oracle_spec} (i : spec.ι) :
+  fintype (spec.range i) := spec.range_fintype i
+
+/-- No access to any oracles. Represented by an empty indexing set via the `empty` type.
+Since `empty` is uninhabited, it isn't possible to construct a query to this oracle.
+We use `unit` for the input and output types but this is just a dummy value. -/
+@[simps] def empty_spec : oracle_spec :=
+{ ι := empty,
+  domain := λ _, unit,
+  range := λ _, unit,
+  range_inhabited := λ _, by apply_instance,
+  ι_decidable_eq := empty.decidable_eq,
+  domain_decidable_eq := λ i, i.elim,
+  range_decidable_eq := λ i, i.elim,
+  range_fintype := λ i, i.elim }
+
+notation `[]ₒ` := empty_spec
+
+instance empty_spec_ι_subsingleton : subsingleton empty_spec.ι := empty.subsingleton
+
+instance inhabited : inhabited oracle_spec := ⟨[]ₒ⟩
+
+/-- `oracle_spec` representing access to a single oracle with input type `T` and output type `U`.
+We use the `unit` type as the index since there is exactly one unique oracle available. -/
+@[simps] def singleton_spec (T U : Type) [hU : inhabited U] [hT : decidable_eq T]
+  [hU' : decidable_eq U] [hU'' : fintype U] : oracle_spec :=
+{ ι := unit,
+  domain := λ _, T,
+  range := λ _, U,
+  range_inhabited := λ _, hU,
+  ι_decidable_eq := punit.decidable_eq,
+  domain_decidable_eq := λ _, hT,
+  range_decidable_eq := λ _, hU',
+  range_fintype := λ _, hU'' }
+
+infixl` ↦ₒ `:25 := singleton_spec
+
+instance singleton_spec_ι_unique (T U : Type) [inhabited U] [decidable_eq T] [decidable_eq U]
+  [fintype U] : unique (T ↦ₒ U).ι := punit.unique
+
+/-- Combine two specifications using a `sum` type to index the different specs.
+Given `spec spec' : oracle_spec`, `spec ++ spec'` gives access to the combined set of oracles,
+with `sum.inl` corresponding to the left oracle and `sum.inr` corresponding to the right oracle. -/
+instance has_append : has_append oracle_spec :=
+{ append := λ spec spec',
+  { ι := spec.ι ⊕ spec'.ι,
+    domain := sum.elim spec.domain spec'.domain,
+    range := sum.elim spec.range spec'.range,
+    range_inhabited := λ i, by induction i; simp; apply_instance,
+    ι_decidable_eq := sum.decidable_eq spec.ι spec'.ι,
+    domain_decidable_eq := λ i, sum.rec_on i spec.domain_decidable_eq spec'.domain_decidable_eq,
+    range_decidable_eq := λ i, sum.rec_on i spec.range_decidable_eq spec'.range_decidable_eq,
+    range_fintype := λ i, sum.rec_on i spec.range_fintype spec'.range_fintype } }
+
+@[simp] lemma append.domain_inl (spec spec' : oracle_spec) (i : spec.ι) :
+  (spec ++ spec').domain (sum.inl i) = spec.domain i := rfl
+
+@[simp] lemma append.domain_inr (spec spec' : oracle_spec) (i : spec'.ι) :
+  (spec ++ spec').domain (sum.inr i) = spec'.domain i := rfl
+
+@[simp] lemma append.range_inl (spec spec' : oracle_spec) (i : spec.ι) :
+  (spec ++ spec').range (sum.inl i) = spec.range i := rfl
+
+@[simp] lemma append.range_inr (spec spec' : oracle_spec) (i : spec'.ι) :
+  (spec ++ spec').range (sum.inr i) = spec'.range i := rfl
+
+/-- Access to a single oracle, returning a `bool` to each oracle query.
+The probability distribution associated to the oracle will eventually be 50/50 for `tt` and `ff`,
+representing oracle access to a fair coin flip. -/
+@[simps] def coin_spec : oracle_spec := unit ↦ₒ bool
+
+@[simp] lemma card_range_coin_spec (i : unit) : fintype.card (coin_spec.range i) = 2 := rfl
+
+/-- Access to a `fin n` oracle for each `n : ℕ`, representing an oracle for evenly sampling
+from a range of numbers. The output of the `n` query is actually in `fin (n + 1)`,
+avoiding a return type of the empty `fin 0` type. -/
+@[simps] def uniform_selecting : oracle_spec :=
+{ ι := ℕ,
+  domain := λ n, unit,
+  range := λ n, fin (n + 1),
+  range_inhabited := λ n, ⟨0⟩,
+  ι_decidable_eq := nat.decidable_eq,
+  domain_decidable_eq := λ _, punit.decidable_eq,
+  range_decidable_eq := λ n, fin.decidable_eq (n + 1),
+  range_fintype := λ n, fin.fintype (n + 1) }
+
+@[simp] lemma card_range_uniform_selecting (n : ℕ) :
+  fintype.card (uniform_selecting.range n) = n + 1 := finset.card_fin (n + 1)
+
+/-- Example of an `oracle_spec` for a pair of oracles each taking a natural `n : ℕ` as input,
+returning a value of type `fin 100` or `bool` respectively, using a sum type for indexing.
 In practice the instances like `range_inhabited` will usually be derived automatically,
 but we expand them here to show the explicit definitions.  -/
 example : oracle_spec :=
@@ -63,140 +166,5 @@ example : oracle_spec :=
   | (sum.inl ()) := fin.fintype 100
   | (sum.inr ()) := bool.fintype
   end }
-
-namespace oracle_spec
-
-section instances
-
-instance range.inhabited {spec : oracle_spec} (i : spec.ι) : inhabited (spec.range i) :=
-spec.range_inhabited i
-
-variables (spec : oracle_spec)
-
-instance ι.decidable_eq' : decidable_eq spec.ι := spec.ι_decidable_eq
-
-instance domain.decidable_eq' (i : spec.ι) :
-  decidable_eq (spec.domain i) := spec.domain_decidable_eq i
-
-instance range.decidable_eq' (i : spec.ι) :
-  decidable_eq (spec.range i) := spec.range_decidable_eq i
-
-instance range.fintype' (i : spec.ι) :
-  fintype (spec.range i) := spec.range_fintype i
-
-end instances
-
-section singleton_spec
-
-/-- `oracle_spec` representing access to a single oracle with input type `T` and output type `U`.
-We use the `unit` type as the index since there is exactly one unique oracle available. -/
-@[simps] def singleton_spec (T U : Type) [hU : inhabited U] [hT : decidable_eq T]
-  [hU' : decidable_eq U] [hU'' : fintype U] : oracle_spec :=
-{ ι := unit,
-  domain := λ _, T,
-  range := λ _, U,
-  range_inhabited := λ _, hU,
-  ι_decidable_eq := punit.decidable_eq,
-  domain_decidable_eq := λ _, hT,
-  range_decidable_eq := λ _, hU',
-  range_fintype := λ _, hU'' }
-
-infixl` ↦ₒ `:25 := singleton_spec
-
-variables (T U : Type) [inhabited U] [decidable_eq T] [decidable_eq U] [fintype U]
-
-instance singleton_spec_ι_subsingleton : subsingleton (T ↦ₒ U).ι := punit.subsingleton
-
-end singleton_spec
-
-section empty_spec
-
-/-- No access to any oracles. Represented by an empty indexing set via the `empty` type.
-Since `empty` is uninhabited, it isn't possible to construct a query to this oracle,
-and therefore any computation with this `oracle_spec` can be evaluated explicitly (`run_comp`). -/
-@[simps] def empty_spec : oracle_spec :=
-{ ι := empty,
-  domain := λ _, unit,
-  range := λ _, unit,
-  range_inhabited := λ _, by apply_instance,
-  ι_decidable_eq := empty.decidable_eq,
-  domain_decidable_eq := λ i, i.elim,
-  range_decidable_eq := λ i, i.elim,
-  range_fintype := λ i, i.elim }
-
-notation `[]ₒ` := empty_spec
-
-instance empty_spec_ι_subsingleton : subsingleton empty_spec.ι := empty.subsingleton
-
--- instance empty_spec_domain_unique (i : empty_spec.ι) : unique (empty_spec.domain i) := punit.unique
-
--- instance empty_spec_range_unique (i : empty_spec.ι) : unique (empty_spec.range i) := punit.unique
-
-end empty_spec
-
-instance inhabited : inhabited oracle_spec := ⟨[]ₒ⟩
-
-section append
-
-/-- Combine two specifications using a `sum` type to index the different specs.
-Given `spec spec' : oracle_spec`, `spec ++ spec'` gives access to the combined set of oracles,
-with `sum.inl` corresponding to the left oracle and `sum.inr` corresponding to the right oracle. -/
-instance has_append : has_append oracle_spec :=
-{ append := λ spec spec',
-  { ι := spec.ι ⊕ spec'.ι,
-    domain := sum.elim spec.domain spec'.domain,
-    range := sum.elim spec.range spec'.range,
-    range_inhabited := λ i, by induction i; simp; apply_instance,
-    ι_decidable_eq := sum.decidable_eq spec.ι spec'.ι,
-    domain_decidable_eq := λ i, sum.rec_on i spec.domain_decidable_eq spec'.domain_decidable_eq,
-    range_decidable_eq := λ i, sum.rec_on i spec.range_decidable_eq spec'.range_decidable_eq,
-    range_fintype := λ i, sum.rec_on i spec.range_fintype spec'.range_fintype } }
-
-variables (spec spec' : oracle_spec)
-
-@[simp] lemma append.domain_inl (i : spec.ι) :
-  (spec ++ spec').domain (sum.inl i) = spec.domain i := rfl
-
-@[simp] lemma append.domain_inr (i : spec'.ι) :
-  (spec ++ spec').domain (sum.inr i) = spec'.domain i := rfl
-
-@[simp] lemma append.range_inl (i : spec.ι) :
-  (spec ++ spec').range (sum.inl i) = spec.range i := rfl
-
-@[simp] lemma append.range_inr (i : spec'.ι) :
-  (spec ++ spec').range (sum.inr i) = spec'.range i := rfl
-
-end append
-
-section coin_spec
-
-/-- Access to a single oracle, returning a `bool` to each oracle query.
-The probability distribution associated to the oracle will eventually be 50/50 for `tt` and `ff`,
-representing oracle access to a fair coin flip. -/
-@[simps] def coin_spec : oracle_spec := unit ↦ₒ bool
-
-@[simp] lemma card_range_coin_spec (i : unit) : fintype.card (coin_spec.range i) = 2 := rfl
-
-end coin_spec
-
-section uniform_selecting
-
-/-- Access to a `fin n` oracle for each `n : ℕ`, representing an oracle for evenly sampling
-from a range of numbers. The output of the `n` query is actually in `fin (n + 1)`,
-avoiding a return type of the empty `fin 0` type. -/
-@[simps] def uniform_selecting : oracle_spec :=
-{ ι := ℕ,
-  domain := λ n, unit,
-  range := λ n, fin (n + 1),
-  range_inhabited := λ n, ⟨0⟩,
-  ι_decidable_eq := nat.decidable_eq,
-  domain_decidable_eq := λ _, punit.decidable_eq,
-  range_decidable_eq := λ n, fin.decidable_eq (n + 1),
-  range_fintype := λ n, fin.fintype (n + 1) }
-
-@[simp] lemma card_range_uniform_selecting (n : ℕ) :
-  fintype.card (uniform_selecting.range n) = n + 1 := finset.card_fin (n + 1)
-
-end uniform_selecting
 
 end oracle_spec

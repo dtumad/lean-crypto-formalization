@@ -72,17 +72,10 @@ end bind_eq_one_iff
 section fin_support
 
 lemma eval_dist_bind_apply_eq_sum_fin_support (oa : oracle_comp spec α)
-  (ob : α → oracle_comp spec β) (y : β) [oa.decidable] :
+  (ob : α → oracle_comp spec β) (y : β) :
   ⁅= y | oa >>= ob⁆ = ∑ x in oa.fin_support, ⁅= x | oa⁆* ⁅= y | ob x⁆ :=
 (eval_dist_bind_apply_eq_tsum oa ob y).trans (tsum_eq_sum $ λ a ha,
   by rw [(eval_dist_eq_zero_iff' oa a).2 ha, zero_mul])
-
--- lemma prob_event_bind_eq_sum_fin_support (oa : oracle_comp spec α)
---   (ob : α → oracle_comp spec β) (e : set β) [oa.decidable] :
---   ⁅e | oa >>= ob⁆ = ∑ x in oa.fin_support, ⁅= x | oa⁆ * ⁅e | ob x⁆ :=
--- begin
---   sorry
--- end
 
 end fin_support
 

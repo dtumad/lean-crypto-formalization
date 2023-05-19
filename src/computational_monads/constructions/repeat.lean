@@ -37,15 +37,6 @@ lemma repeat_zero : oa.repeat 0 = return vector.nil := rfl
 
 lemma repeat_succ : oa.repeat n.succ = do {a ← oa, as ← oa.repeat n, return (a ::ᵥ as)} := rfl
 
-instance repeat.decidable [hoa : oa.decidable] : (oa.repeat n).decidable :=
-begin
-  induction n with n hn,
-  { exact oracle_comp.decidable_return vector.nil },
-  { haveI : decidable_eq α := decidable_eq_of_decidable oa,
-    refine decidable.decidable_bind' _ _ _ _ hoa (λ _, decidable.decidable_bind' _ _ _ _ hn
-      (λ _, decidable.decidable_pure' _ _ (by apply_instance))) }
-end
-
 section support
 
 /-- The support of `oa.repeat n` is the set of vectors where every element is in `oa.support`. -/
@@ -124,11 +115,11 @@ end support
 
 section fin_support
 
-lemma mem_fin_support_repeat_iff_all₂ [oa.decidable] :
+lemma mem_fin_support_repeat_iff_all₂ :
   xs ∈ (oa.repeat m).fin_support ↔ xs.to_list.all₂ (∈ oa.fin_support) :=
 by simp only [mem_fin_support_iff_mem_support, mem_support_repeat_iff_all₂]
 
-lemma mem_fin_support_repeat_iff_forall [oa.decidable] :
+lemma mem_fin_support_repeat_iff_forall :
   xs ∈ (oa.repeat m).fin_support ↔ ∀ x ∈ xs.to_list, x ∈ oa.fin_support :=
 by simp only [mem_fin_support_iff_mem_support, mem_support_repeat_iff_forall]
 

@@ -33,9 +33,6 @@ variables (oa : oracle_comp spec α) (i : spec.ι) (t : spec.domain i) (s : unit
 @[simp] lemma apply_eq : uniform_oracle spec i (t, s) =
   $ᵗ (spec.range i) >>= λ u, return (u, ()) := rfl
 
-noncomputable instance decidable : oracle_comp.decidable (uniform_oracle spec i (t, s)) :=
-stateless_oracle.decidable _ i (t, s)
-
 section support
 
 @[simp] lemma support_apply : (uniform_oracle spec i (t, s)).support = ⊤ :=

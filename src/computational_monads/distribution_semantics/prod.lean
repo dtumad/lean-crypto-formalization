@@ -137,8 +137,6 @@ end support
 
 section fin_support
 
-variables [decidable oa]
-
 lemma fin_support_bind_prod_mk [decidable_eq β] [decidable_eq γ] :
   (oa >>= λ a, return (f a, g a)).fin_support = oa.fin_support.image (λ a, (f a, g a)) :=
 fin_support_bind_return oa _
@@ -194,8 +192,6 @@ by simp_rw [support_bind_prod_mk_of_fst_subsingleton, set.mem_preimage, set.mem_
 end support
 
 section fin_support
-
-variables [decidable oa]
 
 @[simp] lemma fin_support_bind_prod_mk_fst_of_subsingleton [decidable_eq β] [subsingleton γ] :
   (oa >>= λ a, return (f a, g a)).fin_support = (oa.fin_support.image f).preimage prod.fst

@@ -37,8 +37,8 @@ open oracle_spec
 
 /-- Type to represent computations with access so oracles specified by and `oracle_spec`. -/
 inductive oracle_comp (spec : oracle_spec) : Type → Type 1
-| pure' (α : Type) (a : α) : oracle_comp α
-| bind' (α β : Type) (oa : oracle_comp α) (ob : α → oracle_comp β) : oracle_comp β
+| pure' (α) (a : α) : oracle_comp α
+| bind' (α β) (oa : oracle_comp α) (ob : α → oracle_comp β) : oracle_comp β
 | query (i : spec.ι) (t : spec.domain i) : oracle_comp (spec.range i)
 
 namespace oracle_comp
@@ -98,16 +98,17 @@ end
 /-- Check that the induction principal works properly. -/
 example (oa : oracle_comp spec α) : true := by induction oa using oracle_comp.induction_on; trivial
 
-set_option eqn_compiler.lemmas false
+-- set_option eqn_compiler.lemmas false
 
 /-- Given some computation `oa : oracle_comp spec α`, we can construct a "default" output `x : α`,
 using the `default` value for each of the oracle output types (since they are `inhabited`). -/
-def default_result : Π {α : Type}, oracle_comp spec α → α
-| _ (pure' α a) := a
-| _ (bind' α β oa ob) := default_result (ob $ default_result oa)
-| _ (query i t) := default
-
-set_option eqn_compiler.lemmas true
+def default_result {α : Type} (oa : oracle_comp spec α) : α :=
+begin
+  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t,
+  { exact a },
+  { exact hob hoa },
+  { refine (spec.range_inhabited i).1 }
+end
 
 /-- Constructing an `oracle_comp` implies the existence of some element of the underlying type.
   The assumption that the range of the oracles is `inhabited` is the key point for this. -/
@@ -122,70 +123,5 @@ def base_inhabited (oa : oracle_comp spec α) : inhabited α := ⟨oa.default_re
 @[inline, reducible] def query₂ {spec spec' : oracle_spec}
   (i : spec'.ι) (t : spec'.domain i) : oracle_comp (spec ++ spec') (spec'.range i) :=
 @query (spec ++ spec') (sum.inr i) t
-
-section decidable
-
-/-- Inductive definition for computations that only return values of types with `decidable_eq`.
-In this case we can explicitly calculate the `support` as a `finset` rather than a `set`.
-TODO: this seems like bad naming? overlaps? `decidable_comp`? -/
-class inductive decidable : Π {α : Type}, oracle_comp spec α → Type 1
-| decidable_pure' (α : Type) (a : α) (h : decidable_eq α) : decidable (pure' α a)
-| decidable_bind' (α β : Type) (oa : oracle_comp spec α) (ob : α → oracle_comp spec β)
-    (hoa : decidable oa) (hob : ∀ α, decidable (ob α)) : decidable (bind' α β oa ob)
-| decidable_query (i : spec.ι) (t : spec.domain i) : decidable (query i t)
-
-open decidable
-
-/-- Version of `decidable_eq_of_decidable` taking an explicit `decidable` argument -/
-def decidable_eq_of_decidable' : Π {α : Type} {oa : oracle_comp spec α}
-  (h : decidable oa), decidable_eq α
-| _ _ (decidable_pure' α a h) := h
-| _ _ (decidable_bind' α β oa ob hoa hob) := decidable_eq_of_decidable' (hob (base_inhabited oa).1)
-| _ _ (decidable_query i t) := spec.range_decidable_eq i
-
-/-- Given a `decidable` instance on an `oracle_comp`, we can extract a
-  `decidable_eq` instance on the resutlt type of the computation -/
-def decidable_eq_of_decidable (oa : oracle_comp spec α) [h : oa.decidable] :
-  decidable_eq α := decidable_eq_of_decidable' h
-
-instance decidable_return [h : decidable_eq α] (a : α) :
-  decidable (return a : oracle_comp spec α) := decidable_pure' α a h
-
-instance decidable_pure' [h : decidable_eq α] (a : α) :
-  decidable (pure' α a : oracle_comp spec α) := decidable_pure' α a h
-
-instance decidable_pure [h : decidable_eq α] (a : α) :
-  decidable (pure a : oracle_comp spec α) := decidable_pure' α a h
-
-instance decidable_bind (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) [h : decidable oa]
-  [h' : ∀ a, decidable (ob a)] : decidable (oa >>= ob) := decidable_bind' α β oa ob h h'
-
-instance decidable_bind' (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) [h : decidable oa]
-  [h' : ∀ a, decidable (ob a)] : decidable (bind' α β oa ob) := decidable_bind' α β oa ob h h'
-
-instance decidable_map [h : decidable_eq β] (oa : oracle_comp spec α) [h' : oa.decidable]
-  (f : α → β) : decidable (f <$> oa) := decidable_bind' α β oa _ h' (λ a, decidable_pure' β _ h)
-
-instance decidable_query (i : spec.ι) (t : spec.domain i) :
-  decidable (query i t) := decidable_query i t
-
-instance decidable_coin : decidable coin := decidable_query _ _
-
-def decidable_of_decidable_bind_fst {oa : oracle_comp spec α} {ob : α → oracle_comp spec β} :
-  Π (h : decidable (oa >>= ob)), oa.decidable
-| (decidable_bind' α β _ _ hoa hob) := hoa
-
-def decidable_of_decidable_bind_snd {oa : oracle_comp spec α} {ob : α → oracle_comp spec β}
-  (a : α) : Π (h : decidable (oa >>= ob)), (ob a).decidable
-| (decidable_bind' α β _ _ hoa hob) := hob a
-
-end decidable
-
-/-- Simple computations should have automatic decidable instances -/
-example :
-do {b ← coin, b' ← coin,
-    x ← return (b && b'),
-    y ← return (b || b'),
-    return (if x then 1 else if y then 2 else 3)}.decidable := by apply_instance
 
 end oracle_comp

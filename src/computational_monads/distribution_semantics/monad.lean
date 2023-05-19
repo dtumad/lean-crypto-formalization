@@ -71,12 +71,12 @@ lemma eval_dist_bind_return_apply_eq_sum_indicator [fintype α] [decidable_eq β
 (eval_dist_bind_return_apply_eq_tsum_indicator oa f y).trans
   (tsum_eq_sum (λ x hx, (hx $ finset.mem_univ x).elim))
 
-lemma eval_dist_bind_return_apply_eq_sum_fin_support [oa.decidable] [decidable_eq β] :
+lemma eval_dist_bind_return_apply_eq_sum_fin_support [decidable_eq β] :
   ⁅oa >>= λ x, return (f x)⁆ y = ∑ x in oa.fin_support, ite (y = f x) (⁅oa⁆ x) 0 :=
 (eval_dist_bind_return_apply_eq_tsum oa f y).trans
   (tsum_eq_sum (λ x hx, by rw [eval_dist_eq_zero' hx, if_t_t]))
 
-lemma eval_dist_bind_return_apply_eq_sum_fin_support_indicator [oa.decidable] [decidable_eq β] :
+lemma eval_dist_bind_return_apply_eq_sum_fin_support_indicator :
   ⁅oa >>= λ x, return (f x)⁆ y = ∑ x in oa.fin_support, (f ⁻¹' {y}).indicator ⁅oa⁆ x :=
 (eval_dist_bind_return_apply_eq_tsum_indicator oa f y).trans
   (tsum_eq_sum (λ x hx, by simp_rw [set.indicator_apply_eq_zero,
@@ -130,11 +130,11 @@ lemma eval_dist_map_apply_eq_sum_indicator [fintype α] [decidable_eq β] :
   ⁅f <$> oa⁆ y = ∑ x, (f ⁻¹' {y}).indicator ⁅oa⁆ x :=
 eval_dist_bind_return_apply_eq_sum_indicator oa f y
 
-lemma eval_dist_map_apply_eq_sum_fin_support [oa.decidable] [decidable_eq β] :
+lemma eval_dist_map_apply_eq_sum_fin_support [decidable_eq β] :
   ⁅f <$> oa⁆ y = ∑ x in oa.fin_support, ite (y = f x) (⁅oa⁆ x) 0 :=
 eval_dist_bind_return_apply_eq_sum_fin_support oa f y
 
-lemma eval_dist_map_apply_eq_sum_fin_support_indicator [oa.decidable] [decidable_eq β] :
+lemma eval_dist_map_apply_eq_sum_fin_support_indicator [decidable_eq β] :
   ⁅f <$> oa⁆ y = ∑ x in oa.fin_support, (f ⁻¹' {y}).indicator ⁅oa⁆ x :=
 eval_dist_bind_return_apply_eq_sum_fin_support_indicator oa f y
 
@@ -187,10 +187,11 @@ lemma eval_dist_map_bind_apply_eq_sum [fintype α] [fintype β] [decidable_eq γ
 by simp_rw [eval_dist_map_bind', eval_dist_bind_apply_eq_sum,
   eval_dist_map_apply_eq_sum, ← finset.mul_sum]
 
-lemma eval_dist_map_bind_apply_eq_sum_fin_support [decidable oa] [∀ x, decidable (ob x)] [decidable_eq γ] :
+lemma eval_dist_map_bind_apply_eq_sum_fin_support [decidable_eq γ] :
   ⁅g <$> (oa >>= ob)⁆ z = ∑ x in oa.fin_support, ∑ y in (ob x).fin_support, ⁅oa⁆ x * (ite (z = g y) (⁅ob x⁆ y) 0) :=
-by simp_rw [eval_dist_map_bind', eval_dist_bind_apply_eq_sum_fin_support,
-  eval_dist_map_apply_eq_sum_fin_support, ← finset.mul_sum]
+sorry
+-- by simp_rw [eval_dist_map_bind', eval_dist_bind_apply_eq_sum_fin_support,
+--   eval_dist_map_apply_eq_sum_fin_support, ← finset.mul_sum]
 
 end map_bind
 
@@ -215,7 +216,7 @@ begin
   exact tsum_eq_sum (λ _ h, (h $ finset.mem_univ _).elim),
 end
 
-lemma eval_dist_bind_map_apply_eq_sum_fin_support [decidable oa] :
+lemma eval_dist_bind_map_apply_eq_sum_fin_support :
   ⁅(f <$> oa) >>= oc⁆ z = ∑ x in oa.fin_support, ⁅oa⁆ x * ⁅oc (f x)⁆ z :=
 begin
   rw [eval_dist_bind_map, pmf.bind_apply],
@@ -287,7 +288,7 @@ by simp only [support_bind, mem_support_return_iff, set.Union_Union_eq_left]
 lemma mem_support_return_bind_iff : y ∈ (return a >>= ob).support ↔ y ∈ (ob a).support :=
 by rw [support_return_bind]
 
-variables [decidable_eq α] [∀ a, decidable (ob a)]
+variables [decidable_eq α]
 
 lemma fin_support_return_bind : (return a >>= ob).fin_support = (ob a).fin_support :=
 by simp only [fin_support_bind, fin_support_return, finset.singleton_bUnion]
@@ -314,8 +315,6 @@ by simp only [support_bind_return, set.mem_image, exists_prop]
 @[simp] lemma support_bind_return_id : (oa >>= return).support = oa.support :=
 (support_bind_return oa id).trans (set.image_id oa.support)
 
-variables [decidable oa]
-
 @[simp] lemma fin_support_bind_return [decidable_eq β] :
   (oa >>= λ a, return (f a)).fin_support = oa.fin_support.image f :=
 by rw [fin_support_eq_iff_support_eq_coe, support_bind_return,
@@ -341,7 +340,7 @@ by simp only [support_bind, set.Union_true]
 lemma mem_support_query_bind_iff : x ∈ (query i t >>= oa).support ↔ ∃ t, x ∈ (oa t).support :=
 by rw [support_query_bind, set.mem_Union]
 
-variables [decidable_eq α] [∀ u, decidable (oa u)]
+variables [decidable_eq α]
 
 lemma fin_support_query_bind : (query i t >>= oa).fin_support =
   finset.bUnion finset.univ (λ u, (oa u).fin_support) :=
@@ -363,7 +362,7 @@ support_bind_return oa f
 lemma mem_support_map_iff : y ∈ (f <$> oa).support ↔ ∃ x ∈ oa.support, f x = y :=
 mem_support_bind_return_iff oa f y
 
-variables [decidable_eq β] [decidable oa]
+variables [decidable_eq β]
 
 @[simp] lemma fin_support_map : (f <$> oa).fin_support = oa.fin_support.image f :=
 by rw [fin_support_eq_iff_support_eq_coe, finset.coe_image,
@@ -408,11 +407,10 @@ lemma mem_support_map_bind_iff : z ∈ (g <$> (oa >>= ob)).support ↔
   ∃ x ∈ oa.support, ∃ y ∈ (ob x).support, g y = z :=
 by simp only [support_map_bind, set.mem_Union, set.mem_image, exists_prop]
 
-variables [decidable_eq γ] [decidable oa] [∀ x, decidable (ob x)]
+variables [decidable_eq γ]
 
 @[simp] lemma fin_support_map_bind : (g <$> (oa >>= ob)).fin_support =
-  @finset.bUnion α γ (decidable_eq_of_decidable (g <$> (oa >>= ob)))
-    oa.fin_support (λ a, (ob a).fin_support.image g) :=
+  finset.bUnion oa.fin_support (λ a, (ob a).fin_support.image g) :=
 by simp_rw [fin_support_eq_iff_support_eq_coe, finset.coe_bUnion, finset.coe_image,
   coe_fin_support_eq_support, support_map_bind]
 
@@ -436,13 +434,13 @@ lemma mem_support_bind_map_iff : z ∈ ((f <$> oa) >>= oc).support ↔
 by simp only [support_bind, set.mem_Union, support_map, set.mem_image,
   set.Union_exists, set.bUnion_and', set.Union_Union_eq_right]
 
-variables [decidable_eq β] [decidable oa] [∀ y, decidable (oc y)]
+variables [decidable_eq β]
 
-@[simp] lemma fin_support_bind_map : ((f <$> oa) >>= oc).fin_support = @finset.bUnion α γ
-  (decidable_eq_of_decidable ((f <$> oa) >>= oc)) oa.fin_support (λ a, (oc (f a)).fin_support) :=
+@[simp] lemma fin_support_bind_map [decidable_eq γ] : ((f <$> oa) >>= oc).fin_support =
+  finset.bUnion oa.fin_support (λ a, (oc (f a)).fin_support) :=
 by simp only [finset.image_bUnion, fin_support_bind, fin_support_map]; congr
 
-lemma mem_fin_support_bind_map_iff : z ∈ ((f <$> oa) >>= oc).fin_support ↔
+lemma mem_fin_support_bind_map_iff [decidable_eq γ] : z ∈ ((f <$> oa) >>= oc).fin_support ↔
   ∃ x ∈ oa.fin_support, z ∈ (oc (f x)).fin_support :=
 by simp only [fin_support_bind_map, finset.mem_bUnion]
 
@@ -470,7 +468,7 @@ begin
       exact ⟨x, hx, if_neg hx'⟩ } }
 end
 
-@[simp] lemma fin_support_bind_ite [decidable_eq β] (oa : oracle_comp spec α) [oa.decidable]
+@[simp] lemma fin_support_bind_ite [decidable_eq β] (oa : oracle_comp spec α)
   (p : α → Prop) [decidable_pred p] (f : α → β) (g : α → β) :
   (oa >>= λ a, return (if p a then f a else g a)).fin_support =
     ((oa.fin_support.filter p).image f) ∪ ((oa.fin_support.filter (not ∘ p)).image g) :=

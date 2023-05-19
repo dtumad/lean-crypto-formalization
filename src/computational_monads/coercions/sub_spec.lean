@@ -66,8 +66,7 @@ variables (sub_spec super_spec : oracle_spec) [h : sub_spec ⊂ₒ super_spec]
 @[simp] lemma support_to_fun : (h.to_fun i t).support = ⊤ :=
 by rw [← support_eval_dist, h.eval_dist_to_fun', support_eval_dist, support_query]
 
-@[simp] lemma fin_support_to_fun [∀ i t, (h.to_fun i t).decidable] :
-  (h.to_fun i t).fin_support = ⊤ :=
+@[simp] lemma fin_support_to_fun : (h.to_fun i t).fin_support = ⊤ :=
 by simp only [fin_support_eq_iff_support_eq_coe, finset.top_eq_univ,
   support_to_fun, set.top_eq_univ, finset.coe_univ]
 
@@ -101,11 +100,8 @@ section coe_sub_spec
 variables (sub_spec super_spec : oracle_spec) [h : sub_spec ⊂ₒ super_spec]
   (a : α) (oa : oracle_comp sub_spec α) (ob : α → oracle_comp sub_spec β)
   (i : sub_spec.ι) (t : sub_spec.domain i) (e : set α)
-include h
 
-instance coe_sub_spec.decidable [∀ i t, (@is_sub_spec.to_fun sub_spec super_spec h i t).decidable]
-  (oa : oracle_comp sub_spec α) [oa.decidable] : (↑oa : oracle_comp super_spec α).decidable :=
-simulate'.decidable _ oa ()
+include h
 
 lemma coe_sub_spec_return : (↑(return a : oracle_comp sub_spec α) : oracle_comp super_spec α) =
   prod.fst <$> return (a, ()) := rfl
@@ -125,8 +121,8 @@ stateless_oracle.support_simulate'_eq_support _ _ ()
   (λ i t, is_sub_spec.support_to_fun sub_spec super_spec i t)
 
 /-- `fin_support` is unchanged after coercing a computation via a sub-spec instance. -/
-@[simp] lemma fin_support_coe_sub_spec [∀ i t, (@is_sub_spec.to_fun sub_spec super_spec _ i t).decidable]
-  [oa.decidable] : (↑oa : oracle_comp super_spec α).fin_support = oa.fin_support :=
+@[simp] lemma fin_support_coe_sub_spec :
+  (↑oa : oracle_comp super_spec α).fin_support = oa.fin_support :=
 by rw [fin_support_eq_fin_support_iff_support_eq_support, support_coe_sub_spec]
 
 /-- `eval_dist` is unchanged after coercing a computation via a sub-spec instance. -/

@@ -36,9 +36,6 @@ variables (oa : oracle_comp spec α) (ob : oracle_comp spec β)
 
 lemma product.def : oa ×ₘ ob = do {a ← oa, b ← ob, return (a, b)} := rfl
 
-instance product.decidable [decidable_eq α] [decidable_eq β] [decidable oa] [decidable ob] :
-  decidable (oa ×ₘ ob) := by {unfold product, apply_instance}
-
 section support
 
 @[simp] lemma support_prod : (oa ×ₘ ob).support = oa.support ×ˢ ob.support :=
@@ -52,7 +49,7 @@ end support
 
 section fin_support
 
-variables [decidable_eq α] [decidable_eq β] [decidable oa] [decidable ob]
+variables [decidable_eq α] [decidable_eq β]
 
 @[simp] lemma fin_support_prod : (oa ×ₘ ob).fin_support = oa.fin_support ×ˢ ob.fin_support :=
 by simp only [fin_support_eq_iff_support_eq_coe, support_prod,

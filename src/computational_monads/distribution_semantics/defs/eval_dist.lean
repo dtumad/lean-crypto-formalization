@@ -139,66 +139,66 @@ begin
 end
 
 /-- The support of the `pmf` associated to a computation is the coercion of its `fin_support`. -/
-lemma support_eval_dist_eq_fin_support [oa.decidable] : ⁅oa⁆.support = ↑oa.fin_support :=
+lemma support_eval_dist_eq_fin_support : ⁅oa⁆.support = ↑oa.fin_support :=
 (support_eval_dist oa).trans (coe_fin_support_eq_support oa).symm
 
 @[simp] lemma eval_dist_eq_zero_iff : ⁅= x | oa⁆ = 0 ↔ x ∉ oa.support :=
 by rw [pmf.apply_eq_zero_iff, support_eval_dist]
 
-lemma eval_dist_eq_zero_iff' [oa.decidable] : ⁅= x | oa⁆ = 0 ↔ x ∉ oa.fin_support :=
+lemma eval_dist_eq_zero_iff' : ⁅= x | oa⁆ = 0 ↔ x ∉ oa.fin_support :=
 by rw [mem_fin_support_iff_mem_support, eval_dist_eq_zero_iff]
 
 @[simp] lemma eval_dist_ne_zero_iff : ⁅= x | oa⁆ ≠ 0 ↔ x ∈ oa.support :=
 by rw [ne.def, eval_dist_eq_zero_iff, set.not_not_mem]
 
-lemma eval_dist_ne_zero_iff' [oa.decidable] : ⁅= x | oa⁆ ≠ 0 ↔ x ∈ oa.fin_support :=
+lemma eval_dist_ne_zero_iff' : ⁅= x | oa⁆ ≠ 0 ↔ x ∈ oa.fin_support :=
 by rw [mem_fin_support_iff_mem_support, eval_dist_ne_zero_iff]
 
 lemma eval_dist_eq_one_iff : ⁅= x | oa⁆ = 1 ↔ oa.support = {x} :=
 by rw [pmf.apply_eq_one_iff, support_eval_dist oa]
 
-lemma eval_dist_eq_one_iff' [oa.decidable] : ⁅= x | oa⁆ = 1 ↔ oa.fin_support = {x} :=
+lemma eval_dist_eq_one_iff' : ⁅= x | oa⁆ = 1 ↔ oa.fin_support = {x} :=
 by rw [fin_support_eq_iff_support_eq_coe, finset.coe_singleton, eval_dist_eq_one_iff]
 
 @[simp] lemma eval_dist_eq_one_iff_subset : ⁅= x | oa⁆ = 1 ↔ oa.support ⊆ {x} :=
 (eval_dist_eq_one_iff oa x).trans (set.nonempty.subset_singleton_iff $ support_nonempty oa).symm
 
-lemma eval_dist_eq_one_iff_subset' [oa.decidable] : ⁅= x | oa⁆ = 1 ↔ oa.fin_support ⊆ {x} :=
+lemma eval_dist_eq_one_iff_subset' : ⁅= x | oa⁆ = 1 ↔ oa.fin_support ⊆ {x} :=
 by rw [fin_support_subset_iff_support_subset_coe, finset.coe_singleton,
   eval_dist_eq_one_iff_subset]
 
 @[simp] lemma eval_dist_pos_iff : 0 < ⁅= x | oa⁆ ↔ x ∈ oa.support :=
 by rw [pos_iff_ne_zero, eval_dist_ne_zero_iff]
 
-lemma eval_dist_pos_iff' [oa.decidable] : 0 < ⁅= x | oa⁆ ↔ x ∈ oa.fin_support :=
+lemma eval_dist_pos_iff' : 0 < ⁅= x | oa⁆ ↔ x ∈ oa.fin_support :=
 by rw [mem_fin_support_iff_mem_support, eval_dist_pos_iff]
 
 variables {oa} {x}
 
 lemma eval_dist_eq_zero (h : x ∉ oa.support) : ⁅= x | oa⁆ = 0 := (eval_dist_eq_zero_iff oa x).2 h
 
-lemma eval_dist_eq_zero' [oa.decidable] (h : x ∉ oa.fin_support) : ⁅= x | oa⁆ = 0 :=
+lemma eval_dist_eq_zero' (h : x ∉ oa.fin_support) : ⁅= x | oa⁆ = 0 :=
 (eval_dist_eq_zero_iff' oa x).2 h
 
 lemma eval_dist_ne_zero (h : x ∈ oa.support) : ⁅= x | oa⁆ ≠ 0 := (eval_dist_ne_zero_iff oa x).2 h
 
-lemma eval_dist_ne_zero' [oa.decidable] (h : x ∈ oa.fin_support) : ⁅= x | oa⁆ ≠ 0 :=
+lemma eval_dist_ne_zero' (h : x ∈ oa.fin_support) : ⁅= x | oa⁆ ≠ 0 :=
 (eval_dist_ne_zero_iff' oa x).2 h
 
 lemma eval_dist_eq_one (h : oa.support = {x}) : ⁅= x | oa⁆ = 1 := (eval_dist_eq_one_iff oa x).2 h
 
-lemma eval_dist_eq_one' [oa.decidable] (h : oa.fin_support = {x}) : ⁅= x | oa⁆ = 1 :=
+lemma eval_dist_eq_one' (h : oa.fin_support = {x}) : ⁅= x | oa⁆ = 1 :=
 (eval_dist_eq_one_iff' oa x).2 h
 
 lemma eval_dist_eq_one_of_subset (h : oa.support ⊆ {x}) : ⁅= x | oa⁆ = 1 :=
 (eval_dist_eq_one_iff_subset oa x).2 h
 
-lemma eval_dist_eq_one_of_subset' [oa.decidable] (h : oa.fin_support ⊆ {x}) : ⁅= x | oa⁆ = 1 :=
+lemma eval_dist_eq_one_of_subset' (h : oa.fin_support ⊆ {x}) : ⁅= x | oa⁆ = 1 :=
 (eval_dist_eq_one_iff_subset' oa x).2 h
 
 lemma eval_dist_pos (h : x ∈ oa.support) : 0 < ⁅= x | oa⁆ := (eval_dist_pos_iff oa x).2 h
 
-lemma eval_dist_pos' [oa.decidable] (h : x ∈ oa.fin_support) : 0 < ⁅= x | oa⁆ :=
+lemma eval_dist_pos' (h : x ∈ oa.fin_support) : 0 < ⁅= x | oa⁆ :=
 (eval_dist_pos_iff' oa x).2 h
 
 end support

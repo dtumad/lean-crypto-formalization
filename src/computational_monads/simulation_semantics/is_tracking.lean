@@ -64,8 +64,6 @@ end support
 
 section fin_support
 
-variables [∀ i t, (so.o i t).decidable] [∀ i t, (so.answer_query i t).decidable]
-
 lemma fin_support_apply' [decidable_eq S] : (so i (t, s)).fin_support =
   ((λ u, (u, so.update_state s i t u)) <$> so.answer_query i t).fin_support :=
 by rw [fin_support_eq_fin_support_iff_support_eq_support, support_apply']

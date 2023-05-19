@@ -94,21 +94,6 @@ lemma simulate_bind' : simulate so (bind' α β oa ob) s =
 
 @[simp] lemma simulate_map : simulate so (f <$> oa) s = prod.map f id <$> simulate so oa s := rfl
 
-instance simulate.decidable [hoa : oa.decidable] [decidable_eq S]
-  [h : ∀ i t s, (so i (t, s)).decidable] : (oa.simulate so s).decidable :=
-begin
-  unfreezingI {induction oa using oracle_comp.induction_on
-    with α a α β oa ob hoa' hob' i t generalizing s},
-  { haveI : decidable_eq α := decidable_eq_of_decidable' hoa,
-    exact oracle_comp.decidable_return (a, s) },
-  { haveI : oa.decidable := decidable_of_decidable_bind_fst hoa,
-    haveI : ∀ a, (ob a).decidable := λ a, decidable_of_decidable_bind_snd a hoa,
-    haveI : (simulate so oa s).decidable := hoa' _,
-    haveI : ∀ (x : α × S), (simulate so (ob x.1) x.2).decidable := λ x, hob' _ _,
-    refine oracle_comp.decidable_bind' _ _ },
-  { exact h i t s }
-end
-
 section support
 
 lemma support_simulate_return : (simulate so (return a) s).support = {(a, s)} := rfl
@@ -234,13 +219,6 @@ lemma simulate'_bind' : simulate' so (bind' α β oa ob) s =
 
 @[simp] lemma simulate'_map : simulate' so (f <$> oa) s =
   prod.fst <$> (prod.map f id <$> simulate so oa s) := rfl
-
-instance simulate'.decidable [hoa : oa.decidable] [decidable_eq S]
-  [h : ∀ i t s, (so i (t, s)).decidable] : (oa.simulate' so s).decidable :=
-begin
-  haveI : decidable_eq α := decidable_eq_of_decidable oa,
-  exact oracle_comp.decidable_map _ _,
-end
 
 section support
 

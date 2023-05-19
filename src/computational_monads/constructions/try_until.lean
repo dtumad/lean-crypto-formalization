@@ -37,9 +37,6 @@ lemma try_until_zero : oa.try_until p 0 =
 lemma try_until_succ : oa.try_until p n.succ =
   (λ xs, (vector.to_list xs).find p) <$> do {a ← oa, as ← oa.repeat n, return (a ::ᵥ as)} := rfl
 
-instance try_until.decidable [decidable_eq α] [decidable oa] : decidable (oa.try_until p n) :=
-oracle_comp.decidable_map _ _
-
 section support
 
 /-- Any positive result of `oa.try_until p n` will be some output of `oa`. -/
