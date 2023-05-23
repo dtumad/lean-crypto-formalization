@@ -37,8 +37,8 @@ open oracle_spec
 
 /-- Type to represent computations with access so oracles specified by and `oracle_spec`. -/
 inductive oracle_comp (spec : oracle_spec) : Type → Type 1
-| pure' (α) (a : α) : oracle_comp α
-| bind' (α β) (oa : oracle_comp α) (ob : α → oracle_comp β) : oracle_comp β
+| pure' (α : Type) (a : α) : oracle_comp α
+| bind' (α β : Type) (oa : oracle_comp α) (ob : α → oracle_comp β) : oracle_comp β
 | query (i : spec.ι) (t : spec.domain i) : oracle_comp (spec.range i)
 
 namespace oracle_comp

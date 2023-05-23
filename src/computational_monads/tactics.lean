@@ -8,6 +8,9 @@ import computational_monads.oracle_comp
 /-!
 # Induction Tactics for `oracle_comp`
 
+This file defines a number of custom tactics that can be used in proofs involving `oracle_comp`s.
+The definitions don't necessarilly reduce proof burden, but often simplify the statements,
+in particular by giving more readable or simplified set of goals than regular `induction` tactics.
 -/
 
 open interactive (parse)
