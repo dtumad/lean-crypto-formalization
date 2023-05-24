@@ -22,18 +22,44 @@ open oracle_comp oracle_spec
 variables {α β : Type} {spec spec' : oracle_spec}
 
 /-- Oracle computations that uniformly make at most a given number of queries.
-  In particular `simulate` will call the `sim_oracle` at most that many times -/
+In particular `simulate` will call the `sim_oracle` at most that many times.
+TODO: This is difficult to work with using `↔` instead of `→`. -/
 inductive queries_at_most : Π {α : Type}, oracle_comp spec α → ℕ → Prop
 | queries_at_most_pure' {α : Type} (a : α) :
     queries_at_most (pure' α a) 0
 | queries_at_most_bind' {α β : Type} (oa : oracle_comp spec α) (ob : α → oracle_comp spec β)
     (p q : ℕ) (hca : queries_at_most oa p) (hcb : ∀ a, queries_at_most (ob a) q) :
     queries_at_most (oa >>= ob) (p + q)
-| queries_at_most_query {i : spec.ι} (a : spec.domain i) :
-    queries_at_most (query i a) 1
+| queries_at_most_query {i : spec.ι} (t : spec.domain i) :
+    queries_at_most (query i t) 1
 | queries_at_most_trans {α : Type} (oa : oracle_comp spec α) {p q : ℕ}
-    (hoa : queries_at_most oa p) (h : p ≤ q) :
+    (hoa : queries_at_most oa p) (h : p < q) :
     queries_at_most oa q
+
+-- lemma queries_at_most_return_iff (x : α) (n : ℕ) :
+--     queries_at_most (return x : oracle_comp spec α) n ↔ n = 0 :=
+-- begin
+--     refine ⟨λ h, _, λ h, _⟩,
+--     {
+
+--         induction h,
+--         {
+--             refl,
+--         },
+--         {
+--             -- simp at h_ih_hcb,
+--             specialize h_ih_hcb (h_oa.default_result),
+--             rw [h_ih_hca, h_ih_hcb],
+--         },
+--         {
+
+--         }
+--     },
+--     {
+--         rw h,
+--         apply queries_at_most.queries_at_most_pure',
+--     }
+-- end
 
 /-- An function `ℕ → oracle_comp` has `polynomial_queries` if the number of queries made
   has growth bounded by a polynomial in the input `ℕ`. Note that it's a sigma type, not a `Prop`.

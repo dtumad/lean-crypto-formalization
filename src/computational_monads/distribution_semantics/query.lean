@@ -24,7 +24,22 @@ section query_eq_iff
 lemma query_dist_equiv_iff (t : spec.domain i) (oa : oracle_comp spec' (spec.range i)) :
   query i t ≃ₚ oa ↔ ∀ u u', ⁅= u | oa⁆ = ⁅= u' | oa⁆ :=
 begin
-  sorry,
+  refine ⟨λ h, _, λ h, _⟩,
+  {
+    intros u u',
+    simp only [← h.eval_dist_eq, eval_dist_query_apply],
+  },
+  {
+
+    simp only [dist_equiv.ext_iff, eval_dist_query_apply],
+    intro x,
+    have : ∑ x' : spec.range i, ⁅oa⁆ x = 1 := begin
+      sorry,
+    end,
+    rw [finset.sum_const] at this,
+    simp at this,
+    sorry,
+  }
 end
 
 -- lemma eval_dist_query_eq_iff (t : spec.domain i) (p : pmf (spec.range i)) :
@@ -41,8 +56,22 @@ by rw [eval_dist_query_apply_eq_inv, inv_eq_iff_eq_inv]
 lemma eval_dist_query_apply_eq_iff_mul_eq_one (t : spec.domain i) (u : spec.range i) (r : ℝ≥0∞) :
   ⁅= u | query i t⁆ = r ↔ r * (fintype.card $ spec.range i) = 1 :=
 begin
-  rw [eval_dist_query_apply_eq_iff],
-  sorry,
+  by_cases hr0 : r = 0,
+  {
+    simp only [hr0, eval_dist_query, pmf.uniform_of_fintype_apply, ennreal.inv_eq_zero, ennreal.nat_ne_top, zero_mul, zero_ne_one],
+  },
+  {
+    by_cases hr : r = ⊤,
+    {
+      simp only [hr, eval_dist_query, pmf.uniform_of_fintype_apply, ennreal.inv_eq_top, nat.cast_eq_zero,
+        fintype.card_eq_zero_iff, ennreal.top_mul, not_is_empty_of_nonempty, nat.cast_eq_zero, false_iff],
+      split_ifs; simp
+    },
+    {
+      rw [eval_dist_query_apply_eq_iff, inv_eq_one_div],
+      rw [ennreal.eq_div_iff hr0 hr],
+    }
+  }
 end
 
 end query_eq_iff

@@ -92,7 +92,7 @@ end indep_event
 lemma indep_events_iff_forall_indep_event (es es' : set (set α)) :
   oa.indep_events es es' ↔ ∀ e ∈ es, ∀ e' ∈ es', oa.indep_event e e' :=
 begin
-  simp [indep_events_iff, indep_event_iff], sorry,
+  simp [indep_events_iff, indep_event_iff, imp_forall_iff],
 end
 
 end oracle_comp
