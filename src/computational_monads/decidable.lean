@@ -10,7 +10,7 @@ import computational_monads.oracle_comp
 
 This file defines a typeclass `oracle_comp.decidable` for computations that have `decidable_eq`
 instances for every return value in the computation.
-We don't currently make use of this very much in general, becuase `open_locale classical` makes
+We don't currently make use of this in general, becuase `open_locale classical` makes
 it unnecessary, but if this eventually gets removed then things like `oracle_comp.fin_support`
 will require it to function
 -/

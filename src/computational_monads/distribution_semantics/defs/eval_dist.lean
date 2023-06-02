@@ -53,78 +53,18 @@ lemma eval_dist.ext (p : pmf α) (h : ∀ x, ⁅= x | oa⁆ = p x) : ⁅oa⁆ = 
 
 lemma eval_dist.ext_iff (p : pmf α) : ⁅oa⁆ = p ↔ ∀ x, ⁅= x | oa⁆ = p x := pmf.ext_iff
 
-section return
-
 @[simp] lemma eval_dist_return : ⁅(return a : oracle_comp spec α)⁆ = pmf.pure a := rfl
-
-/-- The probability of getting `x` from `return a` is `1` if `x = a` and `0` if `x ≠ a`.
-In general this probability is defined in terms of `set.indicator` applied to a singleton set,
-since a definition in terms of if-then-else requires decidable equality of the type `α`.  -/
-@[simp] lemma eval_dist_return_apply_eq_indicator :
-  ⁅= x | (return a : oracle_comp spec α)⁆ = set.indicator {a} (λ _, 1) x := rfl
-
-/-- Given a decidable equality instance, the probability of `x` from `return a` can be given by
-a simple if-then-else statement rather than by `set.indicator`. -/
-@[simp] lemma eval_dist_return_apply [decidable_eq α] :
-  ⁅= x | (return a : oracle_comp spec α)⁆ = ite (x = a) 1 0 := by convert rfl
 
 lemma eval_dist_pure' : ⁅(pure' α a : oracle_comp spec α)⁆ = pmf.pure a := rfl
 
-lemma eval_dist_pure'_apply_eq_indicator :
-  ⁅= x | (pure' α a : oracle_comp spec α)⁆ = set.indicator {a} (λ _, 1) x := rfl
-
-lemma eval_dist_pure'_apply [decidable_eq α] :
-  ⁅= x | (pure' α a : oracle_comp spec α)⁆ = ite (x = a) 1 0 := by convert rfl
-
 lemma eval_dist_pure : ⁅(pure a : oracle_comp spec α)⁆ = pmf.pure a := rfl
-
-lemma eval_dist_pure_apply_eq_indicator :
-  ⁅= x | (pure a : oracle_comp spec α)⁆ = set.indicator {a} (λ _, 1) x := rfl
-
-lemma eval_dist_pure_apply [decidable_eq α] :
-  ⁅= x | (pure a : oracle_comp spec α)⁆ = ite (x = a) 1 0 := by convert rfl
-
-end return
-
-section bind
 
 @[simp] lemma eval_dist_bind : ⁅oa >>= ob⁆ = ⁅oa⁆.bind (λ x, ⁅ob x⁆) :=
 by rw [← bind'_eq_bind, eval_dist]
 
-/-- The probability of `oa >>= ob` returning `y` is the sum over all `x` of the probability
-of getting `y` from `ob x`, weighted by the probability of getting `x` from `oa`. -/
-lemma eval_dist_bind_apply_eq_tsum : ⁅= y | oa >>= ob⁆ = ∑' x, ⁅= x | oa⁆ * ⁅= y | ob x⁆ :=
-by rw [eval_dist_bind, pmf.bind_apply]
-
-/-- Express the probability of getting `y` from `oa >>= ob` as a finite sum,
-assuming that the underlying return type `α` of `oa` is itself finite. -/
-lemma eval_dist_bind_apply_eq_sum [fintype α] :
-  ⁅= y | oa >>= ob⁆ = ∑ x, ⁅= x | oa⁆ * ⁅= y | ob x⁆ :=
-by simpa only [eval_dist_bind_apply_eq_tsum]
-  using tsum_eq_sum (λ x hx, (hx $ finset.mem_univ x).elim)
-
 lemma eval_dist_bind' : ⁅bind' α β oa ob⁆ = ⁅oa⁆.bind (λ x, ⁅ob x⁆) := eval_dist_bind oa ob
 
-lemma eval_dist_bind'_apply_eq_tsum : ⁅= y | bind' α β oa ob⁆ = ∑' x, ⁅= x | oa⁆ * ⁅= y | ob x⁆ :=
-eval_dist_bind_apply_eq_tsum oa ob y
-
-lemma eval_dist_bind'_apply_eq_sum [fintype α] :
-  ⁅= y | bind' α β oa ob⁆ = ∑ x, ⁅= x | oa⁆ * ⁅= y | ob x⁆ := eval_dist_bind_apply_eq_sum oa ob y
-
-end bind
-
-section query
-
 @[simp] lemma eval_dist_query : ⁅query i t⁆ = pmf.uniform_of_fintype (spec.range i) := rfl
-
-/-- The chance of getting a result `u` from `query i t` is uniform over the output type. -/
-lemma eval_dist_query_apply : ⁅= u | query i t⁆ = 1 / (fintype.card $ spec.range i) :=
-by rw [eval_dist_query, pmf.uniform_of_fintype_apply, one_div]
-
-lemma eval_dist_query_apply_eq_inv : ⁅= u | query i t⁆ = (fintype.card $ spec.range i)⁻¹ :=
-by rw [eval_dist_query, pmf.uniform_of_fintype_apply]
-
-end query
 
 section support
 
@@ -133,7 +73,7 @@ section support
 begin
   induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t,
   { exact pmf.support_pure a },
-  { exact (set.ext $ λ x, by simp_rw [mem_support_bind_iff, ← bind'_eq_bind, eval_dist,
+  { exact (set.ext $ λ x, by simp_rw [support_bind, set.mem_Union, ← bind'_eq_bind, eval_dist,
       pmf.mem_support_bind_iff, hoa, hob]) },
   { rw [eval_dist, pmf.support_uniform_of_fintype, support_query] }
 end

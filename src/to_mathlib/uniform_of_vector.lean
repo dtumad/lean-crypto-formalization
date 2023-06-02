@@ -4,7 +4,6 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
 import probability.probability_mass_function.uniform
--- import to_mathlib.pmf_stuff
 import algebra.big_operators.fin
 
 /-!

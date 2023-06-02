@@ -11,9 +11,22 @@ import probability.probability_mass_function.uniform
 -/
 
 open_locale measure_theory nnreal ennreal big_operators classical
-open measure_theory
+open measure_theory pmf
 
 variables {α β γ : Type*}
+
+lemma to_outer_measure_apply_eq_to_measure_apply (p : pmf α) (s : set α) :
+  p.to_outer_measure s = @pmf.to_measure α ⊤ p s :=
+by simp only [pmf.to_measure_apply_eq_to_outer_measure_apply, measurable_space.measurable_set_top]
+
+lemma to_outer_measure_apply_ne_top (p : pmf α) (s : set α) : p.to_outer_measure s ≠ ⊤ :=
+begin
+  rw [pmf.to_outer_measure_apply],
+  refine ne_top_of_le_ne_top ennreal.one_ne_top _,
+  rw [← p.tsum_coe],
+  refine ennreal.tsum_le_tsum (λ x, _),
+  refine set.indicator_apply_le (λ _, le_rfl),
+end
 
 section monad
 
@@ -65,9 +78,13 @@ end monad
 
 section union
 
-lemma pmf.measurable_set_to_outer_measure_caratheodory (p : pmf α) (s : set α) :
-  measurable_set[p.to_outer_measure.caratheodory] s :=
-p.to_outer_measure_caratheodory.symm ▸ measurable_space.measurable_set_top
+lemma pmf.to_measure_apply_Union_le [measurable_space α] (p : pmf α) (f : ℕ → set α) :
+  p.to_measure (⋃ n, f n) ≤ ∑' n, p.to_measure (f n) :=
+p.to_measure.Union f
+
+lemma pmf.to_measure_apply_union_le [measurable_space α] (p : pmf α) (s s' : set α) :
+  p.to_measure (s ∪ s') ≤ p.to_measure s + p.to_measure s' :=
+p.to_measure.to_outer_measure.union s s'
 
 lemma pmf.to_measure_apply_Union {α : Type*} [measurable_space α] (p : pmf α)
   {f : ℕ → set α} (hf : ∀ n, measurable_set (f n)) (h : pairwise (disjoint on f)) :
@@ -79,27 +96,39 @@ lemma pmf.to_measure_apply_union {α : Type*} [measurable_space α] (p : pmf α)
   p.to_measure (s ∪ t) = p.to_measure s + p.to_measure t :=
 measure_theory.measure_union h ht
 
+
 lemma pmf.to_outer_measure_apply_Union {α : Type*} (p : pmf α) {f : ℕ → set α}
   (h : pairwise (disjoint on f)) : p.to_outer_measure (⋃ n, f n) = ∑' n, p.to_outer_measure (f n) :=
-measure_theory.outer_measure.Union_eq_of_caratheodory _
-  (λ n, pmf.measurable_set_to_outer_measure_caratheodory _ (f n)) h
+begin
+  simp [to_outer_measure_apply_eq_to_measure_apply],
+  apply pmf.to_measure_apply_Union,
+  simp,
+  exact h,
+end
 
 lemma pmf.to_outer_measure_apply_union {α : Type*} (p : pmf α) {s t : set α}
   (h : disjoint s t) : p.to_outer_measure (s ∪ t) = p.to_outer_measure s + p.to_outer_measure t :=
 begin
-  sorry
+  simp [to_outer_measure_apply_eq_to_measure_apply],
+  apply pmf.to_measure_apply_union,
+  simp,
+  exact h,
 end
+
+
 
 lemma pmf.to_measure_apply_union_add_inter [measurable_space α]
   (p : pmf α) (s t : set α) (h : measurable_set t) :
   p.to_measure (s ∪ t) + p.to_measure (s ∩ t) = p.to_measure s + p.to_measure t :=
 measure_theory.measure_union_add_inter s h
 
+
 lemma pmf.to_outer_measure_apply_union_add_inter (p : pmf α) (s t : set α) :
   p.to_outer_measure (s ∪ t) + p.to_outer_measure (s ∩ t) =
     p.to_outer_measure s + p.to_outer_measure t :=
 begin
-  sorry
+  simp [to_outer_measure_apply_eq_to_measure_apply,
+    pmf.to_measure_apply_union_add_inter],
 end
 
 end union
@@ -142,15 +171,44 @@ end prod
 
 section outer_measure
 
+section insert
+
 lemma pmf.to_outer_measure_apply_insert (p : pmf α) (x : α) (s : set α) :
   p.to_outer_measure (insert x s) = p x + p.to_outer_measure (s \ {x}) :=
+calc p.to_outer_measure (insert x s) = ∑' x', (insert x s).indicator p x' :
+    by rw [pmf.to_outer_measure_apply]
+  ... = (insert x s).indicator p x + ∑' x', ite (x' = x) 0 ((insert x s).indicator p x') :
+    (ennreal.tsum_eq_add_tsum_ite x)
+  ... = p x + ∑' x', ite (x' = x) 0 ((insert x s).indicator p x') :
+    by simp only [set.indicator_of_mem, set.mem_insert_iff, eq_self_iff_true, true_or]
+  ... = p x + p.to_outer_measure (s \ {x}) : begin
+    refine congr_arg ((+) (p x)) _,
+    rw [pmf.to_outer_measure_apply],
+    refine tsum_congr (λ x', _),
+    split_ifs with h; simp [set.indicator, h],
+  end
+
+end insert
+
+section diff
+
+lemma pmf.to_outer_measure_apply_inter_add_diff (p : pmf α) (s t : set α) :
+  p.to_outer_measure (s ∩ t) + p.to_outer_measure (s \ t) = p.to_outer_measure s :=
 begin
-  rw [← set.union_singleton], sorry
-  -- rw [pmf.to_outer_measure_apply_Union]
+  simp only [pmf.to_outer_measure_apply, ← ennreal.tsum_add],
+  refine tsum_congr (λ x, _),
+  by_cases hx : x ∈ t; simp [set.indicator, hx],
 end
 
 lemma pmf.to_outer_measure_apply_diff (p : pmf α) (s t : set α) :
   p.to_outer_measure (s \ t) = p.to_outer_measure s - p.to_outer_measure (s ∩ t) :=
-sorry
+begin
+  rw [← p.to_outer_measure_apply_inter_add_diff s t],
+  refine symm _,
+  apply ennreal.add_sub_cancel_left,
+  apply to_outer_measure_apply_ne_top,
+end
+
+end diff
 
 end outer_measure

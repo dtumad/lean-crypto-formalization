@@ -16,14 +16,62 @@ namespace oracle_comp
 open oracle_spec
 open_locale big_operators ennreal
 
-variables {α β γ : Type}
+variables {α β γ : Type} (spec spec' : oracle_spec) (a a' : α)
+
+section mem_support
+
+variable (x : α)
+
+lemma mem_support_return_iff : x ∈ (return a : oracle_comp spec α).support ↔ x = a := iff.rfl
+
+lemma mem_fin_support_return_iff : x ∈ (return a : oracle_comp spec α).fin_support ↔ x = a :=
+finset.mem_singleton
+
+lemma mem_support_return_self : x ∈ (return x : oracle_comp spec α).support := set.mem_singleton x
+
+lemma mem_fin_support_return_self : x ∈ (return x : oracle_comp spec α).fin_support :=
+finset.mem_singleton_self x
+
+lemma not_mem_support_return_iff : x ∉ (return a : oracle_comp spec α).support ↔ x ≠ a :=
+by rw [support_return, set.mem_singleton_iff]
+
+lemma not_mem_fin_support_return_iff : x ∉ (return a : oracle_comp spec α).fin_support ↔ x ≠ a :=
+by simp only [fin_support_return, finset.mem_singleton]
+
+lemma not_mem_support_of_ne {a x} (h : x ≠ a) : x ∉ (return a : oracle_comp spec α).support :=
+by simp only [h, support_return, set.mem_singleton_iff, not_false_iff]
+
+lemma not_mem_fin_support_of_ne {a x} (h : x ≠ a) :
+  x ∉ (return a : oracle_comp spec α).fin_support :=
+by simp only [h, fin_support_return, finset.mem_singleton, not_false_iff]
+
+end mem_support
+
+section eval_dist
+
+/-- The probability of getting `x` from `return a` is `1` if `x = a` and `0` if `x ≠ a`.
+Without a `decidable_eq` instance the output probabilities use `set.indicator`. -/
+lemma eval_dist_return_apply_eq_indicator (x : α) :
+  ⁅= x | (return a : oracle_comp spec α)⁆ = set.indicator {a} (λ _, 1) x := rfl
+
+/-- The probability of getting `x` from `return a` is `1` if `x = a` and `0` if `x ≠ a`. -/
+lemma eval_dist_return_apply [decidable_eq α] (x : α) :
+  ⁅= x | (return a : oracle_comp spec α)⁆ = ite (x = a) 1 0 := by convert rfl
+
+@[simp] lemma prob_event_return_eq_indicator (e : set α) :
+  ⁅e | (return a : oracle_comp spec α)⁆ = e.indicator (λ _, 1) a :=
+by rw [prob_event.def, eval_dist_return, pmf.to_outer_measure_pure_apply, set.indicator]
+
+@[simp] lemma prob_event_return (e : set α) [decidable_pred (∈ e)] :
+  ⁅e | (return a : oracle_comp spec α)⁆ = ite (a ∈ e) 1 0 :=
+by { simp only [prob_event.def, eval_dist_return, pmf.to_outer_measure_pure_apply], congr }
+
+end eval_dist
 
 section return_eq_iff
 
-variables (spec : oracle_spec) {spec' : oracle_spec} (a : α)
-
 /-- `return a` has the same distribution as `oa` iff outputs besides `a` have `0` probability. -/
-lemma return_dist_equiv_iff (oa : oracle_comp spec' α) :
+lemma return_dist_equiv_iff {spec' : oracle_spec} (oa : oracle_comp spec' α) :
   (return a : oracle_comp spec α) ≃ₚ oa ↔ ∀ x ≠ a, ⁅= x | oa⁆ = 0 :=
 by rw [dist_equiv, eval_dist_return, pmf.pure_eq_iff]
 
@@ -50,33 +98,45 @@ by rw [prob_event_return_eq_indicator, set.indicator, ite_eq_iff, @eq_comm ℝ�
 
 end return_eq_iff
 
-section return_eq_zero_iff
-
-variables (spec : oracle_spec) (a : α)
-
-lemma not_mem_support_return_iff (x : α) :
-  x ∉ (return a : oracle_comp spec α).support ↔ x ≠ a :=
-by rw [support_return, set.mem_singleton_iff]
-
-lemma not_mem_fin_support_return_iff (x : α) :
-  x ∉ (return a : oracle_comp spec α).fin_support ↔ x ≠ a :=
-by simp only [fin_support_return, finset.mem_singleton]
+section return_eq_zero
 
 /-- `x` has probability of `0` of being the output of `return a` iff `x ≠ a`. -/
 lemma eval_dist_return_apply_eq_zero_iff (x : α) :
   ⁅(return a : oracle_comp spec α)⁆ x = 0 ↔ x ≠ a :=
 by simp only [eval_dist_return, pmf.apply_eq_zero_iff, pmf.support_pure, set.mem_singleton_iff]
 
-@[simp] lemma prob_event_return_eq_zero_iff (e : set α) :
+lemma prob_event_return_eq_zero_iff (e : set α) :
   ⁅e | (return a : oracle_comp spec α)⁆ = 0 ↔ a ∉ e :=
 by rw [prob_event.def, eval_dist_return, pmf.to_outer_measure_apply_eq_zero_iff,
   pmf.support_pure, set.disjoint_singleton_left]
 
-end return_eq_zero_iff
+/-- The probability of getting a value besides `a` from `return a` is `0`. -/
+lemma eval_dist_return_apply_of_ne {a x} (h : x ≠ a) :
+  ⁅= x | (return a : oracle_comp spec α)⁆ = 0 :=
+by simpa only [eval_dist_return, pmf.pure_apply, ite_eq_right_iff]
 
-section return_eq_one_iff
+lemma prob_event_return_of_not_mem {a} {e : set α} (h : a ∉ e) :
+  ⁅e | (return a : oracle_comp spec α)⁆ = 0 :=
+by rwa [prob_event_eq_zero_iff_disjoint_support, support_return, set.disjoint_singleton_left]
 
-variables (spec : oracle_spec) (a : α)
+lemma prob_event_diff_of_mem {a} (e : set α) {e' : set α} (h : a ∈ e') :
+  ⁅e \ e' | (return a : oracle_comp spec α)⁆ = 0 :=
+prob_event_return_of_not_mem spec (set.not_mem_diff_of_mem h)
+
+lemma prob_event_return_diff_self (e : set α) : ⁅e \ {a} | (return a : oracle_comp spec α)⁆ = 0 :=
+prob_event_diff_of_mem spec e (set.mem_singleton a)
+
+lemma prob_event_return_inter_of_not_mem_left (e e' : set α) (h : a ∉ e) :
+  ⁅e ∩ e' | (return a : oracle_comp spec α)⁆ = 0 :=
+prob_event_return_of_not_mem spec (λ h', h h'.1)
+
+lemma prob_event_return_inter_of_not_mem_right (e e' : set α) (h : a ∉ e') :
+  ⁅e ∩ e' | (return a : oracle_comp spec α)⁆ = 0 :=
+prob_event_return_of_not_mem spec (λ h', h h'.2)
+
+end return_eq_zero
+
+section return_eq_one
 
 /-- `x` has a probability of `1` of being the output of `return a` iff `x = a`. -/
 lemma eval_dist_return_apply_eq_one_iff (x : α) :
@@ -84,16 +144,24 @@ lemma eval_dist_return_apply_eq_one_iff (x : α) :
 by rw [pmf.apply_eq_one_iff, support_eval_dist, support_return,
   set.singleton_eq_singleton_iff, eq_comm]
 
-@[simp] lemma prob_event_return_eq_one_iff (e : set α) :
+lemma prob_event_return_eq_one_iff (e : set α) :
   ⁅e | (return a : oracle_comp spec α)⁆ = 1 ↔ a ∈ e :=
 by rw [prob_event.def, eval_dist_return, pmf.to_outer_measure_apply_eq_one_iff,
   pmf.support_pure, set.singleton_subset_iff]
 
-end return_eq_one_iff
+lemma eval_dist_return_apply_self : ⁅= a | (return a : oracle_comp spec α)⁆ = 1 :=
+by rw [eval_dist_return_apply_eq_one_iff]
+
+lemma prob_event_return_singleton_self : ⁅{a} | (return a : oracle_comp spec α)⁆ = 1 :=
+by rw [prob_event_singleton_eq_eval_dist, eval_dist_return_apply_self]
+
+lemma prob_event_return_insert_self (s : set α) :
+  ⁅insert a s | (return a : oracle_comp spec α)⁆ = 1 :=
+by rw [prob_event_insert, eval_dist_return_apply_self, prob_event_return_diff_self, add_zero]
+
+end return_eq_one
 
 section return_eq_return_iff
-
-variables (spec spec' : oracle_spec) (a a' : α)
 
 /-- Two `return` computations are distributionally equivalent iff they return the same value. -/
 @[simp] lemma return_dist_equiv_return_iff :
@@ -116,8 +184,6 @@ lemma eval_dist_return_eq_eval_dist_return_iff :
   ⁅(return a : oracle_comp spec α)⁆ = ⁅(return a' : oracle_comp spec' α)⁆ ↔ a = a' :=
 return_dist_equiv_return_iff spec spec' a a'
 
--- TODO: this type of thing should work for simp, if we don't reduce eval dist by default.
--- Another reason to be looking in to using specialized simp tagging for that.
 lemma eval_dist_return_apply_eq_eval_dist_return_apply_iff (x y : α) :
   ⁅= x | (return a : oracle_comp spec α)⁆ = ⁅= y | (return a' : oracle_comp spec' α)⁆ ↔
     (x = a ↔ y = a') :=
@@ -132,63 +198,7 @@ by simpa only [prob_event_return_eq_iff, eq_self_iff_true, one_ne_zero, zero_ne_
 
 end return_eq_return_iff
 
-section return_of_ne
-
-variables (spec : oracle_spec) {a : α}
-
-lemma not_mem_support_of_ne {x : α} (h : x ≠ a) : x ∉ (return a : oracle_comp spec α).support :=
-by simp only [h, support_return, set.mem_singleton_iff, not_false_iff]
-
-lemma not_mem_fin_support_of_ne {x : α} (h : x ≠ a) :
-  x ∉ (return a : oracle_comp spec α).fin_support :=
-by simp only [h, fin_support_return, finset.mem_singleton, not_false_iff]
-
-/-- The probability of getting a value besides `a` from `return a` is `0`. -/
-lemma eval_dist_return_apply_of_ne {x : α} (h : x ≠ a) :
-  ⁅= x | (return a : oracle_comp spec α)⁆ = 0 :=
-by simpa only [eval_dist_return, pmf.pure_apply, ite_eq_right_iff]
-
-lemma prob_event_return_of_not_mem {e : set α} (h : a ∉ e) :
-  ⁅e | (return a : oracle_comp spec α)⁆ = 0 :=
-by rwa [prob_event_eq_zero_iff_disjoint_support, support_return, set.disjoint_singleton_left]
-
-lemma prob_event_diff_of_mem (e : set α) {e' : set α} (h : a ∈ e') :
-  ⁅e \ e' | (return a : oracle_comp spec α)⁆ = 0 :=
-prob_event_return_of_not_mem spec (set.not_mem_diff_of_mem h)
-
-lemma prob_event_return_diff_self (e : set α) : ⁅e \ {a} | (return a : oracle_comp spec α)⁆ = 0 :=
-prob_event_diff_of_mem spec e (set.mem_singleton a)
-
-lemma prob_event_inter_of_not_mem_left (e e' : set α) (h : a ∉ e) :
-  ⁅e ∩ e' | (return a : oracle_comp spec α)⁆ = 0 :=
-prob_event_return_of_not_mem spec (λ h', h h'.1)
-
-lemma prob_event_inter_of_not_mem_right (e e' : set α) (h : a ∉ e') :
-  ⁅e ∩ e' | (return a : oracle_comp spec α)⁆ = 0 :=
-prob_event_return_of_not_mem spec (λ h', h h'.2)
-
-end return_of_ne
-
-section return_self
-
-variables (spec : oracle_spec) (a : α)
-
-/-- The probability of getting the returned value `a` from `return a` is `1`. -/
-lemma eval_dist_return_apply_self : ⁅= a | (return a : oracle_comp spec α)⁆ = 1 :=
-by rw [eval_dist_return_apply_eq_one_iff]
-
-lemma prob_event_return_singleton_self : ⁅{a} | (return a : oracle_comp spec α)⁆ = 1 :=
-by rw [prob_event_singleton_eq_eval_dist, eval_dist_return_apply_self]
-
-lemma prob_event_return_insert_self (s : set α) :
-  ⁅insert a s | (return a : oracle_comp spec α)⁆ = 1 :=
-by rw [prob_event_insert, eval_dist_return_apply_self, prob_event_return_diff_self, add_zero]
-
-end return_self
-
 section indep_events
-
-variables (spec : oracle_spec) (a : α)
 
 /-- Any set of events are independent with respect to the computation `return a`. -/
 @[simp] lemma indep_events_return (es es' : set (set α)) :

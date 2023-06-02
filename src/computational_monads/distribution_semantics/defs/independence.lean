@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
 import computational_monads.distribution_semantics.defs.prob_event
-import probability.independence
+import probability.independence.basic
 
 /-!
 # Independent Events for Oracle Computations

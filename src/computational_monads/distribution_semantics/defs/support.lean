@@ -22,9 +22,7 @@ namespace oracle_comp
 
 open oracle_spec
 
-variables {α β γ : Type} {spec: oracle_spec} (a : α)
-  (oa : oracle_comp spec α) (ob : α → oracle_comp spec β)
-  (i : spec.ι) (t : spec.domain i) (u : spec.range i) (x : α) (y : β)
+variables {α β γ : Type} {spec spec' : oracle_spec}
 
 /-- Set of possible outputs of the computation, allowing for any possible output of the queries.
 This will generally correspond to the support of `eval_dist` (see `support_eval_dist`),
@@ -34,41 +32,19 @@ def support : Π {α : Type} (oa : oracle_comp spec α), set α
 | _ (bind' α β oa ob) := ⋃ α ∈ oa.support, (ob α).support
 | _ (query i t) := ⊤
 
-variable (spec)
+@[simp] lemma support_return (spec) (a) : (return a : oracle_comp spec α).support = {a} := rfl
 
-@[simp] lemma support_return : (return a : oracle_comp spec α).support = {a} := rfl
+lemma support_pure' (spec) (a) : (pure' α a : oracle_comp spec α).support = {a} := rfl
 
-lemma mem_support_return_iff : x ∈ (return a : oracle_comp spec α).support ↔ x = a := iff.rfl
+lemma support_pure (spec) (a) : (pure a : oracle_comp spec α).support = {a} := rfl
 
-lemma mem_support_return_self : x ∈ (return x : oracle_comp spec α).support := set.mem_singleton x
+@[simp] lemma support_bind (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) :
+  (oa >>= ob).support = ⋃ α ∈ oa.support, (ob α).support := rfl
 
-lemma support_pure' : (pure' α a : oracle_comp spec α).support = {a} := rfl
+lemma support_bind' (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) :
+  (bind' α β oa ob).support = ⋃ α ∈ oa.support, (ob α).support := rfl
 
-lemma mem_support_pure'_iff : x ∈ (pure' α a : oracle_comp spec α).support ↔ x = a := iff.rfl
-
-lemma mem_support_pure'_self : x ∈ (pure' α x : oracle_comp spec α).support := set.mem_singleton x
-
-lemma support_pure : (pure a : oracle_comp spec α).support = {a} := rfl
-
-lemma mem_support_pure_iff : x ∈ (pure a : oracle_comp spec α).support ↔ x = a := iff.rfl
-
-lemma mem_support_pure_self : x ∈ (pure x : oracle_comp spec α).support := set.mem_singleton x
-
-variable {spec}
-
-@[simp] lemma support_bind : (oa >>= ob).support = ⋃ α ∈ oa.support, (ob α).support := rfl
-
-lemma mem_support_bind_iff : y ∈ (oa >>= ob).support ↔ ∃ x ∈ oa.support, y ∈ (ob x).support :=
-by simp_rw [support_bind, set.mem_Union]
-
-lemma support_bind' : (bind' α β oa ob).support = ⋃ α ∈ oa.support, (ob α).support := rfl
-
-lemma mem_support_bind'_iff : y ∈ (bind' α β oa ob).support ↔
-  ∃ x ∈ oa.support, y ∈ (ob x).support := by simp_rw [support_bind', set.mem_Union]
-
-@[simp] lemma support_query : (query i t).support = ⊤ := rfl
-
-lemma mem_support_query : u ∈ (query i t).support := set.mem_univ u
+@[simp] lemma support_query (i : spec.ι) (t : spec.domain i) : (query i t).support = ⊤ := rfl
 
 /-- If the range of `spec` is a `fintype` then the support is a finite set. -/
 theorem support_finite (oa : oracle_comp spec α) : oa.support.finite :=
@@ -96,17 +72,19 @@ end
 instance support.coe_sort_inhabited (oa : oracle_comp spec α) : inhabited ↥(oa.support) :=
 begin
   induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t,
-  { exact ⟨⟨a, mem_support_pure_self spec a⟩⟩ },
+  { exact ⟨⟨a, set.mem_singleton_of_eq rfl⟩⟩ },
   { refine ⟨⟨(hob hoa.1).1.1, _⟩⟩,
     simp only [subtype.val_eq_coe, bind'_eq_bind, support_bind, set.mem_Union, exists_prop],
     exact ⟨hoa.1.1, hoa.1.2, (hob hoa.1).1.2⟩ },
-  { exact ⟨⟨default, mem_support_query i t default⟩⟩ }
+  { exact ⟨⟨default, set.mem_univ _⟩⟩ }
 end
 
-lemma support_eq_singleton_iff_forall : oa.support = {x} ↔ ∀ x' ∈ oa.support, x' = x :=
+lemma support_eq_singleton_iff_forall (oa : oracle_comp spec α) (x) :
+  oa.support = {x} ↔ ∀ x' ∈ oa.support, x' = x :=
 by simp only [set.eq_singleton_iff_nonempty_unique_mem, oa.support_nonempty, true_and]
 
-lemma support_eq_singleton_iff_subset : oa.support = {x} ↔ oa.support ⊆ {x} :=
+lemma support_eq_singleton_iff_subset (oa : oracle_comp spec α) (x) :
+  oa.support = {x} ↔ oa.support ⊆ {x} :=
 by simp only [support_eq_singleton_iff_forall, set.subset_singleton_iff]
 
 /-- Should be able to automatically derive the support for most simple computations -/

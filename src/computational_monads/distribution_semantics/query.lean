@@ -18,6 +18,35 @@ open_locale big_operators ennreal
 
 variables {α β γ : Type} {spec spec': oracle_spec} (i : spec.ι) (i' : spec'.ι)
 
+lemma mem_support_query (t : spec.domain i) (u : spec.range i) : u ∈ (query i t).support := set.mem_univ u
+
+lemma mem_fin_support_query (t : spec.domain i) (u : spec.range i) : u ∈ (query i t).fin_support := finset.mem_univ u
+
+
+/-- The chance of getting a result `u` from `query i t` is uniform over the output type. -/
+lemma eval_dist_query_apply (t : spec.domain i) (u : spec.range i) : ⁅= u | query i t⁆ = 1 / (fintype.card $ spec.range i) :=
+by rw [eval_dist_query, pmf.uniform_of_fintype_apply, one_div]
+
+lemma eval_dist_query_apply_eq_inv (t : spec.domain i) (u : spec.range i) : ⁅= u | query i t⁆ = (fintype.card $ spec.range i)⁻¹ :=
+by rw [eval_dist_query, pmf.uniform_of_fintype_apply]
+
+
+@[simp] lemma prob_event_query (t : spec.domain i) (e : set (spec.range i)) [decidable_pred e] :
+  ⁅e | query i t⁆ = fintype.card e / fintype.card (spec.range i) :=
+by simp only [prob_event.def, eval_dist_query, pmf.to_outer_measure_uniform_of_fintype_apply,
+  fintype.card_of_finset, finset.filter_congr_decidable]
+
+-- lemma prob_event_query_bind_eq_tsum  :
+--   ⁅e' | query i t >>= oa⁆ = (∑' x, ⁅e' | oa x⁆) / fintype.card (spec.range i) :=
+-- by simp only [prob_event_bind_eq_tsum, eval_dist_query_apply, div_eq_mul_inv,
+--   ← ennreal.tsum_mul_right, one_mul, mul_comm]
+
+-- lemma prob_event_query_bind_eq_sum :
+--   ⁅e' | query i t >>= oa⁆ = (∑ x, ⁅e' | oa x⁆) / fintype.card (spec.range i) :=
+-- by simp only [prob_event_bind_eq_sum, eval_dist_query_apply, div_eq_mul_inv,
+--   finset.mul_sum, one_mul, mul_comm]
+
+
 section query_eq_iff
 
 /-- A computation is distributionally equivalent to query iff all outcomes are equally likely. -/
