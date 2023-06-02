@@ -24,22 +24,17 @@ section query_eq_iff
 lemma query_dist_equiv_iff (t : spec.domain i) (oa : oracle_comp spec' (spec.range i)) :
   query i t ≃ₚ oa ↔ ∀ u u', ⁅= u | oa⁆ = ⁅= u' | oa⁆ :=
 begin
-  refine ⟨λ h, _, λ h, _⟩,
-  {
-    intros u u',
-    simp only [← h.eval_dist_eq, eval_dist_query_apply],
-  },
-  {
-
-    simp only [dist_equiv.ext_iff, eval_dist_query_apply],
-    intro x,
-    have : ∑ x' : spec.range i, ⁅oa⁆ x = 1 := begin
-      sorry,
-    end,
-    rw [finset.sum_const] at this,
-    simp at this,
-    sorry,
-  }
+  refine ⟨λ h u u', by simp only [← h.eval_dist_eq, eval_dist_query_apply], λ h, _⟩,
+  simp only [dist_equiv.ext_iff, eval_dist_query_apply],
+  intro x,
+  have : ∑ x' : spec.range i, ⁅oa⁆ x = 1,
+  by calc ∑ x' : spec.range i, ⁅oa⁆ x = ∑ x' : spec.range i, ⁅oa⁆ x' : finset.sum_congr rfl (λ x' _, h x x')
+    ... = 1 : by simp_rw [sum_eq_tsum_indicator, finset.coe_univ, set.indicator_univ, pmf.tsum_coe],
+  rw [finset.sum_const, nsmul_eq_mul] at this,
+  rw [← this, fintype.card, mul_comm, mul_div_assoc, ennreal.div_self, mul_one],
+  { rw [nat.cast_ne_zero],
+    refine finset.card_ne_zero_of_mem (finset.mem_univ x) },
+  { simp only [ne.def, ennreal.nat_ne_top, not_false_iff] }
 end
 
 -- lemma eval_dist_query_eq_iff (t : spec.domain i) (p : pmf (spec.range i)) :

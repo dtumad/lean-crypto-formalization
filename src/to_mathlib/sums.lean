@@ -41,6 +41,7 @@ end tsum_prod
 
 section option
 
+-- TODO: wasn't this merged somewhere?
 lemma tsum_option_eq_extract_none {α β : Type*} [add_comm_group α] [topological_space α]
   [topological_add_group α] [t2_space α] [decidable_eq β]
   (f : option β → α) (hf : summable f) : tsum f = f none + ∑' x, f (some x) :=
@@ -86,6 +87,37 @@ calc ∑' (x : option α), f x
       { exact false.elim (hx rfl) },
       { exact ⟨a, hfx, rfl⟩ } },
     { simp only [subtype.val_eq_coe, if_false, eq_self_iff_true, implies_true_iff] }
+end
+
+theorem dedup_eq_cons_iff [decidable_eq α] (l : list α) (a : α) (l' : list α) :
+  l.dedup = a :: l' ↔ a ∈ l ∧ a ∉ l' ∧ l' = l.dedup.tail :=
+begin
+  refine ⟨λ h, _, λ h, _⟩,
+  { refine ⟨list.mem_dedup.1 (h.symm ▸ list.mem_cons_self _ _), λ ha, _, by rw [h, list.tail_cons]⟩,
+    have : list.count a l.dedup ≤ 1 := list.nodup_iff_count_le_one.1 (list.nodup_dedup l) a,
+    rw [h, list.count_cons_self, add_le_iff_nonpos_left] at this,
+    exact (not_le_of_lt (list.count_pos.2 ha) this) },
+  { obtain ⟨ha, ha', h⟩ := h,
+    have := @list.cons_head_tail α ⟨a⟩ _ (list.ne_nil_of_mem (list.mem_dedup.2 ha)),
+    have hal : a ∈ l.dedup := list.mem_dedup.2 ha,
+    rw [← this, ← h, list.cons_eq_cons],
+    rw [← this, list.mem_cons_iff, or_iff_not_imp_right] at hal,
+    refine ⟨(hal (h ▸ ha')).symm, rfl⟩ }
+end
+
+
+theorem head_dedup [decidable_eq α] [inhabited α] (l : list α) :
+  l.dedup.head = if l.head ∈ l.tail then l.tail.dedup.head else l.head :=
+match l with
+| [] := rfl
+| (a :: l) := by { by_cases ha : a ∈ l; simp [ha, list.dedup_cons_of_mem] }
+end
+
+theorem tail_dedup [decidable_eq α] [inhabited α] (l : list α) :
+  l.dedup.tail = if l.head ∈ l.tail then l.tail.dedup.tail else l.tail.dedup :=
+match l with
+| [] := rfl
+| (a :: l) := by { by_cases ha : a ∈ l; simp [ha, list.dedup_cons_of_mem] }
 end
 
 end option
