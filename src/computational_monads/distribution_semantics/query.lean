@@ -66,18 +66,25 @@ begin
   { simp only [ne.def, ennreal.nat_ne_top, not_false_iff] }
 end
 
--- lemma eval_dist_query_eq_iff (t : spec.domain i) (p : pmf (spec.range i)) :
---   ⁅query i t⁆ = p ↔ ∀ x x', p x = p x' :=
--- begin
---   rw [eval_dist_query],
---   simp [pmf.ext_iff],
--- end
+lemma eval_dist_query_eq_iff (t : spec.domain i) (p : pmf (spec.range i)) :
+  ⁅query i t⁆ = p ↔ ∀ x x', p x = p x' :=
+begin
+  simp only [eval_dist_query, pmf.ext_iff, pmf.uniform_of_fintype_apply],
+  refine ⟨λ h, λ x x', (h x).symm.trans (h x'), λ h x, _⟩,
+  { have hc : (((finset.univ : finset (spec.range i)).card) : ℝ≥0∞) ≠ 0,
+    from nat.cast_ne_zero.2 (finset.card_ne_zero_of_mem (finset.mem_univ x)),
+    have : ∑ x' : spec.range i, p x = 1 := (tsum_eq_sum (λ x' hx',
+      (hx' (finset.mem_univ _)).elim)).symm.trans (trans (tsum_congr (h x)) p.tsum_coe),
+    rw [finset.sum_const, nsmul_eq_mul] at this,
+    rw [inv_eq_one_div, ← this, fintype.card, mul_comm, mul_div_assoc,
+      ennreal.div_self hc (ennreal.nat_ne_top _), mul_one] }
+end
 
 lemma eval_dist_query_apply_eq_iff (t : spec.domain i) (u : spec.range i) (r : ℝ≥0∞) :
   ⁅= u | query i t⁆ = r ↔ ↑(fintype.card $ spec.range i) = r⁻¹ :=
 by rw [eval_dist_query_apply_eq_inv, inv_eq_iff_eq_inv]
 
-lemma eval_dist_query_apply_eq_iff_mul_eq_one (t : spec.domain i) (u : spec.range i) (r : ℝ≥0∞) :
+lemma eval_dist_query_apply_eq_iff_mul_right_eq_one (t : spec.domain i) (u : spec.range i) (r : ℝ≥0∞) :
   ⁅= u | query i t⁆ = r ↔ r * (fintype.card $ spec.range i) = 1 :=
 begin
   by_cases hr0 : r = 0,
