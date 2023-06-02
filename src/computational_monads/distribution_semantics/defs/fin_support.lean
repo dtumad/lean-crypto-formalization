@@ -4,7 +4,6 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
 import computational_monads.distribution_semantics.defs.support
-import to_mathlib.general
 
 /-!
 # Support of an Oracle Computation as a Finset

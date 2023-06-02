@@ -5,8 +5,6 @@ Authors: Devon Tuma
 -/
 import computational_monads.distribution_semantics.return
 import computational_monads.distribution_semantics.bind
-import computational_monads.distribution_semantics.query
-
 
 /-!
 # Probability Distributions of Monadic Oracle Constructions
@@ -158,37 +156,5 @@ sorry --prob_event_eq_of_eval_dist_eq (eval_dist_bind_return_id oa) e
 
 
 end bind_return
-
-
-section query_bind
-
-variables (i : spec.ι) (t : spec.domain i) (oa : spec.range i → oracle_comp spec α) (x : α)
-
-
-lemma support_query_bind : (query i t >>= oa).support = ⋃ u, (oa u).support :=
-by simp only [support_bind, set.Union_true]
-
-lemma mem_support_query_bind_iff : x ∈ (query i t >>= oa).support ↔ ∃ t, x ∈ (oa t).support :=
-by rw [support_query_bind, set.mem_Union]
-
-lemma fin_support_query_bind [decidable_eq α] : (query i t >>= oa).fin_support =
-  finset.bUnion finset.univ (λ u, (oa u).fin_support) :=
-by {simp only [fin_support_bind, fin_support_query, finset.top_eq_univ], congr}
-
-lemma mem_fin_support_query_bind_iff [decidable_eq α] :
-  x ∈ (query i t >>= oa).fin_support ↔ ∃ t, x ∈ (oa t).fin_support :=
-by simp only [fin_support_query_bind, finset.mem_bUnion, finset.mem_univ, exists_true_left]
-
-lemma eval_dist_query_bind_apply_eq_tsum :
-  ⁅query i t >>= oa⁆ x = (∑' u, ⁅oa u⁆ x) / (fintype.card $ spec.range i) :=
-by simp_rw [eval_dist_bind_apply_eq_tsum, eval_dist_query_apply, div_eq_mul_inv,
-  one_mul, ennreal.tsum_mul_left, mul_comm]
-
-lemma eval_dist_query_bind_apply_eq_sum :
-  ⁅query i t >>= oa⁆ x = (∑ u, ⁅oa u⁆ x) / (fintype.card $ spec.range i) :=
-by simp_rw [eval_dist_bind_apply_eq_sum, eval_dist_query_apply, div_eq_mul_inv,
-  one_mul, finset.sum_mul, mul_comm]
-
-end query_bind
 
 end oracle_comp

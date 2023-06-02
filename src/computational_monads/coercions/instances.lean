@@ -67,7 +67,7 @@ instance is_sub_spec_coin_spec_uniform_selecting : is_sub_spec coin_spec uniform
   eval_dist_to_fun' := λ i t, pmf.ext (λ x, by cases x;
     simp_rw [eval_dist_uniform_select_vector_apply, vector.to_list_cons,
       vector.to_list_nil, list.count_cons, list.count_nil, eq_self_iff_true, if_true, if_false,
-      eval_dist_query_apply, card_range_coin_spec, nat.cast_one]) }
+      eval_dist_query_apply_eq_div, card_range_coin_spec, nat.cast_one]) }
 
 @[simp] lemma is_sub_spec_coin_uniform_selecting_apply (i t : unit) :
   (oracle_spec.is_sub_spec_coin_spec_uniform_selecting).to_fun i t =
