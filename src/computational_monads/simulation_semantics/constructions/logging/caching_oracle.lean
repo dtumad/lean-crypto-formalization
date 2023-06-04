@@ -69,7 +69,7 @@ section support
 begin
   split_ifs with hlog; ext x,
   { rw [apply_eq_of_not_queried i t log hlog, support_bind_return, support_query,
-      set.top_eq_univ, set.image_univ, set.mem_range, set.mem_set_of_eq],
+      set.image_univ, set.mem_range, set.mem_set_of_eq],
     refine ⟨λ h, _, λ h, _⟩,
     { obtain ⟨u, rfl⟩ := h,
       refl },

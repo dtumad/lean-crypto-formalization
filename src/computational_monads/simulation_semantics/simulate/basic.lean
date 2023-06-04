@@ -164,7 +164,7 @@ section prob_event
 
 lemma prob_event_simulate_return (e : set (α × S)) :
   ⁅e | simulate so (return a) s⁆ = e.indicator (λ _, 1) (a, s) :=
-prob_event_return_eq_indicator (a, s) e
+prob_event_return_eq_indicator _ (a, s) e
 
 lemma prob_event_simulate_bind_eq_tsum_tsum (e : set (β × S)) : ⁅e | simulate so (oa >>= ob) s⁆ =
   ∑' a s', ⁅simulate so oa s⁆ (a, s') * ⁅e | simulate so (ob a) s'⁆ :=

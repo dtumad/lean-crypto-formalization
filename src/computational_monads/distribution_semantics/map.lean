@@ -199,7 +199,7 @@ begin
 end
 
 lemma prob_event_map_bind (e' : set γ) : ⁅e' | g <$> (oa >>= ob)⁆ = ⁅e' | oa >>= λ x, g <$> (ob x)⁆ :=
-(map_bind_dist_equiv g oa ob e').prob_event_eq e'
+(map_bind_dist_equiv oa ob g).prob_event_eq e'
 
 end map_bind
 

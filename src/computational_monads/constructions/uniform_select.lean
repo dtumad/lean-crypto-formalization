@@ -3,7 +3,8 @@ Copyright (c) 2022 Devon Tuma. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
-import computational_monads.distribution_semantics.monad
+import computational_monads.distribution_semantics.map
+import computational_monads.distribution_semantics.query
 import to_mathlib.uniform_of_vector
 import data.vector.mem
 
@@ -84,7 +85,7 @@ section prob_event
 
 @[simp] lemma prob_event_uniform_fin (e : set (fin $ m + 1)) [decidable_pred e] :
   ⁅e | $[0..m]⁆ = (fintype.card e) / (m + 1) :=
-by simp only [uniform_fin, prob_event_query, uniform_selecting_range,
+by simp only [uniform_fin, prob_event_query_eq_div, uniform_selecting_range,
   fintype.card_fin, nat.cast_add, nat.cast_one]
 
 @[simp] lemma prob_event_uniform_fin_bind_eq_tsum (e : set α) :
@@ -371,7 +372,7 @@ section eval_dist
 @[simp] lemma eval_dist_uniform_select_finset : ⁅$ˢ bag h⁆ = pmf.uniform_of_finset bag h :=
 (pmf.ext $ λ x, by simp only [uniform_select_finset, div_eq_mul_inv, eval_dist_uniform_select_list,
   uniform_of_list_apply, finset.count_to_list, nat.cast_ite, algebra_map.coe_one,
-  char_p.cast_eq_zero, finset.length_to_list, boole_mul, uniform_of_finset_apply])
+  algebra_map.coe_zero, finset.length_to_list, boole_mul, uniform_of_finset_apply])
 
 lemma eval_dist_uniform_select_finset_apply : ⁅$ˢ bag h⁆ x = ite (x ∈ bag) bag.card⁻¹ 0 :=
 by { rw [eval_dist_uniform_select_finset, pmf.uniform_of_finset_apply], congr }

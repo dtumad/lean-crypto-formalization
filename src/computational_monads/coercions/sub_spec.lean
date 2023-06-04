@@ -63,10 +63,10 @@ namespace is_sub_spec
 variables (sub_spec super_spec : oracle_spec) [h : sub_spec ⊂ₒ super_spec]
   (i : sub_spec.ι) (t : sub_spec.domain i)
 
-@[simp] lemma support_to_fun : (h.to_fun i t).support = ⊤ :=
+@[simp] lemma support_to_fun : (h.to_fun i t).support = set.univ :=
 by rw [← support_eval_dist, h.eval_dist_to_fun', support_eval_dist, support_query]
 
-@[simp] lemma fin_support_to_fun : (h.to_fun i t).fin_support = ⊤ :=
+@[simp] lemma fin_support_to_fun : (h.to_fun i t).fin_support = finset.univ :=
 by simp only [fin_support_eq_iff_support_eq_coe, finset.top_eq_univ,
   support_to_fun, set.top_eq_univ, finset.coe_univ]
 
