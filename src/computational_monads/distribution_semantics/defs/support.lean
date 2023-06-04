@@ -30,7 +30,7 @@ but is slightly more general since it doesn't require α finite range. -/
 def support : Π {α : Type} (oa : oracle_comp spec α), set α
 | _ (pure' α a) := {a}
 | _ (bind' α β oa ob) := ⋃ α ∈ oa.support, (ob α).support
-| _ (query i t) := ⊤
+| _ (query i t) := set.univ
 
 @[simp] lemma support_return (spec) (a) : (return a : oracle_comp spec α).support = {a} := rfl
 
@@ -44,7 +44,8 @@ lemma support_pure (spec) (a) : (pure a : oracle_comp spec α).support = {a} := 
 lemma support_bind' (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) :
   (bind' α β oa ob).support = ⋃ α ∈ oa.support, (ob α).support := rfl
 
-@[simp] lemma support_query (i : spec.ι) (t : spec.domain i) : (query i t).support = ⊤ := rfl
+@[simp] lemma support_query (i : spec.ι) (t : spec.domain i) :
+  (query i t).support = set.univ := rfl
 
 /-- If the range of `spec` is a `fintype` then the support is a finite set. -/
 theorem support_finite (oa : oracle_comp spec α) : oa.support.finite :=

@@ -58,6 +58,9 @@ instance range.inhabited {spec : oracle_spec} (i : spec.ι) :
 instance range.fintype' {spec : oracle_spec} (i : spec.ι) :
   fintype (spec.range i) := spec.range_fintype i
 
+@[simp] lemma card_range_ne_zero {spec : oracle_spec} (i : spec.ι) :
+  fintype.card (spec.range i) ≠ 0 := fintype.card_ne_zero
+
 /-- No access to any oracles. Represented by an empty indexing set via the `empty` type.
 Since `empty` is uninhabited, it isn't possible to construct a query to this oracle.
 We use `unit` for the input and output types but this is just a dummy value. -/

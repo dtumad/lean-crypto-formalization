@@ -58,6 +58,10 @@ lemma eval_dist_return_apply_eq_indicator (x : α) :
 lemma eval_dist_return_apply [decidable_eq α] (x : α) :
   ⁅= x | (return a : oracle_comp spec α)⁆ = ite (x = a) 1 0 := by convert rfl
 
+end eval_dist
+
+section prob_event
+
 @[simp] lemma prob_event_return_eq_indicator (e : set α) :
   ⁅e | (return a : oracle_comp spec α)⁆ = e.indicator (λ _, 1) a :=
 by rw [prob_event.def, eval_dist_return, pmf.to_outer_measure_pure_apply, set.indicator]
@@ -66,7 +70,7 @@ by rw [prob_event.def, eval_dist_return, pmf.to_outer_measure_pure_apply, set.in
   ⁅e | (return a : oracle_comp spec α)⁆ = ite (a ∈ e) 1 0 :=
 by { simp only [prob_event.def, eval_dist_return, pmf.to_outer_measure_pure_apply], congr }
 
-end eval_dist
+end prob_event
 
 section return_eq_iff
 

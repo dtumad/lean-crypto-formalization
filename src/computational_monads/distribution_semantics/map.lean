@@ -134,9 +134,8 @@ lemma eval_dist_map_apply_eq_sum_fin_support_indicator [decidable_eq β] :
   ⁅f <$> oa⁆ y = ∑ x in oa.fin_support, (f ⁻¹' {y}).indicator ⁅oa⁆ x :=
 eval_dist_bind_return_apply_eq_sum_fin_support_indicator oa f y
 
-
 @[simp] lemma prob_event_map (e : set β) : ⁅e | f <$> oa⁆ = ⁅f ⁻¹' e | oa⁆ :=
-sorry --by simp only [prob_event.def, eval_dist_map, pmf.to_outer_measure_map_apply]
+prob_event_bind_return oa f e
 
 @[simp] lemma eval_dist_map_id : ⁅id <$> oa⁆ = ⁅oa⁆ := by rw [eval_dist_map, ⁅oa⁆.map_id]
 
@@ -166,14 +165,16 @@ by simp only [eval_dist_map, eval_dist_return, pmf.map_pure]
 
 lemma prob_event_map_return (e : set β) : ⁅e | f <$> (return a : oracle_comp spec α)⁆ =
   ⁅e | (return (f a) : oracle_comp spec β)⁆ :=
-sorry --prob_event_eq_of_eval_dist_eq (by rw [eval_dist_map_return, eval_dist_return]) e
+prob_event_eq_of_eval_dist_eq (by rw [eval_dist_map_return, eval_dist_return]) e
 
 end map_return
 
 section map_bind
 
-variables --(oa : oracle_comp spec α) (ob : α → oracle_comp spec β) (g : β → γ) (z : γ)
+lemma map_bind_dist_equiv : g <$> (oa >>= ob) ≃ₚ oa >>= (λ x, g <$> ob x) :=
+by simp only [dist_equiv.def, eval_dist_map, eval_dist_bind, pmf.map_bind]
 
+-- todo cleanup here
 lemma eval_dist_map_bind : ⁅g <$> (oa >>= ob)⁆ = ⁅oa⁆.bind (λ x, ⁅ob x⁆.map g) :=
 by simp only [eval_dist_map, eval_dist_bind, pmf.map_bind]
 
@@ -197,9 +198,8 @@ begin
     eval_dist_map_apply_eq_sum_fin_support, ← finset.mul_sum],
 end
 
-
 lemma prob_event_map_bind (e' : set γ) : ⁅e' | g <$> (oa >>= ob)⁆ = ⁅e' | oa >>= λ x, g <$> (ob x)⁆ :=
-sorry
+(map_bind_dist_equiv g oa ob e').prob_event_eq e'
 
 end map_bind
 

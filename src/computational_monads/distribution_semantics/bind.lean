@@ -83,6 +83,10 @@ lemma eval_dist_bind_apply_eq_sum_of_support_subset (y : β) (s : finset α) (hs
 (eval_dist_bind_apply_eq_tsum oa ob y).trans (tsum_eq_sum (λ x hx,
   (eval_dist_eq_zero (λ h, hx (finset.mem_coe.1 (hs h)))).symm ▸ (zero_mul _)))
 
+end eval_dist
+
+section prob_event
+
 @[simp] lemma prob_event_bind_eq_tsum (e' : set β) :
   ⁅e' | oa >>= ob⁆ = ∑' x, ⁅oa⁆ x * ⁅e' | ob x⁆ :=
 by simp only [prob_event.def, eval_dist_bind, pmf.to_outer_measure_bind_apply]
@@ -100,7 +104,7 @@ theorem prob_event_bind_eq_sum_of_support_subset (e : set β) (s : finset α) (h
 (prob_event_bind_eq_tsum oa ob e).trans (tsum_eq_sum (λ x hx,
   (eval_dist_eq_zero (λ h, hx (finset.mem_coe.1 (hs h)))).symm ▸ (zero_mul _)))
 
-end eval_dist
+end prob_event
 
 section bind_eq_iff
 

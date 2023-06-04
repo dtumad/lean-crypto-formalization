@@ -74,7 +74,7 @@ begin
   { exact pmf.support_pure a },
   { exact (set.ext $ λ x, by simp_rw [support_bind, set.mem_Union, ← bind'_eq_bind, eval_dist,
       pmf.mem_support_bind_iff, hoa, hob]) },
-  { rw [eval_dist, pmf.support_uniform_of_fintype, support_query] }
+  { rw [eval_dist, pmf.support_uniform_of_fintype, support_query, set.top_eq_univ] }
 end
 
 /-- The support of the `pmf` associated to a computation is the coercion of its `fin_support`. -/

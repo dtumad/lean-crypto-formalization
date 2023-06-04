@@ -9,8 +9,7 @@ import computational_monads.distribution_semantics.bind
 /-!
 # Probability Distributions of Monadic Oracle Constructions
 
-This file gives additional lemmas about distribution semantics for composed monad operations,
-such as a `bind` followed by a `return`.
+This file gives additional lemmas about how distribution semantics of `bind` and `return` interact.
 -/
 
 namespace oracle_comp
@@ -37,15 +36,17 @@ lemma mem_fin_support_return_bind_iff :
   y ∈ (return a >>= ob).fin_support ↔ y ∈ (ob a).fin_support :=
 by rw [fin_support_return_bind]
 
+lemma return_bind_dist_equiv : return a >>= ob ≃ₚ ob a :=
+by simp only [dist_equiv.def, eval_dist_bind, eval_dist_return, pmf.pure_bind]
+
 lemma eval_dist_return_bind : ⁅return a >>= ob⁆ = ⁅ob a⁆ :=
-by simp only [eval_dist_bind, eval_dist_return, pmf.pure_bind]
+(return_bind_dist_equiv a ob).eval_dist_eq
 
-lemma eval_dist_return_bind_apply : ⁅return a >>= ob⁆ y = ⁅ob a⁆ y :=
-by simp only [eval_dist_bind, eval_dist_return, pmf.pure_bind]
-
+lemma eval_dist_return_bind_apply : ⁅= y | return a >>= ob⁆ = ⁅= y | ob a⁆ :=
+(return_bind_dist_equiv a ob).eval_dist_apply_eq y
 
 @[simp] lemma prob_event_return_bind : ⁅e' | return a >>= ob⁆ = ⁅e' | ob a⁆ :=
-sorry --prob_event_eq_of_eval_dist_eq (eval_dist_return_bind a ob) e'
+(return_bind_dist_equiv a ob).prob_event_eq e'
 
 end return_bind
 
@@ -53,9 +54,8 @@ section bind_return
 
 variables (oa : oracle_comp spec α) (f : α → β) (y : β) (e' : set β)
 
-
 @[simp] lemma support_bind_return : (oa >>= λ x, return (f x)).support = f '' oa.support :=
-calc (f <$> oa).support = ⋃ x ∈ oa.support, {f x} : rfl
+calc (oa >>= λ x, return (f x)).support = ⋃ x ∈ oa.support, {f x} : rfl
   ... = f '' (⋃ x ∈ oa.support, {x}) : by simp only [set.image_Union, set.image_singleton]
   ... = f '' oa.support : congr_arg (λ _, f '' _) (set.bUnion_of_singleton oa.support)
 
@@ -123,8 +123,11 @@ lemma eval_dist_bind_return_apply_eq_sum_fin_support_indicator :
   (tsum_eq_sum (λ x hx, by simp_rw [set.indicator_apply_eq_zero,
     eval_dist_eq_zero_iff', hx, not_false_iff, imp_true_iff]))
 
-@[simp] lemma eval_dist_bind_return_id : ⁅oa >>= return⁆ = ⁅oa⁆ :=
+lemma bind_return_id_dist_equiv : oa >>= return ≃ₚ oa :=
 (eval_dist_bind_return oa id).trans (by rw [pmf.map_id])
+
+@[simp] lemma eval_dist_bind_return_id : ⁅oa >>= return⁆ = ⁅oa⁆ :=
+(bind_return_id_dist_equiv oa).eval_dist_eq
 
 lemma eval_dist_bind_return_apply_eq_single' (x : α) (hx : f x = y)
   (h : ∀ x' ∈ oa.support, f x' = y → x' = x) : ⁅oa >>= λ x, return (f x)⁆ y = ⁅oa⁆ x :=
@@ -146,14 +149,14 @@ begin
   refine (λ _ h h', (h h').elim),
 end
 
-
 @[simp] lemma prob_event_bind_return : ⁅e' | oa >>= λ a, return (f a)⁆ = ⁅f ⁻¹' e' | oa⁆ :=
-show ⁅e' | f <$> oa⁆ = ⁅f ⁻¹' e' | oa⁆,
-by sorry --by simp only [prob_event.def, eval_dist_map, pmf.to_outer_measure_map_apply]
+begin
+  rw [prob_event_bind_eq_tsum, prob_event_eq_tsum_indicator],
+  refine tsum_congr (λ x, by simpa only [prob_event_return_eq_indicator, set.indicator, mul_boole])
+end
 
 @[simp] lemma prob_event_bind_return_id (e : set α) : ⁅e | oa >>= return⁆ = ⁅e | oa⁆ :=
-sorry --prob_event_eq_of_eval_dist_eq (eval_dist_bind_return_id oa) e
-
+by rw [prob_event_bind_return, set.preimage_id']
 
 end bind_return
 
