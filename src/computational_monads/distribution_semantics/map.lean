@@ -19,7 +19,6 @@ variables {α β γ : Type} {spec spec' : oracle_spec} (oa : oracle_comp spec α
   (ob : α → oracle_comp spec β) (oc : β → oracle_comp spec γ)
   (f : α → β) (g : β → γ) (x : α) (y : β) (z : γ)
 
-
 section map
 
 @[simp] lemma support_map : (f <$> oa).support = f '' oa.support :=

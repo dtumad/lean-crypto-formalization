@@ -54,7 +54,7 @@ Informally, `sub_spec ⊂ₒ super_spec` means that for any query to an oracle o
 it can be perfectly simulated by a computation using the oracles of `super_spec`. -/
 class is_sub_spec (sub_spec super_spec : oracle_spec) :=
 (to_fun (i : sub_spec.ι) (t : sub_spec.domain i) : oracle_comp super_spec (sub_spec.range i))
-(eval_dist_to_fun' : ∀ i t, ⁅to_fun i t⁆ = ⁅query i t⁆)
+(to_fun_equiv : ∀ i t, to_fun i t ≃ₚ query i t)
 
 infixl ` ⊂ₒ `:65 := is_sub_spec
 
@@ -64,18 +64,25 @@ variables (sub_spec super_spec : oracle_spec) [h : sub_spec ⊂ₒ super_spec]
   (i : sub_spec.ι) (t : sub_spec.domain i)
 
 @[simp] lemma support_to_fun : (h.to_fun i t).support = set.univ :=
-by rw [← support_eval_dist, h.eval_dist_to_fun', support_eval_dist, support_query]
+(h.to_fun_equiv i t).support_eq.trans (support_query i t)
 
 @[simp] lemma fin_support_to_fun : (h.to_fun i t).fin_support = finset.univ :=
-by simp only [fin_support_eq_iff_support_eq_coe, finset.top_eq_univ,
-  support_to_fun, set.top_eq_univ, finset.coe_univ]
+(h.to_fun_equiv i t).fin_support_eq.trans (fin_support_query i t)
 
 @[simp] lemma eval_dist_to_fun : ⁅h.to_fun i t⁆ = pmf.uniform_of_fintype (sub_spec.range i) :=
-by rw [h.eval_dist_to_fun', eval_dist_query]
+(h.to_fun_equiv i t).eval_dist_eq.trans (eval_dist_query i t)
 
-@[simp] lemma prob_event_to_fun (e : set (sub_spec.range i)) :
-  ⁅e | h.to_fun i t⁆ = ⁅e | query i t⁆ :=
-prob_event_eq_of_eval_dist_eq (h.eval_dist_to_fun' i t) e
+lemma eval_dist_to_fun_apply_eq_div (u : sub_spec.range i) :
+  ⁅= u | h.to_fun i t⁆ = 1 / fintype.card (sub_spec.range i) :=
+((h.to_fun_equiv i t).eval_dist_apply_eq u).trans (eval_dist_query_apply_eq_div i t u)
+
+lemma eval_dist_to_fun_apply_eq_inv (u : sub_spec.range i) :
+  ⁅= u | h.to_fun i t⁆ = (fintype.card (sub_spec.range i))⁻¹ :=
+((h.to_fun_equiv i t).eval_dist_apply_eq u).trans (eval_dist_query_apply_eq_inv i t u)
+
+@[simp] lemma prob_event_to_fun_eq_div (e : set (sub_spec.range i)) [decidable_pred (∈ e)] :
+  ⁅e | h.to_fun i t⁆ = fintype.card e / fintype.card (sub_spec.range i) :=
+((h.to_fun_equiv i t).prob_event_eq e).trans (prob_event_query_eq_div i t e)
 
 end is_sub_spec
 

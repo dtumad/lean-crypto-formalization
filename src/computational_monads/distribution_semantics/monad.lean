@@ -63,9 +63,6 @@ lemma mem_support_bind_return_iff :
   y ∈ (oa >>= λ x, return (f x)).support ↔ ∃ x ∈ oa.support, f x = y :=
 by simp only [support_bind_return, set.mem_image, exists_prop]
 
-@[simp] lemma support_bind_return_id : (oa >>= return).support = oa.support :=
-(support_bind_return oa id).trans (set.image_id oa.support)
-
 @[simp] lemma fin_support_bind_return [decidable_eq β] :
   (oa >>= λ a, return (f a)).fin_support = oa.fin_support.image f :=
 by rw [fin_support_eq_iff_support_eq_coe, support_bind_return,
@@ -75,12 +72,9 @@ lemma mem_fin_support_bind_return_iff [decidable_eq β] :
   y ∈ (oa >>= λ a, return (f a)).fin_support ↔ ∃ x ∈ oa.fin_support, f x = y :=
 by simp only [fin_support_bind_return, finset.mem_image]
 
-@[simp] lemma fin_support_bind_return_id [decidable_eq α] :
-  (oa >>= return).fin_support = oa.fin_support :=
-(fin_support_bind_return oa id).trans finset.image_id
-
 @[simp] lemma eval_dist_bind_return : ⁅oa >>= λ x, return (f x)⁆ = ⁅oa⁆.map f :=
 by simp_rw [eval_dist_bind, eval_dist_return, pmf.bind_pure_comp]
+
 
 lemma eval_dist_bind_return_apply_eq_tsum [decidable_eq β] :
   ⁅oa >>= λ x, return (f x)⁆ y = ∑' x, ite (y = f x) (⁅oa⁆ x) 0 :=
@@ -107,7 +101,7 @@ lemma eval_dist_bind_return_apply_eq_sum [fintype α] [decidable_eq β] :
 (eval_dist_bind_return_apply_eq_tsum oa f y).trans
   (tsum_eq_sum (λ x hx, (hx $ finset.mem_univ x).elim))
 
-lemma eval_dist_bind_return_apply_eq_sum_indicator [fintype α] [decidable_eq β] :
+lemma eval_dist_bind_return_apply_eq_sum_indicator [fintype α] :
   ⁅oa >>= λ x, return (f x)⁆ y = ∑ x, (f ⁻¹' {y}).indicator ⁅oa⁆ x :=
 (eval_dist_bind_return_apply_eq_tsum_indicator oa f y).trans
   (tsum_eq_sum (λ x hx, (hx $ finset.mem_univ x).elim))
@@ -123,11 +117,39 @@ lemma eval_dist_bind_return_apply_eq_sum_fin_support_indicator :
   (tsum_eq_sum (λ x hx, by simp_rw [set.indicator_apply_eq_zero,
     eval_dist_eq_zero_iff', hx, not_false_iff, imp_true_iff]))
 
+@[simp] lemma prob_event_bind_return : ⁅e' | oa >>= λ a, return (f a)⁆ = ⁅f ⁻¹' e' | oa⁆ :=
+begin
+  rw [prob_event_bind_eq_tsum, prob_event_eq_tsum_indicator],
+  refine tsum_congr (λ x, by simpa only [prob_event_return_eq_indicator, set.indicator, mul_boole])
+end
+
+end bind_return
+
+section bind_return_id
+
+variables (oa : oracle_comp spec α) (y : β) (e' : set β)
+
+@[simp] lemma support_bind_return_id : (oa >>= return).support = oa.support :=
+(support_bind_return oa id).trans (set.image_id oa.support)
+
+@[simp] lemma fin_support_bind_return_id [decidable_eq α] :
+  (oa >>= return).fin_support = oa.fin_support :=
+(fin_support_bind_return oa id).trans finset.image_id
+
 lemma bind_return_id_dist_equiv : oa >>= return ≃ₚ oa :=
 (eval_dist_bind_return oa id).trans (by rw [pmf.map_id])
 
 @[simp] lemma eval_dist_bind_return_id : ⁅oa >>= return⁆ = ⁅oa⁆ :=
 (bind_return_id_dist_equiv oa).eval_dist_eq
+
+@[simp] lemma prob_event_bind_return_id (e : set α) : ⁅e | oa >>= return⁆ = ⁅e | oa⁆ :=
+by rw [prob_event_bind_return, set.preimage_id']
+
+end bind_return_id
+
+section bind_return_eq_single
+
+variables (oa : oracle_comp spec α) (f : α → β) (y : β) (e' : set β)
 
 lemma eval_dist_bind_return_apply_eq_single' (x : α) (hx : f x = y)
   (h : ∀ x' ∈ oa.support, f x' = y → x' = x) : ⁅oa >>= λ x, return (f x)⁆ y = ⁅oa⁆ x :=
@@ -149,15 +171,6 @@ begin
   refine (λ _ h h', (h h').elim),
 end
 
-@[simp] lemma prob_event_bind_return : ⁅e' | oa >>= λ a, return (f a)⁆ = ⁅f ⁻¹' e' | oa⁆ :=
-begin
-  rw [prob_event_bind_eq_tsum, prob_event_eq_tsum_indicator],
-  refine tsum_congr (λ x, by simpa only [prob_event_return_eq_indicator, set.indicator, mul_boole])
-end
-
-@[simp] lemma prob_event_bind_return_id (e : set α) : ⁅e | oa >>= return⁆ = ⁅e | oa⁆ :=
-by rw [prob_event_bind_return, set.preimage_id']
-
-end bind_return
+end bind_return_eq_single
 
 end oracle_comp
