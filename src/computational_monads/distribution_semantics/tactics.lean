@@ -25,125 +25,6 @@ variables {α β γ : Type} {spec : oracle_spec}
 
 namespace tactic.interactive
 
--- TODO: merge the matching
-meta def destruct_dist_equiv : expr → tactic unit
--- Trying to prove equivalence between two binding operations
-| `((%%oa >>= %%ob ≃ₚ %%oa' >>= %%ob')) := do {
-  tactic.trace ("Reducing a bind operation"),
-
-  -- Check that both portions of the bind operation
-  `(oracle_comp %%spec %%α) ← tactic.infer_type oa,
-  `(oracle_comp %%spec %%α') ← tactic.infer_type oa',
-  tactic.unify α α' <|> tactic.trace "failed to unify the two first parts",
-
-  tactic.refine ``(oracle_comp.bind_dist_equiv_bind_of_dist_equiv _ _),
-
-  return ()
-}
-| `(%%oa ≃ₚ %%oa') := do {
-  tactic.trace ("Reducing " ++ (to_string oa) ++ " and " ++ (to_string oa')),
-
-  -- Get the type of the type of the computations being compared
-  `(oracle_comp %%spec %%α) ← tactic.infer_type oa,
-
-  -- Immedeately discharge the goal if the equivalence is between equal objects
-  tactic.unify oa oa' >> tactic.congr <|>
-    tactic.trace "Nothing happened",
-
-  return ()
-}
-| _ := return ()
-
-meta def pairwise_dist_equiv : tactic unit :=
-do {
-  G ← tactic.get_goal,
-  g ← tactic.infer_type G,
-  destruct_dist_equiv g
-}
-
-example (oa oa' : oracle_comp spec α) (ob : α → oracle_comp spec β)
-  (h : oa ≃ₚ oa') : (oa >>= ob) ≃ₚ (oa' >>= ob) :=
-begin
-  pairwise_dist_equiv,
-
-end
-
-
--- meta def reduce_support_expr (d_eq : expr) : expr → tactic (expr)
--- | `(oracle_comp.support (oracle_comp.bind' %%α %%β %%oa %%ob)) :=
---   do {
---     tactic.trace "Found a bind': " >> return (reflect ()),
---     tactic.trace ("first part - " ++ to_string oa),
---     ob_body ← return ob.lambda_body,
---     tactic.trace ("second part - " ++ to_string ob_body),
-
---     test ← reduce_support_expr ob_body,
---     return (reflect ())
---   }
--- | `(oracle_comp.support (%%oa >>= %%ob)) :=
---   do {
---     tactic.trace "Found a bind: " >> return (reflect ()),
---     tactic.trace ("first part - " ++ to_string oa),
---     ob_body ← return ob.lambda_body,
---     tactic.trace ("second part - " ++ to_string ob_body),
-
-
---     test ← reduce_support_expr ob_body,
---     return (reflect ())
---   }
--- -- | `(oracle_comp.support %%oa) :=
--- --   do {
--- --     tactic.unify oa oa_left >> tactic.trace "unified" >> return oa_right
--- --       <|> tactic.trace "didn't unify" >> return oa
--- --   }
--- | e := tactic.trace ("stuck with: " ++ to_string e) >> return (reflect ())
-
-
--- /-- Using a given equivalence `d : oa ≃ₚ oa'`, check if the goal is an equality with
--- `oa.support` on either side, and if so replace it with `oa'.support`. -/
--- meta def rw_support_base_goal' (d : parse texpr) : tactic unit :=
--- do {
---   d_eq ← tactic.i_to_expr d, -- Get the left and right sides of the distributional equivalence.
---   `(oracle_comp.dist_equiv %%oa_left %%oa_right) ← tactic.infer_type d_eq,
---   H ← tactic.get_goal, -- Get the left and right sides of the equality
---   h ← tactic.infer_type H,
---   match h with
---   | `(%%e1 = %%e2) := do {
---     e1' ← reduce_support_expr d_eq e1,
-
-
---     -- e2' ← reduce_support_expr d_eq e2,
---     return ()
-
---     -- tactic.trace ("Results from both sides: " ++ to_string e1' ++ " and " ++ to_string e2')
---   }
---   | `(%%e) := do {
---     e' ← reduce_support_expr d_eq e,
---     return ()
---     -- tactic.trace ("Result from reduction: " ++ to_string e)
---   }
---   end
--- }
-
-
--- example (oa oa' oa'' : oracle_comp spec α) (h : oa ≃ₚ oa') (h' : oa' ≃ₚ oa'')
---   (test : oa'.support = oa''.support) (ob : α → oracle_comp spec β)
---   (ob' : oracle_comp spec β) (h'' : ob' ≃ₚ (oa >>= ob)) :
---   (oa >>= ob).support = ob'.support :=
--- begin
---   rw_support_base_goal' h'',
---   sorry,
--- end
-
--- example (oa oa' : oracle_comp spec α) (ob : α → oracle_comp spec β)
---   (oc : α → β → oracle_comp spec γ) (h : oa ≃ₚ oa') (s : γ → Prop) :
---   (do {x ← oa, y ← ob x, oc x y}).support = s :=
--- begin
---   rw_support_base_goal' h
--- end
-
-
-
 
 -- /-- Using a given equivalence `d : oa ≃ₚ oa'`, check if the goal is an equality with
 -- `oa.support` on either side, and if so replace it with `oa'.support`. -/
@@ -160,67 +41,75 @@ end
 --     tactic.refine ``(trans _ (oracle_comp.dist_equiv.support_eq %%d_eq).symm)) <|> return ()
 -- }
 
--- meta def rw_support (q : parse texpr) : parse location → tactic unit
--- | (loc.ns [some h]) := tactic.trace "Doesn't yet support rewriting at other locations"
--- | (loc.ns [none]) := rw_support_base_goal q
--- | _ := tactic.trace "No rewriting to do"
+/-- Attempt to discharge a distributional equivalence between two computations by todo. -/
+meta def pairwise_dist_equiv_base (d_eqs : list expr) : tactic unit :=
+do {
+  `(%%oa ≃ₚ %%oa') ← tactic.target <|> tactic.fail ("Goal must be a distributional equivalence"),
 
+  -- Get the type of the type of the computations being compared
+  `(oracle_comp %%spec %%α) ← tactic.infer_type oa,
 
--- -- meta def rw_dist_equiv_core (d : parse texpr) : tactic unit :=
--- -- do {
--- --   d_eq ← tactic.i_to_expr d,
--- --   `(oracle_comp.dist_equiv %%oa_left %%oa_right) ← tactic.infer_type d_eq,
--- --   support_eq ← return ``(oracle_comp.dist_equiv.support_eq %%d_eq),
--- --   simp_rw _ _
--- -- }
+  -- Immedeately discharge the goal if the equivalence is between equal objects
+  (tactic.unify oa oa' >> tactic.congr) <|>
+    (d_eqs.mmap (λ d_eq, tactic.try (tactic.apply d_eq))
+      >> return ())
+}
 
--- meta def simp_rw_dist_equiv (q : parse texpr) (l : parse location) : tactic unit :=
--- simp_rw begin
+/-- Destruct a distributional equivalence by recursively splitting equivalences between binds
+into multiple equivalences between their individual components.
+For other equivalences will defer to `pairwise_dist_equiv_base`. -/
+meta def destruct_pairwise_dist_equiv (d_eq : list expr) : expr → tactic unit
+| `((%%oa >>= %%ob ≃ₚ %%oa' >>= %%ob')) := do {
 
--- end l
--- -- q.rules.mmap' (λ rule, do
--- --   let simp_arg := if rule.symm
--- --     then simp_arg_type.symm_expr rule.rule
--- --     else simp_arg_type.expr rule.rule,
--- --   save_info rule.pos,
--- --   simp none none tt [simp_arg] [] l)
+  -- Check that both portions of the bind operation
+  `(oracle_comp %%spec %%α) ← tactic.infer_type oa,
+  `(oracle_comp %%spec %%α') ← tactic.infer_type oa',
 
+  do {tactic.unify α α,
+    -- Split the goal into two seperate distributional equivalences.
+    tactic.refine ``(oracle_comp.bind_dist_equiv_bind_of_dist_equiv _ _),
 
+    -- Attempt to recursively solve the first equivalence.
+    tactic.intros,
+    tactic.target >>= destruct_pairwise_dist_equiv,
 
--- end tactic.interactive
+    -- Switch to the second equivalence and attempt to solve it.
+    tactic.rotate 1,
+    tactic.intros,
+    tactic.target >>= destruct_pairwise_dist_equiv
+  } <|> pairwise_dist_equiv_base d_eq
+}
+| _ := pairwise_dist_equiv_base d_eq
 
--- example (oa oa' oa'' : oracle_comp spec α) (h : oa ≃ₚ oa') (h' : oa' ≃ₚ oa'')
---   (test : oa'.support = oa''.support) :
---   oa.support = oa''.support :=
--- begin
---   simp_rw_dist_equiv h at ⊢,
--- end
+/-- Tactic for reducing proofs of distributional equivalences between bind operations
+into pairwise proofs of equivalences between each component.
+Attempts to discharge trivial goals using both `congr` and the given equivalences. -/
+meta def pairwise_dist_equiv (d : parse texpr) : tactic unit :=
+do d_eq ← tactic.i_to_expr d,
+  tactic.target >>= destruct_pairwise_dist_equiv [d_eq]
 
--- #check tactic.rewrite
+example (oa oa' : oracle_comp spec α) (ob : α → oracle_comp spec β)
+  (h : oa ≃ₚ oa') : (oa >>= ob) ≃ₚ (oa' >>= ob) :=
+begin
+  pairwise_dist_equiv h,
+end
 
+example (oa : oracle_comp spec α) (ob ob' : α → oracle_comp spec β)
+  (oc oc' : α → β → oracle_comp spec α)
+  (h : ∀ a, ob a ≃ₚ ob' a) (h' : ∀ a b, oc a b ≃ₚ oc' a b) :
+  ((oa >>= λ x, ob x >>= λ y, oc x y) >>= λ x, ob x >>= λ y, oc x y) ≃ₚ
+    ((oa >>= λ x, ob x >>= λ y, oc' x y) >>= λ x, ob' x >>= λ y, oc' x y) :=
+begin
+  pairwise_dist_equiv h;
+    apply h'
+end
 
+example (oa : oracle_comp spec α) (oa' : oracle_comp spec γ)
+  (ob : α → oracle_comp spec β) (ob' : γ → oracle_comp spec β)
+  (h : oa >>= ob ≃ₚ oa' >>= ob') :
+  oa >>= ob ≃ₚ oa' >>= ob' :=
+begin
+  pairwise_dist_equiv h,
+end
 
-
-
-
-
-
-
--- meta def tactic.interactive.rewrite_support_base (q : parse texpr) : parse location → tactic unit
--- | (loc.ns [some h]) := do {
---   -- Get the distributional equivalence argument and its type
---   d_eq ← tactic.i_to_expr q,
---   `(oracle_comp.dist_equiv %%oa_left %%oa_right) ← tactic.infer_type d_eq,
---   -- Get the type of the goal
---   H ← tactic.get_local h,
---   `(oracle_comp.support %%oa = %%s) ← tactic.infer_type H,
-
-
---   -- Check if we're trying to calculate the support of `oa_left`.
---   _ ← tactic.unify oa oa_left,
-
---   «have» h ``(oracle_comp.support %%oa_right = %%s)
---     ``(trans (oracle_comp.dist_equiv.support_eq %%d_eq).symm %%H),
---   tactic.clear H
--- }
--- | _ := tactic.fail "done"
+end tactic.interactive
