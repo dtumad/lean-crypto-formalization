@@ -22,19 +22,20 @@ tactic.apply d_eq >> return tt <|>
   tactic.refine ``(symm _) >> tactic.apply d_eq >> return tt <|>
     return ff
 
-/-- Attempt to discharge a distributional equivalence between two computations by todo. -/
+/-- Attempt to discharge a distributional equivalence between two computations,
+using both definitional equality and the lemmas in the provided list.
+Unsolved goals are pushed to the bottom of the goal list. -/
 private meta def pairwise_dist_equiv_base (d_eqs : list pexpr) : tactic unit :=
 do `(%%oa ≃ₚ %%oa') ← tactic.target <|> tactic.fail ("Goal must be a distributional equivalence"),
-  -- Immedeately discharge the goal if the equivalence is between equal objects
-  (tactic.unify oa oa' >> tactic.congr) <|>
+  (tactic.unify oa oa' >> tactic.congr) <|> -- Try to solve by unifying terms on each side.
     (d_eqs.mmap (λ d, tactic.to_expr d >>= rw_dist_equiv_base) >>=
-      λ bs, tactic.rotate (bs.count tt))
+      λ bs, if tt ∉ bs then tactic.rotate 1 else return ()) -- Rotate if not discharged.
 
 /-- Destruct a distributional equivalence by recursively splitting equivalences between binds
 into multiple equivalences between their individual components.
 For other equivalences will defer to `pairwise_dist_equiv_base`. -/
 private meta def destruct_pairwise_dist_equiv (d_eq : list pexpr) : expr → tactic unit
-| `((%%oa >>= %%ob ≃ₚ %%oa' >>= %%ob')) := do {
+| `(%%oa >>= %%ob ≃ₚ %%oa' >>= %%ob') := do {
   -- Check that the first components of each bind operation have the same type.
   `(oracle_comp %%spec %%α) ← tactic.infer_type oa,
   `(oracle_comp %%spec %%α') ← tactic.infer_type oa',
@@ -42,12 +43,9 @@ private meta def destruct_pairwise_dist_equiv (d_eq : list pexpr) : expr → tac
   -- Split the goal into two seperate distributional equivalences.
   tactic.refine ``(oracle_comp.bind_dist_equiv_bind_of_dist_equiv _ _),
   -- Attempt to recursively solve the first equivalence.
-  tactic.intros,
   tactic.target >>= destruct_pairwise_dist_equiv,
-  -- Switch to the second equivalence and attempt to solve it.
-  tactic.rotate 1,
-  tactic.intros,
-  tactic.target >>= destruct_pairwise_dist_equiv
+  -- Attempt to recursively solve the second equivalence
+  tactic.intros >> tactic.target >>= destruct_pairwise_dist_equiv
   -- On failure, try to solve the equivalence without any recursion.
 } <|> pairwise_dist_equiv_base d_eq
 | _ := pairwise_dist_equiv_base d_eq
@@ -75,12 +73,12 @@ by oracle_comp.pairwise_dist_equiv [h]
 
 /-- `pairwise_dist_equiv` should leave extra goals for equivalences it can't solve-/
 example (oa oa' : oracle_comp spec α) (ob ob' : α → oracle_comp spec β)
-  (oc oc' : α → β → oracle_comp spec γ) (h : oa ≃ₚ oa') (h' : ∀ a, ob a ≃ₚ ob' a)
-  (h'' : ∀ a b, oc a b ≃ₚ oc' a b) :
-  (oa >>= λ x, ob x >>= λ y, oc x y) ≃ₚ (oa' >>= λ x, ob' x >>= λ y, oc' x y) :=
+  (f : α → oracle_comp spec α) (oc oc' : α → β → oracle_comp spec γ)
+  (h : oa ≃ₚ oa') (h' : ∀ a, ob a ≃ₚ ob' a) (h'' : ∀ a b, oc a b ≃ₚ oc' a b) :
+  ((oa >>= f) >>= λ x, ob x >>= λ y, oc x y) ≃ₚ ((oa' >>= f) >>= λ x, ob' x >>= λ y, oc' x y) :=
 begin
   oracle_comp.pairwise_dist_equiv,
-  apply h'', apply h, apply h'
+  apply h, apply h', apply h''
 end
 
 /-- If two bind operations have mismatched intermediate types, but there is an existing equivalence
@@ -98,5 +96,11 @@ example (oa oa' : oracle_comp spec α) (hoa : oa ≃ₚ oa')
   ((oa' >>= λ x, ob x >>= λ y, oc x y) >>= λ x, ob x >>= λ y, oc' x y) ≃ₚ
     ((oa >>= λ x, ob' x >>= λ y, oc' x y) >>= λ x, ob' x >>= λ y, oc' x y) :=
 by oracle_comp.pairwise_dist_equiv [hoa, hob, hoc]
+
+/-- `pairwise_dist_equiv` can do non-syntactical equality checking. -/
+example (oa oa' : ℕ → oracle_comp spec α) (h : ∀ n, oa n ≃ₚ oa' n):
+  (do {x ← return 6, y ← oa x, return 5} : oracle_comp spec ℕ) ≃ₚ
+  (do {x ← return (1 * 2 * 3), y ← oa' x, return (10 - 3 - 2)} : oracle_comp spec ℕ) :=
+by oracle_comp.pairwise_dist_equiv [h]
 
 end examples
