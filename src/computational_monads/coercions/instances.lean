@@ -50,7 +50,7 @@ section empty_spec
 @[priority std.priority.default+101]
 instance is_sub_spec_empty_spec (spec : oracle_spec) : is_sub_spec []ₒ spec :=
 { to_fun := λ i, empty.elim i,
-  eval_dist_to_fun' := λ i, empty.elim i }
+  to_fun_equiv := λ i, empty.elim i }
 
 @[simp] lemma is_sub_spec_empty_spec_apply (spec : oracle_spec) (i : empty) (t : unit) :
   (oracle_spec.is_sub_spec_empty_spec spec).to_fun i t = return default := i.elim
@@ -64,7 +64,7 @@ Use uniform selection from the vector `[tt, ff]` to get constructiveness. -/
 @[priority std.priority.default+100]
 instance is_sub_spec_coin_spec_uniform_selecting : is_sub_spec coin_spec uniform_selecting :=
 { to_fun := λ i t, $ᵛ (tt ::ᵥ ff ::ᵥ vector.nil),
-  eval_dist_to_fun' := λ i t, pmf.ext (λ x, by cases x;
+  to_fun_equiv := λ i t, pmf.ext (λ x, by cases x;
     simp_rw [eval_dist_uniform_select_vector_apply, vector.to_list_cons,
       vector.to_list_nil, list.count_cons, list.count_nil, eq_self_iff_true, if_true, if_false,
       eval_dist_query_apply_eq_div, card_range_coin_spec, nat.cast_one]) }
@@ -80,14 +80,14 @@ forwarding the old queries to the left side of the combined set of oracles. -/
 @[priority std.priority.default]
 instance is_sub_spec_append_left (spec spec' : oracle_spec) : spec ⊂ₒ (spec' ++ spec) :=
 { to_fun := λ i t, @query (spec' ++ spec) (sum.inr i) t,
-  eval_dist_to_fun' := λ i t, trans (eval_dist_query (sum.inr i) t) (eval_dist_query i t).symm }
+  to_fun_equiv := λ i t, trans (eval_dist_query (sum.inr i) t) (eval_dist_query i t).symm }
 
 /-- Coerce a computation to one with access to another oracle on the right,
 forwarding the old queries to the left side of the combined set of oracles. -/
 @[priority std.priority.default+1]
 instance is_sub_spec_append_right (spec spec' : oracle_spec) : spec ⊂ₒ (spec ++ spec') :=
 { to_fun := λ i t, @query (spec ++ spec') (sum.inl i) t,
-  eval_dist_to_fun' := λ i t, trans (eval_dist_query (sum.inl i) t) (eval_dist_query i t).symm }
+  to_fun_equiv := λ i t, trans (eval_dist_query (sum.inl i) t) (eval_dist_query i t).symm }
 
 lemma is_sub_spec_append_right_apply {spec spec' : oracle_spec} (i : spec.ι) (t : spec.domain i) :
   (oracle_spec.is_sub_spec_append_right spec spec').to_fun i t =
@@ -99,7 +99,7 @@ lemma is_sub_spec_append_right_apply {spec spec' : oracle_spec} (i : spec.ι) (t
 instance is_sub_spec_append_left_of_is_sub_spec (spec sub_spec super_spec : oracle_spec)
   [h : is_sub_spec sub_spec super_spec] : is_sub_spec sub_spec (spec ++ super_spec) :=
 { to_fun := λ i t, ↑(h.to_fun i t),
-  eval_dist_to_fun' := λ i t,by rw [eval_dist_coe_sub_spec, is_sub_spec.eval_dist_to_fun'] }
+  to_fun_equiv := λ i t, (eval_dist_coe_sub_spec _ _ _).trans (is_sub_spec.to_fun_equiv _ _) }
 
 /-- Coerce an oracle and then append to the right. Already sort of exists,
   but the instance priorities don't work without explicitly having this. -/
@@ -107,7 +107,7 @@ instance is_sub_spec_append_left_of_is_sub_spec (spec sub_spec super_spec : orac
 instance is_sub_spec_append_right_of_is_sub_spec (spec sub_spec super_spec : oracle_spec)
   [h : is_sub_spec sub_spec super_spec] : is_sub_spec sub_spec (super_spec ++ spec) :=
 { to_fun := λ i t, ↑(h.to_fun i t),
-  eval_dist_to_fun' := λ i t,by rw [eval_dist_coe_sub_spec, is_sub_spec.eval_dist_to_fun'] }
+  to_fun_equiv := λ i t, (eval_dist_coe_sub_spec _ _ _).trans (is_sub_spec.to_fun_equiv _ _) }
 
 /-- Coerce the oracle on the right side of an existing set of appended oracles. -/
 @[priority std.priority.default+20]
@@ -117,9 +117,9 @@ instance is_sub_spec_left_side_append (spec sub_spec super_spec : oracle_spec)
   | (sum.inl i) := λ t, (append.range_inl sub_spec spec i).symm.rec (h.to_fun i t)
   | (sum.inr i) := λ t, @query (super_spec ++ _) (sum.inr i) t
   end,
-  eval_dist_to_fun' := λ i, match i with
+  to_fun_equiv := λ i, match i with
   | (sum.inl i) := λ t, (eval_dist_coe_sub_spec _ _ (h.to_fun i t)).trans
-      ((h.eval_dist_to_fun' i t).trans rfl)
+      ((h.to_fun_equiv i t).trans (by exact rfl))
   | (sum.inr i) := λ t, rfl
   end }
 
@@ -131,10 +131,10 @@ instance is_sub_spec_right_side_append (spec sub_spec super_spec : oracle_spec)
   | (sum.inl i) := λ t, @query (_ ++ super_spec) (sum.inl i) t
   | (sum.inr i) := λ t, (append.range_inr spec sub_spec i).symm.rec (h.to_fun i t)
   end,
-  eval_dist_to_fun' := λ i, match i with
+  to_fun_equiv := λ i, match i with
   | (sum.inl i) := λ t, rfl
   | (sum.inr i) := λ t, (eval_dist_coe_sub_spec _ _ (h.to_fun i t)).trans
-      ((h.eval_dist_to_fun' i t).trans rfl)
+      ((h.to_fun_equiv i t).trans (by exact rfl))
   end }
 
 /-- Coerce towards a standardized append ordering (matching the `infixl` declaration for `++`) -/
@@ -146,7 +146,7 @@ instance is_sub_spec_assoc (spec spec' spec'' : oracle_spec) :
   | (sum.inr (sum.inl i)) := λ t, @query (spec ++ spec' ++ spec'') (sum.inl (sum.inr i)) t
   | (sum.inr (sum.inr i)) := λ t, @query (spec ++ spec' ++ spec'') (sum.inr i) t
   end,
-  eval_dist_to_fun' := λ i, match i with
+  to_fun_equiv := λ i, match i with
   | (sum.inl i) := λ t, rfl
   | (sum.inr (sum.inl i)) := λ t, rfl
   | (sum.inr (sum.inr i)) := λ t, rfl
