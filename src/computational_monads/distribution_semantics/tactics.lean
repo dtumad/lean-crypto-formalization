@@ -24,7 +24,8 @@ tactic.apply d_eq >> return tt <|>
 
 /-- Attempt to discharge a distributional equivalence between two computations,
 using both definitional equality and the lemmas in the provided list.
-Unsolved goals are pushed to the bottom of the goal list. -/
+Unsolved goals are pushed to the bottom of the goal list.
+TODO: this could behave weirdly if `rw_dist_equiv_base` somehow discharges two goals. -/
 private meta def pairwise_dist_equiv_base (d_eqs : list pexpr) : tactic unit :=
 do `(%%oa ≃ₚ %%oa') ← tactic.target <|> tactic.fail ("Goal must be a distributional equivalence"),
   (tactic.unify oa oa' >> tactic.congr) <|> -- Try to solve by unifying terms on each side.
@@ -58,7 +59,7 @@ tactic.target >>= destruct_pairwise_dist_equiv (opt_d_eqs.get_or_else [])
 
 end tactic.interactive.oracle_comp
 
-section examples
+section tests
 
 /-- `pairwise_dist_equiv` should be able to split the components of the bind,
 and automatically discharge goals that have provided equivalences or definitional equality. -/
@@ -103,4 +104,4 @@ example (oa oa' : ℕ → oracle_comp spec α) (h : ∀ n, oa n ≃ₚ oa' n):
   (do {x ← return (1 * 2 * 3), y ← oa' x, return (10 - 3 - 2)} : oracle_comp spec ℕ) :=
 by oracle_comp.pairwise_dist_equiv [h]
 
-end examples
+end tests
