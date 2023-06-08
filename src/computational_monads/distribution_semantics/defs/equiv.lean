@@ -55,7 +55,9 @@ lemma dist_equiv.ext_iff (oa : oracle_comp spec α) (oa' : oracle_comp spec' α)
   oa ≃ₚ oa' ↔ ∀ x, ⁅= x | oa⁆ = ⁅= x | oa'⁆ :=
 ⟨λ h x, congr_fun (congr_arg _ h) x, dist_equiv.ext⟩
 
-@[refl] instance dist_equiv.is_refl : is_refl (oracle_comp spec α) (≃ₚ) := ⟨λ x, rfl⟩
+@[refl] lemma dist_equiv.refl (oa : oracle_comp spec α) : oa ≃ₚ oa := by exact rfl
+
+instance dist_equiv.is_refl : is_refl (oracle_comp spec α) (≃ₚ) := ⟨λ x, rfl⟩
 
 /-- More general than regular `symm`, the two computations may have different `oracle_spec`. -/
 @[symm] lemma dist_equiv.symm (h : oa ≃ₚ oa') : oa' ≃ₚ oa := h.symm
@@ -85,6 +87,10 @@ congr_fun (congr_arg _ h) x
 
 lemma dist_equiv.prob_event_eq (h : oa ≃ₚ oa') (e : set α) : ⁅e | oa⁆ = ⁅e | oa'⁆ :=
 prob_event_eq_of_eval_dist_eq h.eval_dist_eq e
+
+lemma dist_equiv.prob_event_eq_of_inter_support_eq (h : oa ≃ₚ oa') {e e' : set α}
+  (he : e ∩ oa.support = e' ∩ oa.support) : ⁅e | oa⁆ = ⁅e' | oa'⁆ :=
+(prob_event_eq_prob_event_of_inter_support_eq oa he).trans (h.prob_event_eq e')
 
 lemma dist_equiv.indep_events_iff (h : oa ≃ₚ oa') (es es' : set (set α)) :
   oa.indep_events es es' ↔ oa'.indep_events es es' :=

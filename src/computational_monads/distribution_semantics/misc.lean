@@ -27,7 +27,7 @@ lemma helper {oa : oracle_comp spec α}
   {ob : α → oracle_comp spec β} {b : β} (g : γ → α)
   (h : ∀ x ∈ oa.support, b ∈ (ob x).support → x ∈ set.range g)
   (hg : ∀ x y, g x = g y → g x ∈ oa.support → b ∈ (ob (g x)).support → x = y) :
-  ⁅oa >>= ob⁆ b = ∑' (c : γ), ⁅oa⁆ (g c) * ⁅ob (g c)⁆ b :=
+  ⁅= b | oa >>= ob⁆ = ∑' (c : γ), ⁅= g c | oa⁆ * ⁅= b | ob (g c)⁆ :=
 begin
   rw [eval_dist_bind_apply_eq_tsum],
   refine tsum_eq_tsum_of_ne_zero_bij (g ∘ coe) _ _ (λ _, rfl),

@@ -30,7 +30,7 @@ def repeat (oa : oracle_comp spec α) : Π (n : ℕ), oracle_comp spec (vector �
 | 0 := return vector.nil
 | (n + 1) := do { a ← oa, as ← repeat n, return (a ::ᵥ as) }
 
-variables (oa : oracle_comp spec α) (n : ℕ) {m : ℕ} (x x' : α) (xs : vector α m)
+variables (oa oa' : oracle_comp spec α) (n : ℕ) {m : ℕ} (x x' : α) (xs : vector α m)
   (xs₀ : vector α 0) (xsₛ : vector α m.succ)
 
 lemma repeat_zero : oa.repeat 0 = return vector.nil := rfl
@@ -177,7 +177,7 @@ lemma eval_dist_repeat_succ_apply :
 calc ⁅oa.repeat m.succ⁆ xsₛ = ⁅(λ (x : α × vector α m), x.1 ::ᵥ x.2) <$> (oa ×ₘ oa.repeat m)⁆ xsₛ :
     by rw eval_dist_repeat_succ' oa m
   ... = ⁅oa ×ₘ oa.repeat m⁆ (xsₛ.head, xsₛ.tail) :
-    eval_dist_map_apply_eq_single' _ _ xsₛ (xsₛ.head, xsₛ.tail) (xsₛ.cons_head_tail)
+    eval_dist_map_apply_eq_single' _ _ (xsₛ.head, xsₛ.tail) xsₛ (xsₛ.cons_head_tail)
       (λ x hx hx', by rw [← hx', vector.head_cons, vector.tail_cons, prod.mk.eta])
   ... = ⁅oa⁆ xsₛ.head * ⁅oa.repeat m⁆ xsₛ.tail : by rw eval_dist_product_apply
 
@@ -198,6 +198,14 @@ begin
       sorry,
     }
   }
+end
+
+lemma repeat_dist_equiv_repeat (h : oa ≃ₚ oa') : oa.repeat n ≃ₚ oa'.repeat n :=
+begin
+  induction n with n hn,
+  pairwise_dist_equiv,
+  simp_rw [repeat_succ],
+  pairwise_dist_equiv [h, hn],
 end
 
 end eval_dist
