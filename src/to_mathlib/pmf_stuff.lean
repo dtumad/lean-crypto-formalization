@@ -15,6 +15,11 @@ open measure_theory pmf
 
 variables {α β γ : Type*}
 
+instance pmf.subsingleton [subsingleton α] : subsingleton (pmf α) :=
+⟨λ p q, pmf.ext (λ x, trans (symm ((tsum_eq_single x (λ y hy, false.elim
+  (hy $ subsingleton.elim _ _))))) (trans (p.tsum_coe.trans q.tsum_coe.symm)
+    ((tsum_eq_single x (λ y hy, false.elim (hy $ subsingleton.elim _ _))))))⟩
+
 lemma to_outer_measure_apply_eq_to_measure_apply (p : pmf α) (s : set α) :
   p.to_outer_measure s = @pmf.to_measure α ⊤ p s :=
 by simp only [pmf.to_measure_apply_eq_to_outer_measure_apply, measurable_space.measurable_set_top]

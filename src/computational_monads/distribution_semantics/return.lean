@@ -153,6 +153,14 @@ lemma prob_event_return_eq_one_iff (e : set α) :
 by rw [prob_event.def, eval_dist_return, pmf.to_outer_measure_apply_eq_one_iff,
   pmf.support_pure, set.singleton_subset_iff]
 
+lemma eval_dist_return_apply_of_eq {x : α} (h : x = a) :
+  ⁅= x | (return a : oracle_comp spec α)⁆ = 1 :=
+(eval_dist_return_apply_eq_one_iff _ a x).2 h
+
+lemma prob_event_return_of_mem {e : set α} (h : a ∈ e) :
+  ⁅e | (return a : oracle_comp spec α)⁆ = 1 :=
+(prob_event_return_eq_one_iff _ a e).2 h
+
 lemma eval_dist_return_apply_self : ⁅= a | (return a : oracle_comp spec α)⁆ = 1 :=
 by rw [eval_dist_return_apply_eq_one_iff]
 

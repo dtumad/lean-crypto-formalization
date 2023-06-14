@@ -5,7 +5,7 @@ Authors: Devon Tuma
 -/
 import data.vector.mem
 import computational_monads.constructions.product
-import computational_monads.distribution_semantics.map
+import computational_monads.distribution_semantics.subsingleton
 
 /-!
 # Repeated Independent Runs of an Oracle Computation
@@ -31,13 +31,14 @@ def repeat (oa : oracle_comp spec α) : Π (n : ℕ), oracle_comp spec (vector �
 | (n + 1) := do { a ← oa, as ← repeat n, return (a ::ᵥ as) }
 
 variables (oa oa' : oracle_comp spec α) (n : ℕ) {m : ℕ} (x x' : α) (xs : vector α m)
-  (xs₀ : vector α 0) (xsₛ : vector α m.succ)
+  (xs₀ : vector α 0) (xsₛ : vector α m.succ) (e : set (vector α m))
+  (e₀ : set (vector α 0)) (esₛ : set (vector α m.succ))
 
-lemma repeat_zero : oa.repeat 0 = return vector.nil := rfl
+@[simp] lemma repeat_zero : oa.repeat 0 = return vector.nil := rfl
 
 lemma repeat_succ : oa.repeat n.succ = do {a ← oa, as ← oa.repeat n, return (a ::ᵥ as)} := rfl
 
-section support
+section all₂
 
 /-- The support of `oa.repeat n` is the set of vectors where every element is in `oa.support`. -/
 @[simp] theorem support_repeat_eq_all₂ :
@@ -63,12 +64,42 @@ lemma mem_support_repeat_iff_forall :
   xs ∈ (oa.repeat m).support ↔ ∀ x ∈ xs.to_list, x ∈ oa.support :=
 by rw [support_repeat_eq_forall, set.mem_set_of_eq]
 
-@[simp] lemma support_repeat_zero : (oa.repeat 0).support = {vector.nil} :=
-by rw [repeat_zero, support_return]
+end all₂
+
+section repeat_zero
+
+/-- Repeating a computation `0` times is equivalent to any other computation,
+since the output type is `vector α 0` which is a subsingleton type. -/
+lemma repeat_zero_dist_equiv (oa₀ : oracle_comp spec' (vector α 0)) :
+  oa.repeat 0 ≃ₚ oa₀ := by pairwise_dist_equiv
+
+lemma repeat_zero_dist_equiv_return :
+  oa.repeat 0 ≃ₚ (return vector.nil : oracle_comp spec _) := refl _
+
+lemma support_repeat_zero : (oa.repeat 0).support = {vector.nil} := rfl
 
 /-- Any empty vector is in the support of a computation that is run zero times. -/
 lemma mem_support_repeat_zero : xs₀ ∈ (oa.repeat 0).support :=
-by simp only [repeat_zero, support_return, set.mem_singleton_iff, eq_iff_true_of_subsingleton]
+by simp only [support_repeat_zero, set.mem_singleton_iff, eq_iff_true_of_subsingleton]
+
+lemma fin_support_repeat_zero : (oa.repeat 0).fin_support = {vector.nil} := rfl
+
+lemma mem_fin_support_repeat_zero : xs₀ ∈ (oa.repeat 0).support :=
+by simp only [support_repeat_zero, set.mem_singleton_iff, eq_iff_true_of_subsingleton]
+
+lemma eval_dist_repeat_zero : ⁅oa.repeat 0⁆ = pmf.pure vector.nil := rfl
+
+lemma eval_dist_repeat_zero_apply : ⁅= xs₀ | oa.repeat 0⁆ = 1 :=
+((repeat_zero_dist_equiv_return oa).eval_dist_apply_eq xs₀).trans
+  ((eval_dist_return_apply_eq_one_iff _ _ _).2 (subsingleton.elim _ _))
+
+lemma prob_event_repeat_zero_of_nonempty (h : e₀.nonempty) : ⁅e₀ | oa.repeat 0⁆ = 1 :=
+let ⟨y, hy⟩ := h in trans ((repeat_zero_dist_equiv oa (return y)).prob_event_eq _)
+  (prob_event_return_of_mem spec _ hy)
+
+end repeat_zero
+
+section repeat_succ
 
 /-- The support of running a computation `n + 1` is the set of vectors where the head is in
 the computation's support and the tail is in the support of running it `n` times. -/
@@ -101,6 +132,38 @@ by rw [support_repeat_succ, set.mem_set_of_eq]
 lemma cons_mem_support_repeat_succ_iff : (x ::ᵥ xs) ∈ (oa.repeat m.succ).support ↔
   x ∈ oa.support ∧ xs ∈ (oa.repeat m).support :=
 by rw [mem_support_repeat_succ_iff oa, vector.head_cons, vector.tail_cons]
+
+@[simp_dist_equiv]
+lemma repeat_succ_dist_equiv : oa.repeat n.succ ≃ₚ (λ (x : α × vector α n), x.1 ::ᵥ x.2) <$> (oa ×ₘ oa.repeat n) :=
+by rw [dist_equiv.def, repeat_succ, map_eq_bind_return_comp, (prod_bind_equiv_bind_bind _ _ _).eval_dist_eq]
+
+lemma eval_dist_repeat_succ' :
+  ⁅oa.repeat n.succ⁆ = ⁅(λ (x : α × vector α n), x.1 ::ᵥ x.2) <$> (oa ×ₘ oa.repeat n)⁆ :=
+by rw [repeat_succ, map_eq_bind_return_comp, (prod_bind_equiv_bind_bind _ _ _).eval_dist_eq]
+
+@[simp] lemma eval_dist_repeat_succ :
+  ⁅oa.repeat n.succ⁆ = ⁅oa ×ₘ oa.repeat n⁆.map (λ x, x.1 ::ᵥ x.2) :=
+(oa.eval_dist_repeat_succ' n).trans (eval_dist_map _ _)
+
+lemma eval_dist_repeat_succ_apply :
+  ⁅oa.repeat m.succ⁆ xsₛ = ⁅oa⁆ xsₛ.head * ⁅oa.repeat m⁆ xsₛ.tail :=
+calc ⁅oa.repeat m.succ⁆ xsₛ = ⁅(λ (x : α × vector α m), x.1 ::ᵥ x.2) <$> (oa ×ₘ oa.repeat m)⁆ xsₛ :
+    by rw eval_dist_repeat_succ' oa m
+  ... = ⁅oa ×ₘ oa.repeat m⁆ (xsₛ.head, xsₛ.tail) :
+    eval_dist_map_apply_eq_single' _ _ (xsₛ.head, xsₛ.tail) xsₛ (xsₛ.cons_head_tail)
+      (λ x hx hx', by rw [← hx', vector.head_cons, vector.tail_cons, prod.mk.eta])
+  ... = ⁅oa⁆ xsₛ.head * ⁅oa.repeat m⁆ xsₛ.tail : by rw eval_dist_product_apply
+
+end repeat_succ
+
+
+section nth
+
+-- TODO
+
+end nth
+
+section support
 
 /-- If a vector is in the support of `oa.repeat m` then any of its members is in `oa.support`. -/
 lemma mem_support_of_mem_of_support_repeat {oa : oracle_comp spec α} {x : α} {xs : vector α m}
@@ -155,35 +218,6 @@ begin
       ... = ((x ::ᵥ xs).to_list.map ⁅oa⁆).prod :
         by rw [vector.to_list_cons, list.map_cons, list.prod_cons, hm] }
 end
-
-lemma eval_dist_repeat_zero' : ⁅oa.repeat 0⁆ = ⁅(return vector.nil : oracle_comp spec _)⁆ := rfl
-
-@[simp] lemma eval_dist_repeat_zero : ⁅oa.repeat 0⁆ = pmf.pure vector.nil :=
-by simp only [repeat_zero, eval_dist_return]
-
-lemma eval_dist_repeat_zero_apply : ⁅oa.repeat 0⁆ xs₀ = 1 :=
-by simp only [repeat_zero, eval_dist_return, pmf.pure_apply, eq_iff_true_of_subsingleton, if_true]
-
-@[simp_dist_equiv]
-lemma repeat_succ_dist_equiv : oa.repeat n.succ ≃ₚ (λ (x : α × vector α n), x.1 ::ᵥ x.2) <$> (oa ×ₘ oa.repeat n) :=
-by rw [dist_equiv.def, repeat_succ, map_eq_bind_return_comp, (prod_bind_equiv_bind_bind _ _ _).eval_dist_eq]
-
-lemma eval_dist_repeat_succ' :
-  ⁅oa.repeat n.succ⁆ = ⁅(λ (x : α × vector α n), x.1 ::ᵥ x.2) <$> (oa ×ₘ oa.repeat n)⁆ :=
-by rw [repeat_succ, map_eq_bind_return_comp, (prod_bind_equiv_bind_bind _ _ _).eval_dist_eq]
-
-@[simp] lemma eval_dist_repeat_succ :
-  ⁅oa.repeat n.succ⁆ = ⁅oa ×ₘ oa.repeat n⁆.map (λ x, x.1 ::ᵥ x.2) :=
-(oa.eval_dist_repeat_succ' n).trans (eval_dist_map _ _)
-
-lemma eval_dist_repeat_succ_apply :
-  ⁅oa.repeat m.succ⁆ xsₛ = ⁅oa⁆ xsₛ.head * ⁅oa.repeat m⁆ xsₛ.tail :=
-calc ⁅oa.repeat m.succ⁆ xsₛ = ⁅(λ (x : α × vector α m), x.1 ::ᵥ x.2) <$> (oa ×ₘ oa.repeat m)⁆ xsₛ :
-    by rw eval_dist_repeat_succ' oa m
-  ... = ⁅oa ×ₘ oa.repeat m⁆ (xsₛ.head, xsₛ.tail) :
-    eval_dist_map_apply_eq_single' _ _ (xsₛ.head, xsₛ.tail) xsₛ (xsₛ.cons_head_tail)
-      (λ x hx hx', by rw [← hx', vector.head_cons, vector.tail_cons, prod.mk.eta])
-  ... = ⁅oa⁆ xsₛ.head * ⁅oa.repeat m⁆ xsₛ.tail : by rw eval_dist_product_apply
 
 section tomove
 
