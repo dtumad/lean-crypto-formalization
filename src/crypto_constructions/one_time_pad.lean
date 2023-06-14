@@ -42,7 +42,7 @@ theorem perfect_secrecy (n : ℕ) : (one_time_pad n).perfect_secrecy :=
 begin
   refine ((one_time_pad n).perfect_secrecy_iff_of_equal_card rfl rfl).2 ⟨λ v, _, λ m c, _⟩,
   { calc ⁅= v | (one_time_pad n).keygen ()⁆ = (list.map ⁅coin⁆ v.to_list).prod :
-        by rw [keygen_apply, eval_dist_repeat_apply, vector.to_list_map, eval_dist_coe_sub_spec]
+        by rw [keygen_apply, eval_dist_repeat_apply, eval_dist_coe_sub_spec]
       ... = 2⁻¹ ^ (list.map ⁅coin⁆ v.to_list).length :
         list.prod_eq_pow_card _ 2⁻¹ (λ x hx, let ⟨y, hy⟩ := list.mem_map.1 hx in
           by simp only [← hy.2, eval_dist_query, pmf.uniform_of_fintype_apply, coin_spec_range,
