@@ -63,6 +63,11 @@ lemma eval_dist_bind_apply_eq_tsum (y : β) :
   ⁅= y | oa >>= ob⁆ = ∑' x, ⁅= x | oa⁆ * ⁅= y | ob x⁆ :=
 by rw [eval_dist_bind, pmf.bind_apply]
 
+lemma eval_dist_bind_apply_eq_tsum_indicator (y : β) :
+  ⁅= y | oa >>= ob⁆ = ∑' x, oa.support.indicator (λ x, ⁅= x | oa⁆ * ⁅= y | ob x⁆) x :=
+(eval_dist_bind_apply_eq_tsum oa ob y).trans (tsum_congr (λ x, symm (set.indicator_apply_eq_self.2
+  (λ hx, mul_eq_zero_of_left (eval_dist_eq_zero hx) _))))
+
 /-- Express the probability of getting `y` from `oa >>= ob` as a finite sum,
 assuming that the underlying return type `α` of `oa` is itself finite. -/
 lemma eval_dist_bind_apply_eq_sum (y : β) [fintype α] :
@@ -87,9 +92,14 @@ end eval_dist
 
 section prob_event
 
-@[simp] lemma prob_event_bind_eq_tsum (e' : set β) :
+lemma prob_event_bind_eq_tsum (e' : set β) :
   ⁅e' | oa >>= ob⁆ = ∑' x, ⁅oa⁆ x * ⁅e' | ob x⁆ :=
 by simp only [prob_event.def, eval_dist_bind, pmf.to_outer_measure_bind_apply]
+
+lemma prob_event_bind_eq_tsum_indicator (e' : set β) :
+  ⁅e' | oa >>= ob⁆ = ∑' x, oa.support.indicator (λ x, ⁅= x | oa⁆ * ⁅e' | ob x⁆) x :=
+(prob_event_bind_eq_tsum oa ob e').trans (tsum_congr (λ x, symm (set.indicator_apply_eq_self.2
+  (λ hx, mul_eq_zero_of_left (eval_dist_eq_zero hx) _))))
 
 lemma prob_event_bind_eq_sum [fintype α] (e' : set β) :
   ⁅e' | oa >>= ob⁆ = ∑ x, ⁅oa⁆ x * ⁅e' | ob x⁆ :=

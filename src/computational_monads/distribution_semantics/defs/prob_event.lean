@@ -45,6 +45,12 @@ lemma prob_event_le_one : ⁅e | oa⁆ ≤ 1 :=
 (⁅oa⁆.to_outer_measure.mono (set.subset_univ e)).trans
   (le_of_eq $ (⁅oa⁆.to_outer_measure_apply_eq_one_iff _).2 (set.subset_univ ⁅oa⁆.support))
 
+lemma prob_event_eq_of_iff (h : ∀ x, e x ↔ e' x) : ⁅e | oa⁆ = ⁅e' | oa⁆ :=
+congr_arg (λ e, ⁅e | oa⁆) (set.ext h)
+
+lemma prob_event_eq_of_mem_iff (h : ∀ x, x ∈ e ↔ x ∈ e') : ⁅e | oa⁆ = ⁅e' | oa⁆ :=
+congr_arg (λ e, ⁅e | oa⁆) (set.ext h)
+
 /-- If the a set `e'` contains all elements of `e` that have non-zero
 probability under `⁅oa⁆` then the probability of `e'` is at least as big as that of `e`. -/
 lemma prob_event_mono {e e'} (h : (e ∩ oa.support) ⊆ e') : ⁅e | oa⁆ ≤ ⁅e' | oa⁆ :=

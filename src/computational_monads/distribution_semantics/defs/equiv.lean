@@ -49,7 +49,7 @@ infix ` ≃ₚ ` : 50 := dist_equiv
 lemma dist_equiv.def : oa ≃ₚ oa' ↔ ⁅oa⁆ = ⁅oa'⁆ := iff.rfl
 
 /-- Show that two computations are equivalent by showing every output has the same probability. -/
-lemma dist_equiv.ext (h : ∀ x, ⁅= x | oa⁆ = ⁅= x | oa'⁆) : oa ≃ₚ oa' := pmf.ext h
+@[ext] lemma dist_equiv.ext (h : ∀ x, ⁅= x | oa⁆ = ⁅= x | oa'⁆) : oa ≃ₚ oa' := pmf.ext h
 
 lemma dist_equiv.ext_iff (oa : oracle_comp spec α) (oa' : oracle_comp spec' α) :
   oa ≃ₚ oa' ↔ ∀ x, ⁅= x | oa⁆ = ⁅= x | oa'⁆ :=
