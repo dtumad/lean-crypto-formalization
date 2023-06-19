@@ -36,6 +36,8 @@ variables (oa : oracle_comp spec α) (ob : oracle_comp spec β)
 
 lemma product.def : oa ×ₘ ob = do {a ← oa, b ← ob, return (a, b)} := rfl
 
+
+
 section support
 
 @[simp] lemma support_prod : (oa ×ₘ ob).support = oa.support ×ˢ ob.support :=
@@ -79,7 +81,10 @@ calc ⁅oa ×ₘ ob⁆ x = ∑' (a : α) (b : β), (⁅oa⁆ a * ⁅ob⁆ b) * (
 lemma prod_bind_equiv_bind_bind (oc : α × β → oracle_comp spec γ) :
   oa ×ₘ ob >>= oc ≃ₚ do {a ← oa, b ← ob, oc (a, b)} :=
 begin
-  sorry
+  refine trans (by apply bind_bind_dist_equiv_assoc) _,
+  pairwise_dist_equiv,
+  refine trans (by apply bind_bind_dist_equiv_assoc) _,
+  pairwise_dist_equiv,
 end
 
 @[simp] lemma eval_dist_prod_indicator_prod_apply :

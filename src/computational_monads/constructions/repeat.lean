@@ -64,6 +64,50 @@ lemma mem_support_repeat_iff_forall :
   xs ∈ (oa.repeat m).support ↔ ∀ x ∈ xs.to_list, x ∈ oa.support :=
 by rw [support_repeat_eq_forall, set.mem_set_of_eq]
 
+lemma mem_fin_support_repeat_iff_all₂ :
+  xs ∈ (oa.repeat m).fin_support ↔ xs.to_list.all₂ (∈ oa.fin_support) :=
+by simp only [mem_fin_support_iff_mem_support, mem_support_repeat_iff_all₂]
+
+lemma mem_fin_support_repeat_iff_forall :
+  xs ∈ (oa.repeat m).fin_support ↔ ∀ x ∈ xs.to_list, x ∈ oa.fin_support :=
+by simp only [mem_fin_support_iff_mem_support, mem_support_repeat_iff_forall]
+
+/-- If a vector is in the support of `oa.repeat m` then any of its members is in `oa.support`. -/
+lemma mem_support_of_mem_of_support_repeat {oa : oracle_comp spec α} {x : α} {xs : vector α m}
+  (hxs : xs ∈ (oa.repeat m).support) (hx : x ∈ xs.to_list) : x ∈ oa.support :=
+by { rw mem_support_repeat_iff_forall at hxs, exact hxs x hx }
+
+lemma replicate_mem_support_repeat {oa : oracle_comp spec α} {x : α} (n : ℕ) (hx : x ∈ oa.support) :
+  vector.replicate n x ∈ (oa.repeat n).support :=
+by { rw [mem_support_repeat_iff_forall], exact (λ y hy, (list.eq_of_mem_replicate hy).symm ▸ hx) }
+
+
+/-- For any output `xs` of `oa.repeat m` the probability that all elements of `xs` satisfy `p`
+is the probability of a single output of `oa` satisfying `p` raised to the `m`. -/
+@[simp] lemma prob_event_all₂ (p : α → Prop) :
+  ⁅λ xs, xs.to_list.all₂ p | oa.repeat m⁆ = ⁅p | oa⁆ ^ m :=
+begin
+  induction m with m hm,
+  { simp only [pow_zero, prob_event_eq_one_iff_support_subset,
+      repeat_zero, support_return, set.singleton_subset_iff], },
+  { rw [pow_succ, ← hm],
+    simp only [repeat_succ, prob_event_bind_eq_tsum, prob_event_bind_return],
+    rw [prob_event_eq_tsum_indicator, ← ennreal.tsum_mul_right],
+    refine tsum_congr (λ x, _),
+    by_cases hx : p x,
+    { rw [set.indicator_apply_eq_self.2 (λ h, (h hx).elim)],
+      refine congr_arg ((*) ⁅= x | oa⁆) (prob_event_eq_of_mem_iff _ _ _ (λ xs, _)),
+      show list.all₂ p (x ::ᵥ xs).to_list ↔ list.all₂ p xs.to_list,
+      by simp [hx] },
+    { simp only [set.indicator_apply_eq_zero.2 (λ h, (hx h).elim), zero_mul, mul_eq_zero,
+        eval_dist_eq_zero_iff, prob_event_eq_zero_iff_disjoint_support, support_repeat_eq_all₂,
+        or_iff_not_imp_left, not_not],
+      refine λ hx', set.disjoint_iff_forall_ne.2 (λ ys hys zs hzs, _),
+      have : list.all₂ p (x ::ᵥ zs).to_list := hzs,
+      rw [vector.to_list_cons, list.all₂_cons] at this,
+      refine (hx this.1).elim } }
+end
+
 end all₂
 
 section repeat_zero
@@ -90,8 +134,7 @@ by simp only [support_repeat_zero, set.mem_singleton_iff, eq_iff_true_of_subsing
 lemma eval_dist_repeat_zero : ⁅oa.repeat 0⁆ = pmf.pure vector.nil := rfl
 
 lemma eval_dist_repeat_zero_apply : ⁅= xs₀ | oa.repeat 0⁆ = 1 :=
-((repeat_zero_dist_equiv_return oa).eval_dist_apply_eq xs₀).trans
-  ((eval_dist_return_apply_eq_one_iff _ _ _).2 (subsingleton.elim _ _))
+eval_dist_apply_of_subsingleton _ _
 
 lemma prob_event_repeat_zero_of_nonempty (h : e₀.nonempty) : ⁅e₀ | oa.repeat 0⁆ = 1 :=
 let ⟨y, hy⟩ := h in trans ((repeat_zero_dist_equiv oa (return y)).prob_event_eq _)
@@ -134,11 +177,13 @@ lemma cons_mem_support_repeat_succ_iff : (x ::ᵥ xs) ∈ (oa.repeat m.succ).sup
 by rw [mem_support_repeat_succ_iff oa, vector.head_cons, vector.tail_cons]
 
 @[simp_dist_equiv]
-lemma repeat_succ_dist_equiv : oa.repeat n.succ ≃ₚ (λ (x : α × vector α n), x.1 ::ᵥ x.2) <$> (oa ×ₘ oa.repeat n) :=
-by rw [dist_equiv.def, repeat_succ, map_eq_bind_return_comp, (prod_bind_equiv_bind_bind _ _ _).eval_dist_eq]
+lemma repeat_succ_dist_equiv : oa.repeat n.succ ≃ₚ
+  (λ (x : α × vector α n), x.1 ::ᵥ x.2) <$> (oa ×ₘ oa.repeat n) :=
+by rw [dist_equiv.def, repeat_succ, map_eq_bind_return_comp,
+  (prod_bind_equiv_bind_bind _ _ _).eval_dist_eq]
 
-lemma eval_dist_repeat_succ' :
-  ⁅oa.repeat n.succ⁆ = ⁅(λ (x : α × vector α n), x.1 ::ᵥ x.2) <$> (oa ×ₘ oa.repeat n)⁆ :=
+lemma eval_dist_repeat_succ' : ⁅oa.repeat n.succ⁆ =
+  ⁅(λ (x : α × vector α n), x.1 ::ᵥ x.2) <$> (oa ×ₘ oa.repeat n)⁆ :=
 by rw [repeat_succ, map_eq_bind_return_comp, (prod_bind_equiv_bind_bind _ _ _).eval_dist_eq]
 
 @[simp] lemma eval_dist_repeat_succ :
@@ -156,119 +201,7 @@ calc ⁅oa.repeat m.succ⁆ xsₛ = ⁅(λ (x : α × vector α m), x.1 ::ᵥ x.
 
 end repeat_succ
 
-
 section nth
-
--- TODO
-
-end nth
-
-section support
-
-/-- If a vector is in the support of `oa.repeat m` then any of its members is in `oa.support`. -/
-lemma mem_support_of_mem_of_support_repeat {oa : oracle_comp spec α} {x : α} {xs : vector α m}
-  (hxs : xs ∈ (oa.repeat m).support) (hx : x ∈ xs.to_list) : x ∈ oa.support :=
-by { rw mem_support_repeat_iff_forall at hxs, exact hxs x hx }
-
-lemma replicate_mem_support_repeat {oa : oracle_comp spec α} {x : α} (n : ℕ) (hx : x ∈ oa.support) :
-  vector.replicate n x ∈ (oa.repeat n).support :=
-by { rw [mem_support_repeat_iff_forall], exact (λ y hy, (list.eq_of_mem_replicate hy).symm ▸ hx) }
-
-end support
-
-section fin_support
-
-lemma mem_fin_support_repeat_iff_all₂ :
-  xs ∈ (oa.repeat m).fin_support ↔ xs.to_list.all₂ (∈ oa.fin_support) :=
-by simp only [mem_fin_support_iff_mem_support, mem_support_repeat_iff_all₂]
-
-lemma mem_fin_support_repeat_iff_forall :
-  xs ∈ (oa.repeat m).fin_support ↔ ∀ x ∈ xs.to_list, x ∈ oa.fin_support :=
-by simp only [mem_fin_support_iff_mem_support, mem_support_repeat_iff_forall]
-
-end fin_support
-
-section eval_dist
-
-/-- The probability of getting `xs` after `oa.repeat n` is the product of the probability
-of getting each individual output, since each computation runs independently. -/
-@[simp] theorem eval_dist_repeat_apply : ⁅= xs | oa.repeat m⁆ = (xs.to_list.map ⁅oa⁆).prod :=
-begin
-  induction m with m hm,
-  { simp only [vector.eq_nil xs, repeat_zero oa, eval_dist_return, pmf.pure_apply,
-      if_true, list.map_nil, vector.to_list_nil, list.prod_nil, eq_self_iff_true] },
-  { obtain ⟨x, xs, rfl⟩ := vector.exists_eq_cons xs,
-    calc ⁅oa.repeat m.succ⁆ (x ::ᵥ xs) =
-      ∑' y ys, ⁅oa⁆ y * ⁅oa.repeat m⁆ ys * set.indicator {y ::ᵥ ys} (λ _, 1) (x ::ᵥ xs) :
-        by simp only [repeat_succ, eval_dist_bind_apply_eq_tsum, ← ennreal.tsum_mul_left,
-          eval_dist_return_apply_eq_indicator, hm, list.map, vector.to_list_map,
-          vector.to_list_cons, list.prod_cons, mul_assoc]
-      ... = ⁅oa⁆ x * ⁅oa.repeat m⁆ xs * set.indicator {x ::ᵥ xs} (λ _, 1) (x ::ᵥ xs) :
-        begin
-          refine tsum_tsum_eq_single _ x xs (λ y hy, mul_eq_zero_of_right _ $
-            set.indicator_apply_eq_zero.2 (λ h, (hy _).elim)) (λ y ys hys, mul_eq_zero_of_right _ $
-            set.indicator_apply_eq_zero.2 (λ h, (hys _).elim)),
-          { rw [set.mem_singleton_iff, vector.eq_cons_iff, vector.head_cons, vector.tail_cons] at h,
-            exact h.1.symm },
-          { rw [set.mem_singleton_iff, vector.eq_cons_iff, vector.head_cons, vector.tail_cons] at h,
-            exact h.2.symm }
-        end
-      ... = ⁅oa⁆ x * ⁅oa.repeat m⁆ xs :
-        by simp only [set.indicator_of_mem, set.mem_singleton, mul_one]
-      ... = ((x ::ᵥ xs).to_list.map ⁅oa⁆).prod :
-        by rw [vector.to_list_cons, list.map_cons, list.prod_cons, hm] }
-end
-
-section tomove
-
-lemma bind_dist_equiv_right (oa : oracle_comp spec α) (ob : α → oracle_comp spec β)
-  (x : α) (h : ∀ x' ∈ oa.support, ob x' ≃ₚ ob x) : oa >>= ob ≃ₚ ob x :=
-begin
-  refine (dist_equiv.ext (λ y, _)),
-  calc ⁅= y | oa >>= ob⁆ = ∑' x', ⁅= x' | oa⁆ * ⁅= y | ob x'⁆ : eval_dist_bind_apply_eq_tsum _ _ y
-    ... = ∑' x', ⁅= x' | oa⁆ * ⁅= y | ob x⁆ : begin
-      refine tsum_congr (λ x', _),
-      by_cases hx' : x' ∈ oa.support,
-      { rw [(h _ hx').eval_dist_apply_eq] },
-      { simp_rw [eval_dist_eq_zero hx', zero_mul] }
-    end
-    ... = ⁅= y | ob x⁆ : by rw [ennreal.tsum_mul_right, ⁅oa⁆.tsum_coe, one_mul]
-end
-
-lemma bind_dist_equiv_left (oa : oracle_comp spec α) (oa' : α → oracle_comp spec α)
-  (h : ∀ x ∈ oa.support, oa' x ≃ₚ (return x : oracle_comp spec α)) : oa >>= oa' ≃ₚ oa :=
-begin
-  refine trans (bind_dist_equiv_bind_of_dist_equiv_right _ _ _ h) (bind_return_id_dist_equiv _),
-end
-
-lemma dist_equiv_return_iff (oa : oracle_comp spec α) (x : α) :
-  oa ≃ₚ (return x : oracle_comp spec' α) ↔ oa.support = {x} :=
-begin
-  refine ⟨λ h, h.support_eq.trans (support_return _ _), λ h, dist_equiv.ext (λ y, _)⟩,
-  by_cases hy : y = x,
-  { rwa [hy, eval_dist_return_apply_self, eval_dist_eq_one_iff] },
-  { rwa [eval_dist_return_apply_of_ne _ hy, eval_dist_eq_zero_iff, h, set.mem_singleton_iff] }
-end
-
-lemma map_bind_dist_equiv_left (f : β → α) (oa : oracle_comp spec α) (ob : α → oracle_comp spec β)
-  (h : ∀ x ∈ oa.support, f '' (ob x).support = {x}) : f <$> (oa >>= ob) ≃ₚ oa :=
-begin
-  refine trans (map_bind_dist_equiv _ _ _) _,
-  apply bind_dist_equiv_left,
-  intros x hx,
-  rw [dist_equiv_return_iff, support_map, h x hx],
-end
-
-lemma map_bind_dist_equiv_right {f : β → γ} {oa : oracle_comp spec α} {ob : α → oracle_comp spec β}
-  (x : α) (h : ∀ y ∈ oa.support, f <$> ob y ≃ₚ f <$> ob x) :
-  f <$> (oa >>= ob) ≃ₚ f <$> (ob x) :=
-begin
-  refine trans (map_bind_dist_equiv _ _ _) _,
-  apply bind_dist_equiv_right,
-  exact h,
-end
-
-end tomove
 
 @[simp_dist_equiv]
 lemma map_nth_repeat_dist_equiv (i : fin m) : (λ xs, vector.nth xs i) <$> oa.repeat m ≃ₚ oa :=
@@ -302,27 +235,6 @@ calc vector.head <$> oa.repeat m.succ ≃ₚ (λ xs, vector.nth xs 0) <$> oa.rep
   ⁅= x | (λ xs, vector.nth xs i) <$> oa.repeat m⁆ = ⁅= x | oa⁆ :=
 dist_equiv.eval_dist_apply_eq (by pairwise_dist_equiv) x
 
-lemma repeat_dist_equiv_repeat_of_dist_equiv (h : oa ≃ₚ oa') : oa.repeat n ≃ₚ oa'.repeat n :=
-begin
-  induction n with n hn,
-  pairwise_dist_equiv,
-  simp_rw [repeat_succ],
-  pairwise_dist_equiv [h, hn],
-end
-
-end eval_dist
-
-section prob_event
-
-@[simp] lemma prob_event_repeat (e : set (vector α m)) :
-  ⁅e | oa.repeat m⁆ = ∑' (xs : vector α m), e.indicator (λ xs, (xs.to_list.map ⁅oa⁆).prod) xs :=
-(prob_event_eq_tsum_indicator _ e).trans (tsum_congr (λ x,
-  by simp only [set.indicator, eval_dist_repeat_apply]))
-
-lemma prob_event_succ_thing (e : set (vector α m.succ)) :
-  ⁅e | oa.repeat m.succ⁆ = ∑' (x : α) (xs : vector α m), e.indicator (λ ys, (ys.to_list.map ⁅oa⁆).prod) (x ::ᵥ xs) :=
-by simp only [prob_event_repeat, ennreal.tsum_vector_succ]
-
 /-- After repeating a computation the probability of an event holding on any single
 result is the same as the probability of the event holding after running the computation once. -/
 @[simp] lemma prob_event_nth_repeat (e : set α) (i : fin m) :
@@ -336,32 +248,57 @@ calc ⁅λ xs, xs.head ∈ e | oa.repeat m.succ⁆ = ⁅λ xs, xs.nth 0 ∈ e | 
     by simp only [vector.nth_zero]
   ... = ⁅e | oa⁆ : prob_event_nth_repeat oa e 0
 
-/-- For any output `xs` of `oa.repeat m` the probability that all elements of `xs` satisfy `p`
-is the probability of a single output of `oa` satisfying `p` raised to the `m`. -/
-@[simp] lemma prob_event_all₂ (p : α → Prop) :
-  ⁅λ xs, xs.to_list.all₂ p | oa.repeat m⁆ = ⁅p | oa⁆ ^ m :=
+end nth
+
+/-- The probability of getting `xs` after `oa.repeat n` is the product of the probability
+of getting each individual output, since each computation runs independently. -/
+@[simp] theorem eval_dist_repeat_apply : ⁅= xs | oa.repeat m⁆ = (xs.to_list.map ⁅oa⁆).prod :=
 begin
   induction m with m hm,
-  { simp only [pow_zero, prob_event_eq_one_iff_support_subset,
-      support_repeat_zero, set.singleton_subset_iff] },
-  { rw [pow_succ, ← hm],
-    simp only [repeat_succ, prob_event_bind_eq_tsum, prob_event_bind_return],
-    rw [prob_event_eq_tsum_indicator, ← ennreal.tsum_mul_right],
-    refine tsum_congr (λ x, _),
-    by_cases hx : p x,
-    { rw [set.indicator_apply_eq_self.2 (λ h, (h hx).elim)],
-      refine congr_arg ((*) ⁅= x | oa⁆) (prob_event_eq_of_mem_iff _ _ _ (λ xs, _)),
-      show list.all₂ p (x ::ᵥ xs).to_list ↔ list.all₂ p xs.to_list,
-      by simp [hx] },
-    { simp only [set.indicator_apply_eq_zero.2 (λ h, (hx h).elim), zero_mul, mul_eq_zero,
-        eval_dist_eq_zero_iff, prob_event_eq_zero_iff_disjoint_support, support_repeat_eq_all₂,
-        or_iff_not_imp_left, not_not],
-      refine λ hx', set.disjoint_iff_forall_ne.2 (λ ys hys zs hzs, _),
-      have : list.all₂ p (x ::ᵥ zs).to_list := hzs,
-      rw [vector.to_list_cons, list.all₂_cons] at this,
-      refine (hx this.1).elim } }
+  { simp only [vector.eq_nil xs, repeat_zero oa, eval_dist_return, pmf.pure_apply,
+      if_true, list.map_nil, vector.to_list_nil, list.prod_nil, eq_self_iff_true] },
+  { obtain ⟨x, xs, rfl⟩ := vector.exists_eq_cons xs,
+    calc ⁅oa.repeat m.succ⁆ (x ::ᵥ xs) =
+      ∑' y ys, ⁅oa⁆ y * ⁅oa.repeat m⁆ ys * set.indicator {y ::ᵥ ys} (λ _, 1) (x ::ᵥ xs) :
+        by simp only [repeat_succ, eval_dist_bind_apply_eq_tsum, ← ennreal.tsum_mul_left,
+          eval_dist_return_apply_eq_indicator, hm, list.map, vector.to_list_map,
+          vector.to_list_cons, list.prod_cons, mul_assoc]
+      ... = ⁅oa⁆ x * ⁅oa.repeat m⁆ xs * set.indicator {x ::ᵥ xs} (λ _, 1) (x ::ᵥ xs) :
+        begin
+          refine tsum_tsum_eq_single _ x xs (λ y hy, mul_eq_zero_of_right _ $
+            set.indicator_apply_eq_zero.2 (λ h, (hy _).elim)) (λ y ys hys, mul_eq_zero_of_right _ $
+            set.indicator_apply_eq_zero.2 (λ h, (hys _).elim)),
+          { rw [set.mem_singleton_iff, vector.eq_cons_iff, vector.head_cons, vector.tail_cons] at h,
+            exact h.1.symm },
+          { rw [set.mem_singleton_iff, vector.eq_cons_iff, vector.head_cons, vector.tail_cons] at h,
+            exact h.2.symm }
+        end
+      ... = ⁅oa⁆ x * ⁅oa.repeat m⁆ xs :
+        by simp only [set.indicator_of_mem, set.mem_singleton, mul_one]
+      ... = ((x ::ᵥ xs).to_list.map ⁅oa⁆).prod :
+        by rw [vector.to_list_cons, list.map_cons, list.prod_cons, hm] }
 end
 
-end prob_event
+@[simp] lemma prob_event_repeat (e : set (vector α m)) :
+  ⁅e | oa.repeat m⁆ = ∑' (xs : vector α m), e.indicator (λ xs, (xs.to_list.map ⁅oa⁆).prod) xs :=
+(prob_event_eq_tsum_indicator _ e).trans (tsum_congr (λ x,
+  by simp only [set.indicator, eval_dist_repeat_apply]))
+
+lemma repeat_dist_equiv_repeat_of_dist_equiv (h : oa ≃ₚ oa') : oa.repeat n ≃ₚ oa'.repeat n :=
+begin
+  induction n with n hn,
+  pairwise_dist_equiv,
+  simp_rw [repeat_succ],
+  pairwise_dist_equiv [h, hn],
+end
+
+@[simp] lemma repeat_succ_dist_equiv_repeat_iff :
+  oa.repeat n.succ ≃ₚ oa'.repeat n.succ ↔ oa ≃ₚ oa' :=
+begin
+  refine ⟨λ h, _, repeat_dist_equiv_repeat_of_dist_equiv oa oa' n.succ⟩,
+  calc oa ≃ₚ vector.head <$> oa.repeat n.succ : (map_head_repeat_dist_equiv oa).symm
+    ... ≃ₚ vector.head <$> oa'.repeat n.succ : map_dist_equiv_of_dist_equiv rfl h
+    ... ≃ₚ oa' : map_head_repeat_dist_equiv oa'
+end
 
 end oracle_comp

@@ -84,6 +84,10 @@ lemma prob_event_map_apply_eq_tsum [decidable_pred (∈ e)] :
 
 end prob_event
 
+lemma map_dist_equiv_of_dist_equiv {f g : α → β} {oa : oracle_comp spec α}
+  {oa' : oracle_comp spec' α} (h : f = g) (h' : oa ≃ₚ oa') : f <$> oa ≃ₚ g <$> oa' :=
+bind_dist_equiv_bind_of_dist_equiv h' (by simp [h])
+
 section map_return
 
 variable (a : α)
@@ -98,11 +102,11 @@ by simp only [support_map, support_return, set.image_singleton]
 lemma mem_support_map_return_iff : y ∈ (f <$> (return a : oracle_comp spec α)).support ↔ y = f a :=
 by simp only [support_map, support_return, set.image_singleton, set.mem_singleton_iff]
 
-lemma fin_support_map_return [decidable_eq α] [decidable_eq β] :
+@[simp] lemma fin_support_map_return  :
   (f <$> (return a : oracle_comp spec α)).fin_support = {f a} :=
-by simp only [fin_support_map, fin_support_return, finset.image_singleton]
+by simp [map_eq_bind_return_comp]
 
-lemma mem_fin_support_map_return_iff [decidable_eq α] [decidable_eq β] :
+lemma mem_fin_support_map_return_iff :
   y ∈ (f <$> (return a : oracle_comp spec α)).support ↔ y = f a :=
 by simp only [support_map, support_return, set.image_singleton, set.mem_singleton_iff]
 
@@ -177,6 +181,24 @@ by simp_rw [eval_dist_map_bind', eval_dist_bind_apply_eq_sum_fin_support,
 lemma prob_event_map_bind (e' : set γ) :
   ⁅e' | g <$> (oa >>= ob)⁆ = ⁅e' | oa >>= λ x, g <$> (ob x)⁆ :=
 by pairwise_dist_equiv
+
+lemma map_bind_dist_equiv_left (f : β → α) (oa : oracle_comp spec α) (ob : α → oracle_comp spec β)
+  (h : ∀ x ∈ oa.support, f '' (ob x).support = {x}) : f <$> (oa >>= ob) ≃ₚ oa :=
+begin
+  refine trans (map_bind_dist_equiv _ _ _) _,
+  apply bind_dist_equiv_left,
+  intros x hx,
+  rw [dist_equiv_return_iff, support_map, h x hx],
+end
+
+lemma map_bind_dist_equiv_right {f : β → γ} {oa : oracle_comp spec α} {ob : α → oracle_comp spec β}
+  (x : α) (h : ∀ y ∈ oa.support, f <$> ob y ≃ₚ f <$> ob x) :
+  f <$> (oa >>= ob) ≃ₚ f <$> (ob x) :=
+begin
+  refine trans (map_bind_dist_equiv _ _ _) _,
+  apply bind_dist_equiv_right,
+  exact h,
+end
 
 end map_bind
 

@@ -3,7 +3,7 @@ Copyright (c) 2023 Devon Tuma. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
-import computational_monads.distribution_semantics.tactics
+import computational_monads.distribution_semantics.tactics.pairwise_dist_equiv
 
 /-!
 # Probability Distributions of Monadic Oracle Constructions
@@ -142,6 +142,30 @@ by pairwise_dist_equiv
 by pairwise_dist_equiv
 
 end bind_return_id
+
+section bind_const
+
+variables (oa : oracle_comp spec α) (ob : oracle_comp spec β)
+
+@[simp, simp_dist_equiv] lemma bind_const_dist_equiv : oa >>= (λ _, ob) ≃ₚ ob :=
+by rw [dist_equiv.def, eval_dist_bind, pmf.bind_const]
+
+@[simp] lemma support_bind_const : (oa >>= (λ _, ob)).support = ob.support :=
+(bind_const_dist_equiv oa ob).support_eq
+
+@[simp] lemma fin_support_bind_const : (oa >>= (λ _, ob)).fin_support = ob.fin_support :=
+(bind_const_dist_equiv oa ob).fin_support_eq
+
+@[simp] lemma eval_dist_bind_const : ⁅oa >>= (λ _, ob)⁆ = ⁅ob⁆ :=
+(bind_const_dist_equiv oa ob).eval_dist_eq
+
+lemma eval_dist_bind_const_apply (x : β) : ⁅= x | oa >>= (λ _, ob)⁆ = ⁅= x | ob⁆ :=
+(bind_const_dist_equiv oa ob).eval_dist_apply_eq x
+
+@[simp] lemma prob_event_bind_const (e : set β) : ⁅e | oa >>= (λ _, ob)⁆ = ⁅e | ob⁆ :=
+(bind_const_dist_equiv oa ob).prob_event_eq e
+
+end bind_const
 
 section bind_return_eq_single
 

@@ -214,6 +214,33 @@ begin
   apply to_outer_measure_apply_ne_top,
 end
 
+lemma pmf.to_outer_measure_apply_univ (p : pmf α) :
+  p.to_outer_measure set.univ = 1 :=
+(p.to_outer_measure_apply _).trans (by simp only [set.indicator_univ, tsum_coe])
+
+lemma pmf.to_outer_measure_apply_ne_top (p : pmf α) (s : set α) :
+  p.to_outer_measure s ≠ ∞ :=
+begin
+  refine ne_of_lt (lt_of_le_of_lt _ ennreal.one_lt_top),
+  rw [← p.tsum_coe, pmf.to_outer_measure_apply],
+  refine tsum_le_tsum (λ x, _) ennreal.summable ennreal.summable,
+  simp [set.indicator]; split_ifs; simp
+end
+
+lemma pmf.to_outer_measure_apply_compl (p : pmf α) (s : set α) :
+  p.to_outer_measure sᶜ = 1 - p.to_outer_measure s :=
+begin
+  suffices : p.to_outer_measure sᶜ + p.to_outer_measure s = 1,
+  {
+    rw [← this],
+    rw ennreal.add_sub_cancel_right,
+    apply pmf.to_outer_measure_apply_ne_top,
+
+  },
+  refine (pmf.to_outer_measure_apply_union p (is_compl_compl.symm.disjoint)).symm.trans _,
+  simp [pmf.to_outer_measure_apply_univ],
+end
+
 end diff
 
 end outer_measure

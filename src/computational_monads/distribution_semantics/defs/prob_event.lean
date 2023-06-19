@@ -142,11 +142,19 @@ end support
 
 section sets
 
+-- TODO: Prop versions for everything
+
 lemma prob_event_empty (oa : oracle_comp spec α) : ⁅∅ | oa⁆ = 0 :=
 ⁅oa⁆.to_outer_measure.empty
 
 @[simp] lemma prob_event_insert (x : α) : ⁅insert x e | oa⁆ = ⁅= x | oa⁆ + ⁅e \ {x} | oa⁆ :=
 ⁅oa⁆.to_outer_measure_apply_insert x e
+
+lemma prob_event_compl : ⁅eᶜ | oa⁆ = 1 - ⁅e | oa⁆ :=
+⁅oa⁆.to_outer_measure_apply_compl e
+
+lemma prob_event_not (p : α → Prop) : ⁅λ x, ¬ p x | oa⁆ = 1 - ⁅p | oa⁆ :=
+prob_event_compl oa p
 
 lemma prob_event_diff : ⁅e \ e' | oa⁆ = ⁅e | oa⁆ - ⁅e ∩ e' | oa⁆ :=
 ⁅oa⁆.to_outer_measure_apply_diff e e'
@@ -171,7 +179,6 @@ lemma prob_event_union_eq_of_disjoint {e e' : set α}
 ⁅oa⁆.to_outer_measure_apply_union h
 
 end sets
-
 
 lemma prob_event_eq_eval_dist' {x : α} {e : set α} (hx : x ∈ e)
   (h : ∀ y ≠ x, y ∈ e → y ∉ oa.support) : ⁅e | oa⁆ = ⁅= x | oa⁆ :=

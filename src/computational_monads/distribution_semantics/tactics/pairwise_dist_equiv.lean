@@ -7,9 +7,10 @@ import computational_monads.distribution_semantics.return
 import computational_monads.distribution_semantics.bind
 
 /-!
-# Induction Tactics for Distribution Semantics of `oracle_comp`
+# Induction Tactic for Splitting an Equivalence into Line by Line Equivalences
 
-This file defines custom tactics for working with and proving instances of `dist_equiv`.
+This file defines a tactic `pairwise_dist_equiv` for working with and proving instances of
+`dist_equiv` between sequenced computations, by splitting the goal into line-by-line equivalences.
 -/
 
 open interactive interactive.types
@@ -24,7 +25,7 @@ meta def simp_dist_equiv : user_attribute :=
 
 run_cmd attribute.register "simp_dist_equiv"
 
-private meta def get_simp_dist_equiv_lemmas : tactic (list pexpr) :=
+meta def get_simp_dist_equiv_lemmas : tactic (list pexpr) :=
 do {tagged_d_eqs ← (attribute.get_instances "simp_dist_equiv"),
   t' ← mmap tactic.get_decl tagged_d_eqs,
   d ←  return (list.map declaration.value t'),
@@ -39,21 +40,18 @@ private meta def refl_dist_equiv_base : tactic unit :=
 do `(%%oa ≃ₚ %%oa') ← tactic.target, (tactic.unify oa oa' >> tactic.reflexivity)
 
 /-- Attempt to discharge the current goal using the given lemma (potentially in reverse).
-Returns a boolean representing success or failure -/
-private meta def rw_dist_equiv_base (d_eq : expr) : tactic unit :=
-(tactic.apply d_eq >> return ()) <|>
-  (tactic.refine ``(symm _) >> tactic.apply d_eq >> return ())
+Returns a boolean representing whether or not more lemmas should bet applied -/
+private meta def rw_dist_equiv_base (d_eq : expr) : tactic bool :=
+(tactic.apply d_eq >> return ff) <|>
+  (tactic.refine ``(symm _) >> tactic.apply d_eq >> return ff) <|> return tt
+  -- <|> (tactic.refine ``(trans _ _) >> tactic.rotate 1 >> tactic.apply d_eq >> return tt)
 
 /-- Given a list of distributional equivalences, call `rw_dist_equiv_base` until one succeeds.
 Immediately stops if the current goal is discharged. -/
 private meta def apply_dist_equivs : list pexpr → tactic unit
 | [] := tactic.rotate 1 -- If the goal is never solved then rotate it to the last goal.
-| (d_eq :: d_eqs) := tactic.to_expr d_eq >>= rw_dist_equiv_base <|>
-                      apply_dist_equivs d_eqs
-
--- do
---     (d_eqs.mmap (λ d, tactic.to_expr d >>= rw_dist_equiv_base) >>=
---       λ bs, if tt ∉ bs then tactic.rotate 1 else return ()) -- Rotate if not discharged.
+| (d_eq :: d_eqs) := (tactic.to_expr d_eq >>= rw_dist_equiv_base >>=
+    λ b, if b = tt then apply_dist_equivs d_eqs else return ())
 
 /-- Destruct a distributional equivalence by recursively splitting equivalences between binds
 into multiple equivalences between their individual components.
@@ -117,7 +115,7 @@ match g with
 | `(oracle_comp.fin_support %%oa = oracle_comp.fin_support %%oa') :=
     tactic.refine ``(oracle_comp.dist_equiv.fin_support_eq _) >>
       tactic.target >>= destruct_pairwise_dist_equiv d_eqs
-| _ := tactic.fail "Goal must be a distributional equivalence"
+| _ := tactic.fail "Goal must be an equality be a distributional equivalence."
 end
 
 end oracle_comp
@@ -168,12 +166,21 @@ begin
   apply h, apply h', apply h'',
 end
 
+-- example (oa oa' oa'' : oracle_comp spec α) (h : oa ≃ₚ oa') (h' : oa' ≃ₚ oa'') : oa ≃ₚ oa'' :=
+-- by pairwise_dist_equiv [h, h']
+
 /-- If two bind operations have mismatched intermediate types, but there is an existing equivalence
 between the two, then `pairwise_dist_equiv` should be able to solve without error. -/
 example (oa : oracle_comp spec α) (oa' : oracle_comp spec γ)
   (ob : α → oracle_comp spec β) (ob' : γ → oracle_comp spec β)
   (h : oa >>= ob ≃ₚ oa' >>= ob') : oa >>= ob ≃ₚ oa' >>= ob' :=
 by pairwise_dist_equiv [h]
+
+example (oa oa' : oracle_comp spec α) (hoa : oa ≃ₚ oa')
+  (ob ob' : α → oracle_comp spec β) (hob : ∀ a, ob a ≃ₚ ob' a)
+  (oc oc' : β → oracle_comp spec γ) (hoc : ∀ b, oc b ≃ₚ oc' b) :
+  oa >>= (λ x, ob x >>= oc) ≃ₚ oa' >>= (λ x, ob' x >>= oc') :=
+by pairwise_dist_equiv [hoa, hob, hoc]
 
 /-- `pairwise_dist_equiv` should be able to handle nested branching of binding operations,
 as well as equivalence arguments with many parameters -/

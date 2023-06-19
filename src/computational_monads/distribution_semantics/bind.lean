@@ -179,6 +179,10 @@ begin
       eval_dist_eq_zero (ha.support_eq ▸ hx : x ∉ oa'.support)] }
 end
 
+lemma bind_bind_dist_equiv_assoc (oa : oracle_comp spec α) (ob : α → oracle_comp spec β)
+  (oc : β → oracle_comp spec γ) : (oa >>= ob) >>= oc ≃ₚ oa >>= (λ x, ob x >>= oc) :=
+dist_equiv.ext (λ x, by simp only [eval_dist_bind, pmf.bind_bind])
+
 lemma bind_dist_equiv_bind_of_dist_equiv_left (oa : oracle_comp spec α)
   (ob : α → oracle_comp spec β) (oa' : oracle_comp spec α) (h : oa ≃ₚ oa') :
   (oa >>= ob) ≃ₚ (oa' >>= ob) :=
@@ -188,6 +192,30 @@ lemma bind_dist_equiv_bind_of_dist_equiv_right (oa : oracle_comp spec α)
   (ob : α → oracle_comp spec β) (ob' : α → oracle_comp spec β)
   (h' : ∀ x ∈ oa.support, ob x ≃ₚ ob' x) : (oa >>= ob) ≃ₚ (oa >>= ob') :=
 bind_dist_equiv_bind_of_dist_equiv rfl h'
+
+lemma bind_dist_equiv_bind_of_dist_equiv_right' (oa : oracle_comp spec α)
+  (ob : α → oracle_comp spec β) (ob' : α → oracle_comp spec β)
+  (h' : ∀ x, ob x ≃ₚ ob' x) : (oa >>= ob) ≃ₚ (oa >>= ob') :=
+bind_dist_equiv_bind_of_dist_equiv rfl (λ x _, h' x)
+
+lemma bind_dist_equiv_right (oa : oracle_comp spec α) (ob : α → oracle_comp spec β)
+  (x : α) (h : ∀ x' ∈ oa.support, ob x' ≃ₚ ob x) : oa >>= ob ≃ₚ ob x :=
+begin
+  refine (dist_equiv.ext (λ y, _)),
+  calc ⁅= y | oa >>= ob⁆ = ∑' x', ⁅= x' | oa⁆ * ⁅= y | ob x'⁆ : eval_dist_bind_apply_eq_tsum _ _ y
+    ... = ∑' x', ⁅= x' | oa⁆ * ⁅= y | ob x⁆ : begin
+      refine tsum_congr (λ x', _),
+      by_cases hx' : x' ∈ oa.support,
+      { rw [(h _ hx').eval_dist_apply_eq] },
+      { simp_rw [eval_dist_eq_zero hx', zero_mul] }
+    end
+    ... = ⁅= y | ob x⁆ : by rw [ennreal.tsum_mul_right, ⁅oa⁆.tsum_coe, one_mul]
+end
+
+lemma bind_dist_equiv_left (oa : oracle_comp spec α) (oa' : α → oracle_comp spec α)
+  (h : ∀ x ∈ oa.support, oa' x ≃ₚ (return x : oracle_comp spec α)) : oa >>= oa' ≃ₚ oa :=
+(bind_dist_equiv_bind_of_dist_equiv_right _ _ _ h).trans
+  (dist_equiv.ext (λ x, by simp only [eval_dist_bind, eval_dist_return, pmf.bind_pure]))
 
 end equiv
 

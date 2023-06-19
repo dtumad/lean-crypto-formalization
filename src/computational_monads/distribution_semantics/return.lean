@@ -72,35 +72,6 @@ by { simp only [prob_event.def, eval_dist_return, pmf.to_outer_measure_pure_appl
 
 end prob_event
 
-section return_eq_iff
-
-/-- `return a` has the same distribution as `oa` iff outputs besides `a` have `0` probability. -/
-lemma return_dist_equiv_iff {spec' : oracle_spec} (oa : oracle_comp spec' α) :
-  (return a : oracle_comp spec α) ≃ₚ oa ↔ ∀ x ≠ a, ⁅= x | oa⁆ = 0 :=
-by rw [dist_equiv, eval_dist_return, pmf.pure_eq_iff]
-
-lemma support_return_eq_iff (s : set α) :
-  (return a : oracle_comp spec α).support = s ↔ a ∈ s ∧ ∀ x ∈ s, x = a :=
-by rw [support_return, @eq_comm _ {a} s, set.eq_singleton_iff_unique_mem]
-
-lemma fin_support_return_eq_iff (s : finset α) :
-  (return a : oracle_comp spec α).fin_support = s ↔ a ∈ s ∧ ∀ x ∈ s, x = a :=
-by simp_rw [fin_support_eq_iff_support_eq_coe, support_return_eq_iff, finset.mem_coe]
-
-lemma eval_dist_return_eq_iff (p : pmf α) :
-  ⁅(return a : oracle_comp spec α)⁆ = p ↔ ∀ x ≠ a, p x = 0 :=
-by rw [eval_dist_return, pmf.pure_eq_iff]
-
-lemma eval_dist_return_apply_eq_iff (x : α) (r : ℝ≥0∞) :
-  ⁅= x | (return a : oracle_comp spec α)⁆ = r ↔ (x = a ∧ r = 1) ∨ (x ≠ a ∧ r = 0) :=
-by simp_rw [eval_dist_return_apply_eq_indicator, set.indicator, ite_eq_iff,
-  set.mem_singleton_iff, @eq_comm ℝ≥0∞ 1, @eq_comm ℝ≥0∞ 0]
-
-lemma prob_event_return_eq_iff (e : set α) (r : ℝ≥0∞) :
-  ⁅e | (return a : oracle_comp spec α)⁆ = r ↔ (a ∈ e ∧ r = 1) ∨ (a ∉ e ∧ r = 0) :=
-by rw [prob_event_return_eq_indicator, set.indicator, ite_eq_iff, @eq_comm ℝ≥0∞ 1, @eq_comm ℝ≥0∞ 0]
-
-end return_eq_iff
 
 section return_eq_zero
 
@@ -172,6 +143,45 @@ lemma prob_event_return_insert_self (s : set α) :
 by rw [prob_event_insert, eval_dist_return_apply_self, prob_event_return_diff_self, add_zero]
 
 end return_eq_one
+
+section return_eq_iff
+
+/-- `return a` has the same distribution as `oa` iff outputs besides `a` have `0` probability. -/
+lemma return_dist_equiv_iff {spec' : oracle_spec} (oa : oracle_comp spec' α) :
+  (return a : oracle_comp spec α) ≃ₚ oa ↔ ∀ x ≠ a, ⁅= x | oa⁆ = 0 :=
+by rw [dist_equiv, eval_dist_return, pmf.pure_eq_iff]
+
+lemma dist_equiv_return_iff (oa : oracle_comp spec α) (x : α) :
+  oa ≃ₚ (return x : oracle_comp spec' α) ↔ oa.support = {x} :=
+begin
+  refine ⟨λ h, h.support_eq.trans (support_return _ _), λ h, dist_equiv.ext (λ y, _)⟩,
+  by_cases hy : y = x,
+  { rwa [hy, eval_dist_return_apply_self, eval_dist_eq_one_iff] },
+  { rwa [eval_dist_return_apply_of_ne _ hy, eval_dist_eq_zero_iff, h, set.mem_singleton_iff] }
+end
+
+lemma support_return_eq_iff (s : set α) :
+  (return a : oracle_comp spec α).support = s ↔ a ∈ s ∧ ∀ x ∈ s, x = a :=
+by rw [support_return, @eq_comm _ {a} s, set.eq_singleton_iff_unique_mem]
+
+lemma fin_support_return_eq_iff (s : finset α) :
+  (return a : oracle_comp spec α).fin_support = s ↔ a ∈ s ∧ ∀ x ∈ s, x = a :=
+by simp_rw [fin_support_eq_iff_support_eq_coe, support_return_eq_iff, finset.mem_coe]
+
+lemma eval_dist_return_eq_iff (p : pmf α) :
+  ⁅(return a : oracle_comp spec α)⁆ = p ↔ ∀ x ≠ a, p x = 0 :=
+by rw [eval_dist_return, pmf.pure_eq_iff]
+
+lemma eval_dist_return_apply_eq_iff (x : α) (r : ℝ≥0∞) :
+  ⁅= x | (return a : oracle_comp spec α)⁆ = r ↔ (x = a ∧ r = 1) ∨ (x ≠ a ∧ r = 0) :=
+by simp_rw [eval_dist_return_apply_eq_indicator, set.indicator, ite_eq_iff,
+  set.mem_singleton_iff, @eq_comm ℝ≥0∞ 1, @eq_comm ℝ≥0∞ 0]
+
+lemma prob_event_return_eq_iff (e : set α) (r : ℝ≥0∞) :
+  ⁅e | (return a : oracle_comp spec α)⁆ = r ↔ (a ∈ e ∧ r = 1) ∨ (a ∉ e ∧ r = 0) :=
+by rw [prob_event_return_eq_indicator, set.indicator, ite_eq_iff, @eq_comm ℝ≥0∞ 1, @eq_comm ℝ≥0∞ 0]
+
+end return_eq_iff
 
 section return_eq_return_iff
 
