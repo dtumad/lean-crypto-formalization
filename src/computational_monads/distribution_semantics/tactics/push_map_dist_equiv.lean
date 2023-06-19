@@ -18,17 +18,17 @@ variables {α β γ δ ε: Type} {spec : oracle_spec}
 
 namespace oracle_comp
 
-private meta def push_map_aux : expr → tactic (option (pexpr × pexpr))
+private meta def push_map_aux : expr → tactic (option (pexpr))
 | `(%%f <$> (return %%x)) :=
-  return (some (``(return (%%f %%x)), ``((oracle_comp.map_return_dist_equiv %%f %%x))))
+  return (some (``((oracle_comp.map_return_dist_equiv %%f %%x))))
 | `(%%f <$> (%%oa >>= λ _, %%ob)) := do
   sub_expr' ← tactic.to_expr ``(%%f <$> %%ob) tt ff,
   rec ← push_map_aux sub_expr',
   match rec with
-  | (some (sub_expr, prf)) := return (some (``((%%oa >>= λ _, %%sub_expr)),
+  | (some (prf)) := return (some (
       ``(trans (oracle_comp.map_bind_dist_equiv %%oa (λ _, %%ob) %%f)
           (bind_dist_equiv_bind_of_dist_equiv_right' %%oa _ _ (λ _, %%prf)))))
-  | none := return (some (``(%%oa >>= λ _, (%%f <$> %%ob _)),
+  | none := return (some (
       ``(oracle_comp.map_bind_dist_equiv _ _ _)))
   end
 | `(%%oa) := return none
@@ -43,11 +43,11 @@ match g with
   x ← push_map_aux oa,
   y ← push_map_aux oa',
   match x with
-  | (some x) := tactic.refine ``(trans %%x.2 _)
+  | (some x) := tactic.refine ``(trans %%x _)
   | none := tactic.refine ``(_)
   end,
   match y with
-  | (some x) := tactic.refine ``(symm (trans %%x.2 _))
+  | (some x) := tactic.refine ``(symm (trans %%x _))
   | none := tactic.refine ``(_)
   end,
   tactic.try tactic.reflexivity
@@ -79,35 +79,28 @@ by { push_map_dist_equiv, rw [h] }
 
 example (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) (f : β → γ) :
   f <$> (do {x ← oa, ob x}) ≃ₚ do {x ← oa, f <$> ob x} :=
-begin
-  push_map_dist_equiv,
-
-end
+by push_map_dist_equiv
 
 example (oa : oracle_comp spec α) (g : α → β) (f : β → γ) :
   f <$> (do {x ← oa, return (g x)}) ≃ₚ do {x ← oa, return (f (g x))} :=
-begin
-  push_map_dist_equiv,
+by push_map_dist_equiv
 
+example (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) (oc : α → β → oracle_comp spec γ)
+  (f : γ → δ) : f <$> (do {x ← oa, y ← ob x, oc x y}) ≃ₚ do {x ← oa, y ← ob x, f <$> (oc x y)} :=
+by push_map_dist_equiv
 
-end
+-- example (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) (g : α → β → γ) (f : γ → δ) :
+--   f <$> (do {x ← oa, y ← ob x, return (g x y)}) ≃ₚ
+--     do {x ← oa, y ← ob x, return (f (g x y))} :=
+-- by push_map_dist_equiv
 
-
-example (oa : oracle_comp spec α) (ob : α → oracle_comp spec β)
-  (oc : α → β → oracle_comp spec γ) (f : γ → δ) :
-  f <$> (do {x ← oa, y ← ob x, oc x y}) ≃ₚ
-    do {x ← oa, y ← ob x, f <$> (oc x y)} :=
-begin
-  push_map_dist_equiv,
-end
-
-example (oa : oracle_comp spec α) (ob : α → oracle_comp spec β)
-  (oc : α → β → oracle_comp spec γ) (od : α → β → γ → oracle_comp spec δ) (f : δ → ε) :
-  f <$> (do {x ← oa, y ← ob x, z ← oc x y, od x y z}) ≃ₚ
-    do {x ← oa, y ← ob x, z ← oc x y, f <$> od x y z} :=
-begin
-  push_map_dist_equiv,
-end
+-- example (oa : oracle_comp spec α) (ob : α → oracle_comp spec β)
+--   (oc : α → β → oracle_comp spec γ) (od : α → β → γ → oracle_comp spec δ) (f : δ → ε) :
+--   f <$> (do {x ← oa, y ← ob x, z ← oc x y, od x y z}) ≃ₚ
+--     do {x ← oa, y ← ob x, z ← oc x y, f <$> od x y z} :=
+-- begin
+--   push_map_dist_equiv,
+-- end
 
 
 end tests
