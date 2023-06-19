@@ -106,6 +106,15 @@ begin
     eq_iff_true_of_subsingleton, and_self, if_true]),
 end
 
+@[simp_dist_equiv] lemma simulate_dist_equiv_of_subsingleton [subsingleton S]
+  (s : S) : simulate so oa s ≃ₚ (λ x, (x, s)) <$> simulate' so oa s :=
+begin
+  refine trans _ (map_comp_dist_equiv _ _ _).symm,
+  refine trans (map_id_dist_equiv _).symm _,
+  refine map_dist_equiv_of_dist_equiv (funext (λ x, _)) rfl,
+  simp [prod.eq_iff_fst_eq_snd_eq],
+end
+
 end eval_dist
 
 section prob_event
@@ -113,7 +122,12 @@ section prob_event
 lemma prob_event_simulate_eq_prob_event_image_simulate_of_subsingleton [subsingleton S] (s : S)
   (e : set (α × S)) : ⁅e | simulate so oa s⁆ = ⁅prod.fst '' e | simulate' so oa s⁆ :=
 begin
-  sorry
+  refine trans ((simulate_dist_equiv_of_subsingleton _ _ _).prob_event_eq e) _,
+  rw [prob_event_map],
+  refine congr_arg (λ e, ⁅e | simulate' so oa s⁆) (set.ext (λ x, _)),
+  simp only [set.mem_preimage, set.mem_image, prod.exists, exists_and_distrib_right,
+    exists_eq_right],
+  refine ⟨λ h, ⟨s, h⟩, λ h, let ⟨s', hs'⟩ := h in (subsingleton.elim s' s) ▸ hs'⟩,
 end
 
 end prob_event

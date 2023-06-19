@@ -109,9 +109,9 @@ lemma exists_key_of_mem_support_mgen_and_encrypt (m : M) (c : C)
 
 /-- The distribution associated to `mgen_and_encrypt` is the same as that associated to
 running `m_dist` and `keygen` independently, and mapping according to the `encrypt` function. -/
-lemma eval_dist_mgen_and_encrypt : ⁅se_alg.mgen_and_encrypt m_dist⁆ =
-  ⁅(λ x, (prod.fst x, se_alg.encrypt x)) <$> (m_dist ×ₘ se_alg.keygen ())⁆ :=
-by rw [eval_dist_map_product']
+lemma mgen_and_encrypt_dist_equiv : se_alg.mgen_and_encrypt m_dist ≃ₚ
+  (λ x, (prod.fst x, se_alg.encrypt x)) <$> (m_dist ×ₘ se_alg.keygen ()) :=
+by pairwise_dist_equiv
 
 /-- The probability of getting a particular output `(m, c)` from `mgen_and_encrypt` is the sum over
 possible keys that encrypt `m` to `c` of the probability of getting that key,
@@ -120,7 +120,7 @@ lemma eval_dist_mgen_and_encrypt_apply (m : M) (c : C) :
   ⁅= (m, c) | se_alg.mgen_and_encrypt m_dist⁆ =
     ∑' (k : K), if c = se_alg.encrypt (m, k)
       then ⁅= m | m_dist⁆ * ⁅= k | se_alg.keygen ()⁆ else 0 :=
-by rw [eval_dist_mgen_and_encrypt, eval_dist_map_fst_product_apply]
+by rw [(mgen_and_encrypt_dist_equiv _ _).eval_dist_eq, eval_dist_map_fst_product_apply]
 
 /-- The message portion of the output of `mgen_and_encrypt` follows the message distribution. -/
 lemma eval_dist_fst_map_mgen_and_encrypt :

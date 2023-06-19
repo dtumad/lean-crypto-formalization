@@ -3,7 +3,7 @@ Copyright (c) 2022 Devon Tuma. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
-import computational_monads.distribution_semantics.monad
+import computational_monads.distribution_semantics.tactics.push_map_dist_equiv
 
 /-!
 # Pairwise Oracle Computations
@@ -24,7 +24,7 @@ namespace oracle_comp
 open oracle_spec
 open_locale ennreal big_operators
 
-variables {α β γ : Type} {spec spec' : oracle_spec}
+variables {α β γ δ : Type} {spec spec' : oracle_spec}
 
 def product (oa : oracle_comp spec α) (ob : oracle_comp spec β) :
   oracle_comp spec (α × β) := do {a ← oa, b ← ob, return (a, b)}
@@ -128,16 +128,39 @@ begin
       set.indicator_apply_eq_zero.2 (λ h, (hb h).elim), mul_zero] }
 end
 
-lemma eval_dist_map_fst_product_apply [decidable_eq γ] (f : α × β → γ) (x : α × γ) :
-  ⁅= x | (λ (x : α × β), (prod.fst x, f x)) <$> oa ×ₘ ob⁆ =
-    ∑' (b : β), if x.2 = f (a, b) then ⁅= x.1 | oa⁆ * ⁅= b | ob⁆ else 0 :=
+@[simp_dist_equiv] lemma map_product_dist_equiv (f : α × β → γ) :
+  f <$> oa ×ₘ ob ≃ₚ do {x ← oa, y ← ob, return (f (x, y))} :=
 begin
-  sorry
+  unfold product,
+  push_map_dist_equiv,
+  pairwise_dist_equiv,
 end
 
-lemma eval_dist_map_product' (f : α × β → γ) :
-  ⁅f <$> oa ×ₘ ob⁆ = ⁅oa >>= λ a, ob >>= λ b, return $ f (a, b)⁆ :=
-sorry
+@[simp_dist_equiv] lemma map_prod_product_dist_equiv (f : α → γ) (g : β → δ) :
+  (prod.map f g) <$> oa ×ₘ ob ≃ₚ (f <$> oa) ×ₘ (g <$> ob) :=
+calc (prod.map f g) <$> oa ×ₘ ob ≃ₚ do {x ← oa, y ← ob, return (f x, g y)} :
+      by apply map_product_dist_equiv
+    ... ≃ₚ do {x ← oa, y ← g <$> ob, return (f x, y)} : by pairwise_dist_equiv
+    ... ≃ₚ do {x ← f <$> oa, y ← g <$> ob, return (x, y)} :
+      dist_equiv.ext (λ z, by simp only [eval_dist_bind, eval_dist_map, pmf.bind_map])
+    ... = (f <$> oa) ×ₘ (g <$> ob) : rfl
+
+lemma eval_dist_map_fst_product_apply [decidable_eq γ] (f : α × β → γ) (x : α × γ) :
+  ⁅= x | (λ (x : α × β), (prod.fst x, f x)) <$> oa ×ₘ ob⁆ =
+    ∑' (b : β), if x.2 = f (x.1, b) then ⁅= x.1 | oa⁆ * ⁅= b | ob⁆ else 0 :=
+begin
+  simp only [eval_dist_map, pmf.map_apply, eval_dist_product_apply],
+  rw [ennreal.tsum_prod', ennreal.tsum_comm],
+  refine tsum_congr (λ b, _),
+  refine trans (tsum_eq_single x.1 _) _,
+  {
+    intros b' hb',
+    simp [hb'.symm, prod.eq_iff_fst_eq_snd_eq],
+  },
+  {
+    simp [prod.eq_iff_fst_eq_snd_eq],
+  }
+end
 
 end eval_dist
 

@@ -64,6 +64,8 @@ instance dist_equiv.is_refl : is_refl (oracle_comp spec α) (≃ₚ) := ⟨λ x,
 
 instance dist_equiv.is_symm : is_symm (oracle_comp spec α) dist_equiv := ⟨λ oa oa' h, h.symm⟩
 
+lemma dist_equiv_comm : oa ≃ₚ oa' ↔ oa' ≃ₚ oa := ⟨λ h, h.symm, λ h, h.symm⟩
+
 /-- More general than regular `trans`, the three computations may have different `oracle_spec`. -/
 @[trans] lemma dist_equiv.trans (h : oa ≃ₚ oa') (h' : oa' ≃ₚ oa'') : oa ≃ₚ oa'' := h.trans h'
 

@@ -5,6 +5,7 @@ Authors: Devon Tuma
 -/
 import computational_monads.constructions.repeat
 import computational_monads.distribution_semantics.ite
+import computational_monads.distribution_semantics.tactics.push_map_dist_equiv
 
 /-!
 # Repeated Computation Until a Condition
@@ -40,16 +41,16 @@ lemma try_until_succ : oa.try_until p n.succ =
   (λ xs, (vector.to_list xs).find p) <$> do {a ← oa, as ← oa.repeat n, return (a ::ᵥ as)} := rfl
 
 /-- Any positive result of `oa.try_until p n` will be some output of `oa`. -/
-lemma mem_support_of_some_mem_support_try_until (x : α)
-  (hx : some x ∈ (oa.try_until p n).support) : x ∈ oa.support :=
+lemma mem_support_of_some_mem_support_try_until {x : α}
+  (hx : some x ∈ (oa.try_until p m).support) : x ∈ oa.support :=
 begin
   simp_rw [try_until, support_map, set.mem_image, mem_support_repeat_iff_forall] at hx,
   exact let ⟨xs, hxs, hxs'⟩ := hx in hxs x (list.find_mem hxs')
 end
 
 /-- Any positive result of `oa.try_until p n` will satisfy the predicate `p`. -/
-lemma pos_of_some_mem_support_try_until (x : α)
-  (hx : some x ∈ (oa.try_until p n).support) : p x :=
+lemma pos_of_some_mem_support_try_until {x : α}
+  (hx : some x ∈ (oa.try_until p m).support) : p x :=
 begin
   simp_rw [try_until, support_map, set.mem_image, mem_support_repeat_iff_forall] at hx,
   exact let ⟨xs, hxs, hxs'⟩ := hx in list.find_some hxs'
@@ -93,38 +94,15 @@ end try_until_zero
 
 section try_until_succ
 
+@[simp_dist_equiv]
 lemma try_until_succ_dist_equiv : oa.try_until p n.succ ≃ₚ
   do {x ← oa, if p x then return (some x) else oa.try_until p n} :=
--- calc oa.try_until p n.succ ≃ₚ (λ xs, (vector.to_list xs).find p) <$> (repeat oa n)
-
 begin
   rw [try_until_succ],
-  refine (map_bind_dist_equiv _ _ _).trans _,
+  push_map_dist_equiv,
   pairwise_dist_equiv,
-  refine (map_bind_dist_equiv _ _ _).trans _,
-
-  rw [dist_equiv_ite_iff],
-  refine ⟨λ hpx, _, λ hxp, _⟩,
-  {
-    sorry
-  },
-  {
-    rw [try_until, map_eq_bind_return_comp],
-    pairwise_dist_equiv,
-    refine trans (map_return_dist_equiv _ _) _,
-    rw [vector.to_list_cons, list.find_cons_of_neg _ hxp],
-  }
-
-  -- calc (λ xs, list.find p (vector.to_list xs)) <$> (oa.repeat n >>= λ xs, return (x ::ᵥ xs)) ≃ₚ
-  --   oa.repeat n >>= λ xs, (λ xs, list.find p (vector.to_list xs)) <$> (return (x ::ᵥ xs)) :
-  --     map_bind_dist_equiv _ _ _
-  --   ... ≃ₚ oa.repeat n >>= λ xs, (if p x then return x else return (list.find p (vector.to_list xs))) :
-  --     begin
-  --       pairwise_dist_equiv,
-  --       refine (map_return_dist_equiv _ _).trans _, sorry,
-  --     end
-  --   ... ≃ₚ ite (p x) (return (some x)) (oa.try_until p n) :
-  --     by split_ifs with hpx; pairwise_dist_equiv
+  exact trans (bind_dist_equiv_bind_of_dist_equiv_right' _ _ _ (λ _, map_return_dist_equiv _ _))
+    (by split_ifs with hpx; simp [hpx, try_until, map_eq_bind_return_comp])
 end
 
 /-- `oa.try_until p n` can fail to find a result iff there's an output `x` of `oa` with `¬ p x`. -/
@@ -133,8 +111,7 @@ lemma none_mem_support_try_until_succ_iff :
 begin
   simp only [try_until, mem_support_map_iff, list.find_eq_none],
   exact ⟨λ h, let ⟨xs, hxs, hp⟩ := h in ⟨xs.head, mem_support_of_mem_of_support_repeat hxs
-    xs.head_mem, hp _ xs.head_mem⟩, λ h,
-  let ⟨x, hx, hp⟩ := h in ⟨vector.replicate n.succ x,
+    xs.head_mem, hp _ xs.head_mem⟩, λ h, let ⟨x, hx, hp⟩ := h in ⟨vector.replicate n.succ x,
     replicate_mem_support_repeat n.succ hx, λ y hy, (list.eq_of_mem_replicate hy).symm ▸ hp⟩⟩
 end
 
@@ -161,32 +138,24 @@ lemma some_not_mem_support_try_until_succ {x : α} (hx : x ∈ oa.support) (h : 
   some x ∉ (oa.try_until p n.succ).support :=
 λ h', false.elim (h ((some_mem_support_try_until_succ_iff _ _ _ _).1 h').2)
 
--- lemma eval_dist_try_until_succ_apply (x : α) :
---   ⁅= x | oa.try_until p n.succ⁆ = ⁅= x | oa⁆
-
-end try_until_succ
-
 /-- If at least one result of `oa` doesn't satisfy `p` then the result of `oa.try_until p n.succ`
 is either `none` (in the case of failure) or `some x` for some output `x` of `oa` with `p x`. -/
 lemma support_try_until_succ_of_exists_neg (h : ∃ x ∈ oa.support, ¬ p x) :
   (oa.try_until p n.succ).support = insert none (option.some '' {x | x ∈ oa.support ∧ p x}) :=
 begin
+  refine trans (try_until_succ_dist_equiv oa p n).support_eq _,
+  rw [support_bind_ite_const_right _ _ _ _ h],
   obtain ⟨x, hx, hpx⟩ := h,
   refine set.ext (λ y, _),
-  rw [try_until, support_map, support_repeat_eq_forall],
   cases y with y,
-  { simp only [set.mem_image, set.mem_set_of_eq, list.find_eq_none, set.mem_insert_iff,
-      eq_self_iff_true, and_false, exists_false, or_false, iff_true],
-    refine ⟨vector.replicate n.succ x, λ y hy, _, λ y hy, _⟩;
-    { sorry
-      } },
-  { simp only [set.mem_image, set.mem_set_of_eq, set.mem_insert_iff, exists_eq_right, false_or],
-    refine ⟨λ h, let ⟨xs, hxs⟩ := h in ⟨hxs.1 _ (list.find_mem hxs.2), list.find_some hxs.2⟩,
-    λ h, ⟨vector.replicate n.succ y, λ z hz, _, list.find_cons_of_pos _ h.2⟩⟩,
-    sorry,
-    -- rw [vector.repeat, vector.to_list, list.mem_repeat_succ_iff] at hz,
-    -- exact hz.symm ▸ h.1
-    }
+  { have : none ∈ (oa.try_until p n).support,
+    from (mem_support_map_iff _ _ _).2 ⟨vector.replicate n x, replicate_mem_support_repeat n hx,
+      list.find_eq_none.2 (λ x' hx', (list.mem_replicate.1 hx').2.symm ▸ hpx)⟩,
+    simp [this] },
+  { have : some y ∈ (oa.try_until p n).support → y ∈ oa.support ∧ p y,
+    from λ h, ⟨mem_support_of_some_mem_support_try_until _ _ h,
+      pos_of_some_mem_support_try_until _ _ h⟩,
+    simpa using this }
 end
 
 /-- If all results of `oa` satisfy `p`, then `oa.try_until p n.succ` will just return `some x`,
@@ -197,9 +166,11 @@ begin
   refine set.ext (λ y, ⟨λ h, _, λ h, _⟩),
   { cases y with y,
     { exact false.elim (none_not_mem_support_try_until_succ oa p n hp h) },
-    { exact ⟨y, mem_support_of_some_mem_support_try_until oa p _ y h, rfl⟩ } },
+    { exact ⟨y, mem_support_of_some_mem_support_try_until oa p h, rfl⟩ } },
   { exact let ⟨x, hx⟩ := h in hx.2 ▸ some_mem_support_try_until_succ oa p _ hx.1 (hp x hx.1) }
 end
+
+end try_until_succ
 
 section try_until_none
 

@@ -37,7 +37,7 @@ open oracle_comp oracle_spec
     and a set of random oracles that the algorithm has access to.
   If not in the random oracle model, can just take `random_oracles := []ₒ`, the empty `oracle_spec`
   We also bundle the polynomial complexity of the algorithms into the structure. -/
-structure signature :=
+structure signature := -- TODO: signature_alg?
 -- Types of the possible messages, public keys, secret keys, and signatures
 (M PK SK S : Type)
 -- Equality between messages and between signatures is decidable (unneeded for `PK` and `SK`)
@@ -47,7 +47,7 @@ structure signature :=
 (inhabited_S : inhabited S)
 -- There are a finite number of possible signatures
 (fintype_S : fintype S)
--- Random oracles for the algorithms, with finite ranges and computablity requirements.
+-- Set of random oracles available to the signature algorithms
 (random_oracle_spec : oracle_spec)
 -- The actual algorithms of the signature scheme.
 (gen : unit → oracle_comp (uniform_selecting ++ random_oracle_spec) (PK × SK))
@@ -117,9 +117,15 @@ default_simulate' sig.base_oracle
 lemma completeness_experiment.def (m : sig.M) : sig.completeness_experiment m = default_simulate'
   sig.base_oracle (do {k ← sig.gen (), σ ← sig.sign (k.1, k.2, m), sig.verify (k.1, m, σ)}) :=
 begin
-  sorry
+  rw [completeness_experiment],
+  congr,
+  refine funext (λ x, _),
+  cases x,
+  simp [completeness_experiment._match_1],
 end
 
+/-- The possible outputs of running the completeness experiment,
+  as a union over the keys and signature generated, plus internal random oracle caches. -/
 @[simp] lemma support_completeness_experiment (m : sig.M) :
   (completeness_experiment sig m).support = ⋃ (pk : sig.PK) (sk : sig.SK) (σ : sig.S)
     (cache cache' : query_log sig.random_oracle_spec)
@@ -140,13 +146,23 @@ def complete (sig : signature) := ∀ (m : sig.M), ⁅completeness_experiment si
 
 lemma complete_iff_signatures_support_subset :
   sig.complete ↔ ∀ (m : sig.M) (pk : sig.PK) (sk : sig.SK) (σ : sig.S)
-    (log log' : query_log sig.random_oracle_spec),
-    ((pk, sk), log) ∈ (default_simulate sig.base_oracle $ sig.gen ()).support →
-    (σ, log') ∈ (simulate sig.base_oracle (sig.sign (pk, sk, m)) log).support →
-    (simulate' sig.base_oracle (sig.verify (pk, m, σ)) log').support = {tt} :=
+    (cache cache' : query_log sig.random_oracle_spec),
+    ((pk, sk), cache) ∈ (default_simulate sig.base_oracle $ sig.gen ()).support →
+    (σ, cache') ∈ (simulate sig.base_oracle (sig.sign (pk, sk, m)) cache).support →
+    (simulate' sig.base_oracle (sig.verify (pk, m, σ)) cache').support = {tt} :=
 begin
-  simp_rw [complete, eval_dist_eq_one_iff,
-    support_completeness_experiment], sorry,
+  simp_rw [complete, eval_dist_eq_one_iff_subset],
+  refine ⟨λ h m pk sk σ cache cache' hgen hsign, _, λ h m, _⟩,
+  { rw [support_eq_singleton_iff_forall],
+    refine λ b hb, h m _,
+    simp only [support_completeness_experiment, set.mem_Union],
+    refine ⟨pk, sk, σ, cache, cache', hgen, hsign, hb⟩ },
+  { rw [support_completeness_experiment],
+    intros x hx,
+    simp only [set.mem_Union] at hx,
+    obtain ⟨pk, sk, σ, cache, cache', hgen, hsign, hb⟩ := hx,
+    specialize h m pk sk σ cache cache' hgen hsign,
+    exact h ▸ hb }
 end
 
 end complete

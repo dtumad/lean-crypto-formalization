@@ -193,6 +193,8 @@ begin
   { simp only [simulate_return, support_bind_return, support_return, set.image_singleton] },
   { intros α β oa ob s,
     ext x,
+    simp,
+
 
     sorry },
   { exact h }

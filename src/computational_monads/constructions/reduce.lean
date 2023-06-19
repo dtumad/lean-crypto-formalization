@@ -13,6 +13,8 @@ This file defines a function `oracle_comp.reduce` that removes extra return stat
 immedeately substituting the return value to the next computation.
 The resulting computation isn't definitionally equal to the original, but both
 are equivalent under the probabalistic denotational semantics (see `oracle_comp.reduce_equiv`)
+
+TODO: this could be useful for some greater automation / tactics stuff.
 -/
 
 namespace oracle_comp
@@ -31,23 +33,14 @@ def reduce : Π {α : Type}, oracle_comp spec α → oracle_comp spec α
 | _ (bind' α β oa ob) := bind' α β (reduce oa) (λ x, reduce (ob x))
 | _ (query i t) := query i t
 
-theorem reduce_equiv (oa : oracle_comp spec α) : oa.reduce ≃ₚ oa :=
+theorem reduce_dist_equiv (oa : oracle_comp spec α) : oa.reduce ≃ₚ oa :=
 begin
   oracle_comp.default_induction `oa,
   { exact rfl },
-  {
-    oracle_comp.default_induction `oa,
-    {
-      refine trans _ (eval_dist_return_bind _ _).symm,
-      exact rfl,
-    },
-    {
-      sorry,
-    },
-    {
-      exact rfl,
-    }
-  },
+  { cases oa,
+    { exact (eval_dist_return_bind _ _).symm },
+    { exact bind_dist_equiv_bind_of_dist_equiv hoa (λ _ _, hob _) },
+    { exact rfl } },
   { exact rfl }
 end
 

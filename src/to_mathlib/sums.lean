@@ -54,7 +54,4 @@ begin
   convert λ x, if_neg (option.some_ne_none _),
 end
 
-lemma ennreal.tsum_vector_succ {n : ℕ} (f : vector α n.succ → ℝ≥0∞) :
-  tsum f = ∑' x xs, f (x ::ᵥ xs) := sorry
-
 end option

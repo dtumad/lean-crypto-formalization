@@ -159,10 +159,10 @@ In particular if a tracking oracle *only* does tracking gives the same main outp
 eval_dist_simulate'_eq_eval_dist query update_state default_state oa s (λ _ _, rfl)
 
 lemma eval_dist_simulate'_eq_eval_dist_simulate'
-  (h : ∀ i t, o i t ≃ₚ o' i t) : ⁅simulate' ⟪o | update_state, default_state⟫ oa s⁆ =
-    ⁅simulate' ⟪o' | update_state', default_state'⟫ oa s'⁆ :=
+  (h : ∀ i t, o i t ≃ₚ o' i t) : simulate' ⟪o | update_state, default_state⟫ oa s ≃ₚ
+    simulate' ⟪o' | update_state', default_state'⟫ oa s' :=
 eval_dist_simulate'_eq_eval_dist_simulate' (λ i t s s',
-  sorry) _ _ _ --by simp [pmf.map_comp, tracking_oracle.apply_eq, eval_dist_map, h]) oa s s'
+  by simp [pmf.map_comp, tracking_oracle.apply_eq, eval_dist_map, (h i t).eval_dist_eq]) _ _ _
 
 /-- The first output of simulation under different `tracking_oracle` with the same oracle
 is the same regardless of if the tracking functions are different. -/

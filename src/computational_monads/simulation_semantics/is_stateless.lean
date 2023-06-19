@@ -35,21 +35,18 @@ variables (so : sim_oracle spec spec' S) (i : spec.ι)
 
 /-- Specialize `subsingleton.elim` to simplify the state to the default oracle state.
 Usefull for giving a unified convergence point for state values. -/
-lemma state_elim [hso : so.is_stateless] (s : S) : s = so.default_state :=
+@[simp] lemma state_elim [hso : so.is_stateless] (s : S) : s = so.default_state :=
 @subsingleton.elim S hso.state_subsingleton s so.default_state
 
 instance is_stateless.is_tracking [hso : so.is_stateless] : so.is_tracking :=
-{
-  query_f := λ i t, prod.fst <$> so i (t, so.default_state),
+{ query_f := λ i t, prod.fst <$> so i (t, so.default_state),
   state_f := λ s i t u, so.default_state,
   apply_equiv_state_f_map_query_f :=
     begin
-      sorry,
-      -- refine λ i t s, trans ((eval_dist_map_id $ (so i (t, s))).symm.trans
-      --   (map_equiv_congr (λ x, _) (by rw so.state_elim s))) (eval_dist_map_comp _ _ _).symm,
-      -- simp only [prod.eq_iff_fst_eq_snd_eq, so.state_elim x.2, id.def, eq_self_iff_true, and_self]
-    end
-}
+      refine λ i t s, trans (trans (map_id_dist_equiv _).symm _) (map_comp_dist_equiv _ _ _).symm,
+      refine map_dist_equiv_of_dist_equiv (funext (λ x, prod.eq_iff_fst_eq_snd_eq.2
+        ⟨rfl, state_elim so x.2⟩)) (by rw [state_elim so s]),
+    end }
 
 namespace is_stateless
 

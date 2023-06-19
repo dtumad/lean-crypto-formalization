@@ -42,14 +42,14 @@ by split_ifs; refl
 
 lemma dist_equiv_ite_iff (oa'' : oracle_comp spec' α) :
   (oa'' ≃ₚ if p then oa else oa') ↔ (p → oa'' ≃ₚ oa) ∧ (¬ p → oa'' ≃ₚ oa') :=
-begin
-  sorry
-end
+by split_ifs with hp; simp [hp]
 
 @[simp_dist_equiv] lemma ite_dist_equiv : (if p then oa else oa') ≃ₚ
   do {x ← oa, x' ← oa', if p then return x else return x'} :=
 begin
-  sorry,
+  split_ifs with hp,
+  { exact trans (bind_return_id_dist_equiv oa).symm (by pairwise_dist_equiv) },
+  { exact trans (bind_const_dist_equiv oa oa').symm (by pairwise_dist_equiv) }
 end
 
 end ite
@@ -109,6 +109,20 @@ end bind_ite_const_left
 section bind_ite_const_right
 
 variables (ob : α → oracle_comp spec β) (ob' : oracle_comp spec β) (y : β)
+
+/-- Version of `support_bind_ite_const` when only the right computation is constant -/
+@[simp] lemma support_bind_ite_const_right (h : ∃ x ∈ oa.support, ¬ p x) :
+  (do {x ← oa, if p x then ob x else ob'}).support =
+  (⋃ x ∈ {x ∈ oa.support | p x}, (ob x).support) ∪ ob'.support :=
+begin
+  rw [support_bind_ite],
+  refine congr_arg (λ x, _ ∪ x) _,
+  ext x,
+  simp at ⊢ h,
+  refine λ _, h,
+end
+-- set.ext (λ x, by simp only [mem_support_bind_iff, set.mem_Union, set.mem_union, exists_prop,
+--   set.mem_sep_iff, ← exists_or_distrib, and_assoc, ← and_or_distrib_left, mem_support_ite_iff])
 
 /-- Version of `eval_dist_bind_ite_const` when only the right computation is constant -/
 @[simp] lemma eval_dist_bind_ite_const_right : ⁅= y | do {x ← oa, if p x then ob x else ob'}⁆ =

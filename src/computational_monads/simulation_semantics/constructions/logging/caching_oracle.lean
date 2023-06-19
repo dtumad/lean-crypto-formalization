@@ -242,6 +242,7 @@ theorem support_simulate_bind_simulate_eq_support_simulate (oa : oracle_comp spe
   (simulate (caching_oracle spec) oa log >>= λ x, simulate (caching_oracle spec) oa x.2).support =
     (simulate (caching_oracle spec) oa log).support :=
 begin
+
   refine support_simulate_simulate_eq_support_simulate (caching_oracle spec) (caching_oracle spec)
     _ log oa,
   clear log,
