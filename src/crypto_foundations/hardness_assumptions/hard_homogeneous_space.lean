@@ -52,26 +52,27 @@ do {x₁ ←$ᵗ X, x₂ ←$ᵗ X, g ← adversary.adv (x₁, x₂), return (g 
 
 /-- Vectorization advantage of an adversary in the vectorization experiment. -/
 noncomputable def advantage (adversary : vectorization_adversary G X) : ℝ≥0∞ :=
-⁅(=) tt | experiment adversary⁆
+⁅= tt | experiment adversary⁆
 
 /-- The adversary's advantage at vectorization is the average over all possible pairs of points
 of their advantage at vectorizing those specific points. -/
 lemma advantage_eq_tsum (adversary : vectorization_adversary G X) : adversary.advantage =
   (∑' x₁ x₂, ⁅(=) (x₁ -ᵥ x₂) | adversary.adv (x₁, x₂)⁆) / (fintype.card X) ^ 2 :=
-calc adversary.advantage = ⁅(=) tt | experiment adversary⁆ : rfl
-  ... = ⁅= tt | experiment adversary⁆ : by rw [prob_event_eq_eq_prob_output]
+calc adversary.advantage = ⁅= tt | experiment adversary⁆ : rfl
   ... = ((fintype.card X)⁻¹ ^ 2) * (∑' x₁ x₂, ⁅adversary.adv (x₁, x₂)⁆ (x₁ -ᵥ x₂)) :
   begin
-    simp only [experiment, prob_output_bind_eq_tsum ($ᵗ X), pow_two, ← mul_assoc,
-      eval_dist_uniform_select_fintype_apply, ennreal.tsum_mul_left],
-    refine congr_arg (λ x, _ * x) (tsum_congr (λ x₁, tsum_congr (λ x₂, _))),
-    refine (eval_dist_bind_return_apply_eq_single (adversary.adv (x₁, x₂)) _ tt (x₁ -ᵥ x₂)) _,
-    simp only [set.preimage, set.mem_singleton_iff, to_bool_iff, set.set_of_eq_eq_singleton],
+    sorry,
+
+    -- simp only [experiment, prob_output_bind_eq_tsum ($ᵗ X), pow_two, ← mul_assoc,
+    --   eval_dist_uniform_select_fintype_apply, ennreal.tsum_mul_left],
+    -- refine congr_arg (λ x, _ * x) (tsum_congr (λ x₁, tsum_congr (λ x₂, _))),
+    -- refine (eval_dist_bind_return_apply_eq_single (adversary.adv (x₁, x₂)) _ tt (x₁ -ᵥ x₂)) _,
+    -- simp only [set.preimage, set.mem_singleton_iff, to_bool_iff, set.set_of_eq_eq_singleton],
   end
   ... = (∑' x₁ x₂, ⁅adversary.adv (x₁, x₂)⁆ (x₁ -ᵥ x₂)) / (fintype.card X) ^ 2 :
     by rw [div_eq_mul_inv, ennreal.inv_pow, mul_comm]
   ... = (∑' x₁ x₂, ⁅(=) (x₁ -ᵥ x₂) | adversary.adv (x₁, x₂)⁆) / (fintype.card X) ^ 2 :
-    by simp_rw [prob_event_eq_eq_prob_output]
+    sorry --by simp_rw [prob_event_eq_eq_prob_output]
 
 end vectorization_adversary
 

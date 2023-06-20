@@ -58,6 +58,13 @@ end dist_equiv
 
 section prob_output
 
+lemma prob_output_simulate_return_eq_indicator (x : α × S) :
+  ⁅= x | simulate so (return a) s⁆ = set.indicator {(a, s)} (λ _, 1) x :=
+prob_output_return_eq_indicator _ _ _
+
+lemma prob_output_simulate_return [decidable_eq α] [decidable_eq S] (x : α × S) :
+  ⁅= x | simulate so (return a) s⁆ = if x = (a, s) then 1 else 0 :=
+prob_output_return _ _ _
 
 end prob_output
 

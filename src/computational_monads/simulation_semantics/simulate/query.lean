@@ -56,6 +56,8 @@ end dist_equiv
 
 section prob_output
 
+lemma prob_output_simulate_query (x : spec.range i × S) :
+  ⁅= x | simulate so (query i t) s⁆ = ⁅= x | so i (t, s)⁆ := rfl
 
 end prob_output
 

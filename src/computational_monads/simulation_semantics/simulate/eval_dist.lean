@@ -3,7 +3,8 @@ Copyright (c) 2022 Devon Tuma. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
-import computational_monads.simulation_semantics.simulate.basic
+import computational_monads.simulation_semantics.simulate.monad
+import computational_monads.simulation_semantics.simulate.query
 import computational_monads.distribution_semantics.tactics.pairwise_dist_equiv
 
 /-!
@@ -54,19 +55,19 @@ lemma prob_output_simulate_eq_induction
 begin
   induction oa using oracle_comp.induction_on with α a' α β oa ob hoa hob i t generalizing s s',
   {
-    rw [prob_output_simulate_return],
-    rw [eval_dist_simulate_return, pmf.pure_apply],
+    rw [prob_output_simulate_return_eq_indicator, set.indicator],
+    -- rw [eval_dist_simulate_return, pmf.pure_apply],
     split_ifs with has,
-    { simp only [prod.eq_iff_fst_eq_snd_eq] at has,
+    { simp only [set.mem_singleton_iff, prod.eq_iff_fst_eq_snd_eq] at has,
       refine has.1 ▸ has.2.symm ▸ (h_ret α a s).symm, },
-    { simp only [prod.eq_iff_fst_eq_snd_eq, not_and_distrib] at has,
+    { simp only [set.mem_singleton_iff, prod.eq_iff_fst_eq_snd_eq, not_and_distrib] at has,
       cases has with ha hs,
       { exact (h_ret' α a' a s s' $ or.inl $ ne.symm ha).symm },
       { exact (h_ret' α a' a s s' $ or.inr $ ne.symm hs).symm } }
 
   },
   { simp only [prob_output_simulate_bind_eq_tsum_tsum, h_bind, hoa, hob] },
-  { rw [eval_dist_simulate_query, h_query] },
+  { rw [prob_output_simulate_query, h_query, prob_output.def] },
 end
 
 /-- If the main output of oracle queries is uniformly distributed (ignoring the oracle state),
@@ -78,12 +79,14 @@ theorem eval_dist_simulate'_eq_eval_dist
 begin
   induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t generalizing s,
   { simp only [simulate'_return, eval_dist_map_return, eval_dist_return] },
-  { refine pmf.ext (λ b, _),
-    rw [prob_output_bind_eq_tsum_indicator, eval_dist_simulate'_bind_apply],
+  { refine eval_dist.prob_output_ext _ _ (λ x, _),
+    rw [prob_output_bind_eq_tsum_indicator, prob_output_simulate'_bind],
     refine tsum_congr (λ a, _),
-    rw [← hoa s, eval_dist_simulate'_apply, ← ennreal.tsum_mul_right],
-    refine tsum_congr (λ t, _),
-    rw ← hob },
+    sorry,
+    -- rw [← hoa s, prob_output_simulate', ← ennreal.tsum_mul_right],
+    -- refine tsum_congr (λ t, _),
+    -- rw ← hob
+    },
   { simp only [h, simulate'_query, eval_dist_map, eval_dist_query] }
 end
 
@@ -98,18 +101,20 @@ theorem eval_dist_simulate'_eq_eval_dist_simulate'
 begin
   induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t generalizing s s',
   { simp only [simulate'_return, eval_dist_map_return] },
-  { refine pmf.ext (λ b, _),
-    simp only [eval_dist_simulate'_bind_apply],
+  { refine eval_dist.prob_output_ext _ _ (λ b, _),
+    simp only [prob_output_simulate'_bind],
     refine tsum_congr (λ a, _),
-    calc ∑' (t : S), ⁅simulate so oa s⁆ (a, t) * ⁅simulate' so (ob a) t⁆ b
-      = ∑' (t : S), ⁅simulate so oa s⁆ (a, t) * ⁅simulate' so' (ob a) s'⁆ b :
-        tsum_congr (λ t, congr_arg (λ x, _ * x) $ by rw hob a t s')
-      ... = (∑' (t' : S'), ⁅simulate so' oa s'⁆ (a, t')) * ⁅simulate' so' (ob a) s'⁆ b :
-        by simp_rw [ennreal.tsum_mul_right, ← eval_dist_simulate'_apply, hoa s s']
-      ... = ∑' (t' : S'), ⁅simulate so' oa s'⁆ (a, t') * ⁅simulate' so (ob a) s⁆ b :
-        by rw [ennreal.tsum_mul_right, hob]
-      ... = ∑' (t' : S'), ⁅simulate so' oa s'⁆ (a, t') * ⁅simulate' so' (ob a) t'⁆ b :
-        tsum_congr (λ t, congr_arg (λ x, _ * x) $ by rw hob) },
+    sorry,
+    -- calc ∑' (t : S), ⁅= (a, t) | simulate so oa s⁆ * ⁅= b | simulate' so (ob a) t⁆
+    --   = ∑' (t : S), ⁅= (a, t) | simulate so oa s⁆ * ⁅= b | simulate' so' (ob a) s'⁆ :
+    --     tsum_congr (λ t, congr_arg (λ x, _ * x) $ by rw hob a t s')
+    --   ... = (∑' (t' : S'), ⁅simulate so' oa s'⁆ (a, t')) * ⁅simulate' so' (ob a) s'⁆ b :
+    --     by simp_rw [ennreal.tsum_mul_right, ← prob_output_simulate', hoa s s']
+    --   ... = ∑' (t' : S'), ⁅simulate so' oa s'⁆ (a, t') * ⁅simulate' so (ob a) s⁆ b :
+    --     by rw [ennreal.tsum_mul_right, hob]
+    --   ... = ∑' (t' : S'), ⁅simulate so' oa s'⁆ (a, t') * ⁅simulate' so' (ob a) t'⁆ b :
+    --     tsum_congr (λ t, congr_arg (λ x, _ * x) $ by rw hob)
+        },
   { simpa only [simulate'_query, eval_dist_map] using h i t s s' },
 end
 

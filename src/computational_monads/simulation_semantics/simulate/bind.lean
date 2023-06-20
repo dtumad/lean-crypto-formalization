@@ -80,11 +80,12 @@ by simp only [simulate_bind, prob_output_bind_eq_sum, ← @finset.sum_product �
   finset.univ_product_univ, prod.mk.eta]
 
 
--- lemma prob_output_simulate'_bind (b : β) : ⁅= b | simulate' so (oa >>= ob) s⁆
---   = ∑' (a : α) (s' : S), ⁅= (a, s') | simulate so oa s⁆ * ⁅= b | simulate' so (ob a) s'⁆ :=
--- begin
---   simp [simulate'_bind, prob_output_map_eq_tsum_indicator, ennreal.tsum_prod'],
--- end
+lemma prob_output_simulate'_bind (b : β) : ⁅= b | simulate' so (oa >>= ob) s⁆
+  = ∑' (a : α) (s' : S), ⁅= (a, s') | simulate so oa s⁆ * ⁅= b | simulate' so (ob a) s'⁆ :=
+begin
+  simp [simulate'_bind, prob_output_map_eq_tsum_indicator, ennreal.tsum_prod'],
+  sorry,
+end
 
 end prob_output
 
