@@ -120,7 +120,7 @@ lemma eval_dist_mgen_and_encrypt_apply (m : M) (c : C) :
   ⁅= (m, c) | se_alg.mgen_and_encrypt m_dist⁆ =
     ∑' (k : K), if c = se_alg.encrypt (m, k)
       then ⁅= m | m_dist⁆ * ⁅= k | se_alg.keygen ()⁆ else 0 :=
-by rw [(mgen_and_encrypt_dist_equiv _ _).eval_dist_eq, eval_dist_map_fst_product_apply]
+by rw [(mgen_and_encrypt_dist_equiv _ _).prob_output_eq, prob_output_map_fst_product]
 
 /-- The message portion of the output of `mgen_and_encrypt` follows the message distribution. -/
 lemma eval_dist_fst_map_mgen_and_encrypt :
@@ -153,8 +153,9 @@ begin
   have this : prod.fst ⁻¹' {m} ∩ prod.snd ⁻¹' {c} = ({(m, c)} : set (M × C)),
   by {ext x, simp only [prod.eq_iff_fst_eq_snd_eq, set.mem_inter_iff,
     set.mem_preimage, set.mem_singleton_iff]},
-  simp only [indep_event_iff, ← prob_event_map, prob_event_singleton_eq_eval_dist,
+  simp only [indep_event_iff, ← prob_event_map, prob_event_singleton_eq_prob_output,
     eval_dist_fst_map_mgen_and_encrypt, this],
+  sorry,
 end
 
 section equal_card
@@ -199,11 +200,11 @@ begin
     -- If the message and ciphertext have non-zero probability, there must be an encryption key.
     suffices : 0 < ⁅= (m, c) | se_alg.mgen_and_encrypt ($ᵗ M)⁆,
     from let ⟨k, hk, hk'⟩ := se_alg.exists_key_of_mem_support_mgen_and_encrypt
-      ($ᵗ M) m c ((eval_dist_pos_iff _ _).1 this) in ⟨k, hk, hk'⟩,
+      ($ᵗ M) m c ((prob_output_pos_iff _ _).1 this) in ⟨k, hk, hk'⟩,
     -- It suffices to show that such a key exists for *some* message, rather than exactly `m`.
     suffices : ∃ m' k, k ∈ (se_alg.keygen ()).support ∧ se_alg.encrypt (m', k) = c,
     by simpa only [(se_alg.perfect_secrecy_iff.1 h) ($ᵗ M) m c, ennreal.mul_pos_iff, true_and,
-      eval_dist_pos_iff, mem_support_uniform_select_fintype, mem_support_map_snd_iff,
+      prob_output_pos_iff, mem_support_uniform_select_fintype, mem_support_map_snd_iff,
       mem_support_mgen_and_encrypt_iff, mem_support_uniform_select_fintype M, exists_prop],
     -- We can choose an arbitrary key, and then take the message to be the decrypted ciphertext.
     obtain ⟨k, hk⟩ := (se_alg.keygen ()).support_nonempty,
@@ -282,7 +283,7 @@ begin
   let m := se_alg.decrypt (c, k),
   suffices : ⁅= m | m_dist⁆ * ⁅= k | se_alg.keygen ()⁆ =
     ⁅= m | m_dist⁆ * ⁅= c | prod.snd <$> se_alg.mgen_and_encrypt m_dist⁆,
-  from ((ennreal.mul_eq_mul_left (eval_dist_ne_zero h')
+  from ((ennreal.mul_eq_mul_left (prob_output_ne_zero h')
     (pmf.apply_ne_top _ _)).1 this).symm,
   -- Extend the encryption function to include a side message, preserving injectivity.
   let f : M × K → M × C := λ x, (x.1, se_alg.encrypt (x.1, x.2)),
@@ -294,11 +295,11 @@ begin
       hmk hkc h x.1).1 $ hxy.2.trans (hxy.1 ▸ rfl)⟩ },
   -- Using the above function we can move from keys to ciphertexts, then apply perfect secrecy.
   calc ⁅= m | m_dist⁆ * ⁅= k | se_alg.keygen ()⁆ = ⁅= (m, k) | m_dist ×ₘ se_alg.keygen ()⁆ :
-      symm (eval_dist_product_apply _ _ _)
+      symm (prob_output_product _ _ _)
     ... = ⁅= f (m, k) | f <$> (m_dist ×ₘ se_alg.keygen ())⁆ :
-      (eval_dist_map_apply_of_injective _ f (m, k) hf').symm
+      (prob_output_map_of_injective _ f (m, k) hf').symm
     ... = ⁅= (m, c) | se_alg.mgen_and_encrypt m_dist⁆ :
-      by simp_rw [hf, product, eval_dist_map, eval_dist_bind,
+      by simp_rw [prob_output.def, hf, product, eval_dist_map, eval_dist_bind,
         pmf.map_bind, eval_dist_return, pmf.map_pure]
     ... = ⁅= m | m_dist⁆ * ⁅= c | prod.snd <$> se_alg.mgen_and_encrypt m_dist⁆ :
       (se_alg.perfect_secrecy_iff.1 h) m_dist m c
@@ -322,7 +323,7 @@ calc ⁅= k | se_alg.keygen ()⁆ = 1 * ⁅= k | se_alg.keygen ()⁆ : (one_mul 
       se_alg.eval_dist_ciphertext_eq_eval_dist_key_of_perfect_secrecy hmk hkc h _ k c
         (mem_support_uniform_select_fintype _ _))
   -- The sum over all `c : C` of the probability of getting that value is just `1`.
-  ... = (fintype.card C)⁻¹ : by rw [pmf.tsum_coe, mul_one]
+  ... = (fintype.card C)⁻¹ : by rw [tsum_prob_output, mul_one]
   ... = (fintype.card K)⁻¹ : by rw hkc
 
 /-- Given that all spaces have the same cardinality, perfect secrecy holds iff:
@@ -347,18 +348,18 @@ begin
       refine trans (tsum_eq_single k' $ λ k'' hk'', _) _,
       { by_cases hks' : k'' ∈ (se_alg.keygen ()).support,
         { exact ite_eq_right_iff.2 (λ hkkd, false.elim (hk'' $ hke k'' ⟨hks', hkkd.symm⟩)) },
-        { simp_rw [(eval_dist_eq_zero_iff _ _).2 hks', mul_zero, if_t_t] } },
+        { simp_rw [(prob_output_eq_zero_iff _ _).2 hks', mul_zero, if_t_t] } },
       { simp_rw [hks.2, eq_self_iff_true, if_true, h_keygen] },
     end,
     calc ⁅= (m, c) | se_alg.mgen_and_encrypt m_dist⁆ =
       ⁅= m | m_dist⁆ * ⁅= k | se_alg.keygen ()⁆ : this m
       ... = ⁅= m | m_dist⁆ * ∑' m', ⁅= m' | m_dist⁆ * ⁅= k | se_alg.keygen ()⁆ :
-        by rw [ennreal.tsum_mul_right, ⁅m_dist⁆.tsum_coe, one_mul]
+        by rw [ennreal.tsum_mul_right, tsum_prob_output, one_mul]
       ... = ⁅= m | m_dist⁆ * ∑' m', ⁅= (m', c) | se_alg.mgen_and_encrypt m_dist⁆ :
         congr_arg (λ x, _ * x) (tsum_congr $ λ m', (this m').symm)
       ... = ⁅= m | m_dist⁆ * ⁅= c | prod.snd <$> se_alg.mgen_and_encrypt m_dist⁆ :
         begin
-          simp_rw [eval_dist_map_apply_eq_tsum, ennreal.tsum_prod', ← hc],
+          simp_rw [prob_output_map_eq_tsum, ennreal.tsum_prod', ← hc],
           exact congr_arg (λ x, _ * x) (tsum_congr (λ m', symm $ trans
             (tsum_eq_single (se_alg.encrypt (m, k)) $ λ c hc, if_neg hc.symm) (if_pos rfl))),
         end

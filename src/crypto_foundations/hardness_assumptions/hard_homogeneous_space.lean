@@ -59,10 +59,10 @@ of their advantage at vectorizing those specific points. -/
 lemma advantage_eq_tsum (adversary : vectorization_adversary G X) : adversary.advantage =
   (∑' x₁ x₂, ⁅(=) (x₁ -ᵥ x₂) | adversary.adv (x₁, x₂)⁆) / (fintype.card X) ^ 2 :=
 calc adversary.advantage = ⁅(=) tt | experiment adversary⁆ : rfl
-  ... = ⁅experiment adversary⁆ tt : by rw [prob_event_eq_eq_eval_dist]
+  ... = ⁅= tt | experiment adversary⁆ : by rw [prob_event_eq_eq_prob_output]
   ... = ((fintype.card X)⁻¹ ^ 2) * (∑' x₁ x₂, ⁅adversary.adv (x₁, x₂)⁆ (x₁ -ᵥ x₂)) :
   begin
-    simp only [experiment, eval_dist_bind_apply_eq_tsum ($ᵗ X), pow_two, ← mul_assoc,
+    simp only [experiment, prob_output_bind_eq_tsum ($ᵗ X), pow_two, ← mul_assoc,
       eval_dist_uniform_select_fintype_apply, ennreal.tsum_mul_left],
     refine congr_arg (λ x, _ * x) (tsum_congr (λ x₁, tsum_congr (λ x₂, _))),
     refine (eval_dist_bind_return_apply_eq_single (adversary.adv (x₁, x₂)) _ tt (x₁ -ᵥ x₂)) _,
@@ -71,7 +71,7 @@ calc adversary.advantage = ⁅(=) tt | experiment adversary⁆ : rfl
   ... = (∑' x₁ x₂, ⁅adversary.adv (x₁, x₂)⁆ (x₁ -ᵥ x₂)) / (fintype.card X) ^ 2 :
     by rw [div_eq_mul_inv, ennreal.inv_pow, mul_comm]
   ... = (∑' x₁ x₂, ⁅(=) (x₁ -ᵥ x₂) | adversary.adv (x₁, x₂)⁆) / (fintype.card X) ^ 2 :
-    by simp_rw [prob_event_eq_eq_eval_dist]
+    by simp_rw [prob_event_eq_eq_prob_output]
 
 end vectorization_adversary
 

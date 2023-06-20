@@ -45,7 +45,7 @@ by simp only [prob_output.def, eval_dist_map, pmf.map_snd_apply]
 
 /-- If only the left output is changed in mapping the result of a computation,
 then the resulting distribution sums only over the left type in the product type. -/
-lemma eval_dist_map_prod_map_id_right_apply [decidable_eq β] [decidable_eq γ] (f : α → γ)
+lemma prob_output_map_prod_map_id_right [decidable_eq β] [decidable_eq γ] (f : α → γ)
   (z : γ × β) : ⁅= z | prod.map f id <$> oa⁆ = ∑' (x : α), ite (z.1 = f x) ⁅= (x, z.2) | oa⁆ 0 :=
 begin
   rw [prob_output_map_eq_tsum, ennreal.tsum_prod'],
@@ -57,7 +57,7 @@ end
 
 /-- If only the right output is changed in mapping the result of a computation,
 then the resulting distribution sums only over the right type in the product type. -/
-lemma eval_dist_map_prod_map_id_left_apply [decidable_eq α] [decidable_eq γ] (f : β → γ)
+lemma prob_output_map_prod_map_id_left [decidable_eq α] [decidable_eq γ] (f : β → γ)
   (z : α × γ) : ⁅= z | prod.map id f <$> oa⁆ = ∑' (y : β), ite (z.2 = f y) ⁅= (z.1, y) | oa⁆ 0 :=
 begin
   rw [prob_output_map_eq_tsum, ennreal.tsum_prod', ennreal.tsum_comm],

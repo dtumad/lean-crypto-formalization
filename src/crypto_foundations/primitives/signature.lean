@@ -142,7 +142,7 @@ end
 /-- Signature is complete if for any possible message, the generated signature is valid,
   i.e. the output of `sign` always returns true when `verify` is called.
   note that this definition doesn't allow for negligable failure of signing -/
-def complete (sig : signature) := ∀ (m : sig.M), ⁅completeness_experiment sig m⁆ tt = 1
+def complete (sig : signature) := ∀ (m : sig.M), ⁅= tt | completeness_experiment sig m⁆ = 1
 
 lemma complete_iff_signatures_support_subset :
   sig.complete ↔ ∀ (m : sig.M) (pk : sig.PK) (sk : sig.SK) (σ : sig.S)
@@ -151,7 +151,7 @@ lemma complete_iff_signatures_support_subset :
     (σ, cache') ∈ (simulate sig.base_oracle (sig.sign (pk, sk, m)) cache).support →
     (simulate' sig.base_oracle (sig.verify (pk, m, σ)) cache').support = {tt} :=
 begin
-  simp_rw [complete, eval_dist_eq_one_iff_subset],
+  simp_rw [complete, prob_output_eq_one_iff_subset],
   refine ⟨λ h m pk sk σ cache cache' hgen hsign, _, λ h m, _⟩,
   { rw [support_eq_singleton_iff_forall],
     refine λ b hb, h m _,

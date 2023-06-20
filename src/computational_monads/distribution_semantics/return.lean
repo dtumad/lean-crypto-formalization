@@ -125,7 +125,7 @@ lemma prob_output_return_self : ⁅= a | return' !spec! a⁆ = 1 :=
 by rw [prob_output_return_eq_one_iff]
 
 lemma prob_event_return_singleton_self : ⁅{a} | return' !spec! a⁆ = 1 :=
-by rw [prob_event_singleton_eq_eval_dist, prob_output_return_self]
+by rw [prob_event_singleton_eq_prob_output, prob_output_return_self]
 
 lemma prob_event_return_insert_self (s : set α) : ⁅insert a s | return' !spec! a⁆ = 1 :=
 by rw [prob_event_insert, prob_output_return_self, prob_event_return_diff_self, add_zero]
