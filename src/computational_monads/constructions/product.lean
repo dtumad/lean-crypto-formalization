@@ -124,7 +124,7 @@ begin
       set.indicator_apply_eq_zero.2 (λ h, (hb h).elim), mul_zero] }
 end
 
-@[simp_dist_equiv] lemma map_product_dist_equiv (f : α × β → γ) :
+@[simp, simp_dist_equiv] lemma map_product_dist_equiv (f : α × β → γ) :
   f <$> oa ×ₘ ob ≃ₚ do {x ← oa, y ← ob, return (f (x, y))} :=
 begin
   unfold product,
@@ -132,7 +132,7 @@ begin
   pairwise_dist_equiv,
 end
 
-@[simp_dist_equiv] lemma map_prod_product_dist_equiv (f : α → γ) (g : β → δ) :
+@[simp, simp_dist_equiv] lemma map_prod_product_dist_equiv (f : α → γ) (g : β → δ) :
   (prod.map f g) <$> oa ×ₘ ob ≃ₚ (f <$> oa) ×ₘ (g <$> ob) :=
 calc (prod.map f g) <$> oa ×ₘ ob ≃ₚ do {x ← oa, y ← ob, return (f x, g y)} :
     by apply map_product_dist_equiv

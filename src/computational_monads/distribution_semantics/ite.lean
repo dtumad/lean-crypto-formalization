@@ -44,7 +44,7 @@ lemma dist_equiv_ite_iff (oa'' : oracle_comp spec' α) :
   (oa'' ≃ₚ if p then oa else oa') ↔ (p → oa'' ≃ₚ oa) ∧ (¬ p → oa'' ≃ₚ oa') :=
 by split_ifs with hp; simp [hp]
 
-@[simp_dist_equiv] lemma ite_dist_equiv : (if p then oa else oa') ≃ₚ
+@[simp, simp_dist_equiv] lemma ite_dist_equiv : (if p then oa else oa') ≃ₚ
   do {x ← oa, x' ← oa', if p then return x else return x'} :=
 begin
   split_ifs with hp,
@@ -58,18 +58,13 @@ variables (p : α → Prop) [decidable_pred p]
 
 section bind_ite
 
-variables (ob ob' : α → oracle_comp spec β)
+variables (ob ob' : α → oracle_comp spec β) (y : β) (e : set β)
 
 /-- Running one of two computations based on an `ite` is like running them both from the start,
 and then choosing which result to take based on a final `ite` statement. -/
-@[simp_dist_equiv] lemma bind_ite_dist_equiv : (oa >>= λ x, if p x then ob x else ob' x) ≃ₚ
-  do {x ← oa, y ← ob x, y' ← ob' x, return (if p x then y else y')} :=
-begin
-  pairwise_dist_equiv,
-  split_ifs,
-  { exact trans (bind_return_id_dist_equiv (ob x)).symm (by pairwise_dist_equiv) },
-  { exact trans (by pairwise_dist_equiv) (bind_const_dist_equiv _ _).symm }
-end
+@[simp, simp_dist_equiv] lemma bind_ite_dist_equiv : (oa >>= λ x, if p x then ob x else ob' x) ≃ₚ
+  do {x ← oa, y ← ob x, y' ← ob' x, if p x then return y else return y'} :=
+by pairwise_dist_equiv
 
 /-- The support of binding a computation `oa` to an `ite` of two independent computations,
 that may both depend on the output oa `oa`, is the union of the support of the two paths. -/
@@ -81,7 +76,7 @@ set.ext (λ x, by simp only [mem_support_bind_iff, set.mem_Union, set.mem_union,
 
 /-- The probability of getting a certain output from a computation `oa` bound to an `ite`
 can be written as a sum over outputs where the predicate is true and where it's false. -/
-@[simp] lemma eval_dist_bind_ite (y : β) : ⁅= y | do {x ← oa, if p x then ob x else ob' x}⁆ =
+@[simp] lemma prob_output_bind_ite (y : β) : ⁅= y | do {x ← oa, if p x then ob x else ob' x}⁆ =
   (∑' x, if p x then ⁅= x | oa⁆ * ⁅= y | ob x⁆ else 0) +
     (∑' x, if ¬ p x then ⁅= x | oa⁆ * ⁅= y | ob' x⁆ else 0) :=
 begin
@@ -89,55 +84,87 @@ begin
   exact tsum_congr (λ x, by split_ifs with hx; simp only [zero_add, add_zero]),
 end
 
+/-- The probability of an event holding after a computation `oa` bound to an `ite`
+can be written as a sum over outputs where the predicate is true and where it's false. -/
+@[simp] lemma prob_event_bind_ite  : ⁅e | do {x ← oa, if p x then ob x else ob' x}⁆ =
+  (∑' x, if p x then ⁅= x | oa⁆ * ⁅e | ob x⁆ else 0) +
+    (∑' x, if ¬ p x then ⁅= x | oa⁆ * ⁅e | ob' x⁆ else 0) :=
+begin
+  rw [← ennreal.tsum_add, prob_event_bind_eq_tsum],
+  exact tsum_congr (λ x, by split_ifs with hx; simp only [zero_add, add_zero]),
+end
+
 end bind_ite
 
 section bind_ite_const_left
 
-variables (ob : oracle_comp spec β) (ob' : α → oracle_comp spec β) (y : β)
+variables (ob : oracle_comp spec β) (ob' : α → oracle_comp spec β) (y : β) (e : set β)
 
-/-- Version of `eval_dist_bind_ite_const` when only the left computation is constant -/
-@[simp] lemma eval_dist_bind_ite_const_left : ⁅= y | do {x ← oa, if p x then ob else ob' x}⁆ =
-  ⁅p | oa⁆ * ⁅= y | ob⁆ + (∑' x, if ¬ p x then ⁅= x | oa⁆ * ⁅= y | ob' x⁆ else 0) :=
+@[simp] lemma support_bind_ite_const_left (h : ∃ x ∈ oa.support, p x) :
+  (do {x ← oa, if p x then ob else ob' x}).support =
+    ob.support ∪ (⋃ x ∈ {x ∈ oa.support | ¬ p x}, (ob' x).support) :=
 begin
-  simp_rw [prob_event_eq_tsum_ite, prob_output_bind_eq_tsum,
-    ← ennreal.tsum_mul_right, ← ennreal.tsum_add],
-  exact tsum_congr (λ x, by split_ifs with h; simp only [zero_mul, zero_add, add_zero])
+  refine trans (support_bind_ite _ _ _ _)
+    (congr_arg (λ x, x ∪ (⋃ x ∈ {x ∈ oa.support | ¬ p x}, (ob' x).support)) (set.ext (λ x, _))),
+  simpa using λ _, h,
 end
+
+/-- Version of `prob_output_bind_ite_const` when only the left computation is constant -/
+@[simp] lemma prob_output_bind_ite_const_left : ⁅= y | do {x ← oa, if p x then ob else ob' x}⁆ =
+  ⁅p | oa⁆ * ⁅= y | ob⁆ + (∑' x, if ¬ p x then ⁅= x | oa⁆ * ⁅= y | ob' x⁆ else 0) :=
+by simpa only [prob_output_bind_ite, prob_event_eq_tsum_ite,
+  ← ennreal.tsum_mul_right, ite_mul, zero_mul]
+
+/-- Version of `prob_event_bind_ite_const` when only the left computation is constant -/
+@[simp] lemma prob_event_bind_ite_const_left : ⁅e | do {x ← oa, if p x then ob else ob' x}⁆ =
+  ⁅p | oa⁆ * ⁅e | ob⁆ + (∑' x, if ¬ p x then ⁅= x | oa⁆ * ⁅e | ob' x⁆ else 0) :=
+by simpa only [prob_event_bind_ite, prob_event_eq_tsum_ite,
+  ← ennreal.tsum_mul_right, ite_mul, zero_mul]
 
 end bind_ite_const_left
 
 section bind_ite_const_right
 
-variables (ob : α → oracle_comp spec β) (ob' : oracle_comp spec β) (y : β)
+variables (ob : α → oracle_comp spec β) (ob' : oracle_comp spec β) (y : β) (e : set β)
 
 /-- Version of `support_bind_ite_const` when only the right computation is constant -/
 @[simp] lemma support_bind_ite_const_right (h : ∃ x ∈ oa.support, ¬ p x) :
   (do {x ← oa, if p x then ob x else ob'}).support =
-  (⋃ x ∈ {x ∈ oa.support | p x}, (ob x).support) ∪ ob'.support :=
+    (⋃ x ∈ {x ∈ oa.support | p x}, (ob x).support) ∪ ob'.support :=
 begin
-  rw [support_bind_ite],
-  refine congr_arg (λ x, _ ∪ x) _,
-  ext x,
-  simp at ⊢ h,
-  refine λ _, h,
+  refine trans (support_bind_ite _ _ _ _)
+    (congr_arg (λ x, (⋃ x ∈ {x ∈ oa.support | p x}, (ob x).support) ∪ x) (set.ext (λ x, _))),
+  simpa using λ _, h,
 end
 
-/-- Version of `eval_dist_bind_ite_const` when only the right computation is constant -/
-@[simp] lemma eval_dist_bind_ite_const_right : ⁅= y | do {x ← oa, if p x then ob x else ob'}⁆ =
+/-- Version of `prob_output_bind_ite_const` when only the right computation is constant -/
+@[simp] lemma prob_output_bind_ite_const_right : ⁅= y | do {x ← oa, if p x then ob x else ob'}⁆ =
   (∑' x, if p x then ⁅= x | oa⁆ * ⁅= y | ob x⁆ else 0) + (1 - ⁅p | oa⁆) * ⁅= y | ob'⁆ :=
-begin
-  simp_rw [← prob_event_not, prob_event_eq_tsum_ite, prob_output_bind_eq_tsum,
-    ← ennreal.tsum_mul_right, ← ennreal.tsum_add],
-  exact tsum_congr (λ x, by split_ifs with h; simp only [zero_mul, zero_add, add_zero])
-end
+by {rw ← prob_event_not, simpa only [prob_output_bind_ite, prob_event_eq_tsum_ite,
+  ← ennreal.tsum_mul_right, ite_mul, zero_mul] }
+
+/-- Version of `prob_event_bind_ite_const` when only the right computation is constant -/
+@[simp] lemma prob_event_bind_ite_const_right : ⁅e | do {x ← oa, if p x then ob x else ob'}⁆ =
+  (∑' x, if p x then ⁅= x | oa⁆ * ⁅e | ob x⁆ else 0) + (1 - ⁅p | oa⁆) * ⁅e | ob'⁆ :=
+by {rw ← prob_event_not, simpa only [prob_event_bind_ite, prob_event_eq_tsum_ite,
+  ← ennreal.tsum_mul_right, ite_mul, zero_mul] }
 
 end bind_ite_const_right
 
 section bind_ite_const
 
-variables (ob ob' : oracle_comp spec β) (y : β)
+variables (ob ob' : oracle_comp spec β) (y : β) (e : set β)
 
-/-- Simplified version of `eval_dist_bind_ite` when only the predicate depends on the
+@[simp] lemma support_bind_ite_const (h : ∃ x ∈ oa.support, p x) (h' : ∃ x ∈ oa.support, ¬ p x) :
+  (do {x ← oa, if p x then ob else ob'}).support = ob.support ∪ ob'.support :=
+begin
+  refine trans (support_bind_ite _ _ _ _) _,
+  congr' 1,
+  { ext x, simpa using λ _, h },
+  { ext x, simpa using λ _, h' }
+end
+
+/-- Simplified version of `prob_output_bind_ite` when only the predicate depends on the
 result of the first computation, and the other two computations are constant. -/
 @[simp] lemma prob_output_bind_ite_const : ⁅= y | do {x ← oa, if p x then ob else ob'}⁆ =
   ⁅p | oa⁆ * ⁅= y | ob⁆ + (1 - ⁅p | oa⁆) * ⁅= y | ob'⁆ :=
@@ -145,6 +172,16 @@ begin
   simp_rw [← prob_event_not, prob_event_eq_tsum_ite, prob_output_bind_eq_tsum,
     ← ennreal.tsum_mul_right, ← ennreal.tsum_add],
   exact tsum_congr (λ x, by split_ifs with h; simp only [zero_mul, zero_add, add_zero]),
+end
+
+/-- Simplified version of `prob_event_bind_ite` when only the predicate depends on the
+result of the first computation, and the other two computations are constant. -/
+@[simp] lemma prob_event_bind_ite_const : ⁅e | do {x ← oa, if p x then ob else ob'}⁆ =
+  ⁅p | oa⁆ * ⁅e | ob⁆ + (1 - ⁅p | oa⁆) * ⁅e | ob'⁆ :=
+begin
+  rw [prob_event_bind_ite_const_left, ← prob_event_not],
+  refine congr_arg (λ x, _ + x) _,
+  simpa only [prob_event_eq_tsum_ite, ← ennreal.tsum_mul_right, ite_mul, zero_mul]
 end
 
 end bind_ite_const

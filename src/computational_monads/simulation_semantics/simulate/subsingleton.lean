@@ -3,7 +3,7 @@ Copyright (c) 2022 Devon Tuma. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
-import computational_monads.simulation_semantics.simulate.support
+import computational_monads.simulation_semantics.simulate.induction.support
 
 /-!
 # Simulation with Subsingleton State
@@ -106,7 +106,7 @@ begin
     eq_iff_true_of_subsingleton, and_self, if_true]),
 end
 
-@[simp_dist_equiv] lemma simulate_dist_equiv_of_subsingleton [subsingleton S]
+@[simp, simp_dist_equiv] lemma simulate_dist_equiv_of_subsingleton [subsingleton S]
   (s : S) : simulate so oa s ≃ₚ (λ x, (x, s)) <$> simulate' so oa s :=
 begin
   refine trans _ (map_comp_dist_equiv _ _ _).symm,

@@ -43,6 +43,19 @@ by simp only [prob_output.def, eval_dist_map, pmf.map_fst_apply]
 lemma eval_dist_map_snd (b : β) : ⁅= b | prod.snd <$> oa⁆ = ∑' (a : α), ⁅= (a, b) | oa⁆ :=
 by simp only [prob_output.def, eval_dist_map, pmf.map_snd_apply]
 
+lemma mem_support_map_prod_map_id_right_iff (f : α → γ) (z : γ × β) :
+  z ∈ (prod.map f id <$> oa).support ↔ ∃ x, (x, z.2) ∈ oa.support ∧ f x = z.1 :=
+by simp [prod.eq_iff_fst_eq_snd_eq]
+
+lemma mem_support_map_prod_map_id_left_iff (f : β → γ) (z : α × γ) :
+  z ∈ (prod.map id f <$> oa).support ↔ ∃ y, (z.1, y) ∈ oa.support ∧ f y = z.2 :=
+begin
+  simp only [support_map, prod_map, id.def, set.mem_image, prod.exists],
+  refine ⟨λ h, let ⟨x, y, hy, hx⟩ := h in ⟨y, (prod.eq_iff_fst_eq_snd_eq.1 hx).1 ▸
+    ⟨hy, (prod.eq_iff_fst_eq_snd_eq.1 hx).2⟩⟩, λ h, let ⟨y, hy, hy'⟩ := h in
+      ⟨z.1, y, hy, prod.eq_iff_fst_eq_snd_eq.2 ⟨rfl, hy'⟩⟩⟩
+end
+
 /-- If only the left output is changed in mapping the result of a computation,
 then the resulting distribution sums only over the left type in the product type. -/
 lemma prob_output_map_prod_map_id_right [decidable_eq β] [decidable_eq γ] (f : α → γ)

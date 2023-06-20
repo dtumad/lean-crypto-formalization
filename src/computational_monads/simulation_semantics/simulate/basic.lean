@@ -58,7 +58,7 @@ open_locale big_operators ennreal
 open oracle_spec
 
 variables (so : sim_oracle spec spec' S) (a : α) (i : spec.ι) (t : spec.domain i)
-  (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) (f : α → β) (s : S)
+  (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) (f : α → β) (s : S) (x : α) (e : set α)
 
 section simulate
 
@@ -122,8 +122,8 @@ lemma simulate'_bind' : simulate' so (bind' α β oa ob) s =
 @[simp] lemma support_simulate' : (simulate' so oa s).support =
   prod.fst '' (simulate so oa s).support := by simp only [simulate', support_map]
 
-lemma mem_support_simulate'_iff_exists_state (a : α) :
-  a ∈ (simulate' so oa s).support ↔ ∃ (s' : S), (a, s') ∈ (simulate so oa s).support :=
+lemma mem_support_simulate'_iff_exists_state (x : α) :
+  x ∈ (simulate' so oa s).support ↔ ∃ (s' : S), (x, s') ∈ (simulate so oa s).support :=
 by simp only [support_simulate', set.mem_image, prod.exists,
   exists_and_distrib_right, exists_eq_right]
 
@@ -132,17 +132,21 @@ eval_dist_map _ prod.fst
 
 /-- Express the probability of `simulate'` returning a specific value
 as the sum over all possible output states of the probability of `simulate` return it -/
-lemma prob_output_simulate' : ⁅= a | simulate' so oa s⁆ = ∑' s', ⁅= (a, s') | simulate so oa s⁆ :=
+theorem prob_output_simulate' : ⁅= x | simulate' so oa s⁆ = ∑' t, ⁅= (x, t) | simulate so oa s⁆ :=
 begin
   rw [prob_output.def, eval_dist_simulate', pmf.map_apply],
-  refine (tsum_prod_eq_tsum_snd a $ λ s a' ha', _).trans (tsum_congr (λ s', _)),
-  { simp only [ne.symm ha', if_false] },
+  refine (tsum_prod_eq_tsum_snd x $ λ s x' hx', _).trans (tsum_congr (λ s', _)),
+  { simp only [ne.symm hx', if_false] },
   { simp only [prob_output.def, eq_self_iff_true, if_true] }
 end
 
-lemma prob_event_simulate' (e : set α) :
-  ⁅e | simulate' so oa s⁆ = ⁅prod.fst ⁻¹' e | simulate so oa s⁆ :=
+lemma prob_event_simulate' : ⁅e | simulate' so oa s⁆ = ⁅prod.fst ⁻¹' e | simulate so oa s⁆ :=
 by rw [simulate', prob_event_map]
+
+lemma prob_output_simulate'_eq_prob_event :
+  ⁅= x | simulate' so oa s⁆ = ⁅prod.fst ⁻¹' {x} | simulate so oa s⁆ :=
+by rw [← prob_event_singleton_eq_prob_output, prob_event_simulate']
+
 
 end simulate'
 

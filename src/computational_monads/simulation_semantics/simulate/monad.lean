@@ -26,24 +26,27 @@ variables (so : sim_oracle spec spec' S) (so' : sim_oracle spec spec'' S')
 
 section map_bind
 
-lemma support_simulate_map_bind (g : β → γ) : (simulate so (g <$> (oa >>= ob)) s).support =
+variable (g : β → γ)
+
+lemma support_simulate_map_bind : (simulate so (g <$> (oa >>= ob)) s).support =
   ⋃ x ∈ (simulate so oa s).support, prod.map g id '' (simulate so (ob $ prod.fst x) x.2).support :=
 by simp only [support_simulate_map, support_simulate_bind, set.image_Union]
 
-lemma eval_dist_simulate_map_bind (g : β → γ) : ⁅simulate so (g <$> (oa >>= ob)) s⁆ =
+lemma eval_dist_simulate_map_bind : ⁅simulate so (g <$> (oa >>= ob)) s⁆ =
   ⁅simulate so oa s⁆.bind (λ x, ⁅simulate so (ob x.1) x.2⁆.map (prod.map g id)) :=
 by simp only [simulate_map, simulate_bind, eval_dist_map, eval_dist_bind, pmf.map_bind]
 
-lemma eval_dist_simulate_map_bind' (g : β → γ) : ⁅simulate so (g <$> (oa >>= ob)) s⁆ =
-  ⁅simulate so oa s⁆.bind (λ x, ⁅prod.map g id <$> simulate so (ob x.1) x.2⁆) :=
-by simp only [simulate_map, simulate_bind, eval_dist_map, eval_dist_bind, pmf.map_bind]
+lemma simulate_map_bind_dist_equiv : simulate so (g <$> (oa >>= ob)) s ≃ₚ
+  simulate so oa s >>= λ x, prod.map g id <$> simulate so (ob x.1) x.2 :=
+by pairwise_dist_equiv
 
-lemma eval_dist_simulate_map_bind_apply [decidable_eq γ] [decidable_eq S]
-  (g : β → γ) (z : γ × S) : ⁅simulate so (g <$> (oa >>= ob)) s⁆ z =
-    ∑' (x : α × S), ⁅simulate so oa s⁆ x * ∑' (y : β),
-      ite (z.1 = g y) (⁅simulate so (ob x.1) x.2⁆ (y, z.2)) 0 :=
+lemma prob_output_simulate_map_bind [decidable_eq γ] [decidable_eq S] (z : γ × S) :
+  ⁅= z | simulate so (g <$> (oa >>= ob)) s⁆ =
+    ∑' (x : α × S), (⁅= x | simulate so oa s⁆ *
+      ∑' (y : β), ite (z.1 = g y) ⁅= (y, z.2) | simulate so (ob x.1) x.2⁆ 0) :=
 begin
-  sorry
+  refine trans ((simulate_map_bind_dist_equiv _ _ _ s g).prob_output_eq z) _,
+  simp [prob_output_bind_eq_tsum, prob_output_map_prod_map_id_right],
 end
 
 end map_bind

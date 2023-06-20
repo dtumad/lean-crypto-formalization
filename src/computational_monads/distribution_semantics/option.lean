@@ -28,8 +28,8 @@ lemma prob_event_option [decidable_eq α] (e : set (option α)) :
   ⁅e | oa⁆ = (e.indicator ⁅oa⁆ none) + ∑' (a : α), e.indicator ⁅oa⁆ (some a) :=
 (prob_event_eq_tsum_indicator oa e).trans (ennreal.tsum_option _)
 
-lemma prob_event_is_none : ⁅λ x, x.is_none | oa⁆ = ⁅= none | oa⁆ :=
-prob_event_eq_eval_dist oa option.is_none_none
+@[simp] lemma prob_event_is_none : ⁅λ x, x.is_none | oa⁆ = ⁅= none | oa⁆ :=
+prob_event_eq_prob_output oa none option.is_none_none
   (λ x hx hx', (hx $ option.eq_none_of_is_none hx').elim)
 
 lemma prob_event_is_some [decidable_eq α] : ⁅λ x, x.is_some | oa⁆ = ∑' (a : α), ⁅= some a | oa⁆ :=
@@ -47,6 +47,13 @@ calc ⁅e | oa⁆
     show ((some a).is_some : Prop),
     simp only [option.is_some_some, coe_sort_tt]
   end
+
+lemma prob_event_is_some_eq_one_sub_prob_output_none :
+  ⁅λ x, x.is_some | oa⁆ = 1 - ⁅= none | oa⁆ :=
+begin
+  rw [← prob_event_is_none, ← prob_event_not],
+  refine congr_arg (λ e, ⁅e | _⁆) (funext (λ b, by cases b; simp))
+end
 
 end prob_event
 

@@ -80,7 +80,7 @@ begin
   induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t generalizing s,
   { simp only [simulate'_return, eval_dist_map_return, eval_dist_return] },
   { refine eval_dist.prob_output_ext _ _ (λ x, _),
-    rw [prob_output_bind_eq_tsum_indicator, prob_output_simulate'_bind],
+    rw [prob_output_bind_eq_tsum_indicator, prob_output_simulate'_bind_eq_tsum_tsum],
     refine tsum_congr (λ a, _),
     sorry,
     -- rw [← hoa s, prob_output_simulate', ← ennreal.tsum_mul_right],
@@ -102,7 +102,7 @@ begin
   induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t generalizing s s',
   { simp only [simulate'_return, eval_dist_map_return] },
   { refine eval_dist.prob_output_ext _ _ (λ b, _),
-    simp only [prob_output_simulate'_bind],
+    simp only [prob_output_simulate'_bind_eq_tsum_tsum],
     refine tsum_congr (λ a, _),
     sorry,
     -- calc ∑' (t : S), ⁅= (a, t) | simulate so oa s⁆ * ⁅= b | simulate' so (ob a) t⁆

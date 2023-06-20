@@ -33,7 +33,7 @@ def reduce : Π {α : Type}, oracle_comp spec α → oracle_comp spec α
 | _ (bind' α β oa ob) := bind' α β (reduce oa) (λ x, reduce (ob x))
 | _ (query i t) := query i t
 
-@[simp_dist_equiv]
+@[simp, simp_dist_equiv]
 theorem reduce_dist_equiv (oa : oracle_comp spec α) : oa.reduce ≃ₚ oa :=
 begin
   oracle_comp.default_induction `oa,

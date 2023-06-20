@@ -22,7 +22,7 @@ section return_bind
 
 variables (a : α) (ob : α → oracle_comp spec β) (y : β) (e' : set β)
 
-@[simp_dist_equiv] lemma return_bind_dist_equiv : return a >>= ob ≃ₚ ob a :=
+@[simp, simp_dist_equiv] lemma return_bind_dist_equiv : return a >>= ob ≃ₚ ob a :=
 by simp only [dist_equiv.def, eval_dist_bind, eval_dist_return, pmf.pure_bind]
 
 lemma support_return_bind : (return a >>= ob).support = (ob a).support :=
@@ -125,7 +125,7 @@ section bind_return_id
 
 variables (oa : oracle_comp spec α) (y : β) (e' : set β)
 
-@[simp_dist_equiv] lemma bind_return_id_dist_equiv : oa >>= return ≃ₚ oa :=
+@[simp, simp_dist_equiv] lemma bind_return_id_dist_equiv : oa >>= return ≃ₚ oa :=
 (eval_dist_bind_return oa id).trans (by rw [pmf.map_id])
 
 @[simp] lemma support_bind_return_id : (oa >>= return).support = oa.support :=

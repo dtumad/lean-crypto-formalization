@@ -3,8 +3,8 @@ Copyright (c) 2023 Devon Tuma. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
-import computational_monads.simulation_semantics.simulate.support
-import computational_monads.simulation_semantics.simulate.eval_dist
+import computational_monads.simulation_semantics.simulate.induction.support
+import computational_monads.simulation_semantics.simulate.induction.eval_dist
 import computational_monads.simulation_semantics.simulate.subsingleton
 
 /-!
@@ -27,7 +27,7 @@ namespace sim_oracle
 /-- Typeclass for oracles in which the query responses are independent of the current oracle state.
 We define this in terms of the existence of two functions `query_f` and `state_f`
 that represent the behaviour of the oracle result and state update respectively.
-`eval_dist_apply` asserts that the oracle behaviour is captured exactly by these two functions. -/
+`apply_equiv_state_f_map_query_f` asserts that the oracle behaviour is captured correctly. -/
 class is_tracking (so : sim_oracle spec spec' S) :=
 (query_f : Π (i : spec.ι), spec.domain i → oracle_comp spec' (spec.range i))
 (state_f : Π (s : S) (i : spec.ι), spec.domain i → spec.range i → S)

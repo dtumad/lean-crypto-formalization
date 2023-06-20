@@ -45,7 +45,7 @@ lemma fin_support_of_subsingleton [subsingleton α] (x : α) : oa.fin_support = 
 fin_support_of_subsingleton oa default
 
 @[simp] lemma prob_output_of_subsingleton [subsingleton α] (x : α) : ⁅= x | oa⁆ = 1 :=
-((dist_equiv_return_of_subsingleton oa x).eval_dist_apply_eq x).trans
+((dist_equiv_return_of_subsingleton oa x).prob_output_eq x).trans
   ((prob_output_return_eq_one_iff _ _ _).2 (subsingleton.elim _ _))
 
 lemma prob_event_of_subsingleton_of_nonempty [subsingleton α]

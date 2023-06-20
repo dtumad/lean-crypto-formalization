@@ -176,7 +176,7 @@ lemma cons_mem_support_repeat_succ_iff : (x ::ᵥ xs) ∈ (oa.repeat m.succ).sup
   x ∈ oa.support ∧ xs ∈ (oa.repeat m).support :=
 by rw [mem_support_repeat_succ_iff oa, head_cons, tail_cons]
 
-@[simp_dist_equiv]
+@[simp, simp_dist_equiv]
 lemma repeat_succ_dist_equiv : oa.repeat n.succ ≃ₚ
   (λ (x : α × vector α n), x.1 ::ᵥ x.2) <$> (oa ×ₘ oa.repeat n) :=
 by rw [dist_equiv.def, repeat_succ, map_eq_bind_return_comp,
@@ -203,7 +203,7 @@ end repeat_succ
 
 section nth
 
-@[simp_dist_equiv]
+@[simp, simp_dist_equiv]
 lemma map_nth_repeat_dist_equiv (i : fin m) : (λ xs, nth xs i) <$> oa.repeat m ≃ₚ oa :=
 begin
   haveI : inhabited α := ⟨oa.default_result⟩,
@@ -226,7 +226,7 @@ begin
       exact (trans (congr_arg _ (fin.succ_pred _ _).symm) (nth_cons_succ x _ _)) } }
 end
 
-@[simp_dist_equiv]
+@[simp, simp_dist_equiv]
 lemma map_head_repeat_dist_equiv : head <$> oa.repeat m.succ ≃ₚ oa :=
 calc head <$> oa.repeat m.succ ≃ₚ (λ xs, nth xs 0) <$> oa.repeat m.succ :
   by simp only [nth_zero] ... ≃ₚ oa : by pairwise_dist_equiv

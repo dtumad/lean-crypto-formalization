@@ -179,7 +179,7 @@ lemma prob_event_union_eq_of_disjoint {e e' : set α}
 
 end sets
 
-lemma prob_event_eq_eval_dist' {x : α} {e : set α} (hx : x ∈ e)
+lemma prob_event_eq_prob_output (x : α) {e : set α} (hx : x ∈ e)
   (h : ∀ y ≠ x, y ∈ e → y ∉ oa.support) : ⁅e | oa⁆ = ⁅= x | oa⁆ :=
 begin
   refine (prob_event_eq_tsum_indicator oa e).trans (trans (tsum_eq_single x $ λ y hy, _) _),
@@ -187,16 +187,8 @@ begin
   { simp [set.indicator_apply_eq_self, hx, not_true, false_implies_iff] }
 end
 
-lemma prob_event_eq_eval_dist {x : α} {e : set α} (hx : x ∈ e)
-  (h : ∀ y ≠ x, y ∈ e → y ∉ oa.support) : ⁅e | oa⁆ = ⁅= x | oa⁆ :=
-begin
-  refine (prob_event_eq_tsum_indicator oa e).trans (trans (tsum_eq_single x $ λ y hy, _) _),
-  { simpa [set.indicator_apply_eq_zero] using h y hy },
-  { simp [set.indicator_apply_eq_self, hx, not_true, false_implies_iff] }
-end
-
 /-- If the all elements in `oa.support` have higher probability under -/
-lemma prob_event_le_of_eval_dist_apply_le {oa : oracle_comp spec α} {oa' : oracle_comp spec' α}
+lemma prob_event_le_of_prob_output_le {oa : oracle_comp spec α} {oa' : oracle_comp spec' α}
    {e : set α} (h : ∀ x ∈ e ∩ oa.support, ⁅= x | oa⁆ ≤ ⁅= x | oa'⁆) : ⁅e | oa⁆ ≤ ⁅e | oa'⁆ :=
 begin
   simp only [prob_event_eq_tsum_indicator],
@@ -209,7 +201,7 @@ begin
 end
 
 /-- If the `eval_dist` agrees on all elements of the support, then `prob_event` agrees as well. -/
-lemma prob_event_eq_of_eval_dist_apply_eq {oa : oracle_comp spec α} {oa' : oracle_comp spec' α}
+lemma prob_event_eq_of_prob_output_eq {oa : oracle_comp spec α} {oa' : oracle_comp spec' α}
   {e : set α} (h : ∀ x ∈ e ∩ (oa.support ∪ oa'.support), ⁅= x | oa⁆ = ⁅= x | oa'⁆) :
   ⁅e | oa⁆ = ⁅e | oa'⁆ :=
 begin

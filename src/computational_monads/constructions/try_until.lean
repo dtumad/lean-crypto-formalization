@@ -5,6 +5,7 @@ Authors: Devon Tuma
 -/
 import computational_monads.constructions.repeat
 import computational_monads.distribution_semantics.ite
+import computational_monads.distribution_semantics.option
 import computational_monads.distribution_semantics.tactics.push_map_dist_equiv
 
 /-!
@@ -94,7 +95,7 @@ end try_until_zero
 
 section try_until_succ
 
-@[simp_dist_equiv]
+@[simp, simp_dist_equiv]
 lemma try_until_succ_dist_equiv : oa.try_until p n.succ ≃ₚ
   do {x ← oa, if p x then return (some x) else oa.try_until p n} :=
 begin
@@ -141,7 +142,7 @@ lemma some_not_mem_support_try_until_succ {x : α} (hx : x ∈ oa.support) (h : 
 /-- If at least one result of `oa` doesn't satisfy `p` then the result of `oa.try_until p n.succ`
 is either `none` (in the case of failure) or `some x` for some output `x` of `oa` with `p x`. -/
 lemma support_try_until_succ_of_exists_neg (h : ∃ x ∈ oa.support, ¬ p x) :
-  (oa.try_until p n.succ).support = insert none (option.some '' {x | x ∈ oa.support ∧ p x}) :=
+  (oa.try_until p n.succ).support = insert none (some '' {x | x ∈ oa.support ∧ p x}) :=
 begin
   refine trans (try_until_succ_dist_equiv oa p n).support_eq _,
   rw [support_bind_ite_const_right _ _ _ _ h],
@@ -161,7 +162,7 @@ end
 /-- If all results of `oa` satisfy `p`, then `oa.try_until p n.succ` will just return `some x`,
 for some `x ∈ oa.support`(in particular the result of the first of the `n.succ` runs). -/
 lemma support_try_until_succ_of_forall_pos (hp : ∀ x ∈ oa.support, p x) :
-  (oa.try_until p n.succ).support = option.some '' oa.support :=
+  (oa.try_until p n.succ).support = some '' oa.support :=
 begin
   refine set.ext (λ y, ⟨λ h, _, λ h, _⟩),
   { cases y with y,
@@ -181,10 +182,22 @@ begin
   induction n with n hn,
   { rw [pow_zero, prob_output_try_until_zero] },
   { refine ((try_until_succ_dist_equiv _ _ n).prob_output_eq none).trans _,
-    simp only [prob_output.def, eval_dist_bind_ite_const_right, hn, ← pow_succ, eval_dist_return,
+    simp only [prob_output.def, prob_output_bind_ite_const_right, hn, ← pow_succ, eval_dist_return,
       pmf.pure_apply, if_false, mul_zero, if_t_t, tsum_zero, zero_add] }
 end
 
+lemma prob_event_is_none_try_unitl :
+  ⁅λ x, x.is_none | oa.try_until p n⁆ = (1 - ⁅p | oa⁆) ^ n :=
+by rw [prob_event_is_none, prob_output_none_try_until]
+
 end try_until_none
+
+section try_until_some
+
+lemma prob_event_is_some_try_until :
+  ⁅λ x, x.is_some | oa.try_until p n⁆ = 1 - (1 - ⁅p | oa⁆) ^ n :=
+by rw [prob_event_is_some_eq_one_sub_prob_output_none, prob_output_none_try_until]
+
+end try_until_some
 
 end oracle_comp
