@@ -172,7 +172,7 @@ section eval_dist
 by rw [uniform_select_vector, pmf.uniform_of_vector_eq_nth_map_uniform_of_fintype,
   eval_dist_map, eval_dist_uniform_fin]
 
-lemma prob_output_uniform_select_vector : ⁅= x | $ᵛ v⁆ = v.to_list.count x / n.succ :=
+@[simp] lemma prob_output_uniform_select_vector : ⁅= x | $ᵛ v⁆ = v.to_list.count x / n.succ :=
 by { rw [prob_output.def, eval_dist_uniform_select_vector, pmf.uniform_of_vector_apply], congr }
 
 lemma prob_output_uniform_select_vector_bind_eq_tsum : ⁅= y | ($ᵛ v) >>= ob⁆ =

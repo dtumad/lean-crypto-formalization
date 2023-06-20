@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
 import computational_monads.simulation_semantics.constructions.stateless_oracle
+import computational_monads.simulation_semantics.simulate.monad
 import computational_monads.constructions.uniform_select
 
 /-!
@@ -74,11 +75,11 @@ variables (sub_spec super_spec : oracle_spec) [h : sub_spec ⊂ₒ super_spec]
 
 lemma eval_dist_to_fun_apply_eq_div (u : sub_spec.range i) :
   ⁅= u | h.to_fun i t⁆ = 1 / fintype.card (sub_spec.range i) :=
-((h.to_fun_equiv i t).eval_dist_apply_eq u).trans (eval_dist_query_apply_eq_div i t u)
+((h.to_fun_equiv i t).eval_dist_apply_eq u).trans (prob_output_query_eq_div i t u)
 
 lemma eval_dist_to_fun_apply_eq_inv (u : sub_spec.range i) :
   ⁅= u | h.to_fun i t⁆ = (fintype.card (sub_spec.range i))⁻¹ :=
-((h.to_fun_equiv i t).eval_dist_apply_eq u).trans (eval_dist_query_apply_eq_inv i t u)
+((h.to_fun_equiv i t).eval_dist_apply_eq u).trans (prob_output_query_eq_inv i t u)
 
 @[simp] lemma prob_event_to_fun_eq_div (e : set (sub_spec.range i)) [decidable_pred (∈ e)] :
   ⁅e | h.to_fun i t⁆ = fintype.card e / fintype.card (sub_spec.range i) :=

@@ -131,13 +131,13 @@ section distribution_semantics
 
 /-- The probability of returning a given index is the independent value of getting it from both -/
 lemma eval_dist_fst_map_fork_apply (i : option $ fin adv.q) :
-  ⁅prod.fst <$> fork adv⁆ i = ⁅adv.simulate_choose_fork⁆ i ^ 2 :=
-calc ⁅prod.fst <$> fork adv⁆ i
-  = ⁅adv.simulate_choose_fork ×ₘ adv.simulate_choose_fork⁆ (i, i) : begin
+  ⁅= i | prod.fst <$> fork adv⁆ = ⁅= i | adv.simulate_choose_fork⁆ ^ 2 :=
+calc ⁅= i | prod.fst <$> fork adv⁆
+  = ⁅= (i, i) | adv.simulate_choose_fork ×ₘ adv.simulate_choose_fork⁆ : begin
     sorry
   end
-  ... = ⁅adv.simulate_choose_fork⁆ i ^ 2 : begin
-    rw [eval_dist_product_apply, pow_two],
+  ... = ⁅= i | adv.simulate_choose_fork⁆ ^ 2 : begin
+    rw [prob_output_product, pow_two],
   end
 
 lemma eval_dist_fork_apply_some (i : (fin adv.q)) (x x' : α) (cache cache' : query_log (T ↦ₒ U)) :
@@ -174,12 +174,12 @@ begin
     begin
       refine tsum_congr (λ log, _),
       refine congr_arg (λ x, _ * x) _,
-      refine trans (eval_dist_bind_return_apply_eq_tsum_indicator _ _ _) _,
+      refine trans (prob_output_bind_return_eq_tsum_indicator _ _ _) _,
       refine trans (tsum_eq_single (some i, x', cache') _) _,
       { intros o ho,
         simp only [prod.mk.eta, set.indicator_apply_eq_zero, set.mem_preimage,
           set.mem_singleton_iff, prod.mk.inj_iff, eq_self_iff_true,
-            true_and, eval_dist_eq_zero_iff, and_imp],
+            true_and, prob_output_eq_zero_iff, and_imp],
         intros ho' ho'',
         by_cases hi : some i = o.fst,
         { exact (ho $ prod.eq_iff_fst_eq_snd_eq.2 ⟨hi.symm, ho''⟩).elim },

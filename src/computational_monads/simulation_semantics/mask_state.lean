@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
 import computational_monads.simulation_semantics.simulate.support
+import computational_monads.simulation_semantics.simulate.monad
 
 /-!
 # State Masking for Simulation Oracles
@@ -45,8 +46,7 @@ lemma mask_state_apply_eq : so.mask_state mask i x =
 section support
 
 /-- The `support` of a simulation with masked state is the same as the support without masking -/
-@[simp]
-theorem support_simulate_mask_eq_image_support_simulate :
+@[simp] theorem support_simulate_mask_eq_image_support_simulate :
   (simulate (so.mask_state mask) oa s').support =
     (prod.map id mask) '' (simulate so oa (mask.symm s')).support :=
 begin
