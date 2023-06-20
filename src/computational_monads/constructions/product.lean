@@ -36,8 +36,6 @@ variables (oa : oracle_comp spec α) (ob : oracle_comp spec β)
 
 lemma product.def : oa ×ₘ ob = do {a ← oa, b ← ob, return (a, b)} := rfl
 
-
-
 section support
 
 @[simp] lemma support_prod : (oa ×ₘ ob).support = oa.support ×ˢ ob.support :=
@@ -69,20 +67,18 @@ section eval_dist
 
 /-- Since the two computations run independently, the probability of an element
   is the product of the two individual probabilities-/
-@[simp] lemma eval_dist_product_apply : ⁅oa ×ₘ ob⁆ x = ⁅oa⁆ x.1 * ⁅ob⁆ x.2 :=
-calc ⁅oa ×ₘ ob⁆ x = ∑' (a : α) (b : β), (⁅oa⁆ a * ⁅ob⁆ b) * (⁅return (a, b)⁆ x) :
-    by simp_rw [product.def, eval_dist_bind_apply_eq_tsum, ← ennreal.tsum_mul_left, mul_assoc]
-  ... = ∑' (y : α × β), (⁅oa⁆ y.1 * ⁅ob⁆ y.2) * (⁅(return (y.1, y.2) : oracle_comp spec _)⁆ x) :
+@[simp] lemma prob_output_product : ⁅= x | oa ×ₘ ob⁆ = ⁅= x.1 | oa⁆ * ⁅= x.2 | ob⁆ :=
+calc ⁅= x | oa ×ₘ ob⁆ = ∑' a b, (⁅= a | oa⁆ * ⁅= b | ob⁆) * ⁅= x | return' !spec! (a, b)⁆ :
+    by simp_rw [product.def, prob_output_bind_eq_tsum, ← ennreal.tsum_mul_left, mul_assoc]
+  ... = ∑' (y : α × β), (⁅= y.1 | oa⁆ * ⁅= y.2 | ob⁆) * ⁅= x | return' !spec! (y.1, y.2)⁆ :
     by rw ← ennreal.tsum_prod
-  ... = (⁅oa⁆ x.1 * ⁅ob⁆ x.2) * (⁅(return (x.1, x.2) : oracle_comp spec _)⁆ x) :
-    tsum_eq_single x (λ y hy, by rw [prod.mk.eta, eval_dist_return_apply_of_ne _ hy.symm, mul_zero])
-  ... = ⁅oa⁆ x.1 * ⁅ob⁆ x.2 : by rw [prod.mk.eta, eval_dist_return_apply_self, mul_one]
+  ... = (⁅= x.1 | oa⁆ * ⁅= x.2 | ob⁆) * ⁅= x | return' !spec! (x.1, x.2)⁆ :
+    tsum_eq_single x (λ y hy, by rw [prod.mk.eta, prob_output_return_of_ne _ hy.symm, mul_zero])
+  ... = ⁅= x.1 | oa⁆ * ⁅= x.2 | ob⁆ : by rw [prod.mk.eta, prob_output_return_self, mul_one]
 
 lemma prod_bind_equiv_bind_bind (oc : α × β → oracle_comp spec γ) :
   oa ×ₘ ob >>= oc ≃ₚ do {a ← oa, b ← ob, oc (a, b)} :=
 begin
-  refine trans (by apply bind_bind_dist_equiv_assoc) _,
-  pairwise_dist_equiv,
   refine trans (by apply bind_bind_dist_equiv_assoc) _,
   pairwise_dist_equiv,
 end
@@ -93,9 +89,9 @@ begin
   by_cases ha : x.1 ∈ e,
   { by_cases hb : x.2 ∈ e',
     { have : x ∈ (e ×ˢ e') := ⟨ha, hb⟩,
-      rw [set.indicator_apply_eq_self.2 (λ h, (h this).elim),
+      simp [set.indicator_apply_eq_self.2 (λ h, (h this).elim),
         set.indicator_apply_eq_self.2 (λ h, (h ha).elim),
-        set.indicator_apply_eq_self.2 (λ h, (h hb).elim), eval_dist_product_apply] },
+        set.indicator_apply_eq_self.2 (λ h, (h hb).elim), prob_output_product] },
     { have : x ∉ (e ×ˢ e') := λ h, hb h.2,
       rw [set.indicator_apply_eq_zero.2 (λ h, (this h).elim),
         set.indicator_apply_eq_zero.2 (λ h, (hb h).elim), mul_zero] } },
@@ -109,8 +105,8 @@ lemma eval_dist_prod_indicator_preimage_fst_apply :
 begin
   by_cases ha : a ∈ e,
   { have : (a, b) ∈ (prod.fst ⁻¹' e : set (α × β)) := set.mem_preimage.2 ha,
-    rw [set.indicator_apply_eq_self.2 (λ h, (h this).elim),
-      set.indicator_apply_eq_self.2 (λ h, (h ha).elim), eval_dist_product_apply] },
+    simp [set.indicator_apply_eq_self.2 (λ h, (h this).elim),
+      set.indicator_apply_eq_self.2 (λ h, (h ha).elim), prob_output_product] },
   { have : (a, b) ∉ (prod.fst ⁻¹' e : set (α × β)) := λ h, ha (set.mem_preimage.2 h),
     rw [set.indicator_apply_eq_zero.2 (λ  h, (this h).elim),
       set.indicator_apply_eq_zero.2 (λ h, (ha h).elim), zero_mul] }
@@ -121,8 +117,8 @@ lemma eval_dist_prod_indicator_preimage_snd_apply :
 begin
   by_cases hb : b ∈ e',
   { have : (a, b) ∈ (prod.snd ⁻¹' e' : set (α × β)) := set.mem_preimage.2 hb,
-    rw [set.indicator_apply_eq_self.2 (λ h, (h this).elim),
-      set.indicator_apply_eq_self.2 (λ h, (h hb).elim), eval_dist_product_apply] },
+    simp [set.indicator_apply_eq_self.2 (λ h, (h this).elim),
+      set.indicator_apply_eq_self.2 (λ h, (h hb).elim), prob_output_product] },
   { have : (a, b) ∉ (prod.snd ⁻¹' e' : set (α × β)) := λ h, hb (set.mem_preimage.2 h),
     rw [set.indicator_apply_eq_zero.2 (λ h, (this h).elim),
       set.indicator_apply_eq_zero.2 (λ h, (hb h).elim), mul_zero] }
@@ -139,27 +135,30 @@ end
 @[simp_dist_equiv] lemma map_prod_product_dist_equiv (f : α → γ) (g : β → δ) :
   (prod.map f g) <$> oa ×ₘ ob ≃ₚ (f <$> oa) ×ₘ (g <$> ob) :=
 calc (prod.map f g) <$> oa ×ₘ ob ≃ₚ do {x ← oa, y ← ob, return (f x, g y)} :
-      by apply map_product_dist_equiv
-    ... ≃ₚ do {x ← oa, y ← g <$> ob, return (f x, y)} : by pairwise_dist_equiv
-    ... ≃ₚ do {x ← f <$> oa, y ← g <$> ob, return (x, y)} :
-      dist_equiv.ext (λ z, by simp only [eval_dist_bind, eval_dist_map, pmf.bind_map])
-    ... = (f <$> oa) ×ₘ (g <$> ob) : rfl
+    by apply map_product_dist_equiv
+  ... ≃ₚ do {x ← oa, y ← g <$> ob, return (f x, y)} : by pairwise_dist_equiv
+  ... ≃ₚ do {x ← f <$> oa, y ← g <$> ob, return (x, y)} : dist_equiv.ext
+    (λ z, by simp only [prob_output.def, eval_dist_bind, eval_dist_map, pmf.bind_map])
+  ... = (f <$> oa) ×ₘ (g <$> ob) : rfl
 
-lemma eval_dist_map_fst_product_apply [decidable_eq γ] (f : α × β → γ) (x : α × γ) :
+lemma prob_output_map_fst_product [decidable_eq γ] (f : α × β → γ) (x : α × γ) :
   ⁅= x | (λ (x : α × β), (prod.fst x, f x)) <$> oa ×ₘ ob⁆ =
     ∑' (b : β), if x.2 = f (x.1, b) then ⁅= x.1 | oa⁆ * ⁅= b | ob⁆ else 0 :=
 begin
-  simp only [eval_dist_map, pmf.map_apply, eval_dist_product_apply],
-  rw [ennreal.tsum_prod', ennreal.tsum_comm],
-  refine tsum_congr (λ b, _),
-  refine trans (tsum_eq_single x.1 _) _,
-  {
-    intros b' hb',
-    simp [hb'.symm, prod.eq_iff_fst_eq_snd_eq],
-  },
-  {
-    simp [prod.eq_iff_fst_eq_snd_eq],
-  }
+  simp only [prob_output.def, eval_dist_map, pmf.map_apply, ennreal.tsum_prod'],
+  refine trans ennreal.tsum_comm (tsum_congr (λ b, (tsum_eq_single x.1 (λ b' hb', _)).trans _)),
+  { simp [hb'.symm, prod.eq_iff_fst_eq_snd_eq] },
+  { simp [prod.eq_iff_fst_eq_snd_eq] }
+end
+
+lemma prob_output_map_snd_product [decidable_eq γ] (f : α × β → γ) (x : γ × β) :
+  ⁅= x | (λ (x : α × β), (f x, prod.snd x)) <$> oa ×ₘ ob⁆ =
+    ∑' (a : α), if x.1 = f (a, x.2) then ⁅= a | oa⁆ * ⁅= x.2 | ob⁆ else 0 :=
+begin
+  simp only [prob_output.def, eval_dist_map, pmf.map_apply, ennreal.tsum_prod'],
+  refine tsum_congr (λ a, (tsum_eq_single x.2 (λ a' ha', _)).trans _),
+  { simp [ha'.symm, prod.eq_iff_fst_eq_snd_eq] },
+  { simp [prod.eq_iff_fst_eq_snd_eq] }
 end
 
 end eval_dist

@@ -79,8 +79,8 @@ by rw [fin_support_try_until_zero, finset.mem_singleton]
 @[simp] lemma eval_dist_try_until_zero : ⁅oa.try_until p 0⁆ = pmf.pure none :=
 (try_until_zero_dist_equiv oa p).eval_dist_eq.trans (eval_dist_return _)
 
-lemma eval_dist_try_until_zero_apply : ⁅= x | oa.try_until p 0⁆ = x.rec_on 1 (λ _, 0) :=
-((try_until_zero_dist_equiv oa p).eval_dist_apply_eq x).trans (by cases x; simp)
+lemma prob_output_try_until_zero : ⁅= x | oa.try_until p 0⁆ = x.rec_on 1 (λ _, 0) :=
+((try_until_zero_dist_equiv oa p).prob_output_eq x).trans (by cases x; simp)
 
 @[simp] lemma prob_event_try_until_zero_eq_indicator :
   ⁅e | oa.try_until p 0⁆ = e.indicator (λ _, 1) none :=
@@ -176,16 +176,15 @@ section try_until_none
 
 /-- The probability of `oa.try_until p n` failing to generate a result is the probability
 of getting an output of `oa` not satisfying `p`, raised to the `n`th power. -/
-lemma eval_dist_try_until_apply_none : ⁅= none | oa.try_until p n⁆ = (1 - ⁅p | oa⁆) ^ n :=
+lemma prob_output_none_try_until : ⁅= none | oa.try_until p n⁆ = (1 - ⁅p | oa⁆) ^ n :=
 begin
   induction n with n hn,
-  { rw [pow_zero, eval_dist_try_until_zero_apply] },
-  { refine ((try_until_succ_dist_equiv _ _ n).eval_dist_apply_eq none).trans _,
-    simp only [eval_dist_bind_ite_const_right, hn, ← pow_succ, eval_dist_return, pmf.pure_apply,
-      if_false, mul_zero, if_t_t, tsum_zero, zero_add] }
+  { rw [pow_zero, prob_output_try_until_zero] },
+  { refine ((try_until_succ_dist_equiv _ _ n).prob_output_eq none).trans _,
+    simp only [prob_output.def, eval_dist_bind_ite_const_right, hn, ← pow_succ, eval_dist_return,
+      pmf.pure_apply, if_false, mul_zero, if_t_t, tsum_zero, zero_add] }
 end
 
 end try_until_none
-
 
 end oracle_comp

@@ -17,6 +17,8 @@ For example a logging query would use an empty log as the default state.
 
 We define `simulate'` to be simulation followed by discarding the state.
 This is useful for things like a random oracle, where the final log isn't relevant in general.
+
+-- TODO!!: organize this folder more like the `distribution_semantics` one
 -/
 
 variables {α β γ : Type} {spec spec' spec'' : oracle_spec} {S S' : Type}
@@ -148,14 +150,15 @@ lemma eval_dist_simulate_map : ⁅simulate so (f <$> oa) s⁆ =
 
 /-- Write the `eval_dist` of a simulation as a double summation over the possible
 intermediate outputs and states of the computation. -/
-lemma eval_dist_simulate_bind_apply_eq_tsum_tsum (x : β × S) : ⁅simulate so (oa >>= ob) s⁆ x =
-  ∑' a s', ⁅simulate so oa s⁆ (a, s') * ⁅simulate so (ob a) s'⁆ x :=
+lemma prob_output_simulate_bind_eq_tsum_tsum (x : β × S) : ⁅= x | simulate so (oa >>= ob) s⁆ =
+  ∑' a s', ⁅= (a, s') | simulate so oa s⁆ * ⁅= x | simulate so (ob a) s'⁆ :=
 by rw [simulate_bind, eval_dist_prod_bind]
 
-lemma eval_dist_simulate_bind_apply_eq_sum_sum [fintype α] [fintype S] (x : β × S) :
-  ⁅simulate so (oa >>= ob) s⁆ x = ∑ a s', ⁅simulate so oa s⁆ (a, s') * ⁅simulate so (ob a) s'⁆ x :=
-by simp only [simulate_bind, eval_dist_bind_apply_eq_sum, ← @finset.sum_product ℝ≥0∞ S α _
-  finset.univ finset.univ (λ y, ⁅simulate so oa s⁆ (y.1, y.2) * ⁅simulate so (ob y.1) y.2⁆ x),
+lemma prob_output_simulate_bind_eq_sum_sum [fintype α] [fintype S] (x : β × S) :
+  ⁅= x | simulate so (oa >>= ob) s⁆ =
+    ∑ a s', ⁅= (a, s') | simulate so oa s⁆ * ⁅= x | simulate so (ob a) s'⁆ :=
+by simp only [simulate_bind, prob_output_bind_eq_sum, ← @finset.sum_product ℝ≥0∞ S α _
+  finset.univ finset.univ (λ y, ⁅= (y.1, y.2) | simulate so oa s⁆ * ⁅= x | simulate so (ob y.1) y.2⁆),
   finset.univ_product_univ, prod.mk.eta]
 
 end eval_dist
@@ -167,14 +170,14 @@ lemma prob_event_simulate_return (e : set (α × S)) :
 prob_event_return_eq_indicator _ (a, s) e
 
 lemma prob_event_simulate_bind_eq_tsum_tsum (e : set (β × S)) : ⁅e | simulate so (oa >>= ob) s⁆ =
-  ∑' a s', ⁅simulate so oa s⁆ (a, s') * ⁅e | simulate so (ob a) s'⁆ :=
+  ∑' a s', ⁅= (a, s') | simulate so oa s⁆ * ⁅e | simulate so (ob a) s'⁆ :=
 by simp_rw [simulate_bind, prob_event_bind_eq_tsum, ← ennreal.tsum_prod, prod.mk.eta]
 
 lemma prob_event_simulate_bind_eq_sum_sum [fintype α] [fintype S] (e : set (β × S)) :
   ⁅e | simulate so (oa >>= ob) s⁆ =
-    ∑ a s', ⁅simulate so oa s⁆ (a, s') * ⁅e | simulate so (ob a) s'⁆ :=
+    ∑ a s', ⁅= (a, s') | simulate so oa s⁆ * ⁅e | simulate so (ob a) s'⁆ :=
 by simp only [simulate_bind, prob_event_bind_eq_sum, ← @finset.sum_product ℝ≥0∞ S α _ finset.univ
-  finset.univ (λ x, ⁅simulate so oa s⁆ (x.1, x.2) * ⁅e | simulate so (ob x.1) x.2⁆),
+  finset.univ (λ x, ⁅= (x.1, x.2) | simulate so oa s⁆ * ⁅e | simulate so (ob x.1) x.2⁆),
   finset.univ_product_univ, prod.mk.eta]
 
 lemma prob_event_simulate_query (e : set (spec.range i × S)) :
@@ -263,35 +266,27 @@ eval_dist_map _ prod.fst
 
 /-- Express the probability of `simulate'` returning a specific value
 as the sum over all possible output states of the probability of `simulate` return it -/
-lemma eval_dist_simulate'_apply : ⁅simulate' so oa s⁆ a = ∑' s', ⁅simulate so oa s⁆ (a, s') :=
+lemma prob_output_simulate' : ⁅= a | simulate' so oa s⁆ = ∑' s', ⁅= (a, s') | simulate so oa s⁆ :=
 begin
-  rw [eval_dist_simulate', pmf.map_apply],
+  rw [prob_output.def, eval_dist_simulate', pmf.map_apply],
   refine (tsum_prod_eq_tsum_snd a $ λ s a' ha', _).trans (tsum_congr (λ s', _)),
   { simp only [ne.symm ha', if_false] },
-  { simp only [eq_self_iff_true, if_true] }
+  { simp only [prob_output.def, eq_self_iff_true, if_true] }
 end
 
 lemma eval_dist_simulate'_return : ⁅simulate' so (return a) s⁆ = pmf.pure a :=
 by simp only [simulate'_return, eval_dist_map, eval_dist_return, pmf.map_pure]
-
-lemma eval_dist_simulate'_pure' : ⁅simulate' so (pure' α a) s⁆ = pmf.pure a :=
-eval_dist_simulate'_return so a s
-
-lemma eval_dist_simulate'_pure : ⁅simulate' so (pure a) s⁆ = pmf.pure a :=
-eval_dist_simulate'_return so a s
 
 lemma eval_dist_simulate'_bind : ⁅simulate' so (oa >>= ob) s⁆ =
   ⁅simulate so oa s⁆.bind (λ x, ⁅simulate' so (ob x.1) x.2⁆) :=
 by simp only [simulate'_bind, eval_dist_map_bind, eval_dist_bind, eval_dist_map,
   eval_dist_simulate', eq_self_iff_true, pmf.map_bind]
 
-lemma eval_dist_simulate'_bind_apply (b : β) : ⁅simulate' so (oa >>= ob) s⁆ b
-  = ∑' (a : α) (s' : S), ⁅simulate so oa s⁆ (a, s') * ⁅simulate' so (ob a) s'⁆ b :=
-by rw [eval_dist_simulate'_bind, pmf.bind_apply, tsum_prod'
-  ennreal.summable (λ _, ennreal.summable)]
-
-lemma eval_dist_simulate'_bind' : ⁅simulate' so (bind' α β oa ob) s⁆ =
-  ⁅simulate so oa s⁆.bind (λ x, ⁅simulate' so (ob x.1) x.2⁆) := eval_dist_simulate'_bind _ _ _ s
+-- lemma prob_output_simulate'_bind (b : β) : ⁅= b | simulate' so (oa >>= ob) s⁆
+--   = ∑' (a : α) (s' : S), ⁅= (a, s') | simulate so oa s⁆ * ⁅= b | simulate' so (ob a) s'⁆ :=
+-- begin
+--   simp [simulate'_bind, prob_output_map_eq_tsum_indicator, ennreal.tsum_prod'],
+-- end
 
 lemma eval_dist_simulate'_query : ⁅simulate' so (query i t) s⁆ = ⁅so i (t, s)⁆.map prod.fst :=
 by simp only [simulate'_query, eval_dist_map]
@@ -323,12 +318,12 @@ lemma prob_event_simulate'_return_eq_ite (e : set α) [decidable_pred (∈ e)] :
 by {rw [prob_event_simulate'_return_eq_indicator, set.indicator], congr}
 
 lemma prob_event_simulate'_bind_eq_tsum_tsum (e : set β) : ⁅e | simulate' so (oa >>= ob) s⁆ =
-  ∑' a s', ⁅simulate so oa s⁆ (a, s') * ⁅e | simulate' so (ob a) s'⁆ :=
+  ∑' a s', ⁅= (a, s') | simulate so oa s⁆ * ⁅e | simulate' so (ob a) s'⁆ :=
 by simp_rw [prob_event_simulate', prob_event_simulate_bind_eq_tsum_tsum]
 
 lemma prob_event_simulate'_bind_eq_sum_sum [fintype α] [fintype S] (e : set β) :
   ⁅e | simulate' so (oa >>= ob) s⁆ =
-    ∑ a s', ⁅simulate so oa s⁆ (a, s') * ⁅e | simulate' so (ob a) s'⁆ :=
+    ∑ a s', ⁅= (a, s') | simulate so oa s⁆ * ⁅e | simulate' so (ob a) s'⁆ :=
 by simp_rw [prob_event_simulate', prob_event_simulate_bind_eq_sum_sum]
 
 lemma prob_event_simulate'_query (e : set (spec.range i)) :

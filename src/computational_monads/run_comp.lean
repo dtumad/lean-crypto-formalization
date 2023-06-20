@@ -3,7 +3,7 @@ Copyright (c) 2022 Devon Tuma. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
-import computational_monads.oracle_comp
+import computational_monads.distribution_semantics.monad
 
 /-!
 # Running Compuations With No Oracles
@@ -35,11 +35,17 @@ variables {α β : Type} (oa : oracle_comp []ₒ α) (ob : α → oracle_comp []
 lemma run_comp_query (i : []ₒ.ι) (t : []ₒ.domain i) (u : []ₒ.range i) : run_comp (query i t) = u :=
 empty.elim i
 
+theorem dist_equiv_run_comp_self : oa ≃ₚ (return oa.run_comp : oracle_comp []ₒ α) :=
+begin
+  induction oa with α a α β oa ob hoa hob i t,
+  { refl },
+  { exact trans (bind_dist_equiv_bind_of_dist_equiv hoa (λ x _, hob x)) (by pairwise_dist_equiv) },
+  { exact empty.elim i }
+end
+
 example : run_comp
-(do { x ← return 1,
-      y ← return (x + 1),
-      z ← return (x * y + y * x),
-      return (y + y = z) }) = true := -- Check that `2 + 2 = 4`
-by simp only [run_comp_bind, run_comp_return, one_mul, mul_one, eq_self_iff_true]
+  (do {x ← return 1, y ← return (x + 1), z ← return (x * y + y * x),
+    return (y + y = z)}) = true := -- Check that `2 + 2 = 4`
+by simp
 
 end oracle_comp
