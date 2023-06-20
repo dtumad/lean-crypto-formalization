@@ -101,6 +101,10 @@ match g with
 -- If the target is an equality between `eval_dist`s, convert to equivalence notation first.
 | `(⁅%%oa⁆ = ⁅%%oa'⁆) := tactic.refine ``(oracle_comp.dist_equiv.def.1 _) >>
     tactic.target >>= destruct_pairwise_dist_equiv d_eqs
+-- If the target is an equality between `prob_outputs`s, switch to equivalence first
+| `(⁅= %%x | %%oa⁆ = ⁅= %%x' | %%oa'⁆) :=
+    tactic.refine ``(oracle_comp.dist_equiv.prob_output_eq _ _) >>
+      tactic.target >>= destruct_pairwise_dist_equiv d_eqs
 -- If the target is an equality between `prob_event`s, switch to equivalence first
 | `(⁅%%e | %%oa⁆ = ⁅%%e' | %%oa'⁆) :=
     tactic.unify e e' >> tactic.refine ``(oracle_comp.dist_equiv.prob_event_eq _ %%e) >>
@@ -135,6 +139,11 @@ by pairwise_dist_equiv [h]
 example (oa oa' : oracle_comp spec α) (ob : α → oracle_comp spec β)
   (h : oa ≃ₚ oa') : ⁅oa >>= ob⁆ = ⁅oa' >>= ob⁆ :=
 by pairwise_dist_equiv [h]
+
+/-- `pairwise_dist_equiv` should work on `prob_output`. -/
+example (oa oa' : oracle_comp spec α) (ob : α → oracle_comp spec β) (y y' : β) (h' : oa ≃ₚ oa') :
+  ⁅= y | oa >>= ob⁆ = ⁅= y | oa' >>= ob⁆ :=
+by pairwise_dist_equiv [h']
 
 /-- `pairwise_dist_equiv` should work on `prob_event`. -/
 example (oa oa' : oracle_comp spec α) (ob : α → oracle_comp spec β) (e e' : set β) (h' : oa ≃ₚ oa')

@@ -59,6 +59,9 @@ Simplification lemmas will tend towards `return` and `>>=` over `pure'` and `bin
 instance monad (spec : oracle_spec) : monad (oracle_comp spec) :=
 { pure := oracle_comp.pure', bind := oracle_comp.bind' }
 
+-- Notation for `return` with an explicit `spec` argument for convenience.
+notation `return'` `!` spec `!` a := (return a : oracle_comp spec _)
+
 @[simp] lemma pure'_eq_return (spec) (a : α) :
   (pure' α a : oracle_comp spec α) = return a := rfl
 

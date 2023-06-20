@@ -37,17 +37,17 @@ end mem_support
 section eval_dist
 
 /-- The chance of getting a result `u` from `query i t` is uniform over the output type. -/
-lemma eval_dist_query_apply_eq_div : ⁅= u | query i t⁆ = 1 / ↑(card $ spec.range i) :=
-by rw [eval_dist_query, pmf.uniform_of_fintype_apply, one_div]
+lemma prob_output_query_eq_div : ⁅= u | query i t⁆ = 1 / ↑(card $ spec.range i) :=
+by rw [prob_output, eval_dist_query, pmf.uniform_of_fintype_apply, one_div]
 
-lemma eval_dist_query_apply_eq_inv : ⁅= u | query i t⁆ = (↑(card $ spec.range i))⁻¹ :=
-by rw [eval_dist_query, pmf.uniform_of_fintype_apply]
+lemma prob_output_query_eq_inv : ⁅= u | query i t⁆ = (↑(card $ spec.range i))⁻¹ :=
+by rw [prob_output, eval_dist_query, pmf.uniform_of_fintype_apply]
 
-lemma eval_dist_query_apply_mul_card : ⁅= u | query i t⁆ * ↑(card $ spec.range i) = 1 :=
-(eval_dist_query_apply_eq_inv i t u).symm ▸ (ennreal.inv_mul_cancel (by simp) (by simp))
+@[simp] lemma prob_output_query_mul_card : ⁅= u | query i t⁆ * ↑(card $ spec.range i) = 1 :=
+(prob_output_query_eq_inv i t u).symm ▸ (ennreal.inv_mul_cancel (by simp) (by simp))
 
-lemma card_mul_eval_dist_query_apply : ↑(card $ spec.range i) * ⁅= u | query i t⁆ = 1 :=
-by rw [mul_comm, eval_dist_query_apply_mul_card]
+@[simp] lemma card_mul_prob_output_query : ↑(card $ spec.range i) * ⁅= u | query i t⁆ = 1 :=
+by rw [mul_comm, prob_output_query_mul_card]
 
 end eval_dist
 
@@ -100,14 +100,13 @@ end
 lemma query_dist_equiv_iff (oa : oracle_comp spec' (spec.range i)) :
   query i t ≃ₚ oa ↔ ∀ u u', ⁅= u | oa⁆ = ⁅= u' | oa⁆ := (eval_dist_query_eq_iff i t _)
 
-lemma eval_dist_query_apply_eq_iff (r : ℝ≥0∞) :
-  ⁅= u | query i t⁆ = r ↔ ↑(card $ spec.range i) = r⁻¹ :=
-by rw [eval_dist_query_apply_eq_inv, inv_eq_iff_eq_inv]
+lemma prob_output_query_eq_iff (r : ℝ≥0∞) : ⁅= u | query i t⁆ = r ↔ ↑(card $ spec.range i) = r⁻¹ :=
+by rw [prob_output_query_eq_inv, inv_eq_iff_eq_inv]
 
-lemma eval_dist_query_apply_eq_iff_mul_right_eq_one (r : ℝ≥0∞) :
+lemma prob_output_query_eq_iff_mul_right_eq_one (r : ℝ≥0∞) :
   ⁅= u | query i t⁆ = r ↔ r * (card $ spec.range i) = 1 :=
 begin
-  rw [eval_dist_query_apply_eq_inv],
+  rw [prob_output_query_eq_inv],
   refine ⟨λ h, _, λ h, _⟩,
   { rw [← h, ennreal.inv_mul_cancel]; simp },
   { calc (↑(card (spec.range i)))⁻¹ = 1 * (↑(card (spec.range i)))⁻¹ : by simp
@@ -115,9 +114,9 @@ begin
       ... = r : by rw [mul_assoc, ennreal.mul_inv_cancel, mul_one]; simp }
 end
 
-lemma eval_dist_query_apply_eq_iff_mul_left_eq_one (r : ℝ≥0∞) :
+lemma prob_output_query_eq_iff_mul_left_eq_one (r : ℝ≥0∞) :
   ⁅= u | query i t⁆ = r ↔ ↑(card $ spec.range i) * r = 1 :=
-by rw [← mul_comm r, eval_dist_query_apply_eq_iff_mul_right_eq_one]
+by rw [← mul_comm r, prob_output_query_eq_iff_mul_right_eq_one]
 
 lemma prob_event_query_eq_iff [decidable_pred (∈ e)] (r : ℝ≥0∞) :
   ⁅e | query i t⁆ = r ↔ ↑(card e) = r * card (spec.range i) :=
@@ -131,8 +130,8 @@ end query_eq_iff
 
 section query_eq_zero
 
-lemma eval_dist_query_apply_ne_zero : ⁅= u | query i t⁆ ≠ 0 :=
-by simp only [eval_dist_query_apply_eq_div, one_div, ne.def, ennreal.inv_eq_zero,
+lemma prob_output_query_ne_zero : ⁅= u | query i t⁆ ≠ 0 :=
+by simp only [prob_output_query_eq_inv, one_div, ne.def, ennreal.inv_eq_zero,
   ennreal.nat_ne_top, not_false_iff]
 
 lemma prob_event_query_eq_zero_iff : ⁅e | query i t⁆ = 0 ↔ e = ∅ :=
@@ -149,11 +148,10 @@ end query_eq_zero
 
 section query_eq_one
 
-lemma eval_dist_query_apply_eq_one_iff : ⁅= u | query i t⁆ = 1 ↔ card (spec.range i) = 1 :=
+lemma prob_output_query_eq_one_iff : ⁅= u | query i t⁆ = 1 ↔ card (spec.range i) = 1 :=
 begin
-  simp only [eval_dist_query, pmf.uniform_of_fintype_apply, ← one_div],
-  exact (ennreal.div_eq_one_iff (nat.cast_ne_zero.2 card_ne_zero) $
-    ennreal.nat_ne_top _).trans (eq_comm.trans nat.cast_eq_one),
+  simp [card_eq_one_iff],
+  refine ⟨λ h, ⟨u, h⟩, λ h y, let ⟨u', h⟩ := h in (h y).trans (h u).symm⟩
 end
 
 lemma prob_event_query_eq_one_iff : ⁅e | query i t⁆ = 1 ↔ e = set.univ :=
@@ -169,10 +167,10 @@ end query_eq_one
 
 section query_pos
 
-lemma eval_dist_query_apply_pos : 0 < ⁅= u | query i t⁆ :=
-pos_iff_ne_zero.2 (eval_dist_query_apply_ne_zero i t u)
+@[simp] lemma prob_output_query_pos : 0 < ⁅= u | query i t⁆ :=
+pos_iff_ne_zero.2 (prob_output_query_ne_zero i t u)
 
-lemma prob_event_query_pos_iff : 0 < ⁅e | query i t⁆ ↔ e ≠ ∅ :=
+@[simp] lemma prob_event_query_pos_iff : 0 < ⁅e | query i t⁆ ↔ e ≠ ∅ :=
 pos_iff_ne_zero.trans (by simp only [ne.def, prob_event_query_eq_zero_iff])
 
 end query_pos
@@ -184,10 +182,10 @@ section query_eq_query
 
 lemma eval_dist_query_eq_eval_dist_query (t t' : spec.domain i) : ⁅query i t⁆ = ⁅query i t'⁆ := rfl
 
-lemma eval_dist_query_apply_eq_eval_dist_query_apply_iff (t : spec.domain i) (t' : spec'.domain i')
+lemma prob_output_query_eq_eval_dist_query_apply_iff (t : spec.domain i) (t' : spec'.domain i')
   (u : spec.range i) (u' : spec'.range i') : ⁅= u | query i t⁆ = ⁅= u' | query i' t'⁆ ↔
     card (spec.range i) = card (spec'.range i') :=
-by simp only [eval_dist_query_apply_eq_div, one_div, inv_inj, nat.cast_inj]
+by simp only [prob_output_query_eq_div, one_div, inv_inj, nat.cast_inj]
 
 lemma prob_event_query_eq_prob_event_query_iff (t : spec.domain i) (t' : spec'.domain i')
   (e : set (spec.range i)) (e' : set (spec'.range i')) [decidable_pred (∈ e)]
@@ -216,24 +214,24 @@ lemma mem_fin_support_query_bind_iff [decidable_eq α] :
   x ∈ (query i t >>= oa).fin_support ↔ ∃ t, x ∈ (oa t).fin_support :=
 by simp only [fin_support_query_bind, finset.mem_bUnion, finset.mem_univ, exists_true_left]
 
-lemma eval_dist_query_bind_apply_eq_tsum :
-  ⁅= x | query i t >>= oa⁆ = (∑' u, ⁅= x | oa u⁆) / (card $ spec.range i) :=
-by simp_rw [eval_dist_bind_apply_eq_tsum, eval_dist_query_apply_eq_inv,
+lemma prob_output_query_bind_eq_tsum : ⁅= x | query i t >>= oa⁆ =
+  (∑' u, ⁅= x | oa u⁆) / (card $ spec.range i) :=
+by simp_rw [prob_output_bind_eq_tsum, prob_output_query_eq_inv,
   ennreal.tsum_mul_left, div_eq_mul_inv, mul_comm]
 
-lemma eval_dist_query_bind_apply_eq_sum :
-  ⁅query i t >>= oa⁆ x = (∑ u, ⁅oa u⁆ x) / (card $ spec.range i) :=
-by simp_rw [eval_dist_bind_apply_eq_sum, eval_dist_query_apply_eq_inv,
+lemma prob_output_query_bind_eq_sum (x : α) : ⁅= x | query i t >>= oa⁆ =
+  (∑ u, ⁅= x | oa u⁆) / (card $ spec.range i) :=
+by simp_rw [prob_output_bind_eq_sum, prob_output_query_eq_inv,
   ← finset.mul_sum, div_eq_mul_inv, mul_comm]
 
-lemma prob_event_query_bind_eq_tsum (e' : set α) :
-  ⁅e' | query i t >>= oa⁆ = (∑' x, ⁅e' | oa x⁆) / card (spec.range i) :=
-by simp_rw [prob_event_bind_eq_tsum, eval_dist_query_apply_eq_inv,
+lemma prob_event_query_bind_eq_tsum (e' : set α) : ⁅e' | query i t >>= oa⁆ =
+  (∑' x, ⁅e' | oa x⁆) / card (spec.range i) :=
+by simp_rw [prob_event_bind_eq_tsum, prob_output_query_eq_inv,
   ennreal.tsum_mul_left, div_eq_mul_inv, mul_comm]
 
-lemma prob_event_query_bind_eq_sum (e' : set α) :
-  ⁅e' | query i t >>= oa⁆ = (∑ x, ⁅e' | oa x⁆) / card (spec.range i) :=
-by simp_rw [prob_event_bind_eq_sum, eval_dist_query_apply_eq_inv,
+lemma prob_event_query_bind_eq_sum (e' : set α) : ⁅e' | query i t >>= oa⁆ =
+  (∑ x, ⁅e' | oa x⁆) / card (spec.range i) :=
+by simp_rw [prob_event_bind_eq_sum, prob_output_query_eq_inv,
   ← finset.mul_sum, div_eq_mul_inv, mul_comm]
 
 end query_bind

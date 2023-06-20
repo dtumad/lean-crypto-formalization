@@ -34,8 +34,8 @@ by pairwise_dist_equiv
 lemma eval_dist_return_bind : ⁅return a >>= ob⁆ = ⁅ob a⁆ :=
 by pairwise_dist_equiv
 
-lemma eval_dist_return_bind_apply : ⁅= y | return a >>= ob⁆ = ⁅= y | ob a⁆ :=
-(return_bind_dist_equiv a ob).eval_dist_apply_eq y
+@[simp] lemma prob_output_return_bind : ⁅= y | return a >>= ob⁆ = ⁅= y | ob a⁆ :=
+(return_bind_dist_equiv a ob).prob_output_eq y
 
 @[simp] lemma prob_event_return_bind : ⁅e' | return a >>= ob⁆ = ⁅e' | ob a⁆ :=
 by pairwise_dist_equiv
@@ -73,41 +73,39 @@ section eval_dist
 @[simp] lemma eval_dist_bind_return : ⁅oa >>= λ x, return (f x)⁆ = ⁅oa⁆.map f :=
 by simp_rw [eval_dist_bind, eval_dist_return, pmf.bind_pure_comp]
 
-lemma eval_dist_bind_return_apply_eq_tsum [decidable_eq β] :
-  ⁅oa >>= λ x, return (f x)⁆ y = ∑' x, ite (y = f x) (⁅oa⁆ x) 0 :=
+lemma prob_output_bind_return_eq_tsum [decidable_eq β] :
+  ⁅= y | oa >>= λ x, return (f x)⁆ = ∑' x, ite (y = f x) ⁅= x | oa⁆ 0 :=
+by simp only [prob_output_bind_eq_tsum, prob_output_return, mul_ite, mul_one, mul_zero]
+
+lemma prob_output_bind_return_eq_tsum_indicator :
+  ⁅= y | oa >>= λ x, return (f x)⁆ = ∑' x, (f ⁻¹' {y}).indicator ⁅oa⁆ x :=
 begin
-  rw [eval_dist_bind_return, pmf.map_apply],
-  refine tsum_congr (λ x, by congr)
+  refine (prob_output_bind_eq_tsum _ _ _).trans (tsum_congr $ λ x, _),
+  rw [set.indicator],
+  split_ifs,
+  { rw [prob_output_return_of_eq _ (symm h), mul_one, eval_dist_apply_eq_prob_output] },
+  { rw [prob_output_return_of_ne _ (ne.symm h), mul_zero] }
 end
 
-lemma eval_dist_bind_return_apply_eq_tsum_indicator :
-  ⁅oa >>= λ x, return (f x)⁆ y = ∑' x, (f ⁻¹' {y}).indicator ⁅oa⁆ x :=
-begin
-  refine (eval_dist_bind_apply_eq_tsum _ _ _).trans (tsum_congr $ λ x, _),
-  rw [eval_dist_return, pmf.pure_apply, set.indicator, mul_ite, mul_one, mul_zero, @eq_comm _ y],
-  congr,
-end
-
-lemma eval_dist_bind_return_apply_eq_sum [fintype α] [decidable_eq β] :
+lemma prob_output_bind_return_eq_sum [fintype α] [decidable_eq β] :
   ⁅oa >>= λ x, return (f x)⁆ y = ∑ x, ite (y = f x) (⁅oa⁆ x) 0 :=
-(eval_dist_bind_return_apply_eq_tsum oa f y).trans
+(prob_output_bind_return_eq_tsum oa f y).trans
   (tsum_eq_sum (λ x hx, (hx $ finset.mem_univ x).elim))
 
-lemma eval_dist_bind_return_apply_eq_sum_indicator [fintype α] :
+lemma prob_output_bind_return_eq_sum_indicator [fintype α] :
   ⁅oa >>= λ x, return (f x)⁆ y = ∑ x, (f ⁻¹' {y}).indicator ⁅oa⁆ x :=
-(eval_dist_bind_return_apply_eq_tsum_indicator oa f y).trans
+(prob_output_bind_return_eq_tsum_indicator oa f y).trans
   (tsum_eq_sum (λ x hx, (hx $ finset.mem_univ x).elim))
 
-lemma eval_dist_bind_return_apply_eq_sum_fin_support [decidable_eq β] :
+lemma prob_output_bind_return_eq_sum_fin_support [decidable_eq β] :
   ⁅oa >>= λ x, return (f x)⁆ y = ∑ x in oa.fin_support, ite (y = f x) (⁅oa⁆ x) 0 :=
-(eval_dist_bind_return_apply_eq_tsum oa f y).trans
-  (tsum_eq_sum (λ x hx, by rw [eval_dist_eq_zero' hx, if_t_t]))
+(prob_output_bind_return_eq_tsum oa f y).trans
+  (tsum_eq_sum (λ x hx, by rw [prob_output_eq_zero' hx, if_t_t]))
 
-lemma eval_dist_bind_return_apply_eq_sum_fin_support_indicator :
+lemma prob_output_bind_return_eq_sum_fin_support_indicator :
   ⁅oa >>= λ x, return (f x)⁆ y = ∑ x in oa.fin_support, (f ⁻¹' {y}).indicator ⁅oa⁆ x :=
-(eval_dist_bind_return_apply_eq_tsum_indicator oa f y).trans
-  (tsum_eq_sum (λ x hx, by simp_rw [set.indicator_apply_eq_zero,
-    eval_dist_eq_zero_iff', hx, not_false_iff, imp_true_iff]))
+(prob_output_bind_return_eq_tsum_indicator oa f y).trans
+  (tsum_eq_sum (λ x hx, set.indicator_apply_eq_zero.2 (λ h, prob_output_eq_zero' hx)))
 
 end eval_dist
 
@@ -138,6 +136,9 @@ by pairwise_dist_equiv
 
 @[simp] lemma eval_dist_bind_return_id : ⁅oa >>= return⁆ = ⁅oa⁆ := by pairwise_dist_equiv
 
+@[simp] lemma prob_output_bind_return_id (x : α) : ⁅= x | oa >>= return⁆ = ⁅= x | oa⁆ :=
+by pairwise_dist_equiv
+
 @[simp] lemma prob_event_bind_return_id (e : set α) : ⁅e | oa >>= return⁆ = ⁅e | oa⁆ :=
 by pairwise_dist_equiv
 
@@ -159,8 +160,8 @@ by rw [dist_equiv.def, eval_dist_bind, pmf.bind_const]
 @[simp] lemma eval_dist_bind_const : ⁅oa >>= (λ _, ob)⁆ = ⁅ob⁆ :=
 (bind_const_dist_equiv oa ob).eval_dist_eq
 
-lemma eval_dist_bind_const_apply (x : β) : ⁅= x | oa >>= (λ _, ob)⁆ = ⁅= x | ob⁆ :=
-(bind_const_dist_equiv oa ob).eval_dist_apply_eq x
+@[simp] lemma prob_output_bind_const (x : β) : ⁅= x | oa >>= (λ _, ob)⁆ = ⁅= x | ob⁆ :=
+(bind_const_dist_equiv oa ob).prob_output_eq x
 
 @[simp] lemma prob_event_bind_const (e : set β) : ⁅e | oa >>= (λ _, ob)⁆ = ⁅e | ob⁆ :=
 (bind_const_dist_equiv oa ob).prob_event_eq e
@@ -171,24 +172,23 @@ section bind_return_eq_single
 
 variables (oa : oracle_comp spec α) (f : α → β) (y : β) (e' : set β)
 
-lemma eval_dist_bind_return_apply_eq_single' (x : α) (hx : f x = y)
-  (h : ∀ x' ∈ oa.support, f x' = y → x' = x) : ⁅oa >>= λ x, return (f x)⁆ y = ⁅oa⁆ x :=
+lemma prob_output_bind_return_eq_single' (x : α) (hx : f x = y)
+  (h : ∀ x' ∈ oa.support, f x' = y → x' = x) : ⁅= y | oa >>= λ x, return (f x)⁆ = ⁅oa⁆ x :=
 begin
-  rw [eval_dist_bind_return_apply_eq_tsum_indicator],
+  rw [prob_output_bind_return_eq_tsum_indicator],
   refine trans (tsum_eq_single x $ λ x' hx', set.indicator_apply_eq_zero.2 _) _,
-  { exact λ hx'', eval_dist_eq_zero (λ hxs, hx' (h x' hxs hx'')) },
+  { exact λ hx'', prob_output_eq_zero (λ hxs, hx' (h x' hxs hx'')) },
   { simp only [set.mem_preimage, set.mem_singleton_iff, hx, set.indicator_of_mem] }
 end
 
 /-- If a function `f` returns `y` iff the input is `x`, then the probability of outputting
 `y` after running a computation and applying `f` is the probability of outputting `x`-/
-lemma eval_dist_bind_return_apply_eq_single (x : α) (hx : f ⁻¹' {y} = {x}) :
-  ⁅oa >>= λ x, return (f x)⁆ y = ⁅oa⁆ x :=
+lemma prob_output_bind_return_eq_single (x : α) (hx : f ⁻¹' {y} = {x}) :
+  ⁅= y | oa >>= λ x, return (f x)⁆ = ⁅= x | oa⁆ :=
 begin
-  simp only [eval_dist_bind_return_apply_eq_tsum_indicator, hx],
-  refine trans (tsum_eq_single x _) (by simp only [set.indicator_of_mem, set.mem_singleton]),
-  simp only [set.indicator_apply_eq_zero, eval_dist_eq_zero_iff],
-  refine (λ _ h h', (h h').elim),
+  simp only [prob_output_bind_return_eq_tsum_indicator, hx],
+  exact trans (tsum_eq_single x (λ x' hx', set.indicator_apply_eq_zero.2 (λ h', (hx' h').elim)))
+    (set.indicator_apply_eq_self.2 (λ h, (h rfl).elim)),
 end
 
 end bind_return_eq_single

@@ -59,60 +59,59 @@ section eval_dist
 
 /-- The probability of `oa >>= ob` returning `y` is the sum over all `x` of the probability
 of getting `y` from `ob x`, weighted by the probability of getting `x` from `oa`. -/
-lemma eval_dist_bind_apply_eq_tsum (y : β) :
-  ⁅= y | oa >>= ob⁆ = ∑' x, ⁅= x | oa⁆ * ⁅= y | ob x⁆ :=
-by rw [eval_dist_bind, pmf.bind_apply]
+lemma prob_output_bind_eq_tsum (y : β) : ⁅= y | oa >>= ob⁆ = ∑' x, ⁅= x | oa⁆ * ⁅= y | ob x⁆ :=
+by simp only [prob_output, eval_dist_bind, pmf.bind_apply]
 
-lemma eval_dist_bind_apply_eq_tsum_indicator (y : β) :
+lemma prob_output_bind_eq_tsum_indicator (y : β) :
   ⁅= y | oa >>= ob⁆ = ∑' x, oa.support.indicator (λ x, ⁅= x | oa⁆ * ⁅= y | ob x⁆) x :=
-(eval_dist_bind_apply_eq_tsum oa ob y).trans (tsum_congr (λ x, symm (set.indicator_apply_eq_self.2
-  (λ hx, mul_eq_zero_of_left (eval_dist_eq_zero hx) _))))
+(prob_output_bind_eq_tsum oa ob y).trans (tsum_congr (λ x, symm (set.indicator_apply_eq_self.2
+  (λ hx, mul_eq_zero_of_left (prob_output_eq_zero hx) _))))
 
 /-- Express the probability of getting `y` from `oa >>= ob` as a finite sum,
 assuming that the underlying return type `α` of `oa` is itself finite. -/
-lemma eval_dist_bind_apply_eq_sum (y : β) [fintype α] :
+lemma prob_output_bind_eq_sum (y : β) [fintype α] :
   ⁅= y | oa >>= ob⁆ = ∑ x, ⁅= x | oa⁆ * ⁅= y | ob x⁆ :=
-by simpa only [eval_dist_bind_apply_eq_tsum]
+by simpa only [prob_output_bind_eq_tsum]
   using tsum_eq_sum (λ x hx, (hx $ finset.mem_univ x).elim)
 
 /-- Express the probability of getting `y` from `oa >>= ob` as a sum over `oa.fin_support`. -/
-lemma eval_dist_bind_apply_eq_sum_fin_support (y : β) :
+lemma prob_output_bind_eq_sum_fin_support (y : β) :
   ⁅= y | oa >>= ob⁆ = ∑ x in oa.fin_support, ⁅= x | oa⁆ * ⁅= y | ob x⁆ :=
-(eval_dist_bind_apply_eq_tsum oa ob y).trans
-  (tsum_eq_sum (λ x hx, (eval_dist_eq_zero' hx).symm ▸ zero_mul _))
+(prob_output_bind_eq_tsum oa ob y).trans
+  (tsum_eq_sum (λ x hx, (prob_output_eq_zero' hx).symm ▸ zero_mul _))
 
 /-- Express the probability of getting `y` from `oa >>= ob` as a finite sum over `s`,
 assuming that `s` is a finite subset of `oa.support`. -/
-lemma eval_dist_bind_apply_eq_sum_of_support_subset (y : β) (s : finset α) (hs : oa.support ⊆ s) :
+lemma prob_output_bind_eq_sum_of_support_subset (y : β) (s : finset α) (hs : oa.support ⊆ s) :
   ⁅= y | oa >>= ob⁆ = ∑ x in s, ⁅= x | oa⁆ * ⁅= y | ob x⁆ :=
-(eval_dist_bind_apply_eq_tsum oa ob y).trans (tsum_eq_sum (λ x hx,
-  (eval_dist_eq_zero (λ h, hx (finset.mem_coe.1 (hs h)))).symm ▸ (zero_mul _)))
+(prob_output_bind_eq_tsum oa ob y).trans (tsum_eq_sum (λ x hx,
+  (prob_output_eq_zero (λ h, hx (finset.mem_coe.1 (hs h)))).symm ▸ (zero_mul _)))
 
 end eval_dist
 
 section prob_event
 
 lemma prob_event_bind_eq_tsum (e' : set β) :
-  ⁅e' | oa >>= ob⁆ = ∑' x, ⁅oa⁆ x * ⁅e' | ob x⁆ :=
-by simp only [prob_event.def, eval_dist_bind, pmf.to_outer_measure_bind_apply]
+  ⁅e' | oa >>= ob⁆ = ∑' x, ⁅= x | oa⁆ * ⁅e' | ob x⁆ :=
+by simp only [prob_output.def, prob_event.def, eval_dist_bind, pmf.to_outer_measure_bind_apply]
 
 lemma prob_event_bind_eq_tsum_indicator (e' : set β) :
   ⁅e' | oa >>= ob⁆ = ∑' x, oa.support.indicator (λ x, ⁅= x | oa⁆ * ⁅e' | ob x⁆) x :=
 (prob_event_bind_eq_tsum oa ob e').trans (tsum_congr (λ x, symm (set.indicator_apply_eq_self.2
-  (λ hx, mul_eq_zero_of_left (eval_dist_eq_zero hx) _))))
+  (λ hx, mul_eq_zero_of_left (prob_output_eq_zero hx) _))))
 
 lemma prob_event_bind_eq_sum [fintype α] (e' : set β) :
-  ⁅e' | oa >>= ob⁆ = ∑ x, ⁅oa⁆ x * ⁅e' | ob x⁆ :=
+  ⁅e' | oa >>= ob⁆ = ∑ x, ⁅= x | oa⁆ * ⁅e' | ob x⁆ :=
 by simpa only [prob_event_bind_eq_tsum] using tsum_eq_sum (λ x hx, (hx $ finset.mem_univ x).elim)
 
 lemma prob_event_bind_eq_sum_fin_support (e' : set β) :
-  ⁅e' | oa >>= ob⁆ = ∑ x in oa.fin_support, ⁅oa⁆ x * ⁅e' | ob x⁆ :=
-(prob_event_bind_eq_tsum _ _ _).trans (tsum_eq_sum (λ x h, by rw [eval_dist_eq_zero' h, zero_mul]))
+  ⁅e' | oa >>= ob⁆ = ∑ x in oa.fin_support, ⁅= x | oa⁆ * ⁅e' | ob x⁆ :=
+(prob_event_bind_eq_tsum _ _ _).trans (tsum_eq_sum (λ x h, by simp [prob_output_eq_zero' h]))
 
 theorem prob_event_bind_eq_sum_of_support_subset (e : set β) (s : finset α) (hs : oa.support ⊆ s) :
-  ⁅e | oa >>= ob⁆ = ∑ x in s, ⁅oa⁆ x * ⁅e | ob x⁆ :=
-(prob_event_bind_eq_tsum oa ob e).trans (tsum_eq_sum (λ x hx,
-  (eval_dist_eq_zero (λ h, hx (finset.mem_coe.1 (hs h)))).symm ▸ (zero_mul _)))
+  ⁅e | oa >>= ob⁆ = ∑ x in s, ⁅= x | oa⁆ * ⁅e | ob x⁆ :=
+(prob_event_bind_eq_tsum oa ob e).trans (tsum_eq_sum (λ x hx, let hx' : x ∉ oa.support :=
+  λ h, hx (finset.mem_coe.1 (hs h)) in by simp [mul_eq_zero, prob_output_eq_zero_iff, hx']))
 
 end prob_event
 
@@ -120,15 +119,15 @@ section bind_eq_iff
 
 lemma bind_dist_equiv_iff  (ob' : oracle_comp spec' β) :
   (oa >>= ob) ≃ₚ ob' ↔ ∀ y, ∑' (x : α), ⁅= x | oa⁆ * ⁅= y | ob x⁆ = ⁅= y | ob'⁆ :=
-by simp only [dist_equiv.ext_iff, eval_dist_bind_apply_eq_tsum]
+by simp only [dist_equiv.ext_iff, prob_output_bind_eq_tsum]
 
 lemma eval_dist_bind_eq_iff (p : pmf β) :
   ⁅oa >>= ob⁆ = p ↔ ∀ y, ∑' (x : α), ⁅= x | oa⁆ * ⁅= y | ob x⁆ = p y :=
-by simp only [eval_dist.ext_iff, eval_dist_bind_apply_eq_tsum]
+(eval_dist.ext_iff _ _).trans (by simp [eval_dist_bind, pmf.bind_apply])
 
-lemma eval_dist_bind_apply_eq_iff (y : β) (r : ℝ≥0∞) :
+lemma prob_output_bind_eq_iff (y : β) (r : ℝ≥0∞) :
   ⁅= y | oa >>= ob⁆ = r ↔ ∑' (x : α), ⁅= x | oa⁆ * ⁅= y | ob x⁆ = r :=
-by rw [eval_dist_bind_apply_eq_tsum]
+by rw [prob_output_bind_eq_tsum]
 
 lemma prob_event_bind_eq_iff (e : set β) (r : ℝ≥0∞) :
   ⁅e | oa >>= ob⁆ = r ↔ ∑' (x : α), ⁅= x | oa⁆ * ⁅e | ob x⁆ = r :=
@@ -139,9 +138,9 @@ end bind_eq_iff
 section bind_eq_zero
 
 -- TODO!: Making something like this a simp lemma requires a special "eval_dist" simp class
-@[simp] lemma eval_dist_bind_apply_eq_zero_iff (y : β) :
+@[simp] lemma prob_output_bind_eq_zero_iff (y : β) :
   ⁅= y | oa >>= ob⁆ = 0 ↔ ∀ x ∈ oa.support, y ∉ (ob x).support :=
-by simp_rw [pmf.apply_eq_zero_iff, support_eval_dist, support_bind, set.mem_Union, not_exists]
+by simp only [prob_output_eq_zero_iff, support_bind, set.mem_Union, not_exists]
 
 @[simp] lemma prob_event_bind_eq_zero_iff (e : set β) :
   ⁅e | oa >>= ob⁆ = 0 ↔ ∀ x ∈ oa.support, disjoint (ob x).support e :=
@@ -151,9 +150,9 @@ end bind_eq_zero
 
 section bind_eq_one_iff
 
-@[simp] lemma eval_dist_bind_apply_eq_one_iff (y : β) :
+@[simp] lemma prob_output_bind_eq_one_iff (y : β) :
   ⁅= y | oa >>= ob⁆ = 1 ↔ ∀ x ∈ oa.support, (ob x).support ⊆ {y} :=
-by simp only [eval_dist_bind, pmf.bind_apply_eq_one_iff, support_eval_dist]
+by simp [prob_output_eq_one_iff_subset]
 
 @[simp] lemma prob_event_bind_eq_one_iff (e : set β) :
   ⁅e | oa >>= ob⁆ = 1 ↔ ∀ x ∈ oa.support, (ob x).support ⊆ e :=
@@ -171,17 +170,17 @@ lemma bind_dist_equiv_bind_of_dist_equiv {oa : oracle_comp spec α} {ob : α →
   (hb : ∀ x ∈ oa.support, ob x ≃ₚ ob' x) : (oa >>= ob) ≃ₚ (oa' >>= ob') :=
 begin
   refine dist_equiv.ext (λ y, _),
-  simp only [eval_dist_bind_apply_eq_tsum],
+  simp only [prob_output_bind_eq_tsum],
   refine tsum_congr (λ x, _),
   by_cases hx : x ∈ oa.support,
-  { rw [ha.eval_dist_eq, (hb x hx).eval_dist_eq] },
-  { simp only [zero_mul, eval_dist_eq_zero hx,
-      eval_dist_eq_zero (ha.support_eq ▸ hx : x ∉ oa'.support)] }
+  { rw [ha.prob_output_eq, (hb x hx).prob_output_eq] },
+  { simp only [zero_mul, prob_output_eq_zero hx,
+      prob_output_eq_zero (ha.support_eq ▸ hx : x ∉ oa'.support)] }
 end
 
 lemma bind_bind_dist_equiv_assoc (oa : oracle_comp spec α) (ob : α → oracle_comp spec β)
   (oc : β → oracle_comp spec γ) : (oa >>= ob) >>= oc ≃ₚ oa >>= (λ x, ob x >>= oc) :=
-dist_equiv.ext (λ x, by simp only [eval_dist_bind, pmf.bind_bind])
+dist_equiv.ext (λ x, by simp only [prob_output.def, eval_dist_bind, pmf.bind_bind])
 
 lemma bind_dist_equiv_bind_of_dist_equiv_left (oa : oracle_comp spec α)
   (ob : α → oracle_comp spec β) (oa' : oracle_comp spec α) (h : oa ≃ₚ oa') :
@@ -202,20 +201,20 @@ lemma bind_dist_equiv_right (oa : oracle_comp spec α) (ob : α → oracle_comp 
   (x : α) (h : ∀ x' ∈ oa.support, ob x' ≃ₚ ob x) : oa >>= ob ≃ₚ ob x :=
 begin
   refine (dist_equiv.ext (λ y, _)),
-  calc ⁅= y | oa >>= ob⁆ = ∑' x', ⁅= x' | oa⁆ * ⁅= y | ob x'⁆ : eval_dist_bind_apply_eq_tsum _ _ y
+  calc ⁅= y | oa >>= ob⁆ = ∑' x', ⁅= x' | oa⁆ * ⁅= y | ob x'⁆ : prob_output_bind_eq_tsum _ _ y
     ... = ∑' x', ⁅= x' | oa⁆ * ⁅= y | ob x⁆ : begin
       refine tsum_congr (λ x', _),
       by_cases hx' : x' ∈ oa.support,
-      { rw [(h _ hx').eval_dist_apply_eq] },
-      { simp_rw [eval_dist_eq_zero hx', zero_mul] }
+      { rw [(h _ hx').prob_output_eq] },
+      { simp_rw [prob_output_eq_zero hx', zero_mul] }
     end
-    ... = ⁅= y | ob x⁆ : by rw [ennreal.tsum_mul_right, ⁅oa⁆.tsum_coe, one_mul]
+    ... = ⁅= y | ob x⁆ : by rw [ennreal.tsum_mul_right, oa.tsum_prob_output, one_mul]
 end
 
 lemma bind_dist_equiv_left (oa : oracle_comp spec α) (oa' : α → oracle_comp spec α)
   (h : ∀ x ∈ oa.support, oa' x ≃ₚ (return x : oracle_comp spec α)) : oa >>= oa' ≃ₚ oa :=
-(bind_dist_equiv_bind_of_dist_equiv_right _ _ _ h).trans
-  (dist_equiv.ext (λ x, by simp only [eval_dist_bind, eval_dist_return, pmf.bind_pure]))
+(bind_dist_equiv_bind_of_dist_equiv_right _ _ _ h).trans (dist_equiv.ext (λ x,
+  by simp only [prob_output.def, eval_dist_bind, eval_dist_return, pmf.bind_pure]))
 
 end equiv
 

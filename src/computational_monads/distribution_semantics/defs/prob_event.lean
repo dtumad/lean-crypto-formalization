@@ -3,7 +3,7 @@ Copyright (c) 2022 Devon Tuma. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
-import computational_monads.distribution_semantics.defs.eval_dist
+import computational_monads.distribution_semantics.defs.prob_output
 
 /-!
 # Probability of Events
@@ -61,12 +61,11 @@ lemma prob_event_mono' {e e'} (h : e ⊆ e') : ⁅e | oa⁆ ≤ ⁅e' | oa⁆ :=
 prob_event_mono oa (trans (set.inter_subset_left _ _) h)
 
 /-- The probability of a singleton set happening is just the `eval_dist` of that element. -/
-@[simp] lemma prob_event_singleton_eq_eval_dist (oa : oracle_comp spec α) (x : α) :
-  ⁅{x} | oa⁆ = ⁅= x | oa⁆ := by rw [prob_event.def, pmf.to_outer_measure_apply_singleton]
+@[simp] lemma prob_event_singleton_eq_eval_dist (x : α) : ⁅{x} | oa⁆ = ⁅= x | oa⁆ :=
+by rw [prob_event.def, pmf.to_outer_measure_apply_singleton, prob_output]
 
 /-- The probaility of the `(=) x` event is just the `eval_dist` of that element. -/
-@[simp] lemma prob_event_eq_eq_eval_dist (oa : oracle_comp spec α) (x : α) :
-  ⁅(=) x | oa⁆ = ⁅= x | oa⁆ :=
+@[simp] lemma prob_event_eq_eq_eval_dist (x : α) : ⁅(=) x | oa⁆ = ⁅= x | oa⁆ :=
 trans (congr_arg (λ s, ⁅s | oa⁆) (set.ext $ λ y, eq_comm)) (prob_event_singleton_eq_eval_dist oa x)
 
 lemma prob_event_eq_of_eval_dist_eq {oa : oracle_comp spec α} {oa' : oracle_comp spec' α}
@@ -85,10 +84,10 @@ lemma prob_event_eq_sum_indicator [fintype α] : ⁅e | oa⁆ = ∑ x, e.indicat
 lemma prob_event_eq_sum_fin_support_indicator :
   ⁅e | oa⁆ = ∑ x in oa.fin_support, e.indicator ⁅oa⁆ x :=
 (prob_event_eq_tsum_indicator oa e).trans (tsum_eq_sum $
-  λ a ha, set.indicator_apply_eq_zero.2 (λ _, eval_dist_eq_zero' ha))
+  λ a ha, set.indicator_apply_eq_zero.2 (λ _, prob_output_eq_zero' ha))
 
 /-- Probability of an event in terms of a decidable `ite` sum-/
-lemma prob_event_eq_tsum_ite [decidable_pred e] : ⁅e | oa⁆ = ∑' x, ite (x ∈ e) (⁅oa⁆ x) 0 :=
+lemma prob_event_eq_tsum_ite [decidable_pred e] : ⁅e | oa⁆ = ∑' x, ite (x ∈ e) ⁅= x | oa⁆ 0 :=
 trans (prob_event_eq_tsum_indicator oa e) (tsum_congr $ λ _, by { rw set.indicator, congr} )
 
 lemma prob_event_eq_sum_ite [fintype α] [decidable_pred e] :
@@ -122,9 +121,9 @@ prob_event_eq_prob_event_of_inter_support_eq oa (by rw [set.inter_assoc, set.int
 /-- Given a `finset` containing the `support` of some `oracle_comp`,
   it suffices to take `finset.sum` over that instead of a `tsum` -/
 theorem prob_event_eq_sum_of_support_subset [decidable_pred e] (s : finset α)
-  (hs : oa.support ⊆ s) : ⁅e | oa⁆ = ∑ x in s, ite (x ∈ e) (⁅oa⁆ x) 0 :=
+  (hs : oa.support ⊆ s) : ⁅e | oa⁆ = ∑ x in s, ite (x ∈ e) (⁅= x | oa⁆) 0 :=
 trans (prob_event_eq_tsum_ite oa e) (tsum_eq_sum (λ x hx,
-  by rw [eval_dist_eq_zero (λ hx', hx $ finset.mem_coe.1 (hs hx')), if_t_t]))
+  by rw [prob_output_eq_zero (λ hx', hx $ finset.mem_coe.1 (hs hx')), if_t_t]))
 
 @[simp] lemma prob_event_eq_zero_iff_disjoint_support : ⁅e | oa⁆ = 0 ↔ disjoint oa.support e :=
 by rw [prob_event.def, pmf.to_outer_measure_apply_eq_zero_iff, support_eval_dist]
@@ -184,16 +183,16 @@ lemma prob_event_eq_eval_dist' {x : α} {e : set α} (hx : x ∈ e)
   (h : ∀ y ≠ x, y ∈ e → y ∉ oa.support) : ⁅e | oa⁆ = ⁅= x | oa⁆ :=
 begin
   refine (prob_event_eq_tsum_indicator oa e).trans (trans (tsum_eq_single x $ λ y hy, _) _),
-  { simpa only [set.indicator_apply_eq_zero, eval_dist_eq_zero_iff] using h y hy },
-  { simp only [set.indicator_apply_eq_self, hx, not_true, false_implies_iff] }
+  { simpa [set.indicator_apply_eq_zero, prob_output_eq_zero_iff] using h y hy },
+  { simp [set.indicator_apply_eq_self, hx, not_true, false_implies_iff] }
 end
 
 lemma prob_event_eq_eval_dist {x : α} {e : set α} (hx : x ∈ e)
   (h : ∀ y ≠ x, y ∈ e → y ∉ oa.support) : ⁅e | oa⁆ = ⁅= x | oa⁆ :=
 begin
   refine (prob_event_eq_tsum_indicator oa e).trans (trans (tsum_eq_single x $ λ y hy, _) _),
-  { simpa only [set.indicator_apply_eq_zero, eval_dist_eq_zero_iff] using h y hy },
-  { simp only [set.indicator_apply_eq_self, hx, not_true, false_implies_iff] }
+  { simpa [set.indicator_apply_eq_zero] using h y hy },
+  { simp [set.indicator_apply_eq_self, hx, not_true, false_implies_iff] }
 end
 
 /-- If the all elements in `oa.support` have higher probability under -/
@@ -206,7 +205,7 @@ begin
   by_cases hx : x ∈ oa.support,
   { rw [(set.indicator_apply_eq_self.2 $ λ hxe', (hxe' hxe).elim)],
     exact h x ⟨hxe, hx⟩ },
-  { simp only [eval_dist_eq_zero hx, zero_le'] }
+  { simp only [eval_dist_apply_eq_prob_output, prob_output_eq_zero hx, zero_le'] }
 end
 
 /-- If the `eval_dist` agrees on all elements of the support, then `prob_event` agrees as well. -/
@@ -221,7 +220,7 @@ begin
   { by_cases hx' : x ∈ (oa.support ∪ oa'.support),
     { exact h x ⟨hx, hx'⟩ },
     { rw [set.mem_union, not_or_distrib] at hx',
-      rw [eval_dist_eq_zero hx'.1, eval_dist_eq_zero hx'.2] } },
+      simp [prob_output_eq_zero hx'.1, prob_output_eq_zero hx'.2] } },
   { refl }
 end
 

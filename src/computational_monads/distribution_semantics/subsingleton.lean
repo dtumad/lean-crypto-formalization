@@ -12,7 +12,6 @@ This file gives various lemmas for probabilities of computations `oa : oracle_co
 when `α` is a subsingleton type, simplifying many computations.
 -/
 
-
 namespace oracle_comp
 
 open oracle_spec
@@ -45,9 +44,9 @@ lemma fin_support_of_subsingleton [subsingleton α] (x : α) : oa.fin_support = 
 @[simp] lemma fin_support_of_unique [unique α] : oa.fin_support = {default} :=
 fin_support_of_subsingleton oa default
 
-@[simp] lemma eval_dist_apply_of_subsingleton [subsingleton α] (x : α) : ⁅= x | oa⁆ = 1 :=
+@[simp] lemma prob_output_of_subsingleton [subsingleton α] (x : α) : ⁅= x | oa⁆ = 1 :=
 ((dist_equiv_return_of_subsingleton oa x).eval_dist_apply_eq x).trans
-  ((eval_dist_return_apply_eq_one_iff _ _ _).2 (subsingleton.elim _ _))
+  ((prob_output_return_eq_one_iff _ _ _).2 (subsingleton.elim _ _))
 
 lemma prob_event_of_subsingleton_of_nonempty [subsingleton α]
   (e : set α) (h : e.nonempty) : ⁅e | oa⁆ = 1 :=

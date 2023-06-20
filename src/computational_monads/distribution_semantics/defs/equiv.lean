@@ -53,7 +53,7 @@ lemma dist_equiv.def : oa ≃ₚ oa' ↔ ⁅oa⁆ = ⁅oa'⁆ := iff.rfl
 
 lemma dist_equiv.ext_iff (oa : oracle_comp spec α) (oa' : oracle_comp spec' α) :
   oa ≃ₚ oa' ↔ ∀ x, ⁅= x | oa⁆ = ⁅= x | oa'⁆ :=
-⟨λ h x, congr_fun (congr_arg _ h) x, dist_equiv.ext⟩
+⟨λ h x, by rw [prob_output, prob_output, dist_equiv.def.1 h], dist_equiv.ext⟩
 
 @[refl] lemma dist_equiv.refl (oa : oracle_comp spec α) : oa ≃ₚ oa := by exact rfl
 
@@ -84,8 +84,11 @@ lemma dist_equiv.fin_support_eq (h : oa ≃ₚ oa') : oa.fin_support = oa'.fin_s
 
 lemma dist_equiv.eval_dist_eq (h : oa ≃ₚ oa') : ⁅oa⁆ = ⁅oa'⁆ := h
 
-lemma dist_equiv.eval_dist_apply_eq (h : oa ≃ₚ oa') (x : α) : ⁅= x | oa⁆ = ⁅= x | oa'⁆ :=
-congr_fun (congr_arg _ h) x
+lemma dist_equiv.prob_output_eq (h : oa ≃ₚ oa') (x : α) : ⁅= x | oa⁆ = ⁅= x | oa'⁆ :=
+(dist_equiv.ext_iff oa oa').1 h x
+
+lemma dist_equiv.eval_dist_apply_eq (h : oa ≃ₚ oa') (x : α) : ⁅oa⁆ x = ⁅oa'⁆ x :=
+(dist_equiv.ext_iff oa oa').1 h x
 
 lemma dist_equiv.prob_event_eq (h : oa ≃ₚ oa') (e : set α) : ⁅e | oa⁆ = ⁅e | oa'⁆ :=
 prob_event_eq_of_eval_dist_eq h.eval_dist_eq e

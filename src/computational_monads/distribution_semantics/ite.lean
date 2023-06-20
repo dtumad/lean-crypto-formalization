@@ -34,7 +34,7 @@ by simp only [mem_fin_support_iff_mem_support, mem_support_ite_iff]
 @[simp] lemma eval_dist_ite : ⁅if p then oa else oa'⁆ = if p then ⁅oa⁆ else ⁅oa'⁆ :=
 by split_ifs; refl
 
-@[simp] lemma eval_dist_ite_apply (x : α) : ⁅= x | if p then oa else oa'⁆ =
+@[simp] lemma prob_output_ite (x : α) : ⁅= x | if p then oa else oa'⁆ =
   if p then ⁅= x | oa⁆ else ⁅= x | oa'⁆ := by split_ifs; refl
 
 @[simp] lemma prob_event_ite (e : set α) : ⁅e | if p then oa else oa'⁆ =
@@ -85,7 +85,7 @@ can be written as a sum over outputs where the predicate is true and where it's 
   (∑' x, if p x then ⁅= x | oa⁆ * ⁅= y | ob x⁆ else 0) +
     (∑' x, if ¬ p x then ⁅= x | oa⁆ * ⁅= y | ob' x⁆ else 0) :=
 begin
-  rw [← ennreal.tsum_add, eval_dist_bind_apply_eq_tsum],
+  rw [← ennreal.tsum_add, prob_output_bind_eq_tsum],
   exact tsum_congr (λ x, by split_ifs with hx; simp only [zero_add, add_zero]),
 end
 
@@ -99,7 +99,7 @@ variables (ob : oracle_comp spec β) (ob' : α → oracle_comp spec β) (y : β)
 @[simp] lemma eval_dist_bind_ite_const_left : ⁅= y | do {x ← oa, if p x then ob else ob' x}⁆ =
   ⁅p | oa⁆ * ⁅= y | ob⁆ + (∑' x, if ¬ p x then ⁅= x | oa⁆ * ⁅= y | ob' x⁆ else 0) :=
 begin
-  simp_rw [prob_event_eq_tsum_ite, eval_dist_bind_apply_eq_tsum,
+  simp_rw [prob_event_eq_tsum_ite, prob_output_bind_eq_tsum,
     ← ennreal.tsum_mul_right, ← ennreal.tsum_add],
   exact tsum_congr (λ x, by split_ifs with h; simp only [zero_mul, zero_add, add_zero])
 end
@@ -121,14 +121,12 @@ begin
   simp at ⊢ h,
   refine λ _, h,
 end
--- set.ext (λ x, by simp only [mem_support_bind_iff, set.mem_Union, set.mem_union, exists_prop,
---   set.mem_sep_iff, ← exists_or_distrib, and_assoc, ← and_or_distrib_left, mem_support_ite_iff])
 
 /-- Version of `eval_dist_bind_ite_const` when only the right computation is constant -/
 @[simp] lemma eval_dist_bind_ite_const_right : ⁅= y | do {x ← oa, if p x then ob x else ob'}⁆ =
   (∑' x, if p x then ⁅= x | oa⁆ * ⁅= y | ob x⁆ else 0) + (1 - ⁅p | oa⁆) * ⁅= y | ob'⁆ :=
 begin
-  simp_rw [← prob_event_not, prob_event_eq_tsum_ite, eval_dist_bind_apply_eq_tsum,
+  simp_rw [← prob_event_not, prob_event_eq_tsum_ite, prob_output_bind_eq_tsum,
     ← ennreal.tsum_mul_right, ← ennreal.tsum_add],
   exact tsum_congr (λ x, by split_ifs with h; simp only [zero_mul, zero_add, add_zero])
 end
@@ -141,17 +139,13 @@ variables (ob ob' : oracle_comp spec β) (y : β)
 
 /-- Simplified version of `eval_dist_bind_ite` when only the predicate depends on the
 result of the first computation, and the other two computations are constant. -/
-@[simp] lemma eval_dist_bind_ite_const : ⁅= y | do {x ← oa, if p x then ob else ob'}⁆ =
+@[simp] lemma prob_output_bind_ite_const : ⁅= y | do {x ← oa, if p x then ob else ob'}⁆ =
   ⁅p | oa⁆ * ⁅= y | ob⁆ + (1 - ⁅p | oa⁆) * ⁅= y | ob'⁆ :=
 begin
-  simp_rw [← prob_event_not, prob_event_eq_tsum_ite, eval_dist_bind_apply_eq_tsum,
+  simp_rw [← prob_event_not, prob_event_eq_tsum_ite, prob_output_bind_eq_tsum,
     ← ennreal.tsum_mul_right, ← ennreal.tsum_add],
   exact tsum_congr (λ x, by split_ifs with h; simp only [zero_mul, zero_add, add_zero]),
 end
-
-example : ⁅= y | do {x ← oa, if p x then ob else ob'}⁆ =
-  ⁅p | oa⁆ * ⁅= y | ob⁆ + (1 - ⁅p | oa⁆) * ⁅= y | ob'⁆ :=
-by simp [-eval_dist_bind] -- TODO: this isn't a great thing (maybe `prob_eq` definition?)
 
 end bind_ite_const
 
@@ -172,12 +166,14 @@ variables (f g : α → β) (y : β)
 by simp only [fin_support_eq_iff_support_eq_coe, support_bind_ite_return,
   finset.coe_union, finset.coe_image, finset.coe_filter, coe_fin_support_eq_support]
 
-lemma eval_dist_bind_ite_return [decidable_eq β] :
-  ⁅do {x ← oa, if p x then return (f x) else return (g x)}⁆ y =
-    (∑' x, if p x ∧ y = f x then ⁅oa⁆ x else 0) + (∑' x, if ¬ p x ∧ y = g x then ⁅oa⁆ x else 0) :=
+lemma prob_output_bind_ite_return [decidable_eq β] :
+  ⁅= y | do {x ← oa, if p x then return (f x) else return (g x)}⁆ =
+    (∑' x, if p x ∧ y = f x then ⁅= x | oa⁆ else 0) +
+      (∑' x, if ¬ p x ∧ y = g x then ⁅= x | oa⁆ else 0) :=
 begin
   simp [ite_and, ← tsum_add, -eval_dist_ite],
-  exact tsum_congr (λ x, by split_ifs; simp only [zero_add, add_zero])
+  refine tsum_congr (λ x, _),
+  by_cases hp : p x; simp [hp, prob_output_return]
 end
 
 end bind_ite_return
