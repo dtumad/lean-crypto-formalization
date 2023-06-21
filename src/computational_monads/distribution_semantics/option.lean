@@ -8,7 +8,9 @@ import computational_monads.distribution_semantics.monad
 /-!
 # Probabilities for Computations Over Option Type
 
-General lemmas about probability computations involving `option`
+General lemmas about probability computations involving `option`.
+
+-- TODO: flesh out
 -/
 
 namespace oracle_comp

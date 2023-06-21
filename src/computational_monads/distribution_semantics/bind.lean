@@ -55,6 +55,10 @@ lemma not_mem_fin_support_bind (h : ∀ x ∈ oa.fin_support, y ∉ (ob x).fin_s
 
 end mem_support
 
+section support
+
+end support
+
 section eval_dist
 
 /-- The probability of `oa >>= ob` returning `y` is the sum over all `x` of the probability
@@ -178,12 +182,8 @@ begin
       prob_output_eq_zero (ha.support_eq ▸ hx : x ∉ oa'.support)] }
 end
 
-lemma bind_bind_dist_equiv_assoc (oa : oracle_comp spec α) (ob : α → oracle_comp spec β)
-  (oc : β → oracle_comp spec γ) : (oa >>= ob) >>= oc ≃ₚ oa >>= (λ x, ob x >>= oc) :=
-dist_equiv.ext (λ x, by simp only [prob_output.def, eval_dist_bind, pmf.bind_bind])
-
-lemma bind_dist_equiv_bind_of_dist_equiv_left (oa : oracle_comp spec α)
-  (ob : α → oracle_comp spec β) (oa' : oracle_comp spec α) (h : oa ≃ₚ oa') :
+lemma bind_dist_equiv_bind_of_dist_equiv_left (oa : oracle_comp spec α) (oa' : oracle_comp spec α)
+  (ob : α → oracle_comp spec β) (h : oa ≃ₚ oa') :
   (oa >>= ob) ≃ₚ (oa' >>= ob) :=
 bind_dist_equiv_bind_of_dist_equiv h (λ _ _, rfl)
 

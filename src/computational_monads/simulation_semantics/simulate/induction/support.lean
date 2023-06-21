@@ -24,12 +24,7 @@ variables (so : sim_oracle spec spec' S) (so' : sim_oracle spec spec'' S')
   (a : α) (i : spec.ι) (t : spec.domain i) (oa oa' : oracle_comp spec α)
   (ob ob' : α → oracle_comp spec β) (oc : β → oracle_comp spec γ) (s : S) (f : α → β)
 
-section monad
-
-
-end monad
-
-section induction
+section support_eq
 
 /-- Lemma for inductively proving the support of a simulation is a specific function of the input.
 Often this is simpler than induction on the computation itself, especially the case of `bind`. -/
@@ -62,54 +57,9 @@ begin
   { simp only [h_query, simulate'_query, support_map] }
 end
 
-/-- Given a property `P` of oracle states, if any query call to the oracle preserves it,
-then simulation of an entire computation with that oracle will also preserve it. -/
-theorem support_state_simulate_induction (so : sim_oracle spec spec' S) (P : S → Prop)
-  (s : S) (hs : P s) (oa : oracle_comp spec α) (x : α × S) (hx : x ∈ (simulate so oa s).support)
-  (hso : ∀ i t s, ∀ x ∈ (so i (t, s)).support, P s → P (prod.snd x)) : P x.2 :=
-begin
-  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i' t' generalizing s,
-  { rw [support_simulate_return, set.mem_singleton_iff] at hx,
-    exact hx.symm ▸ hs },
-  { rw [mem_support_simulate_bind_iff] at hx,
-    obtain ⟨a, s', ha, ha'⟩ := hx,
-    exact hob a x s' (hoa (a, s') s hs ha) ha' },
-  { exact hso i' t' s x hx hs }
-end
+end support_eq
 
-end induction
-
-/-- Since `support` assumes any possible query result, `simulate` will never reduce the support.
-In particular the support of a simulation lies in the pullback of the original support. -/
-theorem support_simulate_subset_preimage_support :
-  (simulate so oa s).support ⊆ prod.fst ⁻¹' oa.support :=
-begin
-  rw [set.preimage],
-  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t generalizing s,
-  { simp only [simulate_return, support_return, set.mem_singleton_iff,
-      set.singleton_subset_iff, set.mem_set_of_eq] },
-  { rw [support_simulate_bind],
-    refine set.Union_subset (λ x, set.Union_subset (λ hx, _)),
-    simp only [support_bind, set.mem_Union, exists_prop],
-    refine λ b hb, ⟨x.1, hoa s hx, hob x.1 x.2 hb⟩ },
-  { simp only [support_query, set.top_eq_univ, set.mem_univ, set.set_of_true, set.subset_univ] }
-end
-
-/-- Simulation only reduces the possible oracle outputs, so can't reduce the support. In particular
-the first output of a simulation has support at most that of the original computation -/
-lemma support_simulate'_subset_support : (simulate' so oa s).support ⊆ oa.support :=
-begin
-  refine (support_simulate' so oa s).symm ▸ λ x hx, _,
-  obtain ⟨y, hy, rfl⟩ := (set.mem_image prod.fst _ _).1 hx,
-  exact support_simulate_subset_preimage_support so oa s hy,
-end
-
-lemma mem_support_of_mem_support_simulate (x : α × S) (hx : x ∈ (simulate so oa s).support) :
-  x.1 ∈ oa.support := by simpa using (support_simulate_subset_preimage_support so oa s hx)
-
-lemma mem_support_of_mem_support_simulate' (x : α)
-  (hx : x ∈ (simulate' so oa s).support) : x ∈ oa.support :=
-support_simulate'_subset_support so oa s hx
+section support_eq_support
 
 /-- If the first output of an oracle can take on any value (although the state might not),
 then the first value of simulation has the same support as the original computation.
@@ -171,6 +121,18 @@ begin
   { rw [simulate_query, h]  }
 end
 
+/-- Let `so` and `so'` be two simulation oracles-/
+theorem support_simulate_resimulate_eq_support_simulate (so : sim_oracle spec spec' S)
+  (so' : sim_oracle spec spec' S) (f : S → S)
+  (h : ∀ i t s, (⋃ x ∈ (so i (t, s)).support, (so' i (t, f (prod.snd x))).support) =
+    (so i (t, s)).support)
+  (oa : oracle_comp spec α) (s : S) :
+  (simulate so oa s >>= λ x, simulate so' oa (f x.2)).support = (simulate so oa s).support :=
+begin
+  sorry
+end
+
+/-- Simulating a computation, and then -/
 theorem support_simulate_simulate_eq_support_simulate (so so' : sim_oracle spec spec' S)
   (h : ∀ i t s, (⋃ x ∈ (so i (t, s)).support, (so' i (t, prod.snd x)).support) =
     (so i (t, s)).support) (s : S) (oa : oracle_comp spec α) :
@@ -186,5 +148,7 @@ begin
     sorry },
   { exact h }
 end
+
+end support_eq_support
 
 end oracle_comp

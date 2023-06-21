@@ -23,14 +23,14 @@ variables (so : sim_oracle spec spec' S) (oa : oracle_comp spec α)
 
 section support
 
-lemma support_simulate_bind : (simulate so (oa >>= ob) s).support =
+@[simp] lemma support_simulate_bind : (simulate so (oa >>= ob) s).support =
   ⋃ x ∈ (simulate so oa s).support, (simulate so (ob $ prod.fst x) x.2).support := rfl
 
 lemma mem_support_simulate_bind_iff (x : β × S) : x ∈ (simulate so (oa >>= ob) s).support ↔
   ∃ a s', (a, s') ∈ (simulate so oa s).support ∧ x ∈ (simulate so (ob a) s').support :=
 by simp_rw [support_simulate_bind, set.mem_Union, prod.exists, exists_prop]
 
-lemma support_simulate'_bind : (simulate' so (oa >>= ob) s).support =
+@[simp] lemma support_simulate'_bind : (simulate' so (oa >>= ob) s).support =
   ⋃ x ∈ (simulate so oa s).support, (simulate' so (ob $ prod.fst x) x.snd).support :=
 by simp [set.image_Union]
 
@@ -46,7 +46,7 @@ section eval_dist
   (⁅simulate so oa s⁆).bind (λ x, ⁅simulate so (ob x.1) x.2⁆) :=
 (congr_arg _ $ simulate_bind so oa ob s).trans (eval_dist_bind _ _)
 
-lemma eval_dist_simulate'_bind : ⁅simulate' so (oa >>= ob) s⁆ =
+@[simp] lemma eval_dist_simulate'_bind : ⁅simulate' so (oa >>= ob) s⁆ =
   ⁅simulate so oa s⁆.bind (λ x, ⁅simulate' so (ob x.1) x.2⁆) :=
 by simp only [simulate'_bind, eval_dist_map_bind, eval_dist_bind, eval_dist_map,
   eval_dist_simulate', eq_self_iff_true, pmf.map_bind]
@@ -67,23 +67,24 @@ section prob_output
 
 /-- Write the `eval_dist` of a simulation as a double summation over the possible
 intermediate outputs and states of the computation. -/
-lemma prob_output_simulate_bind_eq_tsum_tsum (x : β × S) : ⁅= x | simulate so (oa >>= ob) s⁆ =
-  ∑' a s', ⁅= (a, s') | simulate so oa s⁆ * ⁅= x | simulate so (ob a) s'⁆ :=
+@[simp] lemma prob_output_simulate_bind_eq_tsum_tsum (x : β × S) :
+  ⁅= x | simulate so (oa >>= ob) s⁆ =
+    ∑' a s', ⁅= (a, s') | simulate so oa s⁆ * ⁅= x | simulate so (ob a) s'⁆ :=
 by rw [simulate_bind, eval_dist_prod_bind]
 
-lemma prob_output_simulate_bind_eq_sum_sum [fintype α] [fintype S] (x : β × S) :
+@[simp] lemma prob_output_simulate_bind_eq_sum_sum [fintype α] [fintype S] (x : β × S) :
   ⁅= x | simulate so (oa >>= ob) s⁆ =
     ∑ a s', ⁅= (a, s') | simulate so oa s⁆ * ⁅= x | simulate so (ob a) s'⁆ :=
 by simp only [simulate_bind, prob_output_bind_eq_sum, ← @finset.sum_product ℝ≥0∞ S α _
   finset.univ finset.univ (λ y, ⁅= (y.1, y.2) | simulate so oa s⁆ * ⁅= x | simulate so (ob y.1) y.2⁆),
   finset.univ_product_univ, prod.mk.eta]
 
-lemma prob_output_simulate'_bind_eq_tsum_tsum (b : β) : ⁅= b | simulate' so (oa >>= ob) s⁆
+@[simp] lemma prob_output_simulate'_bind_eq_tsum_tsum (b : β) : ⁅= b | simulate' so (oa >>= ob) s⁆
   = ∑' a s', ⁅= (a, s') | simulate so oa s⁆ * ⁅= b | simulate' so (ob a) s'⁆ :=
 by simp only [prob_output_simulate'_eq_prob_event, simulate_bind,
   prob_event_bind_eq_tsum, ← ennreal.tsum_prod, prod.mk.eta]
 
-lemma prob_output_simulate'_bind_eq_sum_sum [fintype α] [fintype S] (b : β) :
+@[simp] lemma prob_output_simulate'_bind_eq_sum_sum [fintype α] [fintype S] (b : β) :
   ⁅= b | simulate' so (oa >>= ob) s⁆ =
     ∑ a s', ⁅= (a, s') | simulate so oa s⁆ * ⁅= b | simulate' so (ob a) s'⁆ :=
 by simp_rw [prob_output_simulate'_bind_eq_tsum_tsum, tsum_fintype]
@@ -92,8 +93,9 @@ end prob_output
 
 section prob_event
 
-lemma prob_event_simulate_bind_eq_tsum_tsum (e : set (β × S)) : ⁅e | simulate so (oa >>= ob) s⁆ =
-  ∑' a s', ⁅= (a, s') | simulate so oa s⁆ * ⁅e | simulate so (ob a) s'⁆ :=
+@[simp] lemma prob_event_simulate_bind_eq_tsum_tsum (e : set (β × S)) :
+  ⁅e | simulate so (oa >>= ob) s⁆ =
+    ∑' a s', ⁅= (a, s') | simulate so oa s⁆ * ⁅e | simulate so (ob a) s'⁆ :=
 by simp_rw [simulate_bind, prob_event_bind_eq_tsum, ← ennreal.tsum_prod, prod.mk.eta]
 
 lemma prob_event_simulate_bind_eq_sum_sum [fintype α] [fintype S] (e : set (β × S)) :
@@ -103,8 +105,9 @@ by simp only [simulate_bind, prob_event_bind_eq_sum, ← @finset.sum_product ℝ
   finset.univ (λ x, ⁅= (x.1, x.2) | simulate so oa s⁆ * ⁅e | simulate so (ob x.1) x.2⁆),
   finset.univ_product_univ, prod.mk.eta]
 
-lemma prob_event_simulate'_bind_eq_tsum_tsum (e : set β) : ⁅e | simulate' so (oa >>= ob) s⁆ =
-  ∑' a s', ⁅= (a, s') | simulate so oa s⁆ * ⁅e | simulate' so (ob a) s'⁆ :=
+@[simp] lemma prob_event_simulate'_bind_eq_tsum_tsum (e : set β) :
+  ⁅e | simulate' so (oa >>= ob) s⁆ =
+    ∑' a s', ⁅= (a, s') | simulate so oa s⁆ * ⁅e | simulate' so (ob a) s'⁆ :=
 by simp_rw [prob_event_simulate', prob_event_simulate_bind_eq_tsum_tsum]
 
 lemma prob_event_simulate'_bind_eq_sum_sum [fintype α] [fintype S] (e : set β) :

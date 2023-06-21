@@ -18,6 +18,11 @@ open_locale big_operators ennreal
 
 variables {α β γ : Type} {spec spec' : oracle_spec}
 
+@[simp_dist_equiv]
+lemma bind_bind_dist_equiv_assoc (oa : oracle_comp spec α) (ob : α → oracle_comp spec β)
+  (oc : β → oracle_comp spec γ) : (oa >>= ob) >>= oc ≃ₚ oa >>= (λ x, ob x >>= oc) :=
+dist_equiv.ext (λ x, by simp only [prob_output.def, eval_dist_bind, pmf.bind_bind])
+
 section return_bind
 
 variables (a : α) (ob : α → oracle_comp spec β) (y : β) (e' : set β)

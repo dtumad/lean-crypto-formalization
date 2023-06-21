@@ -22,7 +22,7 @@ variables (so : sim_oracle spec spec' S) (oa : oracle_comp spec α) (f : α → 
 
 section support
 
-lemma support_simulate_map : (simulate so (f <$> oa) s).support =
+@[simp] lemma support_simulate_map : (simulate so (f <$> oa) s).support =
   prod.map f id '' (simulate so oa s).support := by rw [simulate_map, support_map]
 
 lemma mem_support_simulate_map_iff (y : β × S) : y ∈ (simulate so (f <$> oa) s).support ↔
@@ -41,17 +41,17 @@ end support
 
 section eval_dist
 
-lemma eval_dist_simulate_map : ⁅simulate so (f <$> oa) s⁆ =
+@[simp] lemma eval_dist_simulate_map : ⁅simulate so (f <$> oa) s⁆ =
   ⁅simulate so oa s⁆.map (prod.map f id) := by rw [simulate_map, eval_dist_map]
 
-lemma eval_dist_simulate'_map : ⁅simulate' so (f <$> oa) s⁆ = ⁅simulate' so oa s⁆.map f :=
+@[simp] lemma eval_dist_simulate'_map : ⁅simulate' so (f <$> oa) s⁆ = ⁅simulate' so oa s⁆.map f :=
 by simp_rw [eval_dist_simulate', eval_dist_simulate_map, pmf.map_comp, prod.map_fst']
 
 end eval_dist
 
 section dist_equiv
 
-@[simp_dist_equiv] lemma simulate_map_dist_equiv :
+@[simp, simp_dist_equiv] lemma simulate_map_dist_equiv :
   simulate so (f <$> oa) s ≃ₚ (prod.map f id) <$> simulate so oa s :=
 by pairwise_dist_equiv
 
@@ -63,12 +63,12 @@ end dist_equiv
 
 section prob_output
 
-lemma prob_output_simulate_map [decidable_eq S] [decidable_eq β]
+@[simp] lemma prob_output_simulate_map [decidable_eq S] [decidable_eq β]
   (y : β × S) : ⁅= y | simulate so (f <$> oa) s⁆ =
     ∑' x, if y.1 = f x then ⁅= (x, y.snd) | simulate so oa s⁆ else 0 :=
 by rw [simulate_map, prob_output_map_prod_map_id_right]
 
-lemma prob_output_simulate'_map [decidable_eq β]
+@[simp] lemma prob_output_simulate'_map [decidable_eq β]
   (y : β) : ⁅= y | simulate' so (f <$> oa) s⁆ =
     ∑' x, if y = f (prod.fst x) then ⁅= x | simulate so oa s⁆ else 0 :=
 by { rw [simulate'_map, prob_output_map_comp, prod.map_fst', prob_output_map_eq_tsum], refl }
@@ -77,11 +77,11 @@ end prob_output
 
 section prob_event
 
-lemma prob_event_simulate_map (e : set (β × S)) :
+@[simp] lemma prob_event_simulate_map (e : set (β × S)) :
   ⁅e | simulate so (f <$> oa) s⁆ = ⁅prod.map f id ⁻¹' e | simulate so oa s⁆ :=
 by rw [simulate_map, prob_event_map]
 
-lemma prob_event_simulate'_map (e : set β) :
+@[simp] lemma prob_event_simulate'_map (e : set β) :
   ⁅e | simulate' so (f <$> oa) s⁆ = ⁅(f ∘ prod.fst) ⁻¹' e | simulate so oa s⁆ :=
 by simpa only [prob_event_simulate', prob_event_simulate_map, ← set.preimage_comp]
 

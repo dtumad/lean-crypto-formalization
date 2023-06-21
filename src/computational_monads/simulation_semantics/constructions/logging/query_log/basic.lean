@@ -19,7 +19,7 @@ def query_log (spec : oracle_spec) : Type :=
 
 namespace query_log
 
-open oracle_spec 
+open oracle_spec
 
 variables {spec : oracle_spec} (log : query_log spec)
   (i j : spec.ι) (t : spec.domain i) (u : spec.range i)
@@ -37,7 +37,7 @@ def init (spec : oracle_spec) : query_log spec := λ i, []
 
 lemma not_mem_init : (t, u) ∉ (init spec i) := list.not_mem_nil (t, u)
 
-lemma mem_init_iff_false : (t, u) ∈ (init spec i) ↔ false := 
+lemma mem_init_iff_false : (t, u) ∈ (init spec i) ↔ false :=
 by simp only [iff_false, not_mem_init, not_false_iff]
 
 end init
@@ -207,7 +207,7 @@ begin
   { rw [map_at_index_apply_of_index_eq _ i k f hi],
     by_cases hj : j = k,
     { exact false.elim (h $ hi.trans hj.symm) },
-    { rw [log_query_apply_of_index_ne _ hj t u, log_query_apply_of_index_ne _ h.symm t u, 
+    { rw [log_query_apply_of_index_ne _ hj t u, log_query_apply_of_index_ne _ h.symm t u,
         map_at_index_apply_of_index_eq log _ _ f hi] } },
   { rw [map_at_index_apply_of_index_ne _ i k f hi],
     by_cases hj : j = k,
@@ -263,7 +263,7 @@ map_at_index_init_of_nil_nil i (list.drop n) (list.drop_nil n)
 
 @[simp]
 lemma drop_at_index_succ_log_query (i j : spec.ι) (t : spec.domain i) (u : spec.range i) :
-  (log.log_query i t u).drop_at_index j (n + 1) = 
+  (log.log_query i t u).drop_at_index j (n + 1) =
     if i = j then log.drop_at_index j n
       else (log.drop_at_index j (n + 1)).log_query i t u :=
 begin
@@ -276,6 +276,19 @@ begin
         log_query_apply_of_index_ne log (ne_of_eq_of_ne h hj),
         drop_at_index_apply_of_index_ne _ n hj] } },
   { exact map_at_index_log_query_of_ne log j i _ (ne.symm h) t u }
+end
+
+lemma drop_at_index_log_query_of_ne {i : spec.ι} (t : spec.domain i) (u : spec.range i)
+  {j : spec.ι} (h : i ≠ j) : (log.log_query i t u).drop_at_index j n =
+    (log.drop_at_index j n).log_query i t u :=
+by cases n; simp [h]
+
+lemma drop_at_index_log_query_init_eq_init {i : spec.ι} (t : spec.domain i) (u : spec.range i)
+  (h : n ≠ 0) : ((init spec).log_query i t u).drop_at_index i n = init spec :=
+begin
+  cases n,
+  { exact (h rfl).elim },
+  { simp only [drop_at_index_succ_log_query, eq_self_iff_true, drop_at_index_init, if_true] }
 end
 
 end drop_at_index

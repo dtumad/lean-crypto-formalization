@@ -10,7 +10,7 @@ import computational_monads.distribution_semantics.map
 
 General lemmas about probability computations involving `prod`
 
-TODO: orginization of this file has bad vibes.
+TODO: orginization/naming in this file has bad vibes.
 -/
 
 namespace oracle_comp
@@ -23,6 +23,34 @@ variables {α β γ δ : Type} {spec spec' : oracle_spec}
 section eval_dist
 
 variables (oa : oracle_comp spec (α × β)) (oc : α × β → oracle_comp spec γ)
+
+section fst_snd_map_return_dist_equiv
+
+@[simp, simp_dist_equiv] lemma fst_map_return_dist_equiv (x : α) (y : β) :
+  prod.fst <$> (return' !spec! (x, y)) ≃ₚ return' !spec'! x :=
+by simp [dist_equiv.ext_iff, prob_output_return_eq_indicator]
+
+@[simp, simp_dist_equiv] lemma fst_map_return_dist_equiv' (x : α) (y : β) (f : α → γ) :
+  (λ (x : α × β), f x.1) <$> (return' !spec! (x, y)) ≃ₚ return' !spec'! (f x) :=
+by simp [dist_equiv.ext_iff, prob_output_return_eq_indicator]
+
+@[simp, simp_dist_equiv] lemma snd_map_return_dist_equiv (x : α) (y : β) :
+  prod.snd <$> (return' !spec! (x, y)) ≃ₚ return' !spec'! y :=
+by simp [dist_equiv.ext_iff, prob_output_return_eq_indicator]
+
+@[simp, simp_dist_equiv] lemma snd_map_return_dist_equiv' (x : α) (y : β) (f : β → γ) :
+  (λ (x : α × β), f x.2) <$> (return' !spec! (x, y)) ≃ₚ return' !spec'! (f y) :=
+by simp [dist_equiv.ext_iff, prob_output_return_eq_indicator]
+
+@[simp, simp_dist_equiv] lemma fst_map_return_dist_equiv_fst_map_return (x : α) (y y' : β) :
+  prod.fst <$> (return' !spec! (x, y)) ≃ₚ prod.fst <$> (return' !spec'! (x, y')) :=
+by simp [dist_equiv.ext_iff, prob_output_return_eq_indicator]
+
+@[simp, simp_dist_equiv] lemma snd_map_return_dist_equiv_snd_map_return (x x' : α) (y : β) :
+  prod.snd <$> (return' !spec! (x, y)) ≃ₚ prod.snd <$> (return' !spec'! (x', y)) :=
+by simp [dist_equiv.ext_iff, prob_output_return_eq_indicator]
+
+end fst_snd_map_return_dist_equiv
 
 /-- Binding on a computation of a `prod` type can be written as a double sum,
 instead of a sum of the product type. -/

@@ -28,20 +28,20 @@ section map_bind
 
 variable (g : β → γ)
 
-lemma support_simulate_map_bind : (simulate so (g <$> (oa >>= ob)) s).support =
+@[simp] lemma support_simulate_map_bind : (simulate so (g <$> (oa >>= ob)) s).support =
   ⋃ x ∈ (simulate so oa s).support, prod.map g id '' (simulate so (ob $ prod.fst x) x.2).support :=
 by simp only [support_simulate_map, support_simulate_bind, set.image_Union]
 
-lemma eval_dist_simulate_map_bind : ⁅simulate so (g <$> (oa >>= ob)) s⁆ =
+@[simp] lemma eval_dist_simulate_map_bind : ⁅simulate so (g <$> (oa >>= ob)) s⁆ =
   ⁅simulate so oa s⁆.bind (λ x, ⁅simulate so (ob x.1) x.2⁆.map (prod.map g id)) :=
 by simp only [simulate_map, simulate_bind, eval_dist_map, eval_dist_bind, pmf.map_bind]
 
-lemma simulate_map_bind_dist_equiv : simulate so (g <$> (oa >>= ob)) s ≃ₚ
+@[simp, simp_dist_equiv] lemma simulate_map_bind_dist_equiv : simulate so (g <$> (oa >>= ob)) s ≃ₚ
   simulate so oa s >>= λ x, prod.map g id <$> simulate so (ob x.1) x.2 :=
 by pairwise_dist_equiv
 
-lemma prob_output_simulate_map_bind [decidable_eq γ] [decidable_eq S] (z : γ × S) :
-  ⁅= z | simulate so (g <$> (oa >>= ob)) s⁆ =
+@[simp] lemma prob_output_simulate_map_bind [decidable_eq γ] [decidable_eq S]
+  (z : γ × S) : ⁅= z | simulate so (g <$> (oa >>= ob)) s⁆ =
     ∑' (x : α × S), (⁅= x | simulate so oa s⁆ *
       ∑' (y : β), ite (z.1 = g y) ⁅= (y, z.2) | simulate so (ob x.1) x.2⁆ 0) :=
 begin
@@ -53,7 +53,7 @@ end map_bind
 
 section bind_map
 
-lemma support_simulate_bind_map : (simulate so ((f <$> oa) >>= oc) s).support =
+@[simp] lemma support_simulate_bind_map : (simulate so ((f <$> oa) >>= oc) s).support =
   ⋃ x ∈ (simulate so oa s).support, (simulate so (oc (f $ prod.fst x)) x.2).support :=
 begin
   refine set.ext (λ z, _),
@@ -62,7 +62,6 @@ begin
   exact ⟨λ h, let ⟨x, y, hy, hxy, hx⟩ := h in ⟨y, hy, by simpa only [← hxy] using hx⟩,
     λ h, let ⟨x, hx, hz⟩ := h in ⟨(f x.1, x.2), x, hx, rfl, hz⟩⟩,
 end
-
 
 end bind_map
 

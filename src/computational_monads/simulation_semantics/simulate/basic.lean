@@ -71,19 +71,20 @@ def simulate {spec spec' : oracle_spec} (so : sim_oracle spec spec' S) :
 | _ (query i t) state := so i (t, state)
 
 /-- Convenience definition to use the default state as the initial state for `simulate`.
-Marked to be reduced and inlined, so the definition is essentially just notation. -/
+Marked to be reduced and inlined, so the definition is essentially just notational. -/
 @[inline, reducible, simp]
 def default_simulate (so : sim_oracle spec spec' S) (oa : oracle_comp spec α) :
   oracle_comp spec' (α × S) := simulate so oa so.default_state
 
-@[simp] lemma simulate_return : simulate so (return a) s = return (a, s) := rfl
+-- These lemmas are intentionally not marked `@[simp]`, instead the semantic lemmas of them are.
+lemma simulate_return : simulate so (return a) s = return (a, s) := rfl
 
-@[simp] lemma simulate_bind : simulate so (oa >>= ob) s =
+lemma simulate_bind : simulate so (oa >>= ob) s =
   simulate so oa s >>= λ x, simulate so (ob x.1) x.2 := rfl
 
-@[simp] lemma simulate_query : simulate so (query i t) s = so i (t, s) := rfl
+lemma simulate_query : simulate so (query i t) s = so i (t, s) := rfl
 
-@[simp] lemma simulate_map : simulate so (f <$> oa) s = prod.map f id <$> simulate so oa s := rfl
+lemma simulate_map : simulate so (f <$> oa) s = prod.map f id <$> simulate so oa s := rfl
 
 end simulate
 
@@ -102,26 +103,33 @@ def default_simulate' (so : sim_oracle spec spec' S) (oa : oracle_comp spec α) 
 lemma simulate'_def : simulate' so oa s = prod.fst <$> oa.simulate so s := rfl
 
 -- TODO: these should have a special simp category, to not be eagerly applied
-@[simp] lemma simulate'_return : simulate' so (return a) s = prod.fst <$> (return (a, s)) := rfl
+lemma simulate'_return : simulate' so (return a) s = prod.fst <$> (return (a, s)) := rfl
 
 lemma simulate'_pure' : simulate' so (pure' α a) s = prod.fst <$> (return (a, s)) := rfl
 
 lemma simulate'_pure : simulate' so (pure a) s = prod.fst <$> (return (a, s)) := rfl
 
-@[simp] lemma simulate'_bind : simulate' so (oa >>= ob) s =
+lemma simulate'_bind : simulate' so (oa >>= ob) s =
   prod.fst <$> (simulate so oa s >>= λ x, simulate so (ob x.1) x.2) := rfl
 
 lemma simulate'_bind' : simulate' so (bind' α β oa ob) s =
   prod.fst <$> (simulate so oa s >>= λ x, simulate so (ob x.1) x.2) := rfl
 
-@[simp] lemma simulate'_query : simulate' so (query i t) s = prod.fst <$> so i (t, s) := rfl
+lemma simulate'_query : simulate' so (query i t) s = prod.fst <$> so i (t, s) := rfl
 
-@[simp] lemma simulate'_map : simulate' so (f <$> oa) s =
+lemma simulate'_map : simulate' so (f <$> oa) s =
   prod.fst <$> (prod.map f id <$> simulate so oa s) := rfl
 
-@[simp] lemma support_simulate' : (simulate' so oa s).support =
-  prod.fst '' (simulate so oa s).support := by simp only [simulate', support_map]
+@[simp] lemma support_simulate' :
+  (simulate' so oa s).support = prod.fst '' (simulate so oa s).support :=
+by simp only [simulate', support_map]
 
+@[simp] lemma fin_support_simulate' [decidable_eq α] [decidable_eq S] :
+  (simulate' so oa s).fin_support = (simulate so oa s).fin_support.image prod.fst :=
+by simp only [simulate', fin_support_map]
+
+/-- An element is a possible output of `simulate'` if there is some simulation state
+such that the element and state are together a possible output of `simulate`. -/
 lemma mem_support_simulate'_iff_exists_state (x : α) :
   x ∈ (simulate' so oa s).support ↔ ∃ (s' : S), (x, s') ∈ (simulate so oa s).support :=
 by simp only [support_simulate', set.mem_image, prod.exists,
@@ -129,6 +137,9 @@ by simp only [support_simulate', set.mem_image, prod.exists,
 
 @[simp] lemma eval_dist_simulate' : ⁅simulate' so oa s⁆ = ⁅simulate so oa s⁆.map prod.fst :=
 eval_dist_map _ prod.fst
+
+@[simp_dist_equiv] lemma simulate'_dist_equiv :
+  simulate' so oa s ≃ₚ prod.fst <$> simulate so oa s := refl _
 
 /-- Express the probability of `simulate'` returning a specific value
 as the sum over all possible output states of the probability of `simulate` return it -/
@@ -147,7 +158,54 @@ lemma prob_output_simulate'_eq_prob_event :
   ⁅= x | simulate' so oa s⁆ = ⁅prod.fst ⁻¹' {x} | simulate so oa s⁆ :=
 by rw [← prob_event_singleton_eq_prob_output, prob_event_simulate']
 
-
 end simulate'
+
+/-- If some invariant `P` on the state of a simulation oracle is preserved by any query
+where the input state satisfies `P`, and some initial state also satisfies `P`,
+then any result of the simulation will have a final state satisfying `P`. -/
+theorem state_invariant_of_preserved (so : sim_oracle spec spec' S) (P : S → Prop)
+  (hso : ∀ i t s, ∀ x ∈ (so i (t, s)).support, P s → P (prod.snd x)) (s : S) (hs : P s)
+  (oa : oracle_comp spec α) (x : α × S) (hx : x ∈ (simulate so oa s).support) : P x.2 :=
+begin
+  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i' t' generalizing s,
+  { exact (symm hx) ▸ hs },
+  { obtain ⟨x', h, hx⟩ := (mem_support_bind_iff _ _ _).1 hx,
+    exact hob x'.1 x x'.2 (hoa x' s hs h) hx },
+  { exact hso i' t' s x hx hs }
+end
+
+section support_subset
+
+/-- Since `support` assumes any possible query result, `simulate` will never reduce the support.
+In particular the support of a simulation lies in the pullback of the original support. -/
+theorem support_simulate_subset_preimage_support :
+  (simulate so oa s).support ⊆ prod.fst ⁻¹' oa.support :=
+begin
+  rw [set.preimage],
+  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t generalizing s,
+  { simp [simulate_return] },
+  { simp only [simulate_bind, support_bind, set.Union_subset_iff,
+      support_bind, set.mem_Union, exists_prop],
+    refine λ x hx b hb, ⟨x.1, hoa s hx, hob x.1 x.2 hb⟩ },
+  { simp [support_query] }
+end
+
+/-- Simulation only reduces the possible oracle outputs, so can't reduce the support. In particular
+the first output of a simulation has support at most that of the original computation -/
+lemma support_simulate'_subset_support : (simulate' so oa s).support ⊆ oa.support :=
+begin
+  refine (support_simulate' so oa s).symm ▸ λ x hx, _,
+  obtain ⟨y, hy, rfl⟩ := (set.mem_image prod.fst _ _).1 hx,
+  exact support_simulate_subset_preimage_support so oa s hy,
+end
+
+lemma mem_support_of_mem_support_simulate (x : α × S) (hx : x ∈ (simulate so oa s).support) :
+  x.1 ∈ oa.support := by simpa using (support_simulate_subset_preimage_support so oa s hx)
+
+lemma mem_support_of_mem_support_simulate' (x : α)
+  (hx : x ∈ (simulate' so oa s).support) : x ∈ oa.support :=
+support_simulate'_subset_support so oa s hx
+
+end support_subset
 
 end oracle_comp

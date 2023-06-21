@@ -13,6 +13,8 @@ the oracle's internal state is a `subsingleton` type.
 In particular we can often relate simulations to `default_simulate` and `default_simulate'`.
 
 `stateless_oracle` is the biggest example of this, as its internal state type is `unit`
+
+-- TODO: flesh out
 -/
 
 variables {α β γ : Type} {spec spec' spec'' : oracle_spec} {S S' : Type}
@@ -97,21 +99,19 @@ begin
   rw [eval_dist_simulate', pmf.map_comp, this, pmf.map_id],
 end
 
-lemma eval_dist_simulate_apply_eq_eval_dist_simulate'_apply_of_subsingleton [subsingleton S]
-  (s : S) (x : α × S) : ⁅simulate so oa s⁆ x = ⁅simulate' so oa s⁆ x.1 :=
+lemma prob_output_simulate_eq_prob_output_simulate'_of_subsingleton [subsingleton S]
+  (s : S) (x : α × S) : ⁅= x | simulate so oa s⁆ = ⁅= x.1 | simulate' so oa s⁆ :=
 begin
-  rw [eval_dist_simulate_eq_map_eval_dist_simulate'_of_subsingleton, pmf.map_apply],
-  refine trans (tsum_eq_single x.1 $ λ y hy, by simp only [prod.eq_iff_fst_eq_snd_eq,
-    hy.symm, false_and, if_false]) (by simp only [prod.eq_iff_fst_eq_snd_eq, eq_self_iff_true,
-    eq_iff_true_of_subsingleton, and_self, if_true]),
+  simp only [prob_output.def, eval_dist_simulate_eq_map_eval_dist_simulate'_of_subsingleton],
+  refine trans (tsum_eq_single x.1 $ λ y hy, by simp [prod.eq_iff_fst_eq_snd_eq, hy.symm])
+    (by simp [prod.eq_iff_fst_eq_snd_eq]),
 end
 
 @[simp, simp_dist_equiv] lemma simulate_dist_equiv_of_subsingleton [subsingleton S]
   (s : S) : simulate so oa s ≃ₚ (λ x, (x, s)) <$> simulate' so oa s :=
 begin
   refine trans _ (map_comp_dist_equiv _ _ _).symm,
-  refine trans (map_id_dist_equiv _).symm _,
-  refine map_dist_equiv_of_dist_equiv (funext (λ x, _)) rfl,
+  refine trans (map_id_dist_equiv _).symm (map_dist_equiv_of_dist_equiv (funext (λ x, _)) rfl),
   simp [prod.eq_iff_fst_eq_snd_eq],
 end
 
