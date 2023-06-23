@@ -233,13 +233,17 @@ end
 --     simulate' (caching_oracle spec) oa (f x.2)} ≃ₚ
 --       simulate' (caching_oracle spec) oa log
 
-theorem most_general''_wo_f (oa : oracle_comp spec α) (oc : α → oracle_comp spec γ) :
+open_locale classical
+
+theorem most_general''_wo_f (oa : oracle_comp spec α) (oc : α → oracle_comp spec γ)
+  (log : query_log spec) (h : ∃ (oa' : oracle_comp spec α),
+    log ∈ (prod.snd <$> simulate (caching_oracle spec) oa (init spec)).support) :
   do {x ← simulate (caching_oracle spec) oa (init spec),
-    simulate' (caching_oracle spec) (oc x.1) (x.2)} ≃ₚ
+      simulate' (caching_oracle spec) (oc x.1) (x.2)} ≃ₚ
     do {x ← simulate' (caching_oracle spec) oa (init spec),
       simulate' (caching_oracle spec) (oc x) (init spec)} :=
 begin
-  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i' t generalizing γ oc,
+  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i' t generalizing γ oc log,
   { simp [simulate_return],
 
     refine trans (return_bind_dist_equiv _ _) _,
@@ -250,87 +254,142 @@ begin
     simp },
   {
     simp only [] at hoa hob,
-    rw [simulate_bind],
-    specialize hoa ob,
-  }
 
-end
+    specialize hoa ob (init spec) sorry,
 
-theorem most_general'' (oa : oracle_comp spec α) (oc : α → oracle_comp spec γ)
-  (f : query_log spec → query_log spec) (hf : ∀ log', f log' <++ log') :
-  do {x ← simulate (caching_oracle spec) oa (init spec),
-    simulate' (caching_oracle spec) (oc x.1) (f x.2)} ≃ₚ
-    do {x ← simulate' (caching_oracle spec) oa (init spec),
-      simulate' (caching_oracle spec) (oc x) (init spec)} :=
-begin
-  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i' t generalizing γ oc,
-  { simp [simulate_return],
+    calc (simulate (caching_oracle spec) (oa >>= ob) (init spec) >>= λ x,
+      simulate' (caching_oracle spec) (oc x.1) (x.2)) ≃ₚ
 
-    refine trans (return_bind_dist_equiv _ _) _,
-
-    refine trans (return_bind_dist_equiv a _).symm _,
-    refine bind_dist_equiv_bind_of_dist_equiv _ _,
-    pairwise_dist_equiv,
-    sorry },
-  {
-    simp only [] at hoa hob,
-    rw [simulate_bind],
-    specialize hoa ob,
-  }
-
-end
-
-theorem most_general' (oa : oracle_comp spec α) (oa' : oracle_comp spec γ)
-  (f : query_log spec → query_log spec) (hf : ∀ log', f log' <++ log') :
-  do {x ← simulate (caching_oracle spec) oa (init spec),
-    simulate' (caching_oracle spec) oa' (f x.2)} ≃ₚ
-      simulate' (caching_oracle spec) oa' (init spec) :=
-begin
-  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i' t generalizing oa',
-  { simp [simulate_return],
-
-    refine trans (return_bind_dist_equiv _ _) _,
-    refine dist_equiv_of_eq _,
-    refine congr_arg (simulate' (caching_oracle _) oa') _,
-    refine sublog_init_iff.1 (hf (init _)),
-     },
-  {
-    simp only [] at hoa hob,
-    rw [simulate_bind],
-  }
-
-end
-
-theorem most_general (oa : oracle_comp spec α) (log : query_log spec)
-  (f : query_log spec → query_log spec) (hf : ∀ log, f log <++ log)
-  (hlog : ∀ log' ∈ (prod.snd <$> simulate (caching_oracle spec) oa log).support, log <++ f log') :
-  do {x ← simulate (caching_oracle spec) oa log,
-    simulate' (caching_oracle spec) oa (f x.2)} ≃ₚ
-      simulate' (caching_oracle spec) oa log :=
-begin
-  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i' t generalizing log,
-  { refine trans (return_bind_dist_equiv _ _) (fst_map_return_dist_equiv_fst_map_return _ _ _) },
-  {
-    simp at hoa hob,
-    specialize hoa log,
-    calc ((simulate (caching_oracle spec) (oa >>= ob) log) >>=
-        λ x, simulate' (caching_oracle spec) (oa >>= ob) (f x.2)) ≃ₚ
-        ((simulate (caching_oracle spec) (oa >>= ob) log) >>=
-          λ x, simulate' (caching_oracle spec) (oa >>= ob) (f x.2)) :
+      ((simulate (caching_oracle spec) oa (init spec) >>= λ x,
+        simulate (caching_oracle spec) (ob x.1) x.2) >>= λ y,
+        simulate' (caching_oracle spec) (oc y.1) y.2) :
       begin
-        refl,
+        rw [simulate_bind],
       end
-      ... ≃ₚ ((simulate (caching_oracle spec) (oa) log) >>=
-        λ x, simulate' (caching_oracle spec) (ob x.1) (x.2)) : begin
 
-        simp only [simulate_bind],
+      ... ≃ₚ (simulate (caching_oracle spec) oa (init spec) >>= λ x,
+        simulate (caching_oracle spec) (ob x.1) x.2 >>= λ y,
+        simulate' (caching_oracle spec) (oc y.1) y.2) : by pairwise_dist_equiv
+
+      ... ≃ₚ (simulate (caching_oracle spec) oa (init spec) >>= λ x,
+        simulate' (caching_oracle spec) (ob x.1) (init spec) >>= λ y,
+        simulate' (caching_oracle spec) (oc y) (init spec)) : begin
+
+        pairwise_dist_equiv,
+        specialize hob x.1 oc x.2 sorry,
+
+        sorry,
       end
-      ... ≃ₚ simulate' (caching_oracle spec) (oa >>= ob) log : by pairwise_dist_equiv
+
+      ... ≃ₚ ((simulate' (caching_oracle spec) oa (init spec) >>= λ x,
+        simulate' (caching_oracle spec) (ob x) (init spec)) >>= λ y,
+        simulate' (caching_oracle spec) (oc y) (init spec)) : sorry --by pairwise_dist_equiv
+
+      ... ≃ₚ ((simulate (caching_oracle spec) oa (init spec) >>= λ x,
+        simulate' (caching_oracle spec) (ob x.1) (x.2)) >>= λ y,
+        simulate' (caching_oracle spec) (oc y) (init spec)) : by pairwise_dist_equiv [hoa]
+
+      ... ≃ₚ  simulate' (caching_oracle spec) (oa >>= ob) (init spec) >>= λ x,
+      simulate' (caching_oracle spec) (oc x) (init spec) : by pairwise_dist_equiv
+
+    -- rw [simulate_bind, simulate'_bind],
+    -- specialize hoa ob,
+    -- refine trans _ (bind_dist_equiv_bind_of_dist_equiv_left _ _ _ hoa).symm,
   },
   {
-    sorry
+    -- intro z,
+    simp [dist_equiv.ext_iff],
+    intros z,
+
+    simp[prob_output_bind_eq_tsum,
+      prob_output_return, tsum_prod', ← ennreal.tsum_mul_right],
+
+    refine tsum_congr (λ u, _),
+    refine tsum_congr (λ log', _),
+    refine tsum_congr (λ u', _),
+    split_ifs with h,
+    {
+      simp only [h.2, h.1],
+    }
   }
+
 end
+
+-- theorem most_general'' (oa : oracle_comp spec α) (oc : α → oracle_comp spec γ)
+--   (f : query_log spec → query_log spec) (hf : ∀ log', f log' <++ log') :
+--   do {x ← simulate (caching_oracle spec) oa (init spec),
+--     simulate' (caching_oracle spec) (oc x.1) (f x.2)} ≃ₚ
+--     do {x ← simulate' (caching_oracle spec) oa (init spec),
+--       simulate' (caching_oracle spec) (oc x) (init spec)} :=
+-- begin
+--   induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i' t generalizing γ oc,
+--   { simp [simulate_return],
+
+--     refine trans (return_bind_dist_equiv _ _) _,
+
+--     refine trans (return_bind_dist_equiv a _).symm _,
+--     refine bind_dist_equiv_bind_of_dist_equiv _ _,
+--     pairwise_dist_equiv,
+--     sorry },
+--   {
+--     simp only [] at hoa hob,
+--     rw [simulate_bind],
+--     specialize hoa ob,
+--   }
+
+-- end
+
+-- theorem most_general' (oa : oracle_comp spec α) (oa' : oracle_comp spec γ)
+--   (f : query_log spec → query_log spec) (hf : ∀ log', f log' <++ log') :
+--   do {x ← simulate (caching_oracle spec) oa (init spec),
+--     simulate' (caching_oracle spec) oa' (f x.2)} ≃ₚ
+--       simulate' (caching_oracle spec) oa' (init spec) :=
+-- begin
+--   induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i' t generalizing oa',
+--   { simp [simulate_return],
+
+--     refine trans (return_bind_dist_equiv _ _) _,
+--     refine dist_equiv_of_eq _,
+--     refine congr_arg (simulate' (caching_oracle _) oa') _,
+--     refine sublog_init_iff.1 (hf (init _)),
+--      },
+--   {
+--     simp only [] at hoa hob,
+--     rw [simulate_bind],
+--   }
+
+-- end
+
+-- theorem most_general (oa : oracle_comp spec α) (log : query_log spec)
+--   (f : query_log spec → query_log spec) (hf : ∀ log, f log <++ log)
+--   (hlog : ∀ log' ∈ (prod.snd <$> simulate (caching_oracle spec) oa log).support, log <++ f log') :
+--   do {x ← simulate (caching_oracle spec) oa log,
+--     simulate' (caching_oracle spec) oa (f x.2)} ≃ₚ
+--       simulate' (caching_oracle spec) oa log :=
+-- begin
+--   induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i' t generalizing log,
+--   { refine trans (return_bind_dist_equiv _ _) (fst_map_return_dist_equiv_fst_map_return _ _ _) },
+--   {
+--     simp at hoa hob,
+--     specialize hoa log,
+--     calc ((simulate (caching_oracle spec) (oa >>= ob) log) >>=
+--         λ x, simulate' (caching_oracle spec) (oa >>= ob) (f x.2)) ≃ₚ
+--         ((simulate (caching_oracle spec) (oa >>= ob) log) >>=
+--           λ x, simulate' (caching_oracle spec) (oa >>= ob) (f x.2)) :
+--       begin
+--         refl,
+--       end
+--       ... ≃ₚ ((simulate (caching_oracle spec) (oa) log) >>=
+--         λ x, simulate' (caching_oracle spec) (ob x.1) (x.2)) : begin
+
+--         simp only [simulate_bind],
+--       end
+--       ... ≃ₚ simulate' (caching_oracle spec) (oa >>= ob) log : by pairwise_dist_equiv
+--   },
+--   {
+--     sorry
+--   }
+-- end
 
 -- theorem most_general_with_init (oa : oracle_comp spec α)
 --   (f : query_log spec → query_log spec) (hf : ∀ log, f log <++ log) :
