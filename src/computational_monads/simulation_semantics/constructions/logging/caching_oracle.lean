@@ -37,15 +37,18 @@ end
 
 /-- Oracle for logging previous queries, and returning the same value for matching inputs -/
 def caching_oracle (spec : oracle_spec) : sim_oracle spec spec (query_log spec) :=
-{ default_state := query_log.init spec,
+{ default_state := init spec,
   o := λ i ⟨t, log⟩, match log.lookup i t with
   | (some u) := return (u, log) -- Return the cached value if it already exists
   | none := do {u ← query i t, return (u, log.log_query i t u)}
   end }
 
+-- TODO: Play with notation like this for convenience
+@[inline, reducible, simp] def cachingₛₒ {spec : oracle_spec} := caching_oracle spec
+
 namespace caching_oracle
 
-variables (oa oa' : oracle_comp spec α) (i : spec.ι) (t : spec.domain i) (u : spec.range i)
+variables (oa oa' : oracle_comp spec α) (i : spec.ι) (t t' : spec.domain i) (u : spec.range i)
   (log : query_log spec) (x : spec.range i × query_log spec) --TODO: naming → cache
 
 lemma apply_eq : (caching_oracle spec) i (t, log) = option.rec_on (log.lookup i t)
@@ -64,7 +67,7 @@ lemma apply_eq_of_not_queried (hlog : log.not_queried i t) :
   (caching_oracle spec) i (t, log) = (query i t >>= λ u, return (u, log.log_query i t u)) :=
 by rw [apply_eq, (query_log.lookup_eq_none_iff_not_queried _ _ _).2 hlog]
 
-lemma apply_log_query_self :
+@[simp] lemma apply_log_query_self :
   (caching_oracle spec) i (t, log.log_query i t u) = return (u, log.log_query i t u) :=
 begin
   refine apply_eq_of_lookup_eq_some i t _ u _,
@@ -73,12 +76,32 @@ end
 
 @[simp] lemma apply_default_state :
   (caching_oracle spec) i (t, (caching_oracle spec).default_state) =
-    (query i t >>= λ u, return (u, (query_log.init _).log_query i t u)) :=
+    (query i t >>= λ u, return (u, (init _).log_query i t u)) :=
 apply_eq_of_not_queried i _ _ (query_log.not_queried_init _ _)
 
-@[simp] lemma apply_init : (caching_oracle spec) i (t, query_log.init spec) =
-  (query i t >>= λ u, return (u, (query_log.init _).log_query i t u)) :=
+@[simp] lemma apply_init : (caching_oracle spec) i (t, init spec) =
+  (query i t >>= λ u, return (u, (init _).log_query i t u)) :=
 apply_eq_of_not_queried i _ _ (query_log.not_queried_init _ _)
+
+-- TODO: log query notation (maybe induction)
+lemma apply_log_query_init :
+  (caching_oracle spec) i (t', (init spec).log_query i t u) =
+    if t = t' then return (u, (init spec).log_query i t u) else
+      query i t' >>= λ u', return (u', ((init spec).log_query i t u).log_query i t' u') :=
+begin
+  split_ifs with ht,
+  { rw [caching_oracle.apply_eq, lookup_log_query_init, if_pos ht] },
+  { rw [caching_oracle.apply_eq, lookup_log_query_init, if_neg ht] }
+end
+
+lemma apply_log_query_init_of_index_ne {i i'} (t : spec.domain i) (t' : spec.domain i') (u')
+  (hi : i' ≠ i) : (caching_oracle spec) i (t, (init spec).log_query i' t' u') =
+    query i t >>= λ u, return (u, ((init spec).log_query i' t' u').log_query i t u) :=
+begin
+  refine apply_eq_of_not_queried _ _ _ _,
+  refine (not_queried_log_query_of_index_ne _ hi _ _ _).2 _,
+  refine (not_queried_init _ _),
+end
 
 section support
 
@@ -235,13 +258,89 @@ end
 
 open_locale classical
 
-theorem most_general''_wo_f (oa : oracle_comp spec α) (oc : α → oracle_comp spec γ)
+@[simp_dist_equiv] lemma fst_map_apply_bind_apply_dist_equiv
+  (i : spec.ι) (t : spec.domain i) (i' : spec.ι) (t' : spec.domain i') :
+  (do {x ← caching_oracle spec i' (t', init spec),
+    prod.fst <$> caching_oracle spec i (t, prod.snd x)}) ≃ₚ
+      prod.fst <$> caching_oracle spec i (t, init spec) :=
+begin
+    calc ((caching_oracle spec) i' (t', init spec) >>= λ x,
+          (prod.fst <$> (caching_oracle spec) i (t, x.2))) ≃ₚ
+      (query i' t' >>= λ u', return (u', (init spec).log_query i' t' u')) >>= λ x,
+        (prod.fst <$> (caching_oracle spec) i (t, x.2)) : rfl
+
+      ... ≃ₚ (prod.snd <$> (query i' t' >>= λ u', return (u', (init spec).log_query i' t' u'))) >>= λ log',
+        (prod.fst <$> (caching_oracle spec) i (t, log')) : by pairwise_dist_equiv
+
+      ... ≃ₚ (query i' t' >>= λ u', return ((init spec).log_query i' t' u')) >>= λ log',
+        (prod.fst <$> (caching_oracle spec i (t, log'))) : by pairwise_dist_equiv
+
+      ... ≃ₚ query i' t' >>= λ u', (prod.fst <$> (caching_oracle spec i (t, (init spec).log_query i' t' u'))) :
+        by pairwise_dist_equiv
+      ... ≃ₚ query i t : begin
+        by_cases hi : i' = i,
+        { induction hi,
+          by_cases ht : t' = t,
+          { simp only [ht, apply_log_query_self],
+            exact trans (by pairwise_dist_equiv) (bind_return_id_dist_equiv _) },
+          { simp [caching_oracle.apply_log_query_init i' t' t, ht],
+            exact trans (bind_dist_equiv_right _ _ default (λ x hx, by push_map_dist_equiv))
+              ((fst_map_bind_return_dist_equiv _ _ _).trans (map_id_dist_equiv _)) }
+        },
+        {
+
+          simp_rw [caching_oracle.apply_log_query_init_of_index_ne t t' _ hi],
+          refine (bind_dist_equiv_right _ _ default _).trans _,
+          intros x hx,
+          apply fst_map_bind_return_dist_equiv_fst_map_bind_return,
+          pairwise_dist_equiv,
+        }
+      end
+      ... ≃ₚ id <$> query i t : by pairwise_dist_equiv
+      ... ≃ₚ prod.fst <$> (query i t >>= λ u, return (u, (init spec).log_query i t u)) :
+        by pairwise_dist_equiv
+      ... ≃ₚ prod.fst <$> (caching_oracle spec) i (t, init spec) : rfl
+end
+
+/-- Simulating a computation with a caching oracle to get a final cache,
+throwing out some cached values, and then querying the resulting cache on a value
+is distributionally equivalent to a query on its own -/
+theorem simulate_bind_apply_dist_equiv_apply (oa : oracle_comp spec α)
+  (i : spec.ι) (t : spec.domain i) (log : query_log spec)
+  (h : ∃ (oa' : oracle_comp spec α), log ∈ (prod.snd <$> simulate (caching_oracle spec) oa (init spec)).support)
+  (f : query_log spec → query_log spec) (hf : ∀ log i, f log i <+ log i)
+   :
+  do {x ← simulate (caching_oracle spec) oa (init spec), prod.fst <$> (caching_oracle spec) i (t, x.2)} ≃ₚ
+    prod.fst <$> (caching_oracle spec) i (t, init spec) :=
+begin
+  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i' t',
+  { apply return_bind_dist_equiv },
+  {
+    sorry,
+  },
+  {
+
+    exact (fst_map_apply_bind_apply_dist_equiv i t i' t'),
+    -- refl,
+
+
+
+    -- simp_rw [simulate_query, caching_oracle.apply_init],
+    -- simp [dist_equiv.ext_iff, prob_output_bind_eq_tsum,
+    --   prob_output_simulate_return, prob_output_map_eq_tsum],
+  }
+
+end
+
+
+theorem most_general''_wo_f_query (oa : oracle_comp spec α) (oc : α → oracle_comp spec γ)
+  (i : spec.ι) (v : spec.domain i)
   (log : query_log spec) (h : ∃ (oa' : oracle_comp spec α),
     log ∈ (prod.snd <$> simulate (caching_oracle spec) oa (init spec)).support) :
   do {x ← simulate (caching_oracle spec) oa (init spec),
-      simulate' (caching_oracle spec) (oc x.1) (x.2)} ≃ₚ
+      simulate' (caching_oracle spec) (query i v) (x.2)} ≃ₚ
     do {x ← simulate' (caching_oracle spec) oa (init spec),
-      simulate' (caching_oracle spec) (oc x) (init spec)} :=
+      simulate' (caching_oracle spec) (query i v) (init spec)} :=
 begin
   induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i' t generalizing γ oc log,
   { simp [simulate_return],
@@ -256,41 +355,42 @@ begin
     simp only [] at hoa hob,
 
     specialize hoa ob (init spec) sorry,
+    sorry,
 
-    calc (simulate (caching_oracle spec) (oa >>= ob) (init spec) >>= λ x,
-      simulate' (caching_oracle spec) (oc x.1) (x.2)) ≃ₚ
+    -- calc (simulate (caching_oracle spec) (oa >>= ob) (init spec) >>= λ x,
+    --   simulate' (caching_oracle spec) (oc x.1) (x.2)) ≃ₚ
 
-      ((simulate (caching_oracle spec) oa (init spec) >>= λ x,
-        simulate (caching_oracle spec) (ob x.1) x.2) >>= λ y,
-        simulate' (caching_oracle spec) (oc y.1) y.2) :
-      begin
-        rw [simulate_bind],
-      end
+    --   ((simulate (caching_oracle spec) oa (init spec) >>= λ x,
+    --     simulate (caching_oracle spec) (ob x.1) x.2) >>= λ y,
+    --     simulate' (caching_oracle spec) (oc y.1) y.2) :
+    --   begin
+    --     rw [simulate_bind],
+    --   end
 
-      ... ≃ₚ (simulate (caching_oracle spec) oa (init spec) >>= λ x,
-        simulate (caching_oracle spec) (ob x.1) x.2 >>= λ y,
-        simulate' (caching_oracle spec) (oc y.1) y.2) : by pairwise_dist_equiv
+    --   ... ≃ₚ (simulate (caching_oracle spec) oa (init spec) >>= λ x,
+    --     simulate (caching_oracle spec) (ob x.1) x.2 >>= λ y,
+    --     simulate' (caching_oracle spec) (oc y.1) y.2) : by pairwise_dist_equiv
 
-      ... ≃ₚ (simulate (caching_oracle spec) oa (init spec) >>= λ x,
-        simulate' (caching_oracle spec) (ob x.1) (init spec) >>= λ y,
-        simulate' (caching_oracle spec) (oc y) (init spec)) : begin
+    --   ... ≃ₚ (simulate (caching_oracle spec) oa (init spec) >>= λ x,
+    --     simulate' (caching_oracle spec) (ob x.1) (init spec) >>= λ y,
+    --     simulate' (caching_oracle spec) (oc y) (init spec)) : begin
 
-        pairwise_dist_equiv,
-        specialize hob x.1 oc x.2 sorry,
+    --     pairwise_dist_equiv,
+    --     specialize hob x.1 oc x.2 sorry,
 
-        sorry,
-      end
+    --     sorry,
+    --   end
 
-      ... ≃ₚ ((simulate' (caching_oracle spec) oa (init spec) >>= λ x,
-        simulate' (caching_oracle spec) (ob x) (init spec)) >>= λ y,
-        simulate' (caching_oracle spec) (oc y) (init spec)) : sorry --by pairwise_dist_equiv
+    --   ... ≃ₚ ((simulate' (caching_oracle spec) oa (init spec) >>= λ x,
+    --     simulate' (caching_oracle spec) (ob x) (init spec)) >>= λ y,
+    --     simulate' (caching_oracle spec) (oc y) (init spec)) : sorry --by pairwise_dist_equiv
 
-      ... ≃ₚ ((simulate (caching_oracle spec) oa (init spec) >>= λ x,
-        simulate' (caching_oracle spec) (ob x.1) (x.2)) >>= λ y,
-        simulate' (caching_oracle spec) (oc y) (init spec)) : by pairwise_dist_equiv [hoa]
+    --   ... ≃ₚ ((simulate (caching_oracle spec) oa (init spec) >>= λ x,
+    --     simulate' (caching_oracle spec) (ob x.1) (x.2)) >>= λ y,
+    --     simulate' (caching_oracle spec) (oc y) (init spec)) : by pairwise_dist_equiv [hoa]
 
-      ... ≃ₚ  simulate' (caching_oracle spec) (oa >>= ob) (init spec) >>= λ x,
-      simulate' (caching_oracle spec) (oc x) (init spec) : by pairwise_dist_equiv
+    --   ... ≃ₚ  simulate' (caching_oracle spec) (oa >>= ob) (init spec) >>= λ x,
+    --   simulate' (caching_oracle spec) (oc x) (init spec) : by pairwise_dist_equiv
 
     -- rw [simulate_bind, simulate'_bind],
     -- specialize hoa ob,
@@ -302,172 +402,82 @@ begin
     intros z,
 
     simp[prob_output_bind_eq_tsum,
-      prob_output_return, tsum_prod', ← ennreal.tsum_mul_right],
+      prob_output_return, tsum_prod', ← ennreal.tsum_mul_right,
+        caching_oracle.apply_init],
 
-    refine tsum_congr (λ u, _),
-    refine tsum_congr (λ log', _),
-    refine tsum_congr (λ u', _),
-    split_ifs with h,
-    {
-      simp only [h.2, h.1],
-    }
+    sorry,
+
+
+    -- refine tsum_congr (λ u, _),
+    -- refine tsum_congr (λ log', _),
+    -- refine tsum_congr (λ u', _),
+    -- split_ifs with h,
+    -- {
+    --   simp only [h.2, h.1],
+    -- }
   }
 
 end
 
--- theorem most_general'' (oa : oracle_comp spec α) (oc : α → oracle_comp spec γ)
---   (f : query_log spec → query_log spec) (hf : ∀ log', f log' <++ log') :
---   do {x ← simulate (caching_oracle spec) oa (init spec),
---     simulate' (caching_oracle spec) (oc x.1) (f x.2)} ≃ₚ
---     do {x ← simulate' (caching_oracle spec) oa (init spec),
---       simulate' (caching_oracle spec) (oc x) (init spec)} :=
--- begin
---   induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i' t generalizing γ oc,
---   { simp [simulate_return],
-
---     refine trans (return_bind_dist_equiv _ _) _,
-
---     refine trans (return_bind_dist_equiv a _).symm _,
---     refine bind_dist_equiv_bind_of_dist_equiv _ _,
---     pairwise_dist_equiv,
---     sorry },
---   {
---     simp only [] at hoa hob,
---     rw [simulate_bind],
---     specialize hoa ob,
---   }
-
--- end
-
--- theorem most_general' (oa : oracle_comp spec α) (oa' : oracle_comp spec γ)
---   (f : query_log spec → query_log spec) (hf : ∀ log', f log' <++ log') :
---   do {x ← simulate (caching_oracle spec) oa (init spec),
---     simulate' (caching_oracle spec) oa' (f x.2)} ≃ₚ
---       simulate' (caching_oracle spec) oa' (init spec) :=
--- begin
---   induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i' t generalizing oa',
---   { simp [simulate_return],
-
---     refine trans (return_bind_dist_equiv _ _) _,
---     refine dist_equiv_of_eq _,
---     refine congr_arg (simulate' (caching_oracle _) oa') _,
---     refine sublog_init_iff.1 (hf (init _)),
---      },
---   {
---     simp only [] at hoa hob,
---     rw [simulate_bind],
---   }
-
--- end
-
--- theorem most_general (oa : oracle_comp spec α) (log : query_log spec)
---   (f : query_log spec → query_log spec) (hf : ∀ log, f log <++ log)
---   (hlog : ∀ log' ∈ (prod.snd <$> simulate (caching_oracle spec) oa log).support, log <++ f log') :
---   do {x ← simulate (caching_oracle spec) oa log,
---     simulate' (caching_oracle spec) oa (f x.2)} ≃ₚ
---       simulate' (caching_oracle spec) oa log :=
--- begin
---   induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i' t generalizing log,
---   { refine trans (return_bind_dist_equiv _ _) (fst_map_return_dist_equiv_fst_map_return _ _ _) },
---   {
---     simp at hoa hob,
---     specialize hoa log,
---     calc ((simulate (caching_oracle spec) (oa >>= ob) log) >>=
---         λ x, simulate' (caching_oracle spec) (oa >>= ob) (f x.2)) ≃ₚ
---         ((simulate (caching_oracle spec) (oa >>= ob) log) >>=
---           λ x, simulate' (caching_oracle spec) (oa >>= ob) (f x.2)) :
---       begin
---         refl,
---       end
---       ... ≃ₚ ((simulate (caching_oracle spec) (oa) log) >>=
---         λ x, simulate' (caching_oracle spec) (ob x.1) (x.2)) : begin
-
---         simp only [simulate_bind],
---       end
---       ... ≃ₚ simulate' (caching_oracle spec) (oa >>= ob) log : by pairwise_dist_equiv
---   },
---   {
---     sorry
---   }
--- end
-
--- theorem most_general_with_init (oa : oracle_comp spec α)
---   (f : query_log spec → query_log spec) (hf : ∀ log, f log <++ log) :
---   do {x ← simulate (caching_oracle spec) oa (init spec),
---     simulate (caching_oracle spec) oa (f x.2)} ≃ₚ
---       simulate (caching_oracle spec) oa (init spec) :=
--- begin
---   induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i' t,
---   {
---     simp only [simulate_return],
---     refine bind_dist_equiv_left _ _ _,
---     intros x hx,
---     simp at hx,
---     simp [hx, simulate_return, ← sublog_init_iff, hf],
---   },
---   {
---     simp only [] at hoa hob,
---   }
--- end
 
 section drop_at_index
 
-/-- Simulating a computation with a caching oracle to get a final cache,
-throwing out some cached values, and then simulating again with the partial cache
-gives the same distribution as a single execution -/
-theorem simulate_resimulate_dist_equiv_simulate (oa : oracle_comp spec α) (i : spec.ι) (n : ℕ) :
-  do {x ← default_simulate (caching_oracle spec) oa,
-    simulate (caching_oracle spec) oa (query_log.drop_at_index x.2 i n)} ≃ₚ
-      default_simulate (caching_oracle spec) oa :=
-begin
-  -- refine bind_dist_equiv_left _ _ _,
-  -- intros x hx,
-  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i' t,
-  {
+--/-- Simulating a computation with a caching oracle to get a final cache,
+--throwing out some cached values, and then simulating again with the partial cache
+-- gives the same distribution as a single execution -/
+-- theorem simulate_resimulate_dist_equiv_simulate (oa : oracle_comp spec α) (i : spec.ι) (n : ℕ) :
+--   do {x ← default_simulate (caching_oracle spec) oa,
+--     simulate (caching_oracle spec) oa (query_log.drop_at_index x.2 i n)} ≃ₚ
+--       default_simulate (caching_oracle spec) oa :=
+-- begin
+--   -- refine bind_dist_equiv_left _ _ _,
+--   -- intros x hx,
+--   induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i' t,
+--   {
 
-    refine bind_dist_equiv_left _ _ _,
-    intros x hx,
-    simp at hx,
-    simp [hx, simulate_return],
-    refine query_log.drop_at_index_init _ _,
-  },
-  {
-    show _ ≃ₚ simulate (caching_oracle spec) (oa >>= ob) (init spec),
-    rw [simulate_bind],
-    refine trans _ (bind_dist_equiv_bind_of_dist_equiv_left _ _ _ hoa),
-    sorry,
-  },
-  {
+--     refine bind_dist_equiv_left _ _ _,
+--     intros x hx,
+--     simp at hx,
+--     simp [hx, simulate_return],
+--     refine query_log.drop_at_index_init _ _,
+--   },
+--   {
+--     show _ ≃ₚ simulate (caching_oracle spec) (oa >>= ob) (init spec),
+--     rw [simulate_bind],
+--     refine trans _ (bind_dist_equiv_bind_of_dist_equiv_left _ _ _ hoa),
+--     sorry,
+--   },
+--   {
 
-    simp only [simulate_query, default_simulate],
+--     simp only [simulate_query, default_simulate],
 
-    simp only [apply_default_state],
+--     simp only [apply_default_state],
 
-    refine trans (bind_map_dist_equiv _ _ _) _,
+--     refine trans (bind_map_dist_equiv _ _ _) _,
 
-    show (query i' t >>= (λ u, (caching_oracle spec) i' (t, ((query_log.init spec).log_query i' t u).drop_at_index i n))) ≃ₚ
-      query i' t >>= λ u, return (u, (query_log.init spec).log_query i' t u),
+--     show (query i' t >>= (λ u, (caching_oracle spec) i' (t, ((init spec).log_query i' t u).drop_at_index i n))) ≃ₚ
+--       query i' t >>= λ u, return (u, (init spec).log_query i' t u),
 
-    by_cases h : i' ≠ i ∨ n = 0,
-    { pairwise_dist_equiv,
-      cases h with hi hn,
-      { simp only [query_log.drop_at_index_log_query_of_ne _ _ _ _ hi,
-          query_log.drop_at_index_init, apply_log_query_self] },
-      { simp only [hn, drop_at_index_zero, apply_log_query_self] } },
-    { rw [not_or_distrib, not_not] at h,
-      calc (query i' t >>= (λ u, (caching_oracle spec) i'
-            (t, ((query_log.init spec).log_query i' t u).drop_at_index i n)))
-          ≃ₚ (query i' t >>= (λ u, (caching_oracle spec) i' (t, query_log.init _))) : begin
-            pairwise_dist_equiv,
-            refine congr_arg (eval_dist) _,
-            refine congr_arg (λ x, (caching_oracle spec) i' x) _,
-            refine prod.eq_iff_fst_eq_snd_eq.2 ⟨rfl, _⟩,
-            rw [← h.1, drop_at_index_log_query_init_eq_init _ _ _ h.2],
-          end
-          ... ≃ₚ (caching_oracle spec) i' (t, query_log.init _) : by pairwise_dist_equiv
-          ... ≃ₚ query i' t >>= λ u, return (u, (query_log.init spec).log_query i' t u) :
-            by rw [apply_init] } }
-end
+--     by_cases h : i' ≠ i ∨ n = 0,
+--     { pairwise_dist_equiv,
+--       cases h with hi hn,
+--       { simp only [query_log.drop_at_index_log_query_of_ne _ _ _ _ hi,
+--           query_log.drop_at_index_init, apply_log_query_self] },
+--       { simp only [hn, drop_at_index_zero, apply_log_query_self] } },
+--     { rw [not_or_distrib, not_not] at h,
+--       calc (query i' t >>= (λ u, (caching_oracle spec) i'
+--             (t, ((init spec).log_query i' t u).drop_at_index i n)))
+--           ≃ₚ (query i' t >>= (λ u, (caching_oracle spec) i' (t, init _))) : begin
+--             pairwise_dist_equiv,
+--             refine congr_arg (eval_dist) _,
+--             refine congr_arg (λ x, (caching_oracle spec) i' x) _,
+--             refine prod.eq_iff_fst_eq_snd_eq.2 ⟨rfl, _⟩,
+--             rw [← h.1, drop_at_index_log_query_init_eq_init _ _ _ h.2],
+--           end
+--           ... ≃ₚ (caching_oracle spec) i' (t, init _) : by pairwise_dist_equiv
+--           ... ≃ₚ query i' t >>= λ u, return (u, (init spec).log_query i' t u) :
+--             by rw [apply_init] } }
+-- end
 
 end drop_at_index
 
@@ -491,9 +501,9 @@ end
 /-- Specialized version of `support_simulate_fork_cache_some` when the initial state is empty.
 In this case we don't need to place any restrictions on the value of `n`-/
 lemma support_simulate_init_fork_cache_some (i : spec.ι) (n : ℕ) (x : α × query_log spec)
-  (hx : x ∈ (simulate (caching_oracle spec) oa' (query_log.init spec)).support) :
+  (hx : x ∈ (simulate (caching_oracle spec) oa' (init spec)).support) :
   (simulate (caching_oracle spec) oa (x.2.fork_cache i (some n))).support =
-    (simulate (caching_oracle spec) oa (query_log.init spec)).support :=
+    (simulate (caching_oracle spec) oa (init spec)).support :=
 begin
   sorry,
 end
@@ -501,7 +511,7 @@ end
 /-- Version of `support_simulate_fork_cache` for forking on `none` -/
 lemma support_simulate_fork_cache_none (i : spec.ι) (cache : query_log spec) :
   (simulate (caching_oracle spec) oa (cache.fork_cache i none)).support =
-    (simulate (caching_oracle spec) oa (query_log.init spec)).support :=
+    (simulate (caching_oracle spec) oa (init spec)).support :=
 by rw query_log.fork_cache_none
 
 end fork

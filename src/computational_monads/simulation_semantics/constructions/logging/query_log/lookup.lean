@@ -35,7 +35,7 @@ option.map_none'
 lemma lookup_log_query (i j : spec.ι)
   (t : spec.domain i) (t' : spec.domain j) (u : spec.range i) :
   (log.log_query i t u).lookup j t' = if hi : i = j
-    then (if hi.rec_on t = t' then hi.rec_on (some u) else log.lookup j t') else log.lookup j t' := 
+    then (if hi.rec_on t = t' then hi.rec_on (some u) else log.lookup j t') else log.lookup j t' :=
 begin
   split_ifs with hi ht,
   { induction hi, induction ht,
@@ -67,7 +67,7 @@ lemma lookup_log_query_same_input (i : spec.ι)
 trans (log.lookup_log_query_same_index i t t u) (if_pos rfl)
 
 lemma lookup_log_query_of_input_ne (i : spec.ι)
-  (t t' : spec.domain i) (ht : t ≠ t') (u : spec.range i) :
+  {t t' : spec.domain i} (ht : t ≠ t') (u : spec.range i) :
   (log.log_query i t u).lookup i t' = log.lookup i t' :=
 trans (log.lookup_log_query_same_index i t t' u) (if_neg ht)
 
@@ -85,6 +85,10 @@ by rw [← lookup_eq_none_iff_not_queried, ← ne.def, option.ne_none_iff_exists
 lemma exists_eq_lookup_of_not_not_queried (i : spec.ι) (t : spec.domain i)
   (h : ¬ log.not_queried i t) : ∃ (u : spec.range i), some u = log.lookup i t :=
 (exists_eq_lookup_iff_not_not_queried log i t).2 h
+
+lemma lookup_log_query_init (i : spec.ι) (t t' : spec.domain i) (u : spec.range i) :
+  ((init spec).log_query i t u).lookup i t' = if t = t' then some u else none :=
+by split_ifs with h; simp [h]
 
 end lookup
 

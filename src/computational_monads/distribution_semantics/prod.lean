@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
 import computational_monads.distribution_semantics.map
+import computational_monads.distribution_semantics.tactics.push_map_dist_equiv
 
 /-!
 # Probabilities for Computations Over Prod Type
@@ -15,19 +16,18 @@ TODO: orginization/naming in this file has bad vibes.
 
 namespace oracle_comp
 
-open oracle_spec
+open oracle_spec prod
 open_locale big_operators ennreal
 
 variables {α β γ δ : Type} {spec spec' : oracle_spec}
 
 section eval_dist
 
-variables (oa : oracle_comp spec (α × β)) (oc : α × β → oracle_comp spec γ)
 
 section fst_snd_map_return_dist_equiv
 
 @[simp, simp_dist_equiv] lemma fst_map_return_dist_equiv (x : α) (y : β) :
-  prod.fst <$> (return' !spec! (x, y)) ≃ₚ return' !spec'! x :=
+  fst <$> (return' !spec! (x, y)) ≃ₚ return' !spec'! x :=
 by simp [dist_equiv.ext_iff, prob_output_return_eq_indicator]
 
 @[simp, simp_dist_equiv] lemma fst_map_return_dist_equiv' (x : α) (y : β) (f : α → γ) :
@@ -35,7 +35,7 @@ by simp [dist_equiv.ext_iff, prob_output_return_eq_indicator]
 by simp [dist_equiv.ext_iff, prob_output_return_eq_indicator]
 
 @[simp, simp_dist_equiv] lemma snd_map_return_dist_equiv (x : α) (y : β) :
-  prod.snd <$> (return' !spec! (x, y)) ≃ₚ return' !spec'! y :=
+  snd <$> (return' !spec! (x, y)) ≃ₚ return' !spec'! y :=
 by simp [dist_equiv.ext_iff, prob_output_return_eq_indicator]
 
 @[simp, simp_dist_equiv] lemma snd_map_return_dist_equiv' (x : α) (y : β) (f : β → γ) :
@@ -43,14 +43,54 @@ by simp [dist_equiv.ext_iff, prob_output_return_eq_indicator]
 by simp [dist_equiv.ext_iff, prob_output_return_eq_indicator]
 
 @[simp, simp_dist_equiv] lemma fst_map_return_dist_equiv_fst_map_return (x : α) (y y' : β) :
-  prod.fst <$> (return' !spec! (x, y)) ≃ₚ prod.fst <$> (return' !spec'! (x, y')) :=
+  fst <$> (return' !spec! (x, y)) ≃ₚ fst <$> (return' !spec'! (x, y')) :=
 by simp [dist_equiv.ext_iff, prob_output_return_eq_indicator]
 
 @[simp, simp_dist_equiv] lemma snd_map_return_dist_equiv_snd_map_return (x x' : α) (y : β) :
-  prod.snd <$> (return' !spec! (x, y)) ≃ₚ prod.snd <$> (return' !spec'! (x', y)) :=
+  snd <$> (return' !spec! (x, y)) ≃ₚ snd <$> (return' !spec'! (x', y)) :=
 by simp [dist_equiv.ext_iff, prob_output_return_eq_indicator]
 
 end fst_snd_map_return_dist_equiv
+
+section fst_snd_map_bind_return_dist_equiv
+
+variables (oa : oracle_comp spec α) (f : α → β) (g : α → γ) (h : α → δ)
+
+@[simp, simp_dist_equiv] lemma fst_map_bind_return_dist_equiv :
+  fst <$> (oa >>= λ x, return (f x, g x)) ≃ₚ f <$> oa :=
+by pairwise_dist_equiv
+
+@[simp, simp_dist_equiv] lemma fst_map_bind_return_id_dist_equiv :
+  fst <$> (oa >>= λ x, return (x, g x)) ≃ₚ oa :=
+trans (by push_map_dist_equiv) (map_id_dist_equiv oa)
+
+@[simp, simp_dist_equiv] lemma snd_map_bind_return_dist_equiv :
+  snd <$> (oa >>= λ x, return (f x, g x)) ≃ₚ g <$> oa :=
+by pairwise_dist_equiv
+
+@[simp, simp_dist_equiv] lemma snd_map_bind_return_id_dist_equiv :
+  snd <$> (oa >>= λ x, return (f x, x)) ≃ₚ oa :=
+trans (by push_map_dist_equiv) (map_id_dist_equiv oa)
+
+@[simp, simp_dist_equiv] lemma fst_map_bind_return_dist_equiv_fst_map_bind_return :
+  fst <$> (oa >>= λ x, return (f x, g x)) ≃ₚ fst <$> (oa >>= λ x, return (f x, h x)) :=
+by push_map_dist_equiv
+
+@[simp, simp_dist_equiv] lemma snd_map_bind_return_dist_equiv_snd_map_bind_return :
+  snd <$> (oa >>= λ x, return (f x, g x)) ≃ₚ snd <$> (oa >>= λ x, return (h x, g x)) :=
+by push_map_dist_equiv
+
+@[simp, simp_dist_equiv] lemma fst_map_bind_return_dist_equiv_snd_map_bind_return :
+  fst <$> (oa >>= λ x, return (f x, g x)) ≃ₚ snd <$> (oa >>= λ x, return (h x, f x)) :=
+by push_map_dist_equiv
+
+@[simp, simp_dist_equiv] lemma snd_map_bind_return_dist_equiv_fst_map_bind_return :
+  snd <$> (oa >>= λ x, return (f x, g x)) ≃ₚ fst <$> (oa >>= λ x, return (g x, h x)) :=
+by push_map_dist_equiv
+
+end fst_snd_map_bind_return_dist_equiv
+
+variables (oa : oracle_comp spec (α × β)) (oc : α × β → oracle_comp spec γ)
 
 /-- Binding on a computation of a `prod` type can be written as a double sum,
 instead of a sum of the product type. -/
@@ -64,24 +104,24 @@ lemma eval_dist_prod_bind' (c : γ) :
 by rw [prob_output_bind_eq_tsum, ennreal.tsum_prod', ennreal.tsum_comm]
 
 /-- The first output of a computation of a `prod` type is a sum over possible second outputs. -/
-lemma eval_dist_map_fst (a : α) : ⁅= a | prod.fst <$> oa⁆ = ∑' (b : β), ⁅= (a, b) | oa⁆ :=
+lemma eval_dist_map_fst (a : α) : ⁅= a | fst <$> oa⁆ = ∑' (b : β), ⁅= (a, b) | oa⁆ :=
 by simp only [prob_output.def, eval_dist_map, pmf.map_fst_apply]
 
 /-- The second output of a computation of a `prod` type is a sum over possible first outputs -/
-lemma eval_dist_map_snd (b : β) : ⁅= b | prod.snd <$> oa⁆ = ∑' (a : α), ⁅= (a, b) | oa⁆ :=
+lemma eval_dist_map_snd (b : β) : ⁅= b | snd <$> oa⁆ = ∑' (a : α), ⁅= (a, b) | oa⁆ :=
 by simp only [prob_output.def, eval_dist_map, pmf.map_snd_apply]
 
 lemma mem_support_map_prod_map_id_right_iff (f : α → γ) (z : γ × β) :
-  z ∈ (prod.map f id <$> oa).support ↔ ∃ x, (x, z.2) ∈ oa.support ∧ f x = z.1 :=
-by simp [prod.eq_iff_fst_eq_snd_eq]
+  z ∈ (map f id <$> oa).support ↔ ∃ x, (x, z.2) ∈ oa.support ∧ f x = z.1 :=
+by simp [eq_iff_fst_eq_snd_eq]
 
 lemma mem_support_map_prod_map_id_left_iff (f : β → γ) (z : α × γ) :
   z ∈ (prod.map id f <$> oa).support ↔ ∃ y, (z.1, y) ∈ oa.support ∧ f y = z.2 :=
 begin
   simp only [support_map, prod_map, id.def, set.mem_image, prod.exists],
-  refine ⟨λ h, let ⟨x, y, hy, hx⟩ := h in ⟨y, (prod.eq_iff_fst_eq_snd_eq.1 hx).1 ▸
-    ⟨hy, (prod.eq_iff_fst_eq_snd_eq.1 hx).2⟩⟩, λ h, let ⟨y, hy, hy'⟩ := h in
-      ⟨z.1, y, hy, prod.eq_iff_fst_eq_snd_eq.2 ⟨rfl, hy'⟩⟩⟩
+  refine ⟨λ h, let ⟨x, y, hy, hx⟩ := h in ⟨y, (eq_iff_fst_eq_snd_eq.1 hx).1 ▸
+    ⟨hy, (eq_iff_fst_eq_snd_eq.1 hx).2⟩⟩, λ h, let ⟨y, hy, hy'⟩ := h in
+      ⟨z.1, y, hy, eq_iff_fst_eq_snd_eq.2 ⟨rfl, hy'⟩⟩⟩
 end
 
 /-- If only the left output is changed in mapping the result of a computation,
@@ -91,9 +131,9 @@ lemma prob_output_map_prod_map_id_right [decidable_eq β] [decidable_eq γ] (f :
 begin
   rw [prob_output_map_eq_tsum, ennreal.tsum_prod'],
   refine tsum_congr (λ x, (tsum_eq_single z.2 _).trans _),
-  { exact λ y hy, if_neg $ by simp only [prod.eq_iff_fst_eq_snd_eq, hy.symm,
+  { exact λ y hy, if_neg $ by simp only [eq_iff_fst_eq_snd_eq, hy.symm,
       prod.map_mk, id.def, and_false, not_false_iff] },
-  { simpa only [prod.eq_iff_fst_eq_snd_eq, prod.map_mk, id.def, eq_self_iff_true, and_true] },
+  { simpa only [eq_iff_fst_eq_snd_eq, prod.map_mk, id.def, eq_self_iff_true, and_true] },
 end
 
 /-- If only the right output is changed in mapping the result of a computation,
@@ -103,9 +143,9 @@ lemma prob_output_map_prod_map_id_left [decidable_eq α] [decidable_eq γ] (f : 
 begin
   rw [prob_output_map_eq_tsum, ennreal.tsum_prod', ennreal.tsum_comm],
   refine tsum_congr (λ x, (tsum_eq_single z.1 _).trans _),
-  { exact λ y hy, if_neg $ by simp only [prod.eq_iff_fst_eq_snd_eq, hy.symm,
+  { exact λ y hy, if_neg $ by simp only [eq_iff_fst_eq_snd_eq, hy.symm,
       prod.map_mk, id.def, false_and, not_false_iff]},
-  { simpa only [prod.eq_iff_fst_eq_snd_eq, prod.map_mk, id.def, eq_self_iff_true, true_and] },
+  { simpa only [eq_iff_fst_eq_snd_eq, prod.map_mk, id.def, eq_self_iff_true, true_and] },
 end
 
 end eval_dist
@@ -139,7 +179,7 @@ lemma support_map_prod_mk : ((λ a, (f a, g a) : α → β × γ) <$> oa).suppor
 
 lemma mem_support_bind_prod_mk (x : β × γ) :
   x ∈ (oa >>= λ a, return (f a, g a)).support ↔ ∃ y ∈ oa.support, f y = x.1 ∧ g y = x.2 :=
-by simp only [support_bind_return, set.mem_image, exists_prop, prod.eq_iff_fst_eq_snd_eq]
+by simp only [support_bind_return, set.mem_image, exists_prop, eq_iff_fst_eq_snd_eq]
 
 lemma mem_support_map_prod_mk (x : β × γ) :
   x ∈ ((λ a, (f a, g a) : α → β × γ) <$> oa).support ↔ ∃ y ∈ oa.support, f y = x.1 ∧ g y = x.2 :=
@@ -161,12 +201,12 @@ calc x ∈ (oa >>= λ a, return (f a, a)).support
 
 lemma mem_support_bind_prod_mk_fst (x : β × γ) :
   x ∈ (oa >>= λ a, return (f a, c)).support ↔ x.1 ∈ f '' oa.support ∧ x.2 = c :=
-by simp_rw [support_bind_prod_mk, set.mem_image, prod.eq_iff_fst_eq_snd_eq,
+by simp_rw [support_bind_prod_mk, set.mem_image, eq_iff_fst_eq_snd_eq,
   ← exists_and_distrib_right, and_assoc, @eq_comm γ c]
 
 lemma mem_support_bind_prod_mk_snd (x : β × γ) :
   x ∈ (oa >>= λ a, return (b, g a)).support ↔ x.1 = b ∧ x.2 ∈ g '' oa.support :=
-by simp_rw [support_bind_prod_mk, set.mem_image, prod.eq_iff_fst_eq_snd_eq,
+by simp_rw [support_bind_prod_mk, set.mem_image, eq_iff_fst_eq_snd_eq,
   ← exists_and_distrib_left, @eq_comm β b, ← and_assoc, and_comm (x.1 = b)]
 
 end support
@@ -208,14 +248,14 @@ section bind_prod_mk_subsingleton
 section support
 
 @[simp] lemma support_bind_prod_mk_of_fst_subsingleton [subsingleton β] :
-  (oa >>= λ a, return (f a, g a)).support = prod.snd ⁻¹' (g '' oa.support) :=
+  (oa >>= λ a, return (f a, g a)).support = snd ⁻¹' (g '' oa.support) :=
 set.ext (λ x, by simp only [support_bind_prod_mk, set.mem_image, set.mem_preimage,
-  prod.eq_iff_fst_eq_snd_eq, eq_iff_true_of_subsingleton, true_and])
+  eq_iff_fst_eq_snd_eq, eq_iff_true_of_subsingleton, true_and])
 
 @[simp] lemma support_bind_prod_mk_of_snd_subsingleton [subsingleton γ] :
-  (oa >>= λ a, return (f a, g a)).support = prod.fst ⁻¹' (f '' oa.support) :=
+  (oa >>= λ a, return (f a, g a)).support = fst ⁻¹' (f '' oa.support) :=
 set.ext (λ x, by simp only [support_bind_prod_mk, set.mem_image, set.mem_preimage,
-  prod.eq_iff_fst_eq_snd_eq, eq_iff_true_of_subsingleton, and_true])
+  eq_iff_fst_eq_snd_eq, eq_iff_true_of_subsingleton, and_true])
 
 lemma mem_support_bind_prod_mk_fst_of_subsingleton [subsingleton γ] (x : β × γ) :
   x ∈ (oa >>= λ a, return (f a, g a)).support ↔ ∃ a ∈ oa.support, f a = x.1 :=
@@ -230,16 +270,16 @@ end support
 section fin_support
 
 @[simp] lemma fin_support_bind_prod_mk_fst_of_subsingleton [decidable_eq β] [subsingleton γ] :
-  (oa >>= λ a, return (f a, g a)).fin_support = (oa.fin_support.image f).preimage prod.fst
-    (λ y hy z hz h, prod.eq_iff_fst_eq_snd_eq.2 ⟨h, subsingleton.elim _ _⟩) :=
+  (oa >>= λ a, return (f a, g a)).fin_support = (oa.fin_support.image f).preimage fst
+    (λ y hy z hz h, eq_iff_fst_eq_snd_eq.2 ⟨h, subsingleton.elim _ _⟩) :=
 finset.ext (λ x, by simp only [fin_support_bind_prod_mk, finset.mem_preimage, finset.mem_image,
-  prod.eq_iff_fst_eq_snd_eq, eq_iff_true_of_subsingleton, and_true])
+  eq_iff_fst_eq_snd_eq, eq_iff_true_of_subsingleton, and_true])
 
 @[simp] lemma fin_support_bind_prod_mk_snd_of_subsingleton [decidable_eq γ] [subsingleton β] :
-  (oa >>= λ a, return (f a, g a)).fin_support = (oa.fin_support.image g).preimage prod.snd
-    (λ y hy z hz h, prod.eq_iff_fst_eq_snd_eq.2 ⟨subsingleton.elim _ _, h⟩) :=
+  (oa >>= λ a, return (f a, g a)).fin_support = (oa.fin_support.image g).preimage snd
+    (λ y hy z hz h, eq_iff_fst_eq_snd_eq.2 ⟨subsingleton.elim _ _, h⟩) :=
 finset.ext (λ x, by simp only [fin_support_bind_prod_mk, finset.mem_preimage, finset.mem_image,
-  prod.eq_iff_fst_eq_snd_eq, eq_iff_true_of_subsingleton, true_and])
+  eq_iff_fst_eq_snd_eq, eq_iff_true_of_subsingleton, true_and])
 
 lemma mem_fin_support_bind_prod_mk_fst_of_subsingleton [subsingleton γ] (x : β × γ) :
   x ∈ (oa >>= λ a, return (f a, g a)).support ↔ ∃ a ∈ oa.support, f a = x.1 :=
@@ -258,11 +298,11 @@ section map_fst_snd
 section support
 
 lemma mem_support_map_fst_iff (oab : oracle_comp spec (α × β)) (x : α) :
-  x ∈ (prod.fst <$> oab).support ↔ ∃ y, (x, y) ∈ oab.support :=
+  x ∈ (fst <$> oab).support ↔ ∃ y, (x, y) ∈ oab.support :=
 by simp only [support_map, set.mem_image, prod.exists, exists_and_distrib_right, exists_eq_right]
 
 lemma mem_support_map_snd_iff (oab : oracle_comp spec (α × β)) (y : β) :
-  y ∈ (prod.snd <$> oab).support ↔ ∃ x, (x, y) ∈ oab.support :=
+  y ∈ (snd <$> oab).support ↔ ∃ x, (x, y) ∈ oab.support :=
 by simp only [support_map, set.mem_image, prod.exists, exists_and_distrib_right, exists_eq_right]
 
 end support
