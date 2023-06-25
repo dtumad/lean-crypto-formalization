@@ -8,7 +8,10 @@ import computational_monads.oracle_spec
 /-!
 # Oracle Query Log
 
-This file efines a simple definition of a log for queries based on continuations.
+This file defines a log for tracking oracle queries, represented by a list of input output pairs.
+The lists are indexed by a dependent function of oracle indices, and modifications to a log
+are implemented using continuation passing of previous logs (viewed as functions).
+
 This definition is chosen over a list of sigma types to give simple type equalities.
 -/
 
