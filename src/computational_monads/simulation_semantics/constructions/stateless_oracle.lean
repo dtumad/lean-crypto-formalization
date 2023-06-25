@@ -124,7 +124,7 @@ by simp only [eval_dist_simulate_eq_map_eval_dist_simulate',
 
 lemma eval_dist_simulate_apply_eq_eval_dist_simulate'_apply (x : α × unit) :
   ⁅simulate ⟪o⟫ oa s⁆ x = ⁅simulate' ⟪o⟫ oa s⁆ x.1 :=
-eval_dist_simulate_apply_eq_eval_dist_simulate'_apply_of_subsingleton ⟪o⟫ oa s x
+prob_output_simulate_eq_prob_output_simulate'_of_subsingleton ⟪o⟫ oa s x
 
 end eval_dist
 
