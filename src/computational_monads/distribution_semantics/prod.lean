@@ -90,6 +90,18 @@ by push_map_dist_equiv
 
 end fst_snd_map_bind_return_dist_equiv
 
+section unused
+
+variables (oa : oracle_comp spec (α × β)) (oc : α → oracle_comp spec γ) (oc' : β → oracle_comp spec γ)
+
+@[simp, simp_dist_equiv] lemma bind_dist_equiv_fst_bind_of_unused :
+  oa >>= (λ x, oc x.1) ≃ₚ (fst <$> oa) >>= oc := by pairwise_dist_equiv
+
+@[simp, simp_dist_equiv] lemma bind_dist_equiv_snd_bind_of_unused :
+  oa >>= (λ x, oc' x.2) ≃ₚ (snd <$> oa) >>= oc' := by pairwise_dist_equiv
+
+end unused
+
 variables (oa : oracle_comp spec (α × β)) (oc : α × β → oracle_comp spec γ)
 
 /-- Binding on a computation of a `prod` type can be written as a double sum,

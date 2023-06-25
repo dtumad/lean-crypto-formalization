@@ -277,6 +277,16 @@ by pairwise_dist_equiv
 
 end map_id
 
+section map_const
+
+-- TODO: other lemmas and bind versions
+@[simp, simp_dist_equiv] lemma map_const_dist_equiv (b : β) :
+  (λ _, b) <$> oa ≃ₚ return' !spec'! b :=
+by rw [dist_equiv.def, eval_dist_map, ⁅oa⁆.map_const, eval_dist_return]
+
+
+end map_const
+
 section eq_single
 
 lemma prob_output_map_eq_single' (hx : f x = y) (h : ∀ x' ∈ oa.support, f x' = y → x' = x) :

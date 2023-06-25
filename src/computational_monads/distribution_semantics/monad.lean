@@ -23,6 +23,16 @@ lemma bind_bind_dist_equiv_assoc (oa : oracle_comp spec α) (ob : α → oracle_
   (oc : β → oracle_comp spec γ) : (oa >>= ob) >>= oc ≃ₚ oa >>= (λ x, ob x >>= oc) :=
 dist_equiv.ext (λ x, by simp only [prob_output.def, eval_dist_bind, pmf.bind_bind])
 
+-- TODO: implicit / explicit
+lemma bind_bind_dist_equiv_assoc_of_dist_equiv {oa oa' : oracle_comp spec α}
+  {ob ob' : α → oracle_comp spec β} {oc oc' : α → β → oracle_comp spec γ}
+  (h : oa >>= ob ≃ₚ oa' >>= ob') (h' : ∀ x y, oc x y ≃ₚ oc' x y) :
+  oa >>= (λ x, ob x >>= oc x) ≃ₚ oa' >>= (λ x, ob' x >>= oc' x) :=
+begin
+  sorry,
+end
+
+
 section return_bind
 
 variables (a : α) (ob : α → oracle_comp spec β) (y : β) (e' : set β)

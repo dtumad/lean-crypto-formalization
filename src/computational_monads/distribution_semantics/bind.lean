@@ -182,6 +182,7 @@ begin
       prob_output_eq_zero (ha.support_eq ▸ hx : x ∉ oa'.support)] }
 end
 
+-- TODO: implicit arguments??
 lemma bind_dist_equiv_bind_of_dist_equiv_left (oa : oracle_comp spec α) (oa' : oracle_comp spec α)
   (ob : α → oracle_comp spec β) (h : oa ≃ₚ oa') :
   (oa >>= ob) ≃ₚ (oa' >>= ob) :=
