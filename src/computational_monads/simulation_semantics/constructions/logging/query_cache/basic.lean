@@ -253,7 +253,17 @@ notation `[` i `,` t `↦` u `;` cache `]` := cache_query i t u cache
 lemma lookup_cache_query_same_index (t' : spec.domain i) :
   [i, t ↦ u; cache].lookup i t' = if t = t' then some u else cache.lookup i t' := by simp
 
+lemma lookup_cache_query_diff_index (i' : spec.ι) (t' : spec.domain i') (hi : i ≠ i') :
+  [i, t ↦ u; cache].lookup i' t' = cache.lookup i' t' := by simp [hi]
+
 lemma lookup_cache_query_same_input : [i, t ↦ u; cache].lookup i t = some u := by simp
+
+lemma lookup_cache_query_diff_input (t' : spec.domain i) (ht : t ≠ t') :
+  [i, t ↦ u; cache].lookup i t' = cache.lookup i t' := by simp [ht]
+
+lemma cache_query_monotone : monotone (cache_query i t u) :=
+λ cache cache' h i' t' u', by {simp only [lookup_cache_query],
+  split_ifs, exact id, exact h i' t' u', exact h i' t' u'}
 
 @[simp] lemma cache_query_ne_init : [i, t ↦ u; cache] ≠ ∅ :=
 ne_of_lookup_ne _ _ i t (by simp)
@@ -311,12 +321,9 @@ lemma eq_singleton_iff : cache = [i, t ↦ u] ↔ cache ≤ [i, t ↦ u] ∧ cac
 begin
   refine ⟨λ h, h.symm ▸ by simp, λ h, le_antisymm h.1 (λ i' t' u' h', _)⟩,
   obtain ⟨i'', t'', u'', h''⟩ := (ne_init_iff' _).1 h.2,
-  have := h.1 i'' t'' u'' h'',
-  rw [lookup_singleton_eq_some_iff] at this h',
-  obtain ⟨hi, ht, hu⟩ := this,
-  obtain ⟨hi', ht', hu'⟩ := h',
-  induction hi,
-  induction hi',
+  obtain ⟨hi, ht, hu⟩ := (lookup_singleton_eq_some_iff _ _ _ _ _ _).1 (h.1 i'' t'' u'' h''),
+  obtain ⟨hi', ht', hu'⟩ := (lookup_singleton_eq_some_iff _ _ _ _ _ _).1 h',
+  induction hi, induction hi',
   rwa [← ht', ← hu', ht, hu],
 end
 
@@ -331,14 +338,13 @@ begin
   { exact or.inr ⟨h', h⟩ }
 end
 
-lemma le_singleton_iff_forall : cache ≤ [i, t ↦ u] ↔
-  ∀ i' t', cache.is_cached i' t' → ∃ (h : i = i'), h.rec t = t' :=
-begin
-  refine ⟨λ h i' t' ht', _, λ h, _⟩,
-  {
-    have := is_cached_iff_exists_lookup_eq_some
-  }
-end
+lemma le_singleton_iff_forall : cache ≤ [i, t ↦ u] ↔ ∀ i' t', cache.is_cached i' t' →
+  ∃ (h : i = i'), h.rec t = t' ∧ cache.lookup i' t' = some (h.rec u)  :=
+⟨λ h i' t' ht', let ⟨u', hu'⟩ := (cache.is_cached_iff_exists_lookup_eq_some _ _).1 ht' in
+  let ⟨hi, ht, hu⟩ := (lookup_singleton_eq_some_iff _ _ _ _ _ _).1 (h i' t' u' hu') in
+    ⟨hi, ht, hu.symm ▸ hu'⟩, λ h i' t' u' hu', (lookup_singleton_eq_some_iff _ _ _ _ _ _).2
+      (let ⟨hi, ht, hu⟩ := h i' t' (is_cached_of_lookup_eq_some _ hu') in
+        ⟨hi, ht, option.some_inj.1 (hu.symm.trans hu')⟩)⟩
 
 @[simp] lemma lt_singleton_iff : cache < [i, t ↦ u] ↔ cache = ∅ :=
 begin
@@ -350,9 +356,8 @@ end
 @[simp] lemma singleton_le_iff : [i, t ↦ u] ≤ cache ↔ cache.lookup i t = some u :=
 begin
   refine ⟨λ h, h i t u (lookup_singleton_same_input i t u), λ h i' t' u' h', _⟩,
-  obtain ⟨hi, ht, hu⟩ := (lookup_singleton_eq_some_iff _ _ _ _ _ _).1 h',
-  induction hi,
-  refine ht ▸ hu ▸ h
+  obtain ⟨rfl, rfl, rfl⟩ := (lookup_singleton_eq_some_iff _ _ _ _ _ _).1 h',
+  exact h,
 end
 
 end singleton
@@ -370,16 +375,51 @@ variables (i : spec.ι) (t : spec.domain i) (u : spec.range i)
   (cache.drop_query i t).lookup i' t' = if h : i = i' then
     (if h.rec t = t' then none else cache.lookup i' t') else cache.lookup i' t' := rfl
 
-@[simp] lemma is_fresh_drop_query_iff (i' : spec.ι) (t' : spec.domain i') :
-  (cache.drop_query i t).is_fresh i' t' ↔ cache.is_fresh i' t' ∨ ∃ (h : i = i'), h.rec t = t' :=
-begin
-  sorry,
-end
+lemma lookup_drop_query_same_index (t' : spec.domain i) : (cache.drop_query i t).lookup i t' =
+  if t = t' then none else cache.lookup i t' := by simp
+
+lemma lookup_drop_query_diff_index (i' : spec.ι) (t' : spec.domain i') (hi : i ≠ i') :
+  (cache.drop_query i t).lookup i' t' = cache.lookup i' t' := by simp [hi]
+
+lemma lookup_drop_query_same_input : (cache.drop_query i t).lookup i t = none := by simp
+
+lemma lookup_drop_query_diff_input (t' : spec.domain i) (ht : t ≠ t'):
+  (cache.drop_query i t).lookup i t' = cache.lookup i t' := by simp [ht]
+
+lemma drop_query_monotone : monotone (drop_query i t) :=
+λ cache cache' h i' t' u', by {simp only [lookup_drop_query],
+  split_ifs, exact id, exact h i' t' u', exact h i' t' u'}
 
 lemma drop_query_of_is_fresh (h : cache.is_fresh i t) :
   cache.drop_query i t = cache :=
 begin
-  sorry,
+  refine query_cache.ext (λ i t, _),
+  simp [lookup_drop_query],
+  rintros rfl rfl,
+  exact h,
+end
+
+@[simp] lemma is_fresh_drop_query_iff (i' : spec.ι) (t' : spec.domain i') :
+  (cache.drop_query i t).is_fresh i' t' ↔ cache.is_fresh i' t' ∨ ∃ (h : i = i'), h.rec t = t' :=
+begin
+  refine ⟨λ h, _, λ h, (lookup_eq_none_iff_is_fresh _ _ _).1 (h.rec_on (λ h', _) _)⟩,
+  { by_cases hi : i = i',
+    { induction hi,
+      by_cases ht : t = t',
+      { exact or.inr ⟨rfl, ht⟩ },
+      { simp_rw [← lookup_eq_none_iff_is_fresh, lookup_drop_query_same_index, ht,
+          if_false, lookup_eq_none_iff_is_fresh] at h,
+        exact or.inl h } },
+    { refine or.inl _,
+      simpa [lookup_drop_query, hi, if_false] using ((lookup_eq_none_iff_is_fresh _ _ _).2 h) } },
+  { { by_cases hi : i = i',
+      { induction hi,
+        by_cases ht : t = t',
+        { simp [ht, lookup_drop_query_same_input _ _ _] },
+        { simpa [lookup_drop_query_diff_input _ _ _ _ ht] } },
+      { simpa [lookup_drop_query_diff_index _ _ _ _ _ hi] } } },
+  { rintro ⟨rfl, rfl⟩,
+    simp }
 end
 
 @[simp] lemma drop_query_init : drop_query i t ∅ = ∅ := by simp
@@ -388,38 +428,23 @@ end
   ∃ u, cache ≤ [i, t ↦ u] :=
 begin
   refine ⟨λ h, _, λ h, _⟩,
-  {
-    by_cases h' : cache.is_fresh i t,
+  { by_cases h' : cache.is_fresh i t,
     { rw [drop_query_of_is_fresh _ _ _ h'] at h,
       exact ⟨default, h.symm ▸ init_le'⟩ },
-    {
-      rw [← is_cached_iff_not_is_fresh, is_cached_iff_exists_lookup_eq_some] at h',
+    { rw [← is_cached_iff_not_is_fresh, is_cached_iff_exists_lookup_eq_some] at h',
       obtain ⟨u, hu⟩ := h',
-      refine ⟨u, _⟩,
-      rw [eq_init_iff] at h,
-      intros i' t' u' hu',
-      specialize h i' t',
-      rw [is_fresh_drop_query_iff, ← lookup_eq_none_iff_is_fresh] at h,
-      refine h.rec_on (λ h', (option.some_ne_none u' (hu'.symm.trans h')).elim) _,
+      refine ⟨u, λ i' t' u' hu', _⟩,
+      have := ((eq_init_iff _).1 h) i' t',
+      rw [is_fresh_drop_query_iff, ← lookup_eq_none_iff_is_fresh] at this,
+      refine this.rec_on (λ h', (option.some_ne_none u' (hu'.symm.trans h')).elim) _,
       rintro ⟨rfl, rfl⟩,
-      have := hu'.symm.trans hu,
-      rw [option.some_inj] at this,
-      refine this ▸ (lookup_singleton_same_input _ _ _),
-
-    }
-  },
-  {
-    obtain ⟨u, hu⟩ := h,
-    rw [eq_init_iff],
-    intros i' t',
-    rw [is_fresh_drop_query_iff, or_iff_not_imp_left, ← is_cached_iff_not_is_fresh,
-      is_cached_iff_exists_lookup_eq_some],
-    rintro ⟨u', hu'⟩,
-    specialize hu i' t' u' hu',
-    rw [lookup_singleton_eq_some_iff] at hu,
-    obtain ⟨hi', ht', hu'⟩ := hu,
-    refine ⟨hi', ht'⟩,
-  }
+      exact (option.some_inj.1 (hu'.symm.trans hu)) ▸ (lookup_singleton_same_input _ _ _) } },
+  { obtain ⟨u, hu⟩ := h,
+    simp_rw [eq_init_iff, is_fresh_drop_query_iff, or_iff_not_imp_left,
+      ← is_cached_iff_not_is_fresh, is_cached_iff_exists_lookup_eq_some],
+    rintro i' t' ⟨u', hu'⟩,
+    obtain ⟨hi', ht', hu'⟩ := (lookup_singleton_eq_some_iff _ _ _ _ _ _).1 (hu i' t' u' hu'),
+    refine ⟨hi', ht'⟩ }
 end
 
 /-- Adding a value and then dropping it is the original cache if the added value was fresh,
@@ -439,14 +464,6 @@ end drop_query
 section order_cache_query_drop_query
 
 variables (i : spec.ι) (t : spec.domain i) (u : spec.range i)
-
-lemma cache_query_monotone : monotone (cache_query i t u) :=
-λ cache cache' h i' t' u', by {simp only [lookup_cache_query],
-  split_ifs, exact id, exact h i' t' u', exact h i' t' u'}
-
-lemma drop_query_monotone : monotone (drop_query i t) :=
-λ cache cache' h i' t' u', by {simp only [lookup_drop_query],
-  split_ifs, exact id, exact h i' t' u', exact h i' t' u'}
 
 @[simp] lemma le_cache_query_iff : cache ≤ [i, t ↦ u; cache'] ↔
   (cache.is_fresh i t ∨ cache.lookup i t = some u) ∧
