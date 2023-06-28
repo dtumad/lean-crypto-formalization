@@ -22,12 +22,18 @@ section ite
 
 variables (p : Prop) [decidable p]
 
-@[simp] lemma mem_support_ite_iff (x : α) : x ∈ (if p then oa else oa').support ↔
+@[simp] lemma support_ite : (if p then oa else oa').support =
+  if p then oa.support else oa'.support := by split_ifs; refl
+
+@[simp] lemma fin_support_ite : (if p then oa else oa').fin_support =
+  if p then oa.fin_support else oa'.fin_support := by split_ifs; refl
+
+lemma mem_support_ite_iff (x : α) : x ∈ (if p then oa else oa').support ↔
   (p ∧ x ∈ oa.support) ∨ (¬ p ∧ x ∈ oa'.support) :=
 by split_ifs with h; simp only [h, true_and, not_true, false_and,
   or_false, false_and, not_false_iff, true_and, false_or]
 
-@[simp] lemma mem_fin_support_ite_iff (x : α) : x ∈ (if p then oa else oa').support ↔
+lemma mem_fin_support_ite_iff (x : α) : x ∈ (if p then oa else oa').support ↔
   (p ∧ x ∈ oa.fin_support) ∨ (¬ p ∧ x ∈ oa'.fin_support) :=
 by simp only [mem_fin_support_iff_mem_support, mem_support_ite_iff]
 
