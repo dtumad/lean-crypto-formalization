@@ -111,7 +111,6 @@ def fork (adv : forking_adversary T U α) : oracle_comp uniform_selecting
 do{ -- run the adversary for the first time, logging coins and caching random oracles
     ⟨i, ⟨x, ⟨log, cache⟩⟩⟩ ← adv.simulate_with_log,
     -- run again, using the same random choices for first oracle, and newly forked cache
-    -- TODO: might be off by one error with forking somewhere along the way?
     ⟨i', x', cache'⟩ ← adv.simulate_from_seed log.to_seed (cache.fork_cache () (i.map coe)),
     -- return no forking index unless `fork_cache` gives equal values for both runs.
     -- also return the side outputs and the random oracle cache for both runs
@@ -129,7 +128,8 @@ end
 
 section distribution_semantics
 
-/-- The probability of returning a given index is the independent value of getting it from both -/
+/-- The probability of returning a given index is the independent value of getting it from both,
+TODO!!: update to corrected version using new rewind stuff. -/
 lemma eval_dist_fst_map_fork_apply (i : option $ fin adv.q) :
   ⁅= i | prod.fst <$> fork adv⁆ = ⁅= i | adv.simulate_choose_fork⁆ ^ 2 :=
 calc ⁅= i | prod.fst <$> fork adv⁆

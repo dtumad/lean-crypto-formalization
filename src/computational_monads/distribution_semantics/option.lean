@@ -3,7 +3,7 @@ Copyright (c) 2022 Devon Tuma. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
-import computational_monads.distribution_semantics.monad
+import computational_monads.distribution_semantics.map
 
 /-!
 # Probabilities for Computations Over Option Type
@@ -49,6 +49,14 @@ calc ⁅e | oa⁆
     show ((some a).is_some : Prop),
     simp only [option.is_some_some, coe_sort_tt]
   end
+
+lemma prob_event_is_some' (oa : oracle_comp spec α) (f : α → option β) [decidable_eq β] :
+  ⁅λ x, (f x).is_some | oa⁆ = ∑' (b : β), ⁅= some b | f <$> oa⁆ :=
+begin
+  rw [← prob_event_is_some, prob_event_map],
+  refine congr_arg (λ p, ⁅p | oa⁆) (set.ext (λ x, _)),
+  simpa [set.preimage]
+end
 
 lemma prob_event_is_some_eq_one_sub_prob_output_none :
   ⁅λ x, x.is_some | oa⁆ = 1 - ⁅= none | oa⁆ :=

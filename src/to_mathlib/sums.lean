@@ -5,6 +5,7 @@ Authors: Devon Tuma
 -/
 import to_mathlib.general
 import probability.probability_mass_function.basic
+import measure_theory.integral.mean_inequalities
 
 /-!
 # Lemmas about Sums that fit better in mathlib
@@ -55,3 +56,45 @@ begin
 end
 
 end option
+
+section jensen
+
+
+theorem ennreal.pow_sum_div_card_le_sum_pow (s : finset α) (f : α → ℝ≥0∞)
+  (hf : ∀ x ∈ s, f x ≠ ∞) (n : ℕ) :
+  (∑ x in s, f x) ^ (n + 1) / ↑(s.card) ^ n ≤ ∑ x in s, f x ^ (n + 1) :=
+begin
+  have := nnreal.pow_sum_div_card_le_sum_pow s (λ x, (f x).to_nnreal) n,
+  rw [← ennreal.to_nnreal_le_to_nnreal],
+  refine le_trans _ (le_trans this _),
+  {
+
+    rw [ennreal.to_nnreal_div, ennreal.to_nnreal_pow,
+      ennreal.to_nnreal_pow, ennreal.to_nnreal_sum,
+      ennreal.to_nnreal_nat],
+    exact hf,
+  },
+  {
+    rw [ennreal.to_nnreal_sum],
+    simp only [ennreal.to_nnreal_pow],
+    intros x hx,
+    specialize hf x hx,
+    simpa,
+  },
+  {
+    rw [ne.def, ennreal.div_eq_top],
+    simp [not_or_distrib],
+    refine ⟨λ x hx hx', _, _⟩,
+    rw [pow_eq_zero_iff', nat.cast_eq_zero],
+    simp [finset.card_ne_zero_of_mem hx],
+
+    refine ne_top_of_lt (ennreal.sum_lt_top hf),
+  },
+  {
+    refine ne_top_of_lt (ennreal.sum_lt_top (λ x hx, _)),
+    refine ennreal.pow_ne_top (hf x hx),
+  }
+end
+
+
+end jensen

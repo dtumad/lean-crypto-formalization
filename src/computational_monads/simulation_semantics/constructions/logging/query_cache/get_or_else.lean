@@ -282,8 +282,10 @@ lemma fst_map_get_or_else_dist_equiv_fst_map_get_or_else
 begin
   by_cases h' : cache.is_cached i t,
   {
-    have : cache'.is_cached i t := sorry,
+
+    have : cache'.is_cached i t := _,
     simp [h', this, h],
+    sorry,
   },
   {
     have h1 : cache.is_fresh i t := sorry,
@@ -300,6 +302,18 @@ variables
 
 variables (i : spec.ι) (t : spec.domain i) (ou : oracle_comp spec' (spec.range i))
   (i' : spec.ι) (t' : spec.domain i') (ou' : oracle_comp spec' (spec.range i'))
+
+theorem get_or_else_bind_fst_map_get_or_else_dist_equiv'
+  (f : spec.range i × query_cache spec → query_cache spec)
+  (hf : ∀ (x : spec.range i × query_cache spec), cache ≤ x.2 → cache ≤ f x ∧ f x ≤ x.2) :
+  do {x ← cache.get_or_else i t ou, prod.fst <$> (f x).get_or_else i' t' ou'} ≃ₚ
+    if h : i = i' then (if h.rec t = t'
+      then (congr_arg spec.range h).rec (prod.fst <$> cache.get_or_else i t ou)
+      else prod.fst <$> cache.get_or_else i' t' ou')
+      else prod.fst <$> cache.get_or_else i' t' ou' :=
+begin
+  sorry,
+end
 
 theorem get_or_else_bind_fst_map_get_or_else_dist_equiv :
   do {x ← cache.get_or_else i t ou, prod.fst <$> x.2.get_or_else i' t' ou'} ≃ₚ
@@ -329,18 +343,17 @@ begin
     {
       simp [ht],
       refine bind_dist_equiv_right _ _ (default, cache) (λ x hx, _),
-      -- refine map_dist_equiv_of_dist_equiv rfl _,
-      simp,
       have := lookup_snd_eq_of_mem_support_get_or_else_diff_input _ _ _ ht hx,
-      sorry,
+      apply fst_map_get_or_else_dist_equiv_fst_map_get_or_else,
+      exact this
     }
   },
   {
     simp [hi],
     refine bind_dist_equiv_right _ _ (default, cache) (λ x hx, _),
-    refine map_dist_equiv_of_dist_equiv rfl _,
-    simp,
     have := lookup_snd_eq_of_mem_support_get_or_else_diff_index _ _ _ t' hi hx,
+    apply fst_map_get_or_else_dist_equiv_fst_map_get_or_else,
+    exact this
   }
 end
 
@@ -367,5 +380,10 @@ calc do {x ← cache.get_or_else i t ou, prod.fst <$> x.2.get_or_else i t ou} �
 
 
 end bind_fst_map
+
+section bind_comm
+
+
+end bind_comm
 
 end query_cache

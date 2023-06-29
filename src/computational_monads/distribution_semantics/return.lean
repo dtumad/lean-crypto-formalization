@@ -69,6 +69,9 @@ by rw [prob_event.def, eval_dist_return, pmf.to_outer_measure_pure_apply, set.in
   ⁅e | return' !spec! a⁆ = ite (a ∈ e) 1 0 :=
 by { simp only [prob_event.def, eval_dist_return, pmf.to_outer_measure_pure_apply], congr }
 
+@[simp] lemma prob_event_return' (p : α → Prop) [decidable_pred p] :
+  ⁅p | return' !spec! a⁆ = ite (p a) 1 0 := by simpa
+
 end prob_event
 
 section return_eq_zero

@@ -18,19 +18,27 @@ open_locale big_operators ennreal
 
 variables {α β γ : Type} {spec spec' : oracle_spec}
 
+section bind_bind_assoc
+
+variables (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) (oc : β → oracle_comp spec γ)
+
 @[simp_dist_equiv]
-lemma bind_bind_dist_equiv_assoc (oa : oracle_comp spec α) (ob : α → oracle_comp spec β)
-  (oc : β → oracle_comp spec γ) : (oa >>= ob) >>= oc ≃ₚ oa >>= (λ x, ob x >>= oc) :=
+lemma bind_bind_dist_equiv_assoc : oa >>= (λ x, ob x >>= oc) ≃ₚ oa >>= ob >>= oc  :=
 dist_equiv.ext (λ x, by simp only [prob_output.def, eval_dist_bind, pmf.bind_bind])
 
--- TODO: implicit / explicit
-lemma bind_bind_dist_equiv_assoc_of_dist_equiv {oa oa' : oracle_comp spec α}
-  {ob ob' : α → oracle_comp spec β} {oc oc' : α → β → oracle_comp spec γ}
-  (h : oa >>= ob ≃ₚ oa' >>= ob') (h' : ∀ x y, oc x y ≃ₚ oc' x y) :
-  oa >>= (λ x, ob x >>= oc x) ≃ₚ oa' >>= (λ x, ob' x >>= oc' x) :=
-begin
-  sorry,
-end
+lemma support_bind_bind_assoc : (oa >>= (λ x, ob x >>= oc)).support = (oa >>= ob >>= oc).support :=
+by pairwise_dist_equiv
+
+lemma fin_support_bind_bind_assoc : (oa >>= (λ x, ob x >>= oc)).fin_support =
+  (oa >>= ob >>= oc).fin_support := by pairwise_dist_equiv
+
+lemma prob_output_bind_bind_assoc (z : γ) :
+  ⁅= z | oa >>= (λ x, ob x >>= oc)⁆ = ⁅= z | oa >>= ob >>= oc⁆ := by pairwise_dist_equiv
+
+lemma prob_event_bind_bind_assoc (e : set γ) :
+  ⁅e | oa >>= (λ x, ob x >>= oc)⁆ = ⁅e | (oa >>= ob) >>= oc⁆ := by pairwise_dist_equiv
+
+end bind_bind_assoc
 
 
 section return_bind

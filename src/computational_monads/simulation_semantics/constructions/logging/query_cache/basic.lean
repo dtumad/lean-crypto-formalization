@@ -345,6 +345,8 @@ section drop_query_cache_query
 
 variables (i : spec.ι) (t : spec.domain i) (u : spec.range i)
 
+/-- Adding a query to the cache and then dropping a query commutes to dropping and then adding,
+unless the inputs being cached are the same as the one being dropped. -/
 @[simp] lemma drop_query_cache_query (i' : spec.ι) (t' : spec.domain i') :
   [i, t ↦ u; cache].drop_query i' t' = if h : i = i' then (if h.rec t = t' then cache.drop_query i' t'
     else [i, t ↦ u; cache.drop_query i' t']) else [i, t ↦ u; cache.drop_query i' t'] :=
@@ -381,12 +383,8 @@ lemma drop_query_cache_query_same_index (t' : spec.domain i) (u' : spec.domain i
 lemma drop_query_cache_query_diff_index (i' : spec.ι) (t' : spec.domain i') (h : i ≠ i') :
   [i, t ↦ u; cache].drop_query i' t' = [i, t ↦ u; cache.drop_query i' t'] := by simp [h]
 
-/-- Adding a value and then dropping it is the original cache if the added value was fresh,
-and otherwise is the result of dropping the same query from the original cache,
-since old cached values don't persist in the cache afterwords. -/
-@[simp] lemma drop_query_cache_query_same_input :
-  [i, t ↦ u; cache].drop_query i t = if cache.is_fresh i t then cache else cache.drop_query i t :=
-by by_cases h : cache.is_fresh i t; simp [h]
+lemma drop_query_cache_query_same_input :
+  [i, t ↦ u; cache].drop_query i t = cache.drop_query i t := by simp
 
 lemma drop_query_cache_query_diff_input (t' : spec.domain i) (h : t ≠ t') :
   [i, t ↦ u; cache].drop_query i t' = [i, t ↦ u; cache.drop_query i t'] := by simp [h]
@@ -395,13 +393,37 @@ end drop_query_cache_query
 
 section cache_query_drop_query
 
+variables (i : spec.ι) (t : spec.domain i) (u : spec.range i)
+
+lemma cache_query_drop_query (i' : spec.ι) (t' : spec.domain i') :
+  [i, t ↦ u; cache.drop_query i' t'] = if h : i = i' then (if h.rec t = t' then [i, t ↦ u; cache]
+    else [i, t ↦ u; cache].drop_query i' t') else [i, t ↦ u; cache].drop_query i' t' :=
+begin
+  by_cases hi : i = i',
+  {
+    induction hi,
+    by_cases ht : t = t',
+    {
+      simp [ht],
+    }
+  }
+end
+
 /-- Adding a value to a cache after removing a value for the same inputs is the same as just
 caching it into the original cache, since adding new values replaces old ones. -/
-@[simp] lemma cache_query_drop_query (i : spec.ι) (t : spec.domain i) (u : spec.range i) :
+@[simp] lemma cache_query_drop_query_same_input :
   [i, t ↦ u; cache.drop_query i t] = [i, t ↦ u; cache] :=
-sorry
+begin
+
+end
 
 end cache_query_drop_query
+
+lemma cache_query_eq_cache_query_iff_drop_query_eq_drop_query (i t u) :
+  [i, t ↦ u; cache] = [i, t ↦ u; cache'] ↔ cache.drop_query i t = cache'.drop_query i t :=
+⟨λ h, by simpa only [drop_query_cache_query, eq_self_iff_true] using
+  congr_arg (λ c, drop_query i t c) h, λ h, by simpa only [cache_query_drop_query_same_input] using
+    congr_arg (λ c, [i, t ↦ u; c]) h⟩
 
 section singleton
 
