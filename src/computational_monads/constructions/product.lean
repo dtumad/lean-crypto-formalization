@@ -30,7 +30,7 @@ variables {α β γ δ : Type} {spec spec' : oracle_spec}
 def product (oa : oracle_comp spec α) (ob : oracle_comp spec β) :
   oracle_comp spec (α × β) := do {a ← oa, b ← ob, return (a, b)}
 
-infixr `×ₘ` : 100 := oracle_comp.product
+infixr `×ₘ` : 60 := oracle_comp.product
 
 variables (oa : oracle_comp spec α) (ob : oracle_comp spec β)
   (e : set α) (e' : set β) (a : α) (b : β) (x : α × β)
@@ -124,12 +124,12 @@ begin
 end
 
 @[simp, simp_dist_equiv] lemma map_product_dist_equiv (f : α × β → γ) :
-  f <$> oa ×ₘ ob ≃ₚ do {x ← oa, y ← ob, return (f (x, y))} :=
+  f <$> (oa ×ₘ ob) ≃ₚ do {x ← oa, y ← ob, return (f (x, y))} :=
 by pairwise_dist_equiv
 
 @[simp, simp_dist_equiv] lemma map_prod_product_dist_equiv (f : α → γ) (g : β → δ) :
-  (prod.map f g) <$> oa ×ₘ ob ≃ₚ (f <$> oa) ×ₘ (g <$> ob) :=
-calc (prod.map f g) <$> oa ×ₘ ob ≃ₚ do {x ← oa, y ← ob, return (f x, g y)} :
+  prod.map f g <$> (oa ×ₘ ob) ≃ₚ f <$> oa ×ₘ g <$> ob :=
+calc prod.map f g <$> (oa ×ₘ ob) ≃ₚ do {x ← oa, y ← ob, return (f x, g y)} :
     by apply map_product_dist_equiv
   ... ≃ₚ do {x ← oa, y ← g <$> ob, return (f x, y)} : by pairwise_dist_equiv
   ... ≃ₚ do {x ← f <$> oa, y ← g <$> ob, return (x, y)} : dist_equiv.ext
@@ -137,7 +137,7 @@ calc (prod.map f g) <$> oa ×ₘ ob ≃ₚ do {x ← oa, y ← ob, return (f x, 
   ... = (f <$> oa) ×ₘ (g <$> ob) : rfl
 
 lemma prob_output_map_fst_product [decidable_eq γ] (f : α × β → γ) (x : α × γ) :
-  ⁅= x | (λ (x : α × β), (prod.fst x, f x)) <$> oa ×ₘ ob⁆ =
+  ⁅= x | (λ (x : α × β), (prod.fst x, f x)) <$> (oa ×ₘ ob)⁆ =
     ∑' (b : β), if x.2 = f (x.1, b) then ⁅= x.1 | oa⁆ * ⁅= b | ob⁆ else 0 :=
 begin
   simp only [prob_output.def, eval_dist_map, pmf.map_apply, ennreal.tsum_prod'],
@@ -147,7 +147,7 @@ begin
 end
 
 lemma prob_output_map_snd_product [decidable_eq γ] (f : α × β → γ) (x : γ × β) :
-  ⁅= x | (λ (x : α × β), (f x, prod.snd x)) <$> oa ×ₘ ob⁆ =
+  ⁅= x | (λ (x : α × β), (f x, prod.snd x)) <$> (oa ×ₘ ob)⁆ =
     ∑' (a : α), if x.1 = f (a, x.2) then ⁅= a | oa⁆ * ⁅= x.2 | ob⁆ else 0 :=
 begin
   simp only [prob_output.def, eval_dist_map, pmf.map_apply, ennreal.tsum_prod'],
