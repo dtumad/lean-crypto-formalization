@@ -405,7 +405,14 @@ begin
     by_cases ht : t = t',
     {
       simp [ht],
+      sorry,
+    },
+    {
+      sorry,
     }
+  },
+  {
+    sorry,
   }
 end
 
@@ -414,7 +421,7 @@ caching it into the original cache, since adding new values replaces old ones. -
 @[simp] lemma cache_query_drop_query_same_input :
   [i, t ↦ u; cache.drop_query i t] = [i, t ↦ u; cache] :=
 begin
-
+  sorry,
 end
 
 end cache_query_drop_query

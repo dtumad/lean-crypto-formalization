@@ -74,6 +74,12 @@ variable (e : set β)
 @[simp] lemma prob_event_map : ⁅e | f <$> oa⁆ = ⁅f ⁻¹' e | oa⁆ :=
 prob_event_bind_return oa f e
 
+-- TODO!: we should either stick to predicates or sets probably? maybe not??
+lemma prob_event_map' (p : β → Prop) : ⁅p | f <$> oa⁆ = ⁅p ∘ f | oa⁆ :=
+by simpa [set.preimage]
+
+example : ⁅e | f <$> oa⁆ = ⁅f ⁻¹' e | oa⁆ := by simp
+
 lemma prob_event_map_eq_tsum_indicator : ⁅e | f <$> oa⁆ = ∑' x, (f ⁻¹' e).indicator ⁅oa⁆ x :=
 by rw [prob_event_map, prob_event_eq_tsum_indicator]
 

@@ -111,10 +111,15 @@ calc (adv.accepting_probability) ^ 2 / fintype.card T =
       (λ t, ⁅= some t | adv.choose_fork <$> adv.accepting_experiment⁆)
       (λ _ _, prob_output_ne_top _ _) 1
 
-  ... = ⁅adv.accept_fork | adv.forking_experiment⁆ : begin
+  ... = ⁅λ out, out.1.is_some ∧ out.1 = out.2 |
+      (prod.map adv.choose_fork adv.choose_fork) <$> adv.forking_experiment⁆ : begin
       sorry,
-
     end
+  ... = ⁅λ out, (adv.choose_fork out.1).is_some ∧ (adv.choose_fork out.1) = (adv.choose_fork out.2) | adv.forking_experiment⁆ : begin
+      rw [prob_event_map'],
+      sorry,
+    end
+  ... = ⁅adv.accept_fork | adv.forking_experiment⁆ : rfl
 
 theorem forking_probability_at_least :
   (adv.accepting_probability) ^ 2 / fintype.card T

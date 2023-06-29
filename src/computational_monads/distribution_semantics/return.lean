@@ -124,7 +124,7 @@ lemma prob_output_return_of_eq {a x : α} (h : x = a) : ⁅= x | return' !spec! 
 lemma prob_event_return_of_mem {e : set α} (h : a ∈ e) : ⁅e | return' !spec! a⁆ = 1 :=
 (prob_event_return_eq_one_iff _ a e).2 h
 
-lemma prob_output_return_self : ⁅= a | return' !spec! a⁆ = 1 :=
+@[simp] lemma prob_output_return_self : ⁅= a | return' !spec! a⁆ = 1 :=
 by rw [prob_output_return_eq_one_iff]
 
 lemma prob_event_return_singleton_self : ⁅{a} | return' !spec! a⁆ = 1 :=

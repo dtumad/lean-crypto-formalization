@@ -509,6 +509,7 @@ begin
           simulate' cachingₛₒ (oc z'.1) z'.2 : begin
             refine trans (bind_bind_dist_equiv_assoc _ _ _) _,
             pairwise_dist_equiv,
+            sorry,
           end
 
         ... ≃ₚ simulate cachingₛₒ ob log >>= λ y,
