@@ -70,6 +70,16 @@ begin
   pairwise_dist_equiv,
 end
 
+lemma fork_thing (oa : oracle_comp spec α)
+  (i : spec.ι) (f : α × query_cache spec → query_cache spec)
+  (x : α) (cache : query_cache spec) :
+  ⁅= (x, x) | simulate' cachingₛₒ oa cache ×ₘ simulate' cachingₛₒ oa cache⁆ ≤
+    ⁅= (x, x) | do {z ← simulate cachingₛₒ oa cache,
+      z' ← simulate' cachingₛₒ oa (f z), return (z.1, z')}⁆ :=
+begin
+  sorry,
+end
+
 end cachingₛₒ
 
 namespace sim_oracle
