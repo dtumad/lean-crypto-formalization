@@ -100,125 +100,7 @@ end
 
 -- #check antitone
 
-
-def substitute_cache (cache : query_cache spec) :
-  Π {α : Type}, oracle_comp spec α → oracle_comp spec α
-| _ (pure' α a) := return a
-| _ (bind' α β oa ob) := (substitute_cache oa) >>= (λ x, substitute_cache (ob x))
-| _ (query i t) := if cache.is_cached i t then
-  return ((cache.lookup i t).get_or_else default) else query i t
-
-/-- Extra choices to be made while running a computation to get from an
-initial cache of `s` to a cache of `cache` (assuming it's possible to do so)-/
-noncomputable def extra_choices (s cache : query_cache spec) :
-  Π {α : Type}, oracle_comp spec α → finset (Σ (i : spec.ι), spec.domain i)
-| _ (pure' α a) := ∅
-| _ (bind' α β oa ob) := (extra_choices oa) ∪ ((substitute_cache s oa).fin_support.bUnion (λ x, extra_choices (ob x)))
-| _ (query i t) := if s.is_fresh i t then {⟨i, t⟩} else ∅
-
-lemma extra_choices_return (s cache : query_cache spec) (x : α) :
-  extra_choices s cache (return x) = ∅ := rfl
-
-lemma extra_choices_bind (s cache : query_cache spec) (oa : oracle_comp spec α)
-  (ob : α → oracle_comp spec β) : extra_choices s cache (oa >>= ob) = (extra_choices s cache oa) ∪
-    ((substitute_cache s oa).fin_support.bUnion (λ x, extra_choices s cache (ob x))):=
-begin
-  rw [← bind'_eq_bind, extra_choices],
-end
-
-lemma extra_choices_query (s cache : query_cache spec) (i : spec.ι) (t : spec.domain i) :
-  extra_choices s cache (query i t) =
-    if s.is_fresh i t then {⟨i, t⟩} else ∅ := rfl
-
-theorem hope (oa : oracle_comp spec α) (s cache : query_cache spec) (hs : s ≤ cache)
-  (x : α) (hx : (x, cache) ∈ (simulate cachingₛₒ oa s).support) :
-  ⁅= (x, cache) | simulate cachingₛₒ oa s⁆ =
-    (extra_choices s cache oa).prod (λ i, (fintype.card $ spec.range i.1)⁻¹) :=
-begin
-  induction oa using oracle_comp.induction_on
-    with α a α β oa ob hoa hob i t generalizing s cache,
-  {
-    rw [extra_choices_return, finset.prod_empty, simulate_return,
-      prob_output_return_eq_one_iff],
-    rwa [simulate_return, mem_support_return_iff] at hx,
-  },
-  {
-    rw [extra_choices_bind, finset.prod_union sorry],
-    rw [prob_output_simulate_bind_eq_tsum_tsum],
-  },
-  {
-    rw [extra_choices_query],
-    split_ifs with h,
-    {
-      rw [finset.prod_singleton, simulate_query, apply_eq],
-      rw [simulate_query, apply_eq] at hx,
-      simp [h] at hx ⊢,
-      rw [← hx],
-      refine trans (prob_output_bind_return_eq_single' _ _ _ x rfl _) _,
-      refine λ _ _ h', (prod.eq_iff_fst_eq_snd_eq.1 h').1,
-      rw [prob_output_query_eq_inv],
-    },
-    {
-      rw [finset.prod_empty],
-      rw [not_is_fresh_iff_is_cached] at h,
-      simp [h, simulate_query, apply_eq] at ⊢ hx,
-      intros x' s' hx' hs',
-      refine ⟨hx'.trans hx.1.symm, hs'.trans hx.2.symm⟩,
-    }
-  }
-end
-
--- theorem testing (s cache : query_cache spec) ()
-
--- lemma exists_list (oa : oracle_comp spec α) (s cache : query_cache spec)
---   (z : α) :
---   ∃ (qs : list spec.ι), ⁅= (z, cache) | simulate cachingₛₒ oa s⁆ =
---     (qs.map (λ i, )) :=
--- begin
-
--- end
-
-lemma output_eq_of_state_eq (oa : oracle_comp spec α)
-  (s s' : query_cache spec) (hs : s ≤ s')
-  (x x' : α) (cache : query_cache spec)
-  (h : (x, cache) ∈ (simulate cachingₛₒ oa s).support)
-  (h' : (x', cache) ∈ (simulate cachingₛₒ oa s).support) :
-  x = x' :=
-begin
-  induction oa using oracle_comp.induction_on
-    with α a α β oa ob hoa hob i t generalizing s cache,
-  {
-    simp at h h',
-    simp [h.1, h'.1]
-  },
-  {
-    rw [mem_support_simulate_bind_iff] at h h',
-    obtain ⟨a, s, hs, hxa⟩ := h,
-    obtain ⟨a', s', hs', hxa'⟩ := h',
-    specialize hoa a a',
-    specialize hob a x x',
-  }
-end
-
--- lemma prob_output_mono_bot (oa : oracle_comp spec α) (s : query_cache spec)
---   (z : α × query_cache spec) (hz : s ≤ z.2) :
---   ⁅= z | simulate cachingₛₒ oa ∅⁆ ≤ ⁅= z | simulate cachingₛₒ oa s⁆ :=
--- begin
---   induction oa using oracle_comp.induction_on
---     with α a α β oa ob hoa hob i t generalizing s hz,
-
---   {
---     sorry,
---   },
---   {
---     -- simp only [] at hoa hob,
---     simp only [simulate_bind],
---     simp only [prob_output_bind_eq_tsum, ennreal.tsum_prod'],
---     refine ennreal.tsum_le_tsum (λ x, _),
-
-
---   }
--- end
+-- #check exists.rec
 
 lemma maybe (oa : oracle_comp spec α) (ob : α → oracle_comp spec β)
   (s : query_cache spec) (z : β) (cache : query_cache spec)
@@ -233,69 +115,243 @@ begin
   sorry,
 end
 
+-- def midpoint (oa : oracle_comp spec α) (ob : α → oracle_comp spec β)
+--   (s : query_cache spec) (z : β × query_cache spec)
+--   (hz : z ∈ (simulate cachingₛₒ (oa >>= ob) s).support) : α × query_cache spec :=
+-- begin
+--   induction oa using oracle_comp.induction_on
+--     with α a α β oa ob hoa hob i t generalizing,
+--   {
 
-lemma support_antitone (oa : oracle_comp spec α) (s s' : query_cache spec)
-  (hs : s ≤ s') : (simulate' cachingₛₒ oa s').support ⊆ (simulate' cachingₛₒ oa s).support :=
+--   }
+
+-- end
+
+/-- Probability of getting to a final result given a partial cache for queries is given by
+the product of probabilities that each additional query gets the expected result. -/
+lemma finite_version (oa : oracle_comp spec α) (cache : query_cache spec)
+  (z : α × query_cache spec) (h : cache ≤ z.2)
+  (hz : z ∈ (simulate cachingₛₒ oa cache).support) :
+  ⁅= z | simulate cachingₛₒ oa cache⁆ =
+    ∏ i in (z.2.cached_inputs \ cache.cached_inputs), (fintype.card $ spec.range i.1)⁻¹ :=
 begin
   induction oa using oracle_comp.induction_on
-    with α a α β oa ob hoa hob i t generalizing s s',
+    with α a α β oa ob hoa hob i t generalizing,
   {
-    -- rw [simulate_return, simulate_return],
-    simp,
+    simp only [support_simulate_return, set.mem_singleton_iff] at hz,
+    simp only [hz, prob_output_simulate_return_eq_indicator, set.indicator_of_mem,
+      set.mem_singleton, finset.sdiff_self, finset.prod_empty],
   },
-  sorry,
-  sorry,
-end
-
-lemma prob_output_mono (oa : oracle_comp spec α) (s s' : query_cache spec)
-  (hs : s ≤ s') (z : α × query_cache spec) (hz : s' ≤ z.2) :
-  ⁅= z | simulate cachingₛₒ oa s⁆ ≤ ⁅= z | simulate cachingₛₒ oa s'⁆ :=
-begin
-  by_cases h : z ∈ (simulate cachingₛₒ oa s').support,
   {
-    have h' : z ∈ (simulate cachingₛₒ oa s).support := sorry,
+    rw [prob_output_simulate_bind_eq_tsum_tsum],
+    sorry,
+  },
+  {
+    simp [simulate_query, apply_eq] at hz ⊢,
+    sorry,
   }
-
-
-  -- induction oa using oracle_comp.induction_on
-  --   with α a α β oa ob hoa hob i t generalizing s s',
-  -- {
-  --   rw [simulate_return, simulate_return],
-  --   by_cases h : z = (a, s'),
-  --   {
-  --     simp [h],
-  --   },
-  --   {
-  --     have : z ≠ (a, s) := sorry,
-  --     rw [(prob_output_return_eq_zero_iff _ _ _).2 h,
-  --       (prob_output_return_eq_zero_iff _ _ _).2 this],
-  --     refine le_rfl,
-  --   }
-  -- },
-  -- {
-  --   simp only [simulate_bind],
-  --   simp only [prob_output_bind_eq_tsum],
-  --   simp only [ennreal.tsum_prod'],
-  --   -- simp_rw [@ennreal.tsum_comm α],
-  --   refine ennreal.tsum_le_tsum (λ x, _),
-
-
-  --   sorry,
-
-
-
-  -- },
-  -- {
-  --   simp only [simulate_query, apply_eq],
-  --   by_cases ht : s.is_fresh i t,
-  --   {
-  --     by_cases ht' : s'.is_fresh i t,
-  --     {
-  --       simp [ht, ht'],
-  --     }
-  --   }
-  -- }
 end
+
+-- lemma maybe2 (oa : oracle_comp spec α) (ob : α → oracle_comp spec β)
+--   (s : query_cache spec) (z : β × query_cache spec)
+--   (hz : z ∈ (simulate cachingₛₒ (oa >>= ob) s).support) :
+--   ∃! (y : α × query_cache spec),
+--     ⁅= z | simulate cachingₛₒ (oa >>= ob) s⁆ =
+--       ⁅= y | simulate cachingₛₒ oa s⁆ * ⁅= z | simulate cachingₛₒ (ob y.1) y.2⁆ :=
+-- begin
+--   rw [mem_support_simulate_bind_iff] at hz,
+--   obtain ⟨x, s', hx, hs'⟩ := hz,
+--   refine ⟨(x, s'), _⟩,
+--   {
+--     simp,
+--   }
+-- end
+
+-- def substitute_cache (cache : query_cache spec) :
+--   Π {α : Type}, oracle_comp spec α → oracle_comp spec α
+-- | _ (pure' α a) := return a
+-- | _ (bind' α β oa ob) := (substitute_cache oa) >>= (λ x, substitute_cache (ob x))
+-- | _ (query i t) := if cache.is_cached i t then
+--   return ((cache.lookup i t).get_or_else default) else query i t
+
+-- -- def full_substitute_cache
+
+-- /-- Extra choices to be made while running a computation to get from an
+-- initial cache of `s` to a cache of `cache` (assuming it's possible to do so)-/
+-- noncomputable def extra_choices (s cache : query_cache spec) :
+--   Π {α : Type}, oracle_comp spec α → finset (Σ (i : spec.ι), spec.domain i)
+-- | _ (pure' α a) := ∅
+-- | _ (bind' α β oa ob) := (extra_choices oa) ∪
+--   ((substitute_cache cache oa).fin_support.bUnion (λ x, extra_choices (ob x)))
+-- | _ (query i t) := if s.is_fresh i t then {⟨i, t⟩} else ∅
+
+-- lemma extra_choices_return (s cache : query_cache spec) (x : α) :
+--   extra_choices s cache (return x) = ∅ := rfl
+
+-- lemma extra_choices_bind (s cache : query_cache spec) (oa : oracle_comp spec α)
+--   (ob : α → oracle_comp spec β) : extra_choices s cache (oa >>= ob) = (extra_choices s cache oa) ∪
+--     ((substitute_cache cache oa).fin_support.bUnion (λ x, extra_choices s cache (ob x))):=
+-- begin
+--   rw [← bind'_eq_bind, extra_choices],
+-- end
+
+-- lemma extra_choices_query (s cache : query_cache spec) (i : spec.ι) (t : spec.domain i) :
+--   extra_choices s cache (query i t) =
+--     if s.is_fresh i t then {⟨i, t⟩} else ∅ := rfl
+
+-- theorem hope (oa : oracle_comp spec α) (s cache : query_cache spec) (hs : s ≤ cache)
+--   (x : α) (hx : (x, cache) ∈ (simulate cachingₛₒ oa s).support) :
+--   ⁅= (x, cache) | simulate cachingₛₒ oa s⁆ =
+--     ∏ i in extra_choices s cache oa, (fintype.card $ spec.range i.1)⁻¹ :=
+-- begin
+--   induction oa using oracle_comp.induction_on
+--     with α a α β oa ob hoa hob i t generalizing s cache,
+--   {
+--     rw [extra_choices_return, finset.prod_empty, simulate_return,
+--       prob_output_return_eq_one_iff],
+--     rwa [simulate_return, mem_support_return_iff] at hx,
+--   },
+--   {
+--     rw [extra_choices_bind, finset.prod_union sorry],
+--     rw [prob_output_simulate_bind_eq_tsum_tsum],
+--   },
+--   {
+--     rw [extra_choices_query],
+--     split_ifs with h,
+--     {
+--       rw [finset.prod_singleton, simulate_query, apply_eq],
+--       rw [simulate_query, apply_eq] at hx,
+--       simp [h] at hx ⊢,
+--       rw [← hx],
+--       refine trans (prob_output_bind_return_eq_single' _ _ _ x rfl _) _,
+--       refine λ _ _ h', (prod.eq_iff_fst_eq_snd_eq.1 h').1,
+--       rw [prob_output_query_eq_inv],
+--     },
+--     {
+--       rw [finset.prod_empty],
+--       rw [not_is_fresh_iff_is_cached] at h,
+--       simp [h, simulate_query, apply_eq] at ⊢ hx,
+--       intros x' s' hx' hs',
+--       refine ⟨hx'.trans hx.1.symm, hs'.trans hx.2.symm⟩,
+--     }
+--   }
+-- end
+
+-- -- theorem testing (s cache : query_cache spec) ()
+
+-- -- lemma exists_list (oa : oracle_comp spec α) (s cache : query_cache spec)
+-- --   (z : α) :
+-- --   ∃ (qs : list spec.ι), ⁅= (z, cache) | simulate cachingₛₒ oa s⁆ =
+-- --     (qs.map (λ i, )) :=
+-- -- begin
+
+-- -- end
+
+-- lemma output_eq_of_state_eq (oa : oracle_comp spec α)
+--   (s s' : query_cache spec) (hs : s ≤ s')
+--   (x x' : α) (cache : query_cache spec)
+--   (h : (x, cache) ∈ (simulate cachingₛₒ oa s).support)
+--   (h' : (x', cache) ∈ (simulate cachingₛₒ oa s).support) :
+--   x = x' :=
+-- begin
+--   induction oa using oracle_comp.induction_on
+--     with α a α β oa ob hoa hob i t generalizing s cache,
+--   {
+--     simp at h h',
+--     simp [h.1, h'.1]
+--   },
+--   {
+--     rw [mem_support_simulate_bind_iff] at h h',
+--     obtain ⟨a, s, hs, hxa⟩ := h,
+--     obtain ⟨a', s', hs', hxa'⟩ := h',
+--     specialize hoa a a',
+--     specialize hob a x x',
+--   }
+-- end
+
+-- -- lemma prob_output_mono_bot (oa : oracle_comp spec α) (s : query_cache spec)
+-- --   (z : α × query_cache spec) (hz : s ≤ z.2) :
+-- --   ⁅= z | simulate cachingₛₒ oa ∅⁆ ≤ ⁅= z | simulate cachingₛₒ oa s⁆ :=
+-- -- begin
+-- --   induction oa using oracle_comp.induction_on
+-- --     with α a α β oa ob hoa hob i t generalizing s hz,
+
+-- --   {
+-- --     sorry,
+-- --   },
+-- --   {
+-- --     -- simp only [] at hoa hob,
+-- --     simp only [simulate_bind],
+-- --     simp only [prob_output_bind_eq_tsum, ennreal.tsum_prod'],
+-- --     refine ennreal.tsum_le_tsum (λ x, _),
+
+
+-- --   }
+-- -- end
+
+
+-- lemma support_antitone (oa : oracle_comp spec α) (s s' : query_cache spec)
+--   (hs : s ≤ s') : (simulate' cachingₛₒ oa s').support ⊆ (simulate' cachingₛₒ oa s).support :=
+-- begin
+--   induction oa using oracle_comp.induction_on
+--     with α a α β oa ob hoa hob i t generalizing s s',
+--   {
+--     -- rw [simulate_return, simulate_return],
+--     simp,
+--   },
+--   sorry,
+--   sorry,
+-- end
+
+-- lemma prob_output_mono (oa : oracle_comp spec α) (s s' : query_cache spec)
+--   (hs : s ≤ s') (z : α × query_cache spec) (hz : s' ≤ z.2) :
+--   ⁅= z | simulate cachingₛₒ oa s⁆ ≤ ⁅= z | simulate cachingₛₒ oa s'⁆ :=
+-- begin
+--   -- by_cases h : z ∈ (simulate cachingₛₒ oa s').support,
+--   -- {
+--   --   have h' : z ∈ (simulate cachingₛₒ oa s).support := sorry,
+--   -- }
+--   cases z,
+--   rw [hope, hope]; sorry
+--   -- induction oa using oracle_comp.induction_on
+--   --   with α a α β oa ob hoa hob i t generalizing s s',
+--   -- {
+--   --   rw [simulate_return, simulate_return],
+--   --   by_cases h : z = (a, s'),
+--   --   {
+--   --     simp [h],
+--   --   },
+--   --   {
+--   --     have : z ≠ (a, s) := sorry,
+--   --     rw [(prob_output_return_eq_zero_iff _ _ _).2 h,
+--   --       (prob_output_return_eq_zero_iff _ _ _).2 this],
+--   --     refine le_rfl,
+--   --   }
+--   -- },
+--   -- {
+--   --   simp only [simulate_bind],
+--   --   simp only [prob_output_bind_eq_tsum],
+--   --   simp only [ennreal.tsum_prod'],
+--   --   -- simp_rw [@ennreal.tsum_comm α],
+--   --   refine ennreal.tsum_le_tsum (λ x, _),
+
+
+--   --   sorry,
+
+
+
+--   -- },
+--   -- {
+--   --   simp only [simulate_query, apply_eq],
+--   --   by_cases ht : s.is_fresh i t,
+--   --   {
+--   --     by_cases ht' : s'.is_fresh i t,
+--   --     {
+--   --       simp [ht, ht'],
+--   --     }
+--   --   }
+--   -- }
+-- end
 
 
 

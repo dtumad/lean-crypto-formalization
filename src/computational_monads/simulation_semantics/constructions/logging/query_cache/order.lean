@@ -30,7 +30,7 @@ instance : semilattice_inf (query_cache spec) :=
 { le := λ cache cache', ∀ i t u, cache.lookup i t = some u → cache'.lookup i t = some u,
   le_refl := λ cache i t u h, h,
   le_trans := λ cache cache' cache'' h h' i t u h'', h' i t u (h i t u h''),
-  le_antisymm := λ cache cache' h' h, query_cache.ext (λ i t,
+  le_antisymm := λ cache cache' h' h, query_cache.extₗ (λ i t,
     begin
       by_cases hi : cache.lookup i t = none,
       { by_cases hi' : cache'.lookup i t = none,
@@ -39,8 +39,11 @@ instance : semilattice_inf (query_cache spec) :=
           refine (option.some_ne_none u ((h i t u hu).symm.trans hi)).elim } },
       { exact let ⟨u, hu⟩ := option.ne_none_iff_exists'.1 hi in (hu.trans (h' i t u hu).symm) }
     end),
-  inf := λ cache cache' i t, if (cache.is_cached i t ∧ cache.lookup i t = cache'.lookup i t)
-    then cache.lookup i t else none,
+  inf := λ cache cache',
+    { cache_fn := λ i t, if (cache.is_cached i t ∧ cache.lookup i t = cache'.lookup i t)
+        then cache.lookup i t else none,
+      cached_inputs := sorry,
+      mem_cached_inputs := sorry },
   inf_le_left := λ cache cache' i t u hu,
     begin
       by_cases h : cache.is_cached i t ∧ cache.lookup i t = cache'.lookup i t,
@@ -67,7 +70,7 @@ variables (cache cache' : query_cache spec) (i : spec.ι) (t : spec.domain i) (u
 lemma le.def : cache ≤ cache' ↔
   ∀ i t u, cache.lookup i t = some u → cache'.lookup i t = some u := iff.rfl
 
-lemma inf.def : cache ⊓ cache' = λ i t,
+lemma lookup_inf (i : spec.ι) (t : spec.domain i) : (cache ⊓ cache').lookup i t =
   if (cache.is_cached i t ∧ cache.lookup i t = cache'.lookup i t)
     then cache.lookup i t else none := rfl
 
