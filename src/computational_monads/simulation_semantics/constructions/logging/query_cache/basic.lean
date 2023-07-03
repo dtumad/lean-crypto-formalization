@@ -19,6 +19,12 @@ Updates are done using continuation passing with the previous cache.
 def query_cache (spec : oracle_spec) : Type :=
 Π (i : spec.ι), spec.domain i → option (spec.range i)
 
+structure query_cache_fin (spec : oracle_spec) : Type :=
+(cache_fn : Π (i : spec.ι), spec.domain i → option (spec.range i))
+(cache_finite : ∃ (s : finset (Σ (i : spec.ι), spec.domain i)),
+  ∀ i t, cache_fn i t ≠ none → (sigma.mk i t) ∈ s)
+
+
 namespace query_cache
 
 open oracle_spec

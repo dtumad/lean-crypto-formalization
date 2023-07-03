@@ -23,7 +23,6 @@ variables {α β γ δ : Type} {spec spec' : oracle_spec}
 
 section eval_dist
 
-
 section fst_snd_map_return_dist_equiv
 
 @[simp, simp_dist_equiv] lemma fst_map_return_dist_equiv (x : α) (y : β) :
@@ -92,12 +91,12 @@ end fst_snd_map_bind_return_dist_equiv
 
 section unused
 
-variables (oa : oracle_comp spec (α × β)) (oc : α → oracle_comp spec γ) (oc' : β → oracle_comp spec γ)
+variables (oa : oracle_comp spec (α × β))
 
-@[simp, simp_dist_equiv] lemma bind_dist_equiv_fst_bind_of_unused :
+@[simp, simp_dist_equiv] lemma bind_dist_equiv_fst_bind_of_unused (oc : α → oracle_comp spec γ) :
   oa >>= (λ x, oc x.1) ≃ₚ (fst <$> oa) >>= oc := by pairwise_dist_equiv
 
-@[simp, simp_dist_equiv] lemma bind_dist_equiv_snd_bind_of_unused :
+@[simp, simp_dist_equiv] lemma bind_dist_equiv_snd_bind_of_unused (oc' : β → oracle_comp spec γ) :
   oa >>= (λ x, oc' x.2) ≃ₚ (snd <$> oa) >>= oc' := by pairwise_dist_equiv
 
 end unused
@@ -106,21 +105,21 @@ variables (oa : oracle_comp spec (α × β)) (oc : α × β → oracle_comp spec
 
 /-- Binding on a computation of a `prod` type can be written as a double sum,
 instead of a sum of the product type. -/
-lemma eval_dist_prod_bind (c : γ) :
+lemma prob_output_prod_bind (c : γ) :
   ⁅= c | oa >>= oc⁆ = ∑' (a : α) (b : β), ⁅= (a, b) | oa⁆ * ⁅= c | oc (a, b)⁆ :=
 by rw [prob_output_bind_eq_tsum, ennreal.tsum_prod']
 
-/-- Version of `eval_dist_prod_bind` with summation arguments swapped. -/
-lemma eval_dist_prod_bind' (c : γ) :
+/-- Version of `prob_output_prod_bind` with summation arguments swapped. -/
+lemma prob_output_prod_bind' (c : γ) :
   ⁅= c | oa >>= oc⁆ = ∑' (b : β) (a : α), ⁅= (a, b) | oa⁆ * ⁅= c | oc (a, b)⁆ :=
 by rw [prob_output_bind_eq_tsum, ennreal.tsum_prod', ennreal.tsum_comm]
 
 /-- The first output of a computation of a `prod` type is a sum over possible second outputs. -/
-lemma eval_dist_map_fst (a : α) : ⁅= a | fst <$> oa⁆ = ∑' (b : β), ⁅= (a, b) | oa⁆ :=
+lemma prob_output_map_fst (a : α) : ⁅= a | fst <$> oa⁆ = ∑' (b : β), ⁅= (a, b) | oa⁆ :=
 by simp only [prob_output.def, eval_dist_map, pmf.map_fst_apply]
 
 /-- The second output of a computation of a `prod` type is a sum over possible first outputs -/
-lemma eval_dist_map_snd (b : β) : ⁅= b | snd <$> oa⁆ = ∑' (a : α), ⁅= (a, b) | oa⁆ :=
+lemma prob_output_map_snd (b : β) : ⁅= b | snd <$> oa⁆ = ∑' (a : α), ⁅= (a, b) | oa⁆ :=
 by simp only [prob_output.def, eval_dist_map, pmf.map_snd_apply]
 
 lemma mem_support_map_prod_map_id_right_iff (f : α → γ) (z : γ × β) :
@@ -158,6 +157,26 @@ begin
   { exact λ y hy, if_neg $ by simp only [eq_iff_fst_eq_snd_eq, hy.symm,
       prod.map_mk, id.def, false_and, not_false_iff]},
   { simpa only [eq_iff_fst_eq_snd_eq, prod.map_mk, id.def, eq_self_iff_true, true_and] },
+end
+
+lemma bind_dist_equiv_fst_bind (oc : α × β → oracle_comp spec γ) (y : β)
+  (h : ∀ x y', oc (x, y') ≃ₚ oc (x, y)): oa >>= oc ≃ₚ (fst <$> oa >>= λ x, oc (x, y)) :=
+begin
+  refine dist_equiv.ext (λ z, _),
+  rw [prob_output_bind_eq_tsum, prob_output_bind_eq_tsum, ennreal.tsum_prod'],
+  refine tsum_congr (λ x, _),
+  rw [prob_output_map_fst, ← ennreal.tsum_mul_right],
+  refine tsum_congr (λ y', congr_arg (λ k, _ * k) ((h x y').prob_output_eq z))
+end
+
+lemma bind_dist_equiv_snd_bind (oc : α × β → oracle_comp spec γ) (x : α)
+  (h : ∀ x' y, oc (x', y) ≃ₚ oc (x, y)): oa >>= oc ≃ₚ (snd <$> oa >>= λ y, oc (x, y)) :=
+begin
+  refine dist_equiv.ext (λ z, _),
+  rw [prob_output_bind_eq_tsum, prob_output_bind_eq_tsum, ennreal.tsum_prod', ennreal.tsum_comm],
+  refine tsum_congr (λ y, _),
+  rw [prob_output_map_snd, ← ennreal.tsum_mul_right],
+  refine tsum_congr (λ x', congr_arg (λ k, _ * k) ((h x' y).prob_output_eq z))
 end
 
 end eval_dist

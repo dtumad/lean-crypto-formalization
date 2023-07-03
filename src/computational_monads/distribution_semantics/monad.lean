@@ -196,9 +196,9 @@ section bind_return_eq_single
 variables (oa : oracle_comp spec α) (f : α → β) (y : β) (e' : set β)
 
 lemma prob_output_bind_return_eq_single' (x : α) (hx : f x = y)
-  (h : ∀ x' ∈ oa.support, f x' = y → x' = x) : ⁅= y | oa >>= λ x, return (f x)⁆ = ⁅oa⁆ x :=
+  (h : ∀ x' ∈ oa.support, f x' = y → x' = x) : ⁅= y | oa >>= λ x, return (f x)⁆ = ⁅= x | oa⁆ :=
 begin
-  rw [prob_output_bind_return_eq_tsum_indicator],
+  rw [prob_output_bind_return_eq_tsum_indicator, prob_output.def],
   refine trans (tsum_eq_single x $ λ x' hx', set.indicator_apply_eq_zero.2 _) _,
   { exact λ hx'', prob_output_eq_zero (λ hxs, hx' (h x' hxs hx'')) },
   { simp only [set.mem_preimage, set.mem_singleton_iff, hx, set.indicator_of_mem] }

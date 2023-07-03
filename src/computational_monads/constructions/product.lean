@@ -32,7 +32,7 @@ def product (oa : oracle_comp spec α) (ob : oracle_comp spec β) :
 
 infixr `×ₘ` : 60 := oracle_comp.product
 
-variables (oa : oracle_comp spec α) (ob : oracle_comp spec β)
+variables (oa oa' : oracle_comp spec α) (ob ob' : oracle_comp spec β)
   (e : set α) (e' : set β) (a : α) (b : β) (x : α × β)
 
 lemma product.def : oa ×ₘ ob = do {a ← oa, b ← ob, return (a, b)} := rfl
@@ -63,6 +63,17 @@ by rw [fin_support_prod, finset.mem_product]
 end fin_support
 
 section distribution_semantics
+
+section dist_equiv
+
+lemma product_dist_equiv_product {oa oa' : oracle_comp spec α} {ob ob' : oracle_comp spec β}
+  (ha : oa ≃ₚ oa') (hb : ob ≃ₚ ob') : oa ×ₘ ob ≃ₚ oa' ×ₘ ob' :=
+begin
+  simp [product.def],
+  pairwise_dist_equiv [ha, hb],
+end
+
+end dist_equiv
 
 section eval_dist
 

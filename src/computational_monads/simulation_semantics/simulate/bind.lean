@@ -61,6 +61,11 @@ section dist_equiv
 @[simp, simp_dist_equiv] lemma simulate'_bind_dist_equiv : simulate' so (oa >>= ob) s ≃ₚ
   simulate so oa s >>= λ x, simulate' so (ob x.1) x.2 := by pairwise_dist_equiv
 
+lemma simulate_bind_dist_equiv_simulate'_bind (oz : α × S → oracle_comp spec' β)
+  (s₀ s : S) (h : ∀ x s', oz (x, s') ≃ₚ oz (x, s)) :
+  simulate so oa s₀ >>= oz ≃ₚ simulate' so oa s₀ >>= λ x, oz (x, s) :=
+bind_dist_equiv_fst_bind _ _ _ h
+
 end dist_equiv
 
 section prob_output
@@ -70,7 +75,7 @@ intermediate outputs and states of the computation. -/
 @[simp] lemma prob_output_simulate_bind_eq_tsum_tsum (x : β × S) :
   ⁅= x | simulate so (oa >>= ob) s⁆ =
     ∑' a s', ⁅= (a, s') | simulate so oa s⁆ * ⁅= x | simulate so (ob a) s'⁆ :=
-by rw [simulate_bind, eval_dist_prod_bind]
+by rw [simulate_bind, prob_output_prod_bind]
 
 @[simp] lemma prob_output_simulate_bind_eq_sum_sum [fintype α] [fintype S] (x : β × S) :
   ⁅= x | simulate so (oa >>= ob) s⁆ =
