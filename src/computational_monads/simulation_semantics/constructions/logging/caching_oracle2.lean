@@ -155,7 +155,8 @@ def forking_map.to_fun₂ (s₀ : query_cache spec) (f : forking_map α s₀) :
 the probability of getting that result is higher when starting with the larger cache,
 since it has fewer additional choices at which it could diverge from calculating `z`. -/
 lemma prob_output_monotone' (oa : oracle_comp spec α) (s₀ : query_cache spec)
-  (f : α × query_cache spec → query_cache spec) (hf : ∀ z, s₀ ≤ f z ∧ f z ≤ z.2)
+  (f : α × query_cache spec → query_cache spec)
+  (hf : ∀ z ∈ (simulate cachingₛₒ oa s₀).support, s₀ ≤ f z ∧ f z ≤ z.2)
   (z' : α × query_cache spec) :
   ⁅= z' | do {z ← simulate cachingₛₒ oa s₀, return (z.1, f z)}⁆ ≤
     ⁅= z' | do {z ← simulate cachingₛₒ oa z'.2, return (z.1, f z)}⁆ :=
@@ -170,10 +171,10 @@ begin
     {
       apply prob_output_monotone,
       {
-        exact (hf z).1,
+        exact (hf z hzs).1,
       },
       {
-        refine mem_support_of_le_mem_support oa s₀ (f z) (hf z).1 z (hf z).2 hzs,
+        refine mem_support_of_le_mem_support oa s₀ (f z) (hf z hzs).1 z (hf z hzs).2 hzs,
       }
     },
     {
@@ -184,6 +185,16 @@ begin
   {
     refine le_rfl,
   }
+end
+
+lemma prob_output_monotone'' (oa : oracle_comp spec α) (s₀ : query_cache spec)
+  (f : α × query_cache spec → query_cache spec) (hf : ∀ z, s₀ ≤ f z ∧ f z ≤ z.2)
+  (z' : α × query_cache spec) :
+  ⁅= z' | do {z ← simulate cachingₛₒ oa s₀, return (z.1, z.2 \ f z)}⁆ ≤
+    ⁅= z' | do {z ← simulate cachingₛₒ oa z'.2, return (z.1, z.2 \ f z)}⁆ :=
+begin
+  apply prob_output_monotone',
+  refine λ y hy, ⟨_, _⟩,
 end
 
 
@@ -262,6 +273,81 @@ calc ⁅= x | simulate' cachingₛₒ oa s₀⁆ ^ 2 / loss_factor =
 
 
 
+lemma prob_output_eq_le_prob_output_eq_rewind'
+  (oa : oracle_comp spec α) (s₀ : query_cache spec) (x : α)
+  (f : α × query_cache spec → query_cache spec)
+  (hf : ∀ z, s₀ ≤ f z ∧ f z ≤ z.2) :
+
+  let poss_cuts : finset (query_cache spec) :=
+    ((λ z, snd z \ f z) <$> (simulate cachingₛₒ oa s₀)).fin_support in
+
+  ⁅= x | simulate' cachingₛₒ oa s₀⁆ ^ 2 / poss_cuts.card ≤
+    ⁅= (x, x) | do {z ← simulate cachingₛₒ oa s₀,
+      z' ← simulate cachingₛₒ oa (f z), return (z.1, z'.1)}⁆ :=
+
+let poss_cuts : finset (query_cache spec) :=
+  ((λ z, snd z \ f z) <$> (simulate cachingₛₒ oa s₀)).fin_support in
+-- First switch to a sum over the possible intermediate values `sf` that will be chosen by `f`.
+calc ⁅= x | simulate' cachingₛₒ oa s₀⁆ ^ 2 / poss_cuts.card =
+    (∑ sf in poss_cuts,
+      ⁅= (x, sf) | do {z ← simulate cachingₛₒ oa s₀, return (z.1, z.2 \ f z)}⁆) ^ 2 / poss_cuts.card :
+  begin
+    sorry -- "easy"
+  end
+
+-- Use the loss factor to bring the square inside the summation.
+... ≤ ∑ sf in poss_cuts,
+        ⁅= (x, sf) | do {z ← simulate cachingₛₒ oa s₀, return (z.1, z.2 \ f z)}⁆ ^ 2 :
+  begin
+    have := ennreal.pow_sum_div_card_le_sum_pow poss_cuts
+      (λ sf, ⁅= (x, sf) | simulate cachingₛₒ oa s₀ >>= λ z, return (z.1, z.2 \ f z)⁆) (λ _ _, prob_output_ne_top _ _) 1,
+    simpa only [pow_one, one_add_one_eq_two] using this
+  end
+
+-- Substitute probability for running the computation twice in sequence.
+... = ∑ sf in poss_cuts,
+        ⁅= ((x, sf), (x, sf)) | (λ (z : α × query_cache spec), (z.1, z.2 \ f z)) <$> (simulate cachingₛₒ oa s₀)
+          ×ₘ (λ (z : α × query_cache spec), (z.1, z.2 \ f z)) <$> (simulate cachingₛₒ oa s₀)⁆ :
+  begin
+    refine finset.sum_congr rfl (λ sf hsf, _),
+    rw [prob_output_product, pow_two],
+    refl,
+  end
+-- -- Run second computation from the intermediate cache `sf` instead of the base cache `s₀`.
+-- ... ≤ ∑ sf in poss_cuts,
+--         ⁅= ((x, sf), (x, sf)) | (λ (z : α × query_cache spec), (z.1, z.2 \ f z)) <$> (simulate cachingₛₒ oa s₀)
+--           ×ₘ (λ (z : α × query_cache spec), (z.1, z.2 \ f z)) <$> (simulate cachingₛₒ oa (z.2 \ sf))⁆ :
+--   begin
+--     refine finset.sum_le_sum (λ sf hsf, _),
+--     sorry, -- maybe with s₀ → ∅
+--   end
+-- Run second computation from the intermediate cache `sf` instead of the base cache `s₀`.
+-- ... ≤ ∑ sf in poss_cuts,
+--         ⁅= ((x, sf), (x, sf)) | do {z ← simulate cachingₛₒ oa s₀,
+--           z' ← simulate cachingₛₒ oa (z.2 \ sf), return ((z.1, z.2 \ f z), (z'.1, z'.2 \ f z'))}⁆ :
+--   begin
+--     sorry -- folding
+--   end
+-- Substitute the value `sf` for `f z`, which is equal assuming the probability is non-zero.
+... = ∑ sf in poss_cuts,
+        ⁅= ((x, sf), (x, sf)) | do {z ← simulate cachingₛₒ oa s₀,
+          z' ← simulate cachingₛₒ oa (f z), return ((z.1, z.2 \ f z), (z'.1, z'.2 \ f z'))}⁆ :
+  begin
+    sorry
+  end
+-- Improve total probability by just not checking what the second cache returned is.
+... ≤ ∑ sf in poss_cuts,
+        ⁅= ((x, sf), x) | do {z ← simulate cachingₛₒ oa s₀,
+          z' ← simulate cachingₛₒ oa (f z), return ((z.1, z.2 \ f z), z'.1)}⁆ :
+  begin
+    sorry
+  end
+-- Revert the summation over the intermediate cache values.
+... = ⁅= (x, x) | do {z ← simulate cachingₛₒ oa s₀,
+        z' ← simulate cachingₛₒ oa (f z), return (z.1, z'.1)}⁆ :
+  begin
+    sorry
+  end
 
 
 
