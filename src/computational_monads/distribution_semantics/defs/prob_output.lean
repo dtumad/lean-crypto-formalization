@@ -14,6 +14,10 @@ Having a seperate definition helps prevent the simplifier from getting confused.
 
 We also introduce the notation `⁅= x | oa⁆` for the probability of `x` being returned by `oa`,
 under the denotational semantics (in particular assuming queries are answered uniformly at random).
+
+Since showing probabilities are zero and one are very common, we add `@[simp]` tags to a number
+of lemmas that have additional hypotheses. This allows the simplifier to use them if e.g.
+`x ∉ oa.support` is given to the simplifier in showing that `⁅= x | oa⁆ = 0`.
 -/
 
 namespace oracle_comp
@@ -71,10 +75,11 @@ by rw [mem_fin_support_iff_mem_support, prob_output_ne_zero_iff]
 
 variables {oa x}
 
-lemma prob_output_eq_zero (h : x ∉ oa.support) : ⁅= x | oa⁆ = 0 := (prob_output_eq_zero_iff oa x).2 h
+@[simp] lemma prob_output_eq_zero (h : x ∉ oa.support) :
+  ⁅= x | oa⁆ = 0 := (prob_output_eq_zero_iff oa x).2 h
 
-lemma prob_output_eq_zero' (h : x ∉ oa.fin_support) : ⁅= x | oa⁆ = 0 :=
-(prob_output_eq_zero_iff' oa x).2 h
+@[simp] lemma prob_output_eq_zero' (h : x ∉ oa.fin_support) :
+  ⁅= x | oa⁆ = 0 := (prob_output_eq_zero_iff' oa x).2 h
 
 lemma prob_output_ne_zero (h : x ∈ oa.support) : ⁅= x | oa⁆ ≠ 0 := (prob_output_ne_zero_iff oa x).2 h
 
@@ -102,16 +107,17 @@ by rw [fin_support_subset_iff_support_subset_coe, finset.coe_singleton,
 
 variables {oa x}
 
-lemma prob_output_eq_one (h : oa.support = {x}) : ⁅= x | oa⁆ = 1 := (prob_output_eq_one_iff oa x).2 h
+@[simp] lemma prob_output_eq_one (h : oa.support = {x}) :
+  ⁅= x | oa⁆ = 1 := (prob_output_eq_one_iff oa x).2 h
 
-lemma prob_output_eq_one' (h : oa.fin_support = {x}) : ⁅= x | oa⁆ = 1 :=
-(prob_output_eq_one_iff' oa x).2 h
+@[simp] lemma prob_output_eq_one' (h : oa.fin_support = {x}) :
+  ⁅= x | oa⁆ = 1 := (prob_output_eq_one_iff' oa x).2 h
 
-lemma prob_output_eq_one_of_subset (h : oa.support ⊆ {x}) : ⁅= x | oa⁆ = 1 :=
-(prob_output_eq_one_iff_subset oa x).2 h
+@[simp] lemma prob_output_eq_one_of_subset (h : oa.support ⊆ {x}) :
+  ⁅= x | oa⁆ = 1 := (prob_output_eq_one_iff_subset oa x).2 h
 
-lemma prob_output_eq_one_of_subset' (h : oa.fin_support ⊆ {x}) : ⁅= x | oa⁆ = 1 :=
-(prob_output_eq_one_iff_subset' oa x).2 h
+@[simp] lemma prob_output_eq_one_of_subset' (h : oa.fin_support ⊆ {x}) :
+  ⁅= x | oa⁆ = 1 := (prob_output_eq_one_iff_subset' oa x).2 h
 
 end eq_one
 
@@ -127,10 +133,11 @@ by rw [mem_fin_support_iff_mem_support, prob_output_pos_iff]
 
 variables {oa} {x}
 
-lemma prob_output_pos (h : x ∈ oa.support) : 0 < ⁅= x | oa⁆ := (prob_output_pos_iff oa x).2 h
+@[simp] lemma prob_output_pos (h : x ∈ oa.support) :
+  0 < ⁅= x | oa⁆ := (prob_output_pos_iff oa x).2 h
 
-lemma prob_output_pos' (h : x ∈ oa.fin_support) : 0 < ⁅= x | oa⁆ :=
-(prob_output_pos_iff' oa x).2 h
+@[simp] lemma prob_output_pos' (h : x ∈ oa.fin_support) :
+  0 < ⁅= x | oa⁆ := (prob_output_pos_iff' oa x).2 h
 
 end pos
 

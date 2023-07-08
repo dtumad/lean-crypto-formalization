@@ -296,16 +296,8 @@ calc (adv.accepting_probability) ^ 2 / fintype.card T =
   ... ≤ ∑' t, ⁅= (some t, some t) | adv.forking_experiment_cf⁆ : begin
     refine ennreal.tsum_le_tsum (λ t, _),
     simp only [accepting_experiment_cf, forking_experiment_cf_eq, product],
-    sorry,
+    sorry
   end
-  -- ... = ∑' t, ⁅= (some t, some t) | prod.map adv.cf' adv.cf' <$> adv.forking_experiment⁆ : sorry
-  -- ... = ⁅λ out, out.1.is_some ∧ out.1 = out.2 | prod.map adv.cf' adv.cf' <$> adv.forking_experiment⁆ :
-  --   begin
-  --     sorry,
-  --   end
-  -- ... = ⁅λ out, (adv.cf' out.1).is_some ∧ (adv.cf' out.1 = adv.cf' out.2) | adv.forking_experiment⁆ :
-  --   by simpa only [prob_event_map']
-
   ... = ⁅adv.accept_fork | adv.forking_experiment⁆ :
     by rw [prob_event_accept_fork_eq_tsum_prob_output]
 
