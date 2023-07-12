@@ -26,9 +26,13 @@ section support
 @[simp] lemma support_simulate_bind : (simulate so (oa >>= ob) s).support =
   ⋃ x ∈ (simulate so oa s).support, (simulate so (ob $ prod.fst x) x.2).support := rfl
 
-lemma mem_support_simulate_bind_iff (x : β × S) : x ∈ (simulate so (oa >>= ob) s).support ↔
-  ∃ a s', (a, s') ∈ (simulate so oa s).support ∧ x ∈ (simulate so (ob a) s').support :=
+lemma mem_support_simulate_bind_iff (y : β × S) : y ∈ (simulate so (oa >>= ob) s).support ↔
+  ∃ a s', (a, s') ∈ (simulate so oa s).support ∧ y ∈ (simulate so (ob a) s').support :=
 by simp_rw [support_simulate_bind, set.mem_Union, prod.exists, exists_prop]
+
+lemma mem_support_simulate_bind_iff' (y : β × S) : y ∈ (simulate so (oa >>= ob) s).support ↔
+  ∃ x, x ∈ (simulate so oa s).support ∧ y ∈ (simulate so (ob (prod.fst x)) x.2).support :=
+by simp_rw [support_simulate_bind, set.mem_Union, exists_prop]
 
 @[simp] lemma support_simulate'_bind : (simulate' so (oa >>= ob) s).support =
   ⋃ x ∈ (simulate so oa s).support, (simulate' so (ob $ prod.fst x) x.snd).support :=

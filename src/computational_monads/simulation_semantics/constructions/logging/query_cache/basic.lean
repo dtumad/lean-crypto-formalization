@@ -177,9 +177,7 @@ instance : has_emptyc (query_cache spec) := ⟨query_cache.init spec⟩
 
 instance : inhabited (query_cache spec) := ⟨∅⟩
 
--- lemma init_apply' : (∅ : query_cache spec) i = λ _, none := rfl
-
--- @[simp] lemma init_apply : (∅ : query_cache spec) i t = none := rfl
+@[simp] lemma cached_inputs_init : cached_inputs (∅ : query_cache spec) = ∅ := rfl
 
 @[simp] lemma lookup_init : lookup ∅ i t = none := rfl
 
@@ -219,7 +217,6 @@ def cache_query (i : spec.ι) (t : spec.domain i) (u : spec.range i) (cache : qu
     { simp [hi, ne.symm hi, ← cache.mem_cached_inputs ] }
   end }
 
-
 variables (i : spec.ι) (t : spec.domain i) (u : spec.range i)
 
 notation `[` i `,` t `↦` u `;` cache `]` := cache_query i t u cache
@@ -239,6 +236,9 @@ lemma lookup_cache_query_same_input : [i, t ↦ u; cache].lookup i t = some u :=
 
 @[simp] lemma lookup_cache_query_diff_input (t' : spec.domain i) (ht : t ≠ t') :
   [i, t ↦ u; cache].lookup i t' = cache.lookup i t' := by simp [ht]
+
+@[simp] lemma cached_inputs_cache_query :
+  [i, t ↦ u; cache].cached_inputs = insert ⟨i, t⟩ cache.cached_inputs := rfl
 
 @[simp] lemma cache_query_ne_init : [i, t ↦ u; cache] ≠ ∅ :=
 ne_of_lookup_ne _ _ i t (by simp)
@@ -290,6 +290,32 @@ begin
       { simp [ht] },
       { simpa [ht] using hc i t' } },
     { simpa [hi] using hc i' t' } }
+end
+
+lemma cache_query_eq_cache_query_iff_of_same_cache (i t u u') :
+  [i, t ↦ u; cache] = [i, t ↦ u'; cache] ↔ u = u' :=
+⟨λ h, by simpa only [lookup_cache_query_same_input] using
+  ((query_cache.ext_iffₗ _ _).1 h) i t , λ h, by rw [h]⟩
+
+@[simp] lemma cache_query_eq_self_iff (i t u) :
+  [i, t ↦ u; cache] = cache ↔ cache.lookup i t = some u :=
+begin
+  refine ⟨λ h, by rw [← h, lookup_cache_query_same_input], λ h, _⟩,
+  refine query_cache.extₗ (λ i' t', _),
+  by_cases hi : i = i',
+  {
+    induction hi,
+    by_cases ht : t = t',
+    {
+      rw [← ht, lookup_cache_query_same_input, h],
+    },
+    {
+      rw [lookup_cache_query_diff_input _ _ _ _ _ ht],
+    }
+  },
+  {
+    rw [lookup_cache_query_diff_index _ _ _ _ _ _ hi],
+  }
 end
 
 end cache_query
@@ -486,6 +512,8 @@ lemma lookup_singleton_same_input :
 @[simp] lemma lookup_singleton_diff_input (t' : spec.domain i) (h : t ≠ t') :
   [i, t ↦ u].lookup i t' = none := by simp [h]
 
+@[simp] lemma cached_inputs_singleton : [i, t ↦ u].cached_inputs = {⟨i, t⟩} := rfl
+
 lemma lookup_singleton_eq_some_iff (i' : spec.ι) (t' : spec.domain i')
   (u' : spec.range i') : [i, t ↦ u].lookup i' t' = some u' ↔
     ∃ (h : i = i'), h.rec t = t' ∧ h.rec u = u' :=
@@ -530,6 +558,17 @@ lemma drop_query_singleton_same_input : [i, t ↦ u].drop_query i t = ∅ := by 
 lemma drop_query_singleton_diff_input (t' : spec.domain i) (h : t ≠ t') :
   [i, t ↦ u].drop_query i t' = [i, t ↦ u] := by simp [h]
 
+lemma lookup_cache_query_eq_lookup_singleton (i' : spec.ι) (t' : spec.domain i')
+  (h : cache.is_fresh i' t') : [i, t ↦ u; cache].lookup i' t' = [i, t ↦ u].lookup i' t' :=
+begin
+  by_cases hi : i = i',
+  { induction hi,
+    by_cases ht : t = t',
+    { simp [ht] },
+    { simp [ht, h] } },
+  { simp [hi, h] }
+end
+
 end singleton
 
 section sdiff
@@ -550,6 +589,21 @@ variables (i : spec.ι) (t : spec.domain i)
 @[simp] lemma init_sdiff : ∅ \ cache = ∅ := query_cache.extₗ (λ i t, if_t_t _ _)
 
 @[simp] lemma sdiff_init : cache \ ∅ = cache := query_cache.extₗ (λ i t, by simp)
+
+@[simp] lemma sdiff_self : cache \ cache = ∅ := query_cache.extₗ (λ i t, by simp)
+
+@[simp] lemma sdiff_cache_query (u) : [i, t ↦ u; cache] \ cache =
+  if cache.is_fresh i t then [i, t ↦ u] else ∅ :=
+begin
+  refine query_cache.extₗ (λ i' t', _),
+  by_cases hit : cache.is_fresh i t;
+  { by_cases hi : i = i',
+    { induction hi,
+      by_cases ht : t = t',
+      { simp [← ht, hit] },
+      { simp [ht, hit] } },
+    { simp [hi, hit] } },
+end
 
 end sdiff
 

@@ -28,10 +28,16 @@ lemma mem_support_simulate_return_iff (x : α × S) :
   x ∈ (simulate so (return a) s).support ↔ x.1 = a ∧ x.2 = s :=
 by simp [prod.eq_iff_fst_eq_snd_eq]
 
+lemma mem_support_simulate_return_self : (a, s) ∈ (simulate so (return a) s).support :=
+(mem_support_simulate_return_iff so a s (a, s)).2 ⟨rfl, rfl⟩
+
 lemma support_simulate'_return : (simulate' so (return a) s).support = {a} := by simp
 
 lemma mem_support_simulate'_return_iff (x : α) :
   x ∈ (simulate' so (return a) s).support ↔ x = a := by simp
+
+lemma mem_support_simulate'_return_self : a ∈ (simulate' so (return a) s).support :=
+(mem_support_simulate'_return_iff so a s a).2 rfl
 
 end support
 

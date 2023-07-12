@@ -65,4 +65,15 @@ end
 
 end bind_map
 
+section return_bind
+
+lemma simulate_return_bind_dist_equiv : simulate so (return a >>= ob) s ≃ₚ simulate so (ob a) s :=
+by pairwise_dist_equiv
+
+lemma support_simulate_return_bind :
+  (simulate so (return a >>= ob) s).support = (simulate so (ob a) s).support :=
+by pairwise_dist_equiv
+
+end return_bind
+
 end oracle_comp
