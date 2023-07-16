@@ -78,7 +78,8 @@ lemma is_fresh_of_lookup_eq_none {i t} (h : cache.lookup i t = none) : cache.is_
 @[simp] lemma lookup_eq_none_of_is_fresh {i t} (h : cache.is_fresh i t) : cache.lookup i t = none :=
 (cache.lookup_eq_none_iff_is_fresh i t).2 h
 
-lemma not_is_fresh_of_lookup_eq_some {i t u} (h : cache.lookup i t = some u) :
+-- TODO: implicitness stuff
+lemma not_is_fresh_of_lookup_eq_some {cache : query_cache spec} {i t u} (h : cache.lookup i t = some u) :
   ¬ cache.is_fresh i t := by simp [is_fresh, h]
 
 lemma lookup_ne_some_of_is_fresh {i t} (h : cache.is_fresh i t) (u : spec.range i) :
@@ -273,7 +274,8 @@ lemma is_cached_cache_query_same_index_iff (t' : spec.domain i) :
 
 lemma is_cached_cache_query_same_input : [i, t ↦ u; cache].is_cached i t := by simp
 
-lemma cache_query_inj_of_is_fresh (h : cache.is_fresh i t) (h' : cache'.is_fresh i t) :
+lemma cache_query_inj_of_is_fresh {cache cache' : query_cache spec} {i t} (u)
+  (h : cache.is_fresh i t) (h' : cache'.is_fresh i t) :
   [i, t ↦ u; cache] = [i, t ↦ u; cache'] ↔ cache = cache' :=
 begin
   simp only [query_cache.ext_iffₗ],

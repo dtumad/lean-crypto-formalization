@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
 import computational_monads.simulation_semantics.simulate.basic
+import computational_monads.distribution_semantics.query
 
 /-!
 # Distributional Semantics of Simulation of a Query Operation
@@ -25,8 +26,16 @@ section support
 @[simp] lemma support_simulate_query :
   (simulate so (query i t) s).support = (so i (t, s)).support := rfl
 
+lemma mem_support_simulate_query_iff (z : spec.range i × S) :
+  z ∈ (simulate so (query i t) s).support ↔ z ∈ (so i (t, s)).support := iff.rfl
+
 lemma support_simulate'_query : (simulate' so (query i t) s).support =
   prod.fst '' (so i (t, s)).support := by simp
+
+lemma mem_support_simulate'_query_iff (u : spec.range i) :
+  u ∈ (simulate' so (query i t) s).support ↔ ∃ s', (u, s') ∈ (so i (t, s)).support :=
+by simp only [support_simulate', support_simulate_query, set.mem_image, prod.exists,
+  exists_and_distrib_right, exists_eq_right]
 
 end support
 

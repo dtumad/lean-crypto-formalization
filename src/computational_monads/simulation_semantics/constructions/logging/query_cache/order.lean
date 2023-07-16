@@ -72,7 +72,8 @@ lemma le.def : cache ≤ cache' ↔
 
 section is_cached
 
-lemma is_cached_of_le_of_is_cached (h : cache ≤ cache') (h' : cache.is_cached i t) :
+lemma is_cached_of_le_of_is_cached {cache cache' : query_cache spec} {i t}
+  (h : cache ≤ cache') (h' : cache.is_cached i t) :
   cache'.is_cached i t :=
 begin
   rw [le.def] at h,
@@ -85,11 +86,12 @@ end is_cached
 
 section is_fresh
 
-lemma is_fresh_of_le_of_is_fresh (h : cache ≤ cache') (h' : cache'.is_fresh i t) :
+lemma is_fresh_of_le_of_is_fresh {cache cache' : query_cache spec} {i t}
+  (h : cache ≤ cache') (h' : cache'.is_fresh i t) :
   cache.is_fresh i t :=
 begin
   rw [← not_is_cached_iff_is_fresh] at h' ⊢,
-  exact λ h'', h' (is_cached_of_le_of_is_cached _ _ _ _ h h'')
+  exact λ h'', h' (is_cached_of_le_of_is_cached h h'')
 end
 
 end is_fresh
@@ -145,6 +147,37 @@ section cache_query
 lemma cache_query_monotone : monotone (cache_query i t u) :=
 λ cache cache' h i' t' u', by {simp only [lookup_cache_query],
   split_ifs, exact id, exact h i' t' u', exact h i' t' u'}
+
+lemma cache_query_le_cache_query_iff_of_is_fresh {cache cache' : query_cache spec} {i t} (u)
+  (h : cache.is_fresh i t) (h' : cache'.is_fresh i t) :
+    [i, t ↦ u; cache] ≤ [i, t ↦ u; cache'] ↔ cache ≤ cache' :=
+begin
+  refine ⟨λ hu i' t' u' hu', _, λ hu, cache_query_monotone i t u hu⟩,
+  by_cases hi : i = i',
+  -- TODO: could we write some kind of induction tactic thing for proofs like this?
+  { induction hi,
+    by_cases ht : t = t',
+    { exact ((lookup_ne_some_of_is_fresh cache h u') (ht.symm ▸ hu')).elim },
+    { specialize hu i t' u',
+      simp only [lookup_cache_query_diff_input _ _ _ _ _ ht] at hu,
+      exact hu hu' } },
+  { specialize hu i' t' u',
+    simp only [lookup_cache_query_diff_index _ _ _ _ _ _ hi] at hu,
+    exact hu hu' }
+end
+
+lemma cache_query_le_iff_of_le {cache cache' : query_cache spec}
+  (h : cache ≤ cache') (i t u) : [i, t ↦ u; cache] ≤ cache' ↔ cache'.lookup i t = some u :=
+begin
+  refine ⟨λ h', h' i t u (lookup_cache_query_same_input _ i t u), λ h' i' t' u' hu', _⟩,
+  by_cases hi : i = i',
+  { induction hi,
+    by_cases ht : t = t',
+    { induction ht,
+      refine trans h' ((lookup_cache_query_same_input _ _ _ _).symm.trans hu') },
+    { exact h i t' u' ((lookup_cache_query_diff_input _ _ _ _ _ ht).symm.trans hu') } },
+  { exact h i' t' u' ((lookup_cache_query_diff_index _ _ _ _ _ _ hi).symm.trans hu') }
+end
 
 @[simp] lemma le_cache_query_self : cache ≤ [i, t ↦ u; cache] := sorry
 

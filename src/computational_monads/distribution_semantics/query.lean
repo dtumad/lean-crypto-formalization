@@ -236,4 +236,16 @@ by simp_rw [prob_event_bind_eq_sum, prob_output_query_eq_inv,
 
 end query_bind
 
+section query_bind_return
+
+variables (f : spec.range i → α) (x : α)
+
+lemma support_query_bind_return : (query i t >>= λ u, return (f u)).support = set.range f :=
+by simp
+
+lemma mem_support_query_bind_return_iff : x ∈ (query i t >>= λ u, return (f u)).support ↔
+  ∃ u, f u = x := by rw [support_query_bind_return, set.mem_range]
+
+end query_bind_return
+
 end oracle_comp

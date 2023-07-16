@@ -5,8 +5,8 @@ Authors: Devon Tuma
 -/
 import computational_monads.simulation_semantics.constructions.logging.query_cache.get_or_else
 import computational_monads.simulation_semantics.simulate.monad
+import computational_monads.simulation_semantics.simulate.query
 import computational_monads.distribution_semantics.prod
-import computational_monads.distribution_semantics.query
 import computational_monads.constructions.product
 
 /-!
@@ -41,12 +41,22 @@ section apply
   cachingₛₒ i z = z.2.get_or_else i z.1 (query i z.1) := by cases z; refl
 
 variables {i : spec.ι} {z : spec.domain i × query_cache spec}
+  {t : spec.domain i} {s₀ : query_cache spec}
 
 lemma apply_eq_of_is_fresh (h : z.2.is_fresh i z.1) :
   cachingₛₒ i z = query i z.1 >>= λ u, return (u, [i, z.1 ↦ u; z.2]) := by simp [h]
 
+lemma apply_eq_of_is_fresh' (h : s₀.is_fresh i t) :
+  cachingₛₒ i (t, s₀) = query i t >>= λ u, return (u, [i, t ↦ u; s₀]) := apply_eq_of_is_fresh h
+
 lemma apply_eq_of_is_cached (h : z.2.is_cached i z.1) :
   cachingₛₒ i z = return ((z.2.lookup i z.1).get_or_else default, z.2) := by simp [h]
+
+lemma apply_eq_of_is_cached' (h : s₀.is_cached i t) :
+  cachingₛₒ i (t, s₀) = return ((s₀.lookup i t).get_or_else default, s₀) := apply_eq_of_is_cached h
+
+lemma apply_eq_of_lookup_eq_some {u} (h : s₀.lookup i t = some u) :
+  cachingₛₒ i (t, s₀) = return (u, s₀) := get_or_else_of_lookup_eq_some _ _ h
 
 end apply
 
@@ -91,8 +101,8 @@ begin
       { obtain ⟨i, t, htx, htx', ht⟩ := hoa hxx' hx hx',
         have hz : x.2 ≤ z.2 := le_of_mem_support_simulate z hxz,
         have hz' : x'.2 ≤ z'.2 := le_of_mem_support_simulate z' hxz',
-        refine ⟨i, t, is_cached_of_le_of_is_cached _ _ i t hz htx,
-          is_cached_of_le_of_is_cached _ _ i t hz' htx', _⟩,
+        refine ⟨i, t, is_cached_of_le_of_is_cached hz htx,
+          is_cached_of_le_of_is_cached hz' htx', _⟩,
         rwa [lookup_eq_lookup_of_le_of_is_cached hz htx,
           lookup_eq_lookup_of_le_of_is_cached hz' htx'] } },
     { by_cases hs₀ : s₀.is_fresh i t,
@@ -130,20 +140,232 @@ begin
     ne.def, eq_self_iff_true, not_true] at ht,
 end
 
+/-- Add queries in `s'` to `s`, for any query that is fresh to `s`.
+If the query isn't fresh preserve the value cached in `s'`.
+This behaves like a `⊔` operation if the caches have disjoint `cached_inputs` sets,
+but doesn't in general, so we choose not to implement a `has_sup` typeclass instance. -/
+def query_cache.add_fresh_queries (s s' : query_cache spec) : query_cache spec :=
+{ cache_fn := λ i t, if s.is_cached i t then s.lookup i t else s'.lookup i t,
+  cached_inputs := s.cached_inputs ∪ s'.cached_inputs,
+  mem_cached_inputs := λ x, by split_ifs with hx; simp [hx] }
+
+@[simp] lemma add_fresh_queries_init (s : query_cache spec) :
+  s.add_fresh_queries ∅ = s :=
+begin
+  sorry
+end
+
+@[simp] lemma add_fresh_queries_eq_self_iff (s s' : query_cache spec) :
+  s.add_fresh_queries s' = s ↔ s'.cached_inputs ⊆ s.cached_inputs :=
+begin
+  sorry,
+end
+
+lemma cached_inputs_diff_antitone (s₀) {s s' : query_cache spec}
+  (hs : s ≤ s') : (s₀ \ s').cached_inputs ⊆ (s₀ \ s).cached_inputs :=
+begin
+  sorry
+end
+
+-- TODO: why not just use "empty" naming instead of init
+lemma eq_init_of_le_of_le_diff {s₀ s s' : query_cache spec}
+  (hs : s₀ ≤ s) (hs' : s₀ ≤ s' \ s) : s₀ = ∅ :=
+begin
+  refine eq_bot_iff.2 (λ i t u hu, _),
+  specialize hs i t u hu,
+  have : ¬ s.is_fresh i t := not_is_fresh_of_lookup_eq_some hs,
+  specialize hs' i t u hu,
+  simp [this, lookup_sdiff] at hs',
+  refine hs'.elim,
+end
+
+theorem mem_support_simulate_iff_of_le (oa : oracle_comp spec α) {s₀ s₁ : query_cache spec}
+  (hs : s₀ ≤ s₁) (z : α × query_cache spec) :
+  z ∈ (simulate cachingₛₒ oa s₁).support ↔
+  (z.1, s₀.add_fresh_queries (z.2 \ s₁)) ∈ (simulate cachingₛₒ oa s₀).support :=
+begin
+  induction oa using oracle_comp.induction_on
+    with α a α β oa ob hoa hob i t generalizing s₀ s₁,
+  {
+    refine ⟨λ h, _, λ h, _⟩,
+    {
+      rw [mem_support_simulate_return_iff] at h,
+      simp [h.1, h.2],
+    },
+    {
+      simp [mem_support_simulate_return_iff] at h,
+      simp [prod.eq_iff_fst_eq_snd_eq, h.1],
+      have := (cached_inputs_diff_antitone z.2 hs),
+    }
+  }
+end
+
+theorem exists_unique_state_mem_support_of_le (oa : oracle_comp spec α) {s₀ s₁ : query_cache spec}
+  (hs : s₀ ≤ s₁) (z : α × query_cache spec) (hz : z ∈ (simulate cachingₛₒ oa s₁).support) :
+  ∃! (s : query_cache spec), s ≤ z.2 ∧ (z.1, s) ∈ (simulate cachingₛₒ oa s₀).support :=
+begin
+  induction oa using oracle_comp.induction_on
+    with α a α β oa ob hoa hob i t generalizing s₀ s₁,
+  { rw [support_simulate_return, set.mem_singleton_iff, prod.eq_iff_fst_eq_snd_eq] at hz,
+    suffices : ∃! (s : query_cache spec), s ≤ s₁ ∧ s = s₀,
+    by simpa [hz.1, hz.2] using this,
+    exact ⟨s₀, ⟨hs, rfl⟩, λ s hs, hs.2⟩ },
+  {
+    refine exists_unique_of_exists_of_unique _ _,
+    {
+      rw [mem_support_simulate_bind_iff'] at hz,
+      obtain ⟨y, hy, hyz⟩ := hz,
+      specialize hoa y hs hy,
+      obtain ⟨s₁', hs₁'⟩ := exists_of_exists_unique hoa,
+    }
+    -- rw [mem_support_simulate_bind_iff'] at hz,
+    -- obtain ⟨x, hx, hzx⟩ := hz,
+    -- specialize hoa _ hs hx,
+    -- obtain ⟨s', hs', hsz'⟩ := hoa,
+    -- specialize hob x.1 z hs'.1 hzx,
+    -- obtain ⟨s₁', hs₁', hzs₁'⟩ := hob,
+    -- refine ⟨s₁', ⟨hs₁'.1, _⟩, _⟩,
+    -- {
+    --   rw [mem_support_simulate_bind_iff'],
+    --   refine ⟨⟨x.1, s'⟩, hs'.2, hs₁'.2⟩,
+    -- },
+    -- {
+    --   intros sb hsb,
+    --   rw [mem_support_simulate_bind_iff'] at hsb,
+    --   obtain ⟨hsbz, ⟨x'', hx''⟩⟩ := hsb,
+    --   refine hzs₁' _ ⟨hsbz, _⟩,
+    --   have : x'' = (x.1, s') := sorry,
+    -- }
+  },
+  {
+    by_cases hs₁ : s₁.is_fresh i t,
+    {
+      have hs₀ : s₀.is_fresh i t := is_fresh_of_le_of_is_fresh hs hs₁,
+      simp only [hs₀, hs₁, support_simulate_query, apply_eq, get_or_else_of_is_fresh,
+        support_bind_return, support_query, set.image_univ, set.mem_range,
+          prod.mk.inj_iff, exists_eq_left] at hz ⊢,
+      obtain ⟨x, rfl⟩ := hz,
+      exact ⟨[i, t ↦ x; s₀], ⟨(cache_query_le_cache_query_iff_of_is_fresh x hs₀ hs₁).2 hs, rfl⟩,
+        λ s hs, by rw [← hs.2]⟩ },
+    {
+      rw [not_is_fresh_iff_exists_lookup_eq_some] at hs₁,
+      obtain ⟨u, hu⟩ := hs₁,
+      refine ⟨[i, t ↦ u; s₀], ⟨_, _⟩, _⟩,
+      {
+        refine trans _ (le_of_mem_support_simulate z hz),
+        rwa [cache_query_le_iff_of_le hs],
+      },
+      {
+        rw [simulate_query, apply_eq_of_lookup_eq_some hu, mem_support_return_iff] at hz,
+        simp only [hz, support_simulate_query, apply_eq],
+        by_cases hs₀ : s₀.is_fresh i t,
+        {
+          simp only [support_get_or_else_of_is_fresh _ _ hs₀, support_query, set.image_univ,
+            set.mem_range, prod.mk.inj_iff, exists_eq_left],
+        },
+        {
+
+          rw [not_is_fresh_iff_is_cached] at hs₀,
+          simp [support_get_or_else_of_is_cached _ _ hs₀, (lookup_eq_lookup_of_le_of_is_cached hs hs₀).symm.trans hu],
+        }
+      },
+      {
+        rintro s ⟨hs, hsz⟩,
+        rw [simulate_query, apply_eq_of_lookup_eq_some hu, mem_support_return_iff,
+            prod.eq_iff_fst_eq_snd_eq] at hz,
+        by_cases hs₀ : s₀.is_fresh i t,
+        {
+          simp [simulate_query, hs₀, hz.1] at hsz,
+          exact hsz.symm
+        },
+        {
+          rw [not_is_fresh_iff_is_cached] at hs₀,
+          simp [simulate_query, hs₀, hz.1] at hsz,
+          rw [hsz.2, eq_comm, cache_query_eq_self_iff, hsz.1],
+          rw [is_cached_iff_exists_lookup_eq_some] at hs₀,
+          obtain ⟨u', hu'⟩ := hs₀,
+          rw [hu', option.get_or_else_some],
+        }
+      }
+    }
+  }
+end
+
 /-- The possible outputs of simulating a computation with a larger initial cache is
 at most the original set of possible outputs (although the possible final caches may differ). -/
-lemma support_antitone (oa : oracle_comp spec α) (s s' : query_cache spec)
-  (hs : s ≤ s') : (simulate' cachingₛₒ oa s').support ⊆ (simulate' cachingₛₒ oa s).support :=
+lemma support_antitone (oa : oracle_comp spec α) {s₀ s : query_cache spec}
+  (hs : s₀ ≤ s) : (simulate' cachingₛₒ oa s).support ⊆ (simulate' cachingₛₒ oa s₀).support :=
 begin
 
   induction oa using oracle_comp.induction_on
-    with α a α β oa ob hoa hob i t generalizing s s',
+    with α a α β oa ob hoa hob i t generalizing s₀ s,
+  { simp only [support_simulate', support_simulate_return, set.image_singleton] },
   {
-    -- rw [simulate_return, simulate_return],
-    simp,
+    intros y hy,
+    simp_rw [mem_support_simulate'_iff_exists_state,
+      cachingₛₒ.mem_support_simulate_bind_iff] at hy,
+
+    obtain ⟨s₁, hx⟩ := hy,
+    obtain ⟨x, hxy⟩ := exists_of_exists_unique hx,
+
+
+    rw [mem_support_simulate'_bind_iff],
+    refine ⟨x.1, x.2, _⟩,
+    sorry,
+
+    -- specialize hoa hs hxy.1,
+
+    -- have hx' : x.1 ∈ (simulate' cachingₛₒ oa s).support := sorry,
+    -- specialize hoa hs hx',
+    -- rw [mem_support_simulate'_iff_exists_state] at hoa,
+    -- obtain ⟨sx, hsx⟩ := hoa,
+    -- have : sx = x.2 := begin
+    --   suffices : (x.1, sx) = x,
+    --   from (prod.eq_iff_fst_eq_snd_eq.1 this).2,
+    -- end,
+    -- refine ⟨this ▸ hsx, _⟩,
+
+
+
+    -- rw [mem_support_simulate'_bind_iff] at hy ⊢,
+    -- obtain ⟨x, s', hx, hy⟩ := hy,
+    -- have hs' : s ≤ s' := le_of_mem_support_simulate _ hx,
+    -- specialize hob x hs' hy,
+    -- refine ⟨x, s, _, hob⟩,
+    -- rw [mem_support_simulate'_iff_exists_state] at hy,
+    -- obtain ⟨sy, hsy⟩ := hy,
+    -- have hx' : x ∈ (simulate' cachingₛₒ oa s).support :=
+    --   (mem_support_simulate'_iff_exists_state _ _ _ _).2 ⟨s', hx⟩,
+    -- refine ⟨x, s, _⟩,
+    -- specialize hob x _ hy,
+
+
+
+    -- specialize hoa hs hx',
+    -- rw [mem_support_simulate'_iff_exists_state] at hoa,
+    -- obtain ⟨s'', hs''⟩ := hoa,
+    -- refine ⟨x, s', _, _⟩,
+    -- refine hob x _ hz,
+
+    -- specialize hob x,
+    -- have := le_of_mem_support_simulate _ hx,
+    -- specialize hoa this,
+    -- specialize hoa hs hx',
+    -- specialize hob x this,
+    -- refine ⟨x, s', _, _⟩,
+
   },
-  sorry,
-  sorry,
+  { intros u hu,
+    rw [mem_support_simulate'_query_iff] at hu ⊢,
+    obtain ⟨s', hs'⟩ := hu,
+    by_cases hs₀ : s₀.is_fresh i t,
+    { simp_rw [apply_eq_of_is_fresh' hs₀, mem_support_query_bind_return_iff,
+        prod.mk.inj_iff, exists_eq_left, exists_eq'] },
+    { rw [not_is_fresh_iff_is_cached] at hs₀,
+      simp only [apply_eq_of_is_cached' hs₀, mem_support_return_iff, prod.eq_iff_fst_eq_snd_eq,
+        apply_eq_of_is_cached' (is_cached_of_le_of_is_cached hs hs₀), exists_eq_right,
+        ← lookup_eq_lookup_of_le_of_is_cached hs hs₀] at ⊢ hs',
+      exact hs'.1 } },
 end
 
 end support
