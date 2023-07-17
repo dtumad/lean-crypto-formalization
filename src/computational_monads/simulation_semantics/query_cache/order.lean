@@ -3,8 +3,7 @@ Copyright (c) 2023 Devon Tuma. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
-import computational_monads.simulation_semantics.constructions.logging.query_cache.basic
-import computational_monads.distribution_semantics.option
+import computational_monads.simulation_semantics.query_cache.basic
 
 /-!
 # Ordering on Query Caches
@@ -18,10 +17,9 @@ We also define and `inf` operation and a `⊥` element (the empty cache).
 
 namespace query_cache
 
-open oracle_spec oracle_comp
+open oracle_spec
 
 variables {α β γ : Type} {spec spec' : oracle_spec}
-
 
 /-- We say `cache ≤ cache'` for two query caches if every cached value in `cache` has the same
 value cached in `cache'`. For fresh values in `cache` the corresponding value can be anything.

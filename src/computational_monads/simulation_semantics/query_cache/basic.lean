@@ -6,18 +6,26 @@ Authors: Devon Tuma
 import computational_monads.oracle_spec
 
 /-!
-# Oracle Query Cache
+# Cache for Oracle Queries.
 
-This file defines a cache for storing oracle queries and recalling cached values.
+This file defines a `query_cache` type for storing oracle queries and recalling cached values.
 We construct them as functions from oracle indices and inputs to optional output values.
 This automatically gives order independence of cache values and uniqeness of cache values.
 Updates are done using continuation passing with the previous cache.
+
+We also define a number of basic constructors and operations on `query_cache`:
+* `query_cache.lookup` returns the currently cached value.
+* `query_cache.is_fresh` is true iff the given value isn't cached.
+* `query_cache.is_cached` is true iff the given value is cached.
+* `query_cache.cache_query` add a value to the cache.
+* `query_cache.drop_query` removes a value from the cache.
 -/
 
 /-- Data type representing a cache of oracle queries for a given `oracle_spec`,
 represented as a function from inputs to optional outputs, with `none` meaning an uncached value.
-We also bundle a proof that the cache has finitely many cached values for convenience,
-which is always true when running an `oracle_comp` since we only allow well-founded recursion. -/
+We also bundle a finset `cached_inputs` containing all the currently cached values,
+which is enforced by the included proof in `mem_cached_inputs`, since we generally only
+consider computations with a bounded number of oracle queries. -/
 @[ext] structure query_cache (spec : oracle_spec) : Type :=
 (cache_fn : Π (i : spec.ι), spec.domain i → option (spec.range i))
 (cached_inputs : finset (Σ (i : spec.ι), spec.domain i))
@@ -135,13 +143,12 @@ end is_fresh
 section is_cached
 
 /-- `cache.is_cached i t` means that there is *some* value cached for the inputs. -/
-@[derive decidable]
-def is_cached (i : spec.ι) (t : spec.domain i) := (cache.lookup i t).is_some = tt
+@[derive decidable] def is_cached (i : spec.ι) (t : spec.domain i) := ¬ cache.is_fresh i t
 
 @[simp] lemma not_is_cached_iff_is_fresh (i t) : ¬ cache.is_cached i t ↔ cache.is_fresh i t :=
-by rw [is_cached, option.not_is_some_iff_eq_none, lookup_eq_none_iff_is_fresh]
+by rw [is_cached, not_not]
 
-@[simp]  lemma not_is_fresh_iff_is_cached (i t) : ¬ cache.is_fresh i t ↔ cache.is_cached i t :=
+@[simp] lemma not_is_fresh_iff_is_cached (i t) : ¬ cache.is_fresh i t ↔ cache.is_cached i t :=
 by rw [← not_is_cached_iff_is_fresh, not_not]
 
 lemma not_is_cached_of_is_fresh {i t} (h : cache.is_fresh i t) : ¬ cache.is_cached i t :=
@@ -158,7 +165,8 @@ lemma is_cached_of_not_is_fresh {i t} (h : ¬ cache.is_fresh i t) : cache.is_cac
 
 lemma is_cached_iff_exists_lookup_eq_some (i t) :
   cache.is_cached i t ↔ ∃ u, cache.lookup i t = some u :=
-by simp [is_cached, ← option.is_some_iff_exists]
+by rw [is_cached, is_fresh, option.is_none_iff_eq_none, ← option.not_is_some_iff_eq_none,
+  not_not, option.is_some_iff_exists]
 
 lemma not_is_fresh_iff_exists_lookup_eq_some (i t) :
   ¬ cache.is_fresh i t ↔ ∃ u, cache.lookup i t = some u :=
@@ -171,7 +179,7 @@ lemma lookup_eq_some_of_is_cached {i t} (h : cache.is_cached i t) :
   ∃ u, cache.lookup i t = some u := (cache.is_cached_iff_exists_lookup_eq_some i t).1 h
 
 lemma not_is_cached_of_lookup_eq_none {i t} (h : cache.lookup i t = none) :
-  ¬ cache.is_cached i t := by simp [is_cached, h]
+  ¬ cache.is_cached i t := by simp [is_cached_iff_exists_lookup_eq_some, h]
 
 lemma lookup_eq_none_of_not_is_cached {i t} (h : ¬ cache.is_cached i t) :
   cache.lookup i t = none := lookup_eq_none_of_is_fresh cache (is_fresh_of_not_is_cached _ h)
@@ -441,8 +449,7 @@ unless the inputs being cached are the same as the one being dropped. -/
   [i, t ↦ u; cache].drop_query i' t' = if h : i = i' then (if h.rec t = t' then cache.drop_query i' t'
     else [i, t ↦ u; cache.drop_query i' t']) else [i, t ↦ u; cache.drop_query i' t'] :=
 begin
-  simp only [query_cache.ext_iffₗ],
-  intros i'' t'',
+  refine query_cache.extₗ (λ i'' t'', _),
   by_cases hi : i = i',
   { induction hi,
     by_cases hi' : i = i'',
@@ -486,30 +493,40 @@ lemma cache_query_drop_query (i t u i' t') :
   [i, t ↦ u; cache.drop_query i' t'] = if h : i = i' then (if h.rec t = t' then [i, t ↦ u; cache]
     else [i, t ↦ u; cache].drop_query i' t') else [i, t ↦ u; cache].drop_query i' t' :=
 begin
+  refine query_cache.extₗ (λ i'' t'', _),
   by_cases hi : i = i',
-  {
-    induction hi,
-    by_cases ht : t = t',
-    {
-      simp [ht],
-      sorry,
-    },
-    {
-      sorry,
-    }
-  },
-  {
-    sorry,
-  }
+  { induction hi,
+    by_cases hi' : i = i'',
+    { induction hi',
+      by_cases ht : t = t',
+      { by_cases ht' : t' = t'',
+        { simp [ht, ht'] },
+        { simp [ht, ht'] } },
+      { by_cases ht' : t' = t'',
+        { simp [ht, ht', (ht' ▸ ht : t ≠ t'')] },
+        { simp [ht, ht'] } } },
+    { by_cases ht : t = t',
+      { simp [hi', ht] },
+      { simp [hi', ht] } } },
+  { by_cases hi' : i' = i'',
+    { induction hi',
+      simp [hi] },
+    { by_cases hi'' : i = i'',
+      { induction hi'',
+        simp [hi, hi'] },
+      { simp [hi, hi', hi''] } } }
 end
+
+@[simp] lemma cache_query_drop_query_same_index (i t u t') :
+  [i, t ↦ u; cache.drop_query i t'] = if t = t' then [i, t ↦ u; cache]
+    else [i, t ↦ u; cache].drop_query i t' :=
+by simp only [cache_query_drop_query, dif_pos]
 
 /-- Adding a value to a cache after removing a value for the same inputs is the same as just
 caching it into the original cache, since adding new values replaces old ones. -/
 @[simp] lemma cache_query_drop_query_same_input (i t u) :
   [i, t ↦ u; cache.drop_query i t] = [i, t ↦ u; cache] :=
-begin
-  sorry,
-end
+by simp only [cache_query_drop_query, eq_self_iff_true, if_true, dite_eq_ite]
 
 end cache_query_drop_query
 
@@ -604,41 +621,5 @@ begin
 end
 
 end singleton
-
-section sdiff
-
-/-- We define a diff operation `cache \ cache'` on `query_cache` by removing any cached elements
-in `cache'` from `cache`, leaving everything else unchanged. -/
-instance : has_sdiff (query_cache spec) :=
-{ sdiff := λ cache cache', {
-    cache_fn := λ i t, if cache'.is_fresh i t then cache.lookup i t else none,
-    cached_inputs := cache.cached_inputs \ cache'.cached_inputs,
-    mem_cached_inputs := λ x, by simp [and_comm, is_fresh_iff_not_mem_cached_inputs] } }
-
-variables (i : spec.ι) (t : spec.domain i)
-
-@[simp] lemma lookup_sdiff : (cache \ cache').lookup i t =
-  if cache'.is_fresh i t then cache.lookup i t else none := rfl
-
-@[simp] lemma init_sdiff : ∅ \ cache = ∅ := query_cache.extₗ (λ i t, if_t_t _ _)
-
-@[simp] lemma sdiff_init : cache \ ∅ = cache := query_cache.extₗ (λ i t, by simp)
-
-@[simp] lemma sdiff_self : cache \ cache = ∅ := query_cache.extₗ (λ i t, by simp)
-
-@[simp] lemma sdiff_cache_query (u) : [i, t ↦ u; cache] \ cache =
-  if cache.is_fresh i t then [i, t ↦ u] else ∅ :=
-begin
-  refine query_cache.extₗ (λ i' t', _),
-  by_cases hit : cache.is_fresh i t;
-  { by_cases hi : i = i',
-    { induction hi,
-      by_cases ht : t = t',
-      { simp [← ht, hit] },
-      { simp [ht, hit] } },
-    { simp [hi, hit] } },
-end
-
-end sdiff
 
 end query_cache

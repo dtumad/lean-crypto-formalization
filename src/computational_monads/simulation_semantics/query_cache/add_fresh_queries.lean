@@ -3,7 +3,7 @@ Copyright (c) 2023 Devon Tuma. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
-import computational_monads.simulation_semantics.constructions.logging.query_cache.order
+import computational_monads.simulation_semantics.query_cache.order
 
 /-!
 # Merging Fresh Values Into a Cache
@@ -15,10 +15,9 @@ If the two `query_cache`s are disjoint this acts like a sup operation, but in ge
 satisfy the criteria for being a `semilattice`.
 -/
 
-
 namespace query_cache
 
-open oracle_spec oracle_comp
+open oracle_spec
 
 variables {α β γ : Type} {spec spec' : oracle_spec}
 

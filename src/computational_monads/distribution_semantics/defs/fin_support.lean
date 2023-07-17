@@ -13,8 +13,10 @@ Instead of a `set` as in `oracle_comp.support` we introduce `oracle_comp.fin_sup
 which gives the support as a `finset`, in a way that is compatible with `oracle_comp.support`.
 The resulting `finset` is equal to `oracle_comp.support` when coerced to a `set`,
 see `oracle_comp.coe_fin_support_eq_support` and `oracle_comp.fin_support_eq_to_finset_support`.
-Note that we open `classical` for this, without which we would need `oracle_comp.decidable`.
-This is done for simplicity, as classical seems like a minimal hypothesis. TODO
+
+Note that we open `classical` for this, without which we would need `oracle_comp.decidable`
+instances to construct the `bUnion` in the `oracle_comp.bind` case. This is mostly done for
+simplicity, but could be generalized if a need arises.
 -/
 
 namespace oracle_comp
@@ -23,7 +25,7 @@ open oracle_spec
 
 variables {α β γ : Type} {spec spec' : oracle_spec}
 
-open_locale classical -- Could avoid this by using `oracle_comp.decidable` for `bUnion` instance.
+open_locale classical
 
 /-- Compute an explicit `finset` of possible outputs of a computation.
 The members exactly match those of `oracle_comp.support`, and the definition is similar. -/
