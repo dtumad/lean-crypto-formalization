@@ -10,8 +10,8 @@ import computational_monads.distribution_semantics.prod
 /-!
 # Looking Up Cache Values with Fallback
 
-This file defines a function `cache.get_or_else i t ou` that checks for a cached value of `i, t`,
-and if not found runs `ou` to get a new result rather than returning `none`.
+This file defines a function `cache.get_or_else i t ou` that checks for a cached value of
+`i, t`, and if not found runs `ou` to get a new result rather than returning `none`.
 -/
 
 namespace query_cache

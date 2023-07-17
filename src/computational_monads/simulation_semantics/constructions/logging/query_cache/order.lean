@@ -96,6 +96,15 @@ end
 
 end is_fresh
 
+
+lemma cached_inputs_subset_cached_inputs_of_le {cache cache' : query_cache spec}
+  (h : cache ≤ cache') : cache.cached_inputs ⊆ cache'.cached_inputs :=
+begin
+  intros x hx,
+  rw [mem_cached_inputs_iff_is_cached] at hx ⊢,
+  exact is_cached_of_le_of_is_cached h hx
+end
+
 section lookup
 
 lemma lookup_eq_some_of_le {cache cache' : query_cache spec} {i t u}
@@ -159,10 +168,10 @@ begin
     by_cases ht : t = t',
     { exact ((lookup_ne_some_of_is_fresh cache h u') (ht.symm ▸ hu')).elim },
     { specialize hu i t' u',
-      simp only [lookup_cache_query_diff_input _ _ _ _ _ ht] at hu,
+      simp only [lookup_cache_query_diff_input _ _ ht] at hu,
       exact hu hu' } },
   { specialize hu i' t' u',
-    simp only [lookup_cache_query_diff_index _ _ _ _ _ _ hi] at hu,
+    simp only [lookup_cache_query_diff_index _ hi] at hu,
     exact hu hu' }
 end
 
@@ -175,8 +184,8 @@ begin
     by_cases ht : t = t',
     { induction ht,
       refine trans h' ((lookup_cache_query_same_input _ _ _ _).symm.trans hu') },
-    { exact h i t' u' ((lookup_cache_query_diff_input _ _ _ _ _ ht).symm.trans hu') } },
-  { exact h i' t' u' ((lookup_cache_query_diff_index _ _ _ _ _ _ hi).symm.trans hu') }
+    { exact h i t' u' ((lookup_cache_query_diff_input _ _ ht _).symm.trans hu') } },
+  { exact h i' t' u' ((lookup_cache_query_diff_index _ hi _ _ _).symm.trans hu') }
 end
 
 @[simp] lemma le_cache_query_self : cache ≤ [i, t ↦ u; cache] := sorry
@@ -237,7 +246,7 @@ end
 
 section singleton
 
-lemma eq_singleton_iff : cache = [i, t ↦ u] ↔ cache ≤ [i, t ↦ u] ∧ cache ≠ ∅ :=
+lemma eq_singleton_iff_le_and_not_empty : cache = [i, t ↦ u] ↔ cache ≤ [i, t ↦ u] ∧ cache ≠ ∅ :=
 begin
   sorry,
   -- refine ⟨λ h, h.symm ▸ by simp, λ h, le_antisymm h.1 (λ i' t' u' h', _)⟩,
@@ -251,7 +260,7 @@ end
 
 @[simp] lemma le_singleton_iff : cache ≤ [i, t ↦ u] ↔ cache = ∅ ∨ cache = [i, t ↦ u] :=
 begin
-  rw [eq_singleton_iff, and_comm],
+  rw [eq_singleton_iff_le_and_not_empty, and_comm],
   refine ⟨λ h, _, λ h, h.rec_on (λ h', le_of_eq_of_le h' (init_le _)) (λ h, h.2)⟩,
   by_cases h' : cache = ∅,
   { exact or.inl h' },

@@ -4,6 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
 import computational_monads.simulation_semantics.constructions.logging.query_cache.get_or_else
+-- TODO: these namespaces are getting too long. Maybe move the `cache`/`log` stuff to its own folder?
+import computational_monads.simulation_semantics.constructions.logging.query_cache.add_fresh_queries
 import computational_monads.simulation_semantics.simulate.monad
 import computational_monads.simulation_semantics.simulate.query
 import computational_monads.distribution_semantics.prod
@@ -140,27 +142,6 @@ begin
     ne.def, eq_self_iff_true, not_true] at ht,
 end
 
-/-- Add queries in `s'` to `s`, for any query that is fresh to `s`.
-If the query isn't fresh preserve the value cached in `s'`.
-This behaves like a `⊔` operation if the caches have disjoint `cached_inputs` sets,
-but doesn't in general, so we choose not to implement a `has_sup` typeclass instance. -/
-def query_cache.add_fresh_queries (s s' : query_cache spec) : query_cache spec :=
-{ cache_fn := λ i t, if s.is_cached i t then s.lookup i t else s'.lookup i t,
-  cached_inputs := s.cached_inputs ∪ s'.cached_inputs,
-  mem_cached_inputs := λ x, by split_ifs with hx; simp [hx] }
-
-@[simp] lemma add_fresh_queries_init (s : query_cache spec) :
-  s.add_fresh_queries ∅ = s :=
-begin
-  sorry
-end
-
-@[simp] lemma add_fresh_queries_eq_self_iff (s s' : query_cache spec) :
-  s.add_fresh_queries s' = s ↔ s'.cached_inputs ⊆ s.cached_inputs :=
-begin
-  sorry,
-end
-
 lemma cached_inputs_diff_antitone (s₀) {s s' : query_cache spec}
   (hs : s ≤ s') : (s₀ \ s').cached_inputs ⊆ (s₀ \ s).cached_inputs :=
 begin
@@ -196,7 +177,14 @@ begin
       simp [mem_support_simulate_return_iff] at h,
       simp [prod.eq_iff_fst_eq_snd_eq, h.1],
       have := (cached_inputs_diff_antitone z.2 hs),
+      sorry,
     }
+  },
+  {
+    sorry,
+  },
+  {
+    sorry
   }
 end
 
@@ -217,6 +205,10 @@ begin
       obtain ⟨y, hy, hyz⟩ := hz,
       specialize hoa y hs hy,
       obtain ⟨s₁', hs₁'⟩ := exists_of_exists_unique hoa,
+      sorry,
+    },
+    {
+      sorry,
     }
     -- rw [mem_support_simulate_bind_iff'] at hz,
     -- obtain ⟨x, hx, hzx⟩ := hz,

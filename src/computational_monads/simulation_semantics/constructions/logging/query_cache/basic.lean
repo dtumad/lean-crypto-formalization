@@ -38,9 +38,11 @@ def lookup (cache : query_cache spec) (i : spec.ι) (t : spec.domain i) :
 /-- Have `simp` normalize towards using `lookup` over direct application. -/
 @[simp] lemma apply_eq_lookup (i t) : cache.cache_fn i t = cache.lookup i t := rfl
 
+/-- Two caches are equal if all queries have the same `lookup` value. -/
 @[ext] protected lemma extₗ {cache cache' : query_cache spec}
   (h : ∀ i t, cache.lookup i t = cache'.lookup i t) : cache = cache' :=
-query_cache.ext _ _ (funext (λ _, funext (λ _, h _ _))) sorry
+query_cache.ext _ _ (funext (λ _, funext (λ _, h _ _)))
+  (by simp [finset.ext_iff, mem_cached_inputs, h])
 
 protected lemma ext_iffₗ : cache = cache' ↔ ∀ i t, cache.lookup i t = cache'.lookup i t :=
 ⟨λ h i t, h ▸ rfl, query_cache.extₗ⟩
@@ -57,6 +59,24 @@ lemma lookup_ne_some_of_lookup_eq_none {i t} (h : cache.lookup i t = none)
 
 lemma lookup_ne_none_of_lookup_eq_some {i t u} (h : cache.lookup i t = some u) :
   cache.lookup i t ≠ none := λ hu, (option.some_ne_none u (h.symm.trans hu))
+
+/-- Generalized version of `query_cache.extₗ` for when one cache is parameterized by some query
+inputs and outputs, handling the cases where indices/inputs differ independently. -/
+protected lemma extₗ_induction
+  (cache : Π (i : spec.ι), spec.domain i → spec.range i → query_cache spec)
+  (cache' : query_cache spec) (i t u) (h₁ : (cache i t u).lookup i t = cache'.lookup i t)
+  (h₂ : ∀ t', t ≠ t' → (cache i t u).lookup i t' = cache'.lookup i t')
+  (h₃ : ∀ i' t', i ≠ i' → (cache i t u).lookup i' t' = cache'.lookup i' t') :
+  cache i t u = cache' :=
+begin
+  refine query_cache.extₗ (λ i' t', _),
+  by_cases hi : i = i',
+  { induction hi,
+    by_cases ht : t = t',
+    { exact ht ▸ h₁ },
+    { exact h₂ _ ht } },
+  { exact h₃ _ _ hi }
+end
 
 end lookup
 
@@ -79,8 +99,8 @@ lemma is_fresh_of_lookup_eq_none {i t} (h : cache.lookup i t = none) : cache.is_
 (cache.lookup_eq_none_iff_is_fresh i t).2 h
 
 -- TODO: implicitness stuff
-lemma not_is_fresh_of_lookup_eq_some {cache : query_cache spec} {i t u} (h : cache.lookup i t = some u) :
-  ¬ cache.is_fresh i t := by simp [is_fresh, h]
+lemma not_is_fresh_of_lookup_eq_some {cache : query_cache spec} {i t u}
+  (h : cache.lookup i t = some u) : ¬ cache.is_fresh i t := by simp [is_fresh, h]
 
 lemma lookup_ne_some_of_is_fresh {i t} (h : cache.is_fresh i t) (u : spec.range i) :
   cache.lookup i t ≠ some u := by simp [h]
@@ -92,8 +112,23 @@ begin
   exact h'.symm.trans h
 end
 
-@[simp] lemma not_mem_cached_inputs_iff_is_fresh (h : Σ i, spec.domain i) :
+lemma not_mem_cached_inputs_iff_is_fresh (h : Σ i, spec.domain i) :
   h ∉ cache.cached_inputs ↔ cache.is_fresh h.1 h.2 := by simp [mem_cached_inputs]
+
+lemma is_fresh_iff_not_mem_cached_inputs (i t) :
+  cache.is_fresh i t ↔ (sigma.mk i t) ∉ cache.cached_inputs :=
+by rw [not_mem_cached_inputs_iff_is_fresh]
+
+lemma is_fresh_of_cached_inputs_subset_of_is_fresh {cache cache' : query_cache spec}
+  (h : cache.cached_inputs ⊆ cache'.cached_inputs) {i t}
+  (h' : cache'.is_fresh i t) : cache.is_fresh i t :=
+begin
+  refine by_contra (λ ht, _),
+  rw [is_fresh_iff_not_mem_cached_inputs, not_not] at ht,
+  specialize h ht,
+  rw [is_fresh_iff_not_mem_cached_inputs] at h',
+  exact h' h,
+end
 
 end is_fresh
 
@@ -159,14 +194,27 @@ begin
   exact let ⟨u, hu⟩ := h' in ⟨u, h.symm.trans hu⟩
 end
 
-@[simp] lemma mem_cached_inputs_iff_is_cached (x : Σ i, spec.domain i) :
+lemma mem_cached_inputs_iff_is_cached (x : Σ i, spec.domain i) :
   x ∈ cache.cached_inputs ↔ cache.is_cached x.1 x.2 := by simp [mem_cached_inputs]
+
+lemma is_cached_iff_mem_cached_inputs (i t) :
+  cache.is_cached i t ↔ (sigma.mk i t) ∈ cache.cached_inputs :=
+by rw [mem_cached_inputs_iff_is_cached]
+
+lemma is_cached_of_cached_inputs_subset_of_is_cached {cache cache' : query_cache spec}
+  (h : cache.cached_inputs ⊆ cache'.cached_inputs) {i t}
+  (h' : cache.is_cached i t) : cache'.is_cached i t :=
+begin
+  rw [← not_is_fresh_iff_is_cached] at ⊢ h',
+  refine λ ht, h' (is_fresh_of_cached_inputs_subset_of_is_fresh h ht)
+end
 
 end is_cached
 
 section init
 
-/-- `init spec` is the empty cache not containing any values yet (i.e. all are `none` still). -/
+/-- `init spec` is the empty cache not containing any values yet (i.e. all are `none` still).
+TODO: why not just use `emptyc` as the only name/construction -/
 protected def init (spec : oracle_spec) : query_cache spec :=
 { cache_fn := λ _ _, none,
   cached_inputs := ∅,
@@ -214,37 +262,38 @@ def cache_query (i : spec.ι) (t : spec.domain i) (u : spec.range i) (cache : qu
     { induction hi,
       by_cases ht : t = t',
       { simp [ht] },
-      { simp [← cache.mem_cached_inputs, ht, ne.symm ht] } },
-    { simp [hi, ne.symm hi, ← cache.mem_cached_inputs ] }
+      { simp [ht, ne.symm ht, is_cached_iff_mem_cached_inputs] } },
+    { simp [hi, ne.symm hi, is_cached_iff_mem_cached_inputs] }
   end }
 
-variables (i : spec.ι) (t : spec.domain i) (u : spec.range i)
+-- variables (i : spec.ι) (t : spec.domain i) (u : spec.range i)
 
 notation `[` i `,` t `↦` u `;` cache `]` := cache_query i t u cache
 
-lemma lookup_cache_query (i' : spec.ι) (t' : spec.domain i') :
+lemma lookup_cache_query (i t u i' t') :
   [i, t ↦ u; cache].lookup i' t' = if h : i = i' then
     (if h.rec t = t' then some (h.rec u) else cache.lookup i' t') else cache.lookup i' t' := rfl
 
-@[simp] lemma lookup_cache_query_same_index (t' : spec.domain i) :
+@[simp] lemma lookup_cache_query_same_index (i t u t') :
   [i, t ↦ u; cache].lookup i t' = if t = t' then some u else cache.lookup i t' :=
 by simp [lookup_cache_query]
 
-@[simp] lemma lookup_cache_query_diff_index (i' : spec.ι) (t' : spec.domain i') (hi : i ≠ i') :
+@[simp] lemma lookup_cache_query_diff_index {i i'} (hi : i ≠ i') (t u t') :
   [i, t ↦ u; cache].lookup i' t' = cache.lookup i' t' := by simp [lookup_cache_query, hi]
 
-lemma lookup_cache_query_same_input : [i, t ↦ u; cache].lookup i t = some u := by simp
+lemma lookup_cache_query_same_input (i t u) :
+  [i, t ↦ u; cache].lookup i t = some u := by simp
 
-@[simp] lemma lookup_cache_query_diff_input (t' : spec.domain i) (ht : t ≠ t') :
+@[simp] lemma lookup_cache_query_diff_input (i) {t t'} (ht : t ≠ t') (u) :
   [i, t ↦ u; cache].lookup i t' = cache.lookup i t' := by simp [ht]
 
-@[simp] lemma cached_inputs_cache_query :
+@[simp] lemma cached_inputs_cache_query (i t u) :
   [i, t ↦ u; cache].cached_inputs = insert ⟨i, t⟩ cache.cached_inputs := rfl
 
-@[simp] lemma cache_query_ne_init : [i, t ↦ u; cache] ≠ ∅ :=
+@[simp] lemma cache_query_ne_init (i t u) : [i, t ↦ u; cache] ≠ ∅ :=
 ne_of_lookup_ne _ _ i t (by simp)
 
-@[simp] lemma is_fresh_cache_query_iff (i' : spec.ι) (t' : spec.domain i') :
+@[simp] lemma is_fresh_cache_query_iff (i t u i' t') :
   [i, t ↦ u; cache].is_fresh i' t' ↔ cache.is_fresh i' t' ∧
     (if h : i = i' then h.rec t ≠ t' else true) :=
 begin
@@ -255,12 +304,12 @@ begin
   { simp }
 end
 
-lemma is_fresh_cache_query_same_index_iff (t' : spec.domain i) :
+lemma is_fresh_cache_query_same_index_iff (i t u t') :
   [i, t ↦ u; cache].is_fresh i t' ↔ cache.is_fresh i t' ∧ t ≠ t' := by simp
 
-lemma not_is_fresh_cache_query_same_input : ¬ [i, t ↦ u; cache].is_fresh i t := by simp
+lemma not_is_fresh_cache_query_same_input (i t u) : ¬ [i, t ↦ u; cache].is_fresh i t := by simp
 
-@[simp] lemma is_cached_cache_query_iff (i' : spec.ι) (t' : spec.domain i') :
+@[simp] lemma is_cached_cache_query_iff (i t u i' t') :
   [i, t ↦ u; cache].is_cached i' t' ↔ cache.is_cached i' t' ∨
     (if h : i = i' then h.rec t = t' else false) :=
 begin
@@ -269,13 +318,13 @@ begin
   split_ifs; simp
 end
 
-lemma is_cached_cache_query_same_index_iff (t' : spec.domain i) :
+lemma is_cached_cache_query_same_index_iff (i t u t') :
   [i, t ↦ u; cache].is_cached i t' ↔ cache.is_cached i t' ∨ t = t' := by simp
 
-lemma is_cached_cache_query_same_input : [i, t ↦ u; cache].is_cached i t := by simp
+lemma is_cached_cache_query_same_input (i t u) : [i, t ↦ u; cache].is_cached i t := by simp
 
-lemma cache_query_inj_of_is_fresh {cache cache' : query_cache spec} {i t} (u)
-  (h : cache.is_fresh i t) (h' : cache'.is_fresh i t) :
+lemma cache_query_inj_of_is_fresh {cache cache' : query_cache spec} {i t}
+  (h : cache.is_fresh i t) (h' : cache'.is_fresh i t) (u) :
   [i, t ↦ u; cache] = [i, t ↦ u; cache'] ↔ cache = cache' :=
 begin
   simp only [query_cache.ext_iffₗ],
@@ -301,24 +350,9 @@ lemma cache_query_eq_cache_query_iff_of_same_cache (i t u u') :
 
 @[simp] lemma cache_query_eq_self_iff (i t u) :
   [i, t ↦ u; cache] = cache ↔ cache.lookup i t = some u :=
-begin
-  refine ⟨λ h, by rw [← h, lookup_cache_query_same_input], λ h, _⟩,
-  refine query_cache.extₗ (λ i' t', _),
-  by_cases hi : i = i',
-  {
-    induction hi,
-    by_cases ht : t = t',
-    {
-      rw [← ht, lookup_cache_query_same_input, h],
-    },
-    {
-      rw [lookup_cache_query_diff_input _ _ _ _ _ ht],
-    }
-  },
-  {
-    rw [lookup_cache_query_diff_index _ _ _ _ _ _ hi],
-  }
-end
+⟨λ h, by rw [← h, lookup_cache_query_same_input], λ h,
+  query_cache.extₗ_induction (λ i t u, [i, t ↦ u; cache]) cache
+  i t u (by simp [h.symm]) (λ t' ht', by simp [ht']) (λ i' t' hi', by simp [hi'])⟩
 
 end cache_query
 
@@ -330,35 +364,38 @@ def drop_query (i : spec.ι) (t : spec.domain i) (cache : query_cache spec) :
 { cache_fn := λ i' t', if h : i = i' then
     (if h.rec t = t' then none else cache.lookup i' t') else cache.lookup i' t',
   cached_inputs := cache.cached_inputs \ {⟨i, t⟩} ,
-  mem_cached_inputs := sorry }
+  mem_cached_inputs := λ x, begin
+    obtain ⟨i', t'⟩ := x,
+    by_cases hi : i = i',
+    { induction hi,
+      by_cases ht : t = t',
+      { simp [ht] },
+      { simp [ht, ne.symm ht, mem_cached_inputs] } },
+    { simp [hi, ne.symm hi, mem_cached_inputs] }
+  end }
 
-variables (i : spec.ι) (t : spec.domain i) (u : spec.range i)
-
-lemma lookup_drop_query (i' : spec.ι) (t' : spec.domain i') :
+lemma lookup_drop_query (i t i' t') :
   (cache.drop_query i t).lookup i' t' = if h : i = i' then
     (if h.rec t = t' then none else cache.lookup i' t') else cache.lookup i' t' := rfl
 
-@[simp] lemma lookup_drop_query_same_index (t' : spec.domain i) :
+@[simp] lemma lookup_drop_query_same_index (i t t') :
   (cache.drop_query i t).lookup i t' = if t = t' then none else cache.lookup i t' :=
 by simp [lookup_drop_query]
 
-@[simp] lemma lookup_drop_query_diff_index (i' : spec.ι) (t' : spec.domain i') (hi : i ≠ i') :
+@[simp] lemma lookup_drop_query_diff_index {i i'} (hi : i ≠ i') (t t') :
   (cache.drop_query i t).lookup i' t' = cache.lookup i' t' := by simp [lookup_drop_query, hi]
 
-lemma lookup_drop_query_same_input : (cache.drop_query i t).lookup i t = none := by simp
+lemma lookup_drop_query_same_input (i t) : (cache.drop_query i t).lookup i t = none := by simp
 
-lemma lookup_drop_query_diff_input (t' : spec.domain i) (ht : t ≠ t'):
+lemma lookup_drop_query_diff_input (i) {t t'} (ht : t ≠ t'):
   (cache.drop_query i t).lookup i t' = cache.lookup i t' := by simp [ht]
 
-@[simp] lemma drop_query_of_is_fresh (h : cache.is_fresh i t) : cache.drop_query i t = cache :=
-begin
-  refine query_cache.extₗ (λ i t, _),
-  simp [lookup_drop_query],
-  rintros rfl rfl,
-  exact h,
-end
+@[simp] lemma drop_query_of_is_fresh {i t} (h : cache.is_fresh i t) :
+  cache.drop_query i t = cache :=
+query_cache.extₗ_induction (λ i t u, cache.drop_query i t)
+  cache i t default (by simp [h]) (λ t ht, by simp [ht]) (λ i t hi, by simp [hi])
 
-@[simp] lemma is_fresh_drop_query_iff (i' : spec.ι) (t' : spec.domain i') :
+@[simp] lemma is_fresh_drop_query_iff (i t i' t') :
   (cache.drop_query i t).is_fresh i' t' ↔ cache.is_fresh i' t' ∨ ∃ (h : i = i'), h.rec t = t' :=
 begin
   refine ⟨λ h, _, λ h, (lookup_eq_none_iff_is_fresh _ _ _).1 (h.rec_on (λ h', _) _)⟩,
@@ -375,34 +412,32 @@ begin
       { induction hi,
         by_cases ht : t = t',
         { simp [ht, lookup_drop_query_same_input _ _ _] },
-        { simpa [lookup_drop_query_diff_input _ _ _ _ ht] } },
-      { simpa [lookup_drop_query_diff_index _ _ _ _ _ hi] } } },
+        { simpa [lookup_drop_query_diff_input _ _ ht] } },
+      { simpa [lookup_drop_query_diff_index _ hi] } } },
   { rintro ⟨rfl, rfl⟩,
     simp }
 end
 
-lemma is_fresh_drop_query_iff_same_index (t' : spec.domain i) :
+lemma is_fresh_drop_query_iff_same_index (i t t') :
   (cache.drop_query i t).is_fresh i t' ↔ cache.is_fresh i t' ∨ t = t' := by simp
 
-lemma is_fresh_drop_query_iff_diff_index (i' : spec.ι) (t' : spec.domain i') (h : i ≠ i') :
+lemma is_fresh_drop_query_iff_diff_index {i i'} (h : i ≠ i') (t t') :
   (cache.drop_query i t).is_fresh i' t' ↔ cache.is_fresh i' t' := by simp [h]
 
-lemma is_fresh_drop_query_same_input : (cache.drop_query i t).is_fresh i t := by simp
+lemma is_fresh_drop_query_same_input (i t) : (cache.drop_query i t).is_fresh i t := by simp
 
-lemma is_fresh_drop_query_iff_diff_input (t' : spec.domain i) (h : t ≠ t') :
+lemma is_fresh_drop_query_iff_diff_input (i) {t t'} (h : t ≠ t') :
   (cache.drop_query i t).is_fresh i t' ↔ cache.is_fresh i t' := by simp [h]
 
-@[simp] lemma drop_query_init : drop_query i t ∅ = ∅ := by simp
+@[simp] lemma drop_query_init (i : spec.ι) (t) : drop_query i t ∅ = ∅ := by simp
 
 end drop_query
 
 section drop_query_cache_query
 
-variables (i : spec.ι) (t : spec.domain i) (u : spec.range i)
-
 /-- Adding a query to the cache and then dropping a query commutes to dropping and then adding,
 unless the inputs being cached are the same as the one being dropped. -/
-@[simp] lemma drop_query_cache_query (i' : spec.ι) (t' : spec.domain i') :
+@[simp] lemma drop_query_cache_query (i t u i' t') :
   [i, t ↦ u; cache].drop_query i' t' = if h : i = i' then (if h.rec t = t' then cache.drop_query i' t'
     else [i, t ↦ u; cache.drop_query i' t']) else [i, t ↦ u; cache.drop_query i' t'] :=
 begin
@@ -431,26 +466,23 @@ begin
       { simp [hi, hi', hi''] } } }
 end
 
-lemma drop_query_cache_query_same_index (t' : spec.domain i) (u' : spec.domain i) :
-  [i, t ↦ u; cache].drop_query i t' =
-    if t = t' then cache.drop_query i t' else [i, t ↦ u; cache.drop_query i t'] := by simp
+lemma drop_query_cache_query_same_index (i t u t') : [i, t ↦ u; cache].drop_query i t' =
+  if t = t' then cache.drop_query i t' else [i, t ↦ u; cache.drop_query i t'] := by simp
 
-lemma drop_query_cache_query_diff_index (i' : spec.ι) (t' : spec.domain i') (h : i ≠ i') :
+lemma drop_query_cache_query_diff_index {i i'} (h : i ≠ i') (t u t') :
   [i, t ↦ u; cache].drop_query i' t' = [i, t ↦ u; cache.drop_query i' t'] := by simp [h]
 
-lemma drop_query_cache_query_same_input :
+lemma drop_query_cache_query_same_input (i t u) :
   [i, t ↦ u; cache].drop_query i t = cache.drop_query i t := by simp
 
-lemma drop_query_cache_query_diff_input (t' : spec.domain i) (h : t ≠ t') :
+lemma drop_query_cache_query_diff_input (i) {t t'} (h : t ≠ t') (u) :
   [i, t ↦ u; cache].drop_query i t' = [i, t ↦ u; cache.drop_query i t'] := by simp [h]
 
 end drop_query_cache_query
 
 section cache_query_drop_query
 
-variables (i : spec.ι) (t : spec.domain i) (u : spec.range i)
-
-lemma cache_query_drop_query (i' : spec.ι) (t' : spec.domain i') :
+lemma cache_query_drop_query (i t u i' t') :
   [i, t ↦ u; cache.drop_query i' t'] = if h : i = i' then (if h.rec t = t' then [i, t ↦ u; cache]
     else [i, t ↦ u; cache].drop_query i' t') else [i, t ↦ u; cache].drop_query i' t' :=
 begin
@@ -473,7 +505,7 @@ end
 
 /-- Adding a value to a cache after removing a value for the same inputs is the same as just
 caching it into the original cache, since adding new values replaces old ones. -/
-@[simp] lemma cache_query_drop_query_same_input :
+@[simp] lemma cache_query_drop_query_same_input (i t u) :
   [i, t ↦ u; cache.drop_query i t] = [i, t ↦ u; cache] :=
 begin
   sorry,
@@ -581,7 +613,7 @@ instance : has_sdiff (query_cache spec) :=
 { sdiff := λ cache cache', {
     cache_fn := λ i t, if cache'.is_fresh i t then cache.lookup i t else none,
     cached_inputs := cache.cached_inputs \ cache'.cached_inputs,
-    mem_cached_inputs := λ x, by simp [and_comm] } }
+    mem_cached_inputs := λ x, by simp [and_comm, is_fresh_iff_not_mem_cached_inputs] } }
 
 variables (i : spec.ι) (t : spec.domain i)
 
