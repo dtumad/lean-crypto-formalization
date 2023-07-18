@@ -88,6 +88,85 @@ end
 
 end lookup
 
+section mem
+
+@[derive decidable] def mem_inputs {i : spec.ι} (t : spec.domain i) (cache : query_cache spec) :=
+(sigma.mk i t) ∈ cache.cached_inputs
+
+-- Because of the implicit oracle index parameter, we can't just use `has_mem`.
+infix ` ∈ᵢ ` : 50 := query_cache.mem_inputs
+notation t ` ∉ᵢ `:50 cache:50 := ¬ t ∈ᵢ cache
+
+lemma mem_iff_mem_cached_inputs (i t) :
+  t ∈ᵢ cache ↔ (sigma.mk i t) ∈ cache.cached_inputs := iff.rfl
+
+lemma mem_iff_exists_lookup_eq_some (i t) : t ∈ᵢ cache ↔ ∃ u, cache.lookup i t = some u :=
+by rw [mem_iff_mem_cached_inputs, mem_cached_inputs, ← option.is_some_iff_exists, ne.def,
+  ← option.is_none_iff_eq_none, ← not_iff_not, option.not_is_some_iff_eq_none,
+  option.is_none_iff_eq_none, not_not, apply_eq_lookup]
+
+lemma mem_of_lookup_eq_some {i t u} (h : cache.lookup i t = some u) :
+  t ∈ᵢ cache := (cache.mem_iff_exists_lookup_eq_some i t).2 ⟨u, h⟩
+
+lemma exists_lookup_eq_some_of_mem {i t} (h : t ∈ᵢ cache) :
+  ∃ u, cache.lookup i t = some u := (cache.mem_iff_exists_lookup_eq_some i t).1 h
+
+lemma not_mem_iff_not_mem_cached_inputs (i t) :
+  t ∉ᵢ cache ↔ (sigma.mk i t) ∉ cache.cached_inputs := iff.rfl
+
+@[simp] lemma lookup_eq_none_iff_not_mem (i t) : cache.lookup i t = none ↔ t ∉ᵢ cache :=
+by simp [option.eq_none_iff_forall_not_mem, mem_iff_exists_lookup_eq_some]
+
+@[simp] lemma none_eq_lookup_iff_not_mem (i t) : none = cache.lookup i t ↔ t ∉ᵢ cache :=
+by rw [eq_comm, lookup_eq_none_iff_not_mem]
+
+lemma not_mem_iff_lookup_eq_none (i t) : t ∉ᵢ cache ↔ cache.lookup i t = none :=
+(lookup_eq_none_iff_not_mem cache i t).symm
+
+lemma not_mem_of_lookup_eq_none {i t} (h : cache.lookup i t = none) : t ∉ᵢ cache :=
+(not_mem_iff_lookup_eq_none cache i t).2 h
+
+@[simp] lemma lookup_eq_none_of_not_mem {i t} (h : t ∉ᵢ cache) : cache.lookup i t = none :=
+(not_mem_iff_lookup_eq_none cache i t).1 h
+
+lemma lookup_ne_some_of_not_mem {i t} (h : t ∉ᵢ cache) (u) : cache.lookup i t ≠ some u :=
+begin
+  rw [mem_iff_exists_lookup_eq_some, not_exists] at h,
+  exact h u,
+end
+
+lemma not_mem_of_not_mem_of_lookup_eq {cache cache' : query_cache spec} {i t}
+  (h : t ∉ᵢ cache) (h' : cache.lookup i t = cache'.lookup i t) : t ∉ᵢ cache' :=
+begin
+  rw [not_mem_iff_lookup_eq_none] at h ⊢,
+  exact h'.symm.trans h
+end
+
+lemma mem_of_mem_of_lookup_eq {cache cache' : query_cache spec} {i t}
+  (h : t ∈ᵢ cache) (h' : cache.lookup i t = cache'.lookup i t) : t ∈ᵢ cache' :=
+begin
+  rw [mem_iff_exists_lookup_eq_some] at h ⊢,
+  simp [← h', h],
+end
+
+lemma not_mem_of_cached_inputs_subset {cache cache' : query_cache spec} {i} {t : spec.domain i}
+  (h : t ∉ᵢ cache') (h' : cache.cached_inputs ⊆ cache'.cached_inputs) : t ∉ᵢ cache :=
+begin
+  rw [mem_iff_mem_cached_inputs] at h ⊢,
+  exact λ h'', h (h' h''),
+end
+
+lemma mem_of_cached_inputs_subset {cache cache' : query_cache spec} {i} {t : spec.domain i}
+  (h : t ∈ᵢ cache) (h' : cache.cached_inputs ⊆ cache'.cached_inputs) : t ∈ᵢ cache' :=
+begin
+  rw [mem_iff_mem_cached_inputs] at h ⊢,
+  exact h' h,
+end
+
+@[simp] lemma some_get_or_else_lookup_of_mem {i t u} (h : t ∈ᵢ cache) :
+  some ((cache.lookup i t).get_or_else u) = cache.lookup i t :=
+let ⟨u, hu⟩ := exists_lookup_eq_some_of_mem _ h in by simp [hu]
+
 section is_fresh
 
 /-- `cache.is_fresh i t` means that there isn't any value cached for those inputs. -/
@@ -219,14 +298,19 @@ end
 
 end is_cached
 
+end mem
+
 section empty
 
 variables (i : spec.ι) (t : spec.domain i)
 
-instance : has_emptyc (query_cache spec) :=
-⟨{ cache_fn := λ _ _, none,
-   cached_inputs := ∅,
-   mem_cached_inputs := by simp }⟩
+/-- Empty cache has no cached values, so `cache_fn` always returns `none`. -/
+def empty (spec : oracle_spec) : query_cache spec :=
+{ cache_fn := λ _ _, none,
+  cached_inputs := ∅,
+  mem_cached_inputs := by simp }
+
+instance : has_emptyc (query_cache spec) := ⟨empty spec⟩
 
 instance : inhabited (query_cache spec) := ⟨∅⟩
 
