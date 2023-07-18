@@ -198,8 +198,8 @@ section empty
 
 variables (i : spec.ι) (t : spec.domain i) (ou : oracle_comp spec' (spec.range i))
 
-@[simp] lemma get_or_else_init : get_or_else ∅ i t ou = do {u ← ou, return (u, [i, t ↦ u])} :=
-by simp [is_fresh_init i t, singleton.def]
+@[simp] lemma get_or_else_empty : get_or_else ∅ i t ou = do {u ← ou, return (u, [i, t ↦ u])} :=
+by simp [is_fresh_empty i t, singleton.def]
 
 end empty
 

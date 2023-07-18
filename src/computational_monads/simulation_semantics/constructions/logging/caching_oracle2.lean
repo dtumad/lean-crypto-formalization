@@ -62,8 +62,7 @@ lemma apply_eq_of_lookup_eq_some {u} (h : s₀.lookup i t = some u) :
 
 end apply
 
-variables (oa : oracle_comp spec α)
-  (s₀ s : query_cache spec)
+variables (oa : oracle_comp spec α) (s₀ s : query_cache spec)
 
 section support
 
@@ -142,42 +141,33 @@ begin
     ne.def, eq_self_iff_true, not_true] at ht,
 end
 
-lemma cached_inputs_diff_antitone (s₀) {s s' : query_cache spec}
-  (hs : s ≤ s') : (s₀ \ s').cached_inputs ⊆ (s₀ \ s).cached_inputs :=
-begin
-  sorry
-end
-
--- TODO: why not just use "empty" naming instead of init
-lemma eq_init_of_le_of_le_diff {s₀ s s' : query_cache spec}
-  (hs : s₀ ≤ s) (hs' : s₀ ≤ s' \ s) : s₀ = ∅ :=
-begin
-  refine eq_bot_iff.2 (λ i t u hu, _),
-  specialize hs i t u hu,
-  have : ¬ s.is_fresh i t := not_is_fresh_of_lookup_eq_some hs,
-  specialize hs' i t u hu,
-  simp [this, lookup_sdiff] at hs',
-  refine hs'.elim,
-end
-
 theorem mem_support_simulate_iff_of_le (oa : oracle_comp spec α) {s₀ s₁ : query_cache spec}
-  (hs : s₀ ≤ s₁) (z : α × query_cache spec) :
+  (hs : s₀ ≤ s₁) (z : α × query_cache spec) (hz : s₁ ≤ z.2) :
   z ∈ (simulate cachingₛₒ oa s₁).support ↔
-  (z.1, s₀.add_fresh_queries (z.2 \ s₁)) ∈ (simulate cachingₛₒ oa s₀).support :=
+    (z.1, s₀.add_fresh_queries (z.2 \ s₁)) ∈ (simulate cachingₛₒ oa s₀).support :=
 begin
   induction oa using oracle_comp.induction_on
     with α a α β oa ob hoa hob i t generalizing s₀ s₁,
   {
-    refine ⟨λ h, _, λ h, _⟩,
+    simp only [mem_support_simulate_return_iff,
+      and.congr_right_iff],
+    refine λ ha, ⟨λ h, _, λ h, _⟩,
     {
-      rw [mem_support_simulate_return_iff] at h,
-      simp [h.1, h.2],
+
+      rw [h, query_cache.sdiff_self, add_fresh_queries_empty],
     },
     {
-      simp [mem_support_simulate_return_iff] at h,
-      simp [prod.eq_iff_fst_eq_snd_eq, h.1],
-      have := (cached_inputs_diff_antitone z.2 hs),
-      sorry,
+      refine le_antisymm (λ i t u hu, _) hz,
+      by_cases hs₀ : s₀.is_cached i t,
+      {
+        have := is_cached_of_le_of_is_cached hs hs₀,
+        have := lookup_eq_lookup_of_le_of_is_cached hz this,
+        refine this.symm.trans hu,
+      },
+      {
+        sorry,
+      }
+
     }
   },
   {

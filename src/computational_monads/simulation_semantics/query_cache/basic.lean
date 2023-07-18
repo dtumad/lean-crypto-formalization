@@ -219,42 +219,38 @@ end
 
 end is_cached
 
-section init
-
-/-- `init spec` is the empty cache not containing any values yet (i.e. all are `none` still).
-TODO: why not just use `emptyc` as the only name/construction -/
-protected def init (spec : oracle_spec) : query_cache spec :=
-{ cache_fn := λ _ _, none,
-  cached_inputs := ∅,
-  mem_cached_inputs := by simp }
+section empty
 
 variables (i : spec.ι) (t : spec.domain i)
 
-instance : has_emptyc (query_cache spec) := ⟨query_cache.init spec⟩
+instance : has_emptyc (query_cache spec) :=
+⟨{ cache_fn := λ _ _, none,
+   cached_inputs := ∅,
+   mem_cached_inputs := by simp }⟩
 
 instance : inhabited (query_cache spec) := ⟨∅⟩
 
-@[simp] lemma cached_inputs_init : cached_inputs (∅ : query_cache spec) = ∅ := rfl
+@[simp] lemma cached_inputs_empty : cached_inputs (∅ : query_cache spec) = ∅ := rfl
 
-@[simp] lemma lookup_init : lookup ∅ i t = none := rfl
+@[simp] lemma lookup_empty : lookup ∅ i t = none := rfl
 
-lemma lookup_init_ne_some (u : spec.range i) : lookup ∅ i t ≠ some u := by simp
+lemma lookup_empty_ne_some (u : spec.range i) : lookup ∅ i t ≠ some u := by simp
 
-@[simp] lemma is_fresh_init : is_fresh ∅ i t := by simp [is_fresh]
+@[simp] lemma is_fresh_empty : is_fresh ∅ i t := by simp [is_fresh]
 
-@[simp] lemma not_is_cached_init : ¬ is_cached ∅ i t := by simp [is_cached]
+@[simp] lemma not_is_cached_empty : ¬ is_cached ∅ i t := by simp [is_cached]
 
-@[simp] lemma eq_init_iff_forall_is_fresh : cache = ∅ ↔ ∀ i t, cache.is_fresh i t :=
+@[simp] lemma eq_empty_iff_forall_is_fresh : cache = ∅ ↔ ∀ i t, cache.is_fresh i t :=
 by simp [query_cache.ext_iffₗ]
 
-lemma eq_init_iff_forall_eq_none : cache = ∅ ↔ ∀ i t, cache.lookup i t = none := by simp
+lemma eq_empty_iff_forall_eq_none : cache = ∅ ↔ ∀ i t, cache.lookup i t = none := by simp
 
-lemma ne_init_iff_exists_is_cached : cache ≠ ∅ ↔ ∃ i t, cache.is_cached i t := by simp
+lemma ne_empty_iff_exists_is_cached : cache ≠ ∅ ↔ ∃ i t, cache.is_cached i t := by simp
 
-lemma ne_init_iff_exists_eq_some : cache ≠ ∅ ↔ ∃ i t u, cache.lookup i t = some u :=
+lemma ne_empty_iff_exists_eq_some : cache ≠ ∅ ↔ ∃ i t u, cache.lookup i t = some u :=
 by simp [is_cached_iff_exists_lookup_eq_some]
 
-end init
+end empty
 
 section cache_query
 
@@ -298,7 +294,7 @@ lemma lookup_cache_query_same_input (i t u) :
 @[simp] lemma cached_inputs_cache_query (i t u) :
   [i, t ↦ u; cache].cached_inputs = insert ⟨i, t⟩ cache.cached_inputs := rfl
 
-@[simp] lemma cache_query_ne_init (i t u) : [i, t ↦ u; cache] ≠ ∅ :=
+@[simp] lemma cache_query_ne_empty (i t u) : [i, t ↦ u; cache] ≠ ∅ :=
 ne_of_lookup_ne _ _ i t (by simp)
 
 @[simp] lemma is_fresh_cache_query_iff (i t u i' t') :
@@ -437,7 +433,7 @@ lemma is_fresh_drop_query_same_input (i t) : (cache.drop_query i t).is_fresh i t
 lemma is_fresh_drop_query_iff_diff_input (i) {t t'} (h : t ≠ t') :
   (cache.drop_query i t).is_fresh i t' ↔ cache.is_fresh i t' := by simp [h]
 
-@[simp] lemma drop_query_init (i : spec.ι) (t) : drop_query i t ∅ = ∅ := by simp
+@[simp] lemma drop_query_empty (i : spec.ι) (t) : drop_query i t ∅ = ∅ := by simp
 
 end drop_query
 
@@ -577,7 +573,7 @@ by simp [lookup_singleton_eq_some_iff, ite_eq_iff]
 lemma lookup_singleton_eq_some_iff_same_input (u' : spec.range i) :
   [i, t ↦ u].lookup i t = some u' ↔ u = u' := by simp
 
-lemma singleton_ne_init : [i, t ↦ u] ≠ ∅ := cache_query_ne_init ∅ i t u
+lemma singleton_ne_empty : [i, t ↦ u] ≠ ∅ := cache_query_ne_empty ∅ i t u
 
 @[simp] lemma is_fresh_singleton_iff (i' : spec.ι) (t' : spec.domain i') :
   [i, t ↦ u].is_fresh i' t' ↔ if h : i = i' then h.rec t ≠ t' else true := by simp [singleton.def]

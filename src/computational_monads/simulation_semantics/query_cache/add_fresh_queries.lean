@@ -53,11 +53,11 @@ by simp [is_fresh_iff_not_mem_cached_inputs, not_or_distrib]
   (cache.add_fresh_queries cache').is_cached i t ↔ cache.is_cached i t ∨ cache'.is_cached i t :=
 by simp [is_cached_iff_mem_cached_inputs]
 
-@[simp] lemma add_fresh_queries_init (cache : query_cache spec) :
+@[simp] lemma add_fresh_queries_empty (cache : query_cache spec) :
   cache.add_fresh_queries ∅ = cache :=
 by simp [query_cache.ext_iffₗ]
 
-@[simp] lemma init_add_fresh_queries (cache : query_cache spec) :
+@[simp] lemma empty_add_fresh_queries (cache : query_cache spec) :
   add_fresh_queries ∅ cache = cache :=
 by simp [query_cache.ext_iffₗ]
 

@@ -27,6 +27,9 @@ instance : has_sdiff (query_cache spec) :=
 
 variables (cache cache' : query_cache spec) (i : spec.ι) (t : spec.domain i)
 
+@[simp] lemma cached_inputs_sdiff : (cache \ cache').cached_inputs =
+  cache.cached_inputs \ cache'.cached_inputs := rfl
+
 section lookup
 
 @[simp] lemma lookup_sdiff : (cache \ cache').lookup i t =
@@ -43,9 +46,9 @@ by rw [lookup_sdiff, ite_eq_right_iff, lookup_eq_none_iff_is_fresh,
 
 end lookup
 
-@[simp] lemma init_sdiff : ∅ \ cache = ∅ := query_cache.extₗ (λ i t, if_t_t _ _)
+@[simp] lemma empty_sdiff : ∅ \ cache = ∅ := query_cache.extₗ (λ i t, if_t_t _ _)
 
-@[simp] lemma sdiff_init : cache \ ∅ = cache := query_cache.extₗ (λ i t, by simp)
+@[simp] lemma sdiff_empty : cache \ ∅ = cache := query_cache.extₗ (λ i t, by simp)
 
 @[simp] lemma sdiff_self : cache \ cache = ∅ := query_cache.extₗ (λ i t, by simp)
 
@@ -62,11 +65,23 @@ begin
     { simp [hi, hit] } },
 end
 
-lemma sdiff_le_fst : cache \ cache' ≤ cache :=
+@[simp] lemma sdiff_le_left : cache \ cache' ≤ cache :=
+λ i t u hu, ((lookup_sdiff_eq_some_iff _ _ _ _ _).1 hu).2
+
+lemma sdiff_le_right_iff : cache \ cache' ≤ cache' ↔ cache ≤ cache' :=
 begin
-  refine λ i t u hu, _,
-  rw [lookup_sdiff_eq_some_iff] at hu,
-  exact hu.2,
+  sorry,
+end
+
+lemma eq_empty_of_le_of_le_diff {cache₀ cache cache' : query_cache spec}
+  (hs : cache₀ ≤ cache) (hs' : cache₀ ≤ cache' \ cache) : cache₀ = ∅ :=
+begin
+  refine eq_bot_iff.2 (λ i t u hu, _),
+  specialize hs i t u hu,
+  have : ¬ cache.is_fresh i t := not_is_fresh_of_lookup_eq_some hs,
+  specialize hs' i t u hu,
+  simp [this, lookup_sdiff] at hs',
+  refine hs'.elim,
 end
 
 end query_cache
