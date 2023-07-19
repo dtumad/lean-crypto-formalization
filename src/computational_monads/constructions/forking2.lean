@@ -275,7 +275,7 @@ calc (adv.accepting_probability) ^ 2 / fintype.card T =
   ⁅λ out, out.is_some | adv.accepting_experiment_cf⁆ ^ 2 / fintype.card T :
     by rw [accepting_probability_eq_prob_event_is_some]
   ... = (∑' t, ⁅= some t | adv.accepting_experiment_cf⁆) ^ 2 / fintype.card T :
-    by simp only [prob_event_is_some]
+    sorry --by simp only [accepting_probability_eq_prob_event_is_some]
   ... = (∑ t, ⁅= some t | adv.accepting_experiment_cf⁆) ^ 2 / fintype.card T :
     congr_arg (λ y, y ^ 2 / (fintype.card T : ℝ≥0∞))
       (tsum_eq_sum (λ x hx, (hx (finset.mem_univ x)).elim))
