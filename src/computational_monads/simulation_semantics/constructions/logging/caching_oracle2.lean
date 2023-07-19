@@ -45,17 +45,17 @@ section apply
 variables {i : spec.ι} {z : spec.domain i × query_cache spec}
   {t : spec.domain i} {s₀ : query_cache spec}
 
-lemma apply_eq_of_is_fresh (h : z.2.is_fresh i z.1) :
-  cachingₛₒ i z = query i z.1 >>= λ u, return (u, [i, z.1 ↦ u; z.2]) := by simp [h]
-
-lemma apply_eq_of_is_fresh' (h : s₀.is_fresh i t) :
-  cachingₛₒ i (t, s₀) = query i t >>= λ u, return (u, [i, t ↦ u; s₀]) := apply_eq_of_is_fresh h
-
-lemma apply_eq_of_is_cached (h : z.2.is_cached i z.1) :
+lemma apply_eq_of_mem (h : z.1 ∈ᵢ z.2) :
   cachingₛₒ i z = return ((z.2.lookup i z.1).get_or_else default, z.2) := by simp [h]
 
-lemma apply_eq_of_is_cached' (h : s₀.is_cached i t) :
-  cachingₛₒ i (t, s₀) = return ((s₀.lookup i t).get_or_else default, s₀) := apply_eq_of_is_cached h
+lemma apply_eq_of_mem' (h : t ∈ᵢ s₀) :
+  cachingₛₒ i (t, s₀) = return ((s₀.lookup i t).get_or_else default, s₀) := apply_eq_of_mem h
+
+lemma apply_eq_of_not_mem (h : z.1 ∉ᵢ z.2) :
+  cachingₛₒ i z = query i z.1 >>= λ u, return (u, [i, z.1 ↦ u; z.2]) := by simp [h]
+
+lemma apply_eq_of_not_mem' (h : t ∉ᵢ s₀) :
+  cachingₛₒ i (t, s₀) = query i t >>= λ u, return (u, [i, t ↦ u; s₀]) := apply_eq_of_not_mem h
 
 lemma apply_eq_of_lookup_eq_some {u} (h : s₀.lookup i t = some u) :
   cachingₛₒ i (t, s₀) = return (u, s₀) := get_or_else_of_lookup_eq_some _ _ h
@@ -87,7 +87,7 @@ In particular it they can't differ simply by having some additional values being
 lemma ne_iff_exists_lookup_ne_of_mem_support_simulate {oa : oracle_comp spec α}
   {s₀ : query_cache spec} {z z' : α × query_cache spec}
   (hz : z ∈ (simulate cachingₛₒ oa s₀).support) (hz' : z' ∈ (simulate cachingₛₒ oa s₀).support) :
-  z ≠ z' ↔ ∃ i t, z.2.is_cached i t ∧ z'.2.is_cached i t ∧ z.2.lookup i t ≠ z'.2.lookup i t :=
+  z ≠ z' ↔ ∃ i t, t ∈ᵢ z.2 ∧ t ∈ᵢ z'.2 ∧ z.2.lookup i t ≠ z'.2.lookup i t :=
 begin
   refine ⟨λ h, _, λ h, _⟩,
   { induction oa using oracle_comp.induction_on
@@ -102,23 +102,21 @@ begin
       { obtain ⟨i, t, htx, htx', ht⟩ := hoa hxx' hx hx',
         have hz : x.2 ≤ z.2 := le_of_mem_support_simulate z hxz,
         have hz' : x'.2 ≤ z'.2 := le_of_mem_support_simulate z' hxz',
-        refine ⟨i, t, is_cached_of_le_of_is_cached hz htx,
-          is_cached_of_le_of_is_cached hz' htx', _⟩,
-        rwa [lookup_eq_lookup_of_le_of_is_cached hz htx,
-          lookup_eq_lookup_of_le_of_is_cached hz' htx'] } },
-    { by_cases hs₀ : s₀.is_fresh i t,
-      { simp only [simulate_query, hs₀, apply_eq, get_or_else_of_is_fresh, support_bind_return,
-          support_query, set.image_univ, set.mem_range] at hz hz',
+        refine ⟨i, t, mem_of_le_of_mem hz htx,
+          mem_of_le_of_mem hz' htx', _⟩,
+        rwa [lookup_eq_lookup_of_le_of_mem hz htx,
+          lookup_eq_lookup_of_le_of_mem hz' htx'] } },
+    { by_cases hs₀ : t ∈ᵢ s₀,
+      { simp [simulate_query, hs₀] at hz hz',
+        refine (h (hz.trans hz'.symm)).elim },
+      { simp [simulate_query, hs₀] at hz hz',
         obtain ⟨u, rfl⟩ := hz,
         obtain ⟨u', rfl⟩ := hz',
         refine ⟨i, t, _⟩,
-        simp only [is_cached_cache_query_same_input, true_and,
+        simp only [mem_cache_query_same_input, true_and,
           lookup_cache_query_same_input, ne.def, option.some_inj],
         simpa only [ne.def, prod.eq_iff_fst_eq_snd_eq, not_and_distrib,
-          cache_query_eq_cache_query_iff_of_same_cache, or_self] using h },
-      { rw [not_is_fresh_iff_is_cached] at hs₀,
-        simp [simulate_query, hs₀] at hz hz',
-        refine (h (hz.trans hz'.symm)).elim } } },
+          cache_query_eq_cache_query_iff_of_same_cache, or_self] using h } } },
   { exact let ⟨i, t, hzt, hzt', hz⟩ := h in λ h',
       (query_cache.ne_of_lookup_ne _ _ i t hz) (prod.eq_iff_fst_eq_snd_eq.1 h').2 }
 end
@@ -136,8 +134,8 @@ begin
   rintros y y' ⟨hy, hyz⟩ ⟨hy', hyz'⟩,
   by_contradiction h,
   obtain ⟨i, t, hty, hty', ht⟩ := (ne_iff_exists_lookup_ne_of_mem_support_simulate hy hy').1 h,
-  rwa [← lookup_eq_lookup_of_le_of_is_cached (le_of_mem_support_simulate _ hyz) hty,
-    ← lookup_eq_lookup_of_le_of_is_cached (le_of_mem_support_simulate _ hyz') hty',
+  rwa [← lookup_eq_lookup_of_le_of_mem (le_of_mem_support_simulate _ hyz) hty,
+    ← lookup_eq_lookup_of_le_of_mem (le_of_mem_support_simulate _ hyz') hty',
     ne.def, eq_self_iff_true, not_true] at ht,
 end
 
@@ -158,16 +156,15 @@ begin
     },
     {
       refine le_antisymm (λ i t u hu, _) hz,
-      by_cases hs₀ : s₀.is_cached i t,
+      by_cases hs₀ : t ∈ᵢ s₀,
       {
-        have := is_cached_of_le_of_is_cached hs hs₀,
-        have := lookup_eq_lookup_of_le_of_is_cached hz this,
+        have := mem_of_le_of_mem hs hs₀,
+        have := lookup_eq_lookup_of_le_of_mem hz this,
         refine this.symm.trans hu,
       },
       {
         sorry,
       }
-
     }
   },
   {
@@ -220,17 +217,10 @@ begin
     -- }
   },
   {
-    by_cases hs₁ : s₁.is_fresh i t,
+    by_cases hs₁ : t ∈ᵢ s₁,
+
     {
-      have hs₀ : s₀.is_fresh i t := is_fresh_of_le_of_is_fresh hs hs₁,
-      simp only [hs₀, hs₁, support_simulate_query, apply_eq, get_or_else_of_is_fresh,
-        support_bind_return, support_query, set.image_univ, set.mem_range,
-          prod.mk.inj_iff, exists_eq_left] at hz ⊢,
-      obtain ⟨x, rfl⟩ := hz,
-      exact ⟨[i, t ↦ x; s₀], ⟨(cache_query_le_cache_query_iff_of_is_fresh x hs₀ hs₁).2 hs, rfl⟩,
-        λ s hs, by rw [← hs.2]⟩ },
-    {
-      rw [not_is_fresh_iff_exists_lookup_eq_some] at hs₁,
+      rw [mem_iff_exists_lookup_eq_some] at hs₁,
       obtain ⟨u, hu⟩ := hs₁,
       refine ⟨[i, t ↦ u; s₀], ⟨_, _⟩, _⟩,
       {
@@ -240,36 +230,42 @@ begin
       {
         rw [simulate_query, apply_eq_of_lookup_eq_some hu, mem_support_return_iff] at hz,
         simp only [hz, support_simulate_query, apply_eq],
-        by_cases hs₀ : s₀.is_fresh i t,
-        {
-          simp only [support_get_or_else_of_is_fresh _ _ hs₀, support_query, set.image_univ,
-            set.mem_range, prod.mk.inj_iff, exists_eq_left],
-        },
+        by_cases hs₀ : t ∈ᵢ s₀,
+
         {
 
-          rw [not_is_fresh_iff_is_cached] at hs₀,
-          simp [support_get_or_else_of_is_cached _ _ hs₀, (lookup_eq_lookup_of_le_of_is_cached hs hs₀).symm.trans hu],
-        }
+          simp [support_get_or_else_of_mem _ _ hs₀, (lookup_eq_lookup_of_le_of_mem hs hs₀).symm.trans hu],
+        },
+        {
+          simp only [support_get_or_else_of_not_mem _ _ hs₀, support_query, set.image_univ,
+            set.mem_range, prod.mk.inj_iff, exists_eq_left],
+        },
       },
       {
         rintro s ⟨hs, hsz⟩,
         rw [simulate_query, apply_eq_of_lookup_eq_some hu, mem_support_return_iff,
             prod.eq_iff_fst_eq_snd_eq] at hz,
-        by_cases hs₀ : s₀.is_fresh i t,
+        by_cases hs₀ : t ∈ᵢ s₀,
+
+        {
+          simp [simulate_query, hs₀, hz.1] at hsz,
+          rw [hsz.2, eq_comm, cache_query_eq_self_iff, hsz.1],
+          rw [mem_iff_exists_lookup_eq_some] at hs₀,
+          obtain ⟨u', hu'⟩ := hs₀,
+          rw [hu', option.get_or_else_some],
+        },
         {
           simp [simulate_query, hs₀, hz.1] at hsz,
           exact hsz.symm
         },
-        {
-          rw [not_is_fresh_iff_is_cached] at hs₀,
-          simp [simulate_query, hs₀, hz.1] at hsz,
-          rw [hsz.2, eq_comm, cache_query_eq_self_iff, hsz.1],
-          rw [is_cached_iff_exists_lookup_eq_some] at hs₀,
-          obtain ⟨u', hu'⟩ := hs₀,
-          rw [hu', option.get_or_else_some],
-        }
       }
-    }
+    },
+    {
+      have hs₀ : t ∉ᵢ s₀ := not_mem_of_le_of_not_mem hs hs₁,
+      simp [hs₀, hs₁, support_simulate_query] at hz ⊢,
+      obtain ⟨x, rfl⟩ := hz,
+      exact ⟨[i, t ↦ x; s₀], ⟨(cache_query_le_cache_query_iff_of_not_mem x hs₀ hs₁).2 hs, rfl⟩,
+        λ s hs, by rw [← hs.2]⟩ },
   }
 end
 
@@ -340,14 +336,14 @@ begin
   { intros u hu,
     rw [mem_support_simulate'_query_iff] at hu ⊢,
     obtain ⟨s', hs'⟩ := hu,
-    by_cases hs₀ : s₀.is_fresh i t,
-    { simp_rw [apply_eq_of_is_fresh' hs₀, mem_support_query_bind_return_iff,
-        prod.mk.inj_iff, exists_eq_left, exists_eq'] },
-    { rw [not_is_fresh_iff_is_cached] at hs₀,
-      simp only [apply_eq_of_is_cached' hs₀, mem_support_return_iff, prod.eq_iff_fst_eq_snd_eq,
-        apply_eq_of_is_cached' (is_cached_of_le_of_is_cached hs hs₀), exists_eq_right,
-        ← lookup_eq_lookup_of_le_of_is_cached hs hs₀] at ⊢ hs',
-      exact hs'.1 } },
+    by_cases hs₀ : t ∈ᵢ s₀,
+
+    { simp only [apply_eq_of_mem' hs₀, mem_support_return_iff, prod.eq_iff_fst_eq_snd_eq,
+        apply_eq_of_mem' (mem_of_le_of_mem hs hs₀), exists_eq_right,
+        ← lookup_eq_lookup_of_le_of_mem hs hs₀] at ⊢ hs',
+      exact hs'.1 },
+    { simp_rw [apply_eq_of_not_mem' hs₀, mem_support_query_bind_return_iff,
+        prod.mk.inj_iff, exists_eq_left, exists_eq'] }, },
 end
 
 end support
@@ -383,8 +379,8 @@ begin
 end
 
 @[simp] lemma extra_cache_choices_cache_query (i t u) (s : query_cache spec) :
-  extra_cache_choices s [i, t ↦ u; s] = if s.is_fresh i t then fintype.card (spec.range i) else 1 :=
-by split_ifs with h; simp [extra_cache_choices, sdiff_cache_query, h]
+  extra_cache_choices s [i, t ↦ u; s] = if t ∈ᵢ s then 1 else fintype.card (spec.range i) :=
+by split_ifs with h; simp [extra_cache_choices, cache_query_sdiff_self, h]
 
 end extra_cache_choices
 
@@ -412,23 +408,22 @@ begin
   },
   {
     simp only [simulate_query, apply_eq] at hz ⊢,
-    by_cases hs₀ : s₀.is_fresh i t,
+    by_cases hs₀ : t ∈ᵢ s₀,
     {
-      simp only [get_or_else_of_is_fresh _ _ hs₀, support_bind_return, support_query,
+      simp only [hs₀, get_or_else_of_mem, support_return, set.mem_singleton_iff] at hz,
+      simp only [hz, extra_cache_choices_self, nat.cast_one, inv_one,
+        get_or_else_of_mem _ _ hs₀],
+      refine prob_output_return_self _ _,
+    },
+    {
+      simp only [get_or_else_of_not_mem _ _ hs₀, support_bind_return, support_query,
         set.image_univ, set.mem_range] at hz,
       obtain ⟨u, rfl⟩ := hz,
-      simp only [hs₀, get_or_else_of_is_fresh, extra_cache_choices_cache_query, if_true],
+      simp [hs₀, get_or_else_of_not_mem, extra_cache_choices_cache_query, if_true],
       refine trans (prob_output_bind_return_eq_single _ _ _ u _) (prob_output_query_eq_inv _ _ _),
       refine set.ext (λ u', _),
       simp [cache_query_eq_cache_query_iff_of_same_cache],
     },
-    {
-      rw [not_is_fresh_iff_is_cached] at hs₀,
-      simp only [hs₀, get_or_else_of_is_cached, support_return, set.mem_singleton_iff] at hz,
-      simp only [hz, extra_cache_choices_self, nat.cast_one, inv_one,
-        get_or_else_of_is_cached _ _ hs₀],
-      refine prob_output_return_self _ _,
-    }
   }
 end
 
@@ -452,13 +447,15 @@ begin
   {
     simp [simulate_query] at hz ⊢,
     -- TODO: helper lemma
-    by_cases hs₀ : s₀.is_fresh i t,
+    by_cases hs₀ : t ∈ᵢ s₀,
     {
-      rw [mem_support_get_or_else_iff_of_is_fresh _ _ hs₀] at hz,
+      sorry
+    },
+    {
+      rw [mem_support_get_or_else_iff_of_not_mem _ _ hs₀] at hz,
       rw [← hz.2] at hzs,
       sorry,
     },
-    sorry,
   }
 end
 

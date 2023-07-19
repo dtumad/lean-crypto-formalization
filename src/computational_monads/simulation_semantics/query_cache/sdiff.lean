@@ -21,9 +21,9 @@ variables {spec : oracle_spec}
 in `cache'` from `cache`, leaving everything else unchanged. -/
 instance : has_sdiff (query_cache spec) :=
 { sdiff := λ cache cache', {
-    cache_fn := λ i t, if cache'.is_fresh i t then cache.lookup i t else none,
+    cache_fn := λ i t, if t ∉ᵢ cache' then cache.lookup i t else none,
     cached_inputs := cache.cached_inputs \ cache'.cached_inputs,
-    mem_cached_inputs := λ x, by simp [and_comm, is_fresh_iff_not_mem_cached_inputs] } }
+    mem_cached_inputs := λ x, by simp [and_comm, not_mem_iff_not_mem_cached_inputs] } }
 
 variables (cache cache' : query_cache spec) (i : spec.ι) (t : spec.domain i)
 
@@ -33,16 +33,15 @@ variables (cache cache' : query_cache spec) (i : spec.ι) (t : spec.domain i)
 section lookup
 
 @[simp] lemma lookup_sdiff : (cache \ cache').lookup i t =
-  if cache'.is_fresh i t then cache.lookup i t else none := rfl
+  if t ∉ᵢ cache' then cache.lookup i t else none := rfl
 
 lemma lookup_sdiff_eq_some_iff (u) : (cache \ cache').lookup i t = some u ↔
-  cache'.is_fresh i t ∧ cache.lookup i t = some u :=
-by by_cases h : cache'.is_fresh i t; simp [h]
+  t ∉ᵢ cache' ∧ cache.lookup i t = some u :=
+by by_cases h : t ∈ᵢ cache'; simp [h]
 
-lemma lookup_sdiff_eq_none_iff : (cache \ cache').lookup i t = none ↔
-  cache.is_fresh i t ∨ cache'.is_cached i t :=
-by rw [lookup_sdiff, ite_eq_right_iff, lookup_eq_none_iff_is_fresh,
-  imp_iff_not_or, not_is_fresh_iff_is_cached, or_comm]
+lemma lookup_sdiff_eq_none_iff : (cache \ cache').lookup i t = none ↔ t ∉ᵢ cache ∨ t ∈ᵢ cache' :=
+by rw [lookup_sdiff, ite_eq_right_iff, lookup_eq_none_iff_not_mem,
+  imp_iff_not_or, or_comm, not_not]
 
 end lookup
 
@@ -52,11 +51,11 @@ end lookup
 
 @[simp] lemma sdiff_self : cache \ cache = ∅ := query_cache.extₗ (λ i t, by simp)
 
-@[simp] lemma sdiff_cache_query (u) : [i, t ↦ u; cache] \ cache =
-  if cache.is_fresh i t then [i, t ↦ u] else ∅ :=
+@[simp] lemma cache_query_sdiff_self (u) : [i, t ↦ u; cache] \ cache =
+  if t ∉ᵢ cache  then [i, t ↦ u] else ∅ :=
 begin
   refine query_cache.extₗ (λ i' t', _),
-  by_cases hit : cache.is_fresh i t;
+  by_cases hit : t ∈ᵢ cache;
   { by_cases hi : i = i',
     { induction hi,
       by_cases ht : t = t',
@@ -78,7 +77,7 @@ lemma eq_empty_of_le_of_le_diff {cache₀ cache cache' : query_cache spec}
 begin
   refine eq_bot_iff.2 (λ i t u hu, _),
   specialize hs i t u hu,
-  have : ¬ cache.is_fresh i t := not_is_fresh_of_lookup_eq_some hs,
+  have : t ∈ᵢ cache := mem_of_lookup_eq_some _ hs,
   specialize hs' i t u hu,
   simp [this, lookup_sdiff] at hs',
   refine hs'.elim,

@@ -38,28 +38,28 @@ instance : semilattice_inf (query_cache spec) :=
       { exact let ⟨u, hu⟩ := option.ne_none_iff_exists'.1 hi in (hu.trans (h' i t u hu).symm) }
     end),
   inf := λ cache cache',
-    { cache_fn := λ i t, if (cache.is_cached i t ∧ cache.lookup i t = cache'.lookup i t)
+    { cache_fn := λ i t, if (t ∈ᵢ cache ∧ cache.lookup i t = cache'.lookup i t)
         then cache.lookup i t else none,
       cached_inputs := sorry,
       mem_cached_inputs := sorry },
   inf_le_left := λ cache cache' i t u hu,
     begin
-      by_cases h : cache.is_cached i t ∧ cache.lookup i t = cache'.lookup i t,
+      by_cases h : t ∈ᵢ cache ∧ cache.lookup i t = cache'.lookup i t,
       { exact (if_pos h).symm.trans hu },
       { exact (option.some_ne_none u ((if_neg h).symm.trans hu).symm).elim }
     end,
   inf_le_right := λ cache cache' i t u hu,
     begin
-      by_cases h : cache.is_cached i t ∧ cache.lookup i t = cache'.lookup i t,
+      by_cases h : t ∈ᵢ cache ∧ cache.lookup i t = cache'.lookup i t,
       { exact h.2 ▸ (if_pos h).symm.trans hu },
       { exact (option.some_ne_none u ((if_neg h).symm.trans hu).symm).elim }
     end,
   le_inf := λ cache₁ cache₂ cache₃ h2 h3 i t u hu,
     begin
-      by_cases h : cache₂.is_cached i t ∧ cache₂.lookup i t = cache₃.lookup i t,
+      by_cases h : t ∈ᵢ cache₂  ∧ cache₂.lookup i t = cache₃.lookup i t,
       { exact (if_pos h).trans (h2 i t u hu) },
       { refine (not_and_distrib.1 h).rec (λ h, _) (λ h, _),
-        { exact (h (is_cached_of_lookup_eq_some _ (h2 i t u hu))).elim },
+        { exact (h (mem_of_lookup_eq_some _ (h2 i t u hu))).elim },
         { exact (h ((h2 i t u hu).trans (h3 i t u hu).symm)).elim } }
     end }
 
@@ -68,39 +68,23 @@ variables (cache cache' : query_cache spec) (i : spec.ι) (t : spec.domain i) (u
 lemma le.def : cache ≤ cache' ↔
   ∀ i t u, cache.lookup i t = some u → cache'.lookup i t = some u := iff.rfl
 
-section is_cached
-
-lemma is_cached_of_le_of_is_cached {cache cache' : query_cache spec} {i t}
-  (h : cache ≤ cache') (h' : cache.is_cached i t) :
-  cache'.is_cached i t :=
+lemma mem_of_le_of_mem {cache cache' : query_cache spec} {i : spec.ι} {t : spec.domain i}
+  (h : cache ≤ cache') (h' : t ∈ᵢ cache) : t ∈ᵢ cache' :=
 begin
-  rw [le.def] at h,
-  rw [is_cached_iff_exists_lookup_eq_some] at ⊢ h',
-  obtain ⟨u, hu⟩ := h',
-  exact ⟨u, h i t u hu⟩,
+  rw [mem_iff_exists_lookup_eq_some] at ⊢ h',
+  exact let ⟨u, hu⟩ := h' in ⟨u, h i t u hu⟩,
 end
 
-end is_cached
-
-section is_fresh
-
-lemma is_fresh_of_le_of_is_fresh {cache cache' : query_cache spec} {i t}
-  (h : cache ≤ cache') (h' : cache'.is_fresh i t) :
-  cache.is_fresh i t :=
-begin
-  rw [← not_is_cached_iff_is_fresh] at h' ⊢,
-  exact λ h'', h' (is_cached_of_le_of_is_cached h h'')
-end
-
-end is_fresh
-
+lemma not_mem_of_le_of_not_mem {cache cache' : query_cache spec} {i : spec.ι} {t : spec.domain i}
+  (h : cache ≤ cache') (h' : t ∉ᵢ cache') : t ∉ᵢ cache :=
+λ h'', h' (mem_of_le_of_mem h h'')
 
 lemma cached_inputs_subset_cached_inputs_of_le {cache cache' : query_cache spec}
   (h : cache ≤ cache') : cache.cached_inputs ⊆ cache'.cached_inputs :=
 begin
   intros x hx,
-  rw [mem_cached_inputs_iff_is_cached] at hx ⊢,
-  exact is_cached_of_le_of_is_cached h hx
+  rw [← mem_iff_mem_cached_inputs'] at hx ⊢,
+  refine mem_of_le_of_mem h hx,
 end
 
 section lookup
@@ -109,18 +93,16 @@ lemma lookup_eq_some_of_le {cache cache' : query_cache spec} {i t u}
   (h : cache ≤ cache') (h' : cache.lookup i t = some u) :
   cache'.lookup i t = some u := h i t u h'
 
-lemma lookup_eq_lookup_of_le_of_is_cached {cache cache' : query_cache spec} {i t}
-  (h : cache ≤ cache') (h' : cache.is_cached i t) :
-  cache'.lookup i t = cache.lookup i t :=
-let ⟨u, hu⟩ := lookup_eq_some_of_is_cached _ h' in (lookup_eq_some_of_le h hu).trans hu.symm
+lemma lookup_eq_lookup_of_le_of_mem {cache cache' : query_cache spec} {i t}
+  (h : cache ≤ cache') (h' : t ∈ᵢ cache) : cache'.lookup i t = cache.lookup i t :=
+let ⟨u, hu⟩ := exists_lookup_eq_some_of_mem _ h' in (lookup_eq_some_of_le h hu).trans hu.symm
 
 end lookup
 
 section inf
 
 lemma lookup_inf (i : spec.ι) (t : spec.domain i) : (cache ⊓ cache').lookup i t =
-  if (cache.is_cached i t ∧ cache.lookup i t = cache'.lookup i t)
-    then cache.lookup i t else none := rfl
+  if (t ∈ᵢ cache ∧ cache.lookup i t = cache'.lookup i t) then cache.lookup i t else none := rfl
 
 end inf
 
@@ -155,16 +137,14 @@ lemma cache_query_monotone : monotone (cache_query i t u) :=
 λ cache cache' h i' t' u', by {simp only [lookup_cache_query],
   split_ifs, exact id, exact h i' t' u', exact h i' t' u'}
 
-lemma cache_query_le_cache_query_iff_of_is_fresh {cache cache' : query_cache spec} {i t} (u)
-  (h : cache.is_fresh i t) (h' : cache'.is_fresh i t) :
-    [i, t ↦ u; cache] ≤ [i, t ↦ u; cache'] ↔ cache ≤ cache' :=
+lemma cache_query_le_cache_query_iff_of_not_mem {cache cache' : query_cache spec} {i t} (u)
+  (h : t ∉ᵢ cache) (h' : t ∉ᵢ cache') : [i, t ↦ u; cache] ≤ [i, t ↦ u; cache'] ↔ cache ≤ cache' :=
 begin
   refine ⟨λ hu i' t' u' hu', _, λ hu, cache_query_monotone i t u hu⟩,
   by_cases hi : i = i',
-  -- TODO: could we write some kind of induction tactic thing for proofs like this?
   { induction hi,
     by_cases ht : t = t',
-    { exact ((lookup_ne_some_of_is_fresh cache h u') (ht.symm ▸ hu')).elim },
+    { exact ((lookup_ne_some_of_not_mem cache h u') (ht.symm ▸ hu')).elim },
     { specialize hu i t' u',
       simp only [lookup_cache_query_diff_input _ _ ht] at hu,
       exact hu hu' } },
@@ -188,7 +168,7 @@ end
 
 @[simp] lemma le_cache_query_self : cache ≤ [i, t ↦ u; cache] := sorry
 
-@[simp] lemma lt_cache_query_self_iff : cache < [i, t ↦ u; cache] ↔ cache.is_fresh i t := sorry
+@[simp] lemma lt_cache_query_self_iff : cache < [i, t ↦ u; cache] ↔ t ∉ᵢ cache := sorry
 
 end cache_query
 
@@ -200,38 +180,16 @@ lemma drop_query_monotone : monotone (drop_query i t) :=
 
 @[simp] lemma drop_query_le_self : cache.drop_query i t ≤ cache := sorry
 
-@[simp] lemma drop_query_lt_self_iff : cache.drop_query i t < cache ↔ cache.is_cached i t := sorry
+@[simp] lemma drop_query_lt_self_iff : cache.drop_query i t < cache ↔ t ∈ᵢ cache := sorry
 
-@[simp] lemma drop_query_eq_empty_iff_le_singleton : drop_query i t cache = ∅ ↔
-  ∃ u, cache ≤ [i, t ↦ u] :=
+@[simp] lemma drop_query_eq_empty_iff_le_singleton :
+  drop_query i t cache = ∅ ↔ ∃ u, cache ≤ [i, t ↦ u] :=
 sorry
--- begin
---   refine ⟨λ h, _, λ h, _⟩,
---   { by_cases h' : cache.is_fresh i t,
---     { rw [drop_query_of_is_fresh _ _ _ h'] at h,
---       exact ⟨default, h.symm ▸ empty_le'⟩ },
---     { rw [← is_cached_iff_not_is_fresh, is_cached_iff_exists_lookup_eq_some] at h',
---       obtain ⟨u, hu⟩ := h',
---       refine ⟨u, λ i' t' u' hu', _⟩,
---       have := ((eq_empty_iff _).1 h) i' t',
---       rw [is_fresh_drop_query_iff, ← lookup_eq_none_iff_is_fresh] at this,
---       refine this.rec_on (λ h', (option.some_ne_none u' (hu'.symm.trans h')).elim) _,
---       rintro ⟨rfl, rfl⟩,
---       exact (option.some_inj.1 (hu'.symm.trans hu)) ▸ (lookup_singleton_same_input _ _ _) } },
---   { obtain ⟨u, hu⟩ := h,
---     simp_rw [eq_empty_iff, is_fresh_drop_query_iff, or_iff_not_imp_left,
---       ← is_cached_iff_not_is_fresh, is_cached_iff_exists_lookup_eq_some],
---     rintro i' t' ⟨u', hu'⟩,
---     obtain ⟨hi', ht', hu'⟩ := (lookup_singleton_eq_some_iff _ _ _ _ _ _).1 (hu i' t' u' hu'),
---     refine ⟨hi', ht'⟩ }
--- end
-
 
 end drop_query
 
 @[simp] lemma le_cache_query_iff : cache ≤ [i, t ↦ u; cache'] ↔
-  (cache.is_fresh i t ∨ cache.lookup i t = some u) ∧
-    (cache.drop_query i t ≤ cache'.drop_query i t) :=
+  (t ∉ᵢ cache ∨ cache.lookup i t = some u) ∧ (cache.drop_query i t ≤ cache'.drop_query i t) :=
 begin
   sorry,
 end
@@ -255,7 +213,6 @@ begin
   -- rwa [← ht', ← hu', ht, hu],
 end
 
-
 @[simp] lemma le_singleton_iff : cache ≤ [i, t ↦ u] ↔ cache = ∅ ∨ cache = [i, t ↦ u] :=
 begin
   rw [eq_singleton_iff_le_and_not_empty, and_comm],
@@ -266,13 +223,12 @@ begin
 end
 
 
-
-lemma le_singleton_iff_forall : cache ≤ [i, t ↦ u] ↔ ∀ i' t', cache.is_cached i' t' →
+lemma le_singleton_iff_forall : cache ≤ [i, t ↦ u] ↔ ∀ i' t', t' ∈ᵢ cache →
   ∃ (h : i = i'), h.rec t = t' ∧ cache.lookup i' t' = some (h.rec u)  :=
-⟨λ h i' t' ht', let ⟨u', hu'⟩ := (cache.is_cached_iff_exists_lookup_eq_some _ _).1 ht' in
+⟨λ h i' t' ht', let ⟨u', hu'⟩ := (cache.mem_iff_exists_lookup_eq_some _ _).1 ht' in
   let ⟨hi, ht, hu⟩ := (lookup_singleton_eq_some_iff _ _ _ _ _ _).1 (h i' t' u' hu') in
     ⟨hi, ht, hu.symm ▸ hu'⟩, λ h i' t' u' hu', (lookup_singleton_eq_some_iff _ _ _ _ _ _).2
-      (let ⟨hi, ht, hu⟩ := h i' t' (is_cached_of_lookup_eq_some _ hu') in
+      (let ⟨hi, ht, hu⟩ := h i' t' (mem_of_lookup_eq_some _ hu') in
         ⟨hi, ht, option.some_inj.1 (hu.symm.trans hu')⟩)⟩
 
 
