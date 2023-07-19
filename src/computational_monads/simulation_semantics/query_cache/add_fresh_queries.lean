@@ -60,6 +60,71 @@ by simp [query_cache.ext_iffₗ]
   add_fresh_queries ∅ cache = cache :=
 by simp [query_cache.ext_iffₗ]
 
+lemma add_fresh_queries_eq_add_fresh_queries_iff (cache cache₁ cache₂ : query_cache spec) :
+  cache.add_fresh_queries cache₁ = cache.add_fresh_queries cache₂ ↔
+    ∀ i t, t ∉ᵢ cache → cache₁.lookup i t = cache₂.lookup i t :=
+begin
+  rw [query_cache.ext_iffₗ],
+  refine ⟨λ h i t ht, _, λ h i t, _⟩,
+  {
+    simpa only [lookup_add_fresh_queries_of_not_mem _ _ ht] using h i t,
+  },
+  {
+    by_cases ht : t ∈ᵢ cache,
+    {
+      simp only [lookup_add_fresh_queries_of_mem _ _ ht]
+    },
+    {
+      simp only [lookup_add_fresh_queries_of_not_mem _ _ ht, h i t ht]
+    }
+  }
+end
+
+lemma add_fresh_queries_drop_query (cache cache' : query_cache spec) (i t) :
+  cache.add_fresh_queries (cache'.drop_query i t) = if t ∈ᵢ cache
+    then cache.add_fresh_queries cache' else (cache.add_fresh_queries cache').drop_query i t :=
+begin
+  split_ifs with ht,
+  {
+    rw [add_fresh_queries_eq_add_fresh_queries_iff],
+    intros i' t' ht',
+    by_cases hi : i = i',
+    {
+      induction hi,
+      have htt : t ≠ t' := λ htt, (ht' (htt ▸ ht)).elim,
+      simp [htt],
+    },
+    {
+      simp [hi],
+    }
+  },
+  {
+    by_cases ht' : t ∈ᵢ cache',
+    {
+      refine query_cache.extₗ (λ i' t', _),
+      by_cases hi : i = i',
+      {
+        induction hi,
+        by_cases htt : t = t',
+        {
+          simpa [htt] using ht,
+        },
+        {
+          simp [htt],
+        }
+      },
+      {
+        simp [hi],
+      }
+    },
+    {
+      have htt : t ∉ᵢ cache.add_fresh_queries cache',
+      by simp [not_mem_add_fresh_queries_iff, ht, ht'],
+      simp [ht', htt],
+    }
+  }
+end
+
 @[simp] lemma add_fresh_queries_eq_self_iff (cache cache' : query_cache spec) :
   cache.add_fresh_queries cache' = cache ↔ cache'.cached_inputs ⊆ cache.cached_inputs :=
 begin
@@ -69,6 +134,55 @@ begin
   { refine query_cache.extₗ (λ i t, ite_eq_left_iff.2 (λ ht, _)),
     exact (lookup_eq_none_of_not_mem _ (not_mem_of_cached_inputs_subset ht h)).trans
       (lookup_eq_none_of_not_mem _ ht).symm }
+end
+
+@[simp] lemma add_fresh_queries_eq_cache_query_iff (cache cache' : query_cache spec) (i t u)
+  (ht : t ∉ᵢ cache) :
+  cache.add_fresh_queries cache' = [i, t ↦ u; cache] ↔
+    cache'.lookup i t = some u ∧ (cache'.drop_query i t).cached_inputs ⊆ cache.cached_inputs :=
+begin
+  refine ⟨λ h, ⟨_, _⟩, λ h, _⟩,
+  {
+    rw [query_cache.ext_iffₗ] at h,
+    specialize h i t,
+    rwa [lookup_add_fresh_queries_of_not_mem _ _ ht, lookup_cache_query_same_input] at h,
+  },
+  {
+
+    rw [← add_fresh_queries_eq_self_iff, add_fresh_queries_drop_query, h,
+      drop_query_cache_query_same_input, drop_query_of_not_mem _ ht],
+    refine if_neg ht,
+
+  },
+  {
+    rw [← add_fresh_queries_eq_self_iff] at h,
+    refine query_cache.extₗ (λ i' t', _),
+    by_cases hi : i = i',
+    {
+      induction hi,
+      by_cases htt : t = t',
+      {
+        induction htt,
+        simp [ht, h.1],
+      },
+      {
+        simp [htt],
+        intro ht',
+        rw [query_cache.ext_iffₗ] at h,
+        have := h.2 i t',
+        rwa [lookup_add_fresh_queries_of_not_mem _ _ ht',
+          lookup_drop_query_diff_input _ _ htt] at this,
+      }
+    },
+    {
+      simp [hi],
+      intro ht',
+      rw [query_cache.ext_iffₗ] at h,
+      have := h.2 i' t',
+      rwa [lookup_add_fresh_queries_of_not_mem _ _ ht',
+        lookup_drop_query_diff_index _ hi] at this,
+    }
+  }
 end
 
 lemma add_fresh_queries_eq_self_of_le {cache cache' : query_cache spec} (h : cache' ≤ cache) :

@@ -139,41 +139,88 @@ begin
     ne.def, eq_self_iff_true, not_true] at ht,
 end
 
-theorem mem_support_simulate_iff_of_le (oa : oracle_comp spec α) {s₀ s₁ : query_cache spec}
-  (hs : s₀ ≤ s₁) (z : α × query_cache spec) (hz : s₁ ≤ z.2) :
-  z ∈ (simulate cachingₛₒ oa s₁).support ↔
-    (z.1, s₀.add_fresh_queries (z.2 \ s₁)) ∈ (simulate cachingₛₒ oa s₀).support :=
-begin
-  induction oa using oracle_comp.induction_on
-    with α a α β oa ob hoa hob i t generalizing s₀ s₁,
-  {
-    simp only [mem_support_simulate_return_iff,
-      and.congr_right_iff],
-    refine λ ha, ⟨λ h, _, λ h, _⟩,
-    {
+-- theorem mem_support_simulate_iff_of_le (oa : oracle_comp spec α) {s₀ s₁ : query_cache spec}
+--   (hs : s₀ ≤ s₁) (z : α × query_cache spec) (hz : s₁ ≤ z.2)
+--   (hzs : z ∈ (simulate cachingₛₒ oa s₁).support) :
+--     (z.1, s₀.add_fresh_queries (z.2 \ s₁)) ∈ (simulate cachingₛₒ oa s₀).support :=
+-- begin
+--   induction oa using oracle_comp.induction_on
+--     with α a α β oa ob hoa hob i t generalizing s₀ s₁,
+--   {
+--     simp only [mem_support_simulate_return_iff,
+--       and.congr_right_iff] at hzs ⊢,
+--     -- intro h,
+--     rwa [add_fresh_queries_eq_self_iff,
+--       cached_inputs_sdiff_subset_cached_inputs_iff_of_le hs hz],
 
-      rw [h, query_cache.sdiff_self, add_fresh_queries_empty],
-    },
-    {
-      refine le_antisymm (λ i t u hu, _) hz,
-      by_cases hs₀ : t ∈ᵢ s₀,
-      {
-        have := mem_of_le_of_mem hs hs₀,
-        have := lookup_eq_lookup_of_le_of_mem hz this,
-        refine this.symm.trans hu,
-      },
-      {
-        sorry,
-      }
-    }
-  },
-  {
-    sorry,
-  },
-  {
-    sorry
-  }
-end
+--     -- refine λ ha, ⟨λ h, _, λ h, _⟩,
+--     -- {
+
+--     --   rw [h, query_cache.sdiff_self, add_fresh_queries_empty],
+--     -- },
+--     -- {
+--     --   refine le_antisymm (λ i t u hu, _) hz,
+--     --   rw [add_fresh_queries_eq_self_iff] at h,
+
+--     --   by_cases hs₀ : t ∈ᵢ s₀,
+--     --   {
+--     --     have := mem_of_le_of_mem hs hs₀,
+--     --     have := lookup_eq_lookup_of_le_of_mem hz this,
+--     --     refine this.symm.trans hu,
+--     --   },
+--     --   {
+--     --     by_cases hs₁: t ∈ᵢ s₁,
+--     --     {
+--     --       have := lookup_eq_lookup_of_le_of_mem hz hs₁,
+--     --       refine this.symm.trans hu
+--     --     },
+--     --     {
+--     --       rw [query_cache.ext_iffₗ] at h,
+--     --       specialize h i t,
+--     --       rw [lookup_add_fresh_queries_of_not_mem _ _ hs₀,
+--     --         lookup_eq_none_of_not_mem _ hs₀,
+--     --         lookup_sdiff_of_not_mem _ _ hs₁] at h,
+--     --       refine (option.some_ne_none u (hu.symm.trans h)).elim,
+--     --     }
+--     --   }
+--     -- }
+--   },
+--   {
+--     sorry,
+--   },
+--   {
+
+--     by_cases hs₀ : t ∈ᵢ s₀,
+--     {
+--       have hs₁ : t ∈ᵢ s₁ := mem_of_le_of_mem hs hs₀,
+--       -- simp only [mem_support_simulate_query_iff, apply_eq] at hzs,
+--       simpa only [mem_support_simulate_query_iff, apply_eq, mem_support_get_or_else_iff_of_mem _ _ hs₀,
+--         add_fresh_queries_eq_self_iff,
+--           cached_inputs_sdiff_subset_cached_inputs_iff_of_le hs hz,
+--           ← lookup_eq_lookup_of_le_of_mem hs hs₀,
+--           mem_support_get_or_else_iff_of_mem _ _ hs₁, and.congr_left_iff,
+--           iff_self, implies_true_iff] using hzs,
+--     },
+--     {
+
+--       simp_rw [mem_support_simulate_query_iff, apply_eq, mem_support_get_or_else_iff_of_not_mem _ _ hs₀,
+--         mem_support_query, true_and],
+--       simp_rw [mem_support_simulate_query_iff, apply_eq, mem_support_get_or_else_iff,
+--         mem_support_query, true_and] at hzs,
+
+--       refine symm _,
+--       simp [add_fresh_queries_eq_cache_query_iff _ _ _ _ _ hs₀],
+--       by_cases hs₁ : t ∈ᵢ s₁,
+--       {
+
+--         sorry -- don't think this works at all
+--       },
+--       {
+--         sorry
+--       }
+--     }
+--   }
+-- end
 
 theorem exists_unique_state_mem_support_of_le (oa : oracle_comp spec α) {s₀ s₁ : query_cache spec}
   (hs : s₀ ≤ s₁) (z : α × query_cache spec) (hz : z ∈ (simulate cachingₛₒ oa s₁).support) :
@@ -267,6 +314,14 @@ begin
       exact ⟨[i, t ↦ x; s₀], ⟨(cache_query_le_cache_query_iff_of_not_mem x hs₀ hs₁).2 hs, rfl⟩,
         λ s hs, by rw [← hs.2]⟩ },
   }
+end
+
+lemma mem_support_of_le_mem_support (oa : oracle_comp spec α) {s₀ s : query_cache spec}
+  (hs : s₀ ≤ s) (z : α × query_cache spec) (hzs : s ≤ z.2)
+  (hz : z ∈ (simulate cachingₛₒ oa s₀).support) :
+  z ∈ (simulate cachingₛₒ oa s).support :=
+begin
+  sorry,
 end
 
 /-- The possible outputs of simulating a computation with a larger initial cache is
@@ -387,11 +442,10 @@ end extra_cache_choices
 /-- Probability of getting to a final result given a partial cache for queries is given by
 the product of probabilities that each additional query gets the expected result.
 Note that this requires `z` be in the support of the simulation (as the empty product is `1`). -/
-theorem finite_version (oa : oracle_comp spec α) (s₀ : query_cache spec)
-  (z : α × query_cache spec) (hz : z ∈ (simulate cachingₛₒ oa s₀).support) :
+theorem finite_version {oa : oracle_comp spec α} {s₀ : query_cache spec}
+  {z : α × query_cache spec} (hz : z ∈ (simulate cachingₛₒ oa s₀).support) :
   ⁅= z | simulate cachingₛₒ oa s₀⁆ = (extra_cache_choices s₀ z.2)⁻¹ :=
 begin
-  -- have hs₀ : s₀ ≤ z.2 := le_of_mem_support_simulate z hz,
   induction oa using oracle_comp.induction_on
     with α a α β oa ob hoa hob i t generalizing s₀,
   {
@@ -402,7 +456,7 @@ begin
   {
     rw [cachingₛₒ.mem_support_simulate_bind_iff] at hz,
     obtain ⟨y, hy, hyz⟩ := exists_of_exists_unique hz,
-    rw [prob_output_simulate_bind_of_mem_support _ _ _ hy hyz, hoa y s₀ hy, hob y.1 z y.2 hyz,
+    rw [prob_output_simulate_bind_of_mem_support _ _ _ hy hyz, hoa hy, hob y.1 hyz,
       ← ennreal.mul_inv (or.inr (ennreal.nat_ne_top _)) ((or.inl (ennreal.nat_ne_top _))),
       ← nat.cast_mul, extra_cache_choices_mul_trans],
   },
@@ -427,56 +481,6 @@ begin
   }
 end
 
-
-lemma mem_support_of_le_mem_support (oa : oracle_comp spec α) {s₀ s : query_cache spec}
-  (hs : s₀ ≤ s) (z : α × query_cache spec) (hzs : s ≤ z.2)
-  (hz : z ∈ (simulate cachingₛₒ oa s₀).support) :
-  z ∈ (simulate cachingₛₒ oa s).support :=
-begin
-  induction oa using oracle_comp.induction_on
-    with α a α β oa ob hoa hob i t generalizing,
-  {
-    -- rw [simulate_return, simulate_return],
-    simp at hz,
-    simp [hz, prod.eq_iff_fst_eq_snd_eq] at hzs ⊢,
-    refine le_antisymm hs hzs,
-  },
-  {
-    sorry,
-  },
-  {
-    simp [simulate_query] at hz ⊢,
-    -- TODO: helper lemma
-    by_cases hs₀ : t ∈ᵢ s₀,
-    {
-      sorry
-    },
-    {
-      rw [mem_support_get_or_else_iff_of_not_mem _ _ hs₀] at hz,
-      rw [← hz.2] at hzs,
-      sorry,
-    },
-  }
-end
-
-/-- Given a pair of caches `s ≤ s'`, such that some result `z` is possible in both simulations,
-the probability of getting that result is higher when starting with the larger cache,
-since it has fewer additional choices at which it could diverge from calculating `z`. -/
-lemma prob_output_monotone (oa : oracle_comp spec α) (s s' : query_cache spec)
-  (hs : s ≤ s') (z : α × query_cache spec)
-  (hz' : z ∈ (simulate cachingₛₒ oa s').support) :
-  ⁅= z | simulate cachingₛₒ oa s⁆ ≤ ⁅= z | simulate cachingₛₒ oa s'⁆ :=
-begin
-  by_cases hz : z ∈ (simulate cachingₛₒ oa s).support,
-  {
-    rw [finite_version _ _ _ hz', finite_version _ _ _ hz],
-    sorry,
-  },
-  {
-    simp only [hz, prob_output_eq_zero, not_false_iff, zero_le'],
-  }
-end
-
 lemma prob_output_monotone_extra (oa : oracle_comp spec α) {s₀ s : query_cache spec}
   (hs : s₀ ≤ s) (z : α × query_cache spec) (hzs : s ≤ z.2)
   (hz : z ∈ (simulate cachingₛₒ oa s₀).support) :
@@ -485,24 +489,10 @@ lemma prob_output_monotone_extra (oa : oracle_comp spec α) {s₀ s : query_cach
 begin
   have hz' : z ∈ (simulate cachingₛₒ oa s).support,
   from mem_support_of_le_mem_support oa hs z hzs hz,
-  rw [finite_version _ _ _ hz', finite_version _ _ _ hz],
-  have : z.snd.cached_inputs \ s₀.cached_inputs =
-    (z.2.cached_inputs \ s.cached_inputs) ∪ (s.cached_inputs \ s₀.cached_inputs) := sorry,
-  simp only [extra_cache_choices, this],
-  sorry,
-  -- rw [finset.prod_union sorry],
-  -- simp only [finset.prod_union sorry, div_eq_mul_inv, nat.cast_mul],
-  -- rw [ennreal.mul_inv sorry sorry],
+  rw [finite_version hz', finite_version hz, div_eq_mul_inv,
+    ← ennreal.mul_inv (or.inr (ennreal.nat_ne_top _)) (or.inl (ennreal.nat_ne_top _)), ← nat.cast_mul, mul_comm,
+      extra_cache_choices_mul_trans],
 end
-
--- lemma prob_output_monotone_extra_min (oa : oracle_comp spec α) (s s' : query_cache spec)
---   (hs : s ≤ s') (z : α × query_cache spec)
---   (hz' : z ∈ (simulate cachingₛₒ oa s').support) :
---   ⁅= z | simulate cachingₛₒ oa s⁆ ≤
---     ⁅= z | simulate cachingₛₒ oa s'⁆ / (s'.cached_inputs \ s.cached_inputs).card :=
--- begin
---   sorry
--- end
 
 /-- A `forking_map` for a computation `oa` and initial state `s₀` is one that is well behaved
 for forking a computation, via mapping output of simulation to a new initial state for running
@@ -527,28 +517,6 @@ def map_output (f : forking_map oa s₀) :
   α × query_cache spec → α × query_cache spec := λ z, (z.1, f z)
 
 end forking_map
-
-/-- Given a pair of caches `s ≤ s'`, such that some result `z` is possible in both simulations,
-the probability of getting that result is higher when starting with the larger cache,
-since it has fewer additional choices at which it could diverge from calculating `z`. -/
-lemma prob_output_monotone_fork' (oa : oracle_comp spec α) (s₀ : query_cache spec)
-  (f : forking_map oa s₀) (z' : α × query_cache spec) :
-  ⁅= z' | f.map_output <$> simulate cachingₛₒ oa s₀⁆ ≤
-    ⁅= z' | f.map_output <$> simulate cachingₛₒ oa z'.2⁆ :=
-begin
-  rw [prob_output_map_eq_tsum, prob_output_map_eq_tsum],
-  refine ennreal.tsum_le_tsum (λ z, _),
-  split_ifs with hz,
-  { obtain ⟨rfl⟩ := hz,
-    by_cases hzs : z ∈ (simulate cachingₛₒ oa s₀).support,
-    { apply prob_output_monotone,
-      { exact f.le_to_fun z hzs },
-      { exact mem_support_of_le_mem_support oa (f.le_to_fun z hzs)
-          z (f.to_fun_le z hzs) hzs } },
-    { simp only [hzs, eval_dist_apply_eq_prob_output, prob_output_eq_zero,
-        not_false_iff, zero_le'] } },
-  { exact le_rfl }
-end
 
 /-- Given a pair of caches `s ≤ s'`, such that some result `z` is possible in both simulations,
 the probability of getting that result is higher when starting with the larger cache,
@@ -615,199 +583,5 @@ calc ⁅= x | simulate' cachingₛₒ oa s₀⁆ ^ 2 =
 ... ≤ ⁅= (x, x) | do {z ← simulate cachingₛₒ oa s₀,
   z' ← simulate cachingₛₒ oa (f z), return (z.1, z'.1)}⁆ : sorry
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
--------------------------------------- Quarantined
-
-lemma prob_output_eq_le_prob_output_eq_rewind (oa : oracle_comp spec α) (s₀ : query_cache spec)
-  (f : forking_map oa s₀) (x : α) :
-  let loss_factor : ℝ≥0∞ := ↑(f <$> simulate cachingₛₒ oa s₀).fin_support.card in
-  ⁅= x | simulate' cachingₛₒ oa s₀⁆ ^ 2 / loss_factor ≤
-    ⁅= (x, x) | do {z ← simulate cachingₛₒ oa s₀,
-      z' ← simulate cachingₛₒ oa (f z), return (z.1, z'.1)}⁆ :=
-
-let loss_factor : ℝ≥0∞ := ↑(f <$> simulate cachingₛₒ oa s₀).fin_support.card in
--- First switch to a sum over the possible intermediate values `sf` that will be chosen by `f`.
-calc ⁅= x | simulate' cachingₛₒ oa s₀⁆ ^ 2 / loss_factor =
-    (∑ sf in (f <$> simulate cachingₛₒ oa s₀).fin_support,
-      ⁅= (x, sf) | f.map_output <$> simulate cachingₛₒ oa s₀⁆) ^ 2 / loss_factor :
-  begin
-    sorry
-  end
--- Use the loss factor to bring the square inside the summation.
-... ≤ ∑ sf in (f <$> simulate cachingₛₒ oa s₀).fin_support,
-        ⁅= (x, sf) | f.map_output <$> simulate cachingₛₒ oa s₀⁆ ^ 2 :
-  begin
-    have := ennreal.pow_sum_div_card_le_sum_pow (f <$> simulate cachingₛₒ oa s₀).fin_support
-      (λ sf, ⁅= (x, sf) | simulate cachingₛₒ oa s₀ >>= λ z, return (z.1, f z)⁆) (λ _ _, prob_output_ne_top _ _) 1,
-    simpa only [pow_one, one_add_one_eq_two] using this
-  end
-
--- Substitute probability for running the computation twice in sequence.
-... = ∑ sf in (f <$> simulate cachingₛₒ oa s₀).fin_support,
-        ⁅= ((x, sf), (x, sf)) | f.map_output <$> (simulate cachingₛₒ oa s₀)
-          ×ₘ f.map_output <$> (simulate cachingₛₒ oa s₀)⁆ :
-  begin
-    refine finset.sum_congr rfl (λ sf hsf, _),
-    rw [prob_output_product, pow_two],
-  end
--- Substitute probability for running the computation twice in sequence.
-... = ∑ sf in (f <$> simulate cachingₛₒ oa s₀).fin_support,
-        ⁅= ((x, sf), (x, sf)) | do {z ← simulate cachingₛₒ oa s₀,
-          z' ← simulate cachingₛₒ oa s₀, return (f.map_output z, f.map_output z')}⁆ :
-  begin
-    refine finset.sum_congr rfl (λ sf hsf, _),
-    sorry,
-  end
--- Run second computation from the intermediate cache `sf` instead of the base cache `s₀`.
-... ≤ ∑ sf in (f <$> simulate cachingₛₒ oa s₀).fin_support,
-  ⁅= ((x, sf), (x, sf)) | do {z ← simulate cachingₛₒ oa sf,
-    z' ← simulate cachingₛₒ oa sf, return (f.map_output z, f.map_output z')}⁆ :
-  begin
-    sorry,
-  end
-
-... = ∑ sf in (f <$> simulate cachingₛₒ oa s₀).fin_support,
-  ⁅= (x, sf) | f.map_output <$> simulate cachingₛₒ oa sf⁆ ^ 2 : sorry
-
-
-
--- -- Substitute the value `sf` for `f z`, which is equal assuming the probability is non-zero.
--- ... = ∑ sf in (f <$> simulate cachingₛₒ oa s₀).fin_support,
---         ⁅= ((x, sf), (x, sf)) | do {z ← simulate cachingₛₒ oa s₀,
---           z' ← simulate cachingₛₒ oa (f z), return ((z.1, f z), (z'.1, f z'))}⁆ :
---   begin
---     sorry
---   end
-
--- Improve total probability by just not checking what the second cache returned is.
-... ≤ ∑ sf in (f <$> simulate cachingₛₒ oa s₀).fin_support,
-        ⁅= ((x, sf), x) | do {z ← simulate cachingₛₒ oa sf,
-          z' ← simulate cachingₛₒ oa (f z), return (f.map_output z, z'.1)}⁆ :
-  begin
-    sorry
-  end
-
--- Revert the summation over the intermediate cache values.
-... = ⁅= (x, x) | do {z ← simulate cachingₛₒ oa s₀,
-        z' ← simulate cachingₛₒ oa (f z), return (z.1, z'.1)}⁆ :
-  begin
-    sorry
-  end
-
-
-
-
-lemma prob_output_eq_le_prob_output_eq_rewind'
-  (oa : oracle_comp spec α) (s₀ : query_cache spec)
-  (f : forking_map oa s₀) (x : α) :
-
-  let poss_cuts : finset (query_cache spec) :=
-    ((λ z, snd z \ f z) <$> (simulate cachingₛₒ oa s₀)).fin_support in
-
-  ⁅= x | simulate' cachingₛₒ oa s₀⁆ ^ 2 / poss_cuts.card ≤
-    ⁅= (x, x) | do {z ← simulate cachingₛₒ oa s₀,
-      z' ← simulate cachingₛₒ oa (f z), return (z.1, z'.1)}⁆ :=
-
-let poss_cuts : finset (query_cache spec) :=
-  ((λ z, snd z \ f z) <$> (simulate cachingₛₒ oa s₀)).fin_support in
--- First switch to a sum over the possible intermediate values `sf` that will be chosen by `f`.
-calc ⁅= x | simulate' cachingₛₒ oa s₀⁆ ^ 2 / poss_cuts.card =
-    (∑ sf in poss_cuts,
-      ⁅= (x, sf) | do {z ← simulate cachingₛₒ oa s₀, return (z.1, z.2 \ f z)}⁆) ^ 2 / poss_cuts.card :
-  begin
-    sorry -- "easy"
-  end
-
--- Use the loss factor to bring the square inside the summation.
-... ≤ ∑ sf in poss_cuts,
-        ⁅= (x, sf) | do {z ← simulate cachingₛₒ oa s₀, return (z.1, z.2 \ f z)}⁆ ^ 2 :
-  begin
-    have := ennreal.pow_sum_div_card_le_sum_pow poss_cuts
-      (λ sf, ⁅= (x, sf) | simulate cachingₛₒ oa s₀ >>= λ z, return (z.1, z.2 \ f z)⁆) (λ _ _, prob_output_ne_top _ _) 1,
-    simpa only [pow_one, one_add_one_eq_two] using this
-  end
-
--- Substitute probability for running the computation twice in sequence.
-... = ∑ sf in poss_cuts,
-        ⁅= ((x, sf), (x, sf)) | (λ (z : α × query_cache spec), (z.1, z.2 \ f z)) <$> (simulate cachingₛₒ oa s₀)
-          ×ₘ (λ (z : α × query_cache spec), (z.1, z.2 \ f z)) <$> (simulate cachingₛₒ oa s₀)⁆ :
-  begin
-    refine finset.sum_congr rfl (λ sf hsf, _),
-    rw [prob_output_product, pow_two],
-    refl,
-  end
--- -- Run second computation from the intermediate cache `sf` instead of the base cache `s₀`.
--- ... ≤ ∑ sf in poss_cuts,
---         ⁅= ((x, sf), (x, sf)) | (λ (z : α × query_cache spec), (z.1, z.2 \ f z)) <$> (simulate cachingₛₒ oa s₀)
---           ×ₘ (λ (z : α × query_cache spec), (z.1, z.2 \ f z)) <$> (simulate cachingₛₒ oa (z.2 \ sf))⁆ :
---   begin
---     refine finset.sum_le_sum (λ sf hsf, _),
---     sorry, -- maybe with s₀ → ∅
---   end
--- Run second computation from the intermediate cache `sf` instead of the base cache `s₀`.
--- ... ≤ ∑ sf in poss_cuts,
---         ⁅= ((x, sf), (x, sf)) | do {z ← simulate cachingₛₒ oa s₀,
---           z' ← simulate cachingₛₒ oa (z.2 \ sf), return ((z.1, z.2 \ f z), (z'.1, z'.2 \ f z'))}⁆ :
---   begin
---     sorry -- folding
---   end
-
--- Substitute the value `sf` for `f z`, which is equal assuming the probability is non-zero.
-... = ∑ sf in poss_cuts,
-        ⁅= ((x, sf), (x, sf)) | do {z ← simulate cachingₛₒ oa s₀,
-          z' ← simulate cachingₛₒ oa (f z), return ((z.1, z.2 \ f z), (z'.1, z'.2 \ f z'))}⁆ :
-  begin
-    sorry
-  end
--- Improve total probability by just not checking what the second cache returned is.
-... ≤ ∑ sf in poss_cuts,
-        ⁅= ((x, sf), x) | do {z ← simulate cachingₛₒ oa s₀,
-          z' ← simulate cachingₛₒ oa (f z), return ((z.1, z.2 \ f z), z'.1)}⁆ :
-  begin
-    sorry
-  end
--- Revert the summation over the intermediate cache values.
-... = ⁅= (x, x) | do {z ← simulate cachingₛₒ oa s₀,
-        z' ← simulate cachingₛₒ oa (f z), return (z.1, z'.1)}⁆ :
-  begin
-    sorry
-  end
-
-
-
--- lemma output_eq_of_state_eq (oa : oracle_comp spec α)
---   (s s' : query_cache spec) (hs : s ≤ s')
---   (x x' : α) (cache : query_cache spec)
---   (h : (x, cache) ∈ (simulate cachingₛₒ oa s).support)
---   (h' : (x', cache) ∈ (simulate cachingₛₒ oa s).support) :
---   x = x' :=
--- begin
---   induction oa using oracle_comp.induction_on
---     with α a α β oa ob hoa hob i t generalizing s cache,
---   {
---     simp at h h',
---     simp [h.1, h'.1]
---   },
---   {
---     rw [mem_support_simulate_bind_iff] at h h',
---     obtain ⟨a, s, hs, hxa⟩ := h,
---     obtain ⟨a', s', hs', hxa'⟩ := h',
---     specialize hoa a a',
---     specialize hob a x x',
---   }
--- end
 
 end cachingₛₒ

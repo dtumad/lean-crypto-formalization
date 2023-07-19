@@ -35,6 +35,12 @@ section lookup
 @[simp] lemma lookup_sdiff : (cache \ cache').lookup i t =
   if t ∉ᵢ cache' then cache.lookup i t else none := rfl
 
+lemma lookup_sdiff_of_mem {i t} (h : t ∈ᵢ cache') :
+  (cache \ cache').lookup i t = none := by simp [h]
+
+lemma lookup_sdiff_of_not_mem {i t} (h : t ∉ᵢ cache') :
+  (cache \ cache').lookup i t = cache.lookup i t := by simp [h]
+
 lemma lookup_sdiff_eq_some_iff (u) : (cache \ cache').lookup i t = some u ↔
   t ∉ᵢ cache' ∧ cache.lookup i t = some u :=
 by by_cases h : t ∈ᵢ cache'; simp [h]
@@ -44,6 +50,13 @@ by rw [lookup_sdiff, ite_eq_right_iff, lookup_eq_none_iff_not_mem,
   imp_iff_not_or, or_comm, not_not]
 
 end lookup
+
+@[simp] lemma mem_sdiff_iff (i : spec.ι) (t : spec.domain i) :
+  t ∈ᵢ (cache \ cache') ↔ t ∈ᵢ cache ∧ t ∉ᵢ cache' :=
+begin
+  simp only [mem_iff_lookup_ne_none, lookup_sdiff],
+  simp [and_comm],
+end
 
 @[simp] lemma empty_sdiff : ∅ \ cache = ∅ := query_cache.extₗ (λ i t, if_t_t _ _)
 
@@ -81,6 +94,44 @@ begin
   specialize hs' i t u hu,
   simp [this, lookup_sdiff] at hs',
   refine hs'.elim,
+end
+
+lemma drop_query_sdiff (i t u) : (cache \ cache').drop_query i t =
+  cache \ [i, t ↦ u; cache'] :=
+begin
+  refine query_cache.extₗ (λ i' t', _),
+  by_cases hi : i = i',
+  { induction hi,
+    by_cases ht : t = t'; simp [ht] },
+  { simp [hi] }
+end
+
+
+lemma cached_inputs_sdiff_subset_cached_inputs_iff_of_le {cache₀ cache cache' : query_cache spec}
+  (h₀ : cache₀ ≤ cache') (h' : cache' ≤ cache) :
+  (cache \ cache').cached_inputs ⊆ cache₀.cached_inputs ↔ cache = cache' :=
+begin
+  refine ⟨λ h, _, λ h, _⟩,
+  {
+    refine le_antisymm _ h',
+    refine λ i t u hu, _,
+    by_cases ht₀ : t ∈ᵢ cache₀,
+    {
+      have := mem_of_le_of_mem h₀ ht₀,
+      have := lookup_eq_lookup_of_le_of_mem h' this,
+      refine this.symm.trans hu
+    },
+    {
+      have := not_mem_of_cached_inputs_subset ht₀ h,
+      simp [mem_sdiff_iff, not_and_distrib, (mem_of_lookup_eq_some _ hu)] at this,
+      have := lookup_eq_lookup_of_le_of_mem h' this,
+      refine this.symm.trans hu,
+    }
+  },
+  {
+    rw [h, query_cache.sdiff_self, cached_inputs_empty],
+    refine finset.empty_subset _,
+  }
 end
 
 end query_cache
