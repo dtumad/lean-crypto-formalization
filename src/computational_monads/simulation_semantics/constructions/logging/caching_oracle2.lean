@@ -139,129 +139,58 @@ begin
     ne.def, eq_self_iff_true, not_true] at ht,
 end
 
--- theorem mem_support_simulate_iff_of_le (oa : oracle_comp spec α) {s₀ s₁ : query_cache spec}
---   (hs : s₀ ≤ s₁) (z : α × query_cache spec) (hz : s₁ ≤ z.2)
---   (hzs : z ∈ (simulate cachingₛₒ oa s₁).support) :
---     (z.1, s₀.add_fresh_queries (z.2 \ s₁)) ∈ (simulate cachingₛₒ oa s₀).support :=
--- begin
---   induction oa using oracle_comp.induction_on
---     with α a α β oa ob hoa hob i t generalizing s₀ s₁,
---   {
---     simp only [mem_support_simulate_return_iff,
---       and.congr_right_iff] at hzs ⊢,
---     -- intro h,
---     rwa [add_fresh_queries_eq_self_iff,
---       cached_inputs_sdiff_subset_cached_inputs_iff_of_le hs hz],
-
---     -- refine λ ha, ⟨λ h, _, λ h, _⟩,
---     -- {
-
---     --   rw [h, query_cache.sdiff_self, add_fresh_queries_empty],
---     -- },
---     -- {
---     --   refine le_antisymm (λ i t u hu, _) hz,
---     --   rw [add_fresh_queries_eq_self_iff] at h,
-
---     --   by_cases hs₀ : t ∈ᵢ s₀,
---     --   {
---     --     have := mem_of_le_of_mem hs hs₀,
---     --     have := lookup_eq_lookup_of_le_of_mem hz this,
---     --     refine this.symm.trans hu,
---     --   },
---     --   {
---     --     by_cases hs₁: t ∈ᵢ s₁,
---     --     {
---     --       have := lookup_eq_lookup_of_le_of_mem hz hs₁,
---     --       refine this.symm.trans hu
---     --     },
---     --     {
---     --       rw [query_cache.ext_iffₗ] at h,
---     --       specialize h i t,
---     --       rw [lookup_add_fresh_queries_of_not_mem _ _ hs₀,
---     --         lookup_eq_none_of_not_mem _ hs₀,
---     --         lookup_sdiff_of_not_mem _ _ hs₁] at h,
---     --       refine (option.some_ne_none u (hu.symm.trans h)).elim,
---     --     }
---     --   }
---     -- }
---   },
---   {
---     sorry,
---   },
---   {
-
---     by_cases hs₀ : t ∈ᵢ s₀,
---     {
---       have hs₁ : t ∈ᵢ s₁ := mem_of_le_of_mem hs hs₀,
---       -- simp only [mem_support_simulate_query_iff, apply_eq] at hzs,
---       simpa only [mem_support_simulate_query_iff, apply_eq, mem_support_get_or_else_iff_of_mem _ _ hs₀,
---         add_fresh_queries_eq_self_iff,
---           cached_inputs_sdiff_subset_cached_inputs_iff_of_le hs hz,
---           ← lookup_eq_lookup_of_le_of_mem hs hs₀,
---           mem_support_get_or_else_iff_of_mem _ _ hs₁, and.congr_left_iff,
---           iff_self, implies_true_iff] using hzs,
---     },
---     {
-
---       simp_rw [mem_support_simulate_query_iff, apply_eq, mem_support_get_or_else_iff_of_not_mem _ _ hs₀,
---         mem_support_query, true_and],
---       simp_rw [mem_support_simulate_query_iff, apply_eq, mem_support_get_or_else_iff,
---         mem_support_query, true_and] at hzs,
-
---       refine symm _,
---       simp [add_fresh_queries_eq_cache_query_iff _ _ _ _ _ hs₀],
---       by_cases hs₁ : t ∈ᵢ s₁,
---       {
-
---         sorry -- don't think this works at all
---       },
---       {
---         sorry
---       }
---     }
---   }
--- end
+theorem exists_unique_mem_support_of_le (oa : oracle_comp spec α) {s₀ s₁ : query_cache spec}
+  (hs₀₁ : s₀ ≤ s₁) (z₁ : α × query_cache spec) (hz : z₁ ∈ (simulate cachingₛₒ oa s₁).support) :
+  ∃! (z₀ : α × query_cache spec), z₀.2 ≤ z₁.2 ∧ z₀ ∈ (simulate cachingₛₒ oa s₀).support :=
+begin
+  induction oa using oracle_comp.induction_on
+    with α a α β oa ob hoa hob i t generalizing s₀ s₁ z₁,
+  { rw [support_simulate_return, set.mem_singleton_iff, prod.eq_iff_fst_eq_snd_eq] at hz,
+    simp [hz.1, hz.2],
+    exact ⟨⟨a, s₀⟩, ⟨hs₀₁, rfl⟩, λ s hs, hs.2⟩ },
+  {
+    sorry,
+  },
+  {
+    sorry,
+  }
+end
 
 theorem exists_unique_state_mem_support_of_le (oa : oracle_comp spec α) {s₀ s₁ : query_cache spec}
-  (hs : s₀ ≤ s₁) (z : α × query_cache spec) (hz : z ∈ (simulate cachingₛₒ oa s₁).support) :
+  (hs₀₁ : s₀ ≤ s₁) (z : α × query_cache spec) (hz : z ∈ (simulate cachingₛₒ oa s₁).support) :
   ∃! (s : query_cache spec), s ≤ z.2 ∧ (z.1, s) ∈ (simulate cachingₛₒ oa s₀).support :=
 begin
   induction oa using oracle_comp.induction_on
-    with α a α β oa ob hoa hob i t generalizing s₀ s₁,
+    with α a α β oa ob hoa hob i t generalizing s₀ s₁ z,
   { rw [support_simulate_return, set.mem_singleton_iff, prod.eq_iff_fst_eq_snd_eq] at hz,
     suffices : ∃! (s : query_cache spec), s ≤ s₁ ∧ s = s₀,
     by simpa [hz.1, hz.2] using this,
-    exact ⟨s₀, ⟨hs, rfl⟩, λ s hs, hs.2⟩ },
+    exact ⟨s₀, ⟨hs₀₁, rfl⟩, λ s hs, hs.2⟩ },
   {
+    rw [mem_support_simulate_bind_iff'] at hz,
+    obtain ⟨y, hy, hyz⟩ := hz,
+    specialize hoa y hs₀₁ hy,
     refine exists_unique_of_exists_of_unique _ _,
     {
-      rw [mem_support_simulate_bind_iff'] at hz,
-      obtain ⟨y, hy, hyz⟩ := hz,
-      specialize hoa y hs hy,
+
       obtain ⟨s₁', hs₁'⟩ := exists_of_exists_unique hoa,
-      sorry,
+      clear hoa,
+      specialize hob y.1 z hs₁'.1 hyz,
+      obtain ⟨s', hs'⟩ := exists_of_exists_unique hob,
+      clear hob,
+      refine ⟨s', hs'.1, _⟩,
+      rw [oracle_comp.mem_support_simulate_bind_iff],
+      refine ⟨y.1, s₁', hs₁'.2, hs'.2⟩,
     },
     {
+      intros s s' hs hs',
+      rw [mem_support_simulate_bind_iff'] at hs hs',
+      obtain ⟨⟨y1, s₂⟩, hs₂⟩ := hs.2,
+      obtain ⟨⟨y2, s₂'⟩, hs₂'⟩ := hs'.2,
+      have := @unique_of_exists_unique _ _ hoa s₂ s₂',
+      simp only [] at this hs₂ hs₂',
       sorry,
     }
-    -- rw [mem_support_simulate_bind_iff'] at hz,
-    -- obtain ⟨x, hx, hzx⟩ := hz,
-    -- specialize hoa _ hs hx,
-    -- obtain ⟨s', hs', hsz'⟩ := hoa,
-    -- specialize hob x.1 z hs'.1 hzx,
-    -- obtain ⟨s₁', hs₁', hzs₁'⟩ := hob,
-    -- refine ⟨s₁', ⟨hs₁'.1, _⟩, _⟩,
-    -- {
-    --   rw [mem_support_simulate_bind_iff'],
-    --   refine ⟨⟨x.1, s'⟩, hs'.2, hs₁'.2⟩,
-    -- },
-    -- {
-    --   intros sb hsb,
-    --   rw [mem_support_simulate_bind_iff'] at hsb,
-    --   obtain ⟨hsbz, ⟨x'', hx''⟩⟩ := hsb,
-    --   refine hzs₁' _ ⟨hsbz, _⟩,
-    --   have : x'' = (x.1, s') := sorry,
-    -- }
   },
   {
     by_cases hs₁ : t ∈ᵢ s₁,
@@ -272,7 +201,8 @@ begin
       refine ⟨[i, t ↦ u; s₀], ⟨_, _⟩, _⟩,
       {
         refine trans _ (le_of_mem_support_simulate z hz),
-        rwa [cache_query_le_iff_of_le hs],
+        sorry,
+        -- rwa [cache_query_le_iff_of_le hs],
       },
       {
         rw [simulate_query, apply_eq_of_lookup_eq_some hu, mem_support_return_iff] at hz,
@@ -280,8 +210,8 @@ begin
         by_cases hs₀ : t ∈ᵢ s₀,
 
         {
-
-          simp [support_get_or_else_of_mem _ _ hs₀, (lookup_eq_lookup_of_le_of_mem hs hs₀).symm.trans hu],
+          sorry,
+          -- simp [support_get_or_else_of_mem _ _ hs₀, (lookup_eq_lookup_of_le_of_mem hs hs₀).symm.trans hu],
         },
         {
           simp only [support_get_or_else_of_not_mem _ _ hs₀, support_query, set.image_univ,
@@ -485,7 +415,7 @@ lemma prob_output_monotone_extra (oa : oracle_comp spec α) {s₀ s : query_cach
   (hs : s₀ ≤ s) (z : α × query_cache spec) (hzs : s ≤ z.2)
   (hz : z ∈ (simulate cachingₛₒ oa s₀).support) :
   ⁅= z | simulate cachingₛₒ oa s₀⁆ =
-    ⁅= z | simulate cachingₛₒ oa s⁆ / (extra_cache_choices s₀ s) :=
+    ⁅= z | simulate cachingₛₒ oa s⁆ / ↑(extra_cache_choices s₀ s) :=
 begin
   have hz' : z ∈ (simulate cachingₛₒ oa s).support,
   from mem_support_of_le_mem_support oa hs z hzs hz,
@@ -494,6 +424,47 @@ begin
       extra_cache_choices_mul_trans],
 end
 
+lemma prob_output_monotone_extra_inv (oa : oracle_comp spec α) {s₀ s : query_cache spec}
+  (hs : s₀ ≤ s) (z : α × query_cache spec) (hzs : s ≤ z.2)
+  (hz : z ∈ (simulate cachingₛₒ oa s₀).support) :
+  ⁅= z | simulate cachingₛₒ oa s₀⁆ =
+    ⁅= z | simulate cachingₛₒ oa s⁆ * (↑(extra_cache_choices s₀ s))⁻¹ :=
+begin
+  sorry
+end
+
+lemma prob_output_monotone_extra' (oa : oracle_comp spec α) {s₀ s : query_cache spec}
+  (hs : s₀ ≤ s) (z : α × query_cache spec) (hzs : s ≤ z.2)
+  (hz : z ∈ (simulate cachingₛₒ oa s₀).support) :
+  ⁅= z | simulate cachingₛₒ oa s₀⁆ * ↑(extra_cache_choices s₀ s) =
+    ⁅= z | simulate cachingₛₒ oa s⁆ :=
+begin
+  rw [prob_output_monotone_extra oa hs z hzs hz, div_eq_mul_inv,
+    mul_assoc, ennreal.inv_mul_cancel, mul_one],
+  simp [extra_cache_choices, finset.prod_eq_zero_iff],
+  refine ennreal.nat_ne_top _,
+end
+
+-- lemma prob_output_monotone_extra_sim' (oa : oracle_comp spec α) {s₀ s : query_cache spec}
+--   (hs : s₀ ≤ s) (x : α)
+--   (hz : x ∈ (simulate' cachingₛₒ oa s₀).support) :
+--   ⁅= x | simulate' cachingₛₒ oa s⁆ ≤
+--     ⁅= x | simulate' cachingₛₒ oa s₀⁆ * (extra_cache_choices s₀ s) :=
+-- begin
+--   simp only [prob_output_simulate', ← ennreal.tsum_mul_right],
+--   refine ennreal.tsum_le_tsum (λ s', _),
+--   by_cases hz : (x, s') ∈ (simulate cachingₛₒ oa s₀).support,
+--   {
+--     sorry,
+--   },
+--   {
+--     rw [prob_output_eq_zero hz, zero_mul, le_zero_iff],
+--     sorry,
+--   }
+-- end
+
+
+
 /-- A `forking_map` for a computation `oa` and initial state `s₀` is one that is well behaved
 for forking a computation, via mapping output of simulation to a new initial state for running
 the computation again. Requires that the mapping stays between the initial and final cache. -/
@@ -501,22 +472,66 @@ the computation again. Requires that the mapping stays between the initial and f
 (to_fun : α × query_cache spec → query_cache spec)
 (le_to_fun : ∀ z ∈ (simulate cachingₛₒ oa s₀).support, s₀ ≤ to_fun z)
 (to_fun_le : ∀ z ∈ (simulate cachingₛₒ oa s₀).support, to_fun z ≤ z.2)
+(sdiff_to_fun_const {z z' : α × query_cache spec} (hz : z.1 = z'.1) :
+  (z.2 \ to_fun z).cached_inputs = (z'.2 \ to_fun z').cached_inputs)
 
 namespace forking_map
+
+variables {oa} {s₀} (f : forking_map oa s₀)
+
+lemma sdiff_to_fun_const' (x : α) (s s' : query_cache spec) :
+  (s \ f.to_fun (x, s)).cached_inputs = (s \ f.to_fun (x, s)).cached_inputs :=
+f.sdiff_to_fun_const rfl
+
+section fun_like
 
 instance fun_like (oa : oracle_comp spec α) (s₀ : query_cache spec) :
   fun_like (forking_map oa s₀) (α × query_cache spec) (λ z, query_cache spec) :=
 { coe := forking_map.to_fun,
   coe_injective' := forking_map.ext }
 
-variables {oa} {s₀}
+lemma coe_to_fun_apply (z : α × query_cache spec) : f z = f.to_fun z := rfl
+
+end fun_like
+
+section map_output
 
 /-- Replace the cache from a simulation output with the new forked cache,
 without changing the value of the main output. -/
-def map_output (f : forking_map oa s₀) :
-  α × query_cache spec → α × query_cache spec := λ z, (z.1, f z)
+def map_output (z : α × query_cache spec) : α × query_cache spec := (z.1, f z)
+
+lemma sdiff_map_output_const (z z' : α × query_cache spec) (hz : z.1 = z'.1) :
+  (z.2 \ (f.map_output z).2).cached_inputs = (z'.2 \ (f.map_output z').2).cached_inputs :=
+f.sdiff_to_fun_const hz
+
+lemma sdiff_map_output : sorry := sorry
+
+end map_output
 
 end forking_map
+
+-- /-- Given a pair of caches `s ≤ s'`, such that some result `z` is possible in both simulations,
+-- the probability of getting that result is higher when starting with the larger cache,
+-- since it has fewer additional choices at which it could diverge from calculating `z`. -/
+-- lemma prob_output_monotone'_extra' (oa : oracle_comp spec α) (s₀ s : query_cache spec) (hs : s₀ ≤ s)
+--   (f : forking_map oa s₀) (z : α × query_cache spec) (hzs : s ≤ z.2)
+--   (hz : z ∈ (simulate cachingₛₒ oa s₀).support) :
+--   ⁅= z | f.map_output <$> simulate cachingₛₒ oa s₀⁆ =
+--     ⁅= z | f.map_output <$> simulate cachingₛₒ oa s⁆ / (extra_cache_choices s₀ s) :=
+-- begin
+--   rw [prob_output_map_eq_tsum, prob_output_map_eq_tsum],
+--   simp_rw [div_eq_mul_inv, ← ennreal.tsum_mul_right],
+--   refine tsum_congr (λ z, _),
+--   split_ifs with hz,
+--   { obtain ⟨rfl⟩ := hz,
+--     apply prob_output_monotone_extra_inv,
+--     rw [extra_cache_choices],
+--     by_cases hzs : z ∈ (simulate cachingₛₒ oa s₀).support,
+--     { exact le_of_eq (prob_output_monotone_extra oa (f.le_to_fun z hzs) z (f.to_fun_le z hzs) hzs) },
+--     { simp only [hzs, eval_dist_apply_eq_prob_output, prob_output_eq_zero,
+--         not_false_iff, zero_le'] } },
+--   { simp only [zero_mul, le_zero_iff]}
+-- end
 
 /-- Given a pair of caches `s ≤ s'`, such that some result `z` is possible in both simulations,
 the probability of getting that result is higher when starting with the larger cache,
@@ -537,6 +552,55 @@ begin
         not_false_iff, zero_le'] } },
   { simp only [zero_mul, le_zero_iff]}
 end
+
+lemma prob_output_main' (oa : oracle_comp spec α) (s : query_cache spec)
+  (f : forking_map oa s) (x : α) :
+  ⁅= (x, x) | do {x₁ ← simulate' cachingₛₒ oa s,
+      x₂ ← simulate' cachingₛₒ oa s, return (x₁, x₂)}⁆ ≤
+    ⁅= (x, x) | do {z ← simulate cachingₛₒ oa s,
+      x₂ ← simulate' cachingₛₒ oa (f z), return (z.1, x₂)}⁆ :=
+let fork_points : finset (query_cache spec) :=
+  finset.image f {z ∈ (simulate cachingₛₒ oa s).fin_support | z.1 = x} in
+let k : ℝ≥0∞ := sorry in
+calc ⁅= (x, x) | simulate' cachingₛₒ oa s ×ₘ simulate' cachingₛₒ oa s⁆ =
+  ⁅= x | simulate' cachingₛₒ oa s⁆ ^ 2 :
+    begin
+      sorry
+    end
+  ... = (∑ sf in fork_points, ⁅= x | simulate' cachingₛₒ oa s⁆ * fork_points.card⁻¹) ^ 2 :
+    begin
+      sorry
+    end
+
+  ... ≤ (∑ sf in fork_points, ⁅= x | simulate' cachingₛₒ oa sf⁆ * (extra_cache_choices s sf)⁻¹) ^ 2 :
+    begin
+      sorry
+    end
+
+
+  ... ≤ ∑ sf in fork_points, ⁅= x | simulate' cachingₛₒ oa sf⁆ *
+            ⁅= x | simulate' cachingₛₒ oa sf⁆ * (extra_cache_choices s sf)⁻¹ :
+    begin
+      sorry
+    end
+
+
+  ... = ∑ sf in fork_points, ⁅= (x, sf) | f.map_output <$> simulate cachingₛₒ oa s⁆ *
+          ⁅= x | simulate' cachingₛₒ oa sf⁆ :
+    begin
+      sorry,
+    end
+  ... = ∑ sf in fork_points, ⁅= ((x, sf), x) | do {z ← f.map_output <$> simulate cachingₛₒ oa s,
+          x₂ ← simulate' cachingₛₒ oa sf, return (z, x₂)}⁆ :
+    begin
+      sorry,
+    end
+  ... ≤ ⁅= (x, x) | do {z ← simulate cachingₛₒ oa s,
+      x₂ ← simulate' cachingₛₒ oa (f z), return (z.1, x₂)}⁆ :
+    begin
+      sorry
+    end
+
 
 
 lemma prob_output_eq_le_prob_output_eq_rewind_base (oa : oracle_comp spec α) (s₀ : query_cache spec)
