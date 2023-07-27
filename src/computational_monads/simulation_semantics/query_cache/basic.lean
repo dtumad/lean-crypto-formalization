@@ -6,7 +6,7 @@ Authors: Devon Tuma
 import computational_monads.oracle_spec
 
 /-!
-# Cache for Oracle Queries.
+# Cache for Oracle Queries
 
 This file defines a `query_cache` type for storing oracle queries and recalling cached values.
 We construct them as functions from oracle indices and inputs to optional output values.
@@ -39,7 +39,8 @@ variables {spec : oracle_spec} (cache cache' : query_cache spec)
 
 section lookup
 
-/-- Get the currently cached value at the given input, or `none` if nothing is cached. -/
+/-- Get the currently cached value at the given input, or `none` if nothing is cached.
+TODO: can just call the field itself lookup at this point. -/
 def lookup (cache : query_cache spec) (i : spec.ι) (t : spec.domain i) :
   option (spec.range i) := cache.cache_fn i t
 

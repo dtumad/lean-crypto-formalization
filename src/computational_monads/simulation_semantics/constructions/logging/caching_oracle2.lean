@@ -238,12 +238,13 @@ begin
       }
     },
     {
-      have hs₀ : t ∉ᵢ s₀ := not_mem_of_le_of_not_mem hs hs₁,
-      simp [hs₀, hs₁, support_simulate_query] at hz ⊢,
-      obtain ⟨x, rfl⟩ := hz,
-      exact ⟨[i, t ↦ x; s₀], ⟨(cache_query_le_cache_query_iff_of_not_mem x hs₀ hs₁).2 hs, rfl⟩,
-        λ s hs, by rw [← hs.2]⟩ },
-  }
+      sorry,
+      -- have hs₀ : t ∉ᵢ s₀ := not_mem_of_le_of_not_mem hs hs₁,
+      -- simp [hs₀, hs₁, support_simulate_query] at hz ⊢,
+      -- obtain ⟨x, rfl⟩ := hz,
+      -- exact ⟨[i, t ↦ x; s₀], ⟨(cache_query_le_cache_query_iff_of_not_mem x hs₀ hs₁).2 hs, rfl⟩,
+      --   λ s hs, by rw [← hs.2]⟩ },
+  } }
 end
 
 lemma mem_support_of_le_mem_support (oa : oracle_comp spec α) {s₀ s : query_cache spec}

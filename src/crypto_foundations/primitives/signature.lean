@@ -180,8 +180,8 @@ uniform_selecting ++ sig.random_oracle_spec ++ sig.signing_oracle_spec
 structure unforgeable_adversary (sig : signature) :=
 (adv : sig.PK → oracle_comp (sig.unforgeable_adversary_oracle_spec) (sig.M × sig.S))
 (adv_poly_time : poly_time_oracle_comp adv)
-(query_bound : ℕ)
-(adv_queries_at_most : ∀ pk, queries_at_most (adv pk) query_bound)
+-- (query_bound : ℕ)
+-- (adv_queries_at_most : ∀ pk, queries_at_most (adv pk) query_bound)
 
 namespace unforgeable_adversary
 
@@ -232,7 +232,7 @@ def complete (sig_scheme : signature_scheme) : Prop :=
   `unforgeable_experiment` as the security parameter grows -/
 def unforgeable (sig_scheme : signature_scheme) : Prop :=
 ∀ (adversary : Π (sp : ℕ), unforgeable_adversary $ sig_scheme sp),
-  (∃ (p : polynomial ℕ), ∀ n, (adversary n).query_bound ≤ p.eval n) →
+  -- (∃ (p : polynomial ℕ), ∀ n, (adversary n).query_bound ≤ p.eval n) →
   negligable (λ sp, (adversary sp).advantage)
 
 end signature_scheme

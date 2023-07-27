@@ -26,6 +26,11 @@ open oracle_comp oracle_spec
 
 open_locale nnreal ennreal big_operators
 
+structure forking_adversary' (spec : oracle_spec) (α : Type) :=
+(adv : oracle_comp spec α)
+(forking_index : spec.ι)
+
+
 structure forking_adversary (T U α : Type) [inhabited U] [fintype U]
   [decidable_eq T] [decidable_eq U] :=
 (adv : oracle_comp (uniform_selecting ++ (T ↦ₒ U)) α) (q : ℕ)
