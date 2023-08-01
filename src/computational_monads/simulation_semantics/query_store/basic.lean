@@ -16,7 +16,7 @@ represented as a function from oracle indices to lists of query input / output p
 def query_store (spec : oracle_spec) : Type :=
 Π (i : spec.ι), list (spec.range i)
 
-namespace query_log
+namespace query_store
 
 open oracle_spec
 
@@ -24,21 +24,22 @@ variables {spec : oracle_spec}
 
 section empty
 
-/-- Empty log containing no queries -/
+/-- Empty log containing no queries for any of the oracles. -/
+def empty (spec : oracle_spec) : query_store spec := λ i, []
 
+instance (spec : oracle_spec) : has_emptyc (query_store spec) :=
+⟨query_store.empty spec⟩
 
 end empty
 
 section log_query
 
-def log_query (log : query_log spec) (i : spec.ι)
-  (t : spec.domain i) (u : spec.range i) : query_log spec :=
-{
-  log_fn := λ i', if h : i = i' then h.rec_on ((t, u) :: log i) else log i',
-  current_seed := λ i', if i = i' then (log.current_seed i) + 1 else log.current_seed i,
-  current_seed_le_length
-}
+def log_query (store : query_store spec) (i : spec.ι) (u : spec.range i) :
+  query_store spec :=
+λ i', if h : i = i' then h.rec_on (u :: store i) else store i'
+
+notation `[` u `;` store `]` := log_query store _ u
 
 end log_query
 
-end query_log
+end query_store
