@@ -180,7 +180,7 @@ uniform_selecting ++ sig.random_oracle_spec ++ sig.signing_oracle_spec
 structure unforgeable_adversary (sig : signature) :=
 (adv : sig.PK → oracle_comp (sig.unforgeable_adversary_oracle_spec) (sig.M × sig.S))
 (adv_poly_time : poly_time_oracle_comp adv)
--- (query_bound : ℕ)
+(query_bound : ℕ)
 -- (adv_queries_at_most : ∀ pk, queries_at_most (adv pk) query_bound)
 
 namespace unforgeable_adversary
