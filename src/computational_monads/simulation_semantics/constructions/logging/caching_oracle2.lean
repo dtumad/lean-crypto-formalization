@@ -3,9 +3,9 @@ Copyright (c) 2022 Devon Tuma. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
-import computational_monads.simulation_semantics.query_cache.get_or_else
-import computational_monads.simulation_semantics.query_cache.add_fresh_queries
-import computational_monads.simulation_semantics.query_cache.sdiff
+import computational_monads.query_tracking.query_cache.get_or_else
+import computational_monads.query_tracking.query_cache.add_fresh_queries
+import computational_monads.query_tracking.query_cache.sdiff
 import computational_monads.simulation_semantics.simulate.monad
 import computational_monads.simulation_semantics.simulate.query
 import computational_monads.distribution_semantics.prod

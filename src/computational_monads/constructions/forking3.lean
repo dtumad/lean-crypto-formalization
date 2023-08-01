@@ -5,7 +5,7 @@ Authors: Devon Tuma
 -/
 import computational_monads.distribution_semantics.option
 import computational_monads.asymptotics.queries_at_most
-import computational_monads.simulation_semantics.query_store.basic
+import computational_monads.query_tracking.query_store.basic
 
 /-!
 # Forking a Computation at a Query

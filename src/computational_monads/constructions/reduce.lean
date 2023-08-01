@@ -4,7 +4,6 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
 import computational_monads.distribution_semantics.monad
-import computational_monads.tactics
 
 /-!
 # Reducing Return Statements in Computation

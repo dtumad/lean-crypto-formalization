@@ -127,4 +127,15 @@ def base_inhabited (oa : oracle_comp spec α) : inhabited α := ⟨oa.default_re
   (i : spec'.ι) (t : spec'.domain i) : oracle_comp (spec ++ spec') (spec'.range i) :=
 @query (spec ++ spec') (sum.inr i) t
 
+section tactics
+
+/-- Perform induction on the given computation, using `oracle_comp.induction_on` as the eliminator.
+This has better naming conventions, and uses `return` and `>>=` over `pure'` and `bind'`. -/
+meta def default_induction (h : interactive.parse lean.parser.ident) :
+  tactic (list (name × list expr × list (name × expr))) :=
+do { oa ← tactic.get_local h,
+  tactic.induction oa [`α, `a, `α, `β, `oa, `ob, `hoa, `hob, `i, `t] `oracle_comp.induction_on }
+
+end tactics
+
 end oracle_comp
