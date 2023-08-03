@@ -36,6 +36,8 @@ section init
 @[inline, reducible]
 def init (spec : oracle_spec) : query_log spec := λ i, []
 
+instance : has_emptyc (query_log spec) := ⟨init spec⟩
+
 @[simp] lemma init_apply : init spec i = [] := rfl
 
 lemma not_mem_init : (t, u) ∉ (init spec i) := list.not_mem_nil (t, u)

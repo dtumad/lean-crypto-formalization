@@ -3,7 +3,8 @@ Copyright (c) 2023 Devon Tuma. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
-import computational_monads.query_tracking.query_seed.basic
+import computational_monads.query_tracking.query_seed.get_or_else
+import computational_monads.query_tracking.query_count.possible_outcomes
 import computational_monads.constructions.repeat
 import computational_monads.constructions.uniform_select
 
@@ -57,13 +58,11 @@ begin
 end
 
 @[simp] lemma prob_output_generate_seed (h : seed.to_query_count = qc) :
-  ⁅= seed | generate_seed qc⁆ = qc.possible_outcomes⁻¹ :=
+  ⁅= seed | generate_seed qc⁆ = (possible_outcomes qc)⁻¹ :=
 begin
   sorry
 end
 
--- by simp only [mem_support_generate_seed_iff qc ∅ seed' bot_le, query_seed.to_query_count_empty,
---   query_count.empty_apply, list.take_zero, query_seed.to_query_count_apply,
---     eq_self_iff_true, implies_true_iff, and_true]
+
 
 end oracle_comp

@@ -248,6 +248,14 @@ by simp [query_count.active_oracles_decrement]
 
 end drop_queries
 
+section seed_differs
+
+/-- The `n`th seed values differ between `qs` and `qs'`. -/
+def seed_differs (qs qs' : query_seed spec) (i : spec.ι) (n : ℕ) : Prop :=
+(qs i).nth n ≠ (qs' i).nth n
+
+end seed_differs
+
 end query_seed
 
 end oracle_comp

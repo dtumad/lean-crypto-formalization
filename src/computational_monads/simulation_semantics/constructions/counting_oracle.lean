@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
 import computational_monads.simulation_semantics.constructions.tracking_oracle
+import computational_monads.query_tracking.query_count.order
 
 /-!
 # Query Counting Simulation Oracle
@@ -17,38 +18,10 @@ This value is always finite as the `oracle_comp` monad doesn't have unbounded re
 open oracle_comp oracle_spec
 
 variables {α β γ : Type} {spec spec' : oracle_spec}
-  (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) (n m : ℕ)
 
-/-- Simulation oracle that just counts the number of queries to the oracles -/
-def counting_oracle (spec : oracle_spec) : sim_oracle spec spec ℕ :=
-⟪query | λ n _ _ _, n + 1 , 0⟫
+def counting_oracle (spec : oracle_spec) : sim_oracle spec spec (query_count spec) :=
+⟪query | λ qc i u t, qc.increment i 1, ∅⟫
 
 namespace counting_oracle
-
-lemma apply_eq (i : spec.ι) (x : spec.domain i × ℕ) :
-  counting_oracle spec i x = do {u ← query i x.1, return (u, (x.2 + 1 : ℕ))} :=
-tracking_oracle.apply_eq query (λ n _ _ _, n + 1) 0 i x
-
-section support
-
-@[simp] lemma support_apply (i : spec.ι) (x : spec.domain i × ℕ) :
-  (counting_oracle spec i x).support = {y | x.2 + 1 = y.2} :=
-begin
-  refine trans (tracking_oracle.support_apply query _ 0 i x) _,
-  ext x,
-  simp only [prod.eq_iff_fst_eq_snd_eq, support_query, set.top_eq_univ, set.image_univ,
-    set.mem_range, exists_eq_left, set.mem_set_of_eq],
-end
-
-end support
-
-section distribution_semantics
-
-section prob_event
-
-
-end prob_event
-
-end distribution_semantics
 
 end counting_oracle

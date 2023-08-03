@@ -7,13 +7,13 @@ import data.vector.zip
 import crypto_foundations.primitives.signature
 import crypto_foundations.hardness_assumptions.hard_homogeneous_space
 import computational_monads.constructions.repeat
-import computational_monads.constructions.forking_lemma
+import computational_monads.constructions.fork
 
 /-!
 # Signature Scheme Based On Hard Homogenous Spaces
 
 This file defines a signature scheme based on hard homogenous spaces,
-using a generalized version of the basic Diffie-Helmann signature scheme.
+using a generalized version of the basic Schnorr signature scheme.
 
 We prove both completeness and unforgeability, providing an explicit reduction
 from signature forgery to a vectorization forgery.
@@ -79,8 +79,7 @@ variables {G X M : Type} [fintype G] [fintype X] [inhabited G] [inhabited X]
   [decidable_eq G] [decidable_eq X] [decidable_eq M]
   [add_group G] [algorithmic_homogenous_space G X] {n : ℕ}
 
-@[simp]
-lemma support_coe_uniform_selecting_oracles [inhabited G] {α : Type}
+@[simp] lemma support_coe_uniform_selecting_oracles [inhabited G] {α : Type}
   (oa : oracle_comp uniform_selecting α) :
   support (↑oa : oracle_comp (hhs_signature G X M n).base_oracle_spec α) = oa.support :=
 begin
