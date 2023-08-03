@@ -30,48 +30,53 @@ The count is non-zero for finitely many oracles as `oracle_comp` disallows unbou
 @[ext] structure query_count (spec : oracle_spec) :=
 (get_count : spec.ι → ℕ)
 (active_oracles : finset spec.ι)
-(mem_active_oracles_iff (i : spec.ι) : i ∈ active_oracles ↔ get_count i ≠ 0)
+(mem_active_oracles_iff' (i : spec.ι) : i ∈ active_oracles ↔ get_count i ≠ 0)
 
-variables (qc qc' : query_count spec)
+/-- View a `query_count` as a function from oracle index to a count. -/
+instance query_count.fun_like (spec : oracle_spec) :
+  fun_like (query_count spec) spec.ι (λ _, ℕ) :=
+{ coe := query_count.get_count,
+  coe_injective' := λ qc qc' h, query_count.ext qc qc' h
+    (finset.ext (λ x, by simp_rw [query_count.mem_active_oracles_iff', h])) }
 
 namespace query_count
 
-/-- View a `query_count` as a function from oracle index to a count.
-Currently we use the convention of using `get_count` explicitly in most cases. -/
-instance query_count.fun_like (spec : oracle_spec) :
-  fun_like (query_count spec) spec.ι (λ _, ℕ) :=
-{ coe := get_count,
-  coe_injective' := λ qc qc' h, query_count.ext qc qc' h
-    (finset.ext (λ x, by simp_rw [mem_active_oracles_iff, h])) }
+variables (qc qc' : query_count spec)
 
-@[simp] lemma coe_apply (qc : query_count spec) (i) : qc i = qc.get_count i := rfl
+@[simp] lemma get_count_eq_apply (i) : qc.get_count i = qc i := rfl
 
-@[simp] lemma get_count_eq_zero_iff (i) : qc.get_count i = 0 ↔ i ∉ qc.active_oracles :=
+lemma mem_active_oracles_iff (i) : i ∈ qc.active_oracles ↔ qc i ≠ 0 :=
+mem_active_oracles_iff' qc i
+
+@[simp] lemma apply_eq_zero_iff (i) : qc i = 0 ↔ i ∉ qc.active_oracles :=
 by simp [mem_active_oracles_iff]
 
-lemma apply_eq_zero_iff (i) : qc.get_count i = 0 ↔ i ∉ qc.active_oracles := by simp
-
-lemma get_count_ne_zero_iff (i) : qc.get_count i ≠ 0 ↔ i ∈ qc.active_oracles :=
+lemma apply_ne_zero_iff (i) : qc i ≠ 0 ↔ i ∈ qc.active_oracles :=
 (qc.mem_active_oracles_iff i).symm
 
-@[simp] lemma get_count_pos_iff (i) : 0 < qc.get_count i ↔ i ∈ qc.active_oracles :=
+@[simp] lemma apply_pos_iff (i) : 0 < qc i ↔ i ∈ qc.active_oracles :=
 by simp [pos_iff_ne_zero]
 
-lemma mem_active_oracles {i} (hi : qc.get_count i ≠ 0) : i ∈ qc.active_oracles :=
+lemma mem_active_oracles {i} (hi : qc i ≠ 0) : i ∈ qc.active_oracles :=
 (mem_active_oracles_iff qc i).2 hi
+
+lemma mem_active_oracles_of_lt {n i} (hi : n < qc i) : i ∈ qc.active_oracles :=
+qc.mem_active_oracles (ne_zero_of_lt hi)
 
 section empty
 
 /-- The empty `query_count` has a count of zero for every oracle. -/
-@[simps] protected def empty (spec) : query_count spec :=
+protected def empty (spec) : query_count spec :=
 { get_count := λ i, 0,
   active_oracles := ∅,
-  mem_active_oracles_iff := λ i, (ne_self_iff_false 0).symm }
+  mem_active_oracles_iff' := λ i, (ne_self_iff_false 0).symm }
 
 instance : has_emptyc (query_count spec) := ⟨query_count.empty spec⟩
 instance : inhabited (query_count spec) := ⟨∅⟩
 
-@[simp] lemma get_count_empty (i) : (∅ : query_count spec).get_count i = 0 := rfl
+@[simp] lemma empty_apply (i) : (∅ : query_count spec) i = 0 := rfl
+
+@[simp] lemma active_oracles_empty : (∅ : query_count spec).active_oracles = ∅ := rfl
 
 @[simp] lemma not_mem_active_oracles_empty (i) : i ∉ (∅ : query_count spec).active_oracles :=
 finset.not_mem_empty i
@@ -82,19 +87,17 @@ section increment
 
 /-- Increment the count in a `query_count` of the oracle at index `i` by `n`. -/
 def increment (qc : query_count spec) (i : spec.ι) (n : ℕ) : query_count spec :=
-{ get_count := λ i', if i = i' then qc.get_count i' + n else qc.get_count i',
+{ get_count := λ i', if i = i' then qc i' + n else qc i',
   active_oracles := if n = 0 then qc.active_oracles else insert i qc.active_oracles,
-  mem_active_oracles_iff := nat.rec_on n (by simp)
+  mem_active_oracles_iff' := nat.rec_on n (by simp)
     (by simp [ite_eq_iff, or_iff_not_imp_left, @eq_comm _ i]) }
 
-lemma get_count_increment (i n i') : (qc.increment i n).get_count i' =
-  if i = i' then qc.get_count i' + n else qc.get_count i' := rfl
+lemma increment_apply (i n i') : (qc.increment i n) i' = if i = i' then qc i' + n else qc i' := rfl
 
-@[simp] lemma get_count_increment_same_index (i n) :
-  (qc.increment i n).get_count i = qc.get_count i + n := if_pos rfl
+@[simp] lemma increment_apply_self (i n) : (qc.increment i n) i = qc i + n := if_pos rfl
 
-@[simp] lemma get_count_increment_diff_index {i i'} (n) (h : i ≠ i') :
-  (qc.increment i n).get_count i' = qc.get_count i' := if_neg h
+@[simp] lemma increment_apply_diff_index {i i'} (n) (h : i ≠ i') :
+  (qc.increment i n) i' = qc i' := if_neg h
 
 @[simp] lemma mem_active_oracles_increment_iff (i n i') :
   i' ∈ (qc.increment i n).active_oracles ↔
@@ -107,7 +110,7 @@ by simp [h.symm]
 
 @[simp] lemma increment_eq_self_iff (i n) : qc.increment i n = qc ↔ n = 0 :=
 ⟨λ h, by simpa using (fun_like.ext_iff.1 h) i,
-  λ h, by simpa [fun_like.ext_iff, get_count_increment] using h⟩
+  λ h, by simpa [fun_like.ext_iff, increment_apply] using h⟩
 
 @[simp] lemma increment_zero (i) : qc.increment i 0 = qc := by simp
 
@@ -116,9 +119,9 @@ end increment
 section decrement
 
 def decrement (qc : query_count spec) (i : spec.ι) (n : ℕ) : query_count spec :=
-{ get_count := λ i', if i = i' then qc.get_count i' - n else qc.get_count i',
-  active_oracles := if qc.get_count i ≤ n then qc.active_oracles.erase i else qc.active_oracles,
-  mem_active_oracles_iff := λ i', begin
+{ get_count := λ i', if i = i' then qc i' - n else qc i',
+  active_oracles := if qc i ≤ n then qc.active_oracles.erase i else qc.active_oracles,
+  mem_active_oracles_iff' := λ i', begin
     split_ifs with hn hi hi,
     { simpa [hi] using hn },
     { simp [ne.symm hi] },
@@ -127,7 +130,7 @@ def decrement (qc : query_count spec) (i : spec.ι) (n : ℕ) : query_count spec
   end }
 
 @[simp] lemma decrement_zero (i) : qc.decrement i 0 = qc :=
-fun_like.ext _ _ (λ i', by simp [decrement])
+fun_like.ext _ _ (λ i', by simpa [decrement])
 
 end decrement
 
@@ -136,7 +139,7 @@ section possible_outcomes
 /-- Given a count of a number of queries to each oracle, get the number of possible outcomes,
 assuming that each of the oracles could respond with any output. -/
 def possible_outcomes (qc : query_count spec) : ℕ :=
-∏ i in qc.active_oracles, (fintype.card (spec.range i)) ^ (qc.get_count i)
+∏ i in qc.active_oracles, (fintype.card (spec.range i)) ^ (qc i)
 
 @[simp] lemma possible_outcomes_empty : possible_outcomes (∅ : query_count spec) = 1 := rfl
 
@@ -148,7 +151,7 @@ begin
   { sorry }
 end
 
-@[simp] lemma possible_outcomes_decrement_of_le {i n} (h : n ≤ qc.get_count i) :
+@[simp] lemma possible_outcomes_decrement_of_le {i n} (h : n ≤ qc i) :
   possible_outcomes (qc.decrement i n) = (possible_outcomes qc) / (fintype.card (spec.range i)) ^ n :=
 begin
   induction n,
