@@ -113,6 +113,27 @@ instance : has_ordered_sub (query_count spec) :=
 
 end has_ordered_sub
 
+section of_nat
+
+@[simp] lemma of_nat_le_iff (i : spec.ι) (n) : of_nat i n ≤ qc ↔ n ≤ qc i :=
+begin
+  refine ⟨λ h, le_of_eq_of_le (of_nat_apply_self i n).symm (h i), λ h i', _⟩,
+  by_cases hi : i = i',
+  { induction hi, simpa },
+  { simp [hi] }
+end
+
+@[simp] lemma add_of_nat (i : spec.ι) (n) : qc + of_nat i n = qc.increment i n :=
+by simp [fun_like.ext_iff, add_ite]
+
+@[simp] lemma of_nat_add (i : spec.ι) (n) : of_nat i n + qc = qc.increment i n :=
+by rw [add_comm, add_of_nat]
+
+@[simp] lemma sub_of_nat (i : spec.ι) (n) : qc - of_nat i n = qc.decrement i n :=
+fun_like.ext _ _ (λ i', by by_cases hi : i = i'; simp [hi])
+
+end of_nat
+
 end query_count
 
 end oracle_comp
