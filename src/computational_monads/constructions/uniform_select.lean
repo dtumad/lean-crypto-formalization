@@ -68,7 +68,7 @@ section eval_dist
 
 @[simp] lemma eval_dist_uniform_fin : ⁅$[0..n]⁆ = pmf.uniform_of_fintype (fin $ n + 1) := rfl
 
-lemma prob_output_uniform_fin : ⁅= i | $[0..m]⁆ = m.succ⁻¹ :=
+@[simp] lemma prob_output_uniform_fin : ⁅= i | $[0..m]⁆ = m.succ⁻¹ :=
 by rw [prob_output.def, eval_dist_uniform_fin m, pmf.uniform_of_fintype_apply i, fintype.card_fin]
 
 lemma prob_output_uniform_fin_bind_eq_tsum :
@@ -76,7 +76,7 @@ lemma prob_output_uniform_fin_bind_eq_tsum :
 by simp only [prob_output_bind_eq_tsum, div_eq_mul_inv, ← ennreal.tsum_mul_right,
   prob_output_uniform_fin, one_mul, mul_comm (m.succ⁻¹ : ℝ≥0∞)]
 
-lemma prob_output_uniform_fin_bind_eq_sum :
+@[simp] lemma prob_output_uniform_fin_bind_eq_sum :
   ⁅= x | $[0..m] >>= oa⁆ = (∑ i, ⁅= x | oa i⁆) / m.succ :=
 by simp only [prob_output_bind_eq_sum, div_eq_mul_inv, ← finset.sum_mul, one_mul,
   prob_output_uniform_fin, mul_comm (m.succ⁻¹ : ℝ≥0∞), fin_support_uniform_fin]
@@ -101,6 +101,9 @@ by simp only [prob_event_bind_eq_sum, div_eq_mul_inv, ← finset.sum_mul, one_mu
   prob_output_uniform_fin, mul_comm (m.succ⁻¹ : ℝ≥0∞), fin_support_uniform_fin]
 
 end prob_event
+
+@[simp_dist_equiv] lemma uniform_fin_one_dist_equiv {spec} :
+  $[0..0] ≃ₚ return' !spec! 0 := by simp [dist_equiv.ext_iff]
 
 end uniform_fin
 
@@ -183,7 +186,7 @@ begin
   exact tsum_congr (λ _, by ring),
 end
 
-lemma prob_output_uniform_select_vector_bind_eq_sum : ⁅= y | ($ᵛ v) >>= ob⁆ =
+@[simp] lemma prob_output_uniform_select_vector_bind_eq_sum : ⁅= y | ($ᵛ v) >>= ob⁆ =
   (∑ x in v.to_list.to_finset, v.to_list.count x * ⁅= y | ob x⁆) / n.succ :=
 begin
   rw [prob_output_uniform_select_vector_bind_eq_tsum],
@@ -217,6 +220,14 @@ begin
 end
 
 end prob_event
+
+@[simp_dist_equiv] lemma uniform_select_vector_singleton_dist_equiv {spec}
+  (v : vector α 1) : ($ᵛ v) ≃ₚ return' !spec! v.head :=
+begin
+  rw [← vector.nth_zero, uniform_select_vector],
+  exact (map_dist_equiv_of_dist_equiv rfl (by pairwise_dist_equiv)).trans
+    (map_return_dist_equiv _ _)
+end
 
 end uniform_select_vector
 
@@ -282,7 +293,7 @@ begin
   { simpa only [uniform_select_list_cons, eval_dist_uniform_select_vector] }
 end
 
-lemma prob_output_uniform_select_list : ⁅= x | $ˡ xs h⁆ = xs.count x / xs.length :=
+@[simp] lemma prob_output_uniform_select_list : ⁅= x | $ˡ xs h⁆ = xs.count x / xs.length :=
 by { rw [prob_output.def, eval_dist_uniform_select_list, pmf.uniform_of_list_apply], congr }
 
 lemma prob_output_uniform_select_list_bind_eq_tsum :
@@ -327,6 +338,9 @@ begin
 end
 
 end prob_event
+
+lemma uniform_select_list_singleton_dist_equiv {spec} (h : ¬ [x].empty) :
+  $ˡ [x] h ≃ₚ return' !spec! x := by pairwise_dist_equiv
 
 end uniform_select_list
 
@@ -376,7 +390,7 @@ section eval_dist
   uniform_of_list_apply, finset.count_to_list, nat.cast_ite, algebra_map.coe_one,
   algebra_map.coe_zero, finset.length_to_list, boole_mul, uniform_of_finset_apply])
 
-lemma prob_output_uniform_select_finset : ⁅= x | $ˢ bag h⁆ = ite (x ∈ bag) bag.card⁻¹ 0 :=
+@[simp] lemma prob_output_uniform_select_finset : ⁅= x | $ˢ bag h⁆ = ite (x ∈ bag) bag.card⁻¹ 0 :=
 by { rw [prob_output.def, eval_dist_uniform_select_finset, pmf.uniform_of_finset_apply], congr }
 
 lemma prob_output_uniform_select_finset_bind_eq_tsum :
@@ -385,7 +399,7 @@ by simp only [uniform_select_finset, prob_output_uniform_select_list_bind_eq_tsu
   finset.count_to_list, finset.to_list_to_finset, nat.cast_ite, algebra_map.coe_one,
   algebra_map.coe_zero, boole_mul, finset.sum_ite_mem, finset.inter_self, finset.length_to_list]
 
-lemma prob_output_uniform_select_finset_bind_eq_sum  :
+@[simp] lemma prob_output_uniform_select_finset_bind_eq_sum  :
   ⁅= y | $ˢ bag h >>= ob⁆ = (∑ x in bag, ⁅= y | ob x⁆) / bag.card :=
 by simp only [uniform_select_finset, prob_output_uniform_select_list_bind_eq_sum,
   finset.count_to_list, finset.to_list_to_finset, nat.cast_ite, algebra_map.coe_one,
@@ -413,6 +427,11 @@ by simp only [uniform_select_finset, prob_event_uniform_select_list_bind_eq_sum,
   algebra_map.coe_zero, boole_mul, finset.sum_ite_mem, finset.inter_self, finset.length_to_list]
 
 end prob_event
+
+@[simp_dist_equiv] lemma uniform_select_finset_singleton_dist_equiv {spec}
+  (h : finset.nonempty {x}) : $ˢ {x} h ≃ₚ return' !spec! x :=
+by simp only [uniform_select_finset, finset.to_list_singleton,
+  uniform_select_list_singleton_dist_equiv]
 
 end uniform_select_finset
 
@@ -456,7 +475,7 @@ section eval_dist
 @[simp] lemma eval_dist_uniform_select_fintype : ⁅$ᵗ α⁆ = pmf.uniform_of_fintype α :=
 by rw [uniform_select_fintype, eval_dist_uniform_select_finset, pmf.uniform_of_fintype]
 
-lemma prob_output_uniform_select_fintype : ⁅= x | $ᵗ α⁆ = (fintype.card α)⁻¹ :=
+@[simp] lemma prob_output_uniform_select_fintype : ⁅= x | $ᵗ α⁆ = (fintype.card α)⁻¹ :=
 by rw [prob_output.def, eval_dist_uniform_select_fintype, pmf.uniform_of_fintype_apply]
 
 lemma prob_output_uniform_select_fintype_bind_eq_tsum :
@@ -464,7 +483,7 @@ lemma prob_output_uniform_select_fintype_bind_eq_tsum :
 by simp only [uniform_select_fintype, prob_output_uniform_select_finset_bind_eq_tsum,
   finset.mem_univ, if_true, finset.card_univ]
 
-lemma eval_dist_uniform_select_fintype_bind_apply_eq_sum :
+@[simp] lemma eval_dist_uniform_select_fintype_bind_apply_eq_sum :
   ⁅= y | $ᵗ α >>= ob⁆ = (∑ x, ⁅= y | ob x⁆) / fintype.card α :=
 by simp only [uniform_select_fintype, prob_output_uniform_select_finset_bind_eq_sum,
   finset.mem_univ, if_true, finset.card_univ]
@@ -483,12 +502,15 @@ lemma prob_event_uniform_select_fintype_bind_eq_tsum (e : set β) :
 by simp only [uniform_select_fintype, prob_event_uniform_select_finset_bind_eq_tsum,
   finset.mem_univ, if_true, finset.card_univ]
 
-lemma prob_event_uniform_select_fintype_bind_eq_sum (e : set β) :
+@[simp] lemma prob_event_uniform_select_fintype_bind_eq_sum (e : set β) :
   ⁅e | $ᵗ α >>= ob⁆ = (∑ a, ⁅e | ob a⁆) / fintype.card α :=
 by simp only [uniform_select_fintype, prob_event_uniform_select_finset_bind_eq_sum,
   finset.mem_univ, if_true, finset.card_univ]
 
 end prob_event
+
+lemma uniform_select_fintype_unique {spec} {α : Type} [unique α] :
+  $ᵗ α ≃ₚ return' !spec! default := by pairwise_dist_equiv
 
 end uniform_select_fintype
 

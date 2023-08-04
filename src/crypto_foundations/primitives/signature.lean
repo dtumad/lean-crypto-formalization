@@ -4,11 +4,13 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
 import computational_monads.simulation_semantics.constructions.logging.random_oracle
+import computational_monads.simulation_semantics.constructions.logging.logging_oracle
 import computational_monads.simulation_semantics.constructions.identity_oracle
 import computational_monads.simulation_semantics.oracle_append
 import computational_monads.asymptotics.polynomial_time
 import computational_monads.asymptotics.negligable
 import computational_monads.asymptotics.queries_at_most
+import crypto_foundations.sec_adversary
 
 /-!
 # Cryptographic Signature Schemes
@@ -78,15 +80,15 @@ section oracle_spec
 
 /-- Shorthand for the combination of the `uniform_selecting` oracle and the `random_oracles`,
   i.e. the oracles available to the signature algorithms themselves -/
-@[reducible, inline]
-def base_oracle_spec (sig : signature) : oracle_spec := uniform_selecting ++ sig.random_oracle_spec
+@[reducible, inline] def base_oracle_spec (sig : signature) :
+  oracle_spec := uniform_selecting ++ sig.random_oracle_spec
 
 /-- Simulate the basic oracles for the signature, using `random_oracle` to simulate the
 random oracle and preserving the `uniform_selecting` oracle as is. -/
 noncomputable def base_oracle (sig : signature) :
-  sim_oracle sig.base_oracle_spec uniform_selecting (query_log sig.random_oracle_spec) :=
-sim_oracle.mask_state (idₛ ++ₛ random_oracle sig.random_oracle_spec)
-  (equiv.punit_prod (query_log sig.random_oracle_spec))
+  sim_oracle sig.base_oracle_spec uniform_selecting (query_cache sig.random_oracle_spec) :=
+sim_oracle.mask_state (idₛ ++ₛ randomₛₒ)
+  (equiv.punit_prod (query_cache sig.random_oracle_spec))
 
 /-- A signing oracle corresponding to a given signature scheme -/
 @[reducible, inline]
@@ -96,9 +98,9 @@ def signing_oracle_spec (sig : signature) [inhabited sig.S] : oracle_spec := sig
   using the provided public/secret keys to answer queries for signatures.
 Additionally it logs and returns a list queries to the signing oracle -/
 def signing_oracle (sig : signature) (pk : sig.PK) (sk : sig.SK) :
-  sim_oracle sig.signing_oracle_spec sig.base_oracle_spec (query_log (sig.M ↦ₒ sig.S)) :=
-sim_oracle.mask_state (⟪λ _ m, sig.sign (pk, sk, m)⟫ ∘ₛ (logging_oracle (sig.M ↦ₒ sig.S)))
-  (equiv.prod_punit (query_log (signing_oracle_spec sig)))
+  sim_oracle sig.signing_oracle_spec sig.base_oracle_spec (query_cache (sig.M ↦ₒ sig.S)) :=
+sim_oracle.mask_state (⟪λ _ m, sig.sign (pk, sk, m)⟫ ∘ₛ cachingₛₒ)
+  (equiv.prod_punit (query_cache (signing_oracle_spec sig)))
 
 end oracle_spec
 
@@ -128,7 +130,7 @@ end
   as a union over the keys and signature generated, plus internal random oracle caches. -/
 @[simp] lemma support_completeness_experiment (m : sig.M) :
   (completeness_experiment sig m).support = ⋃ (pk : sig.PK) (sk : sig.SK) (σ : sig.S)
-    (cache cache' : query_log sig.random_oracle_spec)
+    (cache cache' : query_cache sig.random_oracle_spec)
     (hk : ((pk, sk), cache) ∈ (default_simulate sig.base_oracle $ sig.gen ()).support)
     (hσ : (σ, cache') ∈ (simulate sig.base_oracle (sig.sign (pk, sk, m)) cache).support),
       (simulate' sig.base_oracle (sig.verify (pk, m, σ)) cache').support :=
@@ -146,7 +148,7 @@ def complete (sig : signature) := ∀ (m : sig.M), ⁅= tt | completeness_experi
 
 lemma complete_iff_signatures_support_subset :
   sig.complete ↔ ∀ (m : sig.M) (pk : sig.PK) (sk : sig.SK) (σ : sig.S)
-    (cache cache' : query_log sig.random_oracle_spec),
+    (cache cache' : query_cache sig.random_oracle_spec),
     ((pk, sk), cache) ∈ (default_simulate sig.base_oracle $ sig.gen ()).support →
     (σ, cache') ∈ (simulate sig.base_oracle (sig.sign (pk, sk, m)) cache).support →
     (simulate' sig.base_oracle (sig.verify (pk, m, σ)) cache').support = {tt} :=
@@ -173,14 +175,18 @@ section unforgeable
   and a signing oracle that will be simulated with the hidden secret key. -/
 @[reducible, inline]
 def unforgeable_adversary_oracle_spec (sig : signature) : oracle_spec :=
-uniform_selecting ++ sig.random_oracle_spec ++ sig.signing_oracle_spec
+sig.random_oracle_spec ++ sig.signing_oracle_spec
 
 /-- An adversary for the unforgeable signature experiment.
   Note that the adversary only has access to the public key. -/
-structure unforgeable_adversary (sig : signature) :=
-(adv : sig.PK → oracle_comp (sig.unforgeable_adversary_oracle_spec) (sig.M × sig.S))
-(adv_poly_time : poly_time_oracle_comp adv)
-(query_bound : ℕ)
+def unforgeable_adversary (sig : signature) :=
+sec_adversary (sig.unforgeable_adversary_oracle_spec) sig.PK (sig.M × sig.S)
+
+
+-- structure unforgeable_adversary (sig : signature) :=
+-- (adv : sig.PK → oracle_comp (sig.unforgeable_adversary_oracle_spec) (sig.M × sig.S))
+-- (adv_poly_time : poly_time_oracle_comp adv)
+-- (query_bound : ℕ)
 -- (adv_queries_at_most : ∀ pk, queries_at_most (adv pk) query_bound)
 
 namespace unforgeable_adversary
@@ -192,8 +198,8 @@ Runs the adversary with a signing oracle based on the provided public/secret key
   returning the results of the adversary, and a log of the queries made by the adversary
  -/
 def simulate (pk : sig.PK) (sk : sig.SK) :
-  oracle_comp sig.base_oracle_spec (sig.M × sig.S × query_log (sig.M ↦ₒ sig.S)) :=
-do{ ((m, s), _, log) ← (default_simulate (idₛ ++ₛ signing_oracle sig pk sk) (adversary.adv pk)),
+  oracle_comp sig.base_oracle_spec (sig.M × sig.S × query_cache (sig.M ↦ₒ sig.S)) :=
+do{ ((m, s), _, log) ← (default_simulate (idₛ ++ₛ signing_oracle sig pk sk) (adversary.run pk)),
     return (m, s, log) }
 
 /-- Experiement for testing if a signature scheme is unforgeable.
@@ -201,11 +207,12 @@ do{ ((m, s), _, log) ← (default_simulate (idₛ ++ₛ signing_oracle sig pk sk
   Adversary succeeds if the signature verifies and the message hasn't been queried -/
 noncomputable def experiment (sig : signature) (adversary : unforgeable_adversary sig) :
   oracle_comp uniform_selecting bool :=
-default_simulate' (idₛ ++ₛ random_oracle sig.random_oracle_spec)
+default_simulate' (idₛ ++ₛ randomₛₒ)
 (do { (pk, sk) ← sig.gen (),
-      (m, σ, log) ← adversary.simulate pk sk,
+      (m, σ, cache) ← adversary.simulate pk sk,
       b ← sig.verify (pk, m, σ),
-      return (if log.not_queried () m then b else ff) })
+      m' : (sig.M ↦ₒ sig.S).domain () ← return m,
+      return (if m' ∉ᵢ cache then b else ff) })
 
 /-- Adversaries success at forging a signature. -/
 noncomputable def advantage {sig : signature} (adversary : unforgeable_adversary sig) : ℝ≥0∞ :=

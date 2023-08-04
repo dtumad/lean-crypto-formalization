@@ -25,30 +25,60 @@ namespace oracle_comp
 open oracle_spec
 
 variables {α β γ : Type} {spec : oracle_spec}
+  (qc : query_count spec) (seed : query_seed spec)
 
--- def seed_set_aux (qc : query_count spec) (seed_set : set (query_seed spec)) :
---   list spec.ι → set (query)
+section generate_seed_aux
 
 /-- Helper function to perform the recursion in `generate_seed`. -/
 private noncomputable def generate_seed_aux (qc : query_count spec) :
   query_seed spec → list spec.ι → oracle_comp uniform_selecting (query_seed spec)
 | seed list.nil := return seed
-| seed (i :: ql) := do { ts ← repeat ($ᵗ (spec.range i)) (qc i),
-    generate_seed_aux (seed.seed_queries ts.to_list) ql }
+| seed (j :: js) := do {ts ←$ᵗ (vector (spec.range j) (qc j)),
+    generate_seed_aux (seed.seed_queries ts.to_list) js}
 
-variables (qc : query_count spec) (seed : query_seed spec)
+variables (j : spec.ι) (js : list spec.ι)
 
 @[simp] lemma generate_seed_aux_nil : generate_seed_aux qc seed [] = return seed := rfl
 
-@[simp] lemma generate_seed_aux_cons (i : spec.ι) (ql : list spec.ι) :
-  generate_seed_aux qc seed (i :: ql) = do { ts ← repeat ($ᵗ (spec.range i)) (qc i),
-    generate_seed_aux qc (seed.seed_queries ts.to_list) ql } := by rw [generate_seed_aux]
+@[simp] lemma generate_seed_aux_cons : generate_seed_aux qc seed (j :: js) =
+  do {ts ←$ᵗ (vector (spec.range j) (qc j)),
+    generate_seed_aux qc (seed.seed_queries ts.to_list) js} :=
+by rw [generate_seed_aux]
+
+lemma active_oracles_of_mem_support_generate_seed_aux {qc seed js}
+  (qs : query_seed spec) (hqs : qs ∈ (generate_seed_aux qc seed js).support) :
+  qs.active_oracles = seed.active_oracles ∪ {j' ∈ qc.active_oracles | j' ∈ js} :=
+begin
+  induction js with j js hj generalizing seed,
+  { rw [generate_seed_aux_nil, mem_support_return_iff] at hqs,
+    simp [hqs] },
+  { simp [generate_seed_aux_cons, support_bind] at hqs,
+    obtain ⟨ks, hks⟩ := hqs,
+    refine (hj hks).trans (finset.ext (λ ps, _)),
+    simp only [and_or_distrib_left, query_seed.to_query_count_seed_queries, vector.to_list_length,
+      finset.sep_def, finset.mem_union, query_count.mem_active_oracles_increment_iff, ne.def,
+      query_count.apply_eq_zero_iff, not_not, finset.mem_filter, list.mem_cons_iff],
+    have : j ∈ qc.active_oracles ∧ ps = j ↔ ps ∈ qc.active_oracles ∧ ps = j :=
+      ⟨λ hjp, ⟨hjp.2.symm ▸ hjp.1, hjp.2⟩, λ hjp, ⟨hjp.2 ▸ hjp.1, hjp.2⟩⟩,
+    rw [@or_comm (j ∈ qc.active_oracles ∧ j = ps), or_assoc, @eq_comm _ j, this] }
+end
+
+lemma active_oracles_subset_of_mem_support_generate_seed_aux {qc seed js}
+  (qs : query_seed spec) (hqs : qs ∈ (generate_seed_aux qc seed js).support) :
+  seed.active_oracles ⊆ qs.active_oracles :=
+(active_oracles_of_mem_support_generate_seed_aux qs hqs).symm ▸ finset.subset_union_left _ _
+
+end generate_seed_aux
 
 /-- Given a count of queries `qc`, and an initial `query_store` seed, generate more outputs at
 random until the number of seeded outputs for each oracle is at least the value given in `qc`. -/
 noncomputable def generate_seed (qc : query_count spec) :
   oracle_comp uniform_selecting (query_seed spec) :=
 generate_seed_aux qc ∅ qc.active_oracles.to_list
+
+lemma active_oracles_of_mem_support_generate_seed (qs : query_seed spec)
+  (hqs : qs ∈ (generate_seed qc).support) : qs.active_oracles = qc.active_oracles :=
+by simp [active_oracles_of_mem_support_generate_seed_aux qs hqs]
 
 @[simp] lemma mem_support_generate_seed_empty_iff :
   seed ∈ (generate_seed qc).support ↔ seed.to_query_count = qc :=
@@ -62,7 +92,5 @@ end
 begin
   sorry
 end
-
-
 
 end oracle_comp

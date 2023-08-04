@@ -40,7 +40,6 @@ lemma prob_event_bind_bind_assoc (e : set γ) :
 
 end bind_bind_assoc
 
-
 section return_bind
 
 variables (a : α) (ob : α → oracle_comp spec β) (y : β) (e' : set β)

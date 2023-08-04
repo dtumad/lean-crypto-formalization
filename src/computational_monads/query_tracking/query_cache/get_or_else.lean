@@ -29,6 +29,9 @@ match cache.lookup i t with
 | (some u) := return (u, cache)
 end
 
+@[inline, reducible] def get_or_query (cache : query_cache spec) (i : spec.ι)
+  (t : spec.domain i) := cache.get_or_else i t (query i t)
+
 variables (cache cache' : query_cache spec)
 
 section ite

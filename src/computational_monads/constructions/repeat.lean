@@ -6,6 +6,7 @@ Authors: Devon Tuma
 import data.vector.mem
 import computational_monads.constructions.product
 import computational_monads.distribution_semantics.subsingleton
+import computational_monads.constructions.uniform_select
 
 /-!
 # Repeated Independent Runs of an Oracle Computation
@@ -21,6 +22,7 @@ is the product over the vector of the probabilities of getting the individual ou
 
 namespace oracle_comp
 
+open_locale ennreal
 open oracle_spec vector
 
 variables {α β γ : Type} {spec spec' : oracle_spec}
@@ -299,6 +301,16 @@ begin
   calc oa ≃ₚ head <$> oa.repeat n.succ : (map_head_repeat_dist_equiv oa).symm
     ... ≃ₚ head <$> oa'.repeat n.succ : map_dist_equiv_of_dist_equiv rfl h
     ... ≃ₚ oa' : map_head_repeat_dist_equiv oa'
+end
+
+@[simp_dist_equiv] lemma repeat_uniform_select_fintype_dist_equiv [fintype α] [inhabited α]
+  [decidable_eq α] : ($ᵗ α).repeat n.succ ≃ₚ $ᵗ (vector α n.succ) :=
+begin
+  refine dist_equiv.ext (λ xs, _),
+  have : list.map ⁅$ᵗ α⁆ xs.to_list = list.replicate n.succ (fintype.card α)⁻¹ :=
+    trans (list.map_eq_replicate_iff.2 (λ x xs, prob_output_uniform_select_fintype α x)) (by simp),
+  rw [prob_output_repeat, prob_output_uniform_select_fintype, card_vector,
+    this, list.prod_replicate, ← ennreal.inv_pow, nat.cast_pow],
 end
 
 end oracle_comp

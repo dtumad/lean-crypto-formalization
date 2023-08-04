@@ -11,6 +11,8 @@ import computational_monads.distribution_semantics.bind
 
 This file defines a tactic `pairwise_dist_equiv` for working with and proving instances of
 `dist_equiv` between sequenced computations, by splitting the goal into line-by-line equivalences.
+
+TODO: could have explicitly passed equivs be used transitively, even if tagged ones aren't.
 -/
 
 open interactive interactive.types
