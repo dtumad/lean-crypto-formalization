@@ -134,6 +134,34 @@ fun_like.ext _ _ (λ i', by by_cases hi : i = i'; simp [hi])
 
 end of_nat
 
+section sep
+
+variables (p q : spec.ι → Prop)
+
+lemma sep_or_eq_sup : {x ∈ qc | p x ∨ q x} = {x ∈ qc | p x} ⊔ {x ∈ qc | q x} :=
+begin
+  haveI : decidable_pred p := classical.dec_pred _,
+  haveI : decidable_pred q := classical.dec_pred _,
+  refine fun_like.ext _ _ (λ x, _),
+  by_cases hpx : p x; by_cases hqx : q x; simp only [hpx, hqx, sep_apply', or_self, sup_apply,
+    max_eq_left, if_true, if_false, true_or, or_true, nat.zero_max, max_comm (qc x)]
+end
+
+-- TODO: change
+lemma sep_and_eq_inf : {x ∈ qc | p x ∨ q x} = {x ∈ qc | p x} ⊔ {x ∈ qc | q x} :=
+begin
+  haveI : decidable_pred p := classical.dec_pred _,
+  haveI : decidable_pred q := classical.dec_pred _,
+  refine fun_like.ext _ _ (λ x, _),
+  by_cases hpx : p x; by_cases hqx : q x; simp only [hpx, hqx, sep_apply', or_self, sup_apply,
+    max_eq_left, if_true, if_false, true_or, or_true, nat.zero_max, max_comm (qc x)]
+end
+
+
+
+
+end sep
+
 end query_count
 
 end oracle_comp

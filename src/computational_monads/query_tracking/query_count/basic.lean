@@ -5,6 +5,7 @@ Authors: Devon Tuma
 -/
 import computational_monads.oracle_comp
 import to_mathlib.general
+import algebra.indicator_function
 
 /-!
 # Structure for Counting Queries to Different Oracles
@@ -285,6 +286,73 @@ by simp [decrement_increment_eq_increment qc i le_rfl]
 lemma increment_decrement_eq_self (i n) (hm : n ≤ qc i) :
   (qc.decrement i n).increment i n = qc :=
 by simp [increment_decrement_eq_increment qc i hm le_rfl]
+
+section filter_oracles
+
+noncomputable def filter_oracles (qc : query_count spec) (s : set spec.ι) : query_count spec :=
+{ get_count := λ i, s.indicator qc i,
+  active_oracles := {x ∈ qc.active_oracles | x ∈ s},
+  mem_active_oracles_iff' := by simp [and_comm] }
+
+variables (s : set spec.ι)
+
+@[simp] lemma filter_oracles_apply (i) : (qc.filter_oracles s) i = s.indicator qc i := rfl
+
+@[simp] lemma filter_oracles_apply' [decidable_pred (∈ s)] (i) :
+  (qc.filter_oracles s) i = if i ∈ s then qc i else 0 := by {simp [set.indicator], congr}
+
+@[simp] lemma active_oracles_filter_oracles :
+  (qc.filter_oracles s).active_oracles = {x ∈ qc.active_oracles | x ∈ s} := rfl
+
+@[simp] lemma active_oracles_filter_oracles' (s : finset spec.ι) :
+  (qc.filter_oracles s).active_oracles = qc.active_oracles ∩ s :=
+finset.ext (λ i', by simp)
+
+lemma mem_active_oracles_filter_oracles_iff (i) :
+  i ∈ (qc.filter_oracles s).active_oracles ↔ i ∈ qc.active_oracles ∧ i ∈ s := by simp
+
+@[simp] lemma filter_oracles_empty_eq_empty : qc.filter_oracles ∅ = ∅ := by simp [fun_like.ext_iff]
+
+@[simp] lemma filter_oracles_eq_self_iff :
+  qc.filter_oracles s = qc ↔ ∀ i ∈ qc.active_oracles, i ∈ s :=
+by simp [fun_like.ext_iff, not_imp_not]
+
+@[simp] lemma filter_oracles_eq_self_iff' (s : finset spec.ι) :
+  qc.filter_oracles s = qc ↔ qc.active_oracles ⊆ s :=
+by simp only [finset.subset_iff, filter_oracles_eq_self_iff, finset.mem_coe]
+
+lemma filter_oracles_self (s : finset spec.ι) : qc.filter_oracles qc.active_oracles = qc :=
+by simp only [filter_oracles_eq_self_iff', finset.subset.refl]
+
+end filter_oracles
+
+section has_sep
+
+noncomputable instance : has_sep spec.ι (query_count spec) :=
+{ sep := λ p qc, qc.filter_oracles p }
+
+variable (p : spec.ι → Prop)
+
+lemma sep_eq_filter : {x ∈ qc | p x} = qc.filter_oracles p := rfl
+
+@[simp] lemma sep_apply (i) : {x ∈ qc | p x} i = set.indicator p qc i := rfl
+
+@[simp] lemma sep_apply' [decidable_pred p] (i) : {x ∈ qc | p x} i = if p i then qc i else 0 :=
+by simpa only [sep_eq_filter, filter_oracles_apply']
+
+@[simp] lemma active_oracles_sep : {x ∈ qc | p x}.active_oracles =
+  {x ∈ qc.active_oracles | p x} := rfl
+
+@[simp] lemma sep_false_eq_empty : {x ∈ qc | false} = ∅ :=
+(filter_oracles_empty_eq_empty qc)
+
+@[simp] lemma sep_eq_self_iff : {x ∈ qc | p x} = qc ↔ ∀ i ∈ qc.active_oracles, p i :=
+by simpa only [sep_eq_filter, filter_oracles_eq_self_iff]
+
+@[simp] lemma sep_self : {x ∈ qc | x ∈ qc.active_oracles} = qc :=
+by simp only [sep_eq_self_iff, imp_self, implies_true_iff]
+
+end has_sep
 
 section reset_count
 

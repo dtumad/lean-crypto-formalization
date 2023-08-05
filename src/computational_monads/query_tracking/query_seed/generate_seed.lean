@@ -26,6 +26,7 @@ open oracle_spec
 
 variables {α β γ : Type} {spec : oracle_spec}
   (qc : query_count spec) (seed : query_seed spec)
+  (j : spec.ι) (js : list spec.ι)
 
 section generate_seed_aux
 
@@ -36,14 +37,29 @@ private noncomputable def generate_seed_aux (qc : query_count spec) :
 | seed (j :: js) := do {ts ←$ᵗ (vector (spec.range j) (qc j)),
     generate_seed_aux (seed.seed_queries ts.to_list) js}
 
-variables (j : spec.ι) (js : list spec.ι)
-
 @[simp] lemma generate_seed_aux_nil : generate_seed_aux qc seed [] = return seed := rfl
 
 @[simp] lemma generate_seed_aux_cons : generate_seed_aux qc seed (j :: js) =
   do {ts ←$ᵗ (vector (spec.range j) (qc j)),
     generate_seed_aux qc (seed.seed_queries ts.to_list) js} :=
 by rw [generate_seed_aux]
+
+lemma to_query_count_of_mem_support_generate_seed_aux {qc seed js}
+  (qs : query_seed spec) (hqs : qs ∈ (generate_seed_aux qc seed js).support) :
+  qs.to_query_count = seed.to_query_count ⊔ {x ∈ qc | x ∈ js} :=
+begin
+  induction js with j js hj generalizing seed,
+  { rw [generate_seed_aux_nil, mem_support_return_iff] at hqs,
+    simp [hqs] },
+  {
+    -- rw [generate_seed_aux_cons] at hqs,
+    simp at hqs,
+    obtain ⟨ps, hps⟩ := hqs,
+    -- specialize hj hps,
+    refine (hj hps).trans _,
+    simp only [list.mem_cons_eq],
+  }
+end
 
 lemma active_oracles_of_mem_support_generate_seed_aux {qc seed js}
   (qs : query_seed spec) (hqs : qs ∈ (generate_seed_aux qc seed js).support) :
@@ -80,7 +96,7 @@ lemma active_oracles_of_mem_support_generate_seed (qs : query_seed spec)
   (hqs : qs ∈ (generate_seed qc).support) : qs.active_oracles = qc.active_oracles :=
 by simp [active_oracles_of_mem_support_generate_seed_aux qs hqs]
 
-@[simp] lemma mem_support_generate_seed_empty_iff :
+@[simp] lemma mem_support_generate_seed_iff :
   seed ∈ (generate_seed qc).support ↔ seed.to_query_count = qc :=
 begin
   simp only [fun_like.ext_iff, query_seed.to_query_count_apply_eq_length],
