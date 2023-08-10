@@ -39,6 +39,9 @@ instance query_count.fun_like (spec : oracle_spec) :
   coe_injective' := λ qc qc' h, query_count.ext qc qc' h
     (finset.ext (λ x, by simp_rw [query_count.mem_active_oracles_iff', h])) }
 
+@[ext] protected lemma ext' {qc qc' : query_count spec}
+  (h : ∀ i, qc i = qc' i) : qc = qc' := fun_like.ext qc qc' h
+
 namespace query_count
 
 variables (qc qc' : query_count spec)

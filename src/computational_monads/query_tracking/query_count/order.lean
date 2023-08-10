@@ -91,7 +91,12 @@ instance : canonically_ordered_add_monoid (query_count spec) :=
 @[simp] lemma empty_inf : ∅ ⊓ qc = ∅ := bot_inf_eq
 @[simp] lemma sup_empty : qc ⊔ ∅ = qc := sup_bot_eq
 @[simp] lemma empty_sup : ∅ ⊔ qc = qc := bot_sup_eq
+@[simp] lemma add_empty : ∅ + qc = qc := zero_add qc
+@[simp] lemma empty_add : qc + ∅ = qc := add_zero qc
+
 lemma zero_eq_empty : (0 : query_count spec) = ∅ := rfl
+@[simp] lemma zero_apply (i) : (0 : query_count spec) i = 0 := rfl
+@[simp] lemma active_oracles_zero : (0 : query_count spec).active_oracles = ∅ := rfl
 
 @[simp] lemma add_apply (i) : (qc + qc') i = qc i + qc' i := rfl
 @[simp] lemma active_oracles_add : (qc + qc').active_oracles =
@@ -140,27 +145,74 @@ variables (p q : spec.ι → Prop)
 
 lemma sep_or_eq_sup : {x ∈ qc | p x ∨ q x} = {x ∈ qc | p x} ⊔ {x ∈ qc | q x} :=
 begin
-  haveI : decidable_pred p := classical.dec_pred _,
-  haveI : decidable_pred q := classical.dec_pred _,
-  refine fun_like.ext _ _ (λ x, _),
+  haveI : decidable_pred p := classical.dec_pred p,
+  haveI : decidable_pred q := classical.dec_pred q,
+  ext x,
   by_cases hpx : p x; by_cases hqx : q x; simp only [hpx, hqx, sep_apply', or_self, sup_apply,
     max_eq_left, if_true, if_false, true_or, or_true, nat.zero_max, max_comm (qc x)]
 end
 
--- TODO: change
-lemma sep_and_eq_inf : {x ∈ qc | p x ∨ q x} = {x ∈ qc | p x} ⊔ {x ∈ qc | q x} :=
+lemma sep_and_eq_inf : {x ∈ qc | p x ∧ q x} = {x ∈ qc | p x} ⊓ {x ∈ qc | q x} :=
 begin
-  haveI : decidable_pred p := classical.dec_pred _,
-  haveI : decidable_pred q := classical.dec_pred _,
-  refine fun_like.ext _ _ (λ x, _),
-  by_cases hpx : p x; by_cases hqx : q x; simp only [hpx, hqx, sep_apply', or_self, sup_apply,
-    max_eq_left, if_true, if_false, true_or, or_true, nat.zero_max, max_comm (qc x)]
+  haveI : decidable_pred p := classical.dec_pred p,
+  haveI : decidable_pred q := classical.dec_pred q,
+  ext x,
+  by by_cases hpx : p x; by_cases hqx : q x; simp only [hpx, hqx, sep_apply', and_self, inf_apply,
+    min_eq_right, zero_min, min_zero, if_true, if_false, and_false, false_and]
 end
-
-
-
 
 end sep
+
+section list_sum
+
+lemma list_sum_apply (qcs : list (query_count spec)) (i : spec.ι) :
+  qcs.sum i = (qcs.map (λ (qc : query_count spec), qc i)).sum :=
+begin
+  induction qcs with qc qcs hqcs,
+  { simp },
+  { simp [hqcs] }
+end
+
+lemma active_oracles_list_sum (qcs : list (query_count spec)) :
+  qcs.sum.active_oracles = (list.foldr (∪) ∅ (qcs.map active_oracles)) :=
+begin
+  sorry,
+end
+
+
+end list_sum
+
+section sum_of_list
+
+def sum_of_list (qc : query_count spec) (js : list spec.ι) : query_count spec :=
+(js.map (λ i, of_nat i (qc i))).sum
+
+variables (j : spec.ι) (js : list spec.ι)
+
+@[simp] lemma sum_of_list_nil : qc.sum_of_list [] = ∅ := rfl
+
+@[simp] lemma sum_of_list_cons : qc.sum_of_list (j :: js) =
+  of_nat j (qc j) + qc.sum_of_list js := by simp only [sum_of_list, list.map, list.sum_cons]
+
+lemma sum_of_list_apply (i) : (qc.sum_of_list js) i = js.count i * qc i :=
+begin
+  induction js with j js hjs,
+  { simp only [sum_of_list_nil, empty_apply, list.count_nil, zero_mul] },
+  { by_cases hi : i = j,
+    { induction hi,
+      simp [hjs, add_mul] },
+    { simp [hi, ne.symm hi, hjs] } }
+end
+
+lemma active_oracles_sum_of_list : (qc.sum_of_list js).active_oracles =
+  qc.active_oracles.filter (λ i, i ∈ js) :=
+begin
+  ext i,
+  simp [sum_of_list],
+  sorry,
+end
+
+end sum_of_list
 
 end query_count
 

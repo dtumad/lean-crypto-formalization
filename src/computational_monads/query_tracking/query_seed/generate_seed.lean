@@ -22,6 +22,7 @@ to determine the ordering, and so the definition is noncomputable.
 
 namespace oracle_comp
 
+open_locale big_operators
 open oracle_spec
 
 variables {α β γ : Type} {spec : oracle_spec}
@@ -44,26 +45,9 @@ private noncomputable def generate_seed_aux (qc : query_count spec) :
     generate_seed_aux qc (seed.seed_queries ts.to_list) js} :=
 by rw [generate_seed_aux]
 
-lemma to_query_count_of_mem_support_generate_seed_aux {qc seed js}
-  (qs : query_seed spec) (hqs : qs ∈ (generate_seed_aux qc seed js).support) :
-  qs.to_query_count = seed.to_query_count ⊔ {x ∈ qc | x ∈ js} :=
-begin
-  induction js with j js hj generalizing seed,
-  { rw [generate_seed_aux_nil, mem_support_return_iff] at hqs,
-    simp [hqs] },
-  {
-    -- rw [generate_seed_aux_cons] at hqs,
-    simp at hqs,
-    obtain ⟨ps, hps⟩ := hqs,
-    -- specialize hj hps,
-    refine (hj hps).trans _,
-    simp only [list.mem_cons_eq],
-  }
-end
-
 lemma active_oracles_of_mem_support_generate_seed_aux {qc seed js}
   (qs : query_seed spec) (hqs : qs ∈ (generate_seed_aux qc seed js).support) :
-  qs.active_oracles = seed.active_oracles ∪ {j' ∈ qc.active_oracles | j' ∈ js} :=
+  qs.active_oracles = seed.active_oracles ∪ {j ∈ qc.active_oracles | j ∈ js} :=
 begin
   induction js with j js hj generalizing seed,
   { rw [generate_seed_aux_nil, mem_support_return_iff] at hqs,
@@ -83,6 +67,30 @@ lemma active_oracles_subset_of_mem_support_generate_seed_aux {qc seed js}
   (qs : query_seed spec) (hqs : qs ∈ (generate_seed_aux qc seed js).support) :
   seed.active_oracles ⊆ qs.active_oracles :=
 (active_oracles_of_mem_support_generate_seed_aux qs hqs).symm ▸ finset.subset_union_left _ _
+
+
+lemma to_query_count_of_mem_support_generate_seed_aux {qc seed js}
+  (qs : query_seed spec) (hqs : qs ∈ (generate_seed_aux qc seed js).support) :
+  qs.to_query_count = seed.to_query_count + ((js.map (λ i, query_count.of_nat)).sum) :=
+begin
+  induction js with j js hj generalizing seed,
+  { rw [generate_seed_aux_nil, mem_support_return_iff] at hqs,
+    simp [hqs] },
+  {
+    -- rw [generate_seed_aux_cons] at hqs,
+    simp at hqs,
+    obtain ⟨ps, hps⟩ := hqs,
+    -- specialize hj hps,
+    refine (hj hps).trans _,
+    simp only [list.mem_cons_eq, query_seed.to_query_count_seed_queries],
+    ext i,
+    by_cases hi : i = j,
+    {
+      induction hi,
+      simp,
+    }
+  }
+end
 
 end generate_seed_aux
 
