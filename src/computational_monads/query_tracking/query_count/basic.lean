@@ -3,7 +3,7 @@ Copyright (c) 2023 Devon Tuma. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
-import computational_monads.oracle_comp
+import computational_monads.query_tracking.indexed_list.basic
 import to_mathlib.general
 import algebra.indicator_function
 
@@ -24,6 +24,11 @@ namespace oracle_comp
 open oracle_spec
 
 variables {α β γ : Type} {spec : oracle_spec}
+
+@[inline, reducible]
+def query_count' (spec : oracle_spec) := spec.indexed_list (λ _, unit)
+
+-- #check (∅ : query_count[spec]) ⇒
 
 /-- A `query_count` represents a count of the number of queries made by a computation.
 The count is non-zero for finitely many oracles as `oracle_comp` disallows unbounded recursion. -/

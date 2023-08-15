@@ -148,8 +148,21 @@ noncomputable instance : semilattice_inf (spec.indexed_list τ) :=
 
 end semilattice_inf
 
-@[simp] lemma le_self_add (il il' : spec.indexed_list τ) : il ≤ il + il' :=
+variables (il il' : spec.indexed_list τ)
+
+@[simp] lemma le_self_add : il ≤ il + il' :=
 λ i, ⟨(il i).length, by simp only [add_apply, list.take_left]⟩
+
+@[simp] lemma le_add_values {i} (ts : list (τ i)) : il ≤ il.add_values ts :=
+by simp only [add_values, le_self_add]
+
+@[simp] lemma take_at_index_le (i n) : il.take_at_index i n ≤ il :=
+begin
+  refine λ i', _,
+  by_cases hi : i = i',
+  { exact ⟨n, by simp [hi]⟩ },
+  { exact ⟨il.get_count i', by simp [hi, get_count_eq_length_apply]⟩ }
+end
 
 end indexed_list
 

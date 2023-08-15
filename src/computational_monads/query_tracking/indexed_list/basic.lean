@@ -47,9 +47,9 @@ lemma indexed_list.coe_fun_eq_to_fun (il : spec.indexed_list τ)
 
 namespace indexed_list
 
-section apply
-
 variables (il il' : spec.indexed_list τ)
+
+section apply
 
 lemma mem_active_oracles_iff (i) : i ∈ il.active_oracles ↔ il i ≠ [] :=
 il.mem_active_oracles_iff' i
@@ -90,6 +90,27 @@ il.mem_active_oracles (list.length_pos_iff_ne_nil.1 h)
 
 end apply
 
+section get_count
+
+/-- The number of elements in the list at index `i`. -/
+def get_count (il : spec.indexed_list τ) (i : spec.ι) : ℕ := (il i).length
+
+lemma get_count_eq_length_apply (i) : il.get_count i = (il i).length := rfl
+
+@[simp] lemma get_count_eq_zero_iff (i) : il.get_count i = 0 ↔ i ∉ il.active_oracles :=
+by simp [list.length_eq_zero, get_count]
+
+lemma get_count_eq_zero {i} (h : i ∉ il.active_oracles) : il.get_count i = 0 :=
+(il.get_count_eq_zero_iff i).2 h
+
+lemma get_count_ne_zero_iff (i) : il.get_count i ≠ 0 ↔ i ∈ il.active_oracles :=
+iff.not_left (il.get_count_eq_zero_iff i)
+
+lemma get_count_ne_zero {i} (h : i ∈ il.active_oracles) : il.get_count i ≠ 0 :=
+(il.get_count_ne_zero_iff i).2 h
+
+end get_count
+
 section empty
 
 /-- The empty indexed list, containing an empty list at every index. -/
@@ -102,6 +123,8 @@ instance : has_emptyc (spec.indexed_list τ) := ⟨empty spec τ⟩
 
 @[simp] lemma empty_apply (i) : (∅ : spec.indexed_list τ) i = [] := rfl
 @[simp] lemma active_oracles_empty : (∅ : spec.indexed_list τ).active_oracles = ∅ := rfl
+
+lemma get_count_empty (i) : (∅ : spec.indexed_list τ).get_count i = 0 := rfl
 
 @[simp] lemma eq_empty_iff (il : spec.indexed_list τ) : il = ∅ ↔ il.active_oracles = ∅ :=
 fun_like.ext_iff.trans (trans (by simp only [mem_active_oracles_iff, empty_apply,
@@ -131,11 +154,12 @@ instance : add_monoid (spec.indexed_list τ) :=
   zero_add := λ il, fun_like.ext _ _ (λ i, (il i).nil_append),
   add_zero := λ il, fun_like.ext _ _ (λ i, (il i).append_nil) }
 
-variables (il il' : spec.indexed_list τ)
-
 @[simp] lemma add_apply (i) : (il + il') i = il i ++ il' i := rfl
 @[simp] lemma active_oracles_add : (il + il').active_oracles =
   il.active_oracles ∪ il'.active_oracles := rfl
+
+@[simp] lemma get_count_add (i) : (il + il').get_count i = il.get_count i + il'.get_count i :=
+by simp_rw [get_count_eq_length_apply, add_apply, list.length_append]
 
 lemma zero_eq_empty : (0 : spec.indexed_list τ) = ∅ := rfl
 @[simp] lemma zero_apply (i) : (0 : spec.indexed_list τ) i = [] := rfl
@@ -164,9 +188,17 @@ def of_list {i} (ts : list (τ i)) : spec.indexed_list τ :=
 variables {i : spec.ι} (ts ts' : list (τ i))
 
 @[simp] lemma of_list_apply (i') : of_list ts i' = if h : i = i' then h.rec_on ts else [] := rfl
-
 @[simp] lemma active_oracles_of_list : (of_list ts).active_oracles =
   if ts.empty then ∅ else {i} := rfl
+
+@[simp] lemma get_count_of_list (i') : (of_list ts).get_count i' =
+  if i = i' then ts.length else 0 :=
+begin
+  by_cases hi : i = i',
+  { induction hi,
+    simp [get_count_eq_length_apply] },
+  { simp [hi, get_count_eq_length_apply] }
+end
 
 @[simp] lemma of_list_add_of_list : of_list ts + of_list ts' = of_list (ts ++ ts') :=
 begin
@@ -194,7 +226,7 @@ section add_values
 def add_values (il : spec.indexed_list τ) {i} (ts : list (τ i)) : spec.indexed_list τ :=
 il + of_list ts
 
-variables (il : spec.indexed_list τ) {i : spec.ι} (ts ts' : list (τ i))
+variables {i : spec.ι} (ts ts' : list (τ i))
 
 @[simp] lemma add_values_apply (i') : il.add_values ts i' =
   if h : i = i' then h.rec_on (il i ++ ts) else il i' :=
@@ -211,6 +243,15 @@ begin
   cases ts,
   { simp [add_values] },
   { exact finset.ext (by simp [add_values, or_comm]) }
+end
+
+@[simp] lemma get_count_add_values (i') : (il.add_values ts).get_count i' =
+  il.get_count i' + if i = i' then ts.length else 0 :=
+begin
+  by_cases hi : i = i',
+  { induction hi,
+    simp [get_count_eq_length_apply] },
+  { simp [hi, get_count_eq_length_apply] }
 end
 
 @[simp] lemma add_values_nil : il.add_values ([] : list (τ i)) = il := by simp [add_values]
@@ -234,22 +275,36 @@ def take_at_index (il : spec.indexed_list τ) (i : spec.ι) (n : ℕ) : spec.ind
     { by_cases hi : i = i'; simp [hi] }
   end }
 
-variables (il : spec.indexed_list τ) (i : spec.ι) (n : ℕ)
+variables (i : spec.ι) (n : ℕ)
 
-@[simp] lemma take_at_index_apply (i') : (il.take_at_index i n) i' =
+@[simp] lemma take_at_index_apply (i') : il.take_at_index i n i' =
   if i = i' then (il i').take n else il i' := rfl
 
 @[simp] lemma active_oracles_take_at_index : (il.take_at_index i n).active_oracles =
   if n = 0 then il.active_oracles.erase i else il.active_oracles := rfl
 
+@[simp] lemma get_count_take_at_index (i') : (il.take_at_index i n).get_count i' =
+  if i = i' then min n (il i').length else il.get_count i' :=
+by by_cases hi : i = i'; simp [hi, get_count_eq_length_apply]
+
 lemma take_at_index_empty : (∅ : spec.indexed_list τ).take_at_index i n = ∅ := by simp
 
-lemma eq_add_values_take_at_index : il = (il.take_at_index i 0).add_values (il i) :=
+lemma add_values_take_at_index_zero : (il.take_at_index i 0).add_values (il i) = il :=
 begin
   refine fun_like.ext _ _ (λ i', _),
   by_cases hi : i = i',
   { induction hi,
     simp },
+  { simp [hi] }
+end
+
+lemma take_at_index_length_add_values (ts : list (τ i)) :
+  (il.add_values ts).take_at_index i (il.get_count i) = il :=
+begin
+  refine fun_like.ext _ _ (λ i', _),
+  by_cases hi : i = i',
+  { induction hi,
+    simp [get_count_eq_length_apply] },
   { simp [hi] }
 end
 
@@ -274,13 +329,17 @@ def drop_at_index (il : spec.indexed_list τ) (i : spec.ι) (n : ℕ) : spec.ind
     { simp [hi, ne.symm hi, hn] } }
   end }
 
-variables (il : spec.indexed_list τ) (i : spec.ι) (n : ℕ)
+variables (i : spec.ι) (n : ℕ)
 
 @[simp] lemma drop_at_index_apply (i') : (il.drop_at_index i n) i' =
   if i = i' then (il i').drop n else il i' := rfl
 
 @[simp] lemma active_oracles_drop_at_index : (il.drop_at_index i n).active_oracles =
   if n < (il i).length then il.active_oracles else il.active_oracles.erase i := rfl
+
+@[simp] lemma get_count_drop_at_index (i') : (il.drop_at_index i n).get_count i' =
+  il.get_count i' - if i = i' then n else 0 :=
+by by_cases hi : i = i'; simp [hi, get_count_eq_length_apply]
 
 lemma drop_at_index_empty : (∅ : spec.indexed_list τ).drop_at_index i n = ∅ := by simp
 
@@ -312,7 +371,7 @@ begin
   induction il_active_oracles using finset.induction_on with i' s hsi hs generalizing il_to_fun,
   { convert h₁ using 1,
     exact eq_empty_of_active_oracles_eq_empty _ rfl },
-  { rw [eq_add_values_take_at_index ({to_fun := il_to_fun, active_oracles := insert i' s,
+  { rw [← add_values_take_at_index_zero ({to_fun := il_to_fun, active_oracles := insert i' s,
       mem_active_oracles_iff' := _}) i'],
     refine h₂ _ _ _ _ _,
     { simpa [coe_fun_eq_to_fun] using il_mem_active_oracles_iff' i' },
