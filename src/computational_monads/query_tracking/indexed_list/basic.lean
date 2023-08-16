@@ -115,6 +115,12 @@ by simp [pos_iff_ne_zero]
 lemma get_count_pos {i} (h : i ∈ il.active_oracles) : 0 < il.get_count i :=
 (il.get_count_pos_iff i).2 h
 
+@[simp] lemma one_le_get_count_iff (i) : 1 ≤ il.get_count i ↔ i ∈ il.active_oracles :=
+by simp [nat.succ_le_iff]
+
+lemma one_le_get_count {i} (h : i ∈ il.active_oracles) : 1 ≤ il.get_count i :=
+(il.one_le_get_count_iff i).2 h
+
 end get_count
 
 section empty
@@ -152,12 +158,20 @@ def add (il il' : spec.indexed_list τ) : spec.indexed_list τ :=
   mem_active_oracles_iff' := by simp [indexed_list.mem_active_oracles_iff',
     coe_fun_eq_to_fun, or_iff_not_imp_left] }
 
-instance : add_monoid (spec.indexed_list τ) :=
+instance : add_cancel_monoid (spec.indexed_list τ) :=
 { add := add,
   zero := ∅,
   add_assoc := λ il il' il'', fun_like.ext _ _ (λ i, list.append_assoc (il i) (il' i) (il'' i)),
   zero_add := λ il, fun_like.ext _ _ (λ i, (il i).nil_append),
-  add_zero := λ il, fun_like.ext _ _ (λ i, (il i).append_nil) }
+  add_zero := λ il, fun_like.ext _ _ (λ i, (il i).append_nil),
+  add_left_cancel := λ il il' il'' h, begin
+    simp [fun_like.ext_iff, add] at h ⊢,
+    refine λ i, list.append_left_cancel (h i)
+  end,
+  add_right_cancel := λ il il' il'' h, begin
+    simp [fun_like.ext_iff, add] at h ⊢,
+    refine λ i, list.append_right_cancel (h i),
+  end }
 
 @[simp] lemma add_apply (i) : (il + il') i = il i ++ il' i := rfl
 @[simp] lemma active_oracles_add : (il + il').active_oracles =
@@ -180,6 +194,12 @@ begin
   { simp only [list.join, list.sum_nil, zero_apply, list.map_nil] },
   { simp only [hqcs, list.join, list.map, list.sum_cons, add_apply] }
 end
+
+@[simp] lemma add_left_eq_self_iff : il + il' = il' ↔ il = ∅ :=
+by rw [add_left_eq_self, zero_eq_empty]
+
+@[simp] lemma add_right_eq_self_iff : il + il' = il ↔ il' = ∅ :=
+by rw [add_right_eq_self, zero_eq_empty]
 
 end add
 
@@ -213,6 +233,8 @@ begin
   { simp [hi, get_count_eq_length_apply] }
 end
 
+lemma of_list_apply_same_index : of_list ts i = ts := by simp
+
 @[simp] lemma of_list_append : of_list (ts ++ ts') = of_list ts + of_list ts' :=
 begin
   refine fun_like.ext _ _ (λ i', _),
@@ -221,6 +243,9 @@ begin
     simp },
   { simp [hi] }
 end
+
+lemma of_list_cons (t : τ i) : of_list (t :: ts) = of_list [t] + of_list ts :=
+by rw [← list.singleton_append, of_list_append]
 
 @[simp] lemma of_list_nil : (of_list ([] : list (τ i))) = ∅ :=
 begin
@@ -354,7 +379,39 @@ variables (i : spec.ι) (n : ℕ)
   il.get_count i' - if i = i' then n else 0 :=
 by by_cases hi : i = i'; simp [hi, get_count_eq_length_apply]
 
+@[simp] lemma drop_at_index_zero : il.drop_at_index i 0 = il :=
+fun_like.ext _ _ (λ i', by simp)
+
 lemma drop_at_index_empty : (∅ : spec.indexed_list τ).drop_at_index i n = ∅ := by simp
+
+@[simp] lemma drop_at_index_add : (il + il').drop_at_index i n =
+  il.drop_at_index i n + il'.drop_at_index i (n - il.get_count i) :=
+fun_like.ext _ _ (λ i', by by_cases hi : i = i';
+  simp [hi, list.drop_append_eq_append_drop, get_count_eq_length_apply])
+
+@[simp] lemma drop_at_index_of_list_singleton {i} (t : τ i) :
+  (of_list [t]).drop_at_index i n = if n = 0 then of_list [t] else ∅ :=
+by cases n with n; simp
+
+lemma drop_at_index_of_list_eq_empty {i} (ts : list (τ i)) (hn : ts.length ≤ n) :
+  (of_list ts).drop_at_index i n = ∅ :=
+begin
+  simp [lt_iff_not_le, hn],
+  split_ifs; simp
+end
+
+@[simp] lemma drop_at_index_succ_of_list_succ {i} (t : τ i) (ts : list (τ i)) :
+  (of_list (t :: ts)).drop_at_index i (n + 1) = (of_list ts).drop_at_index i n :=
+by { rw [of_list_cons], simp [drop_at_index_add] }
+
+lemma drop_at_index_eq_self {i} (h : i ∉ il.active_oracles) : il.drop_at_index i n = il :=
+begin
+  refine fun_like.ext _ _ (λ i', _),
+  by_cases hi : i = i',
+  { induction hi,
+    simp [il.apply_eq_nil h] },
+  { simp [hi] }
+end
 
 end drop_at_index
 
