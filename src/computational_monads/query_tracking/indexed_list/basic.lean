@@ -78,7 +78,7 @@ by simp [list.empty_iff_eq_nil]
 
 lemma apply_empty {i} (hi : i ∉ il.active_oracles) : (il i).empty := (il.apply_empty_iff i).2 hi
 
-@[simp] lemma ite_apply (p : Prop) [decidable p] (i) :
+@[simp] protected lemma ite_apply (p : Prop) [decidable p] (i) :
   (if p then il else il') i = if p then il i else il' i :=
 by split_ifs; refl
 
@@ -109,6 +109,12 @@ iff.not_left (il.get_count_eq_zero_iff i)
 lemma get_count_ne_zero {i} (h : i ∈ il.active_oracles) : il.get_count i ≠ 0 :=
 (il.get_count_ne_zero_iff i).2 h
 
+@[simp] lemma get_count_pos_iff (i) : 0 < il.get_count i ↔ i ∈ il.active_oracles :=
+by simp [pos_iff_ne_zero]
+
+lemma get_count_pos {i} (h : i ∈ il.active_oracles) : 0 < il.get_count i :=
+(il.get_count_pos_iff i).2 h
+
 end get_count
 
 section empty
@@ -123,8 +129,7 @@ instance : has_emptyc (spec.indexed_list τ) := ⟨empty spec τ⟩
 
 @[simp] lemma empty_apply (i) : (∅ : spec.indexed_list τ) i = [] := rfl
 @[simp] lemma active_oracles_empty : (∅ : spec.indexed_list τ).active_oracles = ∅ := rfl
-
-lemma get_count_empty (i) : (∅ : spec.indexed_list τ).get_count i = 0 := rfl
+@[simp] lemma get_count_empty (i) : (∅ : spec.indexed_list τ).get_count i = 0 := rfl
 
 @[simp] lemma eq_empty_iff (il : spec.indexed_list τ) : il = ∅ ↔ il.active_oracles = ∅ :=
 fun_like.ext_iff.trans (trans (by simp only [mem_active_oracles_iff, empty_apply,
@@ -157,16 +162,24 @@ instance : add_monoid (spec.indexed_list τ) :=
 @[simp] lemma add_apply (i) : (il + il') i = il i ++ il' i := rfl
 @[simp] lemma active_oracles_add : (il + il').active_oracles =
   il.active_oracles ∪ il'.active_oracles := rfl
-
 @[simp] lemma get_count_add (i) : (il + il').get_count i = il.get_count i + il'.get_count i :=
 by simp_rw [get_count_eq_length_apply, add_apply, list.length_append]
 
 lemma zero_eq_empty : (0 : spec.indexed_list τ) = ∅ := rfl
 @[simp] lemma zero_apply (i) : (0 : spec.indexed_list τ) i = [] := rfl
 @[simp] lemma active_oracles_zero : (0 : spec.indexed_list τ).active_oracles = ∅ := rfl
+@[simp] lemma get_count_zero (i) : (0 : spec.indexed_list τ).get_count i = 0 := rfl
 
 @[simp] lemma add_empty : il + ∅ = il := add_zero il
 @[simp] lemma empty_add : ∅ + il = il := zero_add il
+
+lemma list_sum_apply (qcs : list (spec.indexed_list τ)) (i : spec.ι) :
+  qcs.sum i = (qcs.map (λ (qc : spec.indexed_list τ), qc i)).join :=
+begin
+  induction qcs with qc qcs hqcs,
+  { simp only [list.join, list.sum_nil, zero_apply, list.map_nil] },
+  { simp only [hqcs, list.join, list.map, list.sum_cons, add_apply] }
+end
 
 end add
 
@@ -200,7 +213,7 @@ begin
   { simp [hi, get_count_eq_length_apply] }
 end
 
-@[simp] lemma of_list_add_of_list : of_list ts + of_list ts' = of_list (ts ++ ts') :=
+@[simp] lemma of_list_append : of_list (ts ++ ts') = of_list ts + of_list ts' :=
 begin
   refine fun_like.ext _ _ (λ i', _),
   by_cases hi : i = i',
@@ -257,7 +270,7 @@ end
 @[simp] lemma add_values_nil : il.add_values ([] : list (τ i)) = il := by simp [add_values]
 
 @[simp] lemma add_values_add_values : (il.add_values ts).add_values ts' =
-  il.add_values (ts ++ ts') := by simp [add_values, add_assoc, of_list_add_of_list]
+  il.add_values (ts ++ ts') := by simp [add_values, add_assoc, of_list_append]
 
 lemma add_values_cons (t) : il.add_values (t :: ts) = (il.add_values [t]).add_values ts := by simp
 
@@ -345,6 +358,59 @@ lemma drop_at_index_empty : (∅ : spec.indexed_list τ).drop_at_index i n = ∅
 
 end drop_at_index
 
+section map
+
+def map (il : spec.indexed_list τ) (f : Π (i : spec.ι), τ i → τ' i) : spec.indexed_list τ' :=
+{ to_fun := λ i, (il i).map (f i),
+  active_oracles := il.active_oracles,
+  mem_active_oracles_iff' := by simp }
+
+variables (f : Π (i : spec.ι), τ i → τ' i)
+
+@[simp] lemma map_apply (i) : il.map f i = (il i).map (f i) := rfl
+@[simp] lemma active_oracles_map : (il.map f).active_oracles = il.active_oracles := rfl
+@[simp] lemma get_count_map (i) : (il.map f).get_count i = il.get_count i :=
+by simp [get_count_eq_length_apply]
+
+lemma map_empty : (∅ : spec.indexed_list τ).map f = ∅ := by simp
+
+@[simp] lemma map_add : (il + il').map f = il.map f + il'.map f := by simp [fun_like.ext_iff]
+
+@[simp] lemma map_of_list {i} (ts : list (τ i)) : (of_list ts).map f = of_list (ts.map (f i)) :=
+begin
+  refine fun_like.ext _ _ (λ i', _),
+  by_cases hi : i = i',
+  { induction hi,
+    simp },
+  { simp [hi] }
+end
+
+@[simp] lemma map_add_values {i} (ts : list (τ i)) :
+  (il.add_values ts).map f = (il.map f).add_values (ts.map (f i)) :=
+by simp [add_values]
+
+@[simp] lemma map_take_at_index (i : spec.ι) (n : ℕ) :
+  (il.take_at_index i n).map f = (il.map f).take_at_index i n :=
+begin
+  refine fun_like.ext _ _ (λ i', _),
+  by_cases hi : i = i',
+  { induction hi,
+    simp [list.map_take] },
+  { simp [hi] }
+end
+
+@[simp] lemma map_drop_at_index (i : spec.ι) (n : ℕ) :
+  (il.drop_at_index i n).map f = (il.map f).drop_at_index i n :=
+begin
+  refine fun_like.ext _ _ (λ i', _),
+  by_cases hi : i = i',
+  { induction hi,
+    simp [list.map_drop] },
+  { simp [hi] }
+end
+
+end map
+
 lemma eq_empty_or_exists_eq_add_values (il : spec.indexed_list τ) : il = ∅ ∨
   ∃ (il' : spec.indexed_list τ) i (ts : list (τ i)), il = il'.add_values ts ∧ il' i = [] :=
 begin
@@ -400,6 +466,73 @@ begin
 end
 
 end sums
+
+-- section filter_oracles
+
+-- noncomputable def filter_oracles (qc : query_count spec) (s : set spec.ι) : query_count spec :=
+-- { get_count := λ i, s.indicator qc i,
+--   active_oracles := {x ∈ qc.active_oracles | x ∈ s},
+--   mem_active_oracles_iff' := by simp [and_comm] }
+
+-- variables (s : set spec.ι)
+
+-- @[simp] lemma filter_oracles_apply (i) : (qc.filter_oracles s) i = s.indicator qc i := rfl
+
+-- @[simp] lemma filter_oracles_apply' [decidable_pred (∈ s)] (i) :
+--   (qc.filter_oracles s) i = if i ∈ s then qc i else 0 := by {simp [set.indicator], congr}
+
+-- @[simp] lemma active_oracles_filter_oracles :
+--   (qc.filter_oracles s).active_oracles = {x ∈ qc.active_oracles | x ∈ s} := rfl
+
+-- @[simp] lemma active_oracles_filter_oracles' (s : finset spec.ι) :
+--   (qc.filter_oracles s).active_oracles = qc.active_oracles ∩ s :=
+-- finset.ext (λ i', by simp)
+
+-- lemma mem_active_oracles_filter_oracles_iff (i) :
+--   i ∈ (qc.filter_oracles s).active_oracles ↔ i ∈ qc.active_oracles ∧ i ∈ s := by simp
+
+-- @[simp] lemma filter_oracles_empty_eq_empty : qc.filter_oracles ∅ = ∅ := by simp [fun_like.ext_iff]
+
+-- @[simp] lemma filter_oracles_eq_self_iff :
+--   qc.filter_oracles s = qc ↔ ∀ i ∈ qc.active_oracles, i ∈ s :=
+-- by simp [fun_like.ext_iff, not_imp_not]
+
+-- @[simp] lemma filter_oracles_eq_self_iff' (s : finset spec.ι) :
+--   qc.filter_oracles s = qc ↔ qc.active_oracles ⊆ s :=
+-- by simp only [finset.subset_iff, filter_oracles_eq_self_iff, finset.mem_coe]
+
+-- lemma filter_oracles_self (s : finset spec.ι) : qc.filter_oracles qc.active_oracles = qc :=
+-- by simp only [filter_oracles_eq_self_iff', finset.subset.refl]
+
+-- end filter_oracles
+
+-- section has_sep
+
+-- noncomputable instance : has_sep spec.ι (query_count spec) :=
+-- { sep := λ p qc, qc.filter_oracles p }
+
+-- variable (p : spec.ι → Prop)
+
+-- lemma sep_eq_filter : {x ∈ qc | p x} = qc.filter_oracles p := rfl
+
+-- @[simp] lemma sep_apply (i) : {x ∈ qc | p x} i = set.indicator p qc i := rfl
+
+-- @[simp] lemma sep_apply' [decidable_pred p] (i) : {x ∈ qc | p x} i = if p i then qc i else 0 :=
+-- by simpa only [sep_eq_filter, filter_oracles_apply']
+
+-- @[simp] lemma active_oracles_sep : {x ∈ qc | p x}.active_oracles =
+--   {x ∈ qc.active_oracles | p x} := rfl
+
+-- @[simp] lemma sep_false_eq_empty : {x ∈ qc | false} = ∅ :=
+-- (filter_oracles_empty_eq_empty qc)
+
+-- @[simp] lemma sep_eq_self_iff : {x ∈ qc | p x} = qc ↔ ∀ i ∈ qc.active_oracles, p i :=
+-- by simpa only [sep_eq_filter, filter_oracles_eq_self_iff]
+
+-- @[simp] lemma sep_self : {x ∈ qc | x ∈ qc.active_oracles} = qc :=
+-- by simp only [sep_eq_self_iff, imp_self, implies_true_iff]
+
+-- end has_sep
 
 end indexed_list
 

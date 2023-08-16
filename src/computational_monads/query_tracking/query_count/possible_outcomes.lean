@@ -15,17 +15,17 @@ the number of ways to choose query outputs for all of the queries.
 In particular this will give the probability of getting an output from `generate_seed`.
 -/
 
-namespace oracle_comp
+namespace oracle_spec
 
 open_locale big_operators
-open oracle_spec query_count
+open query_count indexed_list
 
 variables {α β γ : Type} {spec : oracle_spec}
 
 /-- Given a count of a number of queries to each oracle, get the number of possible outcomes,
 assuming that each of the oracles could respond with any output. -/
 def possible_outcomes (qc : query_count spec) : ℕ :=
-∏ i in qc.active_oracles, (fintype.card (spec.range i)) ^ (qc i)
+∏ i in qc.active_oracles, (fintype.card (spec.range i)) ^ (qc.get_count i)
 
 variables (qc qc' : query_count spec)
 
@@ -39,10 +39,7 @@ pos_iff_ne_zero.2 (possible_outcomes_ne_zero qc)
 
 @[simp] lemma possible_outcomes_of_nat (i : spec.ι) (n) : possible_outcomes (of_nat i n) =
   (fintype.card (spec.range i)) ^ n :=
-begin
-  simp [possible_outcomes],
-  exact λ hn, hn.symm ▸ (pow_zero _).symm,
-end
+by cases n with n; simp [possible_outcomes]
 
 @[simp] lemma possible_outcomes_add : possible_outcomes (qc + qc') =
   possible_outcomes qc * possible_outcomes qc' :=
@@ -51,15 +48,15 @@ begin
   congr' 1,
   { rw [← finset.union_sdiff_self_eq_union, finset.prod_union finset.disjoint_sdiff],
     refine trans (congr_arg _ (finset.prod_eq_one (λ i hi, _))) (mul_one _),
-    rw [apply_eq_zero _ (finset.mem_sdiff.1 hi).2, pow_zero] },
+    rw [get_count_eq_zero _ (finset.mem_sdiff.1 hi).2, pow_zero] },
   { rw [← finset.sdiff_union_self_eq_union, finset.prod_union finset.sdiff_disjoint, mul_comm],
     refine trans (congr_arg _ (finset.prod_eq_one (λ i hi, _))) (mul_one _),
-    rw [apply_eq_zero _ (finset.mem_sdiff.1 hi).2, pow_zero] }
+    rw [get_count_eq_zero _ (finset.mem_sdiff.1 hi).2, pow_zero] }
 end
 
 @[simp] lemma possible_outcomes_increment (i n) : possible_outcomes (qc.increment i n) =
   (possible_outcomes qc) * (fintype.card (spec.range i)) ^ n :=
-by rw [← add_of_nat, possible_outcomes_add, possible_outcomes_of_nat]
+by rw [increment, possible_outcomes_add, possible_outcomes_of_nat]
 
 lemma possible_outcomes_dvd_possible_outcomes (h : qc' ≤ qc) :
   (possible_outcomes qc') ∣ (possible_outcomes qc) :=
@@ -76,10 +73,10 @@ begin
   exact possible_outcomes_dvd_possible_outcomes qc qc' h
 end
 
-@[simp] lemma possible_outcomes_decrement {i n} (h : n ≤ qc i) :
+@[simp] lemma possible_outcomes_decrement {i n} (h : n ≤ qc.get_count i) :
   possible_outcomes (qc.decrement i n) =
     (possible_outcomes qc) / (fintype.card (spec.range i)) ^ n :=
-by rw [← sub_of_nat, possible_outcomes_sub _ _ ((of_nat_le_iff _ _ _).2 h),
+by rw [decrement, possible_outcomes_sub _ _ ((of_nat_le_iff _ _ _).2 h),
   possible_outcomes_of_nat]
 
-end oracle_comp
+end oracle_spec

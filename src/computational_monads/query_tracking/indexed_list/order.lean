@@ -25,25 +25,16 @@ section partial_order
 /-- Ordering on indexed lists induced by list prefixes, specifically we say `il ≤ il'`
 if every list in `il` is a prefix of the corresponding list in `il'`. -/
 instance : partial_order (spec.indexed_list τ) :=
-{ le := λ il il', ∀ i, ∃ n, il i = (il' i).take n,
-  le_refl := λ il i, ⟨(il i).length, symm (list.take_length (il i))⟩,
-  le_trans := λ il il' il'' hil hil' i, let ⟨n, hn⟩ := hil i in let ⟨m, hm⟩ := hil' i in
-    ⟨min n m, trans (hn.trans (congr_arg _ hm)) ((il'' i).take_take n m)⟩,
-  le_antisymm := λ il il' hil hil', fun_like.ext il il' (λ i,
-    let ⟨n, hn⟩ := hil i in let ⟨m, hm⟩ := hil' i in
-    by rw [hn, hm, list.take_take, list.take_eq_take, hn, list.length_take,
-      min_min_min_comm, min_self, ← min_assoc, min_comm n m, min_assoc]) }
+{ le := λ il il', ∀ i, il i <+: il' i,
+  le_refl := λ il i, refl (il i),
+  le_trans := λ il il' il'' hil hil' i, trans (hil i) (hil' i),
+  le_antisymm := λ il il' hil hil', fun_like.ext il il' (λ i, antisymm (hil i) (hil' i)) }
 
-lemma le_iff_forall_exists (il il' : spec.indexed_list τ) :
-  il ≤ il' ↔ ∀ i, ∃ n, il i = (il' i).take n := iff.rfl
+lemma le_iff_forall_prefix (il il' : spec.indexed_list τ) :
+  il ≤ il' ↔ ∀ i, il i <+: il' i := iff.rfl
 
-lemma exists_eq_take_of_le {il il' : spec.indexed_list τ} (h : il ≤ il') (i) :
-  ∃ n, il i = (il' i).take n ∧ n ≤ (il' i).length :=
-begin
-  obtain ⟨n, hn⟩ := h i,
-  refine ⟨min n (il' i).length, hn.trans _, min_le_right _ _⟩,
-  rw [list.take_eq_take, min_assoc, min_self],
-end
+lemma exists_eq_append_of_le {il il' : spec.indexed_list τ} (h : il ≤ il') (i) :
+  ∃ (ts : list (τ i)), il i ++ ts = il' i := h i
 
 end partial_order
 
@@ -52,7 +43,7 @@ section order_bot
 /-- The empty indexed list behaves like a bottom element with the prefix ordering. -/
 instance : order_bot (spec.indexed_list τ) :=
 { bot := ∅,
-  bot_le := λ il i, ⟨0, rfl⟩ }
+  bot_le := λ il i, (il i).nil_prefix }
 
 @[simp] lemma bot_eq_empty : (⊥ : spec.indexed_list τ) = ∅ := rfl
 @[simp] lemma empty_le (il : spec.indexed_list τ) : ∅ ≤ il := bot_le
@@ -76,42 +67,27 @@ protected def inf_aux [decidable_eq α] : list α → list α → list α
 | (t :: ts) := by simp [indexed_list.inf_aux, inf_aux_self ts]
 | [] := by simp [indexed_list.inf_aux]
 
-protected lemma take_inf_aux [decidable_eq α] : Π (ts ts' : list α) (n : ℕ),
-  (indexed_list.inf_aux ts ts').take n = indexed_list.inf_aux (ts.take n) (ts'.take n)
-| (t :: ts) (t' :: ts') (n + 1) :=
-    begin
-      by_cases ht : t = t',
-      { simp [list.take_cons, indexed_list.inf_aux, ht, take_inf_aux ts ts' n] },
-      { simp [list.take_cons, indexed_list.inf_aux, ht] }
-    end
-| [] (t' :: ts') (n + 1) := by simp [indexed_list.inf_aux]
-| (t :: ts) [] (n + 1) := by simp [indexed_list.inf_aux]
-| [] [] (n + 1) := by simp [indexed_list.inf_aux]
-| _ _ 0 := by simp [indexed_list.inf_aux]
+@[simp] protected lemma inf_aux_append [decidable_eq α] (ts ts' ts'' : list α) :
+  indexed_list.inf_aux (ts ++ ts') (ts ++ ts'') = ts ++ indexed_list.inf_aux ts' ts'' :=
+begin
+  induction ts with t ts hts,
+  { simp },
+  { simp [list.cons_append, indexed_list.inf_aux, hts] }
+end
 
-protected lemma inf_aux_eq_take_length_left [decidable_eq α] : Π (ts ts' : list α),
-  indexed_list.inf_aux ts ts' = ts.take (indexed_list.inf_aux ts ts').length
-| (t :: ts) (t' :: ts') :=
-    begin
-      by_cases ht : t = t',
-      { simpa [indexed_list.inf_aux, ht] using inf_aux_eq_take_length_left ts ts' },
-      { simp [indexed_list.inf_aux, ht] }
-    end
-| (t :: ts) [] := by simp [indexed_list.inf_aux]
-| [] (t' :: ts') := by simp [indexed_list.inf_aux]
-| [] [] := by simp [indexed_list.inf_aux]
+@[simp] protected lemma inf_aux_prefix_left [decidable_eq α] : Π (ts ts' : list α),
+  indexed_list.inf_aux ts ts' <+: ts
+| (t :: ts) (t' :: ts') := by by_cases ht : t = t'; simp [ht, indexed_list.inf_aux,
+    list.cons_prefix_iff, inf_aux_prefix_left ts ts', list.nil_prefix]
+| (t :: ts) [] := list.nil_prefix _
+| [] _ := list.nil_prefix _
 
-protected lemma inf_aux_eq_take_length_right [decidable_eq α] : Π (ts ts' : list α),
-  indexed_list.inf_aux ts ts' = ts'.take (indexed_list.inf_aux ts ts').length
-| (t :: ts) (t' :: ts') :=
-    begin
-      by_cases ht : t = t',
-      { simpa [indexed_list.inf_aux, ht] using inf_aux_eq_take_length_right ts ts' },
-      { simp [indexed_list.inf_aux, ht] }
-    end
-| (t :: ts) [] := by simp [indexed_list.inf_aux]
-| [] (t' :: ts') := by simp [indexed_list.inf_aux]
-| [] [] := by simp [indexed_list.inf_aux]
+@[simp] protected lemma inf_aux_prefix_right [decidable_eq α] : Π (ts ts' : list α),
+  indexed_list.inf_aux ts ts' <+: ts'
+| (t :: ts) (t' :: ts') := by by_cases ht : t = t'; simp [ht, indexed_list.inf_aux,
+    list.cons_prefix_iff, inf_aux_prefix_right ts ts', list.nil_prefix]
+| (t :: ts) [] := list.nil_prefix _
+| [] _ := list.nil_prefix _
 
 end inf_aux
 
@@ -127,22 +103,21 @@ noncomputable def inf (il il' : spec.indexed_list τ) : spec.indexed_list τ :=
 noncomputable instance : semilattice_inf (spec.indexed_list τ) :=
 { inf := inf,
   le_inf := λ il il' il'' hil hil' i, begin
-    obtain ⟨n, hn, hn'⟩ := exists_eq_take_of_le hil i,
-    obtain ⟨m, hm, hm'⟩ := exists_eq_take_of_le hil' i,
-    have : n = m := by simpa [hn', hm'] using congr_arg list.length (hn.symm.trans hm),
-    refine ⟨n, _⟩,
-    simp [inf, coe_fun_eq_to_fun, indexed_list.take_inf_aux] at ⊢ hn hm,
-    rw [← hn, this, ← hm, indexed_list.inf_aux_self],
+    haveI : decidable_eq (τ i) := classical.dec_eq (τ i),
+    obtain ⟨ts, hts⟩ := hil i,
+    obtain ⟨ts', hts'⟩ := hil' i,
+    refine ⟨indexed_list.inf_aux ts ts', _⟩,
+    simp [inf, coe_fun_eq_to_fun] at ⊢ hts hts',
+    simp [← hts, ← hts'],
+    congr
   end,
   inf_le_left := λ il il' i, begin
-    refine ⟨(inf il il' i).length, _⟩,
-    simp [inf, coe_fun_eq_to_fun],
-    apply indexed_list.inf_aux_eq_take_length_left,
+    haveI : decidable_eq (τ i) := classical.dec_eq (τ i),
+    convert indexed_list.inf_aux_prefix_left _ _,
   end,
   inf_le_right := λ il il' i, begin
-    refine ⟨(inf il il' i).length, _⟩,
-    simp [inf, coe_fun_eq_to_fun],
-    apply indexed_list.inf_aux_eq_take_length_right,
+    haveI : decidable_eq (τ i) := classical.dec_eq (τ i),
+    convert indexed_list.inf_aux_prefix_right _ _,
   end,
   .. indexed_list.partial_order }
 
@@ -150,8 +125,11 @@ end semilattice_inf
 
 variables (il il' : spec.indexed_list τ)
 
+@[simp] lemma inf_empty : il ⊓ ∅ = ∅ := inf_bot_eq
+@[simp] lemma empty_inf : ∅ ⊓ il = ∅ := bot_inf_eq
+
 @[simp] lemma le_self_add : il ≤ il + il' :=
-λ i, ⟨(il i).length, by simp only [add_apply, list.take_left]⟩
+λ i, list.prefix_append (il i) (il' i)
 
 @[simp] lemma le_add_values {i} (ts : list (τ i)) : il ≤ il.add_values ts :=
 by simp only [add_values, le_self_add]
@@ -160,8 +138,9 @@ by simp only [add_values, le_self_add]
 begin
   refine λ i', _,
   by_cases hi : i = i',
-  { exact ⟨n, by simp [hi]⟩ },
-  { exact ⟨il.get_count i', by simp [hi, get_count_eq_length_apply]⟩ }
+  { induction hi,
+    simp [list.take_prefix _ _] },
+  { simp [hi] }
 end
 
 end indexed_list

@@ -19,235 +19,217 @@ by the count in the underlying `query_count`.
 `query_log` and `query_store` extend a count to include a particular list rather than a count.
 -/
 
-namespace oracle_comp
+namespace oracle_spec
 
-open oracle_spec
+open_locale big_operators
+open indexed_list
 
 variables {α β γ : Type} {spec : oracle_spec}
 
-@[inline, reducible]
-def query_count' (spec : oracle_spec) := spec.indexed_list (λ _, unit)
-
--- #check (∅ : query_count[spec]) ⇒
-
 /-- A `query_count` represents a count of the number of queries made by a computation.
 The count is non-zero for finitely many oracles as `oracle_comp` disallows unbounded recursion. -/
-@[ext] structure query_count (spec : oracle_spec) :=
-(get_count : spec.ι → ℕ)
-(active_oracles : finset spec.ι)
-(mem_active_oracles_iff' (i : spec.ι) : i ∈ active_oracles ↔ get_count i ≠ 0)
-
-/-- View a `query_count` as a function from oracle index to a count. -/
-instance query_count.fun_like (spec : oracle_spec) :
-  fun_like (query_count spec) spec.ι (λ _, ℕ) :=
-{ coe := query_count.get_count,
-  coe_injective' := λ qc qc' h, query_count.ext qc qc' h
-    (finset.ext (λ x, by simp_rw [query_count.mem_active_oracles_iff', h])) }
-
-@[ext] protected lemma ext' {qc qc' : query_count spec}
-  (h : ∀ i, qc i = qc' i) : qc = qc' := fun_like.ext qc qc' h
+@[inline, reducible] def query_count (spec : oracle_spec) :=
+spec.indexed_list (λ _, unit)
 
 namespace query_count
 
-variables (qc qc' : query_count spec)
+lemma apply_eq_replicate_get_count (qc : spec.query_count) (i) :
+  qc i = list.replicate (qc.get_count i) () :=
+begin
+  rw [get_count_eq_length_apply],
+  induction qc i with t ts hts,
+  { refl },
+  { rw [list.length_cons, list.replicate_succ, hts, list.length_replicate, subsingleton.elim t] }
+end
 
-@[simp] lemma get_count_eq_apply (i) : qc.get_count i = qc i := rfl
+protected lemma get_count_ext (qc qc' : spec.query_count)
+  (h : ∀ i, qc.get_count i = qc'.get_count i) : qc = qc' :=
+fun_like.ext _ _ (λ i, by simp_rw [apply_eq_replicate_get_count, h i])
 
-lemma mem_active_oracles_iff (i) : i ∈ qc.active_oracles ↔ qc i ≠ 0 :=
-mem_active_oracles_iff' qc i
+protected lemma get_count_ext_iff {qc qc' : spec.query_count} :
+  qc = qc' ↔ ∀ i, qc.get_count i = qc'.get_count i :=
+⟨λ h i, congr_arg _ h, query_count.get_count_ext qc qc'⟩
 
-lemma mem_active_oracles {i} (hi : qc i ≠ 0) : i ∈ qc.active_oracles :=
-(mem_active_oracles_iff qc i).2 hi
+variables (qc qc' qc'' : spec.query_count)
 
-@[simp] lemma apply_eq_zero_iff (i) : qc i = 0 ↔ i ∉ qc.active_oracles :=
-by simp [mem_active_oracles_iff]
+instance : add_comm_monoid (spec.query_count) :=
+{ add_comm := λ il il', query_count.get_count_ext _ _
+    (λ i, by rw [get_count_add, get_count_add, add_comm]),
+  .. indexed_list.add_monoid }
 
-lemma apply_eq_zero {i} (hi : i ∉ qc.active_oracles) : qc i = 0 := (apply_eq_zero_iff qc i).2 hi
+section sub
 
-lemma apply_ne_zero_iff (i) : qc i ≠ 0 ↔ i ∈ qc.active_oracles :=
-(qc.mem_active_oracles_iff i).symm
+def sub (qc qc' : spec.query_count) : spec.query_count :=
+{ to_fun := λ i, (qc i).drop (qc'.get_count i),
+  active_oracles := qc.active_oracles.filter (λ i, qc'.get_count i < qc.get_count i),
+  mem_active_oracles_iff' := λ i, begin
+    rw [ne.def, list.drop_eq_nil_iff_le, finset.mem_filter, not_le, ← get_count_pos_iff],
+    exact ⟨λ h, h.2, λ h, ⟨lt_of_le_of_lt zero_le' h, h⟩⟩,
+  end }
 
-lemma apply_ne_zero {i} (hi : i ∈ qc.active_oracles) : qc i ≠ 0 := (apply_ne_zero_iff qc i).2 hi
+/-- Subtraction operation on `query_count` given by removing elements from the first lists
+equal to the number of elements in the second list, for each index. -/
+instance : has_sub (spec.query_count) := { sub := sub }
 
-@[simp] lemma apply_pos_iff (i) : 0 < qc i ↔ i ∈ qc.active_oracles :=
-by simp [pos_iff_ne_zero]
+@[simp] lemma sub_apply (i) : (qc - qc') i = (qc i).drop (qc'.get_count i) := rfl
 
-lemma apply_pos {i} (hi : i ∈ qc.active_oracles) : 0 < qc i := (apply_pos_iff qc i).2 hi
+@[simp] lemma active_oracles_sub : (qc - qc').active_oracles =
+  qc.active_oracles.filter (λ i, qc'.get_count i < qc.get_count i) := rfl
 
-lemma mem_active_oracles_of_lt {n i} (hi : n < qc i) : i ∈ qc.active_oracles :=
-qc.mem_active_oracles (ne_zero_of_lt hi)
+@[simp] lemma get_count_sub (i) : (qc - qc').get_count i = qc.get_count i - qc'.get_count i :=
+by simp [get_count_eq_length_apply]
 
-@[simp] lemma ite_apply (p : Prop) [decidable p] (i) :
-  (if p then qc else qc') i = if p then qc i else qc' i :=
-by split_ifs; refl
+@[simp] protected lemma sub_sub : qc - qc' - qc'' = qc - (qc' + qc'') :=
+query_count.get_count_ext _ _ (λ i, by simp [nat.sub_sub])
 
-section empty
+@[simp] lemma sub_empty : qc - ∅ = qc := by simp [fun_like.ext_iff]
 
-/-- The empty `query_count` has a count of zero for every oracle. -/
-protected def empty (spec) : query_count spec :=
-{ get_count := λ i, 0,
-  active_oracles := ∅,
-  mem_active_oracles_iff' := λ i, (ne_self_iff_false 0).symm }
+end sub
 
-instance : has_emptyc (query_count spec) := ⟨query_count.empty spec⟩
-instance : inhabited (query_count spec) := ⟨∅⟩
+section of_nat
 
-@[simp] lemma empty_apply (i) : (∅ : query_count spec) i = 0 := rfl
+def of_nat (i : spec.ι) (n : ℕ) : spec.query_count :=
+@of_list _ _ i (list.replicate n ())
 
-@[simp] lemma active_oracles_empty : (∅ : query_count spec).active_oracles = ∅ := rfl
+variables (i : spec.ι) (n m : ℕ)
 
-@[simp] lemma not_mem_active_oracles_empty (i) : i ∉ (∅ : query_count spec).active_oracles :=
-finset.not_mem_empty i
+@[simp] lemma of_nat_apply (i') : of_nat i n i' = if i = i' then list.replicate n () else [] :=
+by simp only [of_nat, of_list_apply, dif_eq_if, eq_rec_constant]
 
-end empty
+@[simp] lemma active_oracles_of_nat : (of_nat i n).active_oracles = if n = 0 then ∅ else {i} :=
+by simp [of_nat, list.empty_iff_eq_nil, list.eq_nil_iff_forall_not_mem, list.mem_replicate]
+
+@[simp] lemma get_count_of_nat (i') : (of_nat i n).get_count i' = if i = i' then n else 0 :=
+by simp [of_nat]
+
+@[simp] lemma of_nat_zero : of_nat i 0 = ∅ := by simp [fun_like.ext_iff]
+
+lemma of_nat_add : of_nat i (n + m) = of_nat i n + of_nat i m :=
+fun_like.ext _ _ (λ i', by by_cases hi : i = i'; simp [hi, list.replicate_add])
+
+lemma of_list_eq_of_nat_length (ts : list unit) : @of_list _ _ i ts = of_nat i ts.length :=
+begin
+  induction ts with t ts hts,
+  { simp },
+  { rw [list.length_cons, of_nat_add, ← hts, of_nat, add_comm, ← of_list_append,
+      list.replicate_one, subsingleton.elim t unit.star, list.singleton_append] }
+end
+
+end of_nat
+
+/-- We can express a `query_count` as a sum over the active indices of the list
+of the individiaul counts for each index. Doesn't work with an arbitrary `indexed_list`
+since the addition operation there isn't commutative. -/
+theorem sum_of_nat_get_count : ∑ i in qc.active_oracles, of_nat i (qc.get_count i) = qc :=
+begin
+  refine @add_values_induction _ _ (λ qc, ∑ i in qc.active_oracles, of_nat i (qc.get_count i) = qc)
+    qc (by rw [active_oracles_empty, finset.sum_empty, zero_eq_empty]) (λ i ts il hts hil h, _),
+  have : ts ≠ [] := hts,
+  simp [list.empty_iff_eq_nil, this, of_nat_add, finset.sum_add_distrib] at h ⊢,
+  rw [add_values, finset.sum_insert hil, h, get_count_eq_zero il hil, of_nat_zero, empty_add],
+  refine congr_arg (λ il', il + il') _,
+  refine trans (finset.sum_eq_single_of_mem i (finset.mem_insert_self _ _) (λ i' hi' hi'',
+    by simp [ne.symm hi'', zero_eq_empty])) (by simp [of_list_eq_of_nat_length]),
+end
 
 section increment
 
 /-- Increment the count in a `query_count` of the oracle at index `i` by `n`. -/
-def increment (qc : query_count spec) (i : spec.ι) (n : ℕ) : query_count spec :=
-{ get_count := λ i', if i = i' then qc i' + n else qc i',
-  active_oracles := if n = 0 then qc.active_oracles else insert i qc.active_oracles,
-  mem_active_oracles_iff' := nat.rec_on n (by simp)
-    (by simp [ite_eq_iff, or_iff_not_imp_left, @eq_comm _ i]) }
+def increment (qc : spec.query_count) (i : spec.ι) (n : ℕ) :
+  spec.query_count := qc + of_nat i n
 
-@[simp] lemma increment_apply (i n i') :
-  (qc.increment i n) i' = if i = i' then qc i' + n else qc i' := rfl
+@[simp] lemma increment_apply (i n i') : qc.increment i n i' =
+  if i = i' then qc i' ++ list.replicate n () else qc i' :=
+by by_cases hi : i = i'; simp [hi, increment, add_apply, of_nat_apply]
 
-lemma increment_apply_same_index {i i'} (n) (h : i = i') :
-  (qc.increment i n) i' = qc i' + n := if_pos h
+@[simp] lemma active_oracles_increment (i n) : (qc.increment i n).active_oracles =
+  if n = 0 then qc.active_oracles else insert i qc.active_oracles :=
+finset.ext (λ i', by by_cases hn : n = 0; simp [hn, increment, or_comm])
 
-lemma increment_apply_diff_index {i i'} (n) (h : i ≠ i') :
-  (qc.increment i n) i' = qc i' := if_neg h
+@[simp] lemma get_count_increment (i n i') : (qc.increment i n).get_count i' =
+  qc.get_count i' + if i = i' then n else 0 := by simp [increment]
 
-lemma increment_apply_self (i n) : (qc.increment i n) i = qc i + n := if_pos rfl
-
-lemma active_oracles_increment (i n) : (qc.increment i n).active_oracles =
-  if n = 0 then qc.active_oracles else insert i qc.active_oracles := rfl
-
-@[simp] lemma active_oracles_increment_succ (i n) : (qc.increment i (n + 1)).active_oracles =
-  insert i qc.active_oracles := by simp [active_oracles_increment]
-
-@[simp] lemma mem_active_oracles_increment_iff (i n i') :
+lemma mem_active_oracles_increment_iff (i n i') :
   i' ∈ (qc.increment i n).active_oracles ↔ (n ≠ 0 ∧ i = i') ∨ i' ∈ qc.active_oracles :=
-by induction n; simp [increment, @eq_comm _ i]
+by induction n with n hn; simp [@eq_comm _ i]
 
 lemma mem_active_oracles_increment_same_index_iff {i i'} (n) (h : i = i') :
-  i' ∈ (qc.increment i n).active_oracles ↔ n ≠ 0 ∨ i' ∈ qc.active_oracles := by simp [h]
+  i' ∈ (qc.increment i n).active_oracles ↔ n ≠ 0 ∨ i' ∈ qc.active_oracles :=
+by simp [h, -active_oracles_increment, mem_active_oracles_increment_iff]
 
 lemma mem_active_oracles_increment_diff_index_iff {i i'} (n) (h : i ≠ i') :
-  i' ∈ (qc.increment i n).active_oracles ↔ i' ∈ qc.active_oracles := by simp [h]
+  i' ∈ (qc.increment i n).active_oracles ↔ i' ∈ qc.active_oracles :=
+by simp [h, -active_oracles_increment, mem_active_oracles_increment_iff]
 
 lemma mem_active_oracles_increment_self_iff (i n) :
-  i ∈ (qc.increment i n).active_oracles ↔ n ≠ 0 ∨ i ∈ qc.active_oracles := by simp
+  i ∈ (qc.increment i n).active_oracles ↔ n ≠ 0 ∨ i ∈ qc.active_oracles :=
+by simp [-active_oracles_increment, mem_active_oracles_increment_iff]
+
+@[simp] lemma increment_eq_self_iff (i n) : qc.increment i n = qc ↔ n = 0 :=
+⟨λ h, by simpa using congr_arg (λ il, get_count il i) h,
+  λ h, query_count.get_count_ext _ _ (λ i', by rw [get_count_increment, h, if_t_t, add_zero])⟩
+
+lemma increment_zero (i) : qc.increment i 0 = qc := by simp
 
 @[simp] lemma increment_increment (i n m) :
   (qc.increment i n).increment i m = qc.increment i (n + m) :=
-fun_like.ext _ _ (λ i', by by_cases hi : i = i'; simp [hi, add_assoc])
-
-@[simp] lemma increment_eq_self_iff (i n) : qc.increment i n = qc ↔ n = 0 :=
-⟨λ h, by simpa using (fun_like.ext_iff.1 h) i,
-  λ h, by simpa [fun_like.ext_iff, increment_apply] using h⟩
-
-@[simp] lemma increment_zero (i) : qc.increment i 0 = qc := by simp
+by simp [increment, of_nat_add, add_assoc]
 
 end increment
 
-section of_nat
-
-/-- Create a `query_count` from a single entry at index `i`. -/
-def of_nat (i : spec.ι) (n : ℕ) : query_count spec :=
-query_count.increment ∅ i n
-
-@[simp] lemma of_nat_apply (i : spec.ι) (n i') :
-  (of_nat i n) i' = if i = i' then n else 0 := by simp [of_nat]
-
-lemma of_nat_apply_same_index {i i' : spec.ι} (n) (h : i = i') : (of_nat i n) i' = n := by simp [h]
-
-lemma of_nat_apply_diff_index {i i' : spec.ι} (n) (h : i ≠ i') : (of_nat i n) i' = 0 := by simp [h]
-
-lemma of_nat_apply_self (i : spec.ι) (n) : (of_nat i n) i = n := by simp
-
-lemma active_oracles_of_nat (i : spec.ι) (n) : (of_nat i n).active_oracles =
-  if n = 0 then ∅ else {i} := by simp [of_nat, active_oracles_increment]
-
-@[simp] lemma mem_active_oracles_of_nat_iff (i : spec.ι) (n i') :
-  i' ∈ (of_nat i n).active_oracles ↔ n ≠ 0 ∧ i = i' := by simp [of_nat]
-
-@[simp] lemma increment_of_nat (i : spec.ι) (n m) :
-  (of_nat i n).increment i m = of_nat i (n + m) := increment_increment ∅ i n m
-
-@[simp] lemma of_nat_eq_empty_iff (i : spec.ι) (n) : of_nat i n = ∅ ↔ n = 0 := by simp [of_nat]
-
-@[simp] lemma of_nat_zero (i : spec.ι) : of_nat i 0 = ∅ := by simp
-
-end of_nat
-
 section decrement
 
-def decrement (qc : query_count spec) (i : spec.ι) (n : ℕ) : query_count spec :=
-{ get_count := λ i', if i = i' then qc i' - n else qc i',
-  active_oracles := if qc i ≤ n then qc.active_oracles.erase i else qc.active_oracles,
-  mem_active_oracles_iff' := λ i', begin
-    split_ifs with hn hi hi,
-    { simpa [hi] using hn },
-    { simp [ne.symm hi] },
-    { simp [qc.mem_active_oracles (ne_zero_of_lt (not_le.1 hn)), hn, ← hi] },
-    { simp [hi] }
-  end }
+def decrement (qc : spec.query_count) (i : spec.ι) (n : ℕ) :
+  spec.query_count := qc - of_nat i n
 
-@[simp] lemma decrement_apply (i n i') : (qc.decrement i n) i' =
-  if i = i' then qc i' - n else qc i' := rfl
+@[simp] lemma decrement_apply (i n i') : qc.decrement i n i' =
+  if i = i' then (qc i').drop n else qc i' :=
+by by_cases hi : i = i'; simp [hi, decrement]
 
-lemma decrement_apply_same_index {i i'} (n) (h : i = i') :
-  (qc.decrement i n) i' = qc i' - n := if_pos h
-
-lemma decrement_apply_diff_index {i i'} (n) (h : i ≠ i') :
-  (qc.decrement i n) i' = qc i' := if_neg h
-
-lemma decrement_apply_self (i n) : (qc.decrement i n) i = qc i - n := if_pos rfl
-
-lemma active_oracles_decrement (i n) : (qc.decrement i n).active_oracles =
-  if qc i ≤ n then qc.active_oracles.erase i else qc.active_oracles := rfl
-
-@[simp] lemma mem_active_oracles_decrement_iff (i n i') :
-  i' ∈ (qc.decrement i n).active_oracles ↔ (n < qc i ∨ i ≠ i') ∧ i' ∈ qc.active_oracles :=
-by by_cases hn : qc i ≤ n; simp [hn, active_oracles_decrement, @eq_comm _ i, lt_iff_not_le]
-
-lemma mem_active_oracles_decrement_same_index_iff {i i'} (n) (h : i = i') :
-  i' ∈ (qc.decrement i n).active_oracles ↔ n < qc i ∧ i ∈ qc.active_oracles := by simp [h]
-
-lemma mem_active_oracles_decrement_diff_index_iff {i i'} (n) (h : i ≠ i') :
-  i' ∈ (qc.decrement i n).active_oracles ↔ i' ∈ qc.active_oracles := by simp [h]
-
-lemma mem_active_oracles_decrement_self_iff (i n) :
-  i ∈ (qc.decrement i n).active_oracles ↔ n < qc i ∧ i ∈ qc.active_oracles := by simp
-
-@[simp] lemma decrement_decrement (i n m) :
-  (qc.decrement i n).decrement i m = qc.decrement i (n + m) :=
-fun_like.ext _ _ (λ i', by by_cases hi : i = i'; simp [hi, nat.sub_sub])
-
-@[simp] lemma decrement_eq_self_iff (i n) : qc.decrement i n = qc ↔ n = 0 ∨ qc i = 0 :=
+@[simp] lemma active_oracles_decrement (i n) : (qc.decrement i n).active_oracles =
+  if qc.get_count i ≤ n then qc.active_oracles.erase i else qc.active_oracles :=
 begin
-  refine ⟨λ h, _, λ h, by cases h with h h; simp [fun_like.ext_iff, h]⟩,
-  have := (fun_like.ext_iff.1 h) i,
-  simp only [decrement_apply, eq_self_iff_true, if_true] at this,
-  cases n with n,
-  { exact or.inl rfl },
-  { cases (qc i) with m,
-    { exact or.inr rfl },
-    { rw [nat.succ_sub_succ] at this,
-      exact ((this.symm ▸ not_le_of_lt (nat.lt_succ_self m) : ¬ m - n ≤ m) tsub_le_self).elim } }
+  refine finset.ext (λ i', _),
+  by_cases hi : i = i',
+  { induction hi,
+    by_cases hn : qc.get_count i ≤ n; simp [hn, decrement, ← not_le] },
+  { by_cases hn : get_count qc i ≤ n; simp [hn, hi, ne.symm hi, decrement] }
 end
 
-@[simp] lemma decrement_zero (i) : qc.decrement i 0 = qc :=
-fun_like.ext _ _ (λ i', by simpa [decrement])
+@[simp] lemma get_count_decrement (i n i') : (qc.decrement i n).get_count i' =
+  qc.get_count i' - if i = i' then n else 0 := by simp [decrement]
+
+lemma mem_active_oracles_decrement_iff (i n i') : i' ∈ (qc.decrement i n).active_oracles ↔
+  (n < qc.get_count i ∨ i ≠ i') ∧ i' ∈ qc.active_oracles :=
+by by_cases hn : qc.get_count i ≤ n; simp [hn, active_oracles_decrement,
+  @eq_comm _ i, lt_iff_not_le]
+
+lemma mem_active_oracles_decrement_same_index_iff {i i'} (n) (h : i = i') :
+  i' ∈ (qc.decrement i n).active_oracles ↔ n < qc.get_count i ∧ i ∈ qc.active_oracles :=
+by simp [h, -active_oracles_decrement, mem_active_oracles_decrement_iff]
+
+lemma mem_active_oracles_decrement_diff_index_iff {i i'} (n) (h : i ≠ i') :
+  i' ∈ (qc.decrement i n).active_oracles ↔ i' ∈ qc.active_oracles :=
+by simp [h, -active_oracles_decrement, mem_active_oracles_decrement_iff]
+
+lemma mem_active_oracles_decrement_self_iff (i n) :
+  i ∈ (qc.decrement i n).active_oracles ↔ n < qc.get_count i ∧ i ∈ qc.active_oracles :=
+by simp [-active_oracles_decrement, mem_active_oracles_decrement_iff]
+
+lemma decrement_empty (i n) : (∅ : spec.query_count).decrement i n = ∅ := by simp
+
+@[simp] lemma decrement_zero (i) : qc.decrement i 0 = qc := by simp [decrement]
+
+@[simp] lemma decrement_add (i n m) :
+  qc.decrement i (n + m) = (qc.decrement i n).decrement i m :=
+by simp [decrement, query_count.sub_sub, of_nat_add]
 
 end decrement
 
 lemma decrement_increment_eq_increment (i) {n m} (hnm : m ≤ n) :
   (qc.increment i n).decrement i m = qc.increment i (n - m) :=
 begin
-  refine fun_like.ext _ _ (λ i', _),
+  refine query_count.get_count_ext _ _ (λ i', _),
   by_cases hi : i = i',
   { induction hi,
     simp [nat.add_sub_assoc hnm] },
@@ -257,147 +239,81 @@ end
 lemma decrement_increment_eq_decrement (i) {n m} (hnm : n ≤ m) :
   (qc.increment i n).decrement i m = qc.decrement i (m - n) :=
 begin
-  refine fun_like.ext _ _ (λ i', _),
+  refine query_count.get_count_ext _ _ (λ i', _),
   by_cases hi : i = i',
   { induction hi,
     simp [nat_helper_thing hnm] },
   { simp [hi] }
 end
 
-lemma increment_decrement_eq_increment (i) {n m} (hm : m ≤ qc i) (hnm : m ≤ n) :
+lemma increment_decrement_eq_increment (i) {n m} (hm : m ≤ qc.get_count i) (hnm : m ≤ n) :
   (qc.decrement i m).increment i n = qc.increment i (n - m) :=
 begin
-  refine fun_like.ext _ _ (λ i', _),
+  refine query_count.get_count_ext _ _ (λ i', _),
   by_cases hi : i = i',
   { induction hi,
     simp [← nat.sub_add_comm hm, nat.add_sub_assoc hnm] },
   { simp [hi] }
 end
 
-lemma increment_decrement_eq_decrement (i) {n m} (hm : m ≤ qc i) (hnm : n ≤ m) :
+lemma increment_decrement_eq_decrement (i) {n m} (hm : m ≤ qc.get_count i) (hnm : n ≤ m) :
   (qc.decrement i m).increment i n = qc.decrement i (m - n) :=
 begin
-  refine fun_like.ext _ _ (λ i', _),
+  refine query_count.get_count_ext _ _ (λ i', _),
   by_cases hi : i = i',
   { induction hi,
     simp [← nat.sub_add_comm hm, nat_helper_thing hnm] },
   { simp [hi] }
 end
 
-lemma increment_decrement_comm (i) {n m} (hm : m ≤ qc i) (hnm : m ≤ n) :
+lemma increment_decrement_comm (i) {n m} (hm : m ≤ qc.get_count i) (hnm : m ≤ n) :
   (qc.increment i n).decrement i m = (qc.decrement i m).increment i n :=
 by rw [decrement_increment_eq_increment qc i hnm, increment_decrement_eq_increment qc i hm hnm]
 
 @[simp] lemma decrement_increment_eq_self (i n) : (qc.increment i n).decrement i n = qc :=
 by simp [decrement_increment_eq_increment qc i le_rfl]
 
-lemma increment_decrement_eq_self (i n) (hm : n ≤ qc i) :
+lemma increment_decrement_eq_self (i n) (hm : n ≤ qc.get_count i) :
   (qc.decrement i n).increment i n = qc :=
 by simp [increment_decrement_eq_increment qc i hm le_rfl]
 
-section filter_oracles
-
-noncomputable def filter_oracles (qc : query_count spec) (s : set spec.ι) : query_count spec :=
-{ get_count := λ i, s.indicator qc i,
-  active_oracles := {x ∈ qc.active_oracles | x ∈ s},
-  mem_active_oracles_iff' := by simp [and_comm] }
-
-variables (s : set spec.ι)
-
-@[simp] lemma filter_oracles_apply (i) : (qc.filter_oracles s) i = s.indicator qc i := rfl
-
-@[simp] lemma filter_oracles_apply' [decidable_pred (∈ s)] (i) :
-  (qc.filter_oracles s) i = if i ∈ s then qc i else 0 := by {simp [set.indicator], congr}
-
-@[simp] lemma active_oracles_filter_oracles :
-  (qc.filter_oracles s).active_oracles = {x ∈ qc.active_oracles | x ∈ s} := rfl
-
-@[simp] lemma active_oracles_filter_oracles' (s : finset spec.ι) :
-  (qc.filter_oracles s).active_oracles = qc.active_oracles ∩ s :=
-finset.ext (λ i', by simp)
-
-lemma mem_active_oracles_filter_oracles_iff (i) :
-  i ∈ (qc.filter_oracles s).active_oracles ↔ i ∈ qc.active_oracles ∧ i ∈ s := by simp
-
-@[simp] lemma filter_oracles_empty_eq_empty : qc.filter_oracles ∅ = ∅ := by simp [fun_like.ext_iff]
-
-@[simp] lemma filter_oracles_eq_self_iff :
-  qc.filter_oracles s = qc ↔ ∀ i ∈ qc.active_oracles, i ∈ s :=
-by simp [fun_like.ext_iff, not_imp_not]
-
-@[simp] lemma filter_oracles_eq_self_iff' (s : finset spec.ι) :
-  qc.filter_oracles s = qc ↔ qc.active_oracles ⊆ s :=
-by simp only [finset.subset_iff, filter_oracles_eq_self_iff, finset.mem_coe]
-
-lemma filter_oracles_self (s : finset spec.ι) : qc.filter_oracles qc.active_oracles = qc :=
-by simp only [filter_oracles_eq_self_iff', finset.subset.refl]
-
-end filter_oracles
-
-section has_sep
-
-noncomputable instance : has_sep spec.ι (query_count spec) :=
-{ sep := λ p qc, qc.filter_oracles p }
-
-variable (p : spec.ι → Prop)
-
-lemma sep_eq_filter : {x ∈ qc | p x} = qc.filter_oracles p := rfl
-
-@[simp] lemma sep_apply (i) : {x ∈ qc | p x} i = set.indicator p qc i := rfl
-
-@[simp] lemma sep_apply' [decidable_pred p] (i) : {x ∈ qc | p x} i = if p i then qc i else 0 :=
-by simpa only [sep_eq_filter, filter_oracles_apply']
-
-@[simp] lemma active_oracles_sep : {x ∈ qc | p x}.active_oracles =
-  {x ∈ qc.active_oracles | p x} := rfl
-
-@[simp] lemma sep_false_eq_empty : {x ∈ qc | false} = ∅ :=
-(filter_oracles_empty_eq_empty qc)
-
-@[simp] lemma sep_eq_self_iff : {x ∈ qc | p x} = qc ↔ ∀ i ∈ qc.active_oracles, p i :=
-by simpa only [sep_eq_filter, filter_oracles_eq_self_iff]
-
-@[simp] lemma sep_self : {x ∈ qc | x ∈ qc.active_oracles} = qc :=
-by simp only [sep_eq_self_iff, imp_self, implies_true_iff]
-
-end has_sep
-
-section reset_count
-
-/-- Reset the count at index `i` to `n`, unless the current count is below the new value.
-This aligns with the behavior of a function like `list.take` that doesn't add new values. -/
-def reset_count (qc : query_count spec) (i : spec.ι) (n : ℕ) : query_count spec :=
-(qc.decrement i (qc i)).increment i (min n (qc i))
-
-@[simp] lemma reset_count_apply (i n i') : (qc.reset_count i n) i' =
-  if i = i' then min n (qc i') else qc i' :=
-begin
-  by_cases hi : i = i',
-  { induction hi,
-    simp [reset_count] },
-  { simp [reset_count, hi] }
-end
-
-@[simp] lemma active_oracles_reset_count (i n) : (qc.reset_count i n).active_oracles =
-  if n = 0 then qc.active_oracles.erase i else qc.active_oracles :=
-begin
-  refine finset.ext (λ i', _),
-  cases n,
-  { simp [reset_count, @eq_comm _ i] },
-  { by_cases hi : i = i',
-    { induction hi,
-      simp [reset_count] },
-    { simp [hi, reset_count] } }
-end
-
-@[simp] lemma reset_count_eq_self (i) : qc.reset_count i (qc i) = qc :=
-by simp [reset_count, increment_decrement_eq_self qc i (qc i) le_rfl]
-
-@[simp] lemma reset_count_zero (i) : qc.reset_count i 0 = qc.decrement i (qc i) :=
-by simp [reset_count]
-
-end reset_count
-
 end query_count
 
-end oracle_comp
+namespace indexed_list
+
+open query_count
+
+/-- View any `indexed_list` as a `query_count` by replacing all values with `()`. -/
+instance coe_query_count (spec : oracle_spec) (τ : spec.ι → Type) :
+  has_coe (spec.indexed_list τ) (spec.query_count) :=
+{ coe := λ il, il.map (λ _ _, ()) }
+
+variables {τ : spec.ι → Type} (il il' : spec.indexed_list τ)
+
+lemma coe_query_count.def : (↑il : spec.query_count) = il.map (λ _ _, ()) := rfl
+
+@[simp] lemma coe_query_count_empty : (↑(∅ : spec.indexed_list τ) : spec.query_count) = ∅ :=
+by simp [coe_query_count.def]
+
+@[simp] lemma coe_query_count_add : (↑(il + il') : spec.query_count) = ↑il + ↑il' :=
+by simp [coe_query_count.def]
+
+@[simp] lemma coe_query_count_of_list {i} (ts : list (τ i)) :
+  (↑(of_list ts) : spec.query_count) = of_nat i ts.length :=
+by simp [coe_query_count.def, of_nat]
+
+@[simp] lemma coe_query_count_add_values {i} (ts : list (τ i)) :
+  (↑(il.add_values ts) : spec.query_count) = increment ↑il i ts.length :=
+by simp [add_values, increment]
+
+@[simp] lemma coe_query_count_take_at_index (i n) :
+  (↑(il.take_at_index i n) : spec.query_count) = take_at_index ↑il i n :=
+by simp [coe_query_count.def]
+
+@[simp] lemma coe_query_count_drop_at_index (i n) :
+  (↑(il.drop_at_index i n) : spec.query_count) = drop_at_index ↑il i n :=
+by simp [coe_query_count.def]
+
+end indexed_list
+
+end oracle_spec
