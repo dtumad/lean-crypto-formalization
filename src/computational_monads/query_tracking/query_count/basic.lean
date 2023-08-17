@@ -52,10 +52,10 @@ protected lemma get_count_ext_iff {qc qc' : spec.query_count} :
 
 variables (qc qc' qc'' : spec.query_count)
 
-instance : add_comm_monoid (spec.query_count) :=
+instance : add_cancel_comm_monoid (spec.query_count) :=
 { add_comm := λ il il', query_count.get_count_ext _ _
     (λ i, by rw [get_count_add, get_count_add, add_comm]),
-  .. indexed_list.add_monoid }
+  .. indexed_list.add_cancel_monoid }
 
 section sub
 
