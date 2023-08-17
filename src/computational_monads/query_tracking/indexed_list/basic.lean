@@ -60,6 +60,9 @@ by simp [mem_active_oracles_iff]
 lemma mem_active_oracles {i} (hi : il i ≠ []) : i ∈ il.active_oracles :=
 (il.mem_active_oracles_iff i).2 hi
 
+lemma mem_active_oracles' {i t ts} (hi : il i = t :: ts) : i ∈ il.active_oracles :=
+il.mem_active_oracles (hi.symm ▸ list.cons_ne_nil t ts)
+
 lemma not_mem_active_oracles {i} (hi : il i = []) : i ∉ il.active_oracles :=
 (il.not_mem_active_oracles_iff i).2 hi
 
@@ -227,6 +230,7 @@ variables {i : spec.ι} (ts ts' : list (τ i))
 @[simp] lemma get_count_of_list (i') : (of_list ts).get_count i' =
   if i = i' then ts.length else 0 :=
 begin
+  simp [get_count_eq_length_apply],
   by_cases hi : i = i',
   { induction hi,
     simp [get_count_eq_length_apply] },

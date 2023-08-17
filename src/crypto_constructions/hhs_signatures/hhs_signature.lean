@@ -302,7 +302,7 @@ end
 the original adversary's success probability, minus a small chance
 of both oracle calls giving the same result. -/
 theorem le_prob_event_fork_success (x₀ pk : X) :
-  (adversary.advantage ^ 2 / (adversary.qb (sum.inr (sum.inr ())))) - (1 / 2 ^ n) ≤
+  (adversary.advantage ^ 2 / (adversary.qb.get_count (sum.inr (sum.inr ())))) - (1 / 2 ^ n) ≤
     ⁅fork_success | fork (fork_reduction adversary) (x₀, pk)⁆ :=
 begin
   sorry

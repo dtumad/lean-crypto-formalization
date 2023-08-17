@@ -71,7 +71,7 @@ instance : canonically_ordered_add_monoid (query_count spec) :=
   le_self_add := indexed_list.le_self_add,
   exists_add_of_le := λ qc qc' hqc, ⟨qc' - qc, query_count.get_count_ext _ _
     (λ i, by simp [← nat.add_sub_assoc (get_count_le_get_count hqc i), nat.add_sub_cancel_left])⟩,
-  .. query_count.lattice, .. query_count.add_comm_monoid,
+  .. query_count.lattice, .. query_count.add_cancel_comm_monoid,
   .. indexed_list.order_bot }
 
 end canonically_ordered_add_monoid

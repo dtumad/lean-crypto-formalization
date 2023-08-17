@@ -22,7 +22,7 @@ section sec_adversary
 structure sec_adversary (spec : oracle_spec) (α β : Type) :=
 (run : α → oracle_comp (uniform_selecting ++ spec) β)
 -- TODO: poly_time
-(qb : oracle_comp.query_count (uniform_selecting ++ spec))
+(qb : (uniform_selecting ++ spec).query_count)
 
 end sec_adversary
 

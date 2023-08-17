@@ -23,7 +23,7 @@ section forking_adversary
 structure forking_adversary (α β : Type) (i : spec.ι) (q : ℕ)
   extends sec_adversary spec α β :=
 (choose_fork : α → β → option (fin q.succ))
-(q_eq_bound : qb (sum.inr i) = q)
+(q_eq_bound : qb.get_count (sum.inr i) = q)
 
 def forking_adversary.success (adv : forking_adversary α β i q) (y : α) : β → Prop :=
 λ x, adv.choose_fork y x ≠ none
@@ -57,7 +57,7 @@ section of_choose_input
 
 def of_choose_input (adv : sec_adversary spec β α)
   (i : spec.ι) (choose_input : α → β → spec.domain i) :
-  forking_adversary β (α × query_log (uniform_selecting ++ spec)) i (adv.qb (sum.inr i)) :=
+  forking_adversary β (α × query_log (uniform_selecting ++ spec)) i (adv.qb.get_count (sum.inr i)) :=
 { run := λ y, simulate logging_oracle (adv.run y) ∅,
   choose_fork := λ y z, begin
     have inp := choose_input z.1 y,
@@ -96,29 +96,30 @@ do {
   z₁ ← simulate' seeded_oracle (adversary.run y) seed,
   fp₁ ← return ((adversary.choose_fork y z₁).get_or_else 0),
   -- Regenerate seed values after the chosen forking point.
-  shared_seed ← return (seed.take_queries i' fp₁),
+  shared_seed ← return (seed.take_at_index i' fp₁),
   fresh_seed ← generate_seed (adversary.fresh_query_count fp₁),
   -- Run the adversary again using the new seeded values.
-  z₂ ← simulate' seeded_oracle (adversary.run y) (shared_seed ++ fresh_seed),
+  z₂ ← simulate' seeded_oracle (adversary.run y) (shared_seed + fresh_seed),
   fp₂ ← return ((adversary.choose_fork y z₂).get_or_else 0),
   -- Return the final result, assuming that both runs choose the same forking point
   let success := (adversary.choose_fork y z₁).is_some ∧ fp₁ = fp₂ in
-  return (fork_result.mk (if success then fp₁ else none) z₁ z₂ seed (shared_seed ++ fresh_seed))
+  return (fork_result.mk (if success then fp₁ else none) z₁ z₂ seed (shared_seed + fresh_seed))
 }
 
 variables (adv : forking_adversary α β i q) (y : α) (fr : fork_result adv)
 
-/-- Both the resulting `query_seed`s from running `fork` have the same number of seeded values. -/
+/-- Both the resulting `query_seed`s from running `fork` have the same number of seeded values.
+TODO: should this be a `to_query_count` function that matches `coe`? -/
 lemma to_query_count_seed_eq_to_query_count_seed (h : fr ∈ (fork adv y).support) :
-  fr.seed₁.to_query_count = fr.seed₂.to_query_count :=
+  (↑(fr.seed₁) : query_count (uniform_selecting ++ spec)) = ↑fr.seed₂ :=
 begin
   sorry
 end
 
 /-- Up until the forking point, both resulting `query_seed`s have the same seed values. -/
 lemma take_queries_seed_eq_take_queries_seed (h : fr ∈ (fork adv y).support) :
-  (fr.seed₁.take_queries (sum.inr i) fr.get_cf) =
-    (fr.seed₂.take_queries (sum.inr i) fr.get_cf) :=
+  (fr.seed₁.take_at_index (sum.inr i) fr.get_cf) =
+    (fr.seed₂.take_at_index (sum.inr i) fr.get_cf) :=
 begin
   sorry
 end
