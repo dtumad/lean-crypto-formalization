@@ -290,7 +290,6 @@ section map_const
   (λ _, b) <$> oa ≃ₚ return' !spec'! b :=
 by rw [dist_equiv.def, eval_dist_map, ⁅oa⁆.map_const, eval_dist_return]
 
-
 end map_const
 
 section eq_single
@@ -307,5 +306,54 @@ lemma prob_output_map_of_injective (hf : f.injective) : ⁅=f x | f <$> oa⁆ = 
 prob_output_map_eq_single' oa f x (f x) rfl (λ x' hx' hxf, hf hxf)
 
 end eq_single
+
+lemma prob_output_bind_map_eq_mul (f : α → β → γ) (g1 : γ → α) (g2 : γ → β)
+  -- (hf : ∀ x y, f x y ∈ )
+  (h : ∀ x ∈ oa.support, ∀ y ∈ (ob x).support, ∀ z, f x y = z ↔ g1 z = x ∧ g2 z = y) (z : γ) :
+  ⁅= z | oa >>= λ a, f a <$> ob a⁆ = ⁅= g1 z | oa⁆ * ⁅= g2 z | ob (g1 z)⁆ :=
+begin
+  -- rw [prob_output_bind_eq_sum_fin_support],
+  -- refine trans (finset.sum_eq_single (g1 z) _ _) _,
+  rw [prob_output_bind_eq_tsum],
+  refine trans (tsum_eq_single (g1 z) (λ x hx, _)) _,
+  { by_cases hxa : x ∈ oa.support,
+    { refine mul_eq_zero_of_right _ (prob_output_eq_zero _),
+      simp [h x, ← ne.def, ne.symm hx],
+      intros y hy,
+      rw [ne.def, h x hxa y hy, not_and_distrib],
+      refine or.inl hx.symm,
+       },
+    { rw [prob_output_eq_zero hxa, zero_mul] } },
+  { by_cases hg1 : g1 z ∈ oa.support,
+    {
+      refine congr_arg (λ x, _ * x) _,
+      rw [map_eq_bind_return_comp],
+      rw [prob_output_bind_eq_tsum],
+      refine trans (tsum_eq_single (g2 z) (λ y hy, _)) _,
+      {
+        by_cases hyb : y ∈ (ob (g1 z)).support,
+        {
+          refine mul_eq_zero_of_right _ _,
+          specialize h (g1 z) hg1 y hyb z,
+
+          simp [@eq_comm _ z, h, hy.symm, ← ne.def],
+        },
+        {
+          rw [prob_output_eq_zero hyb, zero_mul],
+        }
+      },
+      {
+        have : z = f (g1 z) (g2 z) := sorry,
+        refine trans _ (mul_one _),
+        refine congr_arg (λ e, _ * e) _,
+        refine (prob_output_return_eq_one_iff _ _ _).2 this,
+      }
+    },
+    {
+      simp only [prob_output_eq_zero hg1, zero_mul],
+    }
+  }
+
+end
 
 end oracle_comp

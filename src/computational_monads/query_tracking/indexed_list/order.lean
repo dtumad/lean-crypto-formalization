@@ -48,8 +48,8 @@ instance : order_bot (spec.indexed_list τ) :=
 @[simp] lemma bot_eq_empty : (⊥ : spec.indexed_list τ) = ∅ := rfl
 @[simp] lemma empty_le (il : spec.indexed_list τ) : ∅ ≤ il := bot_le
 @[simp] lemma le_empty_iff (il : spec.indexed_list τ) : il ≤ ∅ ↔ il = ∅ := le_bot_iff
-@[simp] lemma zero_le (il : spec.indexed_list τ) : 0 ≤ il := bot_le
-@[simp] lemma le_zero_iff (il : spec.indexed_list τ) : il ≤ 0 ↔ il = 0 := le_bot_iff
+@[simp] protected lemma zero_le (il : spec.indexed_list τ) : 0 ≤ il := bot_le
+@[simp] protected lemma le_zero_iff (il : spec.indexed_list τ) : il ≤ 0 ↔ il = 0 := le_bot_iff
 
 end order_bot
 
@@ -121,12 +121,17 @@ noncomputable instance : semilattice_inf (spec.indexed_list τ) :=
   end,
   .. indexed_list.partial_order }
 
-end semilattice_inf
-
 variables (il il' : spec.indexed_list τ)
 
 @[simp] lemma inf_empty : il ⊓ ∅ = ∅ := inf_bot_eq
 @[simp] lemma empty_inf : ∅ ⊓ il = ∅ := bot_inf_eq
+
+lemma active_oracles_inf : (il ⊓ il').active_oracles =
+  {i ∈ il.active_oracles | (il i).nth 0 = (il' i).nth 0} := rfl
+
+end semilattice_inf
+
+variables (il il' : spec.indexed_list τ)
 
 @[simp] lemma le_self_add : il ≤ il + il' :=
 λ i, list.prefix_append (il i) (il' i)

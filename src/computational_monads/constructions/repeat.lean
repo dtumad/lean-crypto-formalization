@@ -313,4 +313,17 @@ begin
     this, list.prod_replicate, ← ennreal.inv_pow, nat.cast_pow],
 end
 
+@[simp] lemma prob_output_to_list_map_repeat (xs : list α) :
+  ⁅= xs | vector.to_list <$> repeat oa n⁆ = if xs.length = n then (xs.map ⁅oa⁆).prod else 0 :=
+begin
+  by_cases hn : xs.length = n,
+  { induction hn,
+    rw [← to_list_mk xs rfl],
+    refine trans (prob_output_map_of_injective (oa.repeat xs.length)
+      vector.to_list ⟨xs, rfl⟩ vector.to_list_injective) _,
+    simp only [prob_output_repeat, eq_self_iff_true, if_true] },
+  { simp [hn],
+    refine λ xs' hxs' h, (hn (trans (congr_arg _ h).symm (xs'.to_list_length))) }
+end
+
 end oracle_comp

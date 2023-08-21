@@ -5,7 +5,6 @@ Authors: Devon Tuma
 -/
 import computational_monads.query_tracking.indexed_list.basic
 import to_mathlib.general
-import algebra.indicator_function
 
 /-!
 # Structure for Counting Queries to Different Oracles
@@ -175,6 +174,10 @@ lemma increment_zero (i) : qc.increment i 0 = qc := by simp
   (qc.increment i n).increment i m = qc.increment i (n + m) :=
 by simp [increment, of_nat_add, add_assoc]
 
+@[simp] lemma add_values_eq_increment (i) (ts : list unit) :
+  @add_values _ _ qc i ts = qc.increment i ts.length :=
+by rw [increment, add_values, of_list_eq_of_nat_length]
+
 end increment
 
 section decrement
@@ -277,42 +280,70 @@ lemma increment_decrement_eq_self (i n) (hm : n ≤ qc.get_count i) :
   (qc.decrement i n).increment i n = qc :=
 by simp [increment_decrement_eq_increment qc i hm le_rfl]
 
+/-- Simplified version of `indexed_list.add_values_induction` for the case of `query_count`.
+Makes use of `increment` and simplifies some assumptions from lists to integers. -/
+theorem increment_induction {p : spec.query_count → Prop} (qc : spec.query_count)
+  (h₁ : p ∅) (h₂ : ∀ ⦃i : spec.ι⦄ (n : ℕ) (qc : spec.query_count),
+    i ∉ qc.active_oracles → p qc → p (qc.increment i n.succ)) : p qc :=
+begin
+  refine qc.add_values_induction h₁ (λ i ts qc hqc h hp, _),
+  have : p (increment qc i ts.length),
+  from nat.succ_pred_eq_of_pos (list.length_pos_of_ne_nil hqc) ▸ h₂ ts.length.pred qc h hp,
+  exact (add_values_eq_increment qc i ts).symm ▸ this
+end
+
 end query_count
 
 namespace indexed_list
 
 open query_count
 
-/-- View any `indexed_list` as a `query_count` by replacing all values with `()`. -/
-instance coe_query_count (spec : oracle_spec) (τ : spec.ι → Type) :
-  has_coe (spec.indexed_list τ) (spec.query_count) :=
-{ coe := λ il, il.map (λ _ _, ()) }
-
 variables {τ : spec.ι → Type} (il il' : spec.indexed_list τ)
 
-lemma coe_query_count.def : (↑il : spec.query_count) = il.map (λ _ _, ()) := rfl
+section to_query_count
 
-@[simp] lemma coe_query_count_empty : (↑(∅ : spec.indexed_list τ) : spec.query_count) = ∅ :=
-by simp [coe_query_count.def]
+/-- View any `indexed_list` as a `query_count` by replacing all values with `()`. -/
+def to_query_count {τ : spec.ι → Type} (il : spec.indexed_list τ) : spec.query_count :=
+il.map (λ _ _, ())
 
-@[simp] lemma coe_query_count_add : (↑(il + il') : spec.query_count) = ↑il + ↑il' :=
-by simp [coe_query_count.def]
+@[simp] lemma apply_to_query_count (i) :
+  il.to_query_count i = list.replicate (il.get_count i) () := list.map_const _ _
 
-@[simp] lemma coe_query_count_of_list {i} (ts : list (τ i)) :
-  (↑(of_list ts) : spec.query_count) = of_nat i ts.length :=
-by simp [coe_query_count.def, of_nat]
+@[simp] lemma active_oracles_to_query_count :
+  il.to_query_count.active_oracles = il.active_oracles := rfl
 
-@[simp] lemma coe_query_count_add_values {i} (ts : list (τ i)) :
-  (↑(il.add_values ts) : spec.query_count) = increment ↑il i ts.length :=
+@[simp] lemma get_count_to_query_count : il.to_query_count.get_count = il.get_count :=
+by simp [to_query_count]
+
+@[simp] lemma to_query_count_empty : (∅ : spec.indexed_list τ).to_query_count = ∅ := map_empty _
+
+lemma to_query_count_eq_empty_iff : il.to_query_count = ∅ ↔ il = ∅ :=
+by simp only [eq_empty_iff, active_oracles_to_query_count]
+
+@[simp] lemma to_query_count_add : (il + il').to_query_count =
+  il.to_query_count + il'.to_query_count := map_add _ _ _
+
+@[simp] lemma to_query_count_of_list {i} (ts : list (τ i)) :
+  (of_list ts).to_query_count = of_nat i ts.length :=
+by simp [to_query_count, of_nat]
+
+@[simp] lemma to_query_count_add_values {i} (ts : list (τ i)) :
+  (il.add_values ts).to_query_count = increment il.to_query_count i ts.length :=
 by simp [add_values, increment]
 
-@[simp] lemma coe_query_count_take_at_index (i n) :
-  (↑(il.take_at_index i n) : spec.query_count) = take_at_index ↑il i n :=
-by simp [coe_query_count.def]
+@[simp] lemma to_query_count_take_at_index (i n) : (il.take_at_index i n).to_query_count =
+  take_at_index il.to_query_count i n := map_take_at_index _ _ _ _
 
-@[simp] lemma coe_query_count_drop_at_index (i n) :
-  (↑(il.drop_at_index i n) : spec.query_count) = drop_at_index ↑il i n :=
-by simp [coe_query_count.def]
+@[simp] lemma to_query_count_drop_at_index (i n) : (il.drop_at_index i n).to_query_count =
+  drop_at_index il.to_query_count i n := map_drop_at_index _ _ _ _
+
+end to_query_count
+
+/-- View any `indexed_list` as a `query_count` by replacing all values with `()`. -/
+instance coe_query_count (τ : spec.ι → Type) : has_coe (spec.indexed_list τ) (spec.query_count) :=
+{ coe := to_query_count }
+
+@[simp] lemma coe_query_count_eq : (↑il : spec.query_count) = il.to_query_count := rfl
 
 end indexed_list
 

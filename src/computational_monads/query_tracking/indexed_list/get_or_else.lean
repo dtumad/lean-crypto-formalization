@@ -25,83 +25,71 @@ namespace indexed_list
 
 variables {α β γ : Type} {spec spec' : oracle_spec} {τ τ' : spec.ι → Type}
 
+/-- Split the first value at an index from the rest of the indexed list. -/
+@[inline, reducible] def get_head (il : spec.indexed_list τ) (i : spec.ι) [inhabited (τ i)] :
+  τ i × spec.indexed_list τ := ((il i).head, il.drop_at_index i 1)
+
 /-- Get the first value from an `indexed_list` at an index, and remove it from the list.
 If the list at that index is empty, instead run the computation `oa` and return the result. -/
 def get_or_else (il : spec.indexed_list τ) (i : spec.ι) [inhabited (τ i)]
   (oa : oracle_comp spec' (τ i)) : oracle_comp spec' (τ i × spec.indexed_list τ) :=
-if i ∈ il.active_oracles then return ((il i).head, il.drop_at_index i 1) else (λ t, (t, il)) <$> oa
+if i ∈ il.active_oracles then return (il.get_head i) else (λ t, (t, il)) <$> oa
 
-variables (il il' : spec.indexed_list τ) (i : spec.ι) (oa : oracle_comp spec' (τ i))
+variables (il il' : spec.indexed_list τ) (i : spec.ι) (oa oa' : oracle_comp spec' (τ i))
 variable [inhabited (τ i)]
 
 @[simp] lemma get_or_else_of_mem_active_oracles (hi : i ∈ il.active_oracles) :
-  il.get_or_else i oa = return ((il i).head, il.drop_at_index i 1) := if_pos hi
+  il.get_or_else i oa = return (il.get_head i) := if_pos hi
 
 @[simp] lemma get_or_else_of_not_mem_active_oracles (hi : i ∉ il.active_oracles) :
   il.get_or_else i oa = (λ t, (t, il)) <$> oa := if_neg hi
 
-lemma get_or_else_eq_map_iff (f : τ i → τ i × spec.indexed_list τ)
-  (oa' : oracle_comp spec' (τ i)) :
-  il.get_or_else i oa = f <$> oa' ↔ ∀ t, f t = (t, il) ∧ oa = oa' :=
+@[simp] lemma get_or_else_eq_map_iff (f : τ i → τ i × spec.indexed_list τ) :
+  il.get_or_else i oa = f <$> oa' ↔ (i ∉ il.active_oracles ∧ oa = oa' ∧ ∀ t, f t = (t, il)) :=
 begin
   by_cases hi : i ∈ il.active_oracles,
-  {
-    simp [hi],
-    sorry,
-  },
-  {
-    sorry
-  }
+  { simp only [hi, get_or_else_of_mem_active_oracles, map_ne_return, not_true, false_and] },
+  { simp only [hi, map_eq_bind_return_comp, function.funext_iff, not_false_iff, true_and,
+      @eq_comm (τ i × spec.indexed_list τ), get_or_else_of_not_mem_active_oracles,
+      bind'_eq_bind'_iff, return_eq_return_iff] }
 end
+
+@[simp] lemma get_or_else_eq_return_iff (z : τ i × spec.indexed_list τ) :
+  il.get_or_else i oa = return z ↔ i ∈ il.active_oracles ∧ z = il.get_head i :=
+by by_cases hi : i ∈ il.active_oracles; simp [hi, @eq_comm _ z]
 
 lemma get_or_else_of_eq_nil (h : il i = []) : il.get_or_else i oa = (λ t, (t, il)) <$> oa :=
 by simp [get_or_else, il.not_mem_active_oracles h]
 
 lemma get_or_else_of_eq_cons (t ts) (h : il i = t :: ts) : il.get_or_else i oa =
-  return (t, il.drop_at_index i 1) := by simp [get_or_else, h, il.mem_active_oracles' h]
+  return (t, il.drop_at_index i 1) := by simp [get_or_else, h, il.mem_active_oracles' h, get_head]
 
 @[simp_dist_equiv] lemma get_or_else_dist_equiv : il.get_or_else i oa ≃ₚ
-  if i ∈ il.active_oracles then return ((il i).head, il.drop_at_index i 1) else (λ t, (t, il)) <$> oa :=
-begin
-  -- by_cases hi :
-  simp [get_or_else],
-end
-
-lemma support_get_or_else : (il.get_or_else i oa).support =
-  if i ∈ il.active_oracles then {((il i).head, il.drop_at_index i 1)} else {(x, il) | x ∈ oa.support} :=
-sorry -- by simp only [get_or_else, set.image, apply_empty_iff]
-
-
+  if i ∈ il.active_oracles then return (il.get_head i) else (λ t, (t, il)) <$> oa :=
+by by_cases hi : i ∈ il.active_oracles; simp [hi]
 
 @[simp] lemma get_or_else_empty : (∅ : spec.indexed_list τ).get_or_else i oa =
   (λ t, (t, ∅)) <$> oa := by simp [get_or_else]
 
-@[simp_dist_equiv] lemma get_or_else_add_dist_equiv [inhabited (τ i)] :
-  (il + il').get_or_else i oa ≃ₚ if (il i).empty then prod.map id ((+) il) <$> il'.get_or_else i oa
-    else return ((il i).head, il.drop_at_index i 1 + il') :=
+@[simp_dist_equiv] lemma get_or_else_add_dist_equiv : (il + il').get_or_else i oa ≃ₚ
+  if i ∈ il.active_oracles then return ((il i).head, il.drop_at_index i 1 + il')
+    else prod.map id ((+) il) <$> il'.get_or_else i oa :=
 begin
-  sorry,
-  -- simp only [get_or_else, add_apply, drop_at_index_add, apply_empty_iff, ite_not],
-  -- by_cases hi : i ∈ il.active_oracles,
-  -- { have : ¬ (il i ++ il' i).empty := by simp only [list.empty_iff_eq_nil, hi, list.append_eq_nil,
-  --     apply_eq_nil_iff, not_true, false_and, not_false_iff],
-  --   simp only [hi, this, nat.sub_eq_zero_of_le (il.one_le_get_count hi), list.head_append, ne.def,
-  --     apply_eq_nil_iff, not_true, not_false_iff, drop_at_index_zero, if_false, if_true] },
-  -- { by_cases hi' : i ∈ il'.active_oracles,
-  --   { have : ¬ (il i ++ il' i).empty := by simp only [list.empty_iff_eq_nil, hi',
-  --       list.append_eq_nil, apply_eq_nil_iff, not_true, and_false, not_false_iff],
-  --     have hil : il i = [] := apply_eq_nil _ hi,
-  --     simp only [hi', hi, hil, get_count_eq_zero _ hi, list.nil_append, apply_empty_iff, not_true,
-  --       tsub_zero, if_false, if_true],
-  --     refine trans _ (map_return_dist_equiv _ _).symm,
-  --     simp only [drop_at_index_eq_self _ _ hi, prod.map_mk, id.def] },
-  --   { have : (il i ++ il' i).empty := by simp only [list.empty_iff_eq_nil, hi, hi',
-  --       list.append_eq_nil, apply_eq_nil_iff, not_false_iff, and_self],
-  --     simp only [this, hi, hi', if_true, if_false],
-  --     pairwise_dist_equiv } }
+  simp only [get_or_else, add_apply, drop_at_index_add, apply_empty_iff, ite_not, get_head],
+  by_cases hi : i ∈ il.active_oracles,
+  { simp only [hi, mem_active_oracles_add_left il il' hi, apply_eq_nil_iff, not_true,
+      nat.sub_eq_zero_of_le (il.one_le_get_count hi), list.head_append, ne.def,
+      not_false_iff, drop_at_index_zero, if_false, if_true] },
+  { by_cases hi' : i ∈ il'.active_oracles,
+    { simp only [hi', hi, apply_eq_nil _ hi, get_count_eq_zero _ hi, list.nil_append, if_true,
+        apply_empty_iff, not_true, tsub_zero, if_false, mem_active_oracles_add_right _ _ hi'],
+      refine trans _ (map_return_dist_equiv _ _).symm,
+      simp only [drop_at_index_eq_self _ _ hi, prod.map_mk, id.def] },
+    { simp only [hi, hi', active_oracles_add, finset.mem_union, or_self, if_false],
+      pairwise_dist_equiv } }
 end
 
-@[simp_dist_equiv] lemma get_or_else_of_list_dist_equiv [inhabited (τ i)] (ts : list (τ i)) :
+@[simp_dist_equiv] lemma get_or_else_of_list_dist_equiv (ts : list (τ i)) :
   (of_list ts).get_or_else i oa ≃ₚ if ts.empty then (λ t, (t, ∅)) <$> oa
     else return (ts.head, of_list (ts.tail)) :=
 begin
@@ -112,20 +100,25 @@ begin
     refine trans (get_or_else_add_dist_equiv _ _ _ _) (by simp) }
 end
 
-@[simp_dist_equiv] lemma get_or_else_add_values_dist_equiv [inhabited (τ i)] (ts : list (τ i)) :
+@[simp_dist_equiv] lemma get_or_else_add_values_dist_equiv (ts : list (τ i)) :
   (il.add_values ts).get_or_else i oa ≃ₚ if (il i).empty then (if ts.empty
     then (λ t, (t, il)) <$> oa else return (ts.head, il.add_values ts.tail))
       else return ((il i).head, (il.drop_at_index i 1).add_values ts) :=
 begin
-  -- TODO: this should be more tactic-able
   refine trans (get_or_else_add_dist_equiv _ _ _ _) _,
-  by_cases hil : il i = []; cases ts with t ts; simp [list.empty_iff_eq_nil, hil],
-  { refine trans (map_comp_dist_equiv _ _ _) _,
-    pairwise_dist_equiv,
-    simp only [function.comp_app, prod.map_mk, id.def, add_empty] },
-  { simp [get_or_else_of_eq_cons _ _ _ t ts (of_list_apply_same_index _),
-      dist_equiv_return_iff, set.ext_iff, add_values] },
-  { refl },
+  by_cases hil : i ∈ il.active_oracles; cases ts with t ts,
+  { simp only [hil, of_list_nil, add_empty, if_true, apply_empty_iff,
+      not_true, add_values_nil, if_false] },
+  { simp only [hil, add_values, if_false, eq_self_iff_true, if_true, apply_empty_iff, not_true] },
+  { simp only [hil, list.empty, of_list_nil, get_or_else_empty, if_false, apply_empty_iff,
+      not_false_iff, coe_sort_tt, if_true],
+    refine trans (map_comp_dist_equiv _ _ _) (map_dist_equiv_of_dist_equiv (funext (λ z,
+      prod.eq_iff_fst_eq_snd_eq.2 ⟨rfl, il.add_empty⟩)) (refl _)) },
+  { simp only [hil, get_head, list.empty, get_or_else_of_mem_active_oracles, of_list_apply,
+      active_oracles_of_list, coe_sort_ff, if_false, finset.mem_singleton, eq_self_iff_true,
+      dite_eq_ite, if_true, list.head_cons, drop_at_index_succ_of_list_succ, drop_at_index_zero,
+      apply_empty_iff, not_false_iff, list.tail_cons],
+    pairwise_dist_equiv }
 end
 
 @[simp_dist_equiv] lemma get_or_else_add_values_fresh_dist_equiv [inhabited (τ i)]
