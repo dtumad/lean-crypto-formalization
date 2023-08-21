@@ -146,10 +146,19 @@ begin
 
     rw [generate_aux_cons, list.to_finset_cons, finset.prod_insert hjs'],
 
-    let g1 : spec.indexed_list τ → list (τ j) := λ il, ((il j).take (qc.get_count j)),
+    let g1 : spec.indexed_list τ → list (τ j) := λ il, ((il j).take (il.get_count j)),
     let g2 : spec.indexed_list τ → spec.indexed_list τ := λ il, il.take_at_index j 0,
-    refine trans (prob_output_bind_map_eq_mul _ _ _ g1 g2 _ il) _,
+    refine trans (prob_output_bind_map_eq_mul _ _ _ g1 g2 _ _ il) _,
     {
+      sorry,
+    },
+    {
+
+      intros xs jl jl',
+      -- have hxs' : xs.length = (il j).length := sorry,
+      simp [g1, g2, of_list_add_eq_iff],
+      rw [@eq_comm _ xs, @eq_comm _ jl],
+      -- simp [hxs'],
       sorry,
     },
     simp only [g1, g2, list.map, list.take, h],
@@ -160,7 +169,14 @@ begin
 
     },
     {
-      sorry,
+      refine finset.prod_congr rfl (λ j' hj', _),
+      -- refine congr_arg _ _,
+      have : il.take_at_index j 0 j' = il j' := begin
+        simp only [take_at_index_apply, list.take_zero, ite_eq_right_iff],
+        rintro rfl,
+        refine (hjs' hj').elim,
+      end,
+      rw [this],
     }
   }
 end

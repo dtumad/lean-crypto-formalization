@@ -312,8 +312,6 @@ lemma prob_output_bind_map_eq_mul (f : α → β → γ) (g1 : γ → α) (g2 : 
   (h : ∀ x ∈ oa.support, ∀ y ∈ (ob x).support, ∀ z, f x y = z ↔ g1 z = x ∧ g2 z = y) (z : γ) :
   ⁅= z | oa >>= λ a, f a <$> ob a⁆ = ⁅= g1 z | oa⁆ * ⁅= g2 z | ob (g1 z)⁆ :=
 begin
-  -- rw [prob_output_bind_eq_sum_fin_support],
-  -- refine trans (finset.sum_eq_single (g1 z) _ _) _,
   rw [prob_output_bind_eq_tsum],
   refine trans (tsum_eq_single (g1 z) (λ x hx, _)) _,
   { by_cases hxa : x ∈ oa.support,
@@ -327,26 +325,28 @@ begin
   { by_cases hg1 : g1 z ∈ oa.support,
     {
       refine congr_arg (λ x, _ * x) _,
-      rw [map_eq_bind_return_comp],
-      rw [prob_output_bind_eq_tsum],
+      rw [map_eq_bind_return_comp, prob_output_bind_eq_tsum],
       refine trans (tsum_eq_single (g2 z) (λ y hy, _)) _,
       {
         by_cases hyb : y ∈ (ob (g1 z)).support,
         {
           refine mul_eq_zero_of_right _ _,
-          specialize h (g1 z) hg1 y hyb z,
-
-          simp [@eq_comm _ z, h, hy.symm, ← ne.def],
+          simp [@eq_comm _ z, h (g1 z) hg1 y hyb z, hy.symm, ← ne.def],
         },
         {
           rw [prob_output_eq_zero hyb, zero_mul],
         }
       },
       {
-        have : z = f (g1 z) (g2 z) := sorry,
-        refine trans _ (mul_one _),
-        refine congr_arg (λ e, _ * e) _,
-        refine (prob_output_return_eq_one_iff _ _ _).2 this,
+        by_cases hg2 : g2 z ∈ (ob (g1 z)).support,
+        {
+          refine trans _ (mul_one _),
+          refine congr_arg (λ e, _ * e) _,
+          refine (prob_output_return_eq_one_iff _ _ _).2 ((h _ hg1 _ hg2 _).2 ⟨rfl, rfl⟩).symm,
+        },
+        {
+          simp [hg2],
+        }
       }
     },
     {
