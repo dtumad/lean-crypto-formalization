@@ -219,6 +219,18 @@ by rw [add_left_eq_self, zero_eq_empty]
 @[simp] lemma add_right_eq_self_iff : il + il' = il ↔ il' = ∅ :=
 by rw [add_right_eq_self, zero_eq_empty]
 
+lemma add_comm_of_active_oracles_disjoint
+  (h : disjoint il.active_oracles il'.active_oracles) : il + il' = il' + il :=
+begin
+  rw [finset.disjoint_iff_inter_eq_empty] at h,
+  refine fun_like.ext _ _ (λ i, _),
+  by_cases hi : i ∈ il.active_oracles,
+  { have hi' : i ∉ il'.active_oracles,
+    from λ hi', (finset.not_mem_empty i (h ▸ finset.mem_inter.2 ⟨hi, hi'⟩)),
+    simp only [hi', add_apply, apply_eq_nil, not_false_iff, list.append_nil, list.nil_append] },
+  { simp only [hi, add_apply, apply_eq_nil, not_false_iff, list.nil_append, list.append_nil] }
+end
+
 end add
 
 section of_list
@@ -251,6 +263,9 @@ begin
     simp [get_count_eq_length_apply] },
   { simp [hi, get_count_eq_length_apply] }
 end
+
+lemma of_list_apply_self : of_list ts i = ts := dif_pos rfl
+lemma get_count_of_list_self : (of_list ts).get_count i = ts.length := by simp
 
 lemma mem_active_oracles_of_list_iff (i') :
   i' ∈ (of_list ts).active_oracles ↔ i = i' ∧ ts ≠ [] :=
@@ -521,6 +536,15 @@ begin
   { simp [list.length_take, min_eq_right hi, list.take_all_of_le hi],
     refine drop_at_index_eq_drop_at_index il (or.inr (le_min hi le_rfl)) },
   { simp [list.length_take, min_eq_left (le_of_not_le hi)] }
+end
+
+lemma drop_at_index_get_count : il.drop_at_index i (il.get_count i) = il.take_at_index i 0 :=
+begin
+  refine fun_like.ext _ _ (λ i', _),
+  by_cases hi : i = i',
+  { induction hi,
+    simp [get_count_eq_length_apply] },
+  { simp [hi] }
 end
 
 end drop_at_index

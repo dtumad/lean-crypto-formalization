@@ -40,6 +40,20 @@ lemma prob_event_bind_bind_assoc (e : set γ) :
 
 end bind_bind_assoc
 
+section bind_bind_dist_equiv_comm
+
+variables (oa : oracle_comp spec α) (ob : oracle_comp spec β)
+  (oc : α → β → oracle_comp spec γ)
+
+@[simp_dist_equiv] -- TODO: other lemmas
+lemma bind_bind_dist_equiv_comm : do {a ← oa, b ← ob, oc a b} ≃ₚ do {b ← ob, a ← oa, oc a b} :=
+begin
+  simp only [dist_equiv.ext_iff, prob_output_bind_eq_tsum, ← ennreal.tsum_mul_left, ← mul_assoc],
+  refine λ z, ennreal.tsum_comm.trans (tsum_congr (λ y, by simp_rw [mul_comm ⁅= y | ob⁆]))
+end
+
+end bind_bind_dist_equiv_comm
+
 section return_bind
 
 variables (a : α) (ob : α → oracle_comp spec β) (y : β) (e' : set β)

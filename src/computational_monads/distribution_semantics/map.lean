@@ -309,7 +309,12 @@ end eq_single
 
 lemma prob_output_bind_map_eq_mul (f : α → β → γ) (g1 : γ → α) (g2 : γ → β)
   -- (hf : ∀ x y, f x y ∈ )
+  -- (hg : ∀ z ∉ (oa >>= λ a, f a <$> ob a).support, g1 z ∉ oa.support)
   (h : ∀ x ∈ oa.support, ∀ y ∈ (ob x).support, ∀ z, f x y = z ↔ g1 z = x ∧ g2 z = y) (z : γ) :
+
+  -- (hz' : z ∈ ):
+
+    --(hz : z ∈ (oa >>= λ a, f a <$> ob a).support) :
   ⁅= z | oa >>= λ a, f a <$> ob a⁆ = ⁅= g1 z | oa⁆ * ⁅= g2 z | ob (g1 z)⁆ :=
 begin
   rw [prob_output_bind_eq_tsum],
@@ -342,7 +347,7 @@ begin
         {
           refine trans _ (mul_one _),
           refine congr_arg (λ e, _ * e) _,
-          refine (prob_output_return_eq_one_iff _ _ _).2 ((h _ hg1 _ hg2 _).2 ⟨rfl, rfl⟩).symm,
+          refine (prob_output_return_eq_one_iff _ _ _).2 ((h _ hg1 _ hg2 z).2 ⟨rfl, rfl⟩).symm,
         },
         {
           simp [hg2],
