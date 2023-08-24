@@ -105,7 +105,7 @@ end
 
 end inf
 
-lemma distjoin_iff_disjoint_active_oracles : disjoint qc qc' ↔
+@[simp] lemma distjoin_iff_disjoint_active_oracles : disjoint qc qc' ↔
   disjoint qc.active_oracles qc'.active_oracles :=
 by simp only [disjoint_iff, bot_eq_empty, eq_empty_iff, active_oracles_inf, finset.bot_eq_empty]
 

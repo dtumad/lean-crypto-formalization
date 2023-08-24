@@ -42,11 +42,10 @@ private meta def refl_dist_equiv_base : tactic unit :=
 do `(%%oa ≃ₚ %%oa') ← tactic.target, (tactic.unify oa oa' >> tactic.reflexivity)
 
 /-- Attempt to discharge the current goal using the given lemma (potentially in reverse).
-Returns a boolean representing whether or not more lemmas should bet applied -/
+Returns a boolean representing whether or not more lemmas should be applied -/
 private meta def rw_dist_equiv_base (d_eq : expr) : tactic bool :=
 (tactic.apply d_eq >> return ff) <|>
   (tactic.refine ``(symm _) >> tactic.apply d_eq >> return ff) <|> return tt
-  -- <|> (tactic.refine ``(trans _ _) >> tactic.rotate 1 >> tactic.apply d_eq >> return tt)
 
 /-- Given a list of distributional equivalences, call `rw_dist_equiv_base` until one succeeds.
 Immediately stops if the current goal is discharged. -/
@@ -93,7 +92,7 @@ Attempts to discharge trivial goals using both `refl` and the given equivalences
 Supports `dist_equiv`, `eval_dist`, `prob_event`, `support`, and `fin_support`,
 in each case trying to prove the goal by first proving a distributional equivalence. -/
 @[interactive] meta def pairwise_dist_equiv (opt_d_eqs : parse (optional (pexpr_list)))
-  (opt_depth : parse (optional (lean.parser.small_nat))) :=
+  (opt_depth : parse (optional (lean.parser.small_nat))) : tactic unit :=
 do g ← tactic.target,
   passed_d_eqs ← return (opt_d_eqs.get_or_else []),
   passed_depth ← return (opt_depth.get_or_else 100),

@@ -297,6 +297,9 @@ begin
   { simp [hi] }
 end
 
+@[simp] lemma of_list_inj : of_list ts = of_list ts' ↔ ts = ts' :=
+⟨λ h, by simpa [of_list] using congr_arg (λ il, to_fun il i) h, λ h, congr_arg _ h⟩
+
 end of_list
 
 section add_values

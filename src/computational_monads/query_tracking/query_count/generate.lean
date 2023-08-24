@@ -51,15 +51,10 @@ end
 lemma generate_aux_perm_dist_equiv {js js' : list spec.ι} (hjs : js.nodup)
   (h : js ~ js') : generate_aux qc oa js ≃ₚ generate_aux qc oa js' :=
 begin
-  -- intros js js' h,
   induction h with j js js' h ih j j' js js js' js'' h1 h2 hj1 hj2 generalizing hjs,
-  {
-    exact dist_equiv.refl (return ∅)
-  },
-  {
-    unfold generate_aux,
-    pairwise_dist_equiv [ih (list.nodup_cons.1 hjs).2],
-  },
+  { exact dist_equiv.refl (return ∅) },
+  { unfold generate_aux,
+    pairwise_dist_equiv [ih (list.nodup_cons.1 hjs).2] },
   {
     simp [list.nodup_cons, not_or_distrib] at hjs,
     have : j ≠ j' := ne.symm hjs.1.1,
@@ -80,12 +75,7 @@ begin
     refine add_comm_of_active_oracles_disjoint _ _ _,
     cases ts; cases ts'; simp [this]
   },
-  {
-    have hjs' : js'.nodup := (list.perm.nodup_iff h1).1 hjs,
-    specialize hj1 hjs,
-    specialize hj2 hjs',
-    refine hj1.trans hj2
-  }
+  { exact (hj1 hjs).trans (hj2 ((list.perm.nodup_iff h1).1 hjs)) }
 end
 
 lemma get_count_eq_zero_of_mem_support_generate_aux (il : spec.indexed_list τ) (js : list spec.ι)
@@ -106,19 +96,30 @@ begin
   }
 end
 
--- lemma to_query_count_of_mem_support_generate_aux (il : spec.indexed_list τ) (js : list spec.ι)
---   (hil : il ∈ (generate_aux qc oa js).support) : il.to_query_count = {i ∈ qc | i ∈ js} :=
--- begin
---   induction js with j js h,
---   {
---     simp at hil,
---     simp [eq_empty_of_active_oracles_eq_empty _ hil]
---   },
---   {
---     sorry,
---   }
--- end
+lemma to_query_count_of_mem_support_generate_aux (il : spec.indexed_list τ) (js : list spec.ι)
+  (hjs : js.nodup) (hil : il ∈ (generate_aux qc oa js).support) :
+  il.to_query_count = {i ∈ qc | i ∈ js} :=
+begin
+  induction js with j js h generalizing il,
+  { simp only [generate_aux_nil, support_return, set.mem_singleton_iff, eq_empty_iff] at hil,
+    simp [eq_empty_of_active_oracles_eq_empty il hil] },
+  { simp_rw [generate_aux_cons, mem_support_bind_map_iff, mem_support_map_iff] at hil,
+    rw [list.nodup_cons] at hjs,
+    obtain ⟨ts, hts, il', hil', htsil⟩ := hil,
+    specialize h hjs.2 il' hil',
+    simp_rw [list.mem_cons_iff, sep_or_eq_sup, ← h, ← htsil, to_query_count_add],
+    refine trans _ (sup_eq_add _ _ _).symm,
+    { rw [to_query_count_of_list, vector.to_list_length, sep_index_eq, add_left_inj,
+        of_nat, of_list_inj, apply_eq_replicate_get_count] },
+    { suffices : j ∉ il'.active_oracles,
+      by by_cases hj : j ∈ qc.active_oracles; simp [hj, this],
+      have : il'.active_oracles = qc.active_oracles.filter (∈ js),
+      by simpa only [active_oracles_to_query_count, active_oracles_sep, finset.sep_def,
+        finset.filter_congr_decidable] using congr_arg active_oracles h,
+      simp only [this, finset.mem_filter, not_and_distrib, hjs.1, not_false_iff, or_true] } }
+end
 
+-- TODO: cleanup this
 theorem prob_output_generate_aux (js : list spec.ι) (hjs : js.nodup)
   (il : spec.indexed_list τ) --(hil : il ∈ (generate_aux qc oa js).support)
   (hqc : il.to_query_count = {i ∈ qc | i ∈ js}) :
