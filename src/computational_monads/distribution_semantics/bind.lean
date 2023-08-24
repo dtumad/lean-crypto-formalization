@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
 import computational_monads.distribution_semantics.defs.dist_equiv
+import computational_monads.distribution_semantics.tactics.tactic_tags
 
 /-!
 # Distribution Semantics of Bind
@@ -182,19 +183,18 @@ begin
       prob_output_eq_zero (ha.support_eq ▸ hx : x ∉ oa'.support)] }
 end
 
--- TODO: implicit arguments??
-lemma bind_dist_equiv_bind_of_dist_equiv_left (oa : oracle_comp spec α) (oa' : oracle_comp spec α)
-  (ob : α → oracle_comp spec β) (h : oa ≃ₚ oa') :
-  (oa >>= ob) ≃ₚ (oa' >>= ob) :=
+lemma bind_dist_equiv_bind_of_dist_equiv_left {oa oa' : oracle_comp spec α}
+  (ob : α → oracle_comp spec β) (h : oa ≃ₚ oa') : (oa >>= ob) ≃ₚ (oa' >>= ob) :=
 bind_dist_equiv_bind_of_dist_equiv h (λ _ _, rfl)
 
-lemma bind_dist_equiv_bind_of_dist_equiv_right (oa : oracle_comp spec α)
-  (ob : α → oracle_comp spec β) (ob' : α → oracle_comp spec β)
+-- TODO: implicit arguments??
+lemma bind_dist_equiv_bind_of_dist_equiv_right
+  (oa : oracle_comp spec α) (ob ob' : α → oracle_comp spec β)
   (h' : ∀ x ∈ oa.support, ob x ≃ₚ ob' x) : (oa >>= ob) ≃ₚ (oa >>= ob') :=
 bind_dist_equiv_bind_of_dist_equiv rfl h'
 
-lemma bind_dist_equiv_bind_of_dist_equiv_right' (oa : oracle_comp spec α)
-  (ob : α → oracle_comp spec β) (ob' : α → oracle_comp spec β)
+lemma bind_dist_equiv_bind_of_dist_equiv_right'
+  (oa : oracle_comp spec α) (ob ob' : α → oracle_comp spec β)
   (h' : ∀ x, ob x ≃ₚ ob' x) : (oa >>= ob) ≃ₚ (oa >>= ob') :=
 bind_dist_equiv_bind_of_dist_equiv rfl (λ x _, h' x)
 

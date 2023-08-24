@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
 import computational_monads.distribution_semantics.defs.dist_equiv
+import computational_monads.distribution_semantics.tactics.tactic_tags
 
 /-!
 # Distribution Semantics of Return
@@ -189,6 +190,10 @@ begin
   exact ⟨λ h, by simpa only [ne.def, imp_not_comm, eq_self_iff_true, not_not,
     true_implies_iff, @eq_comm _ a' a] using h a', λ h x hx, h ▸ hx⟩,
 end
+
+@[simp_dist_equiv]
+lemma return_dist_equiv_return : (return' !spec! a) ≃ₚ (return' !spec'! a) :=
+(return_dist_equiv_return_iff spec spec' a a).2 rfl
 
 lemma support_return_eq_support_return_iff :
   (return' !spec! a).support = (return' !spec'! a').support ↔ a = a' :=
