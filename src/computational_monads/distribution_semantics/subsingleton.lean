@@ -21,14 +21,14 @@ variables {α β γ : Type} {spec spec' : oracle_spec}
 
 /-- If a type `α` is `subsingleton` then any pair of computations are distributionally equivalent,
 so in particular they must necessarilly be just `return oa.default_result`. -/
-@[simp, simp_dist_equiv] lemma dist_equiv_of_subsingleton [subsingleton α] : oa ≃ₚ oa' :=
-subsingleton.elim _ _
+@[simp, pairwise_dist_equiv] lemma dist_equiv_of_subsingleton [subsingleton α] : oa ≃ₚ oa' :=
+subsingleton.elim ⁅oa⁆ ⁅oa'⁆
 
-lemma dist_equiv_return_of_subsingleton [subsingleton α] (a : α) :
+@[pairwise_dist_equiv] lemma dist_equiv_return_of_subsingleton [subsingleton α] (a : α) :
   oa ≃ₚ (return a : oracle_comp spec α) :=
 dist_equiv_of_subsingleton _ _
 
-lemma dist_equiv_return_default_result_of_subsingleton [subsingleton α] :
+@[simp_dist_equiv] lemma dist_equiv_return_default_result_of_subsingleton [subsingleton α] :
   oa ≃ₚ (return oa.default_result : oracle_comp spec α) :=
 dist_equiv_of_subsingleton oa _
 

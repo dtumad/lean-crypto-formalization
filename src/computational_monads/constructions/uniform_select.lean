@@ -225,7 +225,7 @@ end prob_event
   (v : vector α 1) : ($ᵛ v) ≃ₚ return' !spec! v.head :=
 begin
   rw [← vector.nth_zero, uniform_select_vector],
-  exact (map_dist_equiv_of_dist_equiv rfl (by pairwise_dist_equiv)).trans
+  exact (map_dist_equiv_of_dist_equiv' rfl (by pairwise_dist_equiv)).trans
     (map_return_dist_equiv _ _)
 end
 

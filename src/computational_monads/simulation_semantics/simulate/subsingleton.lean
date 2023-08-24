@@ -111,7 +111,7 @@ end
   (s : S) : simulate so oa s ≃ₚ (λ x, (x, s)) <$> simulate' so oa s :=
 begin
   refine trans _ (map_comp_dist_equiv _ _ _).symm,
-  refine trans (map_id_dist_equiv _).symm (map_dist_equiv_of_dist_equiv (funext (λ x, _)) rfl),
+  refine trans (map_id_dist_equiv _).symm (map_dist_equiv_of_dist_equiv' (funext (λ x, _)) rfl),
   simp [prod.eq_iff_fst_eq_snd_eq],
 end
 

@@ -216,4 +216,7 @@ begin
   { refl }
 end
 
+@[simp] lemma prob_event_coe_sort (p : α → bool) : ⁅λ x, p x | oa⁆ = ⁅λ x, p x = tt | oa⁆ :=
+by simp_rw [eq_self_iff_true]
+
 end oracle_comp

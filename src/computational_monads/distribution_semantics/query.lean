@@ -177,7 +177,7 @@ end query_pos
 
 section query_eq_query
 
-@[simp, simp_dist_equiv] lemma query_dist_equiv_query (t t' : spec.domain i) :
+@[simp, pairwise_dist_equiv] lemma query_dist_equiv_query (t t' : spec.domain i) :
   query i t ≃ₚ query i t' := dist_equiv.def.2 rfl
 
 lemma eval_dist_query_eq_eval_dist_query (t t' : spec.domain i) : ⁅query i t⁆ = ⁅query i t'⁆ := rfl

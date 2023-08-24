@@ -79,7 +79,8 @@ do g ← tactic.target,
   passed_d_eqs ← return (opt_d_eqs.get_or_else []),
   passed_depth ← return (opt_depth.get_or_else 100),
   tagged_d_eqs ← get_simp_dist_equiv_lemmas,
-  d_eqs ← return (passed_d_eqs ++ tagged_d_eqs),
+  tagged_d_eqs' ← get_pairwise_dist_equiv_lemmas,
+  d_eqs ← return (passed_d_eqs ++ tagged_d_eqs ++ tagged_d_eqs'),
   by_dist_equiv,
   tactic.target >>= destruct_pairwise_dist_equiv d_eqs passed_depth
 

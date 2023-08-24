@@ -334,11 +334,11 @@ begin
           have := lookup_snd_eq_of_mem_support_get_or_else_same_input _ _ hx,
           have := get_or_else_dist_equiv_of_lookup_eq_some _ ou' this,
           rw [prod.mk.eta] at this,
-          refine map_dist_equiv_of_dist_equiv rfl (this.trans ((return_dist_equiv_return_iff _ _ _ _).2 rfl)),
+          refine map_dist_equiv_of_dist_equiv' rfl (this.trans ((return_dist_equiv_return_iff' _ _ _ _).2 rfl)),
         end
         ... ≃ₚ prod.fst <$> (cache.get_or_else i t' ou >>= return) : by push_map_dist_equiv
         ... ≃ₚ prod.fst <$> cache.get_or_else i t' ou :
-          map_dist_equiv_of_dist_equiv rfl (by pairwise_dist_equiv)
+          map_dist_equiv_of_dist_equiv' rfl (by pairwise_dist_equiv)
     },
     {
       simp [ht],

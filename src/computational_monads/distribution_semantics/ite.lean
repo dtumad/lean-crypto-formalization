@@ -3,7 +3,6 @@ Copyright (c) 2023 Devon Tuma. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
-import computational_monads.distribution_semantics.monad
 import computational_monads.distribution_semantics.tactics.rw_dist_equiv
 
 /-!
@@ -51,7 +50,7 @@ lemma dist_equiv_ite_iff (oa'' : oracle_comp spec' α) :
   (oa'' ≃ₚ if p then oa else oa') ↔ (p → oa'' ≃ₚ oa) ∧ (¬ p → oa'' ≃ₚ oa') :=
 by split_ifs with hp; simp [hp]
 
-@[simp, simp_dist_equiv] lemma ite_dist_equiv : (if p then oa else oa') ≃ₚ
+@[pairwise_dist_equiv] lemma ite_dist_equiv : (if p then oa else oa') ≃ₚ
   do {x ← oa, x' ← oa', if p then return x else return x'} :=
 by split_ifs with hp; rw_dist_equiv [bind_const_dist_equiv, bind_return_id_dist_equiv]
 
@@ -65,7 +64,7 @@ variables (ob ob' : α → oracle_comp spec β) (y : β) (e : set β)
 
 /-- Running one of two computations based on an `ite` is like running them both from the start,
 and then choosing which result to take based on a final `ite` statement. -/
-@[simp, simp_dist_equiv] lemma bind_ite_dist_equiv : (oa >>= λ x, if p x then ob x else ob' x) ≃ₚ
+lemma bind_ite_dist_equiv : (oa >>= λ x, if p x then ob x else ob' x) ≃ₚ
   do {x ← oa, y ← ob x, y' ← ob' x, if p x then return y else return y'} :=
 by pairwise_dist_equiv
 

@@ -42,7 +42,7 @@ lemma generate_aux_cons_dist_equiv_drop (j js) (h : j ∉ qc.active_oracles) :
   generate_aux qc oa (j :: js) ≃ₚ generate_aux qc oa js :=
 begin
   rw [generate_aux_cons, get_count_eq_zero _ h, repeat_zero],
-  refine trans (bind_dist_equiv_right _ _ [] _) (trans (map_dist_equiv_of_dist_equiv
+  refine trans (bind_dist_equiv_right _ _ [] _) (trans (map_dist_equiv_of_dist_equiv'
     (by simp [function.funext_iff]) rfl) (map_id_dist_equiv _)),
   simp only [support_map, vector.to_list_empty, set.nonempty.image_const, support_return,
     set.singleton_nonempty, set.mem_singleton_iff, forall_eq],
@@ -69,7 +69,7 @@ begin
 
     refine trans (map_comp_dist_equiv _ _ _) _,
     refine trans _ (map_comp_dist_equiv _ _ _).symm,
-    refine map_dist_equiv_of_dist_equiv _ (refl _),
+    refine map_dist_equiv_of_dist_equiv' _ (refl _),
     refine funext (λ il, _),
     simp only [comp_add_left, add_left_inj],
     refine add_comm_of_active_oracles_disjoint _ _ _,

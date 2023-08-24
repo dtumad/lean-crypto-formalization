@@ -224,7 +224,7 @@ begin
         (λ y hy, (this y).trans (this _).symm)) (this default)) (hm $ i.pred hi),
       refine λ x, (map_comp_dist_equiv _ _ _).trans _,
       pairwise_dist_equiv,
-      simp only [function.comp_app, pure'_eq_return, return_dist_equiv_return_iff],
+      simp only [function.comp_app, pure'_eq_return, return_dist_equiv_return_iff'],
       exact (trans (congr_arg _ (fin.succ_pred _ _).symm) (nth_cons_succ x _ _)) } }
 end
 
@@ -299,7 +299,7 @@ end
 begin
   refine ⟨λ h, _, repeat_dist_equiv_repeat_of_dist_equiv oa oa' n.succ⟩,
   calc oa ≃ₚ head <$> oa.repeat n.succ : (map_head_repeat_dist_equiv oa).symm
-    ... ≃ₚ head <$> oa'.repeat n.succ : map_dist_equiv_of_dist_equiv rfl h
+    ... ≃ₚ head <$> oa'.repeat n.succ : map_dist_equiv_of_dist_equiv' rfl h
     ... ≃ₚ oa' : map_head_repeat_dist_equiv oa'
 end
 

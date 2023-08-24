@@ -44,7 +44,7 @@ instance is_stateless.is_tracking [hso : so.is_stateless] : so.is_tracking :=
   apply_equiv_state_f_map_query_f :=
     begin
       refine λ i t s, trans (trans (map_id_dist_equiv _).symm _) (map_comp_dist_equiv _ _ _).symm,
-      refine map_dist_equiv_of_dist_equiv (funext (λ x, prod.eq_iff_fst_eq_snd_eq.2
+      refine map_dist_equiv_of_dist_equiv' (funext (λ x, prod.eq_iff_fst_eq_snd_eq.2
         ⟨rfl, state_elim so x.2⟩)) (by rw [state_elim so s]),
     end }
 

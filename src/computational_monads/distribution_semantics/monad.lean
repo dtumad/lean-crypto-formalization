@@ -22,21 +22,25 @@ section bind_bind_assoc
 
 variables (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) (oc : β → oracle_comp spec γ)
 
-@[simp_dist_equiv]
+/-- Bind operations are associative under distributional equivalence.
+Intentionally avoid making this a `simp_dist_equiv` lemma, as it can be counterproductive. -/
+@[pairwise_dist_equiv]
 lemma bind_bind_dist_equiv_assoc : oa >>= (λ x, ob x >>= oc) ≃ₚ oa >>= ob >>= oc  :=
 dist_equiv.ext (λ x, by simp only [prob_output.def, eval_dist_bind, pmf.bind_bind])
 
 lemma support_bind_bind_assoc : (oa >>= (λ x, ob x >>= oc)).support = (oa >>= ob >>= oc).support :=
-by pairwise_dist_equiv
+by pairwise_dist_equiv [bind_bind_dist_equiv_assoc]
 
 lemma fin_support_bind_bind_assoc : (oa >>= (λ x, ob x >>= oc)).fin_support =
-  (oa >>= ob >>= oc).fin_support := by pairwise_dist_equiv
+  (oa >>= ob >>= oc).fin_support := by pairwise_dist_equiv [bind_bind_dist_equiv_assoc]
 
 lemma prob_output_bind_bind_assoc (z : γ) :
-  ⁅= z | oa >>= (λ x, ob x >>= oc)⁆ = ⁅= z | oa >>= ob >>= oc⁆ := by pairwise_dist_equiv
+  ⁅= z | oa >>= (λ x, ob x >>= oc)⁆ = ⁅= z | oa >>= ob >>= oc⁆ :=
+by pairwise_dist_equiv [bind_bind_dist_equiv_assoc]
 
 lemma prob_event_bind_bind_assoc (e : set γ) :
-  ⁅e | oa >>= (λ x, ob x >>= oc)⁆ = ⁅e | (oa >>= ob) >>= oc⁆ := by pairwise_dist_equiv
+  ⁅e | oa >>= (λ x, ob x >>= oc)⁆ = ⁅e | (oa >>= ob) >>= oc⁆ :=
+by pairwise_dist_equiv [bind_bind_dist_equiv_assoc]
 
 end bind_bind_assoc
 
@@ -45,8 +49,8 @@ section bind_bind_dist_equiv_comm
 variables (oa : oracle_comp spec α) (ob : oracle_comp spec β)
   (oc : α → β → oracle_comp spec γ)
 
-@[simp_dist_equiv] -- TODO: other lemmas
-lemma bind_bind_dist_equiv_comm : do {a ← oa, b ← ob, oc a b} ≃ₚ do {b ← ob, a ← oa, oc a b} :=
+@[pairwise_dist_equiv] lemma bind_bind_dist_equiv_comm :
+  do {a ← oa, b ← ob, oc a b} ≃ₚ do {b ← ob, a ← oa, oc a b} :=
 begin
   simp only [dist_equiv.ext_iff, prob_output_bind_eq_tsum, ← ennreal.tsum_mul_left, ← mul_assoc],
   refine λ z, ennreal.tsum_comm.trans (tsum_congr (λ y, by simp_rw [mul_comm ⁅= y | ob⁆]))
@@ -58,7 +62,7 @@ section return_bind
 
 variables (a : α) (ob : α → oracle_comp spec β) (y : β) (e' : set β)
 
-@[simp, simp_dist_equiv] lemma return_bind_dist_equiv : return a >>= ob ≃ₚ ob a :=
+@[simp_dist_equiv] lemma return_bind_dist_equiv : return a >>= ob ≃ₚ ob a :=
 by simp only [dist_equiv.def, eval_dist_bind, eval_dist_return, pmf.pure_bind]
 
 lemma support_return_bind : (return a >>= ob).support = (ob a).support :=
@@ -161,7 +165,7 @@ section bind_return_id
 
 variables (oa : oracle_comp spec α) (y : β) (e' : set β)
 
-@[simp, simp_dist_equiv] lemma bind_return_id_dist_equiv : oa >>= return ≃ₚ oa :=
+@[simp_dist_equiv] lemma bind_return_id_dist_equiv : oa >>= return ≃ₚ oa :=
 (eval_dist_bind_return oa id).trans (by rw [pmf.map_id])
 
 @[simp] lemma support_bind_return_id : (oa >>= return).support = oa.support :=
@@ -184,7 +188,7 @@ section bind_const
 
 variables (oa : oracle_comp spec α) (ob : oracle_comp spec β)
 
-@[simp, simp_dist_equiv] lemma bind_const_dist_equiv : oa >>= (λ _, ob) ≃ₚ ob :=
+@[simp_dist_equiv] lemma bind_const_dist_equiv : oa >>= (λ _, ob) ≃ₚ ob :=
 by rw [dist_equiv.def, eval_dist_bind, pmf.bind_const]
 
 @[simp] lemma support_bind_const : (oa >>= (λ _, ob)).support = ob.support :=

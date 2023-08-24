@@ -204,6 +204,8 @@ example (oa oa' oa'' : oracle_comp spec ℕ) (h : oa' ≃ₚ oa'') :
     do {n ← (return 0 >> oa), m ← (return 0 >> oa''),  return (n + m)} :=
 by simp_dist_equiv [h]
 
+variables (oa oa' oa'' oa₀ : oracle_comp spec α)
+
 end simp_dist_equiv
 
 end tests

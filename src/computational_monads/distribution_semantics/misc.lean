@@ -20,10 +20,10 @@ open_locale big_operators ennreal
 
 variables {α β γ : Type} {spec spec' : oracle_spec}
 
-/-- Right the `eval_dist` of bind as a sum over another type,
+/-- Write the `eval_dist` of bind as a sum over another type,
 using a map that is both injective and surjective on corresponding supports,
 although it may not actually be bijective on the entire spaces. -/
-lemma helper {oa : oracle_comp spec α}
+lemma prob_output_bind_of_inj_on_support {oa : oracle_comp spec α}
   {ob : α → oracle_comp spec β} {b : β} (g : γ → α)
   (h : ∀ x ∈ oa.support, b ∈ (ob x).support → x ∈ set.range g)
   (hg : ∀ x y, g x = g y → g x ∈ oa.support → b ∈ (ob (g x)).support → x = y) :

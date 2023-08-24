@@ -3,7 +3,7 @@ Copyright (c) 2023 Devon Tuma. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
-import computational_monads.distribution_semantics.monad
+import computational_monads.distribution_semantics.tactics.rw_dist_equiv
 
 /-!
 # Distribution Semantics of Map
@@ -91,6 +91,11 @@ lemma prob_event_map_eq_tsum [decidable_pred (∈ e)] :
 end prob_event
 
 lemma map_dist_equiv_of_dist_equiv {f g : α → β} {oa : oracle_comp spec α}
+  {oa' : oracle_comp spec' α} (h : ∀ x ∈ oa.support, f x = g x) (h' : oa ≃ₚ oa') :
+  f <$> oa ≃ₚ g <$> oa' :=
+bind_dist_equiv_bind_of_dist_equiv h' (λ x hx, by simp [h x hx])
+
+lemma map_dist_equiv_of_dist_equiv' {f g : α → β} {oa : oracle_comp spec α}
   {oa' : oracle_comp spec' α} (h : f = g) (h' : oa ≃ₚ oa') : f <$> oa ≃ₚ g <$> oa' :=
 bind_dist_equiv_bind_of_dist_equiv h' (by simp [h])
 
@@ -98,8 +103,8 @@ section map_return
 
 variable (a : α)
 
-@[simp, simp_dist_equiv] lemma map_return_dist_equiv :
-  f <$> (return' !spec! a) ≃ₚ (return (f a) : oracle_comp spec β) :=
+@[simp_dist_equiv] lemma map_return_dist_equiv :
+  f <$> (return' !spec! a) ≃ₚ (return' !spec! (f a)) :=
 by simp only [dist_equiv.def, eval_dist_map, eval_dist_return, pmf.map_pure]
 
 lemma support_map_return : (f <$> (return' !spec! a)).support = {f a} :=
@@ -129,7 +134,7 @@ end map_return
 
 section map_comp
 
-@[simp, simp_dist_equiv] lemma map_comp_dist_equiv : g <$> (f <$> oa) ≃ₚ (g ∘ f) <$> oa :=
+@[simp_dist_equiv] lemma map_comp_dist_equiv : g <$> (f <$> oa) ≃ₚ (g ∘ f) <$> oa :=
 by simp only [dist_equiv.def, eval_dist_map, pmf.map_comp]
 
 lemma support_map_comp : (g <$> (f <$> oa)).support = ((g ∘ f) <$> oa).support :=
@@ -168,7 +173,7 @@ lemma mem_fin_support_map_bind_iff [decidable_eq γ] : z ∈ (g <$> (oa >>= ob))
   ∃ x ∈ oa.fin_support, ∃ y ∈ (ob x).fin_support, g y = z :=
 by simp only [fin_support_map_bind, finset.mem_bUnion, finset.mem_image]
 
-@[simp, simp_dist_equiv] lemma map_bind_dist_equiv : g <$> (oa >>= ob) ≃ₚ oa >>= (λ x, g <$> ob x) :=
+@[simp_dist_equiv] lemma map_bind_dist_equiv : g <$> (oa >>= ob) ≃ₚ oa >>= (λ x, g <$> ob x) :=
 by simp only [dist_equiv.def, eval_dist_map, eval_dist_bind, pmf.map_bind]
 
 lemma eval_dist_map_bind : ⁅g <$> (oa >>= ob)⁆ = ⁅oa⁆.bind (λ x, ⁅ob x⁆.map g) :=
@@ -204,7 +209,7 @@ begin
   refine trans (map_bind_dist_equiv _ _ _) _,
   apply bind_dist_equiv_left,
   intros x hx,
-  rw [dist_equiv_return_iff, support_map, h x hx],
+  rw [dist_equiv_return_iff', support_map, h x hx],
 end
 
 lemma map_bind_dist_equiv_right {f : β → γ} {oa : oracle_comp spec α} {ob : α → oracle_comp spec β}
@@ -220,7 +225,7 @@ end map_bind
 
 section bind_map
 
-@[simp, simp_dist_equiv] lemma bind_map_dist_equiv : (f <$> oa) >>= oc ≃ₚ oa >>= oc ∘ f :=
+lemma bind_map_dist_equiv : (f <$> oa) >>= oc ≃ₚ oa >>= oc ∘ f :=
 by simp only [dist_equiv.def, eval_dist_bind, eval_dist_map, pmf.bind_map]
 
 lemma support_bind_map : ((f <$> oa) >>= oc).support =
@@ -245,7 +250,8 @@ by simp only [fin_support_bind_map, finset.mem_bUnion]
 lemma eval_dist_bind_map : ⁅(f <$> oa) >>= oc⁆ = ⁅oa⁆.bind (λ y, ⁅oc (f y)⁆) :=
 by simp only [eval_dist_bind, eval_dist_map, pmf.bind_map]
 
-lemma eval_dist_bind_map' : ⁅(f <$> oa) >>= oc⁆ = ⁅oa >>= oc ∘ f⁆ := by pairwise_dist_equiv
+lemma eval_dist_bind_map' : ⁅(f <$> oa) >>= oc⁆ = ⁅oa >>= oc ∘ f⁆ :=
+by pairwise_dist_equiv [bind_map_dist_equiv]
 
 lemma prob_output_bind_map_eq_tsum : ⁅= z | (f <$> oa) >>= oc⁆ =
   ∑' (x : α), ⁅oa⁆ x * ⁅oc (f x)⁆ z :=
@@ -263,7 +269,7 @@ end bind_map
 
 section map_id
 
-@[simp, simp_dist_equiv] lemma map_id_dist_equiv : id <$> oa ≃ₚ oa :=
+@[simp_dist_equiv] lemma map_id_dist_equiv : id <$> oa ≃ₚ oa :=
 by rw [dist_equiv.def, eval_dist_map, ⁅oa⁆.map_id]
 
 @[simp] lemma support_map_id : (id <$> oa).support = oa.support :=
@@ -285,10 +291,11 @@ end map_id
 
 section map_const
 
--- TODO: other lemmas and bind versions
-@[simp, simp_dist_equiv] lemma map_const_dist_equiv (b : β) :
-  (λ _, b) <$> oa ≃ₚ return' !spec'! b :=
-by rw [dist_equiv.def, eval_dist_map, ⁅oa⁆.map_const, eval_dist_return]
+@[simp_dist_equiv] lemma map_const_dist_equiv (b : β) : (λ _, b) <$> oa ≃ₚ return' !spec! b :=
+bind_const_dist_equiv oa (return b)
+
+-- TODO: other lemmas
+-- @[sipm] lemma
 
 end map_const
 
@@ -302,63 +309,36 @@ lemma prob_output_map_eq_single' (hx : f x = y) (h : ∀ x' ∈ oa.support, f x'
 lemma prob_output_map_eq_single (hx : f ⁻¹' {y} = {x}) :
   ⁅= y | f <$> oa⁆ = ⁅= x | oa⁆ := prob_output_bind_return_eq_single oa f y x hx
 
-lemma prob_output_map_of_injective (hf : f.injective) : ⁅=f x | f <$> oa⁆ = ⁅= x | oa⁆ :=
+lemma prob_output_map_of_injective (hf : f.injective) : ⁅= f x | f <$> oa⁆ = ⁅= x | oa⁆ :=
 prob_output_map_eq_single' oa f x (f x) rfl (λ x' hx' hxf, hf hxf)
 
 end eq_single
 
 lemma prob_output_bind_map_eq_mul (f : α → β → γ) (g1 : γ → α) (g2 : γ → β)
-  -- (hf : ∀ x y, f x y ∈ )
-  -- (hg : ∀ z ∉ (oa >>= λ a, f a <$> ob a).support, g1 z ∉ oa.support)
   (h : ∀ x ∈ oa.support, ∀ y ∈ (ob x).support, ∀ z, f x y = z ↔ g1 z = x ∧ g2 z = y) (z : γ) :
-
-  -- (hz' : z ∈ ):
-
-    --(hz : z ∈ (oa >>= λ a, f a <$> ob a).support) :
   ⁅= z | oa >>= λ a, f a <$> ob a⁆ = ⁅= g1 z | oa⁆ * ⁅= g2 z | ob (g1 z)⁆ :=
 begin
   rw [prob_output_bind_eq_tsum],
   refine trans (tsum_eq_single (g1 z) (λ x hx, _)) _,
   { by_cases hxa : x ∈ oa.support,
     { refine mul_eq_zero_of_right _ (prob_output_eq_zero _),
-      simp [h x, ← ne.def, ne.symm hx],
+      simp_rw [mem_support_map_iff, not_exists],
       intros y hy,
-      rw [ne.def, h x hxa y hy, not_and_distrib],
-      refine or.inl hx.symm,
-       },
+      simp_rw [h x hxa y hy, not_and_distrib, hx.symm, not_false_iff, true_or] },
     { rw [prob_output_eq_zero hxa, zero_mul] } },
   { by_cases hg1 : g1 z ∈ oa.support,
-    {
-      refine congr_arg (λ x, _ * x) _,
+    { refine congr_arg (λ x, _ * x) _,
       rw [map_eq_bind_return_comp, prob_output_bind_eq_tsum],
       refine trans (tsum_eq_single (g2 z) (λ y hy, _)) _,
-      {
-        by_cases hyb : y ∈ (ob (g1 z)).support,
-        {
-          refine mul_eq_zero_of_right _ _,
-          simp [@eq_comm _ z, h (g1 z) hg1 y hyb z, hy.symm, ← ne.def],
-        },
-        {
-          rw [prob_output_eq_zero hyb, zero_mul],
-        }
-      },
-      {
-        by_cases hg2 : g2 z ∈ (ob (g1 z)).support,
-        {
-          refine trans _ (mul_one _),
-          refine congr_arg (λ e, _ * e) _,
-          refine (prob_output_return_eq_one_iff _ _ _).2 ((h _ hg1 _ hg2 z).2 ⟨rfl, rfl⟩).symm,
-        },
-        {
-          simp [hg2],
-        }
-      }
-    },
-    {
-      simp only [prob_output_eq_zero hg1, zero_mul],
-    }
-  }
-
+      { by_cases hyb : y ∈ (ob (g1 z)).support,
+        { refine mul_eq_zero_of_right _ _,
+          simp [@eq_comm _ z, h (g1 z) hg1 y hyb z, hy.symm, ← ne.def] },
+        { rw [prob_output_eq_zero hyb, zero_mul] } },
+      { by_cases hg2 : g2 z ∈ (ob (g1 z)).support,
+        { refine trans (congr_arg (λ e, _ * e) _) (mul_one _),
+          exact (prob_output_return_eq_one_iff _ _ _).2 ((h _ hg1 _ hg2 z).2 ⟨rfl, rfl⟩).symm },
+        { simp only [hg2, prob_output_eq_zero, not_false_iff, zero_mul] } } },
+    { simp only [prob_output_eq_zero hg1, zero_mul] } }
 end
 
 end oracle_comp

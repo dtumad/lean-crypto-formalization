@@ -64,6 +64,8 @@ instance dist_equiv.is_refl : is_refl (oracle_comp spec α) (≃ₚ) := ⟨λ x,
 /-- More general than regular `symm`, the two computations may have different `oracle_spec`. -/
 @[symm] lemma dist_equiv.symm (h : oa ≃ₚ oa') : oa' ≃ₚ oa := h.symm
 
+lemma dist_equiv.symm_iff : oa ≃ₚ oa' ↔ oa' ≃ₚ oa := ⟨dist_equiv.symm, dist_equiv.symm⟩
+
 instance dist_equiv.is_symm : is_symm (oracle_comp spec α) dist_equiv := ⟨λ oa oa' h, h.symm⟩
 
 lemma dist_equiv_comm : oa ≃ₚ oa' ↔ oa' ≃ₚ oa := ⟨λ h, h.symm, λ h, h.symm⟩

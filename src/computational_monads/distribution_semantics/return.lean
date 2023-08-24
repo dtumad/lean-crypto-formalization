@@ -149,14 +149,24 @@ lemma return_dist_equiv_iff {spec' : oracle_spec} (oa : oracle_comp spec' α) :
   (return' !spec! a) ≃ₚ oa ↔ ∀ x ≠ a, ⁅= x | oa⁆ = 0 :=
 by simp_rw [dist_equiv, eval_dist_return, pmf.pure_eq_iff, prob_output]
 
-lemma dist_equiv_return_iff (oa : oracle_comp spec α) (x : α) :
-  oa ≃ₚ (return' !spec! x) ↔ oa.support = {x} :=
+/-- `return a` has the same distribution as `oa` iff outputs besides `a` have `0` probability. -/
+lemma dist_equiv_return_iff {spec' : oracle_spec} (oa : oracle_comp spec' α) :
+  oa ≃ₚ (return' !spec! a) ↔ ∀ x ≠ a, ⁅= x | oa⁆ = 0 :=
+by rw [dist_equiv.symm_iff, return_dist_equiv_iff]
+
+lemma return_dist_equiv_iff' (oa : oracle_comp spec α) (x : α) :
+  (return' !spec! x) ≃ₚ oa ↔ oa.support = {x} :=
 begin
+  rw [dist_equiv.symm_iff],
   refine ⟨λ h, h.support_eq.trans (support_return _ _), λ h, dist_equiv.ext (λ y, _)⟩,
   by_cases hy : y = x,
   { rwa [hy, prob_output_return_self, prob_output_eq_one_iff] },
   { rwa [prob_output_return_of_ne _ hy, prob_output_eq_zero_iff, h, set.mem_singleton_iff] }
 end
+
+lemma dist_equiv_return_iff' (oa : oracle_comp spec α) (x : α) :
+  oa ≃ₚ (return' !spec! x) ↔ oa.support = {x} :=
+by rw [dist_equiv.symm_iff, return_dist_equiv_iff']
 
 lemma support_return_eq_iff (s : set α) :
   (return' !spec! a).support = s ↔ a ∈ s ∧ ∀ x ∈ s, x = a :=
@@ -184,16 +194,16 @@ end return_eq_iff
 section return_eq_return_iff
 
 /-- Two `return` computations are distributionally equivalent iff they return the same value. -/
-@[simp] lemma return_dist_equiv_return_iff : (return' !spec! a) ≃ₚ (return' !spec'! a') ↔ a = a' :=
+@[simp] lemma return_dist_equiv_return_iff' : (return' !spec! a) ≃ₚ (return' !spec'! a') ↔ a = a' :=
 begin
   simp only [return_dist_equiv_iff, prob_output_return_eq_zero_iff],
   exact ⟨λ h, by simpa only [ne.def, imp_not_comm, eq_self_iff_true, not_not,
     true_implies_iff, @eq_comm _ a' a] using h a', λ h x hx, h ▸ hx⟩,
 end
 
-@[simp_dist_equiv]
+@[pairwise_dist_equiv]
 lemma return_dist_equiv_return : (return' !spec! a) ≃ₚ (return' !spec'! a) :=
-(return_dist_equiv_return_iff spec spec' a a).2 rfl
+(return_dist_equiv_return_iff' spec spec' a a).2 rfl
 
 lemma support_return_eq_support_return_iff :
   (return' !spec! a).support = (return' !spec'! a').support ↔ a = a' :=
@@ -205,7 +215,7 @@ by simp only [fin_support_return, finset.singleton_inj]
 
 lemma eval_dist_return_eq_eval_dist_return_iff :
   ⁅return' !spec! a⁆ = ⁅return' !spec'! a'⁆ ↔ a = a' :=
-return_dist_equiv_return_iff spec spec' a a'
+return_dist_equiv_return_iff' spec spec' a a'
 
 lemma prob_output_return_eq_prob_output_return_iff (x y : α) :
   ⁅= x | return' !spec! a⁆ = ⁅= y | return' !spec'! a'⁆ ↔ (x = a ↔ y = a') :=

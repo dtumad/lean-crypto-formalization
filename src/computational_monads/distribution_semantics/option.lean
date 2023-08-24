@@ -9,8 +9,6 @@ import computational_monads.distribution_semantics.map
 # Probabilities for Computations Over Option Type
 
 General lemmas about probability computations involving `option`.
-
--- TODO: flesh out
 -/
 
 namespace oracle_comp
@@ -26,7 +24,7 @@ section prob_event
 
 variables (oa : oracle_comp spec (option α)) (e : set (option α))
 
-lemma prob_event_option [decidable_eq α] (e : set (option α)) :
+lemma prob_event_option (e : set (option α)) :
   ⁅e | oa⁆ = (e.indicator ⁅oa⁆ none) + ∑' (a : α), e.indicator ⁅oa⁆ (some a) :=
 (prob_event_eq_tsum_indicator oa e).trans (ennreal.tsum_option _)
 
@@ -34,12 +32,16 @@ lemma prob_event_option [decidable_eq α] (e : set (option α)) :
 prob_event_eq_prob_output oa none option.is_none_none
   (λ x hx hx', (hx $ option.eq_none_of_is_none hx').elim)
 
-lemma prob_event_is_some [decidable_eq α] : ⁅λ x, x.is_some | oa⁆ = ∑' (a : α), ⁅= some a | oa⁆ :=
+@[simp] lemma prob_event_is_none_eq_tt : ⁅λ x, x.is_none | oa⁆ = ⁅= none | oa⁆ :=
+prob_event_eq_prob_output oa none option.is_none_none
+  (λ x hx hx', (hx $ option.eq_none_of_is_none hx').elim)
+
+@[simp] lemma prob_event_is_some : ⁅λ x, x.is_some | oa⁆ = ∑' (a : α), ⁅= some a | oa⁆ :=
 let e : set (option α) := λ x, x.is_some in
-calc ⁅e | oa⁆
-  = e.indicator ⁅oa⁆ none + ∑' (a : α), e.indicator ⁅oa⁆ (some a) : prob_event_option oa _
+calc ⁅e | oa⁆ = e.indicator ⁅oa⁆ none + ∑' (a : α), e.indicator ⁅oa⁆ (some a) :
+    prob_event_option oa _
   ... = 0 + ∑' (a : α), e.indicator ⁅oa⁆ (some a) : begin
-    congr,
+    refine congr_arg (λ n, n + ∑' (a : α), e.indicator ⁅oa⁆ (some a)) _,
     refine set.indicator_apply_eq_zero.2 (λ h, false.elim _),
     simpa only [option.is_some_none, coe_sort_ff] using (h : none.is_some),
   end
