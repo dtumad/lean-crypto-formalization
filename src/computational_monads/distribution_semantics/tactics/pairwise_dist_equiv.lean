@@ -3,16 +3,13 @@ Copyright (c) 2023 Devon Tuma. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
-import computational_monads.distribution_semantics.return
-import computational_monads.distribution_semantics.bind
+import computational_monads.distribution_semantics.tactics.by_dist_equiv
 
 /-!
 # Induction Tactic for Splitting an Equivalence into Line by Line Equivalences
 
 This file defines a tactic `pairwise_dist_equiv` for working with and proving instances of
 `dist_equiv` between sequenced computations, by splitting the goal into line-by-line equivalences.
-
-TODO: could have explicitly passed equivs be used transitively, even if tagged ones aren't.
 -/
 
 open interactive interactive.types
@@ -98,32 +95,8 @@ do g ← tactic.target,
   passed_depth ← return (opt_depth.get_or_else 100),
   tagged_d_eqs ← get_simp_dist_equiv_lemmas,
   d_eqs ← return (passed_d_eqs ++ tagged_d_eqs),
-match g with
--- If the target is a distributional equivalence, begin solving it immedeately.
-| `(%%oa ≃ₚ %%oa') := destruct_pairwise_dist_equiv d_eqs passed_depth g
--- If the target is an equality between `eval_dist`s, convert to equivalence notation first.
-| `(⁅%%oa⁆ = ⁅%%oa'⁆) := tactic.refine ``(oracle_comp.dist_equiv.def.1 _) >>
-    tactic.target >>= destruct_pairwise_dist_equiv d_eqs passed_depth
--- If the target is an equality between `prob_outputs`s, switch to equivalence first
-| `(⁅= %%x | %%oa⁆ = ⁅= %%x' | %%oa'⁆) :=
-    tactic.refine ``(oracle_comp.dist_equiv.prob_output_eq _ _) >>
-      tactic.target >>= destruct_pairwise_dist_equiv d_eqs passed_depth
--- If the target is an equality between `prob_event`s, switch to equivalence first
-| `(⁅%%e | %%oa⁆ = ⁅%%e' | %%oa'⁆) :=
-    tactic.unify e e' >> tactic.refine ``(oracle_comp.dist_equiv.prob_event_eq _ %%e) >>
-      tactic.target >>= destruct_pairwise_dist_equiv d_eqs passed_depth <|>
-    tactic.refine ``(oracle_comp.dist_equiv.prob_event_eq_of_inter_support_eq _ _) >>
-      tactic.target >>= destruct_pairwise_dist_equiv d_eqs passed_depth
--- If the target is an equality between `support`s, switch to equivalence first
-| `(oracle_comp.support %%oa = oracle_comp.support %%oa') :=
-    tactic.refine ``(oracle_comp.dist_equiv.support_eq _) >>
-      tactic.target >>= destruct_pairwise_dist_equiv d_eqs passed_depth
--- If the target is an equality between `fin_support`s, switch to equivalence first
-| `(oracle_comp.fin_support %%oa = oracle_comp.fin_support %%oa') :=
-    tactic.refine ``(oracle_comp.dist_equiv.fin_support_eq _) >>
-      tactic.target >>= destruct_pairwise_dist_equiv d_eqs passed_depth
-| _ := tactic.fail "Goal must be an equality be a distributional equivalence."
-end
+  by_dist_equiv,
+  tactic.target >>= destruct_pairwise_dist_equiv d_eqs passed_depth
 
 end oracle_comp
 
@@ -149,9 +122,9 @@ example (oa oa' : oracle_comp spec α) (ob : α → oracle_comp spec β) (y y' :
 by pairwise_dist_equiv [h']
 
 /-- `pairwise_dist_equiv` should work on `prob_event`. -/
-example (oa oa' : oracle_comp spec α) (ob : α → oracle_comp spec β) (e e' : set β) (h' : oa ≃ₚ oa')
-  (h : e ∩ (oa >>= ob).support = e' ∩ (oa >>= ob).support) : ⁅e | oa >>= ob⁆ = ⁅e' | oa' >>= ob⁆ :=
-by {pairwise_dist_equiv [h'], exact h}
+example (oa oa' : oracle_comp spec α) (ob : α → oracle_comp spec β) (e : set β) (h' : oa ≃ₚ oa') :
+  ⁅e | oa >>= ob⁆ = ⁅e | oa' >>= ob⁆ :=
+by pairwise_dist_equiv [h']
 
 /-- `pairwise_dist_equiv` should work on `support`. -/
 example (oa oa' : oracle_comp spec α) (ob : α → oracle_comp spec β)
@@ -177,9 +150,6 @@ begin
   pairwise_dist_equiv [],
   apply h, apply h', apply h'',
 end
-
--- example (oa oa' oa'' : oracle_comp spec α) (h : oa ≃ₚ oa') (h' : oa' ≃ₚ oa'') : oa ≃ₚ oa'' :=
--- by pairwise_dist_equiv [h, h']
 
 /-- If two bind operations have mismatched intermediate types, but there is an existing equivalence
 between the two, then `pairwise_dist_equiv` should be able to solve without error. -/

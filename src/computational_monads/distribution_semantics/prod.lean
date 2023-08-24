@@ -5,6 +5,7 @@ Authors: Devon Tuma
 -/
 import computational_monads.distribution_semantics.map
 import computational_monads.distribution_semantics.tactics.push_map_dist_equiv
+import computational_monads.distribution_semantics.tactics.rw_dist_equiv
 
 /-!
 # Probabilities for Computations Over Prod Type
@@ -61,7 +62,7 @@ by pairwise_dist_equiv
 
 @[simp, simp_dist_equiv] lemma fst_map_bind_return_id_dist_equiv :
   fst <$> (oa >>= λ x, return (x, g x)) ≃ₚ oa :=
-trans (by push_map_dist_equiv) (map_id_dist_equiv oa)
+by rw_dist_equiv [map_bind_dist_equiv, return_bind_dist_equiv, map_id_dist_equiv]
 
 @[simp, simp_dist_equiv] lemma snd_map_bind_return_dist_equiv :
   snd <$> (oa >>= λ x, return (f x, g x)) ≃ₚ g <$> oa :=

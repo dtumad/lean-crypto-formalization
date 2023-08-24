@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
 import computational_monads.distribution_semantics.monad
+import computational_monads.distribution_semantics.tactics.rw_dist_equiv
 
 /-!
 # Distribution Semantics of If-Then-Else
@@ -52,11 +53,7 @@ by split_ifs with hp; simp [hp]
 
 @[simp, simp_dist_equiv] lemma ite_dist_equiv : (if p then oa else oa') ≃ₚ
   do {x ← oa, x' ← oa', if p then return x else return x'} :=
-begin
-  split_ifs with hp,
-  { exact trans (bind_return_id_dist_equiv oa).symm (by pairwise_dist_equiv) },
-  { exact trans (bind_const_dist_equiv oa oa').symm (by pairwise_dist_equiv) }
-end
+by split_ifs with hp; rw_dist_equiv [bind_const_dist_equiv, bind_return_id_dist_equiv]
 
 end ite
 

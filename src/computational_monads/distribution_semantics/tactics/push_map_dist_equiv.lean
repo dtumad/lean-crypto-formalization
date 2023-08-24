@@ -24,14 +24,6 @@ private meta def hardcoded_push_map_aux : expr → tactic unit
 | `(%%f <$> (%%oa >>= λ _, return _)) :=
   tactic.refine ``(trans (trans (map_bind_dist_equiv _ _ _) (bind_dist_equiv_bind_of_dist_equiv_right' _ _ _
     (λ _, map_return_dist_equiv _ _))) _)
--- | `(%%f <$> (%%oa >>= λ _, %%ob >>= λ _, return _)) :=
---   (tactic.refine ``(trans (map_bind_dist_equiv _ _ _) (bind_dist_equiv_bind_of_dist_equiv_right' _ _ _
---     (λ x, trans (map_bind_dist_equiv _ _ _) _))) >>
---   tactic.refine ``(bind_dist_equiv_bind_of_dist_equiv_right' _ _ _ (λ y, map_return_dist_equiv _ _)))
--- | `(%%f <$> (%%oa >>= λ _, %%ob >>= λ _, %%oc >>= λ _, %%od)) := tactic.trace "HERE" >>
---   tactic.refine ``(trans (trans (map_bind_dist_equiv _ _ _) (bind_dist_equiv_bind_of_dist_equiv_right' _ _ _
---     (λ _, trans (map_bind_dist_equiv _ _ _) (bind_dist_equiv_bind_of_dist_equiv_right' _ _ _
---     (λ _, (map_bind_dist_equiv _ _ _)))))) _)
 | `(%%f <$> (%%oa >>= λ _, %%ob >>= %%oc)) :=
   tactic.refine ``(trans (trans (map_bind_dist_equiv _ _ _) (bind_dist_equiv_bind_of_dist_equiv_right' _ _ _
     (λ _, map_bind_dist_equiv _ _ _))) _)
@@ -68,7 +60,6 @@ match g with -- TODO: support, eval_dist, etc.
 }
 | _ := tactic.fail "Goal must be a distributional equivalence between a map applied to a bind"
 end
-
 
 end oracle_comp
 
