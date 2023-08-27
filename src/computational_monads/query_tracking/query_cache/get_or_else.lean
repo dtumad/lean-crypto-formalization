@@ -359,8 +359,7 @@ begin
   }
 end
 
-
-@[simp_dist_equiv]
+@[pairwise_dist_equiv]
 lemma get_or_else_bind_get_or_else_dist_equiv_same_input (t' : spec.domain i) :
   do {x ← cache.get_or_else i t ou, x.2.get_or_else i t' ou} ≃ₚ
     cache.get_or_else i t' ou :=
@@ -368,13 +367,12 @@ begin
   sorry
 end
 
-@[simp_dist_equiv]
+@[pairwise_dist_equiv]
 lemma fst_map_get_or_else_bind_get_or_else_dist_equiv_same_input (t' : spec.domain i) :
   do {x ← cache.get_or_else i t ou, prod.fst <$> x.2.get_or_else i t ou} ≃ₚ
     prod.fst <$> cache.get_or_else i t ou :=
 calc do {x ← cache.get_or_else i t ou, prod.fst <$> x.2.get_or_else i t ou} ≃ₚ
-  prod.fst <$> (do {x ← cache.get_or_else i t ou, x.2.get_or_else i t ou}) :
-    by push_map_dist_equiv
+  prod.fst <$> (do {x ← cache.get_or_else i t ou, x.2.get_or_else i t ou}) : by push_map_dist_equiv
   ... ≃ₚ prod.fst <$> cache.get_or_else i t ou : by pairwise_dist_equiv
 
 

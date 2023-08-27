@@ -60,7 +60,7 @@ end
 section try_until_zero
 
 /-- Running a computation zero times is distributionally equivalent to just returning failure. -/
-@[simp, simp_dist_equiv] lemma try_until_zero_dist_equiv :
+@[pairwise_dist_equiv] lemma try_until_zero_dist_equiv :
   oa.try_until p 0 ≃ₚ (return none : oracle_comp spec _) :=
 by simp [dist_equiv_return_iff', try_until_zero]
 

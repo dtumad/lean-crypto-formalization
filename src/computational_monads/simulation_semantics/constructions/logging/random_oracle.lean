@@ -25,7 +25,7 @@ but returns the same result to subsequent oracle queries.
 Masking is used to hide the irrelevent state of the `uniform_oracle` -/
 noncomputable def randomₛₒ {spec : oracle_spec} :
   sim_oracle spec uniform_selecting (query_cache spec) :=
-((uniform_oracle spec) ∘ₛ cachingₛₒ).mask_state (equiv.prod_punit (query_cache spec))
+(uniformₛₒ ∘ₛ cachingₛₒ).mask_state (equiv.prod_punit (query_cache spec))
 
 namespace randomₛₒ
 

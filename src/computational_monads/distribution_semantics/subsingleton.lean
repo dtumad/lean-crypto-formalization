@@ -29,7 +29,7 @@ subsingleton.elim ⁅oa⁆ ⁅oa'⁆
 dist_equiv_of_subsingleton _ _
 
 @[simp_dist_equiv] lemma dist_equiv_return_default_result_of_subsingleton [subsingleton α] :
-  oa ≃ₚ (return oa.default_result : oracle_comp spec α) :=
+  oa ≃ₚ return' !spec! oa.default_result :=
 dist_equiv_of_subsingleton oa _
 
 lemma support_of_subsingleton [subsingleton α] (x : α) : oa.support = {x} :=

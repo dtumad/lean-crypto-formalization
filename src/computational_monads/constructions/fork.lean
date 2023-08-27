@@ -58,7 +58,7 @@ section of_choose_input
 def of_choose_input (adv : sec_adversary spec β α)
   (i : spec.ι) (choose_input : α → β → spec.domain i) :
   forking_adversary β (α × query_log (uniform_selecting ++ spec)) i (adv.qb.get_count (sum.inr i)) :=
-{ run := λ y, simulate logging_oracle (adv.run y) ∅,
+{ run := λ y, simulate loggingₛₒ (adv.run y) ∅,
   choose_fork := λ y z, begin
     have inp := choose_input z.1 y,
     have ts : list (spec.domain i) := (z.2 (sum.inr i)).map prod.fst,
@@ -94,13 +94,13 @@ let i' : (uniform_selecting ++ spec).ι := sum.inr i in
 do {
   -- Generate an initial seed with enouch values to reach the adversary's query bound.
   seed ← generate_seed adversary.qb,
-  z₁ ← simulate' seeded_oracle (adversary.run y) seed,
+  z₁ ← simulate' seededₛₒ (adversary.run y) seed,
   fp₁ ← return ((adversary.choose_fork y z₁).get_or_else 0),
   -- Regenerate seed values after the chosen forking point.
   shared_seed ← return (seed.take_at_index i' fp₁),
   fresh_seed ← generate_seed (adversary.fresh_query_count fp₁),
   -- Run the adversary again using the new seeded values.
-  z₂ ← simulate' seeded_oracle (adversary.run y) (shared_seed + fresh_seed),
+  z₂ ← simulate' seededₛₒ (adversary.run y) (shared_seed + fresh_seed),
   fp₂ ← return ((adversary.choose_fork y z₂).get_or_else 0),
   -- Return the final result, assuming that both runs choose the same forking point
   let success := (adversary.choose_fork y z₁).is_some ∧ fp₁ = fp₂ in
@@ -127,14 +127,14 @@ end
 
 /-- The first side output is in the support of simulating the adversary with the first seed. -/
 lemma mem_support_simulate'_seed₁ (h : fr ∈ (fork adv y).support) :
-  fr.side_output₁ ∈ (simulate' seeded_oracle (adv.run y) fr.seed₁).support :=
+  fr.side_output₁ ∈ (simulate' seededₛₒ (adv.run y) fr.seed₁).support :=
 begin
   sorry,
 end
 
 /-- The second side output is in the support of simulating the adversary with the second seed. -/
 lemma mem_support_simulate'_seed₂ (h : fr ∈ (fork adv y).support) :
-  fr.side_output₂ ∈ (simulate' seeded_oracle (adv.run y) fr.seed₂).support :=
+  fr.side_output₂ ∈ (simulate' seededₛₒ (adv.run y) fr.seed₂).support :=
 begin
   sorry,
 end
@@ -176,20 +176,20 @@ theorem prob_event_ne_none_le_prob_event_fork_success (adv : forking_adversary �
 calc ⁅(≠) none | adv.choose_fork y <$> adv.run y⁆ ^ 2 / q
 
   ≤ (∑ fp : fin q.succ, ⁅= some fp | adv.choose_fork y <$>
-                          simulate' seeded_oracle (adv.run y) ∅⁆) ^ 2 / q :
+                          simulate' seededₛₒ (adv.run y) ∅⁆) ^ 2 / q :
     begin
       sorry
     end
 
   ... ≤ ∑ fp : fin q.succ, ⁅= some fp | adv.choose_fork y <$>
-                          simulate' seeded_oracle (adv.run y) ∅⁆ ^ 2 :
+                          simulate' seededₛₒ (adv.run y) ∅⁆ ^ 2 :
     begin
       -- Apply jensens inequality to pull in the square
       sorry,
     end
 
   ... ≤  ∑ fp : fin q.succ, (∑ seed in poss_shared_seeds adv.qb i fp,
-      ⁅= some fp | adv.choose_fork y <$> simulate' seeded_oracle (adv.run y) seed⁆
+      ⁅= some fp | adv.choose_fork y <$> simulate' seededₛₒ (adv.run y) seed⁆
         * (possible_outcomes (adv.qb.decrement (sum.inr i) fp))⁻¹) ^ 2 :
     begin
       -- Sum over all the possible seeds for that forking point, weighted by their number
@@ -197,7 +197,7 @@ calc ⁅(≠) none | adv.choose_fork y <$> adv.run y⁆ ^ 2 / q
     end
 
   ... ≤ ∑ fp : fin q.succ, ∑ seed in poss_shared_seeds adv.qb i fp,
-      (⁅= some fp | adv.choose_fork y <$> simulate' seeded_oracle (adv.run y) seed⁆ ^ 2
+      (⁅= some fp | adv.choose_fork y <$> simulate' seededₛₒ (adv.run y) seed⁆ ^ 2
         * (possible_outcomes (adv.qb.decrement (sum.inr i) fp))⁻¹) :
     begin
       -- Apply Jensens inequality to pull in the square, losing a "possible_outcomes" factor
@@ -205,9 +205,9 @@ calc ⁅(≠) none | adv.choose_fork y <$> adv.run y⁆ ^ 2 / q
     end
 
   ... ≤ ∑ fp : fin q.succ, ∑ seed in poss_shared_seeds adv.qb i fp,
-      (⁅= some fp | adv.choose_fork y <$> simulate' seeded_oracle (adv.run y) seed⁆
+      (⁅= some fp | adv.choose_fork y <$> simulate' seededₛₒ (adv.run y) seed⁆
         * (possible_outcomes (adv.qb.decrement (sum.inr i) fp))⁻¹)
-         * ⁅= some fp | adv.choose_fork y <$> simulate' seeded_oracle (adv.run y) seed⁆ :
+         * ⁅= some fp | adv.choose_fork y <$> simulate' seededₛₒ (adv.run y) seed⁆ :
     begin
       -- Pull out one of the probability factors
       sorry

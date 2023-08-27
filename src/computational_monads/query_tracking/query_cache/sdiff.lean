@@ -80,11 +80,6 @@ end
 @[simp] lemma sdiff_le_left : cache \ cache' ≤ cache :=
 λ i t u hu, ((lookup_sdiff_eq_some_iff _ _ _ _ _).1 hu).2
 
-lemma sdiff_le_right_iff : cache \ cache' ≤ cache' ↔ cache ≤ cache' :=
-begin
-  sorry,
-end
-
 lemma eq_empty_of_le_of_le_diff {cache₀ cache cache' : query_cache spec}
   (hs : cache₀ ≤ cache) (hs' : cache₀ ≤ cache' \ cache) : cache₀ = ∅ :=
 begin

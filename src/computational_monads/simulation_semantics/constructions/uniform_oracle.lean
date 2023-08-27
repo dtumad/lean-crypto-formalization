@@ -9,7 +9,7 @@ import computational_monads.constructions.uniform_select
 /-!
 # Uniform Oracles
 
-This file defines a simulation oracle called `uniform_oracle`,
+This file defines a simulation oracle called `uniformₛₒ`,
 that reduces any computation to one with a `uniform_selecting` `oracle_spec`,
 by responding uniformly at random to any query.
 -/
@@ -19,36 +19,34 @@ open_locale ennreal big_operators
 
 variables {α β : Type} {spec : oracle_spec}
 
-noncomputable def uniform_oracle (spec : oracle_spec) :
-  sim_oracle spec uniform_selecting unit :=
-⟪λ i t, $ᵗ (spec.range i)⟫
+noncomputable def uniformₛₒ {spec : oracle_spec} :
+  sim_oracle spec uniform_selecting unit := ⟪λ i t, $ᵗ (spec.range i)⟫
 
-lemma uniform_oracle.def (spec : oracle_spec) :
-  uniform_oracle spec = ⟪λ i t, $ᵗ (spec.range i)⟫ := rfl
+lemma uniformₛₒ.def (spec : oracle_spec) : uniformₛₒ = ⟪λ i t, $ᵗ (spec.range i)⟫ := rfl
 
-namespace uniform_oracle
+namespace uniformₛₒ
 
 variables (oa : oracle_comp spec α) (i : spec.ι) (t : spec.domain i) (s : unit)
 
-@[simp] lemma apply_eq : uniform_oracle spec i (t, s) =
+@[simp] lemma apply_eq : uniformₛₒ i (t, s) =
   $ᵗ (spec.range i) >>= λ u, return (u, ()) := rfl
 
 section support
 
-@[simp] lemma support_apply : (uniform_oracle spec i (t, s)).support = ⊤ :=
-by simp only [uniform_oracle.def, stateless_oracle.support_apply,
+@[simp] lemma support_apply : (uniformₛₒ i (t, s)).support = ⊤ :=
+by simp only [uniformₛₒ.def, stateless_oracle.support_apply,
   support_uniform_select_fintype, set.top_eq_univ, set.preimage_univ]
 
-@[simp] lemma fin_support_apply : (uniform_oracle spec i (t, s)).fin_support = ⊤ :=
+@[simp] lemma fin_support_apply : (uniformₛₒ i (t, s)).fin_support = ⊤ :=
 by rw [fin_support_eq_iff_support_eq_coe, support_apply,
   finset.top_eq_univ, finset.coe_univ, set.top_eq_univ]
 
 @[simp] lemma support_simulate :
-  (simulate (uniform_oracle spec) oa s).support = prod.fst ⁻¹' oa.support :=
+  (simulate uniformₛₒ oa s).support = prod.fst ⁻¹' oa.support :=
 stateless_oracle.support_simulate_eq_preimage_support oa _ s
   (λ i t, support_uniform_select_fintype _)
 
-@[simp] lemma support_simulate' : (simulate' (uniform_oracle spec) oa s).support = oa.support :=
+@[simp] lemma support_simulate' : (simulate' uniformₛₒ oa s).support = oa.support :=
 stateless_oracle.support_simulate'_eq_support oa _ s (λ i t, support_uniform_select_fintype _)
 
 end support
@@ -56,7 +54,7 @@ end support
 section eval_dist
 
 @[simp] lemma eval_dist_apply :
-  ⁅uniform_oracle spec i (t, s)⁆ = pmf.uniform_of_fintype (spec.range i × unit) :=
+  ⁅uniformₛₒ i (t, s)⁆ = pmf.uniform_of_fintype (spec.range i × unit) :=
 begin
   refine pmf.ext (λ x, _),
   rw [apply_eq, eval_dist_bind_return, eval_dist_uniform_select_fintype, pmf.map_apply],
@@ -71,8 +69,8 @@ end eval_dist
 section prob_event
 
 @[simp] lemma prob_event_apply (e : set (spec.range i × unit)) [decidable_pred e] :
-  ⁅e | uniform_oracle spec i (t, s)⁆ = fintype.card e / fintype.card (spec.range i) :=
-calc ⁅e | uniform_oracle spec i (t, s)⁆
+  ⁅e | uniformₛₒ i (t, s)⁆ = fintype.card e / fintype.card (spec.range i) :=
+calc ⁅e | uniformₛₒ i (t, s)⁆
   = (∑' x, e.indicator 1 x) / fintype.card (spec.range i) : begin
     rw [apply_eq, prob_event_uniform_select_fintype_bind_eq_tsum],
     simp only [prob_event_return, set.indicator, pi.one_apply,
@@ -98,4 +96,4 @@ calc ⁅e | uniform_oracle spec i (t, s)⁆
 
 end prob_event
 
-end uniform_oracle
+end uniformₛₒ

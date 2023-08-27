@@ -35,7 +35,7 @@ by simp only [support_simulate_map, support_simulate_bind, set.image_Union]
   ⁅simulate so oa s⁆.bind (λ x, ⁅simulate so (ob x.1) x.2⁆.map (prod.map g id)) :=
 by simp only [simulate_map, simulate_bind, eval_dist_map, eval_dist_bind, pmf.map_bind]
 
-@[simp_dist_equiv] lemma simulate_map_bind_dist_equiv : simulate so (g <$> (oa >>= ob)) s ≃ₚ
+@[pairwise_dist_equiv] lemma simulate_map_bind_dist_equiv : simulate so (g <$> (oa >>= ob)) s ≃ₚ
   simulate so oa s >>= λ x, prod.map g id <$> simulate so (ob x.1) x.2 :=
 by pairwise_dist_equiv
 

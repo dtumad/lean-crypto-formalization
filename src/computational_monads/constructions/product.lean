@@ -139,7 +139,7 @@ end
   f <$> (oa ×ₘ ob) ≃ₚ do {x ← oa, y ← ob, return (f (x, y))} :=
 by pairwise_dist_equiv
 
-@[simp_dist_equiv] lemma map_prod_product_dist_equiv (f : α → γ) (g : β → δ) :
+@[pairwise_dist_equiv] lemma map_prod_product_dist_equiv (f : α → γ) (g : β → δ) :
   prod.map f g <$> (oa ×ₘ ob) ≃ₚ f <$> oa ×ₘ g <$> ob :=
 by rw_dist_equiv [map_bind_dist_equiv, map_bind_dist_equiv, bind_map_dist_equiv,
   bind_map_dist_equiv, map_return_dist_equiv]

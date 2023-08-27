@@ -102,7 +102,7 @@ by simp only [prob_event_bind_eq_sum, div_eq_mul_inv, ← finset.sum_mul, one_mu
 
 end prob_event
 
-@[simp_dist_equiv] lemma uniform_fin_one_dist_equiv {spec} :
+@[pairwise_dist_equiv] lemma uniform_fin_one_dist_equiv {spec} :
   $[0..0] ≃ₚ return' !spec! 0 := by simp [dist_equiv.ext_iff]
 
 end uniform_fin
@@ -221,7 +221,7 @@ end
 
 end prob_event
 
-@[simp_dist_equiv] lemma uniform_select_vector_singleton_dist_equiv {spec}
+@[pairwise_dist_equiv] lemma uniform_select_vector_singleton_dist_equiv {spec}
   (v : vector α 1) : ($ᵛ v) ≃ₚ return' !spec! v.head :=
 begin
   rw [← vector.nth_zero, uniform_select_vector],
@@ -428,7 +428,7 @@ by simp only [uniform_select_finset, prob_event_uniform_select_list_bind_eq_sum,
 
 end prob_event
 
-@[simp_dist_equiv] lemma uniform_select_finset_singleton_dist_equiv {spec}
+@[pairwise_dist_equiv] lemma uniform_select_finset_singleton_dist_equiv {spec}
   (h : finset.nonempty {x}) : $ˢ {x} h ≃ₚ return' !spec! x :=
 by simp only [uniform_select_finset, finset.to_list_singleton,
   uniform_select_list_singleton_dist_equiv]
