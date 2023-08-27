@@ -85,7 +85,7 @@ lemma prob_event_get_or_else (e) : ⁅e | cache.get_or_else i t ou⁆ =
     else ⁅e | ou >>= λ u, return (u, [i, t ↦ u; cache])⁆ :=
 by simp [get_or_else_eq_ite]
 
-@[simp_dist_equiv] lemma get_or_else_dist_equiv : cache.get_or_else i t ou ≃ₚ
+lemma get_or_else_dist_equiv : cache.get_or_else i t ou ≃ₚ
   if t ∈ᵢ cache then return ((cache.lookup i t).get_or_else default, cache)
     else ou >>= λ u, return (u, [i, t ↦ u; cache]) :=
 by rw [get_or_else_eq_ite]
@@ -286,11 +286,13 @@ begin
 
     have : t ∈ᵢ cache := sorry,
     simp [h', this, h],
+    rw_dist_equiv [map_return_dist_equiv],
     sorry,
   },
   {
     have : t ∉ᵢ cache' := sorry,
     simp [h, h', this],
+    simp_rw_dist_equiv [map_bind_dist_equiv, map_return_dist_equiv],
   }
 end
 

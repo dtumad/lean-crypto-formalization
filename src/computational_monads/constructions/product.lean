@@ -64,18 +64,7 @@ end fin_support
 
 section distribution_semantics
 
-section dist_equiv
-
-lemma product_dist_equiv_product {oa oa' : oracle_comp spec α} {ob ob' : oracle_comp spec β}
-  (ha : oa ≃ₚ oa') (hb : ob ≃ₚ ob') : oa ×ₘ ob ≃ₚ oa' ×ₘ ob' :=
-begin
-  simp [product.def],
-  pairwise_dist_equiv [ha, hb],
-end
-
-end dist_equiv
-
-section eval_dist
+section prob_output
 
 /-- Since the two computations run independently, the probability of an element
   is the product of the two individual probabilities-/
@@ -88,10 +77,22 @@ calc ⁅= x | oa ×ₘ ob⁆ = ∑' a b, (⁅= a | oa⁆ * ⁅= b | ob⁆) * ⁅
     tsum_eq_single x (λ y hy, by rw [prod.mk.eta, prob_output_return_of_ne _ hy.symm, mul_zero])
   ... = ⁅= x.1 | oa⁆ * ⁅= x.2 | ob⁆ : by rw [prod.mk.eta, prob_output_return_self, mul_one]
 
-@[simp_dist_equiv] lemma prod_bind_equiv_bind_bind (oc : α × β → oracle_comp spec γ) :
+end prob_output
+
+section dist_equiv
+
+lemma product_dist_equiv_product {oa oa' : oracle_comp spec α} {ob ob' : oracle_comp spec β}
+  (ha : oa ≃ₚ oa') (hb : ob ≃ₚ ob') : oa ×ₘ ob ≃ₚ oa' ×ₘ ob' :=
+by rw_dist_equiv [ha, hb]
+
+@[pairwise_dist_equiv] lemma prod_bind_equiv_bind_bind (oc : α × β → oracle_comp spec γ) :
   oa ×ₘ ob >>= oc ≃ₚ do {a ← oa, b ← ob, oc (a, b)} :=
 dist_equiv.ext (λ x, by simp only [prob_output_bind_eq_tsum, prob_output_product,
   ← ennreal.tsum_mul_left, ← ennreal.tsum_prod, prod.mk.eta, mul_assoc])
+
+end dist_equiv
+
+section eval_dist
 
 @[simp] lemma eval_dist_prod_indicator_prod_apply :
   (e ×ˢ e').indicator ⁅oa ×ₘ ob⁆ x = (e.indicator ⁅oa⁆ x.1) * (e'.indicator ⁅ob⁆ x.2) :=
@@ -134,18 +135,14 @@ begin
       set.indicator_apply_eq_zero.2 (λ h, (hb h).elim), mul_zero] }
 end
 
-@[simp, simp_dist_equiv] lemma map_product_dist_equiv (f : α × β → γ) :
+@[pairwise_dist_equiv] lemma map_product_dist_equiv (f : α × β → γ) :
   f <$> (oa ×ₘ ob) ≃ₚ do {x ← oa, y ← ob, return (f (x, y))} :=
 by pairwise_dist_equiv
 
-@[simp, simp_dist_equiv] lemma map_prod_product_dist_equiv (f : α → γ) (g : β → δ) :
+@[simp_dist_equiv] lemma map_prod_product_dist_equiv (f : α → γ) (g : β → δ) :
   prod.map f g <$> (oa ×ₘ ob) ≃ₚ f <$> oa ×ₘ g <$> ob :=
-calc prod.map f g <$> (oa ×ₘ ob) ≃ₚ do {x ← oa, y ← ob, return (f x, g y)} :
-    by apply map_product_dist_equiv
-  ... ≃ₚ do {x ← oa, y ← g <$> ob, return (f x, y)} : by pairwise_dist_equiv
-  ... ≃ₚ do {x ← f <$> oa, y ← g <$> ob, return (x, y)} : dist_equiv.ext
-    (λ z, by simp only [prob_output.def, eval_dist_bind, eval_dist_map, pmf.bind_map])
-  ... = (f <$> oa) ×ₘ (g <$> ob) : rfl
+by rw_dist_equiv [map_bind_dist_equiv, map_bind_dist_equiv, bind_map_dist_equiv,
+  bind_map_dist_equiv, map_return_dist_equiv]
 
 lemma prob_output_map_fst_product [decidable_eq γ] (f : α × β → γ) (x : α × γ) :
   ⁅= x | (λ (x : α × β), (prod.fst x, f x)) <$> (oa ×ₘ ob)⁆ =

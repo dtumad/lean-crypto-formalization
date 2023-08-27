@@ -138,8 +138,7 @@ by simp only [support_simulate', set.mem_image, prod.exists,
 @[simp] lemma eval_dist_simulate' : ⁅simulate' so oa s⁆ = ⁅simulate so oa s⁆.map prod.fst :=
 eval_dist_map _ prod.fst
 
-@[simp_dist_equiv] lemma simulate'_dist_equiv :
-  simulate' so oa s ≃ₚ prod.fst <$> simulate so oa s := refl _
+lemma simulate'_dist_equiv : simulate' so oa s ≃ₚ prod.fst <$> simulate so oa s := refl _
 
 /-- Express the probability of `simulate'` returning a specific value
 as the sum over all possible output states of the probability of `simulate` return it -/

@@ -64,14 +64,14 @@ by simp [get_or_else, il.not_mem_active_oracles h]
 lemma get_or_else_of_eq_cons (t ts) (h : il i = t :: ts) : il.get_or_else i oa =
   return (t, il.drop_at_index i 1) := by simp [get_or_else, h, il.mem_active_oracles' h, get_head]
 
-@[simp_dist_equiv] lemma get_or_else_dist_equiv : il.get_or_else i oa ≃ₚ
+lemma get_or_else_dist_equiv : il.get_or_else i oa ≃ₚ
   if i ∈ il.active_oracles then return (il.get_head i) else (λ t, (t, il)) <$> oa :=
 by by_cases hi : i ∈ il.active_oracles; simp [hi]
 
 @[simp] lemma get_or_else_empty : (∅ : spec.indexed_list τ).get_or_else i oa =
   (λ t, (t, ∅)) <$> oa := by simp [get_or_else]
 
-@[simp_dist_equiv] lemma get_or_else_add_dist_equiv : (il + il').get_or_else i oa ≃ₚ
+lemma get_or_else_add_dist_equiv : (il + il').get_or_else i oa ≃ₚ
   if i ∈ il.active_oracles then return ((il i).head, il.drop_at_index i 1 + il')
     else prod.map id ((+) il) <$> il'.get_or_else i oa :=
 begin
@@ -89,7 +89,7 @@ begin
       pairwise_dist_equiv } }
 end
 
-@[simp_dist_equiv] lemma get_or_else_of_list_dist_equiv (ts : list (τ i)) :
+lemma get_or_else_of_list_dist_equiv (ts : list (τ i)) :
   (of_list ts).get_or_else i oa ≃ₚ if ts.empty then (λ t, (t, ∅)) <$> oa
     else return (ts.head, of_list (ts.tail)) :=
 begin
@@ -100,7 +100,7 @@ begin
     refine trans (get_or_else_add_dist_equiv _ _ _ _) (by simp) }
 end
 
-@[simp_dist_equiv] lemma get_or_else_add_values_dist_equiv (ts : list (τ i)) :
+lemma get_or_else_add_values_dist_equiv (ts : list (τ i)) :
   (il.add_values ts).get_or_else i oa ≃ₚ if (il i).empty then (if ts.empty
     then (λ t, (t, il)) <$> oa else return (ts.head, il.add_values ts.tail))
       else return ((il i).head, (il.drop_at_index i 1).add_values ts) :=
@@ -121,7 +121,7 @@ begin
     pairwise_dist_equiv }
 end
 
-@[simp_dist_equiv] lemma get_or_else_add_values_fresh_dist_equiv [inhabited (τ i)]
+lemma get_or_else_add_values_fresh_dist_equiv [inhabited (τ i)]
   (ts : list (τ i)) (hi : i ∉ il.active_oracles) (hts : ts ≠ []) :
   (il.add_values ts).get_or_else i oa ≃ₚ return' !spec'! (ts.head, il.add_values ts.tail) :=
 begin

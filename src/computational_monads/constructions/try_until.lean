@@ -95,15 +95,13 @@ end try_until_zero
 
 section try_until_succ
 
-@[simp, simp_dist_equiv]
-lemma try_until_succ_dist_equiv : oa.try_until p n.succ ≃ₚ
+@[pairwise_dist_equiv] lemma try_until_succ_dist_equiv : oa.try_until p n.succ ≃ₚ
   do {x ← oa, if p x then return (some x) else oa.try_until p n} :=
 begin
-  rw [try_until_succ],
-  push_map_dist_equiv,
+  rw_dist_equiv [map_bind_dist_equiv, map_bind_dist_equiv, map_return_dist_equiv, ite_dist_equiv,
+    return_bind_dist_equiv, bind_map_dist_equiv],
   pairwise_dist_equiv,
-  exact trans (bind_dist_equiv_bind_of_dist_equiv_right' _ _ _ (λ _, map_return_dist_equiv _ _))
-    (by split_ifs with hpx; simp [hpx, try_until, map_eq_bind_return_comp])
+  by_cases hp : p x; simp [hp],
 end
 
 /-- `oa.try_until p n` can fail to find a result iff there's an output `x` of `oa` with `¬ p x`. -/

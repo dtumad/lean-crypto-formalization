@@ -83,7 +83,6 @@ lemma replicate_mem_support_repeat {oa : oracle_comp spec α} {x : α} (n : ℕ)
   replicate n x ∈ (oa.repeat n).support :=
 by { rw [mem_support_repeat_iff_forall], exact (λ y hy, (list.eq_of_mem_replicate hy).symm ▸ hx) }
 
-
 /-- For any output `xs` of `oa.repeat m` the probability that all elements of `xs` satisfy `p`
 is the probability of a single output of `oa` satisfying `p` raised to the `m`. -/
 @[simp] lemma prob_event_all₂ (p : α → Prop) :
@@ -116,11 +115,11 @@ section repeat_zero
 
 /-- Repeating a computation `0` times is equivalent to any other computation,
 since the output type is `vector α 0` which is a subsingleton type. -/
-lemma repeat_zero_dist_equiv (oa₀ : oracle_comp spec' (vector α 0)) :
+@[pairwise_dist_equiv] lemma repeat_zero_dist_equiv (oa₀ : oracle_comp spec' (vector α 0)) :
   oa.repeat 0 ≃ₚ oa₀ := by pairwise_dist_equiv
 
-lemma repeat_zero_dist_equiv_return :
-  oa.repeat 0 ≃ₚ (return nil : oracle_comp spec _) := refl _
+@[simp_dist_equiv] lemma repeat_zero_dist_equiv_return :
+  oa.repeat 0 ≃ₚ return' !spec! nil := refl _
 
 lemma support_repeat_zero : (oa.repeat 0).support = {nil} := rfl
 

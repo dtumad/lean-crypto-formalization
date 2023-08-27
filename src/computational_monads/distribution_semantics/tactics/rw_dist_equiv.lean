@@ -12,11 +12,11 @@ This file defines a tactic `rw_dist_equiv` that allows for rewriting terms by a 
 equivalence `oa ≃ₚ oa'`, assuming the term is itself a distributional equivalence.
 Generally this behaves like the `rewrite` tactic but for `≃ₚ` instead of `=`.
 This is useful when you don't want to seperate terms like `⁅oa >>= ob⁆` into `⁅oa⁆ >>= ⁅ob⁆` first.
+
+TODO: It would be good to get more done on improving the runtime, especially with simp versions.
 -/
 
 open interactive interactive.types
-
-variables {α β γ : Type} {spec : oracle_spec}
 
 namespace oracle_comp
 
@@ -66,7 +66,8 @@ private meta def traverse_dist_equiv (d_eq : pexpr) : bool → bool → tactic b
     (traverse_dist_equiv tt tt), (tactic.try refl_dist_equiv_base), return tt} <|>
   -- Try to apply things on the other side of the equivalence
   (if check_symm = ff then tactic.fail () else
-    tactic.refine ``(symm _) >> traverse_dist_equiv tt ff) <|>
+    tactic.refine ``(symm _) >> traverse_dist_equiv tt ff
+      >> tactic.refine ``(symm _) >> return tt) <|>
   -- Fail if none of the previous attempts worked
   if fail_on_miss = ff then return ff else
     tactic.fail ("Failed to apply equivalence: " ++ (to_string d_eq))
@@ -79,8 +80,8 @@ private meta def rec_rw_eqs (d_eq : pexpr) (fail_on_miss : bool) : ℕ → tacti
 /-- Loop through all the passed in equivalences, trying to apply them in order. -/
 private meta def apply_dist_equiv_list (fail_on_miss : bool) (iters : ℕ) : list pexpr → tactic unit
 | [] := refl_dist_equiv_base <|> return () -- Try to clear the final state with reflexive equality.
-| (d_eq :: d_eqs) := (apply_dist_equiv d_eq <|> rec_rw_eqs d_eq fail_on_miss iters)
-    >> apply_dist_equiv_list d_eqs
+| (d_eq :: d_eqs) := apply_dist_equiv d_eq <|> (rec_rw_eqs d_eq fail_on_miss iters
+    >> apply_dist_equiv_list d_eqs)
 
 /-- Tactic for reducing proofs of distributional equivalences between bind operations.
 This introduces goals for pairwise proofs of equivalences between each component.
@@ -118,6 +119,8 @@ do passed_d_eqs ← return (opt_d_eqs.get_or_else []),
 end oracle_comp
 
 section tests
+
+variables {α β γ δ : Type} {spec : oracle_spec}
 
 section rw_dist_equiv
 

@@ -103,9 +103,8 @@ section map_return
 
 variable (a : α)
 
-@[simp_dist_equiv] lemma map_return_dist_equiv :
-  f <$> (return' !spec! a) ≃ₚ (return' !spec! (f a)) :=
-by simp only [dist_equiv.def, eval_dist_map, eval_dist_return, pmf.map_pure]
+lemma map_return_dist_equiv : f <$> (return' !spec! a) ≃ₚ (return' !spec! (f a)) :=
+by pairwise_dist_equiv
 
 lemma support_map_return : (f <$> (return' !spec! a)).support = {f a} :=
 by simp only [support_map, support_return, set.image_singleton]
@@ -134,7 +133,7 @@ end map_return
 
 section map_comp
 
-@[simp_dist_equiv] lemma map_comp_dist_equiv : g <$> (f <$> oa) ≃ₚ (g ∘ f) <$> oa :=
+@[pairwise_dist_equiv] lemma map_comp_dist_equiv : g <$> (f <$> oa) ≃ₚ (g ∘ f) <$> oa :=
 by simp only [dist_equiv.def, eval_dist_map, pmf.map_comp]
 
 lemma support_map_comp : (g <$> (f <$> oa)).support = ((g ∘ f) <$> oa).support :=
@@ -173,7 +172,7 @@ lemma mem_fin_support_map_bind_iff [decidable_eq γ] : z ∈ (g <$> (oa >>= ob))
   ∃ x ∈ oa.fin_support, ∃ y ∈ (ob x).fin_support, g y = z :=
 by simp only [fin_support_map_bind, finset.mem_bUnion, finset.mem_image]
 
-@[simp_dist_equiv] lemma map_bind_dist_equiv : g <$> (oa >>= ob) ≃ₚ oa >>= (λ x, g <$> ob x) :=
+@[pairwise_dist_equiv] lemma map_bind_dist_equiv : g <$> (oa >>= ob) ≃ₚ oa >>= (λ x, g <$> ob x) :=
 by simp only [dist_equiv.def, eval_dist_map, eval_dist_bind, pmf.map_bind]
 
 lemma eval_dist_map_bind : ⁅g <$> (oa >>= ob)⁆ = ⁅oa⁆.bind (λ x, ⁅ob x⁆.map g) :=
@@ -269,8 +268,7 @@ end bind_map
 
 section map_id
 
-@[simp_dist_equiv] lemma map_id_dist_equiv : id <$> oa ≃ₚ oa :=
-by rw [dist_equiv.def, eval_dist_map, ⁅oa⁆.map_id]
+lemma map_id_dist_equiv : id <$> oa ≃ₚ oa := by pairwise_dist_equiv
 
 @[simp] lemma support_map_id : (id <$> oa).support = oa.support :=
 by pairwise_dist_equiv
