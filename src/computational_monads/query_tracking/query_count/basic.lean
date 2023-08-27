@@ -12,7 +12,7 @@ import to_mathlib.general
 This file defines a simple `query_count` structure for tracking numbers of queries to oracles.
 See `counting_oracle` for a way to generate a count during a simulation.
 
-`query_bound` extends `query_count` to show that queries in a computation are actually bounded
+`queries_at_most` uses `query_count` to show that queries in a computation are actually bounded
 by the count in the underlying `query_count`.
 
 `query_log` and `query_store` extend a count to include a particular list rather than a count.

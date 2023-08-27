@@ -87,7 +87,7 @@ We can characterize these definitions based on their results on the three basic 
 `src/computational_monads/asymptotics` contains three main asymptotic definitions common in cryptographic proofs:
 * `polynomial_time` extends mathlib's `tm2_computable_in_poly_time` (based on Turing machines) to the `oracle_comp` monad to define polynomial time computations.
 * `negligible` is a standard definition of negligible functions, as a specialization of mathlib's `superpolynomial_decay`.
-* `query_bound` gives a way to bound the number of queries made by a given computation, and to in particular bound it by a polynomial.
+* `queries_at_most` gives a way to bound the number of queries made by a given computation, and to in particular bound it by a polynomial.
 
 ## Cryptographic Constructions
 

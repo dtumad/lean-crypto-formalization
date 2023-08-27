@@ -241,13 +241,9 @@ end mock_signing_reduction
 
 section choose_fork
 
-/- The choose_fork that will be passed to forking lemma. `q` will be the
-max queries of the adversary (given by its `query_bound`).
-Returns none if it hasn't been queried or if the signature isn't valid.
-
-Note that if the message was queried to signing oracle (causing the experiment to fail
-for unforgeability), then the result will only be in the higher level cache,
-not the lower level one being used here (since it never leaves the "mock") -/
+-- Note that if the message was queried to signing oracle (causing the experiment to fail
+-- for unforgeability), then the result will only be in the higher level cache,
+-- not the lower level one being used here (since it never leaves the "mock") -/
 -- def choose_fork (x₀ pk : X) (m : M) (σ : vector (G × bool) n)
 --   (cache : query_log (hhs_signature G X M n).random_oracle_spec) (q : ℕ) : option (fin q) :=
 -- match cache.lookup () (retrieve_commits x₀ pk σ, m) with
@@ -267,7 +263,8 @@ def mocked_unforgeable_adversary (adversary : (hhs_signature G X M n).unforgeabl
   sec_adversary (hhs_signature G X M n).random_oracle_spec (hhs_signature G X M n).PK
     ((hhs_signature G X M n).M × (hhs_signature G X M n).S) :=
 { run := λ ⟨x₀, pk⟩, mock_signing_reduction adversary x₀ pk,
-  qb := sorry }
+  qb := sorry,
+  qb_is_bound := sorry }
 
 /-- Reduce an unforgeability adversery to a forking adversary that can be passed to
 `oracle_comp.fork` to get two results, that can be used to construct a adversary for

@@ -9,7 +9,7 @@ import computational_monads.simulation_semantics.constructions.identity_oracle
 import computational_monads.simulation_semantics.oracle_append
 import computational_monads.asymptotics.polynomial_time
 import computational_monads.asymptotics.negligable
-import computational_monads.asymptotics.query_bound
+import computational_monads.asymptotics.queries_at_most
 import crypto_foundations.sec_adversary
 
 /-!
