@@ -6,7 +6,6 @@ Authors: Devon Tuma
 import computational_monads.simulation_semantics.simulate.map
 import computational_monads.simulation_semantics.simulate.return
 
-
 /-!
 # Distribution Semantics of Simulated Computations
 
@@ -36,7 +35,7 @@ by simp only [support_simulate_map, support_simulate_bind, set.image_Union]
   ⁅simulate so oa s⁆.bind (λ x, ⁅simulate so (ob x.1) x.2⁆.map (prod.map g id)) :=
 by simp only [simulate_map, simulate_bind, eval_dist_map, eval_dist_bind, pmf.map_bind]
 
-@[simp, simp_dist_equiv] lemma simulate_map_bind_dist_equiv : simulate so (g <$> (oa >>= ob)) s ≃ₚ
+@[simp_dist_equiv] lemma simulate_map_bind_dist_equiv : simulate so (g <$> (oa >>= ob)) s ≃ₚ
   simulate so oa s >>= λ x, prod.map g id <$> simulate so (ob x.1) x.2 :=
 by pairwise_dist_equiv
 
@@ -70,9 +69,20 @@ section return_bind
 lemma simulate_return_bind_dist_equiv : simulate so (return a >>= ob) s ≃ₚ simulate so (ob a) s :=
 by pairwise_dist_equiv
 
-lemma support_simulate_return_bind :
-  (simulate so (return a >>= ob) s).support = (simulate so (ob a) s).support :=
-by pairwise_dist_equiv
+lemma support_simulate_return_bind : (simulate so (return a >>= ob) s).support =
+  (simulate so (ob a) s).support := by pairwise_dist_equiv
+
+lemma fin_support_simulate_return_bind : (simulate so (return a >>= ob) s).fin_support =
+  (simulate so (ob a) s).fin_support := by pairwise_dist_equiv
+
+lemma eval_dist_simulate_return_bind : ⁅simulate so (return a >>= ob) s⁆ =
+  ⁅simulate so (ob a) s⁆ := by pairwise_dist_equiv
+
+lemma prob_output_simulate_return_bind (z : β × S) : ⁅= z | simulate so (return a >>= ob) s⁆ =
+  ⁅= z | simulate so (ob a) s⁆ := by pairwise_dist_equiv
+
+lemma prob_event_simulate_return_bind (e : set (β × S)) : ⁅e | simulate so (return a >>= ob) s⁆ =
+  ⁅e | simulate so (ob a) s⁆ := by pairwise_dist_equiv
 
 end return_bind
 

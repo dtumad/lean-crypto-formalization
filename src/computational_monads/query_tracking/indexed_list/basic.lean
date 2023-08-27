@@ -64,6 +64,9 @@ lemma mem_active_oracles {i} (hi : il i ≠ []) : i ∈ il.active_oracles :=
 lemma mem_active_oracles' {i t ts} (hi : il i = t :: ts) : i ∈ il.active_oracles :=
 il.mem_active_oracles (hi.symm ▸ list.cons_ne_nil t ts)
 
+lemma mem_active_oracles_of_mem {i t} (hi : t ∈ il i) : i ∈ il.active_oracles :=
+il.mem_active_oracles (list.ne_nil_of_mem hi)
+
 lemma not_mem_active_oracles {i} (hi : il i = []) : i ∉ il.active_oracles :=
 (il.not_mem_active_oracles_iff i).2 hi
 
@@ -737,6 +740,10 @@ by simpa only [sep_eq_filter']
 
 @[simp] lemma active_oracles_sep : {x ∈ il | p x}.active_oracles =
   {x ∈ il.active_oracles | p x} := rfl
+
+lemma mem_active_oracles_sep_iff (i : spec.ι) :
+  i ∈ {x ∈ il | p x}.active_oracles ↔ i ∈ il.active_oracles ∧ p i :=
+by simp only [active_oracles_sep, finset.sep_def, finset.mem_filter]
 
 @[simp] lemma get_count_sep (i) : {x ∈ il | p x}.get_count i =
   (@ite _ (p i) (classical.dec _) (il.get_count i) 0) :=

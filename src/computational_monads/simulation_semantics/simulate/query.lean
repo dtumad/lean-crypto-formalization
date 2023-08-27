@@ -62,10 +62,10 @@ end eval_dist
 
 section dist_equiv
 
-@[simp, simp_dist_equiv] lemma simulate_query_dist_equiv :
+@[simp] lemma simulate_query_dist_equiv :
   simulate so (query i t) s ≃ₚ so i (t, s) := by pairwise_dist_equiv
 
-@[simp, simp_dist_equiv] lemma simulate'_query_dist_equiv :
+@[simp] lemma simulate'_query_dist_equiv :
   simulate' so (query i t) s ≃ₚ prod.fst <$> so i (t, s) := by pairwise_dist_equiv
 
 end dist_equiv

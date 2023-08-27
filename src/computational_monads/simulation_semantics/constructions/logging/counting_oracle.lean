@@ -19,9 +19,9 @@ open oracle_comp oracle_spec
 
 variables {α β γ : Type} {spec spec' : oracle_spec}
 
-def counting_oracle (spec : oracle_spec) : sim_oracle spec spec (query_count spec) :=
+def countingₛₒ {spec : oracle_spec} : sim_oracle spec spec (query_count spec) :=
 ⟪query | λ qc i u t, qc.increment i 1, ∅⟫
 
-namespace counting_oracle
+namespace countingₛₒ
 
-end counting_oracle
+end countingₛₒ

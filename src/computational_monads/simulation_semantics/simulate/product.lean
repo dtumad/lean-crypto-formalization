@@ -20,6 +20,4 @@ open_locale big_operators ennreal
 
 variables (so : sim_oracle spec spec' S) (a : α) (s : S)
 
--- lemma simulate'_product_dist_equiv
-
 end oracle_comp

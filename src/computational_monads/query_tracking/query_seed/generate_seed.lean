@@ -23,7 +23,7 @@ to determine the ordering, and so the definition is noncomputable.
 namespace oracle_comp
 
 open_locale big_operators
-open oracle_spec
+open oracle_spec oracle_spec.indexed_list
 
 variables {α β γ : Type} {spec : oracle_spec}
 
@@ -33,24 +33,25 @@ noncomputable def generate_seed (qc : spec.query_count) :
   oracle_comp uniform_selecting (spec.query_seed) :=
 generate qc (λ i, $ᵗ (spec.range i))
 
-variables (qc : spec.query_count) (qs : spec.query_seed)
+variables (qc : spec.query_count)
 
-lemma active_oracles_of_mem_support_generate_seed (qs : spec.query_seed)
-  (hqs : qs ∈ (generate_seed qc).support) : qs.active_oracles = qc.active_oracles :=
-begin
-  sorry
-end
+@[simp] lemma support_generate_seed : (generate_seed qc).support = {qs | ↑qs = qc} :=
+by simp only [generate_seed, support_generate, mem_support_uniform_select_fintype,
+  list.all₂_iff_forall, imp_true_iff, and_true]
 
-@[simp] lemma mem_support_generate_seed_iff (qs : spec.query_seed) :
-  qs ∈ (generate_seed qc).support ↔ ↑qs = qc :=
-begin
-  sorry,
-end
-
-@[simp] lemma prob_output_generate_seed (h : ↑qs = qc) :
+@[simp] lemma prob_output_generate_seed (qs : spec.query_seed) (h : ↑qs = qc) :
   ⁅= qs | generate_seed qc⁆ = (possible_outcomes qc)⁻¹ :=
 begin
-  sorry
+  refine trans (prob_output_generate qc _ qs h) (ennreal.eq_inv_of_mul_eq_one_left _),
+  simp only [possible_outcomes, nat.cast_prod, ← h, coe_query_count_eq,
+    active_oracles_to_query_count, ← finset.prod_mul_distrib],
+  refine finset.prod_eq_one (λ j hj, _),
+  have : ⇑⁅$ᵗ (spec.range j)⁆ = λ _, (↑(fintype.card (spec.range j)))⁻¹,
+  from funext (λ i, prob_output_uniform_select_fintype _ i),
+  rw [this, list.map_const, list.prod_replicate, ← get_count_eq_length_apply,
+    nat.cast_pow, ← ennreal.inv_pow, get_count_to_query_count],
+  exact ennreal.inv_mul_cancel (ennreal.pow_ne_zero (nat.cast_ne_zero.2 fintype.card_ne_zero) _)
+    (ennreal.pow_ne_top (ennreal.nat_ne_top _))
 end
 
 end oracle_comp

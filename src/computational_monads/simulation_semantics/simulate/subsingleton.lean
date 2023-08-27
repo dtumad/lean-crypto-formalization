@@ -107,7 +107,7 @@ begin
     (by simp [prod.eq_iff_fst_eq_snd_eq]),
 end
 
-@[simp, simp_dist_equiv] lemma simulate_dist_equiv_of_subsingleton [subsingleton S]
+lemma simulate_dist_equiv_of_subsingleton [subsingleton S]
   (s : S) : simulate so oa s ≃ₚ (λ x, (x, s)) <$> simulate' so oa s :=
 begin
   refine trans _ (map_comp_dist_equiv _ _ _).symm,

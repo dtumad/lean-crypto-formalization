@@ -65,7 +65,8 @@ def of_choose_input (adv : sec_adversary spec β α)
     exact if inp ∈ ts then some ↑(list.index_of inp ts) else none,
   end,
   qb := adv.qb,
-  q_eq_bound := rfl
+  q_eq_bound := rfl,
+  qb_is_bound := sorry
 }
 
 end of_choose_input

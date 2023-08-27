@@ -3,620 +3,650 @@ Copyright (c) 2022 Devon Tuma. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
-import computational_monads.simulation_semantics.constructions.logging.logging_oracle
-import computational_monads.query_tracking.query_log.lookup
-import computational_monads.query_tracking.query_log.fork
-import computational_monads.simulation_semantics.oracle_compose
-import computational_monads.distribution_semantics.tactics.push_map_dist_equiv
+import computational_monads.query_tracking.query_cache.get_or_else
+import computational_monads.query_tracking.query_cache.add_fresh_queries
+import computational_monads.query_tracking.query_cache.sdiff
+import computational_monads.simulation_semantics.simulate.monad
+import computational_monads.simulation_semantics.simulate.query
+import computational_monads.distribution_semantics.prod
+import computational_monads.constructions.product
 
 /-!
 # Caching Simulation Oracle
 
 This file defines a `sim_oracle` that implements caching functionality.
-`caching_oracle` represents a simulator that logs all new queries, returning the old
-log values for queries that have been previously asked, so the `query_log` functions as a cache.
-This is often useful when composed with other oracles, such as in `random_oracle`.
+`cachingₛₒ` represents a simulator that caches fresh queries and returns the same value
+for any future queries, using a `query_cache` as an internal state for tracking this.
+
+This is used by being composed with other oracles, such as in `random_oracle`.
+
+-- TODO: implicit parameters here (and other cache files)
 -/
 
-open oracle_comp oracle_spec query_log
+open oracle_comp oracle_spec query_cache
 open prod (fst) (snd)
+open_locale ennreal big_operators classical -- TODO: temp classical (maybe we should have this for all dist sem)
 
 variables {α β γ δ : Type} {spec spec' : oracle_spec}
 
-/-- Computation that returns a currently cached value, or queries a new value if needed,
-returning both the result and the (potentially updated) cache.
-The function for a fresh query is given by `ou`, which may have other oracles than the cache.
--- TODO: use this? -/
-def query_log.lookup_cached_or_run
-  (cache : query_log spec) (i : spec.ι) (t : spec.domain i)
-  (ou : oracle_comp spec' (spec.range i)) :
-  oracle_comp spec' (spec.range i × query_log spec) :=
-match cache.lookup i t with
-| (some u) := return (u, cache)
-| none := do {u ← ou, return (u, cache.log_query i t u)}
-end
+/-- Oracle for tracking previous queries, and returning the same value for matching inputs.
+The `query_cache.get_or_else` function allows us to run a fallback for non-cached values. -/
+def cachingₛₒ {spec : oracle_spec} : sim_oracle spec spec (query_cache spec) :=
+{ default_state := ∅,
+  o := λ i ⟨t, cache⟩, cache.get_or_else i t (query i t) }
 
-/-- Oracle for logging previous queries, and returning the same value for matching inputs -/
-def caching_oracle (spec : oracle_spec) : sim_oracle spec spec (query_log spec) :=
-{ default_state := init spec,
-  o := λ i ⟨t, log⟩, match log.lookup i t with
-  | (some u) := return (u, log) -- Return the cached value if it already exists
-  | none := do {u ← query i t, return (u, log.log_query i t u)}
-  end }
+namespace cachingₛₒ
 
--- TODO: Play with notation like this for convenience
-@[inline, reducible, simp] def cachingₛₒ {spec : oracle_spec} := caching_oracle spec
+section apply
 
-namespace caching_oracle
+@[simp] lemma apply_eq (i : spec.ι) (z : spec.domain i × query_cache spec) :
+  cachingₛₒ i z = z.2.get_or_else i z.1 (query i z.1) := by cases z; refl
 
-variables (oa oa' : oracle_comp spec α) (i : spec.ι) (t t' : spec.domain i) (u : spec.range i)
-  (log : query_log spec) (x : spec.range i × query_log spec) --TODO: naming → cache
+variables {i : spec.ι} {z : spec.domain i × query_cache spec}
+  {t : spec.domain i} {s₀ : query_cache spec}
 
--- TODO: cleanup, explicity / implicit
-lemma apply_eq : cachingₛₒ i (t, log) = option.rec_on (log.lookup i t)
-  (query i t >>= λ u, return (u, log.log_query i t u)) (λ u, return (u, log)) :=
-by {simp only [cachingₛₒ, caching_oracle, sim_oracle.has_coe_to_fun.def],
-  induction log.lookup i t; refl }
+lemma apply_eq_of_mem (h : z.1 ∈ᵢ z.2) :
+  cachingₛₒ i z = return ((z.2.lookup i z.1).get_or_else default, z.2) := by simp [h]
 
-lemma apply_eq_of_lookup_eq_none (hlog : log.lookup i t = none) :
-  cachingₛₒ i (t, log) = (query i t >>= λ u, return (u, log.log_query i t u)) :=
-by rw [apply_eq, hlog]
+lemma apply_eq_of_mem' (h : t ∈ᵢ s₀) :
+  cachingₛₒ i (t, s₀) = return ((s₀.lookup i t).get_or_else default, s₀) := apply_eq_of_mem h
 
-lemma apply_eq_of_lookup_eq_some (u : spec.range i) (hlog : log.lookup i t = some u) :
-  cachingₛₒ i (t, log) = return (u, log) :=
-by rw [apply_eq, hlog]
+lemma apply_eq_of_not_mem (h : z.1 ∉ᵢ z.2) :
+  cachingₛₒ i z = query i z.1 >>= λ u, return (u, [i, z.1 ↦ u; z.2]) := by simp [h]
 
--- TODO: not_queried-->fresh (or `is_fresh`/`is_cached`)
-lemma apply_eq_of_not_queried {i : spec.ι} {t : spec.domain i} {log : query_log spec}
-  (hlog : log.not_queried i t) :
-  cachingₛₒ i (t, log) = (query i t >>= λ u, return (u, log.log_query i t u)) :=
-by rw [apply_eq, (query_log.lookup_eq_none_iff_not_queried _ _ _).2 hlog]
+lemma apply_eq_of_not_mem' (h : t ∉ᵢ s₀) :
+  cachingₛₒ i (t, s₀) = query i t >>= λ u, return (u, [i, t ↦ u; s₀]) := apply_eq_of_not_mem h
 
-lemma apply_eq_of_not_not_queried (hlog : ¬ log.not_queried i t) :
-  cachingₛₒ i (t, log) = (return ((log.lookup i t).get_or_else default, log)) :=
-begin
-  obtain ⟨u, hu⟩ := exists_eq_lookup_of_not_not_queried _ _ _ hlog,
-  simp [apply_eq_of_lookup_eq_some _ _ _ _ hu.symm, hu.symm],
-end
+lemma apply_eq_of_lookup_eq_some {u} (h : s₀.lookup i t = some u) :
+  cachingₛₒ i (t, s₀) = return (u, s₀) := get_or_else_of_lookup_eq_some _ _ h
 
-lemma fst_map_apply_log_query_dist_equiv_of_index_ne (i' : spec.ι) (t' : spec.domain i') (hi : i' ≠ i) :
-  fst <$> cachingₛₒ i' (t', log.log_query i t u) ≃ₚ fst <$> cachingₛₒ i' (t', log) :=
-begin
-  sorry
-end
+end apply
 
-
-@[simp] lemma fst_map_apply_log_query_dist_equiv :
-  fst <$> cachingₛₒ i (t', log.log_query i t u) ≃ₚ
-    if t = t' then return u else
-      fst <$> cachingₛₒ i (t', log) :=
-begin
-split_ifs with ht,
-  {
-    rw [caching_oracle.apply_eq, lookup_log_query_same_index, if_pos ht],
-    simp,
-
-  },
-  {
-    by_cases hlog : log.not_queried i t',
-    {
-      have hlog' : (log.log_query i t u).not_queried i t' := sorry,
-      rw [apply_eq_of_not_queried hlog,
-        apply_eq_of_not_queried hlog'],
-      push_map_dist_equiv,
-    },
-    {
-      obtain ⟨u', hu⟩ := exists_eq_lookup_of_not_not_queried _ _ _ hlog,
-      have hu' : (log.log_query i t u).lookup i t' = some u' := sorry,
-      simp only [apply_eq_of_lookup_eq_some _ _ _ _ hu.symm,
-        apply_eq_of_lookup_eq_some _ _ _ _ hu',
-        fst_map_return_dist_equiv_fst_map_return],
-
-    }
-
-   }
-end
-
-@[simp] lemma apply_log_query_self :
-  cachingₛₒ i (t, log.log_query i t u) = return (u, log.log_query i t u) :=
-begin
-  refine apply_eq_of_lookup_eq_some i t _ u _,
-  rw [lookup_log_query_same_input],
-end
-
-@[simp] lemma apply_default_state :
-  cachingₛₒ i (t, cachingₛₒ.default_state) =
-    (query i t >>= λ u, return (u, (init _).log_query i t u)) :=
-apply_eq_of_not_queried (query_log.not_queried_init _ _)
-
-@[simp] lemma apply_init : cachingₛₒ i (t, init spec) =
-  (query i t >>= λ u, return (u, (init _).log_query i t u)) :=
-apply_eq_of_not_queried (query_log.not_queried_init _ _)
-
--- TODO: log query notation (maybe induction)
-lemma apply_log_query_init :
-  cachingₛₒ i (t', (init spec).log_query i t u) =
-    if t = t' then return (u, (init spec).log_query i t u) else
-      query i t' >>= λ u', return (u', ((init spec).log_query i t u).log_query i t' u') :=
-begin
-  split_ifs with ht,
-  { rw [caching_oracle.apply_eq, lookup_log_query_init, if_pos ht] },
-  { rw [caching_oracle.apply_eq, lookup_log_query_init, if_neg ht] }
-end
-
--- lemma apply_log_query_of_index_ne {i i'} (t : spec.domain i) (t' : spec.domain i') (u')
---   (hi : i' ≠ i) : cachingₛₒ i (t, log.log_query i' t' u') =
-
-lemma apply_log_query_init_of_index_ne {i i'} (t : spec.domain i) (t' : spec.domain i') (u')
-  (hi : i' ≠ i) : cachingₛₒ i (t, (init spec).log_query i' t' u') =
-    query i t >>= λ u, return (u, ((init spec).log_query i' t' u').log_query i t u) :=
-begin
-  refine apply_eq_of_not_queried _,
-  refine (not_queried_log_query_of_index_ne _ hi _ _ _).2 _,
-  refine (not_queried_init _ _),
-end
+variables (oa : oracle_comp spec α) (s₀ s : query_cache spec)
 
 section support
 
-@[simp] lemma support_apply : (cachingₛₒ i (t, log)).support = if log.not_queried i t
-  then {x | x.2 = log.log_query i t x.1} else {x | some x.1 = log.lookup i t ∧ x.2 = log} :=
+/-- Simulation with a caching oracle will only ever grow the cash and doesn't remove elements. -/
+lemma le_of_mem_support_simulate {oa : oracle_comp spec α} {s₀ : query_cache spec} :
+  ∀ z ∈ (simulate cachingₛₒ oa s₀).support, s₀ ≤ snd z :=
 begin
-  split_ifs with hlog; ext x,
-  { rw [apply_eq_of_not_queried hlog, support_bind_return, support_query,
-      set.image_univ, set.mem_range, set.mem_set_of_eq],
-    refine ⟨λ h, _, λ h, _⟩,
-    { obtain ⟨u, rfl⟩ := h,
-      refl },
-    { exact ⟨x.1, h ▸ (prod.eq_iff_fst_eq_snd_eq.2 ⟨rfl, rfl⟩)⟩ } },
-  { obtain ⟨u, hu⟩ := log.exists_eq_lookup_of_not_not_queried i t hlog,
-    simp only [apply_eq_of_lookup_eq_some _ _ _ u hu.symm, ← hu, support_return,
-      prod.eq_iff_fst_eq_snd_eq, set.mem_singleton_iff, set.mem_set_of_eq] }
+  intros z hz,
+  induction oa using oracle_comp.induction_on
+    with α a α β oa ob hoa hob i t generalizing s₀,
+  { rw [mem_support_simulate_return_iff] at hz,
+    exact hz.2 ▸ le_rfl },
+  { rw [mem_support_simulate_bind_iff] at hz,
+    obtain ⟨x, s, hs, hzx⟩ := hz,
+    exact (hoa (x, s) hs).trans (hob x z hzx) },
+  { exact s₀.le_of_mem_support_get_or_else z hz }
 end
 
-lemma support_apply_of_not_queried {i t} {log : query_log spec}
-  (hlog : query_log.not_queried log i t) :
-  (cachingₛₒ i (t, log)).support = {x | x.2 = log.log_query i t x.1} :=
-by rw [support_apply, if_pos hlog]
-
-lemma mem_support_apply_iff_of_not_queried (hlog : log.not_queried i t) :
-  x ∈ (cachingₛₒ i (t, log)).support ↔ x.2 = log.log_query i t x.1 :=
-by rw [support_apply_of_not_queried hlog, set.mem_set_of_eq]
-
-lemma support_apply_of_queried {i t} {log : query_log spec} (hlog : ¬ query_log.not_queried log i t)  :
-  (cachingₛₒ i (t, log)).support = {x | some x.1 = log.lookup i t ∧ x.2 = log} :=
-by rw [support_apply, if_neg hlog]
-
-lemma mem_support_apply_iff_of_queried (hlog : ¬ log.not_queried i t) :
-  x ∈ (cachingₛₒ i (t, log)).support ↔ some x.1 = log.lookup i t ∧ x.2 = log :=
-by rw [support_apply_of_queried hlog, set.mem_set_of_eq]
-
-/-- If the initial cache has `nodup` for some oracle, then so does the final cache. -/
-lemma state_invariant_nodup (hlog : (log i).nodup) (x : α × query_log spec)
-  (hx : x ∈ (simulate cachingₛₒ oa log).support) : (x.2 i).nodup :=
+/-- The output of two simulations of a computation using `cachingₛₒ` differ iff there is some
+query made in both simulations for which the query response differs.
+In particular it they can't differ simply by having some additional values being fresh. -/
+lemma ne_iff_exists_lookup_ne_of_mem_support_simulate {oa : oracle_comp spec α}
+  {s₀ : query_cache spec} {z z' : α × query_cache spec}
+  (hz : z ∈ (simulate cachingₛₒ oa s₀).support) (hz' : z' ∈ (simulate cachingₛₒ oa s₀).support) :
+  z ≠ z' ↔ ∃ i t, t ∈ᵢ z.2 ∧ t ∈ᵢ z'.2 ∧ z.2.lookup i t ≠ z'.2.lookup i t :=
 begin
-  refine state_invariant_of_preserved cachingₛₒ (λ log, (log i).nodup)
-    (λ i t log x hx hlog, _) log hlog oa x hx,
-  by_cases h : log.not_queried i t,
-  { rw [mem_support_apply_iff_of_not_queried _ _ _ _ h] at hx,
-    rw [hx, query_log.nodup_log_query_apply_iff _ _ _ _ _ hlog],
-    exact or.inr ((log.not_queried_iff_not_mem _ _).1 h _) },
-  { rw [mem_support_apply_iff_of_queried _ _ _ _ h] at hx,
-    exact hx.2.symm ▸ hlog }
+  refine ⟨λ h, _, λ h, _⟩,
+  { induction oa using oracle_comp.induction_on
+      with α a α β oa ob hoa hob i t generalizing s₀,
+    { simp only [support_simulate_return, set.mem_singleton_iff] at hz hz',
+      exact (h (hz.trans hz'.symm)).elim },
+    { rw [mem_support_simulate_bind_iff'] at hz hz',
+      obtain ⟨x, hx, hxz⟩ := hz,
+      obtain ⟨x', hx', hxz'⟩ := hz',
+      by_cases hxx' : x = x',
+      { exact hob x.1 h hxz (hxx'.symm ▸ hxz') },
+      { obtain ⟨i, t, htx, htx', ht⟩ := hoa hxx' hx hx',
+        have hz : x.2 ≤ z.2 := le_of_mem_support_simulate z hxz,
+        have hz' : x'.2 ≤ z'.2 := le_of_mem_support_simulate z' hxz',
+        refine ⟨i, t, mem_of_le_of_mem hz htx,
+          mem_of_le_of_mem hz' htx', _⟩,
+        rwa [lookup_eq_lookup_of_le_of_mem hz htx,
+          lookup_eq_lookup_of_le_of_mem hz' htx'] } },
+    { by_cases hs₀ : t ∈ᵢ s₀,
+      { simp [simulate_query, hs₀] at hz hz',
+        refine (h (hz.trans hz'.symm)).elim },
+      { simp [simulate_query, hs₀] at hz hz',
+        obtain ⟨u, rfl⟩ := hz,
+        obtain ⟨u', rfl⟩ := hz',
+        refine ⟨i, t, _⟩,
+        simp only [mem_cache_query_same_input, true_and,
+          lookup_cache_query_same_input, ne.def, option.some_inj],
+        simpa only [ne.def, prod.eq_iff_fst_eq_snd_eq, not_and_distrib,
+          cache_query_eq_cache_query_iff_of_same_cache, or_self] using h } } },
+  { exact let ⟨i, t, hzt, hzt', hz⟩ := h in λ h',
+      (query_cache.ne_of_lookup_ne _ _ i t hz) (prod.eq_iff_fst_eq_snd_eq.1 h').2 }
 end
 
-section lookup
-
-/-- If a value is already cached in the initial state, it has the same cache value after. -/
-lemma lookup_simulate_eq_some_of_lookup_eq_some (x : α × query_log spec)
-  (hx : x ∈ (simulate cachingₛₒ oa log).support)
-  (hlog : log.lookup i t = some u) : x.2.lookup i t = some u :=
+/-- Given a possible result `z` of simulating a computation `oa >>= ob` with a caching oracle,
+we get a stronger version `mem_support_simulate_bind_iff` that includes uniqueness of the
+intermediate result (since all choices made must align with the cached values in `z`).  -/
+theorem mem_support_simulate_bind_iff (ob : α → oracle_comp spec β)
+  (z : β × query_cache spec) : z ∈ (simulate cachingₛₒ (oa >>= ob) s₀).support ↔
+    ∃! (y : α × query_cache spec), y ∈ (simulate cachingₛₒ oa s₀).support ∧
+      z ∈ (simulate cachingₛₒ (ob y.1) y.2).support :=
 begin
-  refine state_invariant_of_preserved cachingₛₒ (λ log, log.lookup i t = some u)
-    (λ i t log x hx hlog, _) log hlog oa x hx,
-  by_cases h : log.not_queried i t,
-  { rw [support_apply_of_not_queried h, set.mem_set_of_eq] at hx,
-    rw [hx, query_log.lookup_log_query],
-    split_ifs with hi ht,
-    { obtain rfl := ht,
-      obtain rfl := hi,
-      exact false.elim (option.some_ne_none u (trans hlog.symm $
-        (log.lookup_eq_none_iff_not_queried _ _).2 h)) },
-    { exact hlog },
-    { exact hlog } },
-  { rw [mem_support_apply_iff_of_queried _ _ _ _ h] at hx,
-    exact hx.2.symm ▸ hlog }
-end
-
-/-- If a value isn't cached after simulation, it wasn't cached in the initial state. -/
-lemma lookup_eq_none_of_lookup_simulate_eq_none (x : α × query_log spec)
-  (hx : x ∈ (simulate cachingₛₒ oa log).support)
-  (hx' : x.2.lookup i t = none) : log.lookup i t = none :=
-begin
+  rw [mem_support_simulate_bind_iff'],
+  refine ⟨λ h, exists_unique_of_exists_of_unique h _, λ h, exists_of_exists_unique h⟩,
+  rintros y y' ⟨hy, hyz⟩ ⟨hy', hyz'⟩,
   by_contradiction h,
-  rw [← ne.def, option.ne_none_iff_exists'] at h,
-  refine let ⟨u, hu⟩ := h in option.some_ne_none u ((lookup_simulate_eq_some_of_lookup_eq_some
-    oa i t u log x hx hu).symm.trans hx'),
+  obtain ⟨i, t, hty, hty', ht⟩ := (ne_iff_exists_lookup_ne_of_mem_support_simulate hy hy').1 h,
+  rwa [← lookup_eq_lookup_of_le_of_mem (le_of_mem_support_simulate _ hyz) hty,
+    ← lookup_eq_lookup_of_le_of_mem (le_of_mem_support_simulate _ hyz') hty',
+    ne.def, eq_self_iff_true, not_true] at ht,
 end
 
-/-- For any query fresh to the initial cache, if there is some output such that query has a cached
-value, then there are also outputs with any other possible cached value. -/
-lemma exists_cache_lookup_eq_some (hlog : log.not_queried i t)
-  (x : α × query_log spec) (hx : x ∈ (simulate cachingₛₒ oa log).support)
-  (h : x.2.lookup i t = some u) (u' : spec.range i) :
-  ∃ (y : α × query_log spec) (hy : y ∈ (simulate cachingₛₒ oa log).support),
-    y.2.lookup i t = some u' :=
+theorem exists_unique_mem_support_of_le (oa : oracle_comp spec α) {s₀ s₁ : query_cache spec}
+  (hs₀₁ : s₀ ≤ s₁) (z₁ : α × query_cache spec) (hz : z₁ ∈ (simulate cachingₛₒ oa s₁).support) :
+  ∃! (z₀ : α × query_cache spec), z₀.2 ≤ z₁.2 ∧ z₀ ∈ (simulate cachingₛₒ oa s₀).support :=
 begin
-  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t,
-  { rw [support_simulate_return, set.mem_singleton_iff] at hx,
-    have : ¬ log.not_queried i t := begin
-      rw [← query_log.lookup_eq_none_iff_not_queried,
-        option.eq_none_iff_forall_not_mem, not_forall],
-      refine ⟨u, _⟩,
-      simpa only [hx] using h,
-    end,
-    refine (this hlog).elim },
-  sorry, sorry,
-end
-
-lemma bind_simulate'_dist_equiv_of_forall_lookup_eq
-  (oa oa' : oracle_comp spec (α × query_log spec)) (ob : α → oracle_comp spec β)
-  (h : ∀ i t u x, ⁅λ y, y.1 = x ∧ y.2.lookup i t = u | oa⁆ =
-    ⁅λ y, y.1 = x ∧ y.2.lookup i t = u | oa'⁆) :
-  (oa >>= λ x, simulate' cachingₛₒ (ob x.1) x.2) ≃ₚ
-    oa' >>= λ x, simulate' cachingₛₒ (ob x.1) x.2 :=
-begin
-  sorry,
-end
-
--- -- TODO!: make `query_cache` type with `nodup` proofs included??
-lemma simulate'_dist_equiv_of_forall_lookup_eq (oa : oracle_comp spec α)
-  (log log' : query_log spec) (h : ∀ i t, log.lookup i t = log'.lookup i t) :
-  simulate' cachingₛₒ oa log ≃ₚ simulate' cachingₛₒ oa log' :=
-begin
-  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i' t generalizing log log',
+  induction oa using oracle_comp.induction_on
+    with α a α β oa ob hoa hob i t generalizing s₀ s₁ z₁,
+  { rw [support_simulate_return, set.mem_singleton_iff, prod.eq_iff_fst_eq_snd_eq] at hz,
+    simp [hz.1, hz.2],
+    exact ⟨⟨a, s₀⟩, ⟨hs₀₁, rfl⟩, λ s hs, hs.2⟩ },
   {
-    pairwise_dist_equiv,
+    sorry,
   },
   {
-    calc simulate' cachingₛₒ (oa >>= ob) log ≃ₚ
-        simulate cachingₛₒ oa log >>= λ x, simulate' cachingₛₒ (ob x.1) x.2 : by pairwise_dist_equiv
-      ... ≃ₚ simulate cachingₛₒ oa log >>= λ x, simulate' cachingₛₒ (ob x.1) log : begin
-        refine bind_dist_equiv_bind_of_dist_equiv_right _ _ _ (λ x hx, symm _),
-        refine hob x.1 log x.2 (λ i t, _),
-        sorry,
-        -- have := lookup_simulate_eq_some_of_lookup_eq_some oa i t u log x hx hu,
-        -- refine option.some_inj.1 (this.symm.trans hu'),
-      end
-
-      ... ≃ₚ simulate' cachingₛₒ oa log >>= λ x, simulate' cachingₛₒ (ob x) log  : begin
-        pairwise_dist_equiv,
-      end
-      ... ≃ₚ simulate' cachingₛₒ oa log' >>= λ x, simulate' cachingₛₒ (ob x) log' : begin
-        refine bind_dist_equiv_bind_of_dist_equiv (hoa log log' h) (λ x hx, hob x log log' h)
-      end
-      ... ≃ₚ simulate cachingₛₒ oa log' >>= λ x, simulate' cachingₛₒ (ob x.1) log' : begin
-        pairwise_dist_equiv
-      end
-      ... ≃ₚ simulate cachingₛₒ oa log' >>= λ x, simulate' cachingₛₒ (ob x.1) x.2 : begin
-        -- pairwise_dist_equiv 1,
-        refine bind_dist_equiv_bind_of_dist_equiv_right _ _ _ (λ x hx, _),
-        refine hob x.1 log' x.2 (λ i t, _),
-        sorry,
-        -- have := lookup_simulate_eq_some_of_lookup_eq_some oa i t u log' x hx hu,
-        -- refine option.some_inj.1 (this.symm.trans hu')
-      end
-      ... ≃ₚ simulate' cachingₛₒ (oa >>= ob) log' : by pairwise_dist_equiv
-  },
-  {
-    simp [simulate'_query],
     sorry,
   }
-
 end
 
-end lookup
-
-section length
-
-lemma length_cache_apply_of_not_queried (hlog : log.not_queried i t)
-  (x : spec.range i × query_log spec) (hx : x ∈ (cachingₛₒ i (t, log)).support) :
-  (x.2 i).length = (log i).length + 1 :=
+theorem exists_unique_state_mem_support_of_le (oa : oracle_comp spec α) {s₀ s₁ : query_cache spec}
+  (hs₀₁ : s₀ ≤ s₁) (z : α × query_cache spec) (hz : z ∈ (simulate cachingₛₒ oa s₁).support) :
+  ∃! (s : query_cache spec), s ≤ z.2 ∧ (z.1, s) ∈ (simulate cachingₛₒ oa s₀).support :=
 begin
-  rw [support_apply_of_not_queried hlog, set.mem_set_of_eq] at hx,
-  rw [hx, query_log.log_query_apply_same_index, list.length_cons],
-end
-
-lemma length_cache_apply_of_not_not_queried (hlog : ¬ log.not_queried i t)
-  (x : spec.range i × query_log spec) (hx : x ∈ (cachingₛₒ i (t, log)).support) :
-  (x.2 i).length = (log i).length :=
-begin
-  rw [mem_support_apply_iff_of_queried _ _ _ _ hlog] at hx,
-  refine congr_arg list.length (congr_fun hx.2 i)
-end
-
-/-- The length of the final cache is at least as long as the initial cache. -/
-lemma length_cache_le_length_cache_simulate (x : α × query_log spec)
-  (hx : x ∈ (simulate cachingₛₒ oa log).support) :
-  (log i).length ≤ (x.2 i).length :=
-begin
-  refine state_invariant_of_preserved cachingₛₒ
-    (λ log', (log i).length ≤ (log' i).length) (λ i' t log' x' hx' hlog', le_trans hlog' _)
-      log le_rfl oa x hx ,
-  by_cases hlog'' : log'.not_queried i' t,
-  { rw [support_apply_of_not_queried hlog''] at hx',
-    exact hx'.symm ▸ log'.length_apply_le_lenght_log_query_apply i' t x'.1 i },
-  { rw [mem_support_apply_iff_of_queried _ _ _ _ hlog''] at hx',
-    rw [hx'.2] }
-end
-
-end length
-
-def query_log.sublog (log log' : query_log spec) := ∀ i, log i <+ log' i
-
-infix ` <++ `:50 := query_log.sublog
-
-lemma sublog_init_iff {log : query_log spec} : log <++ init spec ↔ log = init spec :=
-begin
-  sorry,
-end
-
--- lemma caching_oracle_general (log : query_log spec) (i : spec.ι) (t : spec.domain i)
---   (f : query_log spec → query_log spec) (hf : ∀ log, f log <++ log) :
---   do {x ← cachingₛₒ i (t, log),
---     simulate' cachingₛₒ oa (f x.2)} ≃ₚ
---       simulate' cachingₛₒ oa log
-
-open_locale classical
-
-@[inline, reducible]
-def init' {spec : oracle_spec} := init spec
-
-notation `[` i `,` t `↦` u `]` := init'.log_query i t u
-
-notation `[` i `,` t `↦` u `]` `::ₗ` log := log.log_query i t u
-
-
-@[simp_dist_equiv] lemma fst_map_apply_bind_apply_dist_equiv'
-  (i : spec.ι) (t : spec.domain i) (i' : spec.ι) (t' : spec.domain i') (log : query_log spec) :
-  do {x ← cachingₛₒ i' (t', log), fst <$> cachingₛₒ i (t, x.2)} ≃ₚ
-    fst <$> cachingₛₒ i (t, log) :=
-begin
-  by_cases hi : i = i',
-  { induction hi,
-    by_cases hlog : log.not_queried i t',
-    { calc (cachingₛₒ i (t', log) >>= λ x, fst <$> cachingₛₒ i (t, x.2)) ≃ₚ
-        (query i t' >>= λ u, fst <$> cachingₛₒ i (t, [i, t' ↦ u] ::ₗ log)) :
-          by { rw [apply_eq_of_not_queried hlog], pairwise_dist_equiv }
-        ... ≃ₚ fst <$> cachingₛₒ i (t, log) :
-          begin
-            by_cases ht : t' = t,
-            { induction ht,
-              simp_rw [apply_log_query_self, apply_eq_of_not_queried hlog],
-              pairwise_dist_equiv },
-            { have := fst_map_apply_log_query_dist_equiv i t' t,
-              simp only [ht, cachingₛₒ, if_false] at this,
-              refine trans (bind_dist_equiv_bind_of_dist_equiv_right' _ _ _ (λ u, this u _)) _,
-              pairwise_dist_equiv }
-          end },
-    { obtain ⟨u', hu⟩ := exists_eq_lookup_of_not_not_queried _ _ _ hlog,
-      simp only [apply_eq_of_lookup_eq_some _ _ _ _ hu.symm],
-      pairwise_dist_equiv } },
-  { refine bind_dist_equiv_right _ _ (default, log) ( _),
-    intros x hx,
-    rw [support_apply] at hx,
-    split_ifs at hx with hx',
-    { simp only [set.mem_set_of_eq] at hx,
-      exact hx.symm ▸ fst_map_apply_log_query_dist_equiv_of_index_ne _ _ _ _ _ _ hi },
-    { rw [hx.2] } }
-end
-
-
--- -- TODO!: make `query_cache` type with `nodup` proofs included??
--- lemma simulate'_bind_apply_dist_equiv_of_forall_lookup_eq (oa : oracle_comp spec α)
---   (log log' : query_log spec) (i : spec.ι) (t : spec.domain i)
---   (h : ∀ i t u u', log.lookup i t = some u → log'.lookup i t = some u' → u = u') :
---   (simulate cachingₛₒ oa log >>= λ x, fst <$> cachingₛₒ i (t, x.2)) ≃ₚ
---     fst <$> cachingₛₒ i (t, log) :=
--- begin
-
--- end
-
-lemma helper (oa : oracle_comp spec α) (i : spec.ι) (t : spec.domain i)
-  (i' : spec.ι) (t' : spec.domain i') (u' : option (spec.range i')) (x : α) :
-  ⁅λ y, y.1 = x ∧ y.2.lookup i' t' = u'|
-    cachingₛₒ i (t, log) >>= λ z, simulate cachingₛₒ oa z.2⁆ =
-      ⁅λ z, z.1 = x ∧ z.2.lookup i' t' = u' |
-        (simulate cachingₛₒ oa log >>= λ y, cachingₛₒ i (t, y.2) >>= λ z, return (y.1, z.2))⁆ :=
-begin
-  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i'' t'' generalizing log,
+  induction oa using oracle_comp.induction_on
+    with α a α β oa ob hoa hob i t generalizing s₀ s₁ z,
+  { rw [support_simulate_return, set.mem_singleton_iff, prod.eq_iff_fst_eq_snd_eq] at hz,
+    suffices : ∃! (s : query_cache spec), s ≤ s₁ ∧ s = s₀,
+    by simpa [hz.1, hz.2] using this,
+    exact ⟨s₀, ⟨hs₀₁, rfl⟩, λ s hs, hs.2⟩ },
   {
-    pairwise_dist_equiv,
-  },
-  {
-    sorry,
-  },
-  {
-    simp [simulate_query],
-    by_cases hi : i = i',
+    rw [mem_support_simulate_bind_iff'] at hz,
+    obtain ⟨y, hy, hyz⟩ := hz,
+    specialize hoa y hs₀₁ hy,
+    refine exists_unique_of_exists_of_unique _ _,
     {
-      induction hi, sorry,
-      -- by_cases hlog : log.not_queried i t,
+
+      obtain ⟨s₁', hs₁'⟩ := exists_of_exists_unique hoa,
+      clear hoa,
+      specialize hob y.1 z hs₁'.1 hyz,
+      obtain ⟨s', hs'⟩ := exists_of_exists_unique hob,
+      clear hob,
+      refine ⟨s', hs'.1, _⟩,
+      rw [oracle_comp.mem_support_simulate_bind_iff],
+      refine ⟨y.1, s₁', hs₁'.2, hs'.2⟩,
     },
     {
-      by_cases hlog : log.not_queried i t,
+      intros s s' hs hs',
+      rw [mem_support_simulate_bind_iff'] at hs hs',
+      obtain ⟨⟨y1, s₂⟩, hs₂⟩ := hs.2,
+      obtain ⟨⟨y2, s₂'⟩, hs₂'⟩ := hs'.2,
+      have := @unique_of_exists_unique _ _ hoa s₂ s₂',
+      simp only [] at this hs₂ hs₂',
+      sorry,
+    }
+  },
+  {
+    by_cases hs₁ : t ∈ᵢ s₁,
+
+    {
+      rw [mem_iff_exists_lookup_eq_some] at hs₁,
+      obtain ⟨u, hu⟩ := hs₁,
+      refine ⟨[i, t ↦ u; s₀], ⟨_, _⟩, _⟩,
       {
+        refine trans _ (le_of_mem_support_simulate z hz),
         sorry,
+        -- rwa [cache_query_le_iff_of_le hs],
       },
       {
-        rw [apply_eq_of_not_not_queried _ _ _ hlog],
-        simp,
-        sorry,
+        rw [simulate_query, apply_eq_of_lookup_eq_some hu, mem_support_return_iff] at hz,
+        simp only [hz, support_simulate_query, apply_eq],
+        by_cases hs₀ : t ∈ᵢ s₀,
+
+        {
+          sorry,
+          -- simp [support_get_or_else_of_mem _ _ hs₀, (lookup_eq_lookup_of_le_of_mem hs hs₀).symm.trans hu],
+        },
+        {
+          simp only [support_get_or_else_of_not_mem _ _ hs₀, support_query, set.image_univ,
+            set.mem_range, prod.mk.inj_iff, exists_eq_left],
+        },
+      },
+      {
+        rintro s ⟨hs, hsz⟩,
+        rw [simulate_query, apply_eq_of_lookup_eq_some hu, mem_support_return_iff,
+            prod.eq_iff_fst_eq_snd_eq] at hz,
+        by_cases hs₀ : t ∈ᵢ s₀,
+
+        {
+          simp [simulate_query, hs₀, hz.1] at hsz,
+          rw [hsz.2, eq_comm, cache_query_eq_self_iff, hsz.1],
+          rw [mem_iff_exists_lookup_eq_some] at hs₀,
+          obtain ⟨u', hu'⟩ := hs₀,
+          rw [hu', option.get_or_else_some],
+        },
+        {
+          simp [simulate_query, hs₀, hz.1] at hsz,
+          exact hsz.symm
+        },
       }
-    }
-  }
-
+    },
+    {
+      sorry,
+      -- have hs₀ : t ∉ᵢ s₀ := not_mem_of_le_of_not_mem hs hs₁,
+      -- simp [hs₀, hs₁, support_simulate_query] at hz ⊢,
+      -- obtain ⟨x, rfl⟩ := hz,
+      -- exact ⟨[i, t ↦ x; s₀], ⟨(cache_query_le_cache_query_iff_of_not_mem x hs₀ hs₁).2 hs, rfl⟩,
+      --   λ s hs, by rw [← hs.2]⟩ },
+  } }
 end
 
-lemma simulate_bind_simulate'_dist_equiv_simulate' (oa : oracle_comp spec α)
-  (log : query_log spec) (oc : oracle_comp spec γ) :
-  do {x ← simulate cachingₛₒ oa log, simulate' cachingₛₒ oc x.2} ≃ₚ
-    simulate' cachingₛₒ oc log :=
+lemma mem_support_of_le_mem_support (oa : oracle_comp spec α) {s₀ s : query_cache spec}
+  (hs : s₀ ≤ s) (z : α × query_cache spec) (hzs : s ≤ z.2)
+  (hz : z ∈ (simulate cachingₛₒ oa s₀).support) :
+  z ∈ (simulate cachingₛₒ oa s).support :=
 begin
-  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i' t generalizing oc log,
-  { by pairwise_dist_equiv },
-  { calc (simulate cachingₛₒ (oa >>= ob) log >>= λ x, simulate' cachingₛₒ oc x.snd) ≃ₚ
-      (simulate cachingₛₒ oa log >>= λ x,
-        simulate cachingₛₒ (ob x.1) x.2) >>= λ y,
-        simulate' cachingₛₒ oc y.2 : by pairwise_dist_equiv
-      ... ≃ₚ simulate cachingₛₒ oa log >>= λ x,
-        simulate cachingₛₒ (ob x.1) x.2 >>= λ y,
-        simulate' cachingₛₒ oc y.2 : by pairwise_dist_equiv
-      ... ≃ₚ simulate cachingₛₒ oa log >>= λ x, simulate' cachingₛₒ oc x.2 :
-        bind_dist_equiv_bind_of_dist_equiv_right' _ _ _ (λ x, hob x.1 oc x.2)
-      ... ≃ₚ simulate' cachingₛₒ oc log : hoa oc log },
+  sorry,
+end
+
+/-- The possible outputs of simulating a computation with a larger initial cache is
+at most the original set of possible outputs (although the possible final caches may differ). -/
+lemma support_antitone (oa : oracle_comp spec α) {s₀ s : query_cache spec}
+  (hs : s₀ ≤ s) : (simulate' cachingₛₒ oa s).support ⊆ (simulate' cachingₛₒ oa s₀).support :=
+begin
+
+  induction oa using oracle_comp.induction_on
+    with α a α β oa ob hoa hob i t generalizing s₀ s,
+  { simp only [support_simulate', support_simulate_return, set.image_singleton] },
   {
-    rw [simulate_query],
-    induction oc using oracle_comp.induction_on with β b β γ ob oc hob hoc i' t' generalizing log,
-    {
-      simp [simulate'_return],
-      refine trans (map_bind_dist_equiv _ _ _).symm _,
+    intros y hy,
+    simp_rw [mem_support_simulate'_iff_exists_state,
+      cachingₛₒ.mem_support_simulate_bind_iff] at hy,
 
-      refine trans (fst_map_bind_return_dist_equiv _ _ _) _,
-      refine trans (map_const_dist_equiv _ _) _,
-      pairwise_dist_equiv,
-    },
-    {
-      calc (cachingₛₒ i' (t, log) >>= λ x, simulate' cachingₛₒ (ob >>= oc) x.snd) ≃ₚ
-        cachingₛₒ i' (t, log) >>= λ x,
-          (simulate cachingₛₒ ob x.2 >>= λ y,
-          simulate' cachingₛₒ (oc y.1) y.2) : by pairwise_dist_equiv
-
-        ... ≃ₚ (cachingₛₒ i' (t, log) >>= λ x,
-          simulate cachingₛₒ ob x.2) >>= λ y,
-          simulate' cachingₛₒ (oc y.1) y.2 : by pairwise_dist_equiv
-
-        ... ≃ₚ (simulate cachingₛₒ ob log >>= λ y,
-          cachingₛₒ i' (t, y.2) >>= λ z, return (y.1, z.2)) >>= λ z',
-          simulate' cachingₛₒ (oc z'.1) z'.2 : begin
-            apply bind_simulate'_dist_equiv_of_forall_lookup_eq,
-            intros i t u x,
-            -- pairwise_dist_equiv,
-            apply helper,
-          end
-
-        ... ≃ₚ simulate cachingₛₒ ob log >>= λ y,
-          cachingₛₒ i' (t, y.2) >>= λ z, return (y.1, z.2) >>= λ z',
-          simulate' cachingₛₒ (oc z'.1) z'.2 : begin
-            refine trans (bind_bind_dist_equiv_assoc _ _ _) _,
-            pairwise_dist_equiv,
-            sorry,
-          end
-
-        ... ≃ₚ simulate cachingₛₒ ob log >>= λ y,
-          cachingₛₒ i' (t, y.2) >>= λ z,
-          simulate' cachingₛₒ (oc y.1) z.2 : begin
-            pairwise_dist_equiv,
-          end
-
-        ... ≃ₚ simulate cachingₛₒ ob log >>= λ y,
-          (cachingₛₒ i' (t, y.2) >>= λ z,
-          simulate' cachingₛₒ (oc y.1) z.2) : begin
-            by pairwise_dist_equiv
-          end
-
-        ... ≃ₚ simulate cachingₛₒ ob log >>= λ y,
-          simulate' cachingₛₒ (oc y.1) y.2 : begin
-            pairwise_dist_equiv 1,
-            specialize hoc x.1 x.2,
-            exact hoc,
-          end
-
-        -- ... ≃ₚ (simulate cachingₛₒ ob log >>= λ y,
-        --   simulate' cachingₛₒ (oc y.1) y.2) : begin
-        --     specialize hoc, sorry,
-
-        --   end
-        ... ≃ₚ simulate' cachingₛₒ (ob >>= oc) log : by pairwise_dist_equiv
-    },
-    {
-      apply fst_map_apply_bind_apply_dist_equiv',
-    }
-  }
-end
-
-section fork
-
-/-- Given a `query_log`, and a output of simulating with that as the cache,
-simulation with the `fork_cache` applied to the new cache has the same support as simulating
-with the original cache. Intuitively, since all the new entries to the cache just come
-from a call to `query`, it's irrelevent that they have been added, since any new call
-can't tell whether this call to `query` is new or made earlier. -/
-theorem support_simulate_fork_cache_some
-  (cache : query_log spec) (i : spec.ι) (n : ℕ) (hn : (cache i).length ≤ n)
-  (x : α × query_log spec) (hx : x ∈ (simulate cachingₛₒ oa' cache).support) :
-  (simulate cachingₛₒ oa (x.2.fork_cache i (some n))).support =
-    (simulate cachingₛₒ oa cache).support :=
-begin
-  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t,
-  sorry, sorry, sorry,
-end
-
-/-- Specialized version of `support_simulate_fork_cache_some` when the initial state is empty.
-In this case we don't need to place any restrictions on the value of `n`-/
-lemma support_simulate_init_fork_cache_some (i : spec.ι) (n : ℕ) (x : α × query_log spec)
-  (hx : x ∈ (simulate cachingₛₒ oa' (init spec)).support) :
-  (simulate cachingₛₒ oa (x.2.fork_cache i (some n))).support =
-    (simulate cachingₛₒ oa (init spec)).support :=
-begin
-  sorry,
-end
-
-/-- Version of `support_simulate_fork_cache` for forking on `none` -/
-lemma support_simulate_fork_cache_none (i : spec.ι) (cache : query_log spec) :
-  (simulate cachingₛₒ oa (cache.fork_cache i none)).support =
-    (simulate cachingₛₒ oa (init spec)).support :=
-by rw query_log.fork_cache_none
-
-end fork
+    obtain ⟨s₁, hx⟩ := hy,
+    obtain ⟨x, hxy⟩ := exists_of_exists_unique hx,
 
 
--- TODO: generalize. Should also work for log→seed probably ?
-/-- Re-running a computation with an old cache doesn't change the possible outputs,
-assuming the old cache was generated by an honest simulation. -/
-theorem support_simulate_bind_simulate_eq_support_simulate (oa : oracle_comp spec α) :
-  (simulate cachingₛₒ oa log >>= λ x, simulate cachingₛₒ oa x.2).support =
-    (simulate cachingₛₒ oa log).support :=
-begin
-  -- apply support_bind_eq_support,
-  refine support_simulate_simulate_eq_support_simulate cachingₛₒ cachingₛₒ
-    _ log oa,
-  clear log,
-  intros i t log,
-  ext x,
-  refine ⟨λ h, _, λ h, _⟩,
-  { simp_rw [set.mem_Union] at h,
-    obtain ⟨y, hy, hy'⟩ := h,
-    by_cases hlog : log.not_queried i t,
-    { rw [mem_support_apply_iff_of_not_queried _ _ _ _ hlog] at ⊢ hy,
-      have : ¬ y.2.not_queried i t := sorry,
-      rw [mem_support_apply_iff_of_queried _ _ _ _ this] at hy',
-      refine hy'.2.trans _,
-      have : x.1 = y.1 := sorry,
-      rw [hy, this] },
-    { rw [mem_support_apply_iff_of_queried _ _ _ _ hlog] at ⊢ hy,
-      have : ¬ y.2.not_queried i t := sorry,
-      rw [mem_support_apply_iff_of_queried _ _ _ _ this] at hy',
-      refine ⟨trans (hy'.1.trans _) hy.1, hy'.2.trans hy.2⟩,
-      rw [hy.2],
-      exact symm hy.1 } },
-  sorry,
+    rw [mem_support_simulate'_bind_iff],
+    refine ⟨x.1, x.2, _⟩,
+    sorry,
+
+    -- specialize hoa hs hxy.1,
+
+    -- have hx' : x.1 ∈ (simulate' cachingₛₒ oa s).support := sorry,
+    -- specialize hoa hs hx',
+    -- rw [mem_support_simulate'_iff_exists_state] at hoa,
+    -- obtain ⟨sx, hsx⟩ := hoa,
+    -- have : sx = x.2 := begin
+    --   suffices : (x.1, sx) = x,
+    --   from (prod.eq_iff_fst_eq_snd_eq.1 this).2,
+    -- end,
+    -- refine ⟨this ▸ hsx, _⟩,
+
+
+
+    -- rw [mem_support_simulate'_bind_iff] at hy ⊢,
+    -- obtain ⟨x, s', hx, hy⟩ := hy,
+    -- have hs' : s ≤ s' := le_of_mem_support_simulate _ hx,
+    -- specialize hob x hs' hy,
+    -- refine ⟨x, s, _, hob⟩,
+    -- rw [mem_support_simulate'_iff_exists_state] at hy,
+    -- obtain ⟨sy, hsy⟩ := hy,
+    -- have hx' : x ∈ (simulate' cachingₛₒ oa s).support :=
+    --   (mem_support_simulate'_iff_exists_state _ _ _ _).2 ⟨s', hx⟩,
+    -- refine ⟨x, s, _⟩,
+    -- specialize hob x _ hy,
+
+
+
+    -- specialize hoa hs hx',
+    -- rw [mem_support_simulate'_iff_exists_state] at hoa,
+    -- obtain ⟨s'', hs''⟩ := hoa,
+    -- refine ⟨x, s', _, _⟩,
+    -- refine hob x _ hz,
+
+    -- specialize hob x,
+    -- have := le_of_mem_support_simulate _ hx,
+    -- specialize hoa this,
+    -- specialize hoa hs hx',
+    -- specialize hob x this,
+    -- refine ⟨x, s', _, _⟩,
+
+  },
+  { intros u hu,
+    rw [mem_support_simulate'_query_iff] at hu ⊢,
+    obtain ⟨s', hs'⟩ := hu,
+    by_cases hs₀ : t ∈ᵢ s₀,
+
+    { simp only [apply_eq_of_mem' hs₀, mem_support_return_iff, prod.eq_iff_fst_eq_snd_eq,
+        apply_eq_of_mem' (mem_of_le_of_mem hs hs₀), exists_eq_right,
+        ← lookup_eq_lookup_of_le_of_mem hs hs₀] at ⊢ hs',
+      exact hs'.1 },
+    { simp_rw [apply_eq_of_not_mem' hs₀, mem_support_query_bind_return_iff,
+        prod.mk.inj_iff, exists_eq_left, exists_eq'] }, },
 end
 
 end support
 
-section eval_dist
+lemma prob_output_simulate_bind_of_mem_support (ob : α → oracle_comp spec β)
+  {z : β × query_cache spec} {y : α × query_cache spec}
+  (hy : y ∈ (simulate cachingₛₒ oa s₀).support)
+  (hz : z ∈ (simulate cachingₛₒ (ob y.1) y.2).support) :
+  ⁅= z | simulate cachingₛₒ (oa >>= ob) s₀⁆ =
+    ⁅= y | simulate cachingₛₒ oa s₀⁆ * ⁅= z | simulate cachingₛₒ (ob y.1) y.2⁆ :=
+begin
+  have : z ∈ (simulate cachingₛₒ (oa >>= ob) s₀).support,
+  from (mem_support_simulate_bind_iff' _ _ _ _ _).2 ⟨y, hy, hz⟩,
+  rw [simulate_bind, prob_output_bind_eq_tsum],
+  refine tsum_eq_single y (λ y' hy', by_contra (λ h, hy' (unique_of_exists_unique
+    ((cachingₛₒ.mem_support_simulate_bind_iff _ _ _ _).1 this) _ ⟨hy, hz⟩))),
+  simpa only [← prob_output_ne_zero_iff, ne.def, ← not_or_distrib, ← mul_eq_zero] using h,
+end
+
+section extra_cache_choices
+
+def extra_cache_choices (s₀ s : query_cache spec) : ℕ :=
+(∏ i in (s \ s₀).cached_inputs, (fintype.card $ spec.range i.1))
+
+@[simp] lemma extra_cache_choices_self : extra_cache_choices s₀ s₀ = 1 :=
+by simp [extra_cache_choices]
+
+lemma extra_cache_choices_mul_trans (s₀ s₁ s : query_cache spec) :
+  extra_cache_choices s₀ s₁ * extra_cache_choices s₁ s = extra_cache_choices s₀ s :=
+begin
+  simp [extra_cache_choices],
+  sorry,
+end
+
+@[simp] lemma extra_cache_choices_cache_query (i t u) (s : query_cache spec) :
+  extra_cache_choices s [i, t ↦ u; s] = if t ∈ᵢ s then 1 else fintype.card (spec.range i) :=
+by split_ifs with h; simp [extra_cache_choices, cache_query_sdiff_self, h]
+
+end extra_cache_choices
+
+/-- Probability of getting to a final result given a partial cache for queries is given by
+the product of probabilities that each additional query gets the expected result.
+Note that this requires `z` be in the support of the simulation (as the empty product is `1`). -/
+theorem finite_version {oa : oracle_comp spec α} {s₀ : query_cache spec}
+  {z : α × query_cache spec} (hz : z ∈ (simulate cachingₛₒ oa s₀).support) :
+  ⁅= z | simulate cachingₛₒ oa s₀⁆ = (extra_cache_choices s₀ z.2)⁻¹ :=
+begin
+  induction oa using oracle_comp.induction_on
+    with α a α β oa ob hoa hob i t generalizing s₀,
+  {
+    simp only [support_simulate_return, set.mem_singleton_iff] at hz,
+    simp only [hz, prob_output_simulate_return, eq_self_iff_true, if_true,
+      extra_cache_choices_self, algebra_map.coe_one, inv_one],
+  },
+  {
+    rw [cachingₛₒ.mem_support_simulate_bind_iff] at hz,
+    obtain ⟨y, hy, hyz⟩ := exists_of_exists_unique hz,
+    rw [prob_output_simulate_bind_of_mem_support _ _ _ hy hyz, hoa hy, hob y.1 hyz,
+      ← ennreal.mul_inv (or.inr (ennreal.nat_ne_top _)) ((or.inl (ennreal.nat_ne_top _))),
+      ← nat.cast_mul, extra_cache_choices_mul_trans],
+  },
+  {
+    simp only [simulate_query, apply_eq] at hz ⊢,
+    by_cases hs₀ : t ∈ᵢ s₀,
+    {
+      simp only [hs₀, get_or_else_of_mem, support_return, set.mem_singleton_iff] at hz,
+      simp only [hz, extra_cache_choices_self, nat.cast_one, inv_one,
+        get_or_else_of_mem _ _ hs₀],
+      refine prob_output_return_self _ _,
+    },
+    {
+      simp only [get_or_else_of_not_mem _ _ hs₀, support_bind_return, support_query,
+        set.image_univ, set.mem_range] at hz,
+      obtain ⟨u, rfl⟩ := hz,
+      simp [hs₀, get_or_else_of_not_mem, extra_cache_choices_cache_query, if_true],
+      refine trans (prob_output_bind_return_eq_single _ _ _ u _) (prob_output_query_eq_inv _ _ _),
+      refine set.ext (λ u', _),
+      simp [cache_query_eq_cache_query_iff_of_same_cache],
+    },
+  }
+end
+
+lemma prob_output_monotone_extra (oa : oracle_comp spec α) {s₀ s : query_cache spec}
+  (hs : s₀ ≤ s) (z : α × query_cache spec) (hzs : s ≤ z.2)
+  (hz : z ∈ (simulate cachingₛₒ oa s₀).support) :
+  ⁅= z | simulate cachingₛₒ oa s₀⁆ =
+    ⁅= z | simulate cachingₛₒ oa s⁆ / ↑(extra_cache_choices s₀ s) :=
+begin
+  have hz' : z ∈ (simulate cachingₛₒ oa s).support,
+  from mem_support_of_le_mem_support oa hs z hzs hz,
+  rw [finite_version hz', finite_version hz, div_eq_mul_inv,
+    ← ennreal.mul_inv (or.inr (ennreal.nat_ne_top _)) (or.inl (ennreal.nat_ne_top _)), ← nat.cast_mul, mul_comm,
+      extra_cache_choices_mul_trans],
+end
+
+lemma prob_output_monotone_extra_inv (oa : oracle_comp spec α) {s₀ s : query_cache spec}
+  (hs : s₀ ≤ s) (z : α × query_cache spec) (hzs : s ≤ z.2)
+  (hz : z ∈ (simulate cachingₛₒ oa s₀).support) :
+  ⁅= z | simulate cachingₛₒ oa s₀⁆ =
+    ⁅= z | simulate cachingₛₒ oa s⁆ * (↑(extra_cache_choices s₀ s))⁻¹ :=
+begin
+  sorry
+end
+
+lemma prob_output_monotone_extra' (oa : oracle_comp spec α) {s₀ s : query_cache spec}
+  (hs : s₀ ≤ s) (z : α × query_cache spec) (hzs : s ≤ z.2)
+  (hz : z ∈ (simulate cachingₛₒ oa s₀).support) :
+  ⁅= z | simulate cachingₛₒ oa s₀⁆ * ↑(extra_cache_choices s₀ s) =
+    ⁅= z | simulate cachingₛₒ oa s⁆ :=
+begin
+  rw [prob_output_monotone_extra oa hs z hzs hz, div_eq_mul_inv,
+    mul_assoc, ennreal.inv_mul_cancel, mul_one],
+  simp [extra_cache_choices, finset.prod_eq_zero_iff],
+  refine ennreal.nat_ne_top _,
+end
+
+-- lemma prob_output_monotone_extra_sim' (oa : oracle_comp spec α) {s₀ s : query_cache spec}
+--   (hs : s₀ ≤ s) (x : α)
+--   (hz : x ∈ (simulate' cachingₛₒ oa s₀).support) :
+--   ⁅= x | simulate' cachingₛₒ oa s⁆ ≤
+--     ⁅= x | simulate' cachingₛₒ oa s₀⁆ * (extra_cache_choices s₀ s) :=
+-- begin
+--   simp only [prob_output_simulate', ← ennreal.tsum_mul_right],
+--   refine ennreal.tsum_le_tsum (λ s', _),
+--   by_cases hz : (x, s') ∈ (simulate cachingₛₒ oa s₀).support,
+--   {
+--     sorry,
+--   },
+--   {
+--     rw [prob_output_eq_zero hz, zero_mul, le_zero_iff],
+--     sorry,
+--   }
+-- end
 
 
-end eval_dist
 
-end caching_oracle
+/-- A `forking_map` for a computation `oa` and initial state `s₀` is one that is well behaved
+for forking a computation, via mapping output of simulation to a new initial state for running
+the computation again. Requires that the mapping stays between the initial and final cache. -/
+@[ext] structure forking_map (oa : oracle_comp spec α) (s₀ : query_cache spec) :=
+(to_fun : α × query_cache spec → query_cache spec)
+(le_to_fun : ∀ z ∈ (simulate cachingₛₒ oa s₀).support, s₀ ≤ to_fun z)
+(to_fun_le : ∀ z ∈ (simulate cachingₛₒ oa s₀).support, to_fun z ≤ z.2)
+(sdiff_to_fun_const {z z' : α × query_cache spec} (hz : z.1 = z'.1) :
+  (z.2 \ to_fun z).cached_inputs = (z'.2 \ to_fun z').cached_inputs)
+
+namespace forking_map
+
+variables {oa} {s₀} (f : forking_map oa s₀)
+
+lemma sdiff_to_fun_const' (x : α) (s s' : query_cache spec) :
+  (s \ f.to_fun (x, s)).cached_inputs = (s \ f.to_fun (x, s)).cached_inputs :=
+f.sdiff_to_fun_const rfl
+
+section fun_like
+
+instance fun_like (oa : oracle_comp spec α) (s₀ : query_cache spec) :
+  fun_like (forking_map oa s₀) (α × query_cache spec) (λ z, query_cache spec) :=
+{ coe := forking_map.to_fun,
+  coe_injective' := forking_map.ext }
+
+lemma coe_to_fun_apply (z : α × query_cache spec) : f z = f.to_fun z := rfl
+
+end fun_like
+
+section map_output
+
+/-- Replace the cache from a simulation output with the new forked cache,
+without changing the value of the main output. -/
+def map_output (z : α × query_cache spec) : α × query_cache spec := (z.1, f z)
+
+lemma sdiff_map_output_const (z z' : α × query_cache spec) (hz : z.1 = z'.1) :
+  (z.2 \ (f.map_output z).2).cached_inputs = (z'.2 \ (f.map_output z').2).cached_inputs :=
+f.sdiff_to_fun_const hz
+
+lemma sdiff_map_output : sorry := sorry
+
+end map_output
+
+end forking_map
+
+-- /-- Given a pair of caches `s ≤ s'`, such that some result `z` is possible in both simulations,
+-- the probability of getting that result is higher when starting with the larger cache,
+-- since it has fewer additional choices at which it could diverge from calculating `z`. -/
+-- lemma prob_output_monotone'_extra' (oa : oracle_comp spec α) (s₀ s : query_cache spec) (hs : s₀ ≤ s)
+--   (f : forking_map oa s₀) (z : α × query_cache spec) (hzs : s ≤ z.2)
+--   (hz : z ∈ (simulate cachingₛₒ oa s₀).support) :
+--   ⁅= z | f.map_output <$> simulate cachingₛₒ oa s₀⁆ =
+--     ⁅= z | f.map_output <$> simulate cachingₛₒ oa s⁆ / (extra_cache_choices s₀ s) :=
+-- begin
+--   rw [prob_output_map_eq_tsum, prob_output_map_eq_tsum],
+--   simp_rw [div_eq_mul_inv, ← ennreal.tsum_mul_right],
+--   refine tsum_congr (λ z, _),
+--   split_ifs with hz,
+--   { obtain ⟨rfl⟩ := hz,
+--     apply prob_output_monotone_extra_inv,
+--     rw [extra_cache_choices],
+--     by_cases hzs : z ∈ (simulate cachingₛₒ oa s₀).support,
+--     { exact le_of_eq (prob_output_monotone_extra oa (f.le_to_fun z hzs) z (f.to_fun_le z hzs) hzs) },
+--     { simp only [hzs, eval_dist_apply_eq_prob_output, prob_output_eq_zero,
+--         not_false_iff, zero_le'] } },
+--   { simp only [zero_mul, le_zero_iff]}
+-- end
+
+/-- Given a pair of caches `s ≤ s'`, such that some result `z` is possible in both simulations,
+the probability of getting that result is higher when starting with the larger cache,
+since it has fewer additional choices at which it could diverge from calculating `z`. -/
+lemma prob_output_monotone'_extra (oa : oracle_comp spec α) (s₀ : query_cache spec)
+  (f : forking_map oa s₀) (z' : α × query_cache spec) :
+  ⁅= z' | f.map_output <$> simulate cachingₛₒ oa s₀⁆ ≤
+    ⁅= z' | f.map_output <$> simulate cachingₛₒ oa z'.2⁆ / (extra_cache_choices s₀ z'.2) :=
+begin
+  rw [prob_output_map_eq_tsum, prob_output_map_eq_tsum],
+  simp_rw [div_eq_mul_inv, ← ennreal.tsum_mul_right],
+  refine ennreal.tsum_le_tsum (λ z, _),
+  split_ifs with hz,
+  { obtain ⟨rfl⟩ := hz,
+    by_cases hzs : z ∈ (simulate cachingₛₒ oa s₀).support,
+    { exact le_of_eq (prob_output_monotone_extra oa (f.le_to_fun z hzs) z (f.to_fun_le z hzs) hzs) },
+    { simp only [hzs, eval_dist_apply_eq_prob_output, prob_output_eq_zero,
+        not_false_iff, zero_le'] } },
+  { simp only [zero_mul, le_zero_iff]}
+end
+
+lemma prob_output_main' (oa : oracle_comp spec α) (s : query_cache spec)
+  (f : forking_map oa s) (x : α) :
+  ⁅= (x, x) | do {x₁ ← simulate' cachingₛₒ oa s,
+      x₂ ← simulate' cachingₛₒ oa s, return (x₁, x₂)}⁆ ≤
+    ⁅= (x, x) | do {z ← simulate cachingₛₒ oa s,
+      x₂ ← simulate' cachingₛₒ oa (f z), return (z.1, x₂)}⁆ :=
+let fork_points : finset (query_cache spec) :=
+  finset.image f {z ∈ (simulate cachingₛₒ oa s).fin_support | z.1 = x} in
+let k : ℝ≥0∞ := sorry in
+calc ⁅= (x, x) | simulate' cachingₛₒ oa s ×ₘ simulate' cachingₛₒ oa s⁆ =
+  ⁅= x | simulate' cachingₛₒ oa s⁆ ^ 2 :
+    begin
+      sorry
+    end
+  ... = (∑ sf in fork_points, ⁅= x | simulate' cachingₛₒ oa s⁆ * fork_points.card⁻¹) ^ 2 :
+    begin
+      sorry
+    end
+
+  ... ≤ (∑ sf in fork_points, ⁅= x | simulate' cachingₛₒ oa sf⁆ * (extra_cache_choices s sf)⁻¹) ^ 2 :
+    begin
+      sorry
+    end
+
+
+  ... ≤ ∑ sf in fork_points, ⁅= x | simulate' cachingₛₒ oa sf⁆ *
+            ⁅= x | simulate' cachingₛₒ oa sf⁆ * (extra_cache_choices s sf)⁻¹ :
+    begin
+      sorry
+    end
+
+
+  ... = ∑ sf in fork_points, ⁅= (x, sf) | f.map_output <$> simulate cachingₛₒ oa s⁆ *
+          ⁅= x | simulate' cachingₛₒ oa sf⁆ :
+    begin
+      sorry,
+    end
+  ... = ∑ sf in fork_points, ⁅= ((x, sf), x) | do {z ← f.map_output <$> simulate cachingₛₒ oa s,
+          x₂ ← simulate' cachingₛₒ oa sf, return (z, x₂)}⁆ :
+    begin
+      sorry,
+    end
+  ... ≤ ⁅= (x, x) | do {z ← simulate cachingₛₒ oa s,
+      x₂ ← simulate' cachingₛₒ oa (f z), return (z.1, x₂)}⁆ :
+    begin
+      sorry
+    end
+
+
+
+lemma prob_output_eq_le_prob_output_eq_rewind_base (oa : oracle_comp spec α) (s₀ : query_cache spec)
+  (f : forking_map oa s₀) (x : α) :
+  ⁅= x | simulate' cachingₛₒ oa s₀⁆ ^ 2 ≤
+    ⁅= (x, x) | do {z ← simulate cachingₛₒ oa s₀,
+      z' ← simulate cachingₛₒ oa (f z), return (z.1, z'.1)}⁆ :=
+calc ⁅= x | simulate' cachingₛₒ oa s₀⁆ ^ 2 =
+  (∑ sf in (f <$> simulate cachingₛₒ oa s₀).fin_support,
+    ⁅= (x, sf) | f.map_output <$> simulate cachingₛₒ oa s₀⁆) ^ 2 :
+  begin
+    sorry
+  end
+
+... ≤ ∑ sf in (f <$> simulate cachingₛₒ oa s₀).fin_support,
+  ⁅= (x, sf) | f.map_output <$> simulate cachingₛₒ oa s₀⁆ ^ 2 *
+    (f <$> simulate cachingₛₒ oa s₀).fin_support.card :
+  begin
+    sorry,
+  end
+
+-- THIS IS THE LEAST CONFIDENT PORTION OF PROOF
+... ≤ ∑ sf in (f <$> simulate cachingₛₒ oa s₀).fin_support,
+  ⁅= ((x, sf), (x, sf)) | do {z ← simulate cachingₛₒ oa s₀,
+    z' ← simulate cachingₛₒ oa sf, return (f.map_output z, f.map_output z')}⁆ :
+  begin
+    sorry,
+  end
+
+... = ∑ sf in (f <$> simulate cachingₛₒ oa s₀).fin_support,
+  ⁅= ((x, sf), (x, sf)) | do {z ← simulate cachingₛₒ oa s₀,
+    z' ← simulate cachingₛₒ oa (f z), return (f.map_output z, f.map_output z')}⁆ :
+  begin
+    sorry,
+  end
+
+... ≤ ∑ sf in (f <$> simulate cachingₛₒ oa s₀).fin_support,
+  ⁅= ((x, sf), x) | do {z ← simulate cachingₛₒ oa s₀,
+    z' ← simulate cachingₛₒ oa (f z), return (f.map_output z, z'.1)}⁆ :
+  begin
+    sorry,
+  end
+
+... ≤ ⁅= (x, x) | do {z ← simulate cachingₛₒ oa s₀,
+  z' ← simulate cachingₛₒ oa (f z), return (z.1, z'.1)}⁆ : sorry
+
+
+end cachingₛₒ

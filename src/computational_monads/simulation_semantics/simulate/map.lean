@@ -51,12 +51,10 @@ end eval_dist
 
 section dist_equiv
 
-@[simp, simp_dist_equiv] lemma simulate_map_dist_equiv :
-  simulate so (f <$> oa) s ≃ₚ (prod.map f id) <$> simulate so oa s :=
+lemma simulate_map_dist_equiv : simulate so (f <$> oa) s ≃ₚ (prod.map f id) <$> simulate so oa s :=
 by pairwise_dist_equiv
 
-@[simp, simp_dist_equiv] lemma simulate'_map_dist_equiv :
-  simulate' so (f <$> oa) s ≃ₚ f <$> simulate' so oa s :=
+lemma simulate'_map_dist_equiv : simulate' so (f <$> oa) s ≃ₚ f <$> simulate' so oa s :=
 by simp [dist_equiv.def, pmf.map_comp, prod.map_fst']
 
 end dist_equiv

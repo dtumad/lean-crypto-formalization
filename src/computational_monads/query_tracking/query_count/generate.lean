@@ -65,7 +65,7 @@ begin
   { exact (hj1 hjs).trans (hj2 ((list.perm.nodup_iff h1).1 hjs)) }
 end
 
-lemma get_count_eq_zero_of_mem_support_generate_aux (il : spec.indexed_list τ) (js : list spec.ι)
+lemma get_count_eq_zero_of_mem_support_generate_aux {js : list spec.ι} {il : spec.indexed_list τ}
   (hil : il ∈ (generate_aux qc oa js).support) (i : spec.ι) (hj : i ∉ js) : il.get_count i = 0 :=
 begin
   induction js with j js h generalizing il hil,
@@ -75,11 +75,11 @@ begin
     simp [generate_aux_cons] at hil,
     obtain ⟨ks, hks, il', hil'⟩ := hil,
     simp [← hil'.2, ne.symm hj.1],
-    exact (il'.get_count_eq_zero_iff i).1 (h hj.2 il' hil'.1) }
+    exact (il'.get_count_eq_zero_iff i).1 (h hj.2 hil'.1) }
 end
 
-lemma to_query_count_of_mem_support_generate_aux (il : spec.indexed_list τ) (js : list spec.ι)
-  (hjs : js.nodup) (hil : il ∈ (generate_aux qc oa js).support) :
+lemma to_query_count_of_mem_support_generate_aux {js : list spec.ι} (hjs : js.nodup)
+  {il : spec.indexed_list τ} (hil : il ∈ (generate_aux qc oa js).support) :
   il.to_query_count = {i ∈ qc | i ∈ js} :=
 begin
   induction js with j js h generalizing il,
@@ -88,7 +88,7 @@ begin
   { simp_rw [generate_aux_cons, mem_support_bind_map_iff, mem_support_map_iff] at hil,
     rw [list.nodup_cons] at hjs,
     obtain ⟨ts, hts, il', hil', htsil⟩ := hil,
-    specialize h hjs.2 il' hil',
+    specialize h hjs.2 hil',
     simp_rw [list.mem_cons_iff, sep_or_eq_sup, ← h, ← htsil, to_query_count_add],
     refine trans _ (sup_eq_add _ _ _).symm,
     { rw [to_query_count_of_list, vector.to_list_length, sep_index_eq, add_left_inj,
@@ -101,10 +101,11 @@ begin
       simp only [this, finset.mem_filter, not_and_distrib, hjs.1, not_false_iff, or_true] } }
 end
 
-lemma prob_output_generate_aux (js : list spec.ι) (hjs : js.nodup)
-  (il : spec.indexed_list τ) (hqc : il.to_query_count = {i ∈ qc | i ∈ js}) :
+lemma prob_output_generate_aux {js : list spec.ι} (hjs : js.nodup)
+  {il : spec.indexed_list τ} (hqc : ↑il = {i ∈ qc | i ∈ js}) :
   ⁅= il | generate_aux qc oa js⁆ = ∏ j in js.to_finset, ((il j).map ⁅oa j⁆).prod :=
 begin
+  rw [coe_query_count_eq] at hqc,
   induction js with j js h generalizing hjs il hqc,
   { simpa only [generate_aux_nil, list.to_finset_nil, finset.prod_empty,
     prob_output_return_eq_one_iff, eq_empty_iff, list.not_mem_nil, sep_false_eq_empty] using hqc },
@@ -123,7 +124,7 @@ begin
     let g2 : spec.indexed_list τ → spec.indexed_list τ := λ il, il.take_at_index j 0,
     refine trans (prob_output_bind_map_eq_mul _ _ _ g1 g2 (λ xs hxs jl hjl jl', _) il) _,
     { have hjlj : jl.get_count j = 0,
-      from get_count_eq_zero_of_mem_support_generate_aux _ _ _ _ hjl j hjs.1,
+      from get_count_eq_zero_of_mem_support_generate_aux _ _ hjl j hjs.1,
       simp only [g1, g2, of_list_add_eq_iff],
       rw [@eq_comm _ xs, @eq_comm _ jl, ← drop_at_index_get_count],
       refine ⟨λ hjl', _, λ hjl', _⟩,
@@ -135,7 +136,7 @@ begin
       { have hxj := congr_arg list.length hjl'.1,
         simp only [get_count_eq_length_apply, list.take_length] at hxj,
         simpa only [← hxj] using hjl' } },
-    simp only [g1, g2, list.map, list.take, h hjs.2 (il.take_at_index j 0) this],
+    simp only [g1, g2, list.map, list.take, h hjs.2 this],
     congr' 1,
     { simpa only [prob_output_to_list_map_repeat, hqc', get_count_eq_length_apply,
         list.take_length, eq_self_iff_true] },
@@ -144,6 +145,29 @@ begin
       simp only [take_at_index_apply, list.take_zero, ite_eq_right_iff],
       rintro rfl,
       exact (hjs' hj').elim } }
+end
+
+lemma support_generate_aux {js : list spec.ι} (hjs : js.nodup) : (generate_aux qc oa js).support =
+  {il | ↑il = {i ∈ qc | i ∈ js} ∧ ∀ i, (il i).all₂ (∈ (oa i).support)} :=
+begin
+  refine set.ext (λ il, _),
+  rw [set.mem_set_of_eq],
+  refine ⟨λ h, _, λ h, _⟩,
+  { have hil := to_query_count_of_mem_support_generate_aux qc oa hjs h,
+    refine ⟨hil, λ i, _⟩,
+    rw [← prob_output_ne_zero_iff, prob_output_generate_aux qc oa hjs hil] at h,
+    simp only [finset.prod_eq_zero_iff, list.mem_to_finset, list.prod_eq_zero_iff, set.not_not_mem,
+      exists_prop, not_exists, list.mem_map, eval_dist_apply_eq_zero_iff, ne.def, not_and] at h,
+    refine list.all₂_iff_forall.2 (λ t ht, h i _ t ht),
+    have hi : i ∈ il.active_oracles := mem_active_oracles_of_mem _ ht,
+    rw [← active_oracles_to_query_count, hil, mem_active_oracles_sep_iff] at hi,
+    exact hi.2 },
+  { simp_rw [← prob_output_ne_zero_iff, prob_output_generate_aux qc oa hjs h.1, ne.def,
+      finset.prod_eq_zero_iff, not_exists, list.prod_eq_zero_iff, list.mem_map, not_exists,
+      list.mem_to_finset, not_and_distrib, or_iff_not_imp_left, not_not],
+    refine λ i hi t ht, prob_output_ne_zero _,
+    have := list.all₂_iff_forall.1 (h.2 i) t ht,
+    exact this }
 end
 
 end generate_aux
@@ -156,12 +180,17 @@ generate_aux qc oa qc.active_oracles.to_list
 
 variables (qc : spec.query_count) (oa : Π (i : spec.ι), oracle_comp spec' (τ i))
 
-theorem prob_output_generate (il : spec.indexed_list τ) (h : il.to_query_count = qc) :
+theorem prob_output_generate (il : spec.indexed_list τ) (h : ↑il = qc) :
   ⁅= il | generate qc oa⁆ = ∏ j in il.active_oracles, ((il j).map ⁅oa j⁆).prod :=
 begin
-  have : il.to_query_count = {i ∈ qc | i ∈ qc.active_oracles.to_list} := by simp [h],
-  rw [generate, prob_output_generate_aux qc oa _ (finset.nodup_to_list _) _ this,
-    finset.to_list_to_finset, ← h, active_oracles_to_query_count]
+  have : ↑il = {i ∈ qc | i ∈ qc.active_oracles.to_list} := by simp [h],
+  rw [generate, prob_output_generate_aux qc oa (finset.nodup_to_list _) this,
+    finset.to_list_to_finset, ← h, coe_query_count_eq, active_oracles_to_query_count]
 end
+
+lemma support_generate : (generate qc oa).support =
+  {il | ↑il = qc ∧ ∀ i, (il i).all₂ (∈ (oa i).support)} :=
+by simp only [generate, support_generate_aux qc oa (finset.nodup_to_list _),
+  finset.mem_to_list, sep_self]
 
 end oracle_comp

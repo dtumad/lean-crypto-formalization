@@ -59,14 +59,14 @@ end eval_dist
 
 section dist_equiv
 
-@[simp, simp_dist_equiv] lemma simulate_bind_dist_equiv : simulate so (oa >>= ob) s ≃ₚ
+lemma simulate_bind_dist_equiv : simulate so (oa >>= ob) s ≃ₚ
   simulate so oa s >>= λ x, simulate so (ob x.1) x.2 := refl _
 
-@[simp, simp_dist_equiv] lemma simulate'_bind_dist_equiv : simulate' so (oa >>= ob) s ≃ₚ
+lemma simulate'_bind_dist_equiv : simulate' so (oa >>= ob) s ≃ₚ
   simulate so oa s >>= λ x, simulate' so (ob x.1) x.2 := by pairwise_dist_equiv
 
-lemma simulate_bind_dist_equiv_simulate'_bind (oz : α × S → oracle_comp spec' β)
-  (s₀ s : S) (h : ∀ x s', oz (x, s') ≃ₚ oz (x, s)) :
+lemma simulate_bind_dist_equiv_simulate'_bind
+  (oz : α × S → oracle_comp spec' β) (s₀ s : S) (h : ∀ z, oz z ≃ₚ oz (z.1, s)) :
   simulate so oa s₀ >>= oz ≃ₚ simulate' so oa s₀ >>= λ x, oz (x, s) :=
 bind_dist_equiv_fst_bind _ _ _ h
 

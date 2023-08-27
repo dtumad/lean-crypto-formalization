@@ -5,6 +5,8 @@ The system makes use of the Lean proof assistant, and gives constructions to rep
 It provides semantics both for calculating probabilities and for simulating oracles in a stateful way.
 Mathematical foundations are built from or contributed to the open-source Mathlib project whenever possible.
 
+TODO/NOTE: this needs to be updated with the recent changes to simulation semantics and tactic programming.
+
 ## Representing Non-Deterministic Computations and Oracles
 
 `src/computational_monads` contains the definition of the main computational monad `oracle_comp`, as well as it's semantics and various constructions of computations.
@@ -85,7 +87,7 @@ We can characterize these definitions based on their results on the three basic 
 `src/computational_monads/asymptotics` contains three main asymptotic definitions common in cryptographic proofs:
 * `polynomial_time` extends mathlib's `tm2_computable_in_poly_time` (based on Turing machines) to the `oracle_comp` monad to define polynomial time computations.
 * `negligible` is a standard definition of negligible functions, as a specialization of mathlib's `superpolynomial_decay`.
-* `queries_at_most` gives a way to bound the number of queries made by a given computation, and to in particular bound it by a polynomial.
+* `query_bound` gives a way to bound the number of queries made by a given computation, and to in particular bound it by a polynomial.
 
 ## Cryptographic Constructions
 

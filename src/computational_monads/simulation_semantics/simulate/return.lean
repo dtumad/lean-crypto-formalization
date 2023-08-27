@@ -68,17 +68,21 @@ end eval_dist
 
 section dist_equiv
 
--- @[simp_dist_equiv] lemma simulate_return_dist_equiv' :
---   simulate so (return a) s ≃ₚ (return' !spec! (a, s)) := refl _
-
-@[simp, simp_dist_equiv] lemma simulate_return_dist_equiv :
+/-- simulating a `return` is equivalent to returning the initial values.
+This version uses the same `oracle_spec` as the original for `simp_dist_equiv` purposes. -/
+@[simp_dist_equiv] lemma simulate_return_dist_equiv' :
   simulate so (return a) s ≃ₚ (return' !spec'! (a, s)) := refl _
 
--- @[simp_dist_equiv] lemma simulate'_return_dist_equiv' :
---   simulate' so (return a) s ≃ₚ (return' !spec! a) := by pairwise_dist_equiv
+/-- Equivalence to an arbitrary `oracle_spec` rather than the original. -/
+@[simp] lemma simulate_return_dist_equiv (spec'' : oracle_spec) :
+  simulate so (return a) s ≃ₚ (return' !spec''! (a, s)) := refl _
 
-@[simp, simp_dist_equiv] lemma simulate'_return_dist_equiv :
-  simulate' so (return a) s ≃ₚ (return' !spec'! a) := by simp [simulate'_return]
+lemma simulate'_return_dist_equiv' : simulate' so (return a) s ≃ₚ (return' !spec'! a) :=
+by pairwise_dist_equiv
+
+@[simp] lemma simulate'_return_dist_equiv (spec'' : oracle_spec) :
+  simulate' so (return a) s ≃ₚ (return' !spec''! a) :=
+by simp [dist_equiv.ext_iff, simulate'_return, prob_output_return_eq_indicator]
 
 end dist_equiv
 

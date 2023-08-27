@@ -9,7 +9,7 @@ import computational_monads.simulation_semantics.constructions.identity_oracle
 import computational_monads.simulation_semantics.oracle_append
 import computational_monads.asymptotics.polynomial_time
 import computational_monads.asymptotics.negligable
-import computational_monads.asymptotics.queries_at_most
+import computational_monads.asymptotics.query_bound
 import crypto_foundations.sec_adversary
 
 /-!
@@ -181,13 +181,6 @@ sig.random_oracle_spec ++ sig.signing_oracle_spec
   Note that the adversary only has access to the public key. -/
 def unforgeable_adversary (sig : signature) :=
 sec_adversary (sig.unforgeable_adversary_oracle_spec) sig.PK (sig.M × sig.S)
-
-
--- structure unforgeable_adversary (sig : signature) :=
--- (adv : sig.PK → oracle_comp (sig.unforgeable_adversary_oracle_spec) (sig.M × sig.S))
--- (adv_poly_time : poly_time_oracle_comp adv)
--- (query_bound : ℕ)
--- (adv_queries_at_most : ∀ pk, queries_at_most (adv pk) query_bound)
 
 namespace unforgeable_adversary
 

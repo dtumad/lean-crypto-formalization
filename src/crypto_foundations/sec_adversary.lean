@@ -6,6 +6,7 @@ Authors: Devon Tuma
 import computational_monads.coercions.instances
 import computational_monads.simulation_semantics.simulate.monad
 import computational_monads.simulation_semantics.constructions.logging.seeded_oracle
+import computational_monads.asymptotics.queries_at_most
 
 /-!
 # Adversary for Security Games
@@ -23,6 +24,7 @@ structure sec_adversary (spec : oracle_spec) (α β : Type) :=
 (run : α → oracle_comp (uniform_selecting ++ spec) β)
 -- TODO: poly_time
 (qb : (uniform_selecting ++ spec).query_count)
+(qb_is_bound (x : α) : queries_at_most (run x) qb)
 
 end sec_adversary
 

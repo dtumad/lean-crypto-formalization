@@ -3,7 +3,7 @@ Copyright (c) 2022 Devon Tuma. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
-import computational_monads.simulation_semantics.constructions.logging.caching_oracle2
+import computational_monads.simulation_semantics.constructions.logging.caching_oracle
 import computational_monads.simulation_semantics.constructions.uniform_oracle
 import computational_monads.simulation_semantics.oracle_compose
 import computational_monads.simulation_semantics.mask_state
@@ -27,8 +27,8 @@ noncomputable def randomₛₒ {spec : oracle_spec} :
   sim_oracle spec uniform_selecting (query_cache spec) :=
 ((uniform_oracle spec) ∘ₛ cachingₛₒ).mask_state (equiv.prod_punit (query_cache spec))
 
-namespace random_oracle
+namespace randomₛₒ
 
 
 
-end random_oracle
+end randomₛₒ
