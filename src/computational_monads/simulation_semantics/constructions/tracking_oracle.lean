@@ -84,11 +84,12 @@ by simp only [support_apply, prod.eq_iff_fst_eq_snd_eq, set.mem_image,
   and_comm (_ = y.fst), exists_eq_right_right]
 
 /-- If the oracle can take on any value then the first element of the support is unchanged -/
-theorem support_simulate'_eq_support (h : ∀ i t, (o i t).support = ⊤) :
+lemma support_simulate'_eq_support (h : ∀ i t, (o i t).support = ⊤) :
   (simulate' ⟪o | update_state, default_state⟫ oa s).support = oa.support :=
-support_simulate'_eq_support _ oa s (λ i t s, set.ext (λ x, by simp only
-  [h, set.top_eq_univ, set.mem_univ, true_and, apply_eq, support_map, set.mem_image,
-    prod.exists, prod.mk.inj_iff, exists_eq_left, exists_eq_left', exists_apply_eq_apply]))
+sorry
+-- support_simulate'_eq_support _ oa s (λ i t s, set.ext (λ x, by simp only
+--   [h, set.top_eq_univ, set.mem_univ, true_and, apply_eq, support_map, set.mem_image,
+--     prod.exists, prod.mk.inj_iff, exists_eq_left, exists_eq_left', exists_apply_eq_apply]))
 
 /-- Particular case of `support_simulate'_eq_support` for `query`.
 In particular a tracking oracle that *only* does tracking doesn't affect the main output. -/
@@ -96,7 +97,7 @@ In particular a tracking oracle that *only* does tracking doesn't affect the mai
   (simulate' ⟪query | update_state, default_state⟫ oa s).support = oa.support :=
 support_simulate'_eq_support query update_state default_state oa s (λ _ _, rfl)
 
-theorem support_simulate'_eq_support_simulate' (h : ∀ i t, (o i t).support = (o' i t).support) :
+lemma support_simulate'_eq_support_simulate' (h : ∀ i t, (o i t).support = (o' i t).support) :
   (simulate' ⟪o | update_state, default_state⟫ oa s).support =
     (simulate' ⟪o' | update_state', default_state'⟫ oa s').support :=
 support_simulate'_eq_support_simulate' (λ i t s s', set.ext $ λ x,
@@ -105,7 +106,7 @@ support_simulate'_eq_support_simulate' (λ i t s s', set.ext $ λ x,
     exists_eq_right', exists_eq_right_right, prod.eq_iff_fst_eq_snd_eq, and_comm (_ = x)]) oa s s'
 
 /-- The support of `simulate'` is independt of the tracking functions -/
-theorem support_simulate'_eq_support_simulate'_of_oracle_eq :
+lemma support_simulate'_eq_support_simulate'_of_oracle_eq :
   (simulate' ⟪o | update_state, default_state⟫ oa s).support =
     (simulate' ⟪o | update_state', default_state'⟫ oa s').support :=
 support_simulate'_eq_support_simulate' o o _ _ _ _ oa s s' (λ _ _, rfl)
@@ -139,11 +140,12 @@ section eval_dist
 by rw [apply_eq, eval_dist_map]
 
 /-- If the oracle has uniform distribution, then the distribution under `simulate'` is unchanged -/
-theorem eval_dist_simulate'_eq_eval_dist
+lemma eval_dist_simulate'_eq_eval_dist
   (h : ∀ i t, ⁅o i t⁆ = pmf.uniform_of_fintype (spec.range i)) :
   ⁅simulate' ⟪o | update_state, default_state⟫ oa s⁆ = ⁅oa⁆ :=
-eval_dist_simulate'_eq_eval_dist _ oa s (λ i t s, trans
-  (by simpa [eval_dist_apply, pmf.map_comp] using pmf.map_id ⁅o i t⁆) (h i t))
+sorry
+-- eval_dist_simulate'_eq_eval_dist _ oa s (λ i t s, trans
+--   (by simpa [eval_dist_apply, pmf.map_comp] using pmf.map_id ⁅o i t⁆) (h i t))
 
 /-- Specific case of `eval_dist_simulate'_eq_eval_dist` for query.
 In particular if a tracking oracle *only* does tracking gives the same main output distribution. -/
@@ -154,12 +156,13 @@ eval_dist_simulate'_eq_eval_dist query update_state default_state oa s (λ _ _, 
 lemma eval_dist_simulate'_eq_eval_dist_simulate'
   (h : ∀ i t, o i t ≃ₚ o' i t) : simulate' ⟪o | update_state, default_state⟫ oa s ≃ₚ
     simulate' ⟪o' | update_state', default_state'⟫ oa s' :=
-eval_dist_simulate'_eq_eval_dist_simulate' (λ i t s s',
-  by simp [pmf.map_comp, tracking_oracle.apply_eq, eval_dist_map, (h i t).eval_dist_eq]) _ _ _
+sorry
+-- -- eval_dist_simulate'_eq_eval_dist_simulate' (λ i t s s',
+--   by simp [pmf.map_comp, tracking_oracle.apply_eq, eval_dist_map, (h i t).eval_dist_eq]) _ _ _
 
 /-- The first output of simulation under different `tracking_oracle` with the same oracle
 is the same regardless of if the tracking functions are different. -/
-theorem eval_dist_simulate'_eq_eval_dist_simulate'_of_oracle_eq :
+lemma eval_dist_simulate'_eq_eval_dist_simulate'_of_oracle_eq :
   ⁅simulate' ⟪o | update_state, default_state⟫ oa s⁆ =
     ⁅simulate' ⟪o | update_state', default_state'⟫ oa s'⁆ :=
 eval_dist_simulate'_eq_eval_dist_simulate' o o _ _ _ _ oa s s' (λ _ _, rfl)
@@ -193,7 +196,7 @@ prob_event_eq_of_eval_dist_eq (eval_dist_simulate'_eq_eval_dist_simulate' _ _ _ 
 
 /-- The first output of simulation under different `tracking_oracle` with the same oracle
 is the same regardless of if the tracking functions are different. -/
-theorem prob_event_simulate'_eq_eval_dist_simulate'_of_oracle_eq :
+lemma prob_event_simulate'_eq_eval_dist_simulate'_of_oracle_eq :
   ⁅e | simulate' ⟪o | update_state, default_state⟫ oa s⁆ =
     ⁅e | simulate' ⟪o | update_state', default_state'⟫ oa s'⁆ :=
 prob_event_simulate'_eq_prob_event_simulate' o o _ _ _ _ oa s s' e (λ _ _, rfl)

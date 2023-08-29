@@ -20,10 +20,6 @@ open interactive interactive.types
 
 namespace oracle_comp
 
-/-- Discharge a distributional equivalence between definitionally equal computations.-/
-private meta def refl_dist_equiv_base : tactic unit :=
-do `(%%oa ≃ₚ %%oa') ← tactic.target, (tactic.unify oa oa' >> tactic.reflexivity)
-
 /-- Check that an expression is a proof of the form `∀ x₁, ... ∀ xₙ, oa ≃ₚ oa'`. -/
 private meta def is_dist_equiv : expr → tactic bool
 | `(%%oa ≃ₚ %%oa') := return tt
@@ -43,7 +39,7 @@ tactic.intros >> tactic.to_expr d_eq >>= tactic.apply >> return ()
 
 /-- Try to apply the given expresion to rewrite the left hand side of an equivalence. -/
 private meta def apply_dist_equiv_trans (d_eq : pexpr) : tactic unit :=
-do tactic.intros >> tactic.refine ``(trans _ _),
+do tactic.intros >> tactic.refine ``(dist_equiv.trans _ _),
   (list.length <$> tactic.get_goals) >>= rotate_to_dist_equiv,
   tactic.to_expr d_eq >>= tactic.apply >> return ()
 
@@ -57,13 +53,13 @@ private meta def traverse_dist_equiv (d_eq : pexpr) : bool → bool → tactic b
   -- Try to solve the goal by applying the given expression directly.
   apply_dist_equiv_trans d_eq >> return tt <|>
   -- Try to apply the expression to the left portion of the bind.
-  do {tactic.refine ``(trans (oracle_comp.bind_dist_equiv_bind_of_dist_equiv_left _ _) _),
-    (list.length <$> tactic.get_goals) >>= rotate_to_dist_equiv,
-    (traverse_dist_equiv tt tt), (tactic.try refl_dist_equiv_base), return tt} <|>
+  do {tactic.refine ``(dist_equiv.trans (oracle_comp.bind_dist_equiv_bind_of_dist_equiv_left _ _)
+    _), (list.length <$> tactic.get_goals) >>= rotate_to_dist_equiv,
+    (traverse_dist_equiv tt tt), (tactic.try tactic.reflexivity), return tt} <|>
   -- Try to apply the expression to the right portion of the bind.
-  do {tactic.refine ``(trans (oracle_comp.bind_dist_equiv_bind_of_dist_equiv_right' _ _ _ _) _),
-    (list.length <$> tactic.get_goals) >>= rotate_to_dist_equiv, tactic.intros,
-    (traverse_dist_equiv tt tt), (tactic.try refl_dist_equiv_base), return tt} <|>
+  do {tactic.refine ``(dist_equiv.trans (oracle_comp.bind_dist_equiv_bind_of_dist_equiv_right' _ _
+    _ _) _), (list.length <$> tactic.get_goals) >>= rotate_to_dist_equiv, tactic.intros,
+    (traverse_dist_equiv tt tt), (tactic.try tactic.reflexivity), return tt} <|>
   -- Try to apply things on the other side of the equivalence
   (if check_symm = ff then tactic.fail () else
     tactic.refine ``(symm _) >> traverse_dist_equiv tt ff
@@ -79,7 +75,7 @@ private meta def rec_rw_eqs (d_eq : pexpr) (fail_on_miss : bool) : ℕ → tacti
 
 /-- Loop through all the passed in equivalences, trying to apply them in order. -/
 private meta def apply_dist_equiv_list (fail_on_miss : bool) (iters : ℕ) : list pexpr → tactic unit
-| [] := refl_dist_equiv_base <|> return () -- Try to clear the final state with reflexive equality.
+| [] := tactic.reflexivity <|> return () -- Try to clear the final state with reflexive equality.
 | (d_eq :: d_eqs) := apply_dist_equiv d_eq <|> (rec_rw_eqs d_eq fail_on_miss iters
     >> apply_dist_equiv_list d_eqs)
 
@@ -92,7 +88,8 @@ in each case trying to prove the goal by first proving a distributional equivale
   (opt_d_eqs : parse (optional (pexpr_list))) :=
 do passed_d_eqs ← return (opt_d_eqs.get_or_else []),
   by_dist_equiv, apply_dist_equiv_list tt 1 passed_d_eqs,
-  tactic.try refl_dist_equiv_base
+  tactic.try tactic.reflexivity,
+  tactic.try by_dist_equiv
 
 /-- Version of `rw_dist_equiv` that applies lemmas multiple times until it can't anymore.
 The `opt_iters` param gives the maximum rewrites to make before stopping. -/
@@ -102,7 +99,8 @@ The `opt_iters` param gives the maximum rewrites to make before stopping. -/
 do passed_d_eqs ← return (opt_d_eqs.get_or_else []),
   iters ← return (opt_iters.get_or_else 6),
   by_dist_equiv, apply_dist_equiv_list tt iters passed_d_eqs,
-  tactic.try refl_dist_equiv_base
+  tactic.try tactic.reflexivity,
+  tactic.try by_dist_equiv
 
 /-- Version of `simp_rw_dist_equiv` that allows for a given equivalence to be used zero times,
 and includes all external lemmas in the scope that are tagged with `simp_dist_equiv`-/
@@ -114,13 +112,15 @@ do passed_d_eqs ← return (opt_d_eqs.get_or_else []),
   iters ← return (opt_iters.get_or_else 6),
   by_dist_equiv, apply_dist_equiv_list ff iters (passed_d_eqs ++ tagged_d_eqs),
   apply_dist_equiv_list ff iters (passed_d_eqs ++ tagged_d_eqs), -- hack for ordering
-  tactic.try refl_dist_equiv_base
+  tactic.try tactic.reflexivity,
+  tactic.try by_dist_equiv
+
 
 end oracle_comp
 
 section tests
 
-variables {α β γ δ : Type} {spec : oracle_spec}
+variables {α β γ δ : Type} {spec spec' spec'' : oracle_spec}
 
 section rw_dist_equiv
 
@@ -131,6 +131,10 @@ by rw_dist_equiv []
 
 /-- `rw_dist_equiv` should be able to solve a goal that exactly matches an argument. -/
 example (oa oa' : oracle_comp spec α) (hoa : oa ≃ₚ oa') : oa ≃ₚ oa' :=
+by rw_dist_equiv [hoa]
+
+/-- `rw_dist_equiv` should be able to solve a goal with differeing `oracle_spec`. -/
+example (oa : oracle_comp spec α) (oa' : oracle_comp spec' α) (hoa : oa ≃ₚ oa') : oa ≃ₚ oa' :=
 by rw_dist_equiv [hoa]
 
 /-- `rw_dist_equiv` should be able to solve an equivalence between bind operations. -/

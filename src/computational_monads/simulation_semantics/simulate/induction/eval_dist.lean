@@ -8,7 +8,7 @@ import computational_monads.simulation_semantics.simulate.query
 import computational_monads.distribution_semantics.tactics.pairwise_dist_equiv
 
 /-!
-# Distributions of Simulations
+# Induction Lemmas
 
 This file contains more complicated lemmas for `eval_dist` applied to `simulate` and `simulate'`.
 -/
@@ -68,54 +68,6 @@ begin
   },
   { simp only [prob_output_simulate_bind_eq_tsum_tsum, h_bind, hoa, hob] },
   { rw [prob_output_simulate_query, h_query, prob_output.def] },
-end
-
-/-- If the main output of oracle queries is uniformly distributed (ignoring the oracle state),
-then the output distribution under `simulate'` is exactly the original distribution,
-since we define `eval_dist` to be uniform on oracle calls. -/
-theorem eval_dist_simulate'_eq_eval_dist
-  (h : ∀ i t s, ⁅so i (t, s)⁆.map prod.fst = pmf.uniform_of_fintype (spec.range i)) :
-  ⁅simulate' so oa s⁆ = ⁅oa⁆ :=
-begin
-  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t generalizing s,
-  { simp only [simulate'_return, eval_dist_map_return, eval_dist_return] },
-  { refine eval_dist.prob_output_ext _ _ (λ x, _),
-    rw [prob_output_bind_eq_tsum_indicator, prob_output_simulate'_bind_eq_tsum_tsum],
-    refine tsum_congr (λ a, _),
-    sorry,
-    -- rw [← hoa s, prob_output_simulate', ← ennreal.tsum_mul_right],
-    -- refine tsum_congr (λ t, _),
-    -- rw ← hob
-    },
-  { simp only [h, simulate'_query, eval_dist_map, eval_dist_query] }
-end
-
-/-- Given two simulation oracles `so` and `so'`, if the output distribution of oracle queries
-(ignoring the output state) is the same for any input and pair of initial oracle states,
-then the output distribution of simulating a computation is the same for both. -/
-theorem eval_dist_simulate'_eq_eval_dist_simulate'
-  {so : sim_oracle spec spec' S} {so' : sim_oracle spec spec'' S'}
-  (h : ∀ i t s s', ⁅so i (t, s)⁆.map prod.fst = ⁅so' i (t, s')⁆.map prod.fst)
-  (oa : oracle_comp spec α) (s : S) (s' : S') :
-  ⁅simulate' so oa s⁆ = ⁅simulate' so' oa s'⁆ :=
-begin
-  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t generalizing s s',
-  { simp only [simulate'_return, eval_dist_map_return] },
-  { refine eval_dist.prob_output_ext _ _ (λ b, _),
-    simp only [prob_output_simulate'_bind_eq_tsum_tsum],
-    refine tsum_congr (λ a, _),
-    sorry,
-    -- calc ∑' (t : S), ⁅= (a, t) | simulate so oa s⁆ * ⁅= b | simulate' so (ob a) t⁆
-    --   = ∑' (t : S), ⁅= (a, t) | simulate so oa s⁆ * ⁅= b | simulate' so' (ob a) s'⁆ :
-    --     tsum_congr (λ t, congr_arg (λ x, _ * x) $ by rw hob a t s')
-    --   ... = (∑' (t' : S'), ⁅simulate so' oa s'⁆ (a, t')) * ⁅simulate' so' (ob a) s'⁆ b :
-    --     by simp_rw [ennreal.tsum_mul_right, ← prob_output_simulate', hoa s s']
-    --   ... = ∑' (t' : S'), ⁅simulate so' oa s'⁆ (a, t') * ⁅simulate' so (ob a) s⁆ b :
-    --     by rw [ennreal.tsum_mul_right, hob]
-    --   ... = ∑' (t' : S'), ⁅simulate so' oa s'⁆ (a, t') * ⁅simulate' so' (ob a) t'⁆ b :
-    --     tsum_congr (λ t, congr_arg (λ x, _ * x) $ by rw hob)
-        },
-  { simpa only [simulate'_query, eval_dist_map] using h i t s s' },
 end
 
 end oracle_comp

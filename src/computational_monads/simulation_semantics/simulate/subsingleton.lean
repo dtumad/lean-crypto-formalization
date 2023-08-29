@@ -3,6 +3,7 @@ Copyright (c) 2022 Devon Tuma. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
+import computational_monads.simulation_semantics.simulate.simulate'_idem
 import computational_monads.simulation_semantics.simulate.induction.support
 
 /-!
@@ -38,7 +39,7 @@ section support
 
 /-- Version of `support_simulate'_eq_support` for `default_simulate`, given a `subsingleton` state.
 Has a weaker requirement for the hypothesis `h` than the more general lemma -/
-theorem support_simulate'_eq_support_of_subsingleton [subsingleton S] (s : S)
+lemma support_simulate'_eq_support_of_subsingleton [subsingleton S] (s : S)
   (h : ∀ i t, prod.fst '' (so i (t, so.default_state)).support = ⊤) :
   (simulate' so oa s).support = oa.support :=
 support_simulate'_eq_support so oa s (λ i t s, subsingleton.elim so.default_state s ▸ h i t)
@@ -53,7 +54,7 @@ begin
 end
 
 /-- If the state has at most one elements, we can express the support of `simulate` in terms
-of only `simulate'`. For example in a `stateless_oracle` or `uniform_oracle`.
+of only `simulate'`. For example in a `stateless_oracle` or `uniformₛₒ`.
 TODO: above is basically the same statement -/
 lemma support_simulate_eq_support_simulate'_of_subsingleton [subsingleton S]
   (so : sim_oracle spec spec' S) : (simulate so oa s).support =
@@ -110,7 +111,7 @@ end
 lemma simulate_dist_equiv_of_subsingleton [subsingleton S]
   (s : S) : simulate so oa s ≃ₚ (λ x, (x, s)) <$> simulate' so oa s :=
 begin
-  refine trans _ (map_comp_dist_equiv _ _ _).symm,
+  rw_dist_equiv [map_comp_dist_equiv],
   refine trans (map_id_dist_equiv _).symm (map_dist_equiv_of_dist_equiv' (funext (λ x, _)) rfl),
   simp [prod.eq_iff_fst_eq_snd_eq],
 end

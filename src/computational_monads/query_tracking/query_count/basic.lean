@@ -119,7 +119,7 @@ end of_nat
 /-- We can express a `query_count` as a sum over the active indices of the list
 of the individiaul counts for each index. Doesn't work with an arbitrary `indexed_list`
 since the addition operation there isn't commutative. -/
-theorem sum_of_nat_get_count : ∑ i in qc.active_oracles, of_nat i (qc.get_count i) = qc :=
+lemma sum_of_nat_get_count : ∑ i in qc.active_oracles, of_nat i (qc.get_count i) = qc :=
 begin
   refine @add_values_induction _ _ (λ qc, ∑ i in qc.active_oracles, of_nat i (qc.get_count i) = qc)
     qc (by rw [active_oracles_empty, finset.sum_empty, zero_eq_empty]) (λ i ts il hts hil h, _),
@@ -282,7 +282,7 @@ by simp [increment_decrement_eq_increment qc i hm le_rfl]
 
 /-- Simplified version of `indexed_list.add_values_induction` for the case of `query_count`.
 Makes use of `increment` and simplifies some assumptions from lists to integers. -/
-theorem increment_induction {p : spec.query_count → Prop} (qc : spec.query_count)
+lemma increment_induction {p : spec.query_count → Prop} (qc : spec.query_count)
   (h₁ : p ∅) (h₂ : ∀ ⦃i : spec.ι⦄ (n : ℕ) (qc : spec.query_count),
     i ∉ qc.active_oracles → p qc → p (qc.increment i n.succ)) : p qc :=
 begin

@@ -208,7 +208,7 @@ section indep_events
 
 /-- Any collections of sets corresponding to output types of two computations
 are independent when returning the outputs of the computations in a `prod` type. -/
-theorem indep_events_prod (es : set (set α)) (es' : set (set β)) :
+lemma indep_events_prod (es : set (set α)) (es' : set (set β)) :
   indep_events (oa ×ₘ ob) ((λ e, prod.fst ⁻¹' e) '' es) ((λ e', prod.snd ⁻¹' e') '' es') :=
 begin
   rw [indep_events_iff],

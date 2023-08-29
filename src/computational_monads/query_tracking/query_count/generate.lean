@@ -180,7 +180,7 @@ generate_aux qc oa qc.active_oracles.to_list
 
 variables (qc : spec.query_count) (oa : Π (i : spec.ι), oracle_comp spec' (τ i))
 
-theorem prob_output_generate (il : spec.indexed_list τ) (h : ↑il = qc) :
+lemma prob_output_generate (il : spec.indexed_list τ) (h : ↑il = qc) :
   ⁅= il | generate qc oa⁆ = ∏ j in il.active_oracles, ((il j).map ⁅oa j⁆).prod :=
 begin
   have : ↑il = {i ∈ qc | i ∈ qc.active_oracles.to_list} := by simp [h],

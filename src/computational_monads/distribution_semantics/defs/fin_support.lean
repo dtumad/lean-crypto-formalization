@@ -39,7 +39,7 @@ section support
 variables (oa : oracle_comp spec α) (s : finset α)
 
 /-- Correctness of `fin_support` with respect to `support`, i.e. the two are equal as `set` -/
-theorem mem_fin_support_iff_mem_support (x : α) : x ∈ oa.fin_support ↔ x ∈ oa.support :=
+lemma mem_fin_support_iff_mem_support (x : α) : x ∈ oa.fin_support ↔ x ∈ oa.support :=
 begin
   induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t,
   { exact finset.mem_singleton.trans (set.mem_singleton_iff) },
@@ -53,7 +53,7 @@ lemma mem_fin_support_of_mem_support {x : α} (hx : x ∈ oa.support) : x ∈ oa
 lemma fin_support_eq_to_finset : oa.fin_support = oa.support.to_finset :=
 finset.ext (λ x, by simp only [mem_fin_support_iff_mem_support, set.mem_to_finset])
 
-@[simp] theorem coe_fin_support_eq_support : ↑oa.fin_support = oa.support :=
+@[simp] lemma coe_fin_support_eq_support : ↑oa.fin_support = oa.support :=
 set.ext (λ a, (mem_fin_support_iff_mem_support oa a))
 
 lemma fin_support_eq_iff_support_eq_coe : oa.fin_support = s ↔ oa.support = ↑s :=

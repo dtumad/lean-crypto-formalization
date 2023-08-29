@@ -46,7 +46,7 @@ lemma mask_state_apply_eq : so.mask_state mask i x =
 section support
 
 /-- The `support` of a simulation with masked state is the same as the support without masking -/
-@[simp] theorem support_simulate_mask_eq_image_support_simulate :
+@[simp] lemma support_simulate_mask_eq_image_support_simulate :
   (simulate (so.mask_state mask) oa s').support =
     (prod.map id mask) '' (simulate so oa (mask.symm s')).support :=
 begin
@@ -118,7 +118,7 @@ lemma eval_dist_mask_apply : ⁅so.mask_state mask i (t, s')⁆ =
 by simpa only [mask_state_apply_eq, eval_dist_map]
 
 @[simp]
-theorem eval_dist_simulate_mask : ⁅simulate (so.mask_state mask) oa s'⁆
+lemma eval_dist_simulate_mask : ⁅simulate (so.mask_state mask) oa s'⁆
   = (⁅simulate so oa (mask.symm s')⁆).map (prod.map id mask) :=
 begin
   induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t generalizing s',
@@ -171,7 +171,7 @@ by simpa only [mask_state_apply_eq, prob_event_map, prod_map, id.def]
 /-- The probability of an event holding after masking state is the same as the
 probability of the preimage of the event holding on the unmasked computation. -/
 @[simp]
-theorem prob_event_simulate_mask_eq_preimage (e : set (α × S')) :
+lemma prob_event_simulate_mask_eq_preimage (e : set (α × S')) :
   ⁅e | simulate (so.mask_state mask) oa s'⁆ =
     ⁅(prod.map id mask) ⁻¹' e | simulate so oa (mask.symm s')⁆ :=
 by simp_rw [prob_event.def, eval_dist_simulate_mask, pmf.to_outer_measure_map_apply]

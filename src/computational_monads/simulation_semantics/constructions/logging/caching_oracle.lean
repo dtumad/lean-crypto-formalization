@@ -124,7 +124,7 @@ end
 /-- Given a possible result `z` of simulating a computation `oa >>= ob` with a caching oracle,
 we get a stronger version `mem_support_simulate_bind_iff` that includes uniqueness of the
 intermediate result (since all choices made must align with the cached values in `z`).  -/
-theorem mem_support_simulate_bind_iff (ob : α → oracle_comp spec β)
+lemma mem_support_simulate_bind_iff (ob : α → oracle_comp spec β)
   (z : β × query_cache spec) : z ∈ (simulate cachingₛₒ (oa >>= ob) s₀).support ↔
     ∃! (y : α × query_cache spec), y ∈ (simulate cachingₛₒ oa s₀).support ∧
       z ∈ (simulate cachingₛₒ (ob y.1) y.2).support :=
@@ -139,7 +139,7 @@ begin
     ne.def, eq_self_iff_true, not_true] at ht,
 end
 
-theorem exists_unique_mem_support_of_le (oa : oracle_comp spec α) {s₀ s₁ : query_cache spec}
+lemma exists_unique_mem_support_of_le (oa : oracle_comp spec α) {s₀ s₁ : query_cache spec}
   (hs₀₁ : s₀ ≤ s₁) (z₁ : α × query_cache spec) (hz : z₁ ∈ (simulate cachingₛₒ oa s₁).support) :
   ∃! (z₀ : α × query_cache spec), z₀.2 ≤ z₁.2 ∧ z₀ ∈ (simulate cachingₛₒ oa s₀).support :=
 begin
@@ -156,7 +156,7 @@ begin
   }
 end
 
-theorem exists_unique_state_mem_support_of_le (oa : oracle_comp spec α) {s₀ s₁ : query_cache spec}
+lemma exists_unique_state_mem_support_of_le (oa : oracle_comp spec α) {s₀ s₁ : query_cache spec}
   (hs₀₁ : s₀ ≤ s₁) (z : α × query_cache spec) (hz : z ∈ (simulate cachingₛₒ oa s₁).support) :
   ∃! (s : query_cache spec), s ≤ z.2 ∧ (z.1, s) ∈ (simulate cachingₛₒ oa s₀).support :=
 begin
@@ -373,7 +373,7 @@ end extra_cache_choices
 /-- Probability of getting to a final result given a partial cache for queries is given by
 the product of probabilities that each additional query gets the expected result.
 Note that this requires `z` be in the support of the simulation (as the empty product is `1`). -/
-theorem finite_version {oa : oracle_comp spec α} {s₀ : query_cache spec}
+lemma finite_version {oa : oracle_comp spec α} {s₀ : query_cache spec}
   {z : α × query_cache spec} (hz : z ∈ (simulate cachingₛₒ oa s₀).support) :
   ⁅= z | simulate cachingₛₒ oa s₀⁆ = (extra_cache_choices s₀ z.2)⁻¹ :=
 begin

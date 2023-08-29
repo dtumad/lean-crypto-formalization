@@ -41,7 +41,7 @@ Usefull for giving a unified convergence point for state values. -/
 instance is_stateless.is_tracking [hso : so.is_stateless] : so.is_tracking :=
 { query_f := λ i t, prod.fst <$> so i (t, so.default_state),
   state_f := λ s i t u, so.default_state,
-  apply_equiv_state_f_map_query_f :=
+  apply_dist_equiv_state_f_map_query_f :=
     begin
       refine λ i t s, trans (trans (map_id_dist_equiv _).symm _) (map_comp_dist_equiv _ _ _).symm,
       refine map_dist_equiv_of_dist_equiv' (funext (λ x, prod.eq_iff_fst_eq_snd_eq.2

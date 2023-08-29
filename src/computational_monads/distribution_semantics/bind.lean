@@ -113,7 +113,7 @@ lemma prob_event_bind_eq_sum_fin_support (e' : set β) :
   ⁅e' | oa >>= ob⁆ = ∑ x in oa.fin_support, ⁅= x | oa⁆ * ⁅e' | ob x⁆ :=
 (prob_event_bind_eq_tsum _ _ _).trans (tsum_eq_sum (λ x h, by simp [prob_output_eq_zero' h]))
 
-theorem prob_event_bind_eq_sum_of_support_subset (e : set β) (s : finset α) (hs : oa.support ⊆ s) :
+lemma prob_event_bind_eq_sum_of_support_subset (e : set β) (s : finset α) (hs : oa.support ⊆ s) :
   ⁅e | oa >>= ob⁆ = ∑ x in s, ⁅= x | oa⁆ * ⁅e | ob x⁆ :=
 (prob_event_bind_eq_tsum oa ob e).trans (tsum_eq_sum (λ x hx, let hx' : x ∉ oa.support :=
   λ h, hx (finset.mem_coe.1 (hs h)) in by simp [mul_eq_zero, prob_output_eq_zero_iff, hx']))

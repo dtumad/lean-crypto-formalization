@@ -632,7 +632,7 @@ end
 /-- To prove a property about indexed lists, it suffices to prove it for the empty list,
 and to show that if it holds for an indexed list `il` then it still holds after adding values
 to one particular index, where that index is initially empty. -/
-theorem add_values_induction {p : spec.indexed_list τ → Prop} (il : spec.indexed_list τ)
+lemma add_values_induction {p : spec.indexed_list τ → Prop} (il : spec.indexed_list τ)
   (h₁ : p ∅) (h₂ : ∀ ⦃i : spec.ι⦄ (ts : list (τ i)) (il : spec.indexed_list τ),
     ts ≠ [] → i ∉ il.active_oracles → p il → p (il.add_values ts)) : p il :=
 begin

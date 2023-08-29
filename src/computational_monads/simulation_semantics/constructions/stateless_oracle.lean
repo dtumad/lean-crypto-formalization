@@ -179,7 +179,7 @@ end support
 section distribution_semantics
 
 /-- The first output of a tracking oracle is equivalent to using just the stateless oracle -/
-theorem simulate'_equiv_stateless_oracle :
+lemma simulate'_equiv_stateless_oracle :
   simulate' ⟪o | update_state, default_state⟫ oa s ≃ₚ simulate' ⟪o⟫ oa () :=
 begin
   sorry

@@ -44,7 +44,7 @@ end
 @[simp] lemma support_simulate' : (simulate' idₛ oa s).support = oa.support :=
 stateless_oracle.support_simulate'_eq_support _ query s (λ _ _, rfl)
 
-@[simp] theorem support_simulate : (simulate idₛ oa s).support = prod.fst ⁻¹' oa.support :=
+@[simp] lemma support_simulate : (simulate idₛ oa s).support = prod.fst ⁻¹' oa.support :=
 (stateless_oracle.support_simulate_eq_preimage_support_simulate' _ _ _).trans
   (congr_arg _ $ support_simulate' oa ())
 
@@ -64,7 +64,7 @@ lemma eval_dist_apply (i : spec.ι) (t : spec.domain i) :
 rfl
 
 -- @[simp]
--- theorem eval_dist_simulate : ⁅simulate idₛ oa s⁆ = ⁅(λ a, (a, ())) <$> oa⁆ :=
+-- lemma eval_dist_simulate : ⁅simulate idₛ oa s⁆ = ⁅(λ a, (a, ())) <$> oa⁆ :=
 -- begin
 --   induction oa with α a α β oa ob hoa hob i t generalizing s,
 --   { simp [punit_eq s (), pmf.pure_map] },

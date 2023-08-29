@@ -106,6 +106,19 @@ variable (a : α)
 lemma map_return_dist_equiv : f <$> (return' !spec! a) ≃ₚ (return' !spec! (f a)) :=
 by pairwise_dist_equiv
 
+@[pairwise_dist_equiv]
+lemma map_return_dist_equiv' : f <$> (return' !spec! a) ≃ₚ (return' !spec'! (f a)) :=
+begin
+  refine dist_equiv.ext (λ x, _),
+  by_cases hx : f a = x,
+  { induction hx,
+    simp only [prob_output_eq_one_of_subset, set.subset_singleton_iff, support_map, support_return,
+      set.image_singleton, set.mem_singleton_iff, imp_self, implies_true_iff] },
+  { simp only [(prob_output_return_eq_zero_iff _ _ _).2 (ne.symm hx), prob_output_eq_zero_iff,
+      ne.symm hx, support_map, support_return, set.image_singleton,
+      set.mem_singleton_iff, not_false_iff] }
+end
+
 lemma support_map_return : (f <$> (return' !spec! a)).support = {f a} :=
 by simp only [support_map, support_return, set.image_singleton]
 

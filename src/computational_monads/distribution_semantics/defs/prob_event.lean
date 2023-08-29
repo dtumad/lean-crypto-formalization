@@ -120,7 +120,7 @@ prob_event_eq_prob_event_of_inter_support_eq oa (by rw [set.inter_assoc, set.int
 
 /-- Given a `finset` containing the `support` of some `oracle_comp`,
   it suffices to take `finset.sum` over that instead of a `tsum` -/
-theorem prob_event_eq_sum_of_support_subset [decidable_pred e] (s : finset α)
+lemma prob_event_eq_sum_of_support_subset [decidable_pred e] (s : finset α)
   (hs : oa.support ⊆ s) : ⁅e | oa⁆ = ∑ x in s, ite (x ∈ e) (⁅= x | oa⁆) 0 :=
 trans (prob_event_eq_tsum_ite oa e) (tsum_eq_sum (λ x hx,
   by rw [prob_output_eq_zero (λ hx', hx $ finset.mem_coe.1 (hs hx')), if_t_t]))

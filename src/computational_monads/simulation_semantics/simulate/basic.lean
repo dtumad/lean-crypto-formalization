@@ -142,7 +142,7 @@ lemma simulate'_dist_equiv : simulate' so oa s ≃ₚ prod.fst <$> simulate so o
 
 /-- Express the probability of `simulate'` returning a specific value
 as the sum over all possible output states of the probability of `simulate` return it -/
-theorem prob_output_simulate' : ⁅= x | simulate' so oa s⁆ = ∑' t, ⁅= (x, t) | simulate so oa s⁆ :=
+lemma prob_output_simulate' : ⁅= x | simulate' so oa s⁆ = ∑' t, ⁅= (x, t) | simulate so oa s⁆ :=
 begin
   rw [prob_output.def, eval_dist_simulate', pmf.map_apply],
   refine (tsum_prod_eq_tsum_snd x $ λ s x' hx', _).trans (tsum_congr (λ s', _)),
@@ -162,7 +162,7 @@ end simulate'
 /-- If some invariant `P` on the state of a simulation oracle is preserved by any query
 where the input state satisfies `P`, and some initial state also satisfies `P`,
 then any result of the simulation will have a final state satisfying `P`. -/
-theorem state_invariant_of_preserved (so : sim_oracle spec spec' S) (P : S → Prop)
+lemma state_invariant_of_preserved (so : sim_oracle spec spec' S) (P : S → Prop)
   (hso : ∀ i t s, ∀ x ∈ (so i (t, s)).support, P s → P (prod.snd x)) (s : S) (hs : P s)
   (oa : oracle_comp spec α) (x : α × S) (hx : x ∈ (simulate so oa s).support) : P x.2 :=
 begin
@@ -177,7 +177,7 @@ section support_subset
 
 /-- Since `support` assumes any possible query result, `simulate` will never reduce the support.
 In particular the support of a simulation lies in the pullback of the original support. -/
-theorem support_simulate_subset_preimage_support :
+lemma support_simulate_subset_preimage_support :
   (simulate so oa s).support ⊆ prod.fst ⁻¹' oa.support :=
 begin
   rw [set.preimage],

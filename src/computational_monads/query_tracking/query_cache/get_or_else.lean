@@ -305,7 +305,7 @@ variables
 variables (i : spec.ι) (t : spec.domain i) (ou : oracle_comp spec' (spec.range i))
   (i' : spec.ι) (t' : spec.domain i') (ou' : oracle_comp spec' (spec.range i'))
 
-theorem get_or_else_bind_fst_map_get_or_else_dist_equiv'
+lemma get_or_else_bind_fst_map_get_or_else_dist_equiv'
   (f : spec.range i × query_cache spec → query_cache spec)
   (hf : ∀ (x : spec.range i × query_cache spec), cache ≤ x.2 → cache ≤ f x ∧ f x ≤ x.2) :
   do {x ← cache.get_or_else i t ou, prod.fst <$> (f x).get_or_else i' t' ou'} ≃ₚ
@@ -317,7 +317,7 @@ begin
   sorry,
 end
 
-theorem get_or_else_bind_fst_map_get_or_else_dist_equiv :
+lemma get_or_else_bind_fst_map_get_or_else_dist_equiv :
   do {x ← cache.get_or_else i t ou, prod.fst <$> x.2.get_or_else i' t' ou'} ≃ₚ
     if h : i = i' then (if h.rec t = t'
       then (congr_arg spec.range h).rec (prod.fst <$> cache.get_or_else i t ou)

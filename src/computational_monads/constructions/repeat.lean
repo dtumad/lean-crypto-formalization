@@ -43,7 +43,7 @@ lemma repeat_succ : oa.repeat n.succ = do {a ← oa, as ← oa.repeat n, return 
 section all₂
 
 /-- The support of `oa.repeat n` is the set of vectors where every element is in `oa.support`. -/
-@[simp] theorem support_repeat_eq_all₂ :
+@[simp] lemma support_repeat_eq_all₂ :
   (oa.repeat n).support = {xs | xs.to_list.all₂ (∈ oa.support)} :=
 begin
   induction n with n hn,
@@ -251,7 +251,7 @@ end nth
 
 /-- The probability of getting `xs` after `oa.repeat n` is the product of the probability
 of getting each individual output, since each computation runs independently. -/
-@[simp] theorem prob_output_repeat : ⁅= xs | oa.repeat m⁆ = (xs.to_list.map ⁅oa⁆).prod :=
+@[simp] lemma prob_output_repeat : ⁅= xs | oa.repeat m⁆ = (xs.to_list.map ⁅oa⁆).prod :=
 begin
   induction m with m hm,
   { simp only [vector.eq_nil xs, repeat_zero oa, prob_output_return,

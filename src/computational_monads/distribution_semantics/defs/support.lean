@@ -48,7 +48,7 @@ lemma support_bind' (oa : oracle_comp spec α) (ob : α → oracle_comp spec β)
   (query i t).support = set.univ := rfl
 
 /-- If the range of `spec` is a `fintype` then the support is a finite set. -/
-theorem support_finite (oa : oracle_comp spec α) : oa.support.finite :=
+lemma support_finite (oa : oracle_comp spec α) : oa.support.finite :=
 begin
   induction oa with α a α β oa ob hoa hob i t,
   { exact set.finite_singleton a },
@@ -61,7 +61,7 @@ noncomputable instance support.coe_sort_fintype (oa : oracle_comp spec α) :
 
 /-- Since the range of oracles in an `oracle_spec` are required to be nonempty,
 we naturally get that the `support` of an `oracle_comp` is nonempty. -/
-theorem support_nonempty (oa : oracle_comp spec α) : oa.support.nonempty :=
+lemma support_nonempty (oa : oracle_comp spec α) : oa.support.nonempty :=
 begin
   induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t,
   { exact set.singleton_nonempty a },
