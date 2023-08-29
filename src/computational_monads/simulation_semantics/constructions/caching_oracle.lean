@@ -8,7 +8,6 @@ import computational_monads.query_tracking.query_cache.add_fresh_queries
 import computational_monads.query_tracking.query_cache.sdiff
 import computational_monads.simulation_semantics.simulate.monad
 import computational_monads.simulation_semantics.simulate.query
-import computational_monads.distribution_semantics.prod
 import computational_monads.constructions.product
 
 /-!

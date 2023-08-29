@@ -4,9 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
 import computational_monads.query_tracking.query_count.generate
-import computational_monads.query_tracking.query_count.possible_outcomes
 import computational_monads.query_tracking.query_seed.basic
-import computational_monads.constructions.uniform_select
 
 /-!
 # Pre-Computation of Queries Made by a Computation

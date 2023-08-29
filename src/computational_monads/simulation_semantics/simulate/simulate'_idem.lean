@@ -3,10 +3,8 @@ Copyright (c) 2023 Devon Tuma. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
-import computational_monads.simulation_semantics.simulate.monad
-import computational_monads.simulation_semantics.simulate.query
-import computational_monads.distribution_semantics.tactics.pairwise_dist_equiv
 import computational_monads.simulation_semantics.simulate.induction
+import computational_monads.constructions.uniform_select
 
 /-!
 # Simulation with Oracles That Only Modify State

@@ -16,13 +16,14 @@ is itself polynomial time. We assume that any oracle call is polynomial time by 
 
 namespace oracle_comp
 
+variables {α β : Type} {spec : oracle_spec}
+
 /-- Extend polynomial time to the `oracle_comp` monad in the natural way,
 checking that each step of the monadic construction is polynomial time,
 using `uncurry` to deal with the additional variable in each `bind` construction.
 We also consider computations "up to implementation", so if there is a polynomial time computation
 with the same underlying distribution, then it's polynomial time as well (`poly_time_ext`) -/
-inductive poly_time_oracle_comp {spec : oracle_spec} :
-  Π {α β : Type} (f : α → oracle_comp spec β), Type 1
+inductive poly_time_oracle_comp : Π {α β : Type} (f : α → oracle_comp spec β), Type 1
 | poly_time_pure' {α β : Type} (f : α → β) (hf : poly_time f) :
     poly_time_oracle_comp (λ a, pure' β (f a))
 | poly_time_bind' {α β γ : Type} (f : α → oracle_comp spec β) (g : α → β → oracle_comp spec γ)

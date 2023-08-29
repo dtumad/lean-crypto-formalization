@@ -3,9 +3,7 @@ Copyright (c) 2022 Devon Tuma. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
-import computational_monads.distribution_semantics.map
 import computational_monads.distribution_semantics.tactics.push_map_dist_equiv
-import computational_monads.distribution_semantics.tactics.rw_dist_equiv
 
 /-!
 # Probabilities for Computations Over Prod Type

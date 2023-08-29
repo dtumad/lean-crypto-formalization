@@ -4,7 +4,6 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
 import computational_monads.distribution_semantics.tactics.by_dist_equiv
-import computational_monads.distribution_semantics.tactics.tactic_tags
 
 /-!
 # Induction Tactic for Splitting an Equivalence into Line by Line Equivalences

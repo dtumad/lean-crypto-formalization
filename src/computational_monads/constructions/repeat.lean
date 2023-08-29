@@ -192,7 +192,8 @@ by rw [repeat_succ, map_eq_bind_return_comp, (prod_bind_equiv_bind_bind _ _ _).e
 
 lemma prob_output_repeat_succ :
   ⁅= xsₛ | oa.repeat m.succ⁆ = ⁅= xsₛ.head | oa⁆ * ⁅= xsₛ.tail | oa.repeat m⁆ :=
-calc ⁅= xsₛ | oa.repeat m.succ⁆ = ⁅(λ (x : α × vector α m), x.1 ::ᵥ x.2) <$> (oa ×ₘ oa.repeat m)⁆ xsₛ :
+calc ⁅= xsₛ | oa.repeat m.succ⁆ =
+  ⁅(λ (x : α × vector α m), x.1 ::ᵥ x.2) <$> (oa ×ₘ oa.repeat m)⁆ xsₛ :
     by rw [prob_output.def, eval_dist_repeat_succ' oa m]
   ... = ⁅= (xsₛ.head, xsₛ.tail) | oa ×ₘ oa.repeat m⁆ :
     prob_output_map_eq_single' _ _ (xsₛ.head, xsₛ.tail) xsₛ (xsₛ.cons_head_tail)

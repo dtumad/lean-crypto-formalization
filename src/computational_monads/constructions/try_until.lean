@@ -6,7 +6,6 @@ Authors: Devon Tuma
 import computational_monads.constructions.repeat
 import computational_monads.distribution_semantics.ite
 import computational_monads.distribution_semantics.option
-import computational_monads.distribution_semantics.tactics.push_map_dist_equiv
 
 /-!
 # Repeated Computation Until a Condition

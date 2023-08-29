@@ -6,9 +6,7 @@ Authors: Devon Tuma
 import data.vector.zip
 import crypto_foundations.primitives.signature
 import crypto_foundations.hardness_assumptions.hard_homogeneous_space
-import computational_monads.constructions.repeat
 import computational_monads.constructions.fork
-import crypto_foundations.sec_adversary
 
 /-!
 # Signature Scheme Based On Hard Homogenous Spaces

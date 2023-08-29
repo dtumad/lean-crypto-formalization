@@ -9,6 +9,9 @@ import data.polynomial.eval
 /-!
 # Query Bounds for Oracle Computations
 
+This file defines a proposition `queries_at_most` to bound the number of queries made by a
+computation, and a structure `poly_num_queries` to show that a indexed set of computations
+have number of queries bounded by a polynomial in the index.
 -/
 
 namespace oracle_comp
@@ -16,6 +19,8 @@ namespace oracle_comp
 open oracle_spec
 
 variables {α β : Type} {spec spec' : oracle_spec}
+
+section queries_at_most
 
 /-- A `query_count` bounds the number of queries made by a computation if any result of simulating
 with `countingₛₒ produces a count that is smaller. -/
@@ -45,11 +50,19 @@ begin
   }
 end
 
-end oracle_comp
+end queries_at_most
 
--- /-- An function `ℕ → oracle_comp` has `polynomial_queries` if the number of queries made
---   has growth bounded by a polynomial in the input `ℕ`. Note that it's a sigma type, not a `Prop`.
---   Used to show that an `oracle_comp` with polynomial time simulated by a polynomial time oracle
---     is still polynomial time if the number of queries is also polynomial -/
--- def polynomial_queries (oa : ℕ → oracle_comp spec α) : Prop :=
--- ∃ (p : polynomial ℕ), ∀ n, queries_at_most (oa n) (p.eval n)
+section poly_num_queries
+
+/-- If `f` is an `oracle_comp` indexed by a security parameter, then `poly_num_queries f` means
+that for each oracle there exists a polynomial that bounds the number of queries to that oracle,
+as a function of the input parameter. -/
+structure poly_num_queries (f : ℕ → oracle_comp spec α) :=
+(qc : ℕ → spec.query_count)
+(queries_at_most_qc (n : ℕ) : queries_at_most (f n) (qc n))
+(poly_bound (i : spec.ι) : polynomial ℕ)
+(queries_le_poly_bound (n : ℕ) (i : spec.ι) : (qc n).get_count i ≤ (poly_bound i).eval n)
+
+end poly_num_queries
+
+end oracle_comp

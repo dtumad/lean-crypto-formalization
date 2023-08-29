@@ -4,7 +4,6 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
 import computational_monads.simulation_semantics.simulate.map
-import computational_monads.simulation_semantics.simulate.return
 
 /-!
 # Distribution Semantics of Simulated Computations
