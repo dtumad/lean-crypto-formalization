@@ -22,6 +22,8 @@ open oracle_spec
 
 variables {α β γ : Type} {spec spec' : oracle_spec} {S S' : Type}
 
+section support
+
 /-- Lemma for inductively proving the support of a simulation is a specific function of the input.
 Often this is simpler than induction on the computation itself, especially the case of `bind`. -/
 lemma support_simulate_eq_induction {supp : Π (α : Type), oracle_comp spec α → S → set (α × S)}
@@ -53,6 +55,31 @@ begin
   { simp only [h_query, simulate'_query, support_map] }
 end
 
+end support
+
+section dist_equiv
+
+/-- Lemma for inductively proving the support of a simulation is a specific function of the input.
+Often this is simpler than induction on the computation itself, especially the case of `bind` -/
+lemma simulate_dist_equiv_induction
+  {pr : Π (α : Type), oracle_comp spec α → S → oracle_comp spec' (α × S)}
+  (so : sim_oracle spec spec' S) (oa : oracle_comp spec α) (s : S)
+  (h_ret : ∀ α a s, pr α (return a) s ≃ₚ return' !spec'! (a, s))
+  (h_bind : ∀ α β (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) s,
+    pr β (oa >>= ob) s ≃ₚ pr α oa s >>= λ x, pr β (ob x.1) x.2)
+  (h_query : ∀ i t s, pr (spec.range i) (query i t) s ≃ₚ so i (t, s)) :
+  simulate so oa s ≃ₚ pr α oa s :=
+begin
+  induction oa using oracle_comp.induction_on with α a' α β oa ob hoa hob i t generalizing s,
+  { rw_dist_equiv [h_ret] },
+  { rw_dist_equiv [h_bind, hoa, hob] },
+  { rw_dist_equiv [h_query] }
+end
+
+end dist_equiv
+
+section eval_dist
+
 /-- Lemma for inductively proving the support of a simulation is a specific function of the input.
 Often this is simpler than induction on the computation itself, especially the case of `bind` -/
 lemma eval_dist_simulate_eq_induction {pr : Π (α : Type), oracle_comp spec α → S → (pmf (α × S))}
@@ -69,6 +96,10 @@ begin
   { simp only [h_query, simulate_query] }
 end
 
+end eval_dist
+
+section prob_output
+
 /-- Lemma for inductively proving that the distribution associated to a simulation
 is a specific function. Gives more explicit criteria than induction on the computation.
 In particular this automatically splits the cases for `return` and the `prod` in the `bind` sum. -/
@@ -83,53 +114,54 @@ lemma prob_output_simulate_eq_induction
   ⁅= (a, s') | simulate so oa s⁆ = pr α oa s (a, s') :=
 begin
   induction oa using oracle_comp.induction_on with α a' α β oa ob hoa hob i t generalizing s s',
-  {
-    rw [prob_output_simulate_return_eq_indicator, set.indicator],
-    -- rw [eval_dist_simulate_return, pmf.pure_apply],
+  { rw [prob_output_simulate_return_eq_indicator, set.indicator],
     split_ifs with has,
     { simp only [set.mem_singleton_iff, prod.eq_iff_fst_eq_snd_eq] at has,
       refine has.1 ▸ has.2.symm ▸ (h_ret α a s).symm, },
     { simp only [set.mem_singleton_iff, prod.eq_iff_fst_eq_snd_eq, not_and_distrib] at has,
       cases has with ha hs,
       { exact (h_ret' α a' a s s' $ or.inl $ ne.symm ha).symm },
-      { exact (h_ret' α a' a s s' $ or.inr $ ne.symm hs).symm } }
-
-  },
+      { exact (h_ret' α a' a s s' $ or.inr $ ne.symm hs).symm } } },
   { simp only [prob_output_simulate_bind_eq_tsum_tsum, h_bind, hoa, hob] },
   { rw [prob_output_simulate_query, h_query, prob_output.def] },
 end
 
+end prob_output
 
-section to_move
+section prob_event
 
 
-/-- Let `so` and `so'` be two simulation oracles-/
-lemma support_simulate_resimulate_eq_support_simulate (so : sim_oracle spec spec' S)
-  (so' : sim_oracle spec spec' S) (f : S → S)
-  (h : ∀ i t s, (⋃ x ∈ (so i (t, s)).support, (so' i (t, f (prod.snd x))).support) =
-    (so i (t, s)).support)
-  (oa : oracle_comp spec α) (s : S) :
-  (simulate so oa s >>= λ x, simulate so' oa (f x.2)).support = (simulate so oa s).support :=
-begin
-  sorry
-end
+end prob_event
 
-/-- Simulating a computation, and then -/
-lemma support_simulate_simulate_eq_support_simulate (so so' : sim_oracle spec spec' S)
-  (h : ∀ i t s, (⋃ x ∈ (so i (t, s)).support, (so' i (t, prod.snd x)).support) =
-    (so i (t, s)).support) (s : S) (oa : oracle_comp spec α) :
-  (simulate so oa s >>= λ x, simulate so' oa x.2).support = (simulate so oa s).support :=
-begin
-  refine symm (support_simulate_eq_induction so oa s (λ α a s, _) _ _),
-  { simp only [simulate_return, support_bind_return, support_return, set.image_singleton] },
-  { intros α β oa ob s,
-    ext x,
-    simp,
+-- section to_move
 
-    sorry },
-  { exact h }
-end
+-- /-- Let `so` and `so'` be two simulation oracles-/
+-- lemma support_simulate_resimulate_eq_support_simulate (so : sim_oracle spec spec' S)
+--   (so' : sim_oracle spec spec' S) (f : S → S)
+--   (h : ∀ i t s, (⋃ x ∈ (so i (t, s)).support, (so' i (t, f (prod.snd x))).support) =
+--     (so i (t, s)).support)
+--   (oa : oracle_comp spec α) (s : S) :
+--   (simulate so oa s >>= λ x, simulate so' oa (f x.2)).support = (simulate so oa s).support :=
+-- begin
+--   sorry
+-- end
 
-end to_move
+-- /-- Simulating a computation, and then -/
+-- lemma support_simulate_simulate_eq_support_simulate (so so' : sim_oracle spec spec' S)
+--   (h : ∀ i t s, (⋃ x ∈ (so i (t, s)).support, (so' i (t, prod.snd x)).support) =
+--     (so i (t, s)).support) (s : S) (oa : oracle_comp spec α) :
+--   (simulate so oa s >>= λ x, simulate so' oa x.2).support = (simulate so oa s).support :=
+-- begin
+--   refine symm (support_simulate_eq_induction so oa s (λ α a s, _) _ _),
+--   { simp only [simulate_return, support_bind_return, support_return, set.image_singleton] },
+--   { intros α β oa ob s,
+--     ext x,
+--     simp,
+
+--     sorry },
+--   { exact h }
+-- end
+
+-- end to_move
 
 end oracle_comp

@@ -185,14 +185,11 @@ begin
 end
 
 lemma fin_support_simulate'_eq_fin_support_simulate'
-  (h : ∀ i t s s', (so i (t, s)).support.image fst = (so' i (t, s')).fin_support.image fst) :
+  (h : ∀ i t s s', (so i (t, s)).fin_support.image fst = (so' i (t, s')).fin_support.image fst) :
   (simulate' so oa s).fin_support = (simulate' so' oa s').fin_support :=
-begin
-
-  refine fin_support_eq_fin_support_of_support_eq_support _ _ _,
-  sorry,
-  -- refine support_simulate'_eq_support_simulate'
-end
+fin_support_eq_fin_support_of_support_eq_support _ _ (support_simulate'_eq_support_simulate' oa s
+  s' (λ i t s s', by simpa only [finset.coe_image, coe_fin_support_eq_support]
+  using congr_arg (λ s, (↑s : set (spec.range i))) (h i t s s')))
 
 end simulate'_eq_simulate'
 
@@ -213,6 +210,13 @@ begin
   { simp only [simulate_bind, support_bind, eq_self_iff_true] },
   { rw [simulate_query, h]  }
 end
+
+/-- Version of `support_simulate_eq_support_simulate` for `fin_support`. -/
+lemma fin_support_simulate_eq_fin_support_simulate
+  (h : ∀ i t s s', (so i (t, s)).fin_support = (so' i (t, s')).fin_support) :
+  (simulate so oa s).fin_support = (simulate so' oa s).fin_support :=
+fin_support_eq_fin_support_of_support_eq_support _ _ (support_simulate_eq_support_simulate
+  oa s (λ i t s s', (fin_support_eq_fin_support_iff_support_eq_support _ _).1 (h i t s s')))
 
 end simulate_eq_simulate
 
