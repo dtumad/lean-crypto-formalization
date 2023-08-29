@@ -7,24 +7,20 @@ import computational_monads.simulation_semantics.simulate.monad
 import computational_monads.simulation_semantics.simulate.query
 
 /-!
-# Support of Simulations
+# Induction Lemmas for Oracle Simulation
 
-This file contains more complex lemmas about the support of `simulate` and `simulate'`.
-In particular it relates the `support` after `simulate` and `simulate'` to the original `support`,
-and gives lemmas for proving equalities between or properties of these `supports`.
+This file contains convenience lemmas for showing that the distribution semantics
+of `simulate so oa s` take a certain form via induction on `oa`.
+The only difference between direct induction on `oa` is that it pre-emptively simplifies
+the applications of `simulate` and the other side.
 -/
-
-variables {α β γ : Type} {spec spec' spec'' : oracle_spec} {S S' : Type}
 
 namespace oracle_comp
 
+open_locale ennreal
 open oracle_spec
 
-variables (so : sim_oracle spec spec' S) (so' : sim_oracle spec spec'' S')
-  (a : α) (i : spec.ι) (t : spec.domain i) (oa oa' : oracle_comp spec α)
-  (ob ob' : α → oracle_comp spec β) (oc : β → oracle_comp spec γ) (s : S) (f : α → β)
-
-section support_eq
+variables {α β γ : Type} {spec spec' : oracle_spec} {S S' : Type}
 
 /-- Lemma for inductively proving the support of a simulation is a specific function of the input.
 Often this is simpler than induction on the computation itself, especially the case of `bind`. -/
@@ -42,7 +38,7 @@ begin
   { simp only [h_query, simulate_query] }
 end
 
-/-- Slightly weaker version of `support_simulate_eq_induction` for `simulate'`. -/
+/-- Version of `support_simulate_eq_induction` for `simulate'` -/
 lemma support_simulate'_eq_induction {supp : Π (α : Type), oracle_comp spec α → S → set α}
   (so : sim_oracle spec spec' S) (oa : oracle_comp spec α) (s : S)
   (h_ret : ∀ α a s, supp α (return a) s = {a})
@@ -57,50 +53,55 @@ begin
   { simp only [h_query, simulate'_query, support_map] }
 end
 
-end support_eq
-
-section support_eq_support
-
-/-- If the possible outputs of two oracles are the same for any inputs  regardless of their
-internal states, then the `support` of `simulate'` with either oracle is the same.
-Intuitively the simulations *could* take the same branch at each oracle query, and while the
-probabilities of divergence may vary, this doesn't affect the set of possible results. -/
-lemma support_simulate'_eq_support_simulate'
-  {so : sim_oracle spec spec' S} {so' : sim_oracle spec spec'' S'}
-  (h : ∀ i t s s', prod.fst '' (so i (t, s)).support = prod.fst '' (so' i (t, s')).support)
-  (oa : oracle_comp spec α) (s : S) (s' : S') :
-  (simulate' so oa s).support = (simulate' so' oa s').support :=
+/-- Lemma for inductively proving the support of a simulation is a specific function of the input.
+Often this is simpler than induction on the computation itself, especially the case of `bind` -/
+lemma eval_dist_simulate_eq_induction {pr : Π (α : Type), oracle_comp spec α → S → (pmf (α × S))}
+  (so : sim_oracle spec spec' S) (oa : oracle_comp spec α) (s : S)
+  (h_ret : ∀ α a s, pr α (return a) s = pmf.pure (a, s))
+  (h_bind : ∀ α β (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) s,
+    pr β (oa >>= ob) s = (pr α oa s).bind (λ x, pr β (ob x.1) x.2))
+  (h_query : ∀ i t s, pr (spec.range i) (query i t) s = ⁅so i (t, s)⁆) :
+  ⁅simulate so oa s⁆ = pr α oa s :=
 begin
-  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t generalizing s s',
-  { simp only [simulate'_return, support_map, support_return, set.image_singleton] },
-  { ext x,
-    simp_rw [support_simulate'_bind, set.mem_Union],
-    refine ⟨λ h, _, λ h, _⟩,
-    { obtain ⟨⟨a, t⟩, hoa', hob'⟩ := h,
-      have : ∃ u, (a, u) ∈ (simulate so oa s).support := ⟨t, hoa'⟩,
-      rw [← mem_support_simulate'_iff_exists_state, hoa s s',
-        mem_support_simulate'_iff_exists_state] at this,
-      obtain ⟨t', ht'⟩ := this,
-      exact ⟨(a, t'), ht', hob a t t' ▸ hob'⟩ },
-    { obtain ⟨⟨a, t⟩, hoa', hob'⟩ := h,
-      have : ∃ u, (a, u) ∈ (simulate so' oa s').support := ⟨t, hoa'⟩,
-      rw [← mem_support_simulate'_iff_exists_state, ← hoa s s',
-        mem_support_simulate'_iff_exists_state] at this,
-      obtain ⟨t', ht'⟩ := this,
-      exact ⟨(a, t'), ht', (hob a t' t).symm ▸ hob'⟩ } },
-  { simpa only [support_simulate'_query] using h i t s s' }
+  induction oa using oracle_comp.induction_on with α a' α β oa ob hoa hob i t generalizing s,
+  { simp only [h_ret, simulate_return, eval_dist_return] },
+  { simp only [h_bind, hoa, hob, simulate_bind, eval_dist_bind] },
+  { simp only [h_query, simulate_query] }
 end
 
-lemma support_simulate_eq_support_simulate
-  (so : sim_oracle spec spec' S) (so' : sim_oracle spec spec'' S)
-  (h : ∀ i t s s', (so i (t, s)).support = (so' i (t, s')).support) :
-  (simulate so oa s).support = (simulate so' oa s).support :=
+/-- Lemma for inductively proving that the distribution associated to a simulation
+is a specific function. Gives more explicit criteria than induction on the computation.
+In particular this automatically splits the cases for `return` and the `prod` in the `bind` sum. -/
+lemma prob_output_simulate_eq_induction
+  {pr : Π (α : Type), oracle_comp spec α → S → α × S → ℝ≥0∞}
+  (so : sim_oracle spec spec' S) (oa : oracle_comp spec α) (s : S) (a : α) (s' : S)
+  (h_ret : ∀ α a s, pr α (return a) s (a, s) = 1)
+  (h_ret' : ∀ α a a' s s', a ≠ a' ∨ s ≠ s' → pr α (return a) s (a', s') = 0)
+  (h_bind : ∀ α β (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) s b s',
+    pr β (oa >>= ob) s (b, s') = ∑' (a : α) (t : S), (pr α oa s (a, t)) * (pr β (ob a) t (b, s')))
+  (h_query : ∀ i t s u s', pr (spec.range i) (query i t) s (u, s') = ⁅so i (t, s)⁆ (u, s')) :
+  ⁅= (a, s') | simulate so oa s⁆ = pr α oa s (a, s') :=
 begin
-  refine support_simulate_eq_induction so oa s _ (λ _ _ _ _ _, _) (λ _ _ _, _),
-  { simp only [simulate_return, support_return, eq_self_iff_true, forall_3_true_iff] },
-  { simp only [simulate_bind, support_bind, eq_self_iff_true] },
-  { rw [simulate_query, h]  }
+  induction oa using oracle_comp.induction_on with α a' α β oa ob hoa hob i t generalizing s s',
+  {
+    rw [prob_output_simulate_return_eq_indicator, set.indicator],
+    -- rw [eval_dist_simulate_return, pmf.pure_apply],
+    split_ifs with has,
+    { simp only [set.mem_singleton_iff, prod.eq_iff_fst_eq_snd_eq] at has,
+      refine has.1 ▸ has.2.symm ▸ (h_ret α a s).symm, },
+    { simp only [set.mem_singleton_iff, prod.eq_iff_fst_eq_snd_eq, not_and_distrib] at has,
+      cases has with ha hs,
+      { exact (h_ret' α a' a s s' $ or.inl $ ne.symm ha).symm },
+      { exact (h_ret' α a' a s s' $ or.inr $ ne.symm hs).symm } }
+
+  },
+  { simp only [prob_output_simulate_bind_eq_tsum_tsum, h_bind, hoa, hob] },
+  { rw [prob_output_simulate_query, h_query, prob_output.def] },
 end
+
+
+section to_move
+
 
 /-- Let `so` and `so'` be two simulation oracles-/
 lemma support_simulate_resimulate_eq_support_simulate (so : sim_oracle spec spec' S)
@@ -125,11 +126,10 @@ begin
     ext x,
     simp,
 
-
     sorry },
   { exact h }
 end
 
-end support_eq_support
+end to_move
 
 end oracle_comp

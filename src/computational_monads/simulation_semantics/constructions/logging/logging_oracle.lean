@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
 import computational_monads.query_tracking.query_log.basic
-import computational_monads.simulation_semantics.constructions.tracking_oracle
+import computational_monads.simulation_semantics.is_tracking
 
 /-!
 # Logging Oracles

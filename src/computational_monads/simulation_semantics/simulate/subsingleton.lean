@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
 import computational_monads.simulation_semantics.simulate.simulate'_idem
-import computational_monads.simulation_semantics.simulate.induction.support
+import computational_monads.simulation_semantics.simulate.induction
 
 /-!
 # Simulation with Subsingleton State

@@ -6,6 +6,7 @@ Authors: Devon Tuma
 import computational_monads.simulation_semantics.simulate.monad
 import computational_monads.simulation_semantics.simulate.query
 import computational_monads.distribution_semantics.tactics.pairwise_dist_equiv
+import computational_monads.simulation_semantics.simulate.induction
 
 /-!
 # Simulation with Oracles That Only Modify State
@@ -134,6 +135,47 @@ begin
     --     tsum_congr (λ t, congr_arg (λ x, _ * x) $ by rw hob)
         },
   { simpa only [simulate'_query, eval_dist_map] using h i t s s' },
+end
+
+/-- If the possible outputs of two oracles are the same for any inputs regardless of their
+internal states, then the `support` of `simulate'` with either oracle is the same.
+Intuitively the simulations *could* take the same branch at each oracle query, and while the
+probabilities of divergence may vary, this doesn't affect the set of possible results. -/
+lemma support_simulate'_eq_support_simulate'
+  {so : sim_oracle spec spec' S} {so' : sim_oracle spec spec'' S'}
+  (h : ∀ i t s s', prod.fst '' (so i (t, s)).support = prod.fst '' (so' i (t, s')).support)
+  (oa : oracle_comp spec α) (s : S) (s' : S') :
+  (simulate' so oa s).support = (simulate' so' oa s').support :=
+begin
+  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t generalizing s s',
+  { simp only [simulate'_return, support_map, support_return, set.image_singleton] },
+  { ext x,
+    simp_rw [support_simulate'_bind, set.mem_Union],
+    refine ⟨λ h, _, λ h, _⟩,
+    { obtain ⟨⟨a, t⟩, hoa', hob'⟩ := h,
+      have : ∃ u, (a, u) ∈ (simulate so oa s).support := ⟨t, hoa'⟩,
+      rw [← mem_support_simulate'_iff_exists_state, hoa s s',
+        mem_support_simulate'_iff_exists_state] at this,
+      obtain ⟨t', ht'⟩ := this,
+      exact ⟨(a, t'), ht', hob a t t' ▸ hob'⟩ },
+    { obtain ⟨⟨a, t⟩, hoa', hob'⟩ := h,
+      have : ∃ u, (a, u) ∈ (simulate so' oa s').support := ⟨t, hoa'⟩,
+      rw [← mem_support_simulate'_iff_exists_state, ← hoa s s',
+        mem_support_simulate'_iff_exists_state] at this,
+      obtain ⟨t', ht'⟩ := this,
+      exact ⟨(a, t'), ht', (hob a t' t).symm ▸ hob'⟩ } },
+  { simpa only [support_simulate'_query] using h i t s s' }
+end
+
+lemma support_simulate_eq_support_simulate
+  (so : sim_oracle spec spec' S) (so' : sim_oracle spec spec'' S)
+  (h : ∀ i t s s', (so i (t, s)).support = (so' i (t, s')).support) :
+  (simulate so oa s).support = (simulate so' oa s).support :=
+begin
+  refine support_simulate_eq_induction so oa s _ (λ _ _ _ _ _, _) (λ _ _ _, _),
+  { simp only [simulate_return, support_return, eq_self_iff_true, forall_3_true_iff] },
+  { simp only [simulate_bind, support_bind, eq_self_iff_true] },
+  { rw [simulate_query, h]  }
 end
 
 end simulate'_eq_simulate'
