@@ -16,7 +16,6 @@ since we already have `so.default_state` as an explicit element.
 This is a special case of `sim_oracle.is_tracking`, see `is_stateless.is_tracking`.
 This allows for a number of very general lemmas that simplify the process of working
 with simulated computations, by automatically removing states.
-
 We also construct a `stateless_oracle` that creates a simulation oracle from a direct specification
 of a `query_f`, taking the state to be `unit` as a simple `subsingleton` type.
 

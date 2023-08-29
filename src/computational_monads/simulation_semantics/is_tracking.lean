@@ -217,10 +217,10 @@ support_simulate'_eq_support query update_state default_state oa s (λ _ _, rfl)
 lemma support_simulate'_eq_support_simulate' (h : ∀ i t, (o i t).support = (o' i t).support) :
   (simulate' ⟪o | update_state, default_state⟫ oa s).support =
     (simulate' ⟪o' | update_state', default_state'⟫ oa s').support :=
-support_simulate'_eq_support_simulate' (λ i t s s', set.ext $ λ x,
+support_simulate'_eq_support_simulate' oa s s' (λ i t s s', set.ext (λ x,
   by simp only [mem_support_apply_iff, h, simulate'_query, support_map, support_apply,
     set.mem_image, set.mem_set_of_eq, prod.exists, exists_and_distrib_right, exists_eq_right,
-    exists_eq_right', exists_eq_right_right, prod.eq_iff_fst_eq_snd_eq, and_comm (_ = x)]) oa s s'
+    exists_eq_right', exists_eq_right_right, prod.eq_iff_fst_eq_snd_eq, and_comm (_ = x)]))
 
 /-- The support of `simulate'` is independt of the tracking functions -/
 lemma support_simulate'_eq_support_simulate'_of_oracle_eq :

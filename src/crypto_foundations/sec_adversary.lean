@@ -5,7 +5,7 @@ Authors: Devon Tuma
 -/
 import computational_monads.coercions.instances
 import computational_monads.simulation_semantics.simulate.monad
-import computational_monads.simulation_semantics.constructions.logging.seeded_oracle
+import computational_monads.simulation_semantics.constructions.seeded_oracle
 import computational_monads.asymptotics.queries_at_most
 
 /-!

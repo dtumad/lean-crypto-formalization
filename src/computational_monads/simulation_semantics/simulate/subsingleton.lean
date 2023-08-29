@@ -13,9 +13,8 @@ This file gives additional lemmas about `simulate` and `simulate'` when
 the oracle's internal state is a `subsingleton` type.
 In particular we can often relate simulations to `default_simulate` and `default_simulate'`.
 
-`stateless_oracle` is the biggest example of this, as its internal state type is `unit`
-
--- TODO: flesh out
+These lemmas are mainly used to prove things about `sim_oracle`s with a `is_stateless` instance,
+which essentially just bundles in the statelessness of the state type.
 -/
 
 variables {α β γ : Type} {spec spec' spec'' : oracle_spec} {S S' : Type}
@@ -42,7 +41,7 @@ Has a weaker requirement for the hypothesis `h` than the more general lemma -/
 lemma support_simulate'_eq_support_of_subsingleton [subsingleton S] (s : S)
   (h : ∀ i t, prod.fst '' (so i (t, so.default_state)).support = ⊤) :
   (simulate' so oa s).support = oa.support :=
-support_simulate'_eq_support so oa s (λ i t s, subsingleton.elim so.default_state s ▸ h i t)
+support_simulate'_eq_support oa s (λ i t s, subsingleton.elim so.default_state s ▸ h i t)
 
 /-- Given the state is `subsingleton`, the support of `simulate` is determined by `simulate'` -/
 lemma support_simulate_eq_preimage_support_simulate' [subsingleton S] :
@@ -83,7 +82,7 @@ lemma support_simulate_eq_support_simulate_of_subsingleton [subsingleton S]
   (simulate so oa s).support = (simulate so' oa s').support :=
 begin
   simp only [support_simulate_eq_preimage_support_simulate'],
-  refine congr_arg _ (support_simulate'_eq_support_simulate' _ oa _ _),
+  refine congr_arg _ (support_simulate'_eq_support_simulate' oa _ _ _),
   intros i t s s',
   rw [subsingleton.elim s so.default_state, subsingleton.elim s' so'.default_state, h i t],
 end

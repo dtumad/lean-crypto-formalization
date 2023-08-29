@@ -63,6 +63,10 @@ lemma fin_support_eq_fin_support_iff_support_eq_support (oa' : oracle_comp spec'
   oa.fin_support = oa'.fin_support ↔ oa.support = oa'.support :=
 by rw [fin_support_eq_iff_support_eq_coe, coe_fin_support_eq_support]
 
+lemma fin_support_eq_fin_support_of_support_eq_support (oa' : oracle_comp spec' α)
+  (h : oa.support = oa'.support) : oa.fin_support = oa'.fin_support :=
+(fin_support_eq_fin_support_iff_support_eq_support oa oa').2 h
+
 lemma fin_support_subset_iff_support_subset_coe : oa.fin_support ⊆ s ↔ oa.support ⊆ ↑s :=
 by rw [← finset.coe_subset, coe_fin_support_eq_support]
 

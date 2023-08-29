@@ -3,7 +3,7 @@ Copyright (c) 2022 Devon Tuma. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
-import computational_monads.simulation_semantics.constructions.logging.caching_oracle
+import computational_monads.simulation_semantics.constructions.caching_oracle
 import computational_monads.simulation_semantics.constructions.uniform_oracle
 import computational_monads.simulation_semantics.oracle_compose
 import computational_monads.simulation_semantics.mask_state

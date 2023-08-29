@@ -3,7 +3,7 @@ Copyright (c) 2022 Devon Tuma. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
-import computational_monads.simulation_semantics.constructions.logging.counting_oracle
+import computational_monads.simulation_semantics.constructions.counting_oracle
 import data.polynomial.eval
 
 /-!
@@ -21,6 +21,29 @@ variables {α β : Type} {spec spec' : oracle_spec}
 with `countingₛₒ produces a count that is smaller. -/
 def queries_at_most (oa : oracle_comp spec α) (qc : spec.query_count) : Prop :=
 ∀ x qc', (x, qc') ∈ (simulate countingₛₒ oa ∅).support → qc' ≤ qc
+
+/-- The number of queries made by `return a` is bounded by any count. -/
+@[simp] lemma queries_at_most_return (a : α) (qc : spec.query_count) :
+  (return' !spec! a).queries_at_most qc :=
+begin
+  intros x qc' h,
+  simp only [support_simulate_return, set.mem_singleton_iff, prod.eq_iff_fst_eq_snd_eq] at h,
+  exact h.2.symm ▸ (indexed_list.empty_le qc)
+end
+
+@[simp] lemma queries_at_most_query_iff (i : spec.ι) (t : spec.domain i) (qc : spec.query_count) :
+  (query i t).queries_at_most qc ↔ i ∈ qc.active_oracles :=
+begin
+  refine ⟨λ h, _, λ h, _⟩,
+  {
+    specialize h default qc,
+    sorry,
+
+  },
+  {
+    sorry,
+  }
+end
 
 end oracle_comp
 
