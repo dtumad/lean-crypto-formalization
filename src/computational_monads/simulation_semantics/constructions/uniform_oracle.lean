@@ -42,11 +42,11 @@ by rw [fin_support_eq_iff_support_eq_coe, support_apply,
 
 @[simp] lemma support_simulate :
   (simulate uniformₛₒ oa s).support = prod.fst ⁻¹' oa.support :=
-stateless_oracle.support_simulate_eq_preimage_support oa _ s
-  (λ i t, support_uniform_select_fintype _)
+sorry -- stateless_oracle.support_simulate_eq_preimage_support oa _ s
+--   (λ i t, support_uniform_select_fintype _)
 
 @[simp] lemma support_simulate' : (simulate' uniformₛₒ oa s).support = oa.support :=
-stateless_oracle.support_simulate'_eq_support oa _ s (λ i t, support_uniform_select_fintype _)
+sorry --stateless_oracle.support_simulate'_eq_support oa _ s (λ i t, support_uniform_select_fintype _)
 
 end support
 

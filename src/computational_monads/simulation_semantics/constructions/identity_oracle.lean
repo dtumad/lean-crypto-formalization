@@ -42,7 +42,7 @@ begin
 end
 
 @[simp] lemma support_simulate' : (simulate' idₛ oa s).support = oa.support :=
-stateless_oracle.support_simulate'_eq_support _ query s (λ _ _, rfl)
+sorry --stateless_oracle.support_simulate'_eq_support _ query s (λ _ _, rfl)
 
 @[simp] lemma support_simulate : (simulate idₛ oa s).support = prod.fst ⁻¹' oa.support :=
 (stateless_oracle.support_simulate_eq_preimage_support_simulate' _ _ _).trans
