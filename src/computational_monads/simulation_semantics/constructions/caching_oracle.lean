@@ -8,7 +8,7 @@ import computational_monads.query_tracking.query_cache.add_fresh_queries
 import computational_monads.query_tracking.query_cache.sdiff
 import computational_monads.simulation_semantics.simulate.monad
 import computational_monads.simulation_semantics.simulate.query
-import computational_monads.constructions.product
+import computational_monads.distribution_semantics.mprod
 
 /-!
 # Caching Simulation Oracle
@@ -19,7 +19,7 @@ for any future queries, using a `query_cache` as an internal state for tracking 
 
 This is used by being composed with other oracles, such as in `random_oracle`.
 
--- TODO: implicit parameters here (and other cache files)
+-- TODO: a lot of this isn't quite right and not needed for fork.
 -/
 
 open oracle_comp oracle_spec query_cache

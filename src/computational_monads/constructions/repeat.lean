@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
 import data.vector.mem
-import computational_monads.constructions.product
+import computational_monads.distribution_semantics.mprod
 import computational_monads.distribution_semantics.subsingleton
 import computational_monads.constructions.uniform_select
 

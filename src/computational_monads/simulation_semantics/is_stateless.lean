@@ -18,13 +18,12 @@ This allows for a number of very general lemmas that simplify the process of wor
 with simulated computations, by automatically removing states.
 We also construct a `stateless_oracle` that creates a simulation oracle from a direct specification
 of a `query_f`, taking the state to be `unit` as a simple `subsingleton` type.
-
 -/
-
-variables {α β γ : Type} {spec spec' spec'' : oracle_spec} {S S' : Type}
 
 open_locale big_operators ennreal
 open oracle_comp oracle_spec
+
+variables {α β γ : Type} {spec spec' spec'' : oracle_spec} {S S' : Type}
 
 namespace sim_oracle
 
@@ -36,12 +35,11 @@ have to be defined on the type parameter `S` explicitly, but on the actual oracl
 class is_stateless (so : sim_oracle spec spec' S) :=
 (state_subsingleton : subsingleton S)
 
-variables (so : sim_oracle spec spec' S) (i : spec.ι)
-  (t t' : spec.domain i) (s s' : S) (u u' : spec.range i)
+variables (so : sim_oracle spec spec' S) (so' : sim_oracle spec spec' S')
 
 /-- Specialize `subsingleton.elim` to simplify the state to the default oracle state.
 Usefull for giving a unified convergence point for state values. -/
-@[simp] lemma state_elim [hso : so.is_stateless] (s : S) : s = so.default_state :=
+@[simp] lemma is_stateless.state_elim [hso : so.is_stateless] (s : S) : s = so.default_state :=
 @subsingleton.elim S hso.state_subsingleton s so.default_state
 
 instance is_stateless.is_tracking [hso : so.is_stateless] : so.is_tracking :=
@@ -51,16 +49,53 @@ instance is_stateless.is_tracking [hso : so.is_stateless] : so.is_tracking :=
     begin
       refine λ i t s, trans (trans (map_id_dist_equiv _).symm _) (map_comp_dist_equiv _ _ _).symm,
       refine map_dist_equiv_of_dist_equiv' (funext (λ x, prod.eq_iff_fst_eq_snd_eq.2
-        ⟨rfl, state_elim so x.2⟩)) (by rw [state_elim so s]),
+        ⟨rfl, is_stateless.state_elim so x.2⟩)) (by rw [is_stateless.state_elim so s]),
     end }
 
 namespace is_stateless
 
-@[simp] lemma answer_query_eq_map_apply [so.is_stateless] :
+lemma answer_query_eq_map_apply {i : spec.ι} (t : spec.domain i) [so.is_stateless] :
   so.answer_query i t = prod.fst <$> so i (t, so.default_state) := rfl
 
-@[simp] lemma update_state_eq_const [so.is_stateless] :
-  so.update_state s i t u = so.default_state := rfl
+@[simp] lemma update_state_eq_const {s : S} {i : spec.ι} (t : spec.domain i) (u : spec.range i)
+  [so.is_stateless] : so.update_state s i t u = so.default_state := rfl
+
+section apply
+
+variables [hso : so.is_stateless] {i : spec.ι} (s : S) (t : spec.domain i)
+include hso
+
+@[pairwise_dist_equiv] lemma apply_dist_equiv : so i (t, s) ≃ₚ
+  (λ u, (u, so.default_state)) <$> so.answer_query i t :=
+is_tracking.apply_dist_equiv so t s
+
+@[simp] lemma support_apply : (so i (t, s)).support =
+  (λ u, (u, so.default_state)) '' (so.answer_query i t).support :=
+is_tracking.support_apply so t s
+
+@[simp] lemma fin_support_apply [decidable_eq S] : (so i (t, s)).fin_support =
+  (so.answer_query i t).fin_support.image (λ u, (u, so.default_state)) :=
+is_tracking.fin_support_apply so t s
+
+@[simp] lemma eval_dist_apply : ⁅so i (t, s)⁆ =
+  ⁅so.answer_query i t⁆.map (λ u, (u, so.default_state)) :=
+is_tracking.eval_dist_apply so t s
+
+@[simp] lemma prob_output_apply (z : spec.range i × S) : ⁅= z | so i (t, s)⁆ =
+  ⁅λ u, (u, so.default_state) = z | so.answer_query i t⁆ :=
+is_tracking.prob_output_apply so t s z
+
+@[simp] lemma prob_event_apply (e : set (spec.range i × S)) : ⁅e | so i (t, s)⁆ =
+  ⁅(λ u, (u, so.default_state)) ⁻¹' e | so.answer_query i t⁆ :=
+is_tracking.prob_event_apply so t s e
+
+end apply
+
+section simulate_idem
+
+
+
+end simulate_idem
 
 end is_stateless
 

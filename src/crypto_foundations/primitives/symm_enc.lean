@@ -5,7 +5,7 @@ Authors: Devon Tuma
 -/
 import computational_monads.distribution_semantics.prod
 import computational_monads.constructions.uniform_select
-import computational_monads.constructions.product
+import computational_monads.distribution_semantics.mprod
 import computational_monads.asymptotics.polynomial_time
 
 /-!
@@ -24,11 +24,11 @@ structure symm_enc_alg (M K C : Type) :=
 (keygen : unit → oracle_comp uniform_selecting K)
 (encrypt : M × K → C)
 (decrypt : C × K → M)
+(complete : ∀ (m : M), ∀ k ∈ (keygen ()).support,
+  decrypt (encrypt (m, k), k) = m)
 -- (keygen_poly_time : poly_time_oracle_comp keygen)
 -- (encrypt_poly_time : poly_time encrypt)
 -- (decrypt_poly_time : poly_time decrypt)
-(complete : ∀ (m : M), ∀ k ∈ (keygen ()).support,
-  decrypt (encrypt (m, k), k) = m)
 
 namespace symm_enc_alg
 
@@ -299,7 +299,7 @@ begin
     ... = ⁅= f (m, k) | f <$> (m_dist ×ₘ se_alg.keygen ())⁆ :
       (prob_output_map_of_injective _ f (m, k) hf').symm
     ... = ⁅= (m, c) | se_alg.mgen_and_encrypt m_dist⁆ :
-      by simp_rw [prob_output.def, hf, product, eval_dist_map, eval_dist_bind,
+      by simp_rw [prob_output.def, hf, mprod.def, eval_dist_map, eval_dist_bind,
         pmf.map_bind, eval_dist_return, pmf.map_pure]
     ... = ⁅= m | m_dist⁆ * ⁅= c | prod.snd <$> se_alg.mgen_and_encrypt m_dist⁆ :
       (se_alg.perfect_secrecy_iff.1 h) m_dist m c
