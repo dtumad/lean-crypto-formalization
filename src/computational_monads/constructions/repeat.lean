@@ -180,11 +180,11 @@ by rw [mem_support_repeat_succ_iff oa, head_cons, tail_cons]
 lemma repeat_succ_dist_equiv : oa.repeat n.succ ≃ₚ
   (λ (x : α × vector α n), x.1 ::ᵥ x.2) <$> (oa ×ₘ oa.repeat n) :=
 by rw [dist_equiv.def, repeat_succ, map_eq_bind_return_comp,
-  (prod_bind_equiv_bind_bind _ _ _).eval_dist_eq]
+  (mprod_bind_equiv_bind_bind _ _ _).eval_dist_eq]
 
 lemma eval_dist_repeat_succ' : ⁅oa.repeat n.succ⁆ =
   ⁅(λ (x : α × vector α n), x.1 ::ᵥ x.2) <$> (oa ×ₘ oa.repeat n)⁆ :=
-by rw [repeat_succ, map_eq_bind_return_comp, (prod_bind_equiv_bind_bind _ _ _).eval_dist_eq]
+by rw [repeat_succ, map_eq_bind_return_comp, (mprod_bind_equiv_bind_bind _ _ _).eval_dist_eq]
 
 @[simp] lemma eval_dist_repeat_succ :
   ⁅oa.repeat n.succ⁆ = ⁅oa ×ₘ oa.repeat n⁆.map (λ x, x.1 ::ᵥ x.2) :=
@@ -198,7 +198,7 @@ calc ⁅= xsₛ | oa.repeat m.succ⁆ =
   ... = ⁅= (xsₛ.head, xsₛ.tail) | oa ×ₘ oa.repeat m⁆ :
     prob_output_map_eq_single' _ _ (xsₛ.head, xsₛ.tail) xsₛ (xsₛ.cons_head_tail)
       (λ x hx hx', by rw [← hx', head_cons, tail_cons, prod.mk.eta])
-  ... = ⁅= xsₛ.head | oa⁆ * ⁅= xsₛ.tail | oa.repeat m⁆ : by rw prob_output_product
+  ... = ⁅= xsₛ.head | oa⁆ * ⁅= xsₛ.tail | oa.repeat m⁆ : by rw prob_output_mprod
 
 end repeat_succ
 

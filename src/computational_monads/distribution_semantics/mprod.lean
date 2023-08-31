@@ -29,12 +29,12 @@ variables (oa oa' : oracle_comp spec α) (ob ob' : oracle_comp spec β)
 
 section support
 
-@[simp] lemma support_prod : (oa ×ₘ ob).support = oa.support ×ˢ ob.support :=
+@[simp] lemma support_mprod : (oa ×ₘ ob).support = oa.support ×ˢ ob.support :=
 set.ext (λ x, by simp only [mprod.def, prod.eq_iff_fst_eq_snd_eq, support_bind, support_bind_return,
   set.mem_Union, set.mem_image, exists_eq_right_right, exists_prop, set.mem_prod])
 
-lemma mem_support_prod_iff : x ∈ (oa ×ₘ ob).support ↔ x.1 ∈ oa.support ∧ x.2 ∈ ob.support :=
-by rw [support_prod, set.mem_prod]
+lemma mem_support_mprod_iff : x ∈ (oa ×ₘ ob).support ↔ x.1 ∈ oa.support ∧ x.2 ∈ ob.support :=
+by rw [support_mprod, set.mem_prod]
 
 end support
 
@@ -42,13 +42,13 @@ section fin_support
 
 variables [decidable_eq α] [decidable_eq β]
 
-@[simp] lemma fin_support_prod : (oa ×ₘ ob).fin_support = oa.fin_support ×ˢ ob.fin_support :=
-by simp only [fin_support_eq_iff_support_eq_coe, support_prod,
+@[simp] lemma fin_support_mprod : (oa ×ₘ ob).fin_support = oa.fin_support ×ˢ ob.fin_support :=
+by simp only [fin_support_eq_iff_support_eq_coe, support_mprod,
   finset.coe_product, coe_fin_support_eq_support]
 
-lemma mem_fin_support_prod_iff : x ∈ (oa ×ₘ ob).fin_support ↔
+lemma mem_fin_support_mprod_iff : x ∈ (oa ×ₘ ob).fin_support ↔
   x.1 ∈ oa.fin_support ∧ x.2 ∈ ob.fin_support :=
-by rw [fin_support_prod, finset.mem_product]
+by rw [fin_support_mprod, finset.mem_product]
 
 end fin_support
 
@@ -75,7 +75,7 @@ lemma mprod_dist_equiv_mprod {oa oa' : oracle_comp spec α} {ob ob' : oracle_com
   (ha : oa ≃ₚ oa') (hb : ob ≃ₚ ob') : (oa ×ₘ ob) ≃ₚ (oa' ×ₘ ob') :=
 by rw_dist_equiv [ha, hb]
 
-@[pairwise_dist_equiv] lemma prod_bind_equiv_bind_bind (oc : α × β → oracle_comp spec γ) :
+@[pairwise_dist_equiv] lemma mprod_bind_equiv_bind_bind (oc : α × β → oracle_comp spec γ) :
   (oa ×ₘ ob) >>= oc ≃ₚ do {a ← oa, b ← ob, oc (a, b)} :=
 dist_equiv.ext (λ x, by simp only [prob_output_bind_eq_tsum, prob_output_mprod,
   ← ennreal.tsum_mul_left, ← ennreal.tsum_prod, prod.mk.eta, mul_assoc])
@@ -84,7 +84,7 @@ end dist_equiv
 
 section eval_dist
 
-@[simp] lemma eval_dist_prod_indicator_prod_apply :
+@[simp] lemma eval_dist_mprod_indicator_prod_apply :
   (e ×ˢ e').indicator ⁅oa ×ₘ ob⁆ x = (e.indicator ⁅oa⁆ x.1) * (e'.indicator ⁅ob⁆ x.2) :=
 begin
   by_cases ha : x.1 ∈ e,
@@ -101,7 +101,7 @@ begin
       set.indicator_apply_eq_zero.2 (λ h, (ha h).elim), zero_mul] }
 end
 
-lemma eval_dist_prod_indicator_preimage_fst_apply :
+lemma eval_dist_mprod_indicator_preimage_fst_apply :
   (prod.fst ⁻¹' e).indicator ⁅oa ×ₘ ob⁆ (a, b) = e.indicator ⁅oa⁆ a * ⁅ob⁆ b :=
 begin
   by_cases ha : a ∈ e,
@@ -113,7 +113,7 @@ begin
       set.indicator_apply_eq_zero.2 (λ h, (ha h).elim), zero_mul] }
 end
 
-lemma eval_dist_prod_indicator_preimage_snd_apply :
+lemma eval_dist_mprod_indicator_preimage_snd_apply :
   (prod.snd ⁻¹' e').indicator ⁅oa ×ₘ ob⁆ (a, b) = ⁅oa⁆ a * e'.indicator ⁅ob⁆ b :=
 begin
   by_cases hb : b ∈ e',
@@ -158,37 +158,37 @@ end eval_dist
 
 section prob_event
 
-@[simp] lemma prob_event_prod_eq_mul : ⁅e ×ˢ e' | oa ×ₘ ob⁆ = ⁅e | oa⁆ * ⁅e' | ob⁆ :=
+@[simp] lemma prob_event_mprod_eq_mul : ⁅e ×ˢ e' | oa ×ₘ ob⁆ = ⁅e | oa⁆ * ⁅e' | ob⁆ :=
 calc ⁅e ×ˢ e' | oa ×ₘ ob⁆ = ∑' x, (e ×ˢ e').indicator ⁅oa ×ₘ ob⁆ x :
     (prob_event_eq_tsum_indicator _ _)
   ... = ∑' (x : α × β), e.indicator ⁅oa⁆ x.1 * e'.indicator ⇑⁅ob⁆ x.2 :
-    tsum_congr (λ x, eval_dist_prod_indicator_prod_apply oa ob e e' x)
+    tsum_congr (λ x, eval_dist_mprod_indicator_prod_apply oa ob e e' x)
   ... = (∑' a, e.indicator ⁅oa⁆ a) * (∑' b, e'.indicator ⁅ob⁆ b) :
     by simp_rw [← ennreal.tsum_mul_right, ← ennreal.tsum_mul_left, ← ennreal.tsum_prod]
   ... = ⁅e | oa⁆ * ⁅e' | ob⁆ : by simp_rw [prob_event_eq_tsum_indicator]
 
 /-- If an event only cares about the first part of the computation,
 we can calculate the probability using only the first of the computations. -/
-@[simp] lemma prob_event_prod_preimage_fst : ⁅prod.fst ⁻¹' e | oa ×ₘ ob⁆ = ⁅e | oa⁆ :=
+@[simp] lemma prob_event_mprod_preimage_fst : ⁅prod.fst ⁻¹' e | oa ×ₘ ob⁆ = ⁅e | oa⁆ :=
 calc ⁅prod.fst ⁻¹' e | oa ×ₘ ob⁆
   = ∑' (x : α × β), (prod.fst ⁻¹' e).indicator ⇑⁅oa×ₘ ob⁆ (x.1, x.2) :
     by simp_rw [prob_event_eq_tsum_indicator, prod.mk.eta]
   ... = ∑' a b, (prod.fst ⁻¹' e).indicator ⇑⁅oa×ₘ ob⁆ (a, b) :
     @ennreal.tsum_prod α β (λ a b, (prod.fst ⁻¹' e).indicator ⇑⁅oa×ₘ ob⁆ (a, b))
-  ... = ∑' a, e.indicator ⁅oa⁆ a : by simp only [eval_dist_prod_indicator_preimage_fst_apply,
+  ... = ∑' a, e.indicator ⁅oa⁆ a : by simp only [eval_dist_mprod_indicator_preimage_fst_apply,
     ennreal.tsum_mul_left, ⁅ob⁆.tsum_coe, mul_one]
   ... = ⁅e | oa⁆ : by rw [prob_event_eq_tsum_indicator]
 
 /-- If an event only cares about the second part of the computation,
 we can calculate the probability using only the first of the computations. -/
-lemma prob_event_prod_preimage_snd : ⁅prod.snd ⁻¹' e' | oa ×ₘ ob⁆ = ⁅e' | ob⁆ :=
+lemma prob_event_mprod_preimage_snd : ⁅prod.snd ⁻¹' e' | oa ×ₘ ob⁆ = ⁅e' | ob⁆ :=
 calc ⁅prod.snd ⁻¹' e' | oa ×ₘ ob⁆
   = ∑' (x : α × β), (prod.snd ⁻¹' e').indicator ⁅oa ×ₘ ob⁆ (x.1, x.2) :
     by simp_rw [prob_event_eq_tsum_indicator, prod.mk.eta]
   ... = ∑' a b, (prod.snd ⁻¹' e').indicator ⁅oa ×ₘ ob⁆ (a, b) :
     @ennreal.tsum_prod α β (λ a b, (prod.snd ⁻¹' e').indicator ⁅oa ×ₘ ob⁆ (a, b))
   ... = ∑' b a, (prod.snd ⁻¹' e').indicator ⁅oa ×ₘ ob⁆ (a, b) : ennreal.tsum_comm
-  ... = ∑' b, e'.indicator ⁅ob⁆ b : by simp only [eval_dist_prod_indicator_preimage_snd_apply,
+  ... = ∑' b, e'.indicator ⁅ob⁆ b : by simp only [eval_dist_mprod_indicator_preimage_snd_apply,
     ennreal.tsum_mul_right, ⁅oa⁆.tsum_coe, one_mul]
   ... = ⁅e' | ob⁆ : by rw [prob_event_eq_tsum_indicator]
 
@@ -209,8 +209,8 @@ begin
   have hed' : e' = prod.snd ⁻¹' d' := hde'.symm,
   have h : e ∩ e' = d ×ˢ d',
   from set.ext (λ x, by simp only [hed, hed', set.mem_inter_iff, set.mem_preimage, set.mem_prod]),
-  rw [h, hed, hed', prob_event_prod_eq_mul, prob_event_prod_preimage_fst,
-    prob_event_prod_preimage_snd],
+  rw [h, hed, hed', prob_event_mprod_eq_mul, prob_event_mprod_preimage_fst,
+    prob_event_mprod_preimage_snd],
 end
 
 /-- Any events corresponding to two computations respective output types

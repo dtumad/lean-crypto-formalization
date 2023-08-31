@@ -120,7 +120,7 @@ lemma eval_dist_mgen_and_encrypt_apply (m : M) (c : C) :
   ⁅= (m, c) | se_alg.mgen_and_encrypt m_dist⁆ =
     ∑' (k : K), if c = se_alg.encrypt (m, k)
       then ⁅= m | m_dist⁆ * ⁅= k | se_alg.keygen ()⁆ else 0 :=
-by rw [(mgen_and_encrypt_dist_equiv _ _).prob_output_eq, prob_output_map_fst_product]
+by rw [(mgen_and_encrypt_dist_equiv _ _).prob_output_eq, prob_output_map_fst_mprod]
 
 /-- The message portion of the output of `mgen_and_encrypt` follows the message distribution. -/
 lemma eval_dist_fst_map_mgen_and_encrypt :
@@ -295,7 +295,7 @@ begin
       hmk hkc h x.1).1 $ hxy.2.trans (hxy.1 ▸ rfl)⟩ },
   -- Using the above function we can move from keys to ciphertexts, then apply perfect secrecy.
   calc ⁅= m | m_dist⁆ * ⁅= k | se_alg.keygen ()⁆ = ⁅= (m, k) | m_dist ×ₘ se_alg.keygen ()⁆ :
-      symm (prob_output_product _ _ _)
+      symm (prob_output_mprod _ _ _)
     ... = ⁅= f (m, k) | f <$> (m_dist ×ₘ se_alg.keygen ())⁆ :
       (prob_output_map_of_injective _ f (m, k) hf').symm
     ... = ⁅= (m, c) | se_alg.mgen_and_encrypt m_dist⁆ :
