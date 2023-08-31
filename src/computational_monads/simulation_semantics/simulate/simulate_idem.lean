@@ -150,7 +150,7 @@ then the probability of an event on the first output of simulation with either o
 is exactly the same for any initial states. -/
 lemma prob_event_simulate'_eq_prob_event_simulate'
   (h : ∀ i t s s' u, ⁅= u | fst <$> so i (t, s)⁆ = ⁅= u | fst <$> so' i (t, s')⁆)
-  (e : set α) : ⁅ e | simulate' so oa s⁆ = ⁅ e | simulate' so' oa s'⁆ :=
+  (e : set α) : ⁅e | simulate' so oa s⁆ = ⁅e | simulate' so' oa s'⁆ :=
 begin
   refine (simulate'_dist_equiv_simulate' oa s s' (λ i t s s', _)).prob_event_eq e,
   simp only [dist_equiv.ext_iff, h i t s s', eq_self_iff_true, forall_const],

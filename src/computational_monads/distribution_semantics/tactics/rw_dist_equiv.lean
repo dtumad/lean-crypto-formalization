@@ -111,7 +111,7 @@ do passed_d_eqs ← return (opt_d_eqs.get_or_else []),
   tagged_d_eqs ← if no_tagged then return [] else get_simp_dist_equiv_lemmas,
   iters ← return (opt_iters.get_or_else 6),
   by_dist_equiv, apply_dist_equiv_list ff iters (passed_d_eqs ++ tagged_d_eqs),
-  apply_dist_equiv_list ff iters (passed_d_eqs ++ tagged_d_eqs), -- hack for ordering
+  apply_dist_equiv_list ff iters (passed_d_eqs ++ tagged_d_eqs).reverse, -- hack for ordering
   tactic.try tactic.reflexivity,
   tactic.try by_dist_equiv
 

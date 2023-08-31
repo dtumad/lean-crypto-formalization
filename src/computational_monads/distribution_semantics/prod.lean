@@ -333,6 +333,14 @@ end support
 
 section fin_support
 
+lemma mem_fin_support_map_fst_iff (oab : oracle_comp spec (α × β)) (x : α) :
+  x ∈ (fst <$> oab).fin_support ↔ ∃ y, (x, y) ∈ oab.support :=
+by rw [mem_fin_support_iff_mem_support, mem_support_map_fst_iff]
+
+lemma mem_fin_support_map_snd_iff (oab : oracle_comp spec (α × β)) (y : β) :
+  y ∈ (snd <$> oab).fin_support ↔ ∃ x, (x, y) ∈ oab.support :=
+by rw [mem_fin_support_iff_mem_support, mem_support_map_snd_iff]
+
 end fin_support
 
 end map_fst_snd

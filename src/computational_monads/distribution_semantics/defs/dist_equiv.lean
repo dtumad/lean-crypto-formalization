@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
 import computational_monads.distribution_semantics.defs.independence
+import tactic.equiv_rw
 
 /-!
 # Distributional Equivalence Between Oracle Computations
@@ -57,9 +58,11 @@ lemma dist_equiv.ext_iff (oa : oracle_comp spec α) (oa' : oracle_comp spec' α)
   oa ≃ₚ oa' ↔ ∀ x, ⁅= x | oa⁆ = ⁅= x | oa'⁆ :=
 ⟨λ h x, by rw [prob_output, prob_output, dist_equiv.def.1 h], dist_equiv.ext⟩
 
-@[refl] lemma dist_equiv.refl (oa : oracle_comp spec α) : oa ≃ₚ oa := by exact rfl
+@[refl] lemma dist_equiv.refl (oa : oracle_comp spec α) : oa ≃ₚ oa := @rfl (pmf α) ⁅oa⁆
 
 instance dist_equiv.is_refl : is_refl (oracle_comp spec α) (≃ₚ) := ⟨λ x, rfl⟩
+
+lemma dist_equiv.rfl {oa : oracle_comp spec α} : oa ≃ₚ oa := refl oa
 
 /-- More general than regular `symm`, the two computations may have different `oracle_spec`. -/
 @[symm] lemma dist_equiv.symm (h : oa ≃ₚ oa') : oa' ≃ₚ oa := h.symm
