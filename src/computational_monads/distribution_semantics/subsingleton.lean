@@ -25,8 +25,12 @@ so in particular they must necessarilly be just `return oa.default_result`. -/
 subsingleton.elim ⁅oa⁆ ⁅oa'⁆
 
 @[pairwise_dist_equiv] lemma dist_equiv_return_of_subsingleton [subsingleton α] (a : α) :
-  oa ≃ₚ (return a : oracle_comp spec α) :=
-dist_equiv_of_subsingleton _ _
+  oa ≃ₚ (return' !spec'! a) := dist_equiv_of_subsingleton _ _
+
+/-- Version of `dist_equiv_return_of_subsingleton` with a fixed `oracle_spec` for the return,
+which can help when the other oracle spec can't be inferred directly. -/
+lemma dist_equiv_return_of_subsingleton' [subsingleton α] (a : α) :
+  oa ≃ₚ (return' !spec! a) := dist_equiv_of_subsingleton _ _
 
 @[simp_dist_equiv] lemma dist_equiv_return_default_result_of_subsingleton [subsingleton α] :
   oa ≃ₚ return' !spec! oa.default_result :=
@@ -45,7 +49,7 @@ lemma fin_support_of_subsingleton [subsingleton α] (x : α) : oa.fin_support = 
 fin_support_of_subsingleton oa default
 
 @[simp] lemma prob_output_of_subsingleton [subsingleton α] (x : α) : ⁅= x | oa⁆ = 1 :=
-((dist_equiv_return_of_subsingleton oa x).prob_output_eq x).trans
+((dist_equiv_return_of_subsingleton' oa x).prob_output_eq x).trans
   ((prob_output_return_eq_one_iff _ _ _).2 (subsingleton.elim _ _))
 
 lemma prob_event_of_subsingleton_of_nonempty [subsingleton α]

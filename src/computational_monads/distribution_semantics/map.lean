@@ -35,6 +35,10 @@ lemma mem_fin_support_map_iff [decidable_eq β] :
   y ∈ (f <$> oa).fin_support ↔ ∃ x ∈ oa.fin_support, f x = y :=
 by rw [fin_support_map, finset.mem_image]
 
+lemma apply_mem_support_map (hx : x ∈ oa.support) : f x ∈ (f <$> oa).support :=
+have ∃ (x' : α), x' ∈ oa.support ∧ f x' = f x := ⟨x, hx, rfl⟩,
+  by simp only [this, support_map, set.mem_image]
+
 end support
 
 section eval_dist
@@ -103,9 +107,13 @@ section map_return
 
 variable (a : α)
 
+/-- This version of a map-return lemma preserves the original `oracle_spec`,
+which works well with `rw_dist_equiv`-/
 lemma map_return_dist_equiv : f <$> (return' !spec! a) ≃ₚ (return' !spec! (f a)) :=
 by pairwise_dist_equiv
 
+/-- This version of a map-return lemma allows for an arbitrary `oracle_spec` on both sides,
+which works well with `pairwise_dist_equiv`. -/
 @[pairwise_dist_equiv]
 lemma map_return_dist_equiv' : f <$> (return' !spec! a) ≃ₚ (return' !spec'! (f a)) :=
 begin

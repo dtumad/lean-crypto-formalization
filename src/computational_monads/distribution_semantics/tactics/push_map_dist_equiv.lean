@@ -25,7 +25,8 @@ and to specify the maximum recursion depth (default `3` for efficiency). -/
   (opt_iters : parse (optional lean.parser.small_nat)) :=
 do map_lemmas ← return [`oracle_comp.map_bind_dist_equiv,
     `oracle_comp.map_return_dist_equiv',
-    `oracle_comp.map_return_dist_equiv],
+    `oracle_comp.map_return_dist_equiv,
+    `oracle_comp.return_bind_dist_equiv],
   t' ← mmap tactic.get_decl map_lemmas,
   d ←  return (list.map declaration.value t'),
   q ← return (list.map pexpr.of_expr d ++ (opt_d_eqs.get_or_else [])),
@@ -41,6 +42,10 @@ variables {α β γ δ ε: Type} {spec spec' : oracle_spec}
 /-- `push_map_dist_equiv` should be able to push into a `return` operation. -/
 example (x : α) (f : α → β) : f <$> (return x : oracle_comp spec α) ≃ₚ
   (return (f x) : oracle_comp spec β) :=
+by push_map_dist_equiv
+
+/-- `push_map_dist_equiv` should be able to reduce a computation starting with assignment. -/
+example (a : α) (ob : α → oracle_comp spec β) : (return a >>= ob) ≃ₚ ob a :=
 by push_map_dist_equiv
 
 /-- `push_map_dist_equiv` should be able to handle differeing `oracle_spec`. -/

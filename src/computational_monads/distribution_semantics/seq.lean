@@ -26,7 +26,6 @@ example (n : oracle_comp spec ℕ) :
 (+) <$> (return 0) <*> n ≃ₚ n :=
 begin
   push_map_dist_equiv,
-  rw_dist_equiv [return_bind_dist_equiv],
   simp,
   simp_rw [zero_add_eq_id],
   rw_dist_equiv [bind_return_id_dist_equiv],

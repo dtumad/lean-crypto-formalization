@@ -227,6 +227,10 @@ lemma prob_event_return_eq_prob_event_return_iff (e e' : set α) :
 by simpa only [prob_event_return_eq_iff, eq_self_iff_true, one_ne_zero, zero_ne_one,
   and_true, and_false, or_false, false_or] using (iff_iff_and_or_not_and_not).symm
 
+lemma return_dist_equiv_return_of_eq (h : a = a') :
+  (return' !spec! a) ≃ₚ (return' !spec'! a') :=
+by rwa [return_dist_equiv_return_iff']
+
 end return_eq_return_iff
 
 section indep_events

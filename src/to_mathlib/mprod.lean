@@ -12,7 +12,9 @@ This file defines a `mprod` function for running two monads independently,
 collection their results in a product type
 -/
 
-def mprod {m : Type → Type 1} [monad m] {α β : Type} (x : m α) (y : m β) : m (α × β) :=
+universes u v
+
+def mprod {m : Type u → Type v} [monad m] {α β : Type u} (x : m α) (y : m β) : m (α × β) :=
 -- (×) <$> x <*> y
 do {a ← x, b ← y, return (a, b)}
 
