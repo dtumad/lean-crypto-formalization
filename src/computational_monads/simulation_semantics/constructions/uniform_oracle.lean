@@ -13,7 +13,7 @@ that reduces any computation to one with a `uniform_selecting` `oracle_spec`,
 by responding uniformly at random to any query.
 -/
 
-open oracle_comp oracle_spec ennreal
+open oracle_comp oracle_spec
 open_locale ennreal big_operators
 
 variables {α β : Type} {spec : oracle_spec}
@@ -23,30 +23,58 @@ noncomputable def uniformₛₒ {spec : oracle_spec} :
 
 lemma uniformₛₒ.def (spec : oracle_spec) : uniformₛₒ = ⟪λ i t, $ᵗ (spec.range i)⟫ := rfl
 
+noncomputable instance uniformₛₒ.is_stateless :
+  sim_oracle.is_stateless (@uniformₛₒ spec) := stateless_oracle.is_stateless _
+
 namespace uniformₛₒ
 
-variables (oa : oracle_comp spec α) (i : spec.ι) (t : spec.domain i) (s : unit)
+open sim_oracle
 
-@[simp] lemma apply_eq : uniformₛₒ i (t, s) =
-  $ᵗ (spec.range i) >>= λ u, return (u, ()) := rfl
+variables (oa : oracle_comp spec α) (i : spec.ι) (t : spec.domain i) (s : unit) (u : spec.range i)
 
-section support
+@[simp] lemma apply_eq : uniformₛₒ i (t, s) = ($ᵗ (spec.range i) ×ₘ return ()) := rfl
 
-@[simp] lemma support_apply : (uniformₛₒ i (t, s)).support = ⊤ :=
-by simp only [uniformₛₒ.def, stateless_oracle.support_apply,
-  support_uniform_select_fintype, set.top_eq_univ, set.preimage_univ]
+@[pairwise_dist_equiv]
+lemma answer_query_dist_equiv : uniformₛₒ.answer_query i t ≃ₚ $ᵗ (spec.range i) :=
+stateless_oracle.answer_query_dist_equiv _ _
 
-@[simp] lemma fin_support_apply : (uniformₛₒ i (t, s)).fin_support = ⊤ :=
-by rw [fin_support_eq_iff_support_eq_coe, support_apply,
-  finset.top_eq_univ, finset.coe_univ, set.top_eq_univ]
+lemma update_state_eq : uniformₛₒ.update_state s i t u = () := subsingleton.elim _ _
 
-@[simp] lemma support_simulate :
-  (simulate uniformₛₒ oa s).support = prod.fst ⁻¹' oa.support :=
-sorry -- stateless_oracle.support_simulate_eq_preimage_support oa _ s
---   (λ i t, support_uniform_select_fintype _)
+section answer_query
+
+@[simp] lemma support_answer_query : (uniformₛₒ.answer_query i t).support = set.univ :=
+trans ((answer_query_dist_equiv i t).support_eq) (support_uniform_select_fintype _)
+
+@[simp] lemma fin_support_answer_query : (uniformₛₒ.answer_query i t).fin_support = finset.univ :=
+by rw [fin_support_eq_iff_support_eq_coe, finset.coe_univ, support_answer_query]
+
+end answer_query
+
+section apply
+
+@[simp] lemma support_apply : (uniformₛₒ i (t, s)).support = set.univ :=
+by rw [sim_oracle.is_stateless.support_apply, support_answer_query, set.preimage_univ]
+
+@[simp] lemma fin_support_apply : (uniformₛₒ i (t, s)).fin_support = finset.univ :=
+by rw [fin_support_eq_iff_support_eq_coe, support_apply, finset.coe_univ]
+
+end apply
+
+section simulate'
 
 @[simp] lemma support_simulate' : (simulate' uniformₛₒ oa s).support = oa.support :=
-sorry --stateless_oracle.support_simulate'_eq_support oa _ s (λ i t, support_uniform_select_fintype _)
+is_tracking.support_simulate'_eq_support _ oa s (λ i t, support_answer_query i t)
+
+end simulate'
+
+section simulate
+
+@[simp] lemma support_simulate : (simulate uniformₛₒ oa s).support = oa.support ×ˢ {()} :=
+is_stateless.support_simulate_eq_support _ oa s (λ i t, support_answer_query i t)
+
+end simulate
+
+section support
 
 end support
 
@@ -55,12 +83,16 @@ section eval_dist
 @[simp] lemma eval_dist_apply :
   ⁅uniformₛₒ i (t, s)⁆ = pmf.uniform_of_fintype (spec.range i × unit) :=
 begin
-  refine pmf.ext (λ x, _),
-  rw [apply_eq, eval_dist_bind_return, eval_dist_uniform_select_fintype, pmf.map_apply],
-  refine trans (tsum_eq_single x.1 $ λ u hu, _) _,
-  { simp only [prod.eq_iff_fst_eq_snd_eq, hu.symm, false_and, if_false] },
-  { simp only [prod.eq_iff_fst_eq_snd_eq, eq_self_iff_true, true_and, punit_eq x.2 (), if_true,
-      pmf.uniform_of_fintype_apply, fintype.card_prod, fintype.card_unit, mul_one] }
+  refine trans (is_stateless.eval_dist_apply _ _ _) _,
+  sorry,
+  -- rw [uniformₛₒ_def],
+  -- rw [stateless_oracle.eval_dist_answer_query],
+  -- refine pmf.ext (λ x, _),
+  -- rw [apply_eq, eval_dist_bind_return, eval_dist_uniform_select_fintype, pmf.map_apply],
+  -- refine trans (tsum_eq_single x.1 $ λ u hu, _) _,
+  -- { simp only [prod.eq_iff_fst_eq_snd_eq, hu.symm, false_and, if_false] },
+  -- { simp only [prod.eq_iff_fst_eq_snd_eq, eq_self_iff_true, true_and, punit_eq x.2 (), if_true,
+  --     pmf.uniform_of_fintype_apply, fintype.card_prod, fintype.card_unit, mul_one] }
 end
 
 end eval_dist
@@ -71,17 +103,18 @@ section prob_event
   ⁅e | uniformₛₒ i (t, s)⁆ = fintype.card e / fintype.card (spec.range i) :=
 calc ⁅e | uniformₛₒ i (t, s)⁆
   = (∑' x, e.indicator 1 x) / fintype.card (spec.range i) : begin
-    rw [apply_eq, prob_event_uniform_select_fintype_bind_eq_tsum],
-    simp only [prob_event_return, set.indicator, pi.one_apply,
-      ennreal.tsum_prod'],
-    have : ∀ u, ∑' (s : unit), ite ((u, s) ∈ e) (1 : ℝ≥0∞) 0 = ite ((u, ()) ∈ e) 1 0,
-    from λ u, tsum_eq_single () (λ s' hs', (hs' $ punit_eq _ _).elim),
-    congr,
-    refine funext (λ u, _),
-    specialize this u,
-    convert this.symm,
-    refine funext (λ s, _),
-    split_ifs; refl
+    sorry,
+    -- rw [apply_eq, prob_event_uniform_select_fintype_bind_eq_tsum],
+    -- simp only [prob_event_return, set.indicator, pi.one_apply,
+    --   ennreal.tsum_prod'],
+    -- have : ∀ u, ∑' (s : unit), ite ((u, s) ∈ e) (1 : ℝ≥0∞) 0 = ite ((u, ()) ∈ e) 1 0,
+    -- from λ u, tsum_eq_single () (λ s' hs', (hs' $ punit_eq _ _).elim),
+    -- congr,
+    -- refine funext (λ u, _),
+    -- specialize this u,
+    -- convert this.symm,
+    -- refine funext (λ s, _),
+    -- split_ifs; refl
   end
   ... = (∑ x, e.indicator 1 x) / fintype.card (spec.range i) : begin
     congr,

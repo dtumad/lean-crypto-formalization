@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
 import computational_monads.simulation_semantics.simulate.subsingleton
+import computational_monads.distribution_semantics.mprod
 
 /-!
 # Tracking Simulation Oracles
@@ -208,7 +209,7 @@ namespace tracking_oracle
 variables (query_f : Π (i : spec.ι), spec.domain i → oracle_comp spec' (spec.range i))
   (state_f : Π (s : S) (i : spec.ι), spec.domain i → spec.range i → S) (default_state : S)
 
-lemma apply_eq (i : spec.ι) (z : spec.domain i × S) :
+@[simp] lemma apply_eq (i : spec.ι) (z : spec.domain i × S) :
   ⟪query_f | state_f, default_state⟫ i z = (λ u, (u, state_f z.2 i z.1 u)) <$> (query_f i z.1) :=
 by {cases z, refl}
 

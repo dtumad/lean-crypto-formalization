@@ -27,26 +27,28 @@ notation `idₛ` := identity_oracle _
 
 namespace identity_oracle
 
-@[simp] lemma apply (i : spec.ι) (t : spec.domain i) (s : unit) :
-  (idₛ) i (t, s) = query i t >>= λ u, return (u, ()) := rfl
+-- @[simp] lemma apply (i : spec.ι) (t : spec.domain i) (s : unit) :
+--   (idₛ) i (t, s) = query i t >>= λ u, return (u, ()) := rfl
 
 section support
 
 @[simp] lemma support_apply (i : spec.ι) (t : spec.domain i) :
   ((idₛ) i (t, s)).support = {u | u.1 ∈ (query i t).support} :=
 begin
-  simp only [apply, support_bind, support_return, set.Union_true,
-    set.Union_singleton_eq_range, support_query, set.top_eq_univ, set.mem_univ, set.set_of_true],
-  exact set.eq_univ_of_forall (λ x, set.mem_range.2
-    ⟨x.1, prod.eq_iff_fst_eq_snd_eq.2 ⟨rfl, punit_eq () x.snd⟩⟩),
+  sorry
+  -- simp only [apply, support_bind, support_return, set.Union_true,
+  --   set.Union_singleton_eq_range, support_query, set.top_eq_univ, set.mem_univ, set.set_of_true],
+  -- exact set.eq_univ_of_forall (λ x, set.mem_range.2
+  --   ⟨x.1, prod.eq_iff_fst_eq_snd_eq.2 ⟨rfl, punit_eq () x.snd⟩⟩),
 end
 
 @[simp] lemma support_simulate' : (simulate' idₛ oa s).support = oa.support :=
 sorry --stateless_oracle.support_simulate'_eq_support _ query s (λ _ _, rfl)
 
 @[simp] lemma support_simulate : (simulate idₛ oa s).support = prod.fst ⁻¹' oa.support :=
-(stateless_oracle.support_simulate_eq_preimage_support_simulate' _ _ _).trans
-  (congr_arg _ $ support_simulate' oa ())
+sorry
+-- (stateless_oracle.support_simulate_eq_preimage_support_simulate' _ _ _).trans
+--   (congr_arg _ $ support_simulate' oa ())
 
 @[simp] lemma mem_support_simulate_iff (x : α × unit) :
   x ∈ (simulate idₛ oa s).support ↔ x.1 ∈ oa.support :=
@@ -58,10 +60,10 @@ section distribution_semantics
 
 section eval_dist
 
-@[simp]
-lemma eval_dist_apply (i : spec.ι) (t : spec.domain i) :
-  ⁅idₛ i (t, s)⁆ = ⁅(λ u, (u, ())) <$> query i t⁆ :=
-rfl
+-- @[simp]
+-- lemma eval_dist_apply (i : spec.ι) (t : spec.domain i) :
+--   ⁅idₛ i (t, s)⁆ = ⁅(λ u, (u, ())) <$> query i t⁆ :=
+-- rfl
 
 -- @[simp]
 -- lemma eval_dist_simulate : ⁅simulate idₛ oa s⁆ = ⁅(λ a, (a, ())) <$> oa⁆ :=

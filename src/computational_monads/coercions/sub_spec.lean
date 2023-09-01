@@ -62,6 +62,8 @@ namespace is_sub_spec
 variables (sub_spec super_spec : oracle_spec) [h : sub_spec ⊂ₒ super_spec]
   (i : sub_spec.ι) (t : sub_spec.domain i)
 
+@[pairwise_dist_equiv] lemma to_fun_dist_equiv : h.to_fun i t ≃ₚ query i t := h.to_fun_equiv i t
+
 @[simp] lemma support_to_fun : (h.to_fun i t).support = set.univ :=
 (h.to_fun_equiv i t).support_eq.trans (support_query i t)
 
@@ -89,7 +91,7 @@ end oracle_spec
 
 namespace oracle_comp
 
-open oracle_spec
+open oracle_spec sim_oracle
 
 /-- Given a `is_sub_spec` instance between `sub_spec` and `super_spec`, we can coerce a computation
 with oracles `sub_spec` to one with `super_spec` by simulating with `is_sub_spec.to_fun`. -/
@@ -105,7 +107,7 @@ section coe_sub_spec
 
 variables (sub_spec super_spec : oracle_spec) [h : sub_spec ⊂ₒ super_spec]
   (a : α) (oa : oracle_comp sub_spec α) (ob : α → oracle_comp sub_spec β)
-  (i : sub_spec.ι) (t : sub_spec.domain i) (e : set α)
+  (i : sub_spec.ι) (t : sub_spec.domain i) (x : α) (e : set α)
 
 include h
 
@@ -118,28 +120,35 @@ lemma coe_sub_spec_bind : (↑(oa >>= ob) : oracle_comp super_spec β) =
 by rw [coe_sub_spec_def, default_simulate', simulate'_bind]
 
 lemma coe_sub_spec_query : (↑(query i t) : oracle_comp super_spec (sub_spec.range i)) =
-  prod.fst <$> (h.to_fun i t >>= λ u, return (u, ())) :=
-by rw [coe_sub_spec_def, default_simulate', simulate'_query, stateless_oracle.apply_eq]
+  prod.fst <$> (h.to_fun i t ×ₘ return ()) := rfl
+
+/-- Coercing a computation via a sub-spec instance doesn't change the associated distribution. -/
+@[pairwise_dist_equiv] lemma coe_sub_spec_dist_equiv : (↑oa : oracle_comp super_spec α) ≃ₚ oa :=
+begin
+  refine is_tracking.simulate'_dist_equiv_self _ oa _ (λ i t, _),
+  rw_dist_equiv [stateless_oracle.answer_query_dist_equiv, h.to_fun_equiv],
+end
 
 /-- `support` is unchanged after coercing a computation via a sub-spec instance. -/
 @[simp] lemma support_coe_sub_spec : (↑oa : oracle_comp super_spec α).support = oa.support :=
-stateless_oracle.support_simulate'_eq_support _ _ ()
-  (λ i t, is_sub_spec.support_to_fun sub_spec super_spec i t)
+(coe_sub_spec_dist_equiv sub_spec super_spec oa).support_eq
 
 /-- `fin_support` is unchanged after coercing a computation via a sub-spec instance. -/
 @[simp] lemma fin_support_coe_sub_spec :
   (↑oa : oracle_comp super_spec α).fin_support = oa.fin_support :=
-by rw [fin_support_eq_fin_support_iff_support_eq_support, support_coe_sub_spec]
+(coe_sub_spec_dist_equiv sub_spec super_spec oa).fin_support_eq
 
 /-- `eval_dist` is unchanged after coercing a computation via a sub-spec instance. -/
 @[simp] lemma eval_dist_coe_sub_spec : ⁅(↑oa : oracle_comp super_spec α)⁆ = ⁅oa⁆ :=
-stateless_oracle.eval_dist_simulate'_eq_eval_dist _ _ ()
-  (λ i t, is_sub_spec.eval_dist_to_fun sub_spec super_spec i t)
+(coe_sub_spec_dist_equiv sub_spec super_spec oa).eval_dist_eq
+
+/-- `prob_output` is unchanged after coercing a computation via a sub-spec instance. -/
+@[simp] lemma prob_output_coe_sub_spec : ⁅= x | (↑oa : oracle_comp super_spec α)⁆ = ⁅= x | oa⁆ :=
+(coe_sub_spec_dist_equiv sub_spec super_spec oa).prob_output_eq x
 
 /-- `prob_event` is unchanged after coercing a computation via a sub-spec instance. -/
 @[simp] lemma prob_event_coe_sub_spec : ⁅e | (↑oa : oracle_comp super_spec α)⁆ = ⁅e | oa⁆ :=
-stateless_oracle.prob_event_simulate'_eq_prob_event _ _ ()
-  (λ i t, is_sub_spec.eval_dist_to_fun sub_spec super_spec i t) e
+(coe_sub_spec_dist_equiv sub_spec super_spec oa).prob_event_eq e
 
 end coe_sub_spec
 
@@ -183,9 +192,10 @@ by simp only [support_simulate', support_simulate_coe_sub_spec_bind, set.image_U
 @[simp] lemma support_simulate_coe_sub_spec_query :
   (simulate so' (↑(query i t) : oracle_comp super_spec (sub_spec.range i)) s').support =
     (simulate so' (h.to_fun i t) s').support :=
-by simp_rw [coe_sub_spec_def, default_simulate', simulate'_query, stateless_oracle.apply_eq,
-  support_simulate_map, support_simulate_bind, support_simulate_return, set.image_Union,
-  set.image_singleton, prod.map_mk, id.def, prod.mk.eta, set.bUnion_of_singleton]
+sorry
+-- by simp_rw [coe_sub_spec_def, default_simulate', simulate'_query, stateless_oracle.apply_eq,
+--   support_simulate_map, support_simulate_bind, support_simulate_return, set.image_Union,
+--   set.image_singleton, prod.map_mk, id.def, prod.mk.eta, set.bUnion_of_singleton]
 
 /-- Given two simulation oracles `so : sim_oracle spec spec'' S` and
 `so' : sim_oracle spec' spec'' : S'` with the starting specs satisfying `spec ⊂ₒ spec'`,
@@ -243,18 +253,20 @@ calc ⁅simulate so' (↑(oa >>= ob) : oracle_comp super_spec β) s'⁆
   ... = (⁅simulate so' (default_simulate ⟪h.to_fun⟫ oa) s'⁆.map (prod.map prod.fst id)).bind
       (λ x, ⁅simulate so' (default_simulate ⟪h.to_fun⟫ (ob x.1)) x.2⁆.map (prod.map prod.fst id)) :
     symm (trans (pmf.bind_map _ _ _) (congr_arg (λ _, pmf.bind _ _) (funext $ λ x, by simp only
-      [function.comp_app, prod_map, id.def, stateless_oracle.simulate_eq_default_simulate])))
+      [function.comp_app, prod_map, id.def, is_stateless.simulate_eq_default_simulate])))
   ... = ⁅simulate so' (default_simulate' ⟪h.to_fun⟫ oa) s'⁆.bind (λ (x : α × S'),
       ⁅simulate so' (default_simulate ⟪h.to_fun⟫ (ob x.1)) x.2⁆.map (prod.map prod.fst id)) :
     by rw [default_simulate', simulate', eval_dist_simulate_map]
   ... = ⁅simulate so' ↑oa s'⁆.bind (λ (x : α × S'), ⁅simulate so' ↑(ob $ prod.fst x) x.2⁆) :
     by simp only [coe_sub_spec_def, simulate', eval_dist_simulate_map, default_simulate']
 
+/-- TOOD:stuff like this should use `dist_equiv` -/
 @[simp] lemma eval_dist_simulate_coe_sub_spec_query :
   ⁅simulate so' (↑(query i t) : oracle_comp super_spec _) s'⁆ =
     ⁅simulate so' (h.to_fun i t) s'⁆ :=
-by simp only [coe_sub_spec_query, eval_dist_simulate_map_bind, eval_dist_simulate_return,
-  pmf.map_pure, prod.map_mk, id.def, prod.mk.eta, pmf.bind_pure]
+sorry
+-- by simp only [coe_sub_spec_query, eval_dist_simulate_map_bind, eval_dist_simulate_return,
+--   pmf.map_pure, prod.map_mk, id.def, prod.mk.eta, pmf.bind_pure]
 
 /-- Given two simulation oracles `so : sim_oracle spec spec'' S` and
 `so' : sim_oracle spec' spec'' : S'` with the starting specs satisfying `spec ⊂ₒ spec'`,
