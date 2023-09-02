@@ -36,15 +36,14 @@ def mask_state (so : sim_oracle spec spec' S) (mask : S ≃ S') :
 
 namespace mask_state
 
-variables (so : sim_oracle spec spec' S) (mask : S ≃ S') (mask' : S' ≃ S'')
-  (a : α) (i : spec.ι) (t : spec.domain i) (oa : oracle_comp spec α)
-  (ob : α → oracle_comp spec β) (s : S) (s' : S') (s'' : S'')
-  (x : spec.domain i × S') (y : spec.range i × S')
+variables (so : sim_oracle spec spec' S) (mask : S ≃ S')
 
-lemma mask_state_apply_eq : so.mask_state mask i x =
-  prod.map id mask <$> (so.o i (prod.map id mask.symm x)) := rfl
+lemma mask_state_apply_eq {i : spec.ι} (z : spec.domain i × S') : so.mask_state mask i z =
+  prod.map id mask <$> (so.o i (prod.map id mask.symm z)) := rfl
 
 section simulate
+
+variables (oa : oracle_comp spec α) (s' : S')
 
 /-- Simulating with an oracle after masking the state is equivalent to simulating with the original
 up to mapping the state values by the equivalence used in the masking. -/
@@ -117,6 +116,8 @@ end
 end simulate
 
 section simulate'
+
+variables (oa : oracle_comp spec α) (s' : S')
 
 /-- Taking just the first result of simulating a computation with a masked simulation oracle
 is equivalent to simulating with the original oracle after masking the initial state. -/

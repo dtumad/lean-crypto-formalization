@@ -103,6 +103,13 @@ begin
     in hu.symm.trans (trans (option.some_inj.2 (punit_eq _ _)) hu')⟩,
 end
 
+@[simp] lemma get_count_inf (i : spec.ι) : (qc ⊓ qc').get_count i =
+  min (qc.get_count i) (qc'.get_count i) :=
+begin
+  simp [get_count_eq_length_apply],
+  sorry,
+end
+
 end inf
 
 @[simp] lemma distjoin_iff_disjoint_active_oracles : disjoint qc qc' ↔
@@ -154,24 +161,12 @@ section sep
 variables (p q : spec.ι → Prop)
 
 @[simp] lemma sep_or_eq_sup : {x ∈ qc | p x ∨ q x} = {x ∈ qc | p x} ⊔ {x ∈ qc | q x} :=
-begin
-  haveI : decidable_pred p := classical.dec_pred p,
-  haveI : decidable_pred q := classical.dec_pred q,
-  ext x,
-  sorry, sorry,
-  -- by_cases hpx : p x; by_cases hqx : q x; simp only [hpx, hqx, sep_apply', or_self, sup_apply,
-  --   max_eq_left, if_true, if_false, true_or, or_true, nat.zero_max, max_comm (qc x)]
-end
+fun_like.ext _ _ (λ i, by by_cases hpi : p i; by_cases hqi : q i;
+  simp [hpi, hqi, apply_eq_replicate_get_count])
 
 @[simp] lemma sep_and_eq_inf : {x ∈ qc | p x ∧ q x} = {x ∈ qc | p x} ⊓ {x ∈ qc | q x} :=
-begin
-  haveI : decidable_pred p := classical.dec_pred p,
-  haveI : decidable_pred q := classical.dec_pred q,
-  ext x,
-  sorry, sorry,
-  -- by by_cases hpx : p x; by_cases hqx : q x; simp only [hpx, hqx, sep_apply', and_self, inf_apply,
-  --   min_eq_right, zero_min, min_zero, if_true, if_false, and_false, false_and]
-end
+fun_like.ext _ _ (λ i, by by_cases hpi : p i; by_cases hqi : q i;
+  simp [hpi, hqi, apply_eq_replicate_get_count, get_count_inf])
 
 end sep
 

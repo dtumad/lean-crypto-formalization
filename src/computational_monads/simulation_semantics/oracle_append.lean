@@ -27,8 +27,8 @@ def oracle_append (so : sim_oracle spec spec'' S) (so' : sim_oracle spec' spec''
   sim_oracle (spec ++ spec') spec'' (S × S') :=
 { default_state := (so.default_state, so'.default_state),
   o := λ i, match i with
-  | (sum.inl i) := λ ⟨t, s₁, s₂⟩, do {⟨u, s₁'⟩ ← so i (t, s₁), return (u, s₁', s₂)}
-  | (sum.inr i) := λ ⟨t, s₁, s₂⟩, do {⟨u, s₂'⟩ ← so' i (t, s₂), return (u, s₁, s₂')}
+    | (sum.inl i) := λ ⟨t, s₁, s₂⟩, do {⟨u, s₁'⟩ ← so i (t, s₁), return (u, s₁', s₂)}
+    | (sum.inr i) := λ ⟨t, s₁, s₂⟩, do {⟨u, s₂'⟩ ← so' i (t, s₂), return (u, s₁, s₂')}
   end }
 
 infixl ` ++ₛ `:65 := oracle_append
@@ -40,8 +40,7 @@ variables (so : sim_oracle spec spec'' S) (so' : sim_oracle spec' spec'' S')
   (i : spec.ι) (i' : spec'.ι) (t : spec.domain i) (t' : spec'.domain i') (s : S × S')
   (x : spec.domain i × S × S') (x' : spec'.domain i' × S × S')
 
-@[simp]
-lemma apply_inl_eq : (so ++ₛ so') (sum.inl i) x =
+@[simp] lemma apply_inl_eq : (so ++ₛ so') (sum.inl i) x =
   do {u_s' ← so i (x.1, x.2.1), return (u_s'.1, u_s'.2, x.2.2)} :=
 begin
   cases x with t s, cases s with s₁ s₂,
@@ -49,8 +48,7 @@ begin
   cases y, refl,
 end
 
-@[simp]
-lemma apply_inr_eq : (so ++ₛ so') (sum.inr i') x' =
+@[simp] lemma apply_inr_eq : (so ++ₛ so') (sum.inr i') x' =
   do {u_s' ← so' i' (x'.1, x'.2.2), return (u_s'.1, x'.2.1, u_s'.2)} :=
 begin
   cases x' with t s, cases s with s₁ s₂,
@@ -114,6 +112,39 @@ if we use `simulate'` to ignore the final oracle state of the two `sim_oracle`s.
 set.ext (λ x, by simp only [support_simulate', support_simulate_coe_append_right, set.image_image])
 
 end coe_append_right
+
+section is_tracking
+
+instance is_tracking [hso : so.is_tracking] [hso' : so'.is_tracking] :
+  (so ++ₛ so').is_tracking :=
+{ query_f := λ i, sum.rec_on i so.answer_query so'.answer_query,
+  state_f := λ s i, sum.rec_on i (λ i t u, (so.update_state s.1 i t u, s.2))
+    (λ i t u, (s.1, so'.update_state s.2 i t u)),
+  apply_dist_equiv_state_f_map_query_f := λ i t s, begin
+    cases i; simp only [apply_inl_eq, apply_inr_eq],
+    { rw_dist_equiv [hso.apply_dist_equiv_state_f_map_query_f,
+        map_bind_dist_equiv, map_return_dist_equiv] },
+    { rw_dist_equiv [hso'.apply_dist_equiv_state_f_map_query_f,
+        map_bind_dist_equiv, map_return_dist_equiv] }
+  end }
+
+@[simp] lemma answer_query_eq [so.is_tracking] [so'.is_tracking] :
+  (so ++ₛ so').answer_query = λ i, sum.rec_on i so.answer_query so'.answer_query := rfl
+
+@[simp] lemma update_state_eq [so.is_tracking] [so'.is_tracking] :
+  (so ++ₛ so').update_state = λ s i, sum.rec_on i (λ i t u, (so.update_state s.1 i t u, s.2))
+    (λ i t u, (s.1, so'.update_state s.2 i t u)) := rfl
+
+end is_tracking
+
+section is_stateless
+
+/-- Appending two stateless oracles together gives another stateless oracle. -/
+instance is_stateless [hso : so.is_stateless] [hso' : so'.is_stateless] :
+  (so ++ₛ so').is_stateless :=
+{ state_subsingleton := @subsingleton.prod S S' hso.state_subsingleton hso'.state_subsingleton }
+
+end is_stateless
 
 end oracle_append
 
