@@ -88,22 +88,11 @@ by rw_dist_equiv [is_tracking.apply_dist_equiv, map_return_dist_equiv]
 @[simp] lemma support_apply : (so i (t, s)).support = fst ⁻¹' (so.answer_query i t).support :=
 trans (is_tracking.support_apply so t s) (by simp [set.ext_iff, eq_iff_fst_eq_snd_eq])
 
-lemma image_fst_support_apply : fst '' (so i (t, s)).support = (so.answer_query i t).support :=
-begin
-  haveI : unique S := is_stateless.state_unique so,
-  simp [is_stateless.support_apply, set.ext_iff, unique.exists_iff],
-end
-
 @[simp] lemma fin_support_apply : (so i (t, s)).fin_support =
   (so.answer_query i t).fin_support.preimage fst
     (λ x hx y hy h, (eq_iff_fst_eq_snd_eq.2 ⟨h, state_elim' so x.2 y.2⟩)) :=
 by rw [fin_support_eq_iff_support_eq_coe, support_apply, finset.coe_preimage,
   coe_fin_support_eq_support]
-
-lemma image_fst_fin_support_apply :
-  (so i (t, s)).fin_support.image fst = (so.answer_query i t).fin_support :=
-by rw [eq_fin_support_iff_coe_eq_support, finset.coe_image,
-  coe_fin_support_eq_support, image_fst_support_apply]
 
 @[simp] lemma eval_dist_apply : ⁅so i (t, s)⁆ =
   (⁅so.answer_query i t⁆ ×ₘ (pmf.pure so.default_state)) :=
@@ -128,6 +117,40 @@ begin
 end
 
 end apply
+
+section answer_query
+
+variables [hso : so.is_stateless] {i : spec.ι} (s : S) (t : spec.domain i)
+include hso
+
+lemma answer_query_dist_equiv : so.answer_query i t ≃ₚ (fst <$> so i (t, so.default_state)) :=
+by pairwise_dist_equiv
+
+lemma support_answer_query :
+  (so.answer_query i t).support = fst '' (so i (t, so.default_state)).support :=
+by rw [answer_query_eq_map_apply, support_map]
+
+lemma fin_support_answer_query :
+  (so.answer_query i t).fin_support = (so i (t, so.default_state)).fin_support.image fst :=
+by rw [answer_query_eq_map_apply, fin_support_map]
+
+lemma eval_dist_answer_query :
+  ⁅so.answer_query i t⁆ = ⁅so i (t, so.default_state)⁆.map fst :=
+by rw [answer_query_eq_map_apply, eval_dist_map]
+
+lemma prob_output_answer_query (u : spec.range i) :
+  ⁅= u | so.answer_query i t⁆ = ⁅= (u, so.default_state) | so i (t, so.default_state)⁆ :=
+by rw [prob_output_apply]
+
+lemma prob_event_answer_query (e : set (spec.range i)) :
+  ⁅e | so.answer_query i t⁆ = ⁅e ×ˢ {so.default_state} | so i (t, so.default_state)⁆ :=
+begin
+  haveI : unique S := is_stateless.state_unique so,
+  rw [prob_event_apply],
+  refine congr_arg _ (by simp [set.ext_iff])
+end
+
+end answer_query
 
 section default_simulate
 
@@ -210,7 +233,7 @@ begin
   rw [prob_output_mprod, prob_output_of_subsingleton _ z.2, mul_one]
 end
 
-lemma prob_event_simulate_eq_prob_output
+lemma prob_event_simulate_eq_prob_event
   (h : ∀ i t u, ⁅= u | so.answer_query i t⁆ = (fintype.card (spec.range i))⁻¹)
   (e : set (α × S)) : ⁅e | simulate so oa s⁆ = ⁅fst '' e | oa⁆ :=
 begin
@@ -251,7 +274,7 @@ lemma support_simulate_eq_support_simulate
 begin
   haveI : subsingleton S := hso.state_subsingleton,
   apply support_simulate_eq_support_simulate_of_subsingleton,
-  simp only [image_fst_support_apply, h, eq_self_iff_true, forall_2_true_iff],
+  simp only [← support_answer_query, h, eq_self_iff_true, forall_2_true_iff],
 end
 
 lemma fin_support_simulate_eq_fin_support_simulate
@@ -312,7 +335,7 @@ lemma apply_eq : ⟪query_f⟫ i (t, s) = (query_f i t ×ₘ return ()) := rfl
 
 lemma answer_query_eq : ⟪query_f⟫.answer_query i t = fst <$> (query_f i t ×ₘ return ()) := rfl
 
-lemma update_state_eq : ⟪query_f⟫.update_state s i t u = () := rfl
+lemma update_state_eq : ⟪query_f⟫.update_state = λ _ _ _ _, () := rfl
 
 lemma answer_query_dist_equiv :
   ⟪query_f⟫.answer_query i t ≃ₚ query_f i t := by pairwise_dist_equiv

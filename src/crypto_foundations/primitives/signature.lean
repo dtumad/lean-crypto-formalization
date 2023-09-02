@@ -109,9 +109,9 @@ section complete
 noncomputable def completeness_experiment (sig : signature) (m : sig.M) :
   oracle_comp uniform_selecting bool :=
 default_simulate' sig.base_oracle
-(do { (pk, sk) ← sig.gen (),
-      σ ← sig.sign (pk, sk, m),
-      sig.verify (pk, m, σ) })
+(do {(pk, sk) ← sig.gen (),
+  σ ← sig.sign (pk, sk, m),
+  sig.verify (pk, m, σ)})
 
 lemma completeness_experiment.def (m : sig.M) : sig.completeness_experiment m = default_simulate'
   sig.base_oracle (do {k ← sig.gen (), σ ← sig.sign (k.1, k.2, m), sig.verify (k.1, m, σ)}) :=

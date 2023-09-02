@@ -14,6 +14,8 @@ Generally this behaves like the `rewrite` tactic but for `≃ₚ` instead of `=`
 This is useful when you don't want to seperate terms like `⁅oa >>= ob⁆` into `⁅oa⁆ >>= ⁅ob⁆` first.
 
 TODO: It would be good to get more done on improving the runtime, especially with simp versions.
+Currently the number of lemmas tagged with `simp_dist_equiv` is limited by the runtime increase,
+another alternative would be to increase the number of tags.
 -/
 
 open interactive interactive.types

@@ -106,6 +106,18 @@ by rw [prob_event_eq_tsum_indicator, sum_eq_tsum_indicator]
 
 end sums
 
+lemma prob_event_ext (h : ∀ x ∈ oa.support, x ∈ e ↔ x ∈ e') : ⁅e | oa⁆ = ⁅e' | oa⁆ :=
+begin
+  rw [prob_event_eq_tsum_indicator, prob_event_eq_tsum_indicator],
+  refine tsum_congr (λ x, _),
+  by_cases hx : x ∈ oa.support,
+  { by_cases hx' : x ∈ e,
+    { simp only [hx', (h x hx).1 hx', set.indicator_of_mem, eval_dist_apply_eq_prob_output] },
+    { simp only [hx', mt ((h x hx).2) hx', set.indicator_of_not_mem, not_false_iff] } },
+  { rw [set.indicator_apply_eq_zero.2 (λ _, eval_dist_apply_eq_zero hx),
+      set.indicator_apply_eq_zero.2 (λ _, eval_dist_apply_eq_zero hx)] }
+end
+
 section support
 
 /-- If two sets have the same intersection with the support of a computation,

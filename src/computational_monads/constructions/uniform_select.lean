@@ -509,8 +509,12 @@ by simp only [uniform_select_fintype, prob_event_uniform_select_finset_bind_eq_s
 
 end prob_event
 
-lemma uniform_select_fintype_unique {spec} {α : Type} [unique α] :
+lemma uniform_select_fintype_dist_equiv_return {spec} {α : Type} [unique α] :
   $ᵗ α ≃ₚ return' !spec! default := by pairwise_dist_equiv
+
+@[pairwise_dist_equiv] lemma uniform_select_fintype_range {spec : oracle_spec} {i : spec.ι}
+  (t : spec.domain i) : $ᵗ (spec.range i) ≃ₚ query i t :=
+by simp [dist_equiv.ext_iff, prob_output_query_eq_inv]
 
 end uniform_select_fintype
 
