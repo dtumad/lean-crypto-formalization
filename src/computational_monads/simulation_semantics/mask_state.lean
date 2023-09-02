@@ -107,15 +107,44 @@ lemma prob_event_simulate_eq_prob_event_simulate_image (e : set (α × S')) :
     ⁅prod.map id mask.symm '' e | simulate so oa (mask.symm s')⁆ :=
 begin
   rw [prob_event_simulate_eq_prob_event_simulate_preimage],
-  sorry,
-  -- refine prob_event_eq_of_mem_iff
+  refine prob_event_eq_of_mem_iff _ _ _ (λ z, ⟨λ hz, _, λ hz, _⟩),
+  { refine ⟨prod.map id mask z, hz, _⟩,
+    rw [prod.map_map, symm_comp_self, function.comp.right_id, prod.map_id, id.def] },
+  { obtain ⟨z', hz'⟩ := hz,
+    simp only [set.mem_preimage, ← hz'.2, hz'.1, prod_map, id.def, apply_symm_apply, prod.mk.eta] }
 end
-
 
 end simulate
 
 section simulate'
 
+/-- Taking just the first result of simulating a computation with a masked simulation oracle
+is equivalent to simulating with the original oracle after masking the initial state. -/
+@[pairwise_dist_equiv] lemma simulate'_dist_equiv_simulate' :
+  simulate' (so.mask_state mask) oa s' ≃ₚ simulate' so oa (mask.symm s') :=
+by rw_dist_equiv [simulate'_dist_equiv, simulate_dist_equiv_map_simulate,
+  map_bind_dist_equiv, map_return_dist_equiv]
+
+@[simp] lemma support_simulate'_eq_support_simulate' :
+  (simulate' (so.mask_state mask) oa s').support = (simulate' so oa (mask.symm s')).support :=
+by pairwise_dist_equiv
+
+@[simp] lemma fin_support_simulate'_eq_fin_support_simulate' :
+  (simulate' (so.mask_state mask) oa s').fin_support =
+    (simulate' so oa (mask.symm s')).fin_support :=
+by pairwise_dist_equiv
+
+@[simp] lemma eval_dist_simulate'_eq_eval_dist_simulate' :
+  ⁅simulate' (so.mask_state mask) oa s'⁆ = ⁅simulate' so oa (mask.symm s')⁆ :=
+by pairwise_dist_equiv
+
+@[simp] lemma prob_output_simulate'_eq_prob_output_simulate' (x : α) :
+  ⁅= x | simulate' (so.mask_state mask) oa s'⁆ = ⁅= x | simulate' so oa (mask.symm s')⁆ :=
+by pairwise_dist_equiv
+
+@[simp] lemma prob_event_simulate'_eq_prob_event_simulate' (e : set α) :
+  ⁅e | simulate' (so.mask_state mask) oa s'⁆ = ⁅e | simulate' so oa (mask.symm s')⁆ :=
+by pairwise_dist_equiv
 
 end simulate'
 
