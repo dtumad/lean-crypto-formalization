@@ -39,7 +39,7 @@ lemma apply_eq {i : spec.ι} (t : spec.domain i) (qc : spec.query_count) :
 
 lemma answer_query_eq : (counting_oracle spec).answer_query = query := rfl
 
-lemma update_state_eq : (counting_oracle spec).update_state = λ qc i u t, qc.increment i 1 := rfl
+lemma update_state_eq : (counting_oracle spec).update_state = λ qc i t u, qc.increment i 1 := rfl
 
 section simulate'
 

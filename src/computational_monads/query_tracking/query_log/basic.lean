@@ -13,7 +13,11 @@ The lists are indexed by a dependent function of oracle indices, and modificatio
 are implemented using continuation passing of previous logs (viewed as functions).
 
 This definition is chosen over a list of sigma types to give simple type equalities.
+
+-- TODO: use indexed list
 -/
+
+namespace oracle_spec
 
 /-- Data type representing a log of oracle queries for a given `oracle_spec`.
   Represented as a list of query inputs and outputs, indexed by the indexing set in the spec -/
@@ -24,19 +28,19 @@ namespace query_log
 
 open oracle_spec
 
-variables {spec : oracle_spec} (log : query_log spec)
+variables {spec : oracle_spec} (log : spec.query_log)
   (i j : spec.ι) (t : spec.domain i) (u : spec.range i)
 
-@[ext] lemma ext {spec : oracle_spec} {log log' : query_log spec}
+@[ext] lemma ext {spec : oracle_spec} {log log' : spec.query_log}
   (h : ∀ (i : spec.ι), log i = log' i) : log = log' := funext h
 
 section init
 
 /-- Empty query log, with no entries for any of the oracles in the spec -/
 @[inline, reducible]
-def init (spec : oracle_spec) : query_log spec := λ i, []
+def init (spec : oracle_spec) : spec.query_log := λ i, []
 
-instance : has_emptyc (query_log spec) := ⟨init spec⟩
+instance : has_emptyc (spec.query_log) := ⟨init spec⟩
 
 @[simp] lemma init_apply : init spec i = [] := rfl
 
@@ -50,7 +54,7 @@ end init
 section log_query
 
 /-- Given a current query log, return the new log after adding a given oracle query -/
-def log_query (i : spec.ι) (t : spec.domain i) (u : spec.range i) : query_log spec :=
+def log_query (i : spec.ι) (t : spec.domain i) (u : spec.range i) : spec.query_log :=
 λ j, if hi : i = j then hi.rec_on ((t, u) :: (log i)) else log j
 
 @[simp] lemma log_query_apply (i j : spec.ι) (t : spec.domain i) (u : spec.range i) :
@@ -176,7 +180,7 @@ section map_at_index
   TODO: I think a lot of the above functions can use this as a helper -/
 def map_at_index (i : spec.ι)
   (f : list (spec.domain i × spec.range i) → list (spec.domain i × spec.range i)) :
-  query_log spec :=
+  spec.query_log :=
 λ j, if hi : i = j then hi.rec_on (f $ log i) else (log j)
 
 variables (f : list (spec.domain i × spec.range i) → list (spec.domain i × spec.range i))
@@ -227,7 +231,7 @@ end map_at_index
 section drop_at_index
 
 /-- Drop the given number of elements from the given log at the specified index. -/
-def drop_at_index (log : query_log spec) (i : spec.ι) (n : ℕ) : query_log spec :=
+def drop_at_index (log : spec.query_log) (i : spec.ι) (n : ℕ) : spec.query_log :=
 log.map_at_index i (list.drop n)
 
 variables (n : ℕ)
@@ -301,8 +305,8 @@ end drop_at_index
 section remove_head
 
 /-- remove the head of the index `i` log -/
-def remove_head (log : query_log spec) (i : spec.ι) :
-  query_log spec :=
+def remove_head (log : spec.query_log) (i : spec.ι) :
+  spec.query_log :=
 λ j, if i = j then (log j).tail else (log j)
 
 @[simp]
@@ -367,3 +371,5 @@ trans (log.remove_head_log_query i j t u) (if_neg hi)
 end remove_head
 
 end query_log
+
+end oracle_spec
