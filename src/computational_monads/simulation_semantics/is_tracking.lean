@@ -17,6 +17,9 @@ actually splits into the two components given.
 
 Note that we require that `query_f` be deterministic for simplicity.
 For current use cases this is generally sufficient.
+Also note that because `query_f` and `state_f` are given explicitly rather than existentially,
+`is_tracking` is not a proposition, and in particular two different instances may exist.
+Generally it's best to avoid situations with multiple distinct instances.
 
 For example in `loggingₛₒ` the internal state doesn't change the main output, it just records it.
 This allows for many lemmas to be automatically shared between these sorts of oracles.

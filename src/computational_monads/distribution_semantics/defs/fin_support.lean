@@ -59,6 +59,9 @@ set.ext (λ a, (mem_fin_support_iff_mem_support oa a))
 lemma fin_support_eq_iff_support_eq_coe : oa.fin_support = s ↔ oa.support = ↑s :=
 by rw [← coe_fin_support_eq_support, finset.coe_inj]
 
+lemma eq_fin_support_iff_coe_eq_support : s = oa.fin_support ↔ ↑s = oa.support :=
+by rw [← coe_fin_support_eq_support, finset.coe_inj]
+
 lemma fin_support_eq_fin_support_iff_support_eq_support (oa' : oracle_comp spec' α) :
   oa.fin_support = oa'.fin_support ↔ oa.support = oa'.support :=
 by rw [fin_support_eq_iff_support_eq_coe, coe_fin_support_eq_support]

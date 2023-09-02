@@ -23,7 +23,7 @@ of a `query_f`, taking the state to be `unit` as a simple `subsingleton` type.
 -/
 
 open_locale big_operators ennreal
-open oracle_comp oracle_spec sim_oracle
+open oracle_comp oracle_spec sim_oracle prod
 
 variables {α β γ : Type} {spec spec' spec'' : oracle_spec} {S S' : Type}
 
@@ -59,19 +59,19 @@ def is_stateless.state_unique [hso : so.is_stateless] : unique S :=
   uniq := λ s, is_stateless.state_elim' so _ _}
 
 instance is_stateless.is_tracking [hso : so.is_stateless] : so.is_tracking :=
-{ query_f := λ i t, prod.fst <$> so i (t, so.default_state),
+{ query_f := λ i t, fst <$> so i (t, so.default_state),
   state_f := λ s i t u, so.default_state,
   apply_dist_equiv_state_f_map_query_f :=
     begin
       refine λ i t s, trans (trans (map_id_dist_equiv _).symm _) (map_comp_dist_equiv _ _ _).symm,
-      refine map_dist_equiv_of_dist_equiv' (funext (λ x, prod.eq_iff_fst_eq_snd_eq.2
+      refine map_dist_equiv_of_dist_equiv' (funext (λ x, eq_iff_fst_eq_snd_eq.2
         ⟨rfl, is_stateless.state_elim so x.2⟩)) (by rw [is_stateless.state_elim so s]),
     end }
 
 namespace is_stateless
 
 lemma answer_query_eq_map_apply {i : spec.ι} (t : spec.domain i) [so.is_stateless] :
-  so.answer_query i t = prod.fst <$> so i (t, so.default_state) := rfl
+  so.answer_query i t = fst <$> so i (t, so.default_state) := rfl
 
 @[simp] lemma update_state_eq_const {s : S} {i : spec.ι} (t : spec.domain i) (u : spec.range i)
   [so.is_stateless] : so.update_state s i t u = so.default_state := rfl
@@ -85,15 +85,25 @@ include hso
   so i (t, s) ≃ₚ (so.answer_query i t ×ₘ return so.default_state) :=
 by rw_dist_equiv [is_tracking.apply_dist_equiv, map_return_dist_equiv]
 
-@[simp] lemma support_apply : (so i (t, s)).support =
-  prod.fst ⁻¹' (so.answer_query i t).support :=
-trans (is_tracking.support_apply so t s) (by simp [set.ext_iff, prod.eq_iff_fst_eq_snd_eq])
+@[simp] lemma support_apply : (so i (t, s)).support = fst ⁻¹' (so.answer_query i t).support :=
+trans (is_tracking.support_apply so t s) (by simp [set.ext_iff, eq_iff_fst_eq_snd_eq])
+
+lemma image_fst_support_apply : fst '' (so i (t, s)).support = (so.answer_query i t).support :=
+begin
+  haveI : unique S := is_stateless.state_unique so,
+  simp [is_stateless.support_apply, set.ext_iff, unique.exists_iff],
+end
 
 @[simp] lemma fin_support_apply : (so i (t, s)).fin_support =
-  (so.answer_query i t).fin_support.preimage prod.fst
-    (λ x hx y hy h, (prod.eq_iff_fst_eq_snd_eq.2 ⟨h, state_elim' so x.2 y.2⟩)) :=
+  (so.answer_query i t).fin_support.preimage fst
+    (λ x hx y hy h, (eq_iff_fst_eq_snd_eq.2 ⟨h, state_elim' so x.2 y.2⟩)) :=
 by rw [fin_support_eq_iff_support_eq_coe, support_apply, finset.coe_preimage,
   coe_fin_support_eq_support]
+
+lemma image_fst_fin_support_apply :
+  (so i (t, s)).fin_support.image fst = (so.answer_query i t).fin_support :=
+by rw [eq_fin_support_iff_coe_eq_support, finset.coe_image,
+  coe_fin_support_eq_support, image_fst_support_apply]
 
 @[simp] lemma eval_dist_apply : ⁅so i (t, s)⁆ =
   (⁅so.answer_query i t⁆ ×ₘ (pmf.pure so.default_state)) :=
@@ -106,11 +116,11 @@ end
 @[simp] lemma prob_output_apply (z : spec.range i × S) :
   ⁅= z | so i (t, s)⁆ = ⁅= z.1 | so.answer_query i t⁆ :=
 trans (is_tracking.prob_output_apply so t s z) (prob_event_eq_prob_output _ _
-  (prod.eq_iff_fst_eq_snd_eq.2 ⟨rfl, is_stateless.state_elim' so _ _⟩) (λ y hy hy',
-    (hy ((prod.eq_iff_fst_eq_snd_eq.1 hy').1)).elim))
+  (eq_iff_fst_eq_snd_eq.2 ⟨rfl, is_stateless.state_elim' so _ _⟩) (λ y hy hy',
+    (hy ((eq_iff_fst_eq_snd_eq.1 hy').1)).elim))
 
-@[simp] lemma prob_event_apply (e : set (spec.range i × S)) : ⁅e | so i (t, s)⁆ =
-  ⁅prod.fst '' e | so.answer_query i t⁆ :=
+@[simp] lemma prob_event_apply (e : set (spec.range i × S)) :
+  ⁅e | so i (t, s)⁆ = ⁅fst '' e | so.answer_query i t⁆ :=
 begin
   haveI : unique S := is_stateless.state_unique so,
   refine trans (is_tracking.prob_event_apply so t s e) (prob_event_eq_of_mem_iff _ _ _ (λ u, _ )),
@@ -144,7 +154,7 @@ begin
   simp_rw_dist_equiv [map_return_dist_equiv', map_bind_dist_equiv, map_return_dist_equiv'],
   refine trans (dist_equiv_of_eq (simulate_eq_default_simulate so oa s)) _,
   refine symm (bind_dist_equiv_left _ _ (λ z hz, _)),
-  simp only [prod.eq_iff_fst_eq_snd_eq, return_dist_equiv_return_iff', eq_self_iff_true,
+  simp only [eq_iff_fst_eq_snd_eq, return_dist_equiv_return_iff', eq_self_iff_true,
     default_state_eq_iff_true, and_self],
 end
 
@@ -202,12 +212,12 @@ end
 
 lemma prob_event_simulate_eq_prob_output
   (h : ∀ i t u, ⁅= u | so.answer_query i t⁆ = (fintype.card (spec.range i))⁻¹)
-  (e : set (α × S)) : ⁅e | simulate so oa s⁆ = ⁅prod.fst '' e | oa⁆ :=
+  (e : set (α × S)) : ⁅e | simulate so oa s⁆ = ⁅fst '' e | oa⁆ :=
 begin
   haveI : unique S := state_unique so,
   refine trans ((simulate_dist_equiv_self so oa s (λ i t, dist_equiv.ext
     (λ u, (h i t u).trans (prob_output_query_eq_inv i t u).symm))).prob_event_eq e) _,
-  have : e = (prod.fst '' e) ×ˢ {so.default_state},
+  have : e = (fst '' e) ×ˢ {so.default_state},
   { refine set.ext (λ z, z.rec_on (λ x y, _)),
     simp [state_elim' so y default, unique.exists_iff] },
   rw [this, prob_event_mprod_eq_mul, set.fst_image_prod _ (set.singleton_nonempty _),
@@ -218,18 +228,57 @@ end simulate_idem
 
 section simulate_eq_simulate
 
-
 variables [hso : so.is_stateless] [hso' : so'.is_stateless]
-  {i : spec.ι} (t : spec.domain i) (oa : oracle_comp spec α) (s : S) (s' : S')
+  {i : spec.ι} (t : spec.domain i) (oa : oracle_comp spec α) (s s' : S)
 include hso hso'
 
+/-- If two stateless oracles have equivalent `answer_query` functions, then simulating
+with either of them will give equivalent computations. -/
 lemma simulate_dist_equiv_simulate
-  (h : ∀ i t,  so.answer_query i t ≃ₚ so'.answer_query i t) :
-  simulate so oa s ≃ₚ simulate so' oa s :=
+  (h : ∀ i t, so.answer_query i t ≃ₚ so'.answer_query i t) :
+  simulate so oa s ≃ₚ simulate so' oa s' :=
 begin
-  sorry,
+  rw [is_stateless.state_elim' so s' s],
+  haveI : subsingleton S := hso.state_subsingleton,
+  rw_dist_equiv [simulate_dist_equiv_of_subsingleton so oa s,
+    simulate_dist_equiv_of_subsingleton so' oa s,
+    is_tracking.simulate'_dist_equiv_simulate' so so' oa s s h],
 end
 
+lemma support_simulate_eq_support_simulate
+  (h : ∀ i t, (so.answer_query i t).support = (so'.answer_query i t).support) :
+  (simulate so oa s).support = (simulate so' oa s').support :=
+begin
+  haveI : subsingleton S := hso.state_subsingleton,
+  apply support_simulate_eq_support_simulate_of_subsingleton,
+  simp only [image_fst_support_apply, h, eq_self_iff_true, forall_2_true_iff],
+end
+
+lemma fin_support_simulate_eq_fin_support_simulate
+  (h : ∀ i t, (so.answer_query i t).fin_support = (so'.answer_query i t).fin_support) :
+  (simulate so oa s).fin_support = (simulate so' oa s').fin_support :=
+begin
+  rw [fin_support_eq_fin_support_iff_support_eq_support],
+  refine support_simulate_eq_support_simulate so so' _ _ _ (λ i t, _),
+  exact (fin_support_eq_fin_support_iff_support_eq_support _ _).1 (h i t),
+end
+
+lemma eval_dist_simulate_eq_eval_dist_simulate
+  (h : ∀ i t, ⁅so.answer_query i t⁆ = ⁅so'.answer_query i t⁆) :
+  ⁅simulate so oa s⁆ = ⁅simulate so' oa s'⁆ :=
+simulate_dist_equiv_simulate so so' oa s s' h
+
+lemma prob_output_simulate_eq_prob_output_simulate
+  (h : ∀ i t u, ⁅= u | so.answer_query i t⁆ = ⁅= u | so'.answer_query i t⁆)
+  (z : α × S) : ⁅= z | simulate so oa s⁆ = ⁅= z | simulate so' oa s'⁆ :=
+by simp_rw [prob_output.def, eval_dist_simulate_eq_eval_dist_simulate so so' oa s s'
+  (λ i t, dist_equiv.ext (λ u, h i t u))]
+
+lemma prob_event_simulate_eq_prob_event_simulate
+  (h : ∀ i t u, ⁅= u | so.answer_query i t⁆ = ⁅= u | so'.answer_query i t⁆)
+  (e : set (α × S)) : ⁅e | simulate so oa s⁆ = ⁅e | simulate so' oa s'⁆ :=
+by simp_rw [prob_event.def, eval_dist_simulate_eq_eval_dist_simulate so so' oa s s'
+  (λ i t, dist_equiv.ext (λ u, h i t u))]
 
 end simulate_eq_simulate
 
@@ -237,15 +286,14 @@ end is_stateless
 
 end sim_oracle
 
-
 /-- Simulate a computation without making use of the internal state.
-  We use the `unit` type as the state in this case, so all possible states are equal.
-  Implemented as a `tracking_oracle` where the state isn't actually tracking anything -/
+We use the `unit` type as the state in this case, so all possible states are equal.
+We avoid making this a special case of `tracking_oracle` to give better equalities for
+`answer_query`, as otherwise many equalities hold only distributionally. -/
 def stateless_oracle (query_f : Π (i : spec.ι), spec.domain i → oracle_comp spec' (spec.range i)) :
   sim_oracle spec spec' unit :=
 { default_state := (),
   o := λ i ⟨t, s⟩, query_f i t ×ₘ return () }
--- ⟪query_f | λ _ _ _ _, (), ()⟫
 
 notation `⟪` query_f `⟫` := stateless_oracle query_f
 
@@ -262,12 +310,12 @@ variables {i : spec.ι} (t : spec.domain i) (s : unit) (u : spec.range i)
 
 lemma apply_eq : ⟪query_f⟫ i (t, s) = (query_f i t ×ₘ return ()) := rfl
 
-lemma answer_query_eq : ⟪query_f⟫.answer_query i t = prod.fst <$> (query_f i t ×ₘ return ()) := rfl
+lemma answer_query_eq : ⟪query_f⟫.answer_query i t = fst <$> (query_f i t ×ₘ return ()) := rfl
 
 lemma update_state_eq : ⟪query_f⟫.update_state s i t u = () := rfl
 
-lemma answer_query_dist_equiv : ⟪query_f⟫.answer_query i t ≃ₚ query_f i t :=
-by pairwise_dist_equiv
+lemma answer_query_dist_equiv :
+  ⟪query_f⟫.answer_query i t ≃ₚ query_f i t := by pairwise_dist_equiv
 
 @[simp] lemma support_answer_query :
   (⟪query_f⟫.answer_query i t).support = (query_f i t).support := by pairwise_dist_equiv
@@ -286,72 +334,11 @@ by pairwise_dist_equiv
 
 end stateless_oracle
 
--- More lemmas we can prove about `tracking_oracle` with the definition of the `stateless_oracle`
--- namespace tracking_oracle
-
--- -- variables (oa : oracle_comp spec α)
--- --   (o : Π (i : spec.ι), spec.domain i → oracle_comp spec' (spec.range i))
--- --   (o' : Π (i : spec.ι), spec.domain i → oracle_comp spec'' (spec.range i))
--- --   (i : spec.ι) (t : spec.domain i) (s s' : unit) (u : spec.range i)
--- --   (x : spec.domain i × unit) (y : spec.range i × unit)
-
-
--- variables
---   (update_state update_state': Π (s : S) (i : spec.ι), spec.domain i → spec.range i → S)
---   (default_state default_state' s s' : S) (oa : oracle_comp spec α)
-
--- section support
-
--- /-- The first output with a tracking oracle is independent of any of the tracking state -/
--- lemma support_simulate'_eq_support_simulate'_stateless_oracle :
---   (simulate' ⟪o | update_state, default_state⟫ oa s).support = (simulate' ⟪o⟫ oa ()).support :=
--- begin
---   sorry
---   -- unfold stateless_oracle,
---   -- refine support_simulate'_eq_of_oracle_eq o update_state (λ _ _ _ _, ()) default_state _ oa s _
--- end
-
--- end support
-
--- section distribution_semantics
-
--- /-- The first output of a tracking oracle is equivalent to using just the stateless oracle -/
--- lemma simulate'_equiv_stateless_oracle :
---   simulate' ⟪o | update_state, default_state⟫ oa s ≃ₚ simulate' ⟪o⟫ oa () :=
--- begin
---   sorry
---   -- induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t generalizing s,
---   -- { simp },
---   -- { let so := ⟪o|update_state, default_state⟫,
---   --   calc simulate' so (oa >>= ob) s
---   --     ≃ₚ (simulate so oa s) >>= (λ x, simulate' so (ob x.1) x.2) :
---               --simulate'_bind_equiv so oa ob s
---   --     ... ≃ₚ (simulate so oa s) >>= (λ x, simulate' ⟪o⟫ (ob x.1) ()) :
---   --       bind_equiv_of_equiv_second _ (λ a, (hob a.1 a.2))
---   --     ... ≃ₚ (simulate' so oa s) >>= (λ x, simulate' ⟪o⟫ (ob x) ()) : by erw [bind_map_equiv]
---   --     ... ≃ₚ (simulate' ⟪o⟫ oa ()) >>= (λ x, simulate' ⟪o⟫ (ob x) ()) :
---   --       bind_equiv_of_equiv_first _ (hoa _)
---   --     ... ≃ₚ (simulate ⟪o⟫ oa ()) >>= (λ x, simulate' ⟪o⟫ (ob x.1) ()) : by erw [bind_map_equiv]
---   --     ... ≃ₚ (simulate ⟪o⟫ oa ()) >>= (λ x, simulate' ⟪o⟫ (ob x.1) x.2) :
---   --       by { congr, ext x, rw [punit_eq () x.2] }
---   --     ... ≃ₚ simulate' ⟪o⟫ (oa >>= ob) () : by rw [simulate'_bind_equiv] },
---   -- { simp_rw [simulate'_query_equiv, apply_eq, stateless_oracle.apply_eq, map_bind_equiv],
---   --   refine bind_equiv_of_equiv_second (o i t) _,
---   --   simp only [map_pure_equiv, eq_self_iff_true, forall_const] }
--- end
-
--- /-- The first ouptput of a tracking oracle is indepenedent of the actual tracking functions
--- TODO: `so.answer_query i t ≃ₚ so'.answer_query i t` -/
--- lemma simulate'_equiv_of_equiv (h : ∀ i t, o i t ≃ₚ o' i t) :
---   simulate' ⟪o | update_state, default_state⟫ oa s ≃ₚ
---     simulate' ⟪o' | update_state', default_state'⟫ oa s' :=
--- calc simulate' ⟪o | update_state, default_state⟫ oa s
---   ≃ₚ simulate' ⟪o⟫ oa () : simulate'_equiv_stateless_oracle o update_state default_state s oa
---   ... ≃ₚ simulate' ⟪o'⟫ oa () :
---     sorry --stateless_oracle.eval_dist_simulate'_eq_eval_dist_simulate' _ _ _ _ _ h
---   ... ≃ₚ simulate' ⟪o' | update_state', default_state'⟫ oa s' :
---     symm (simulate'_equiv_stateless_oracle o' update_state' default_state' _ _)
-
--- end distribution_semantics
-
--- end tracking_oracle
+/-- Taking just the first result of simulating a computation with a `tracking_oracle` gives an
+equivalent result to simulating with the corresponding `stateless_oracle`. -/
+@[pairwise_dist_equiv]
+lemma tracking_oracle.simulate'_dist_equiv_simulate'_stateless_oracle
+  (state_f : Π (s : S) (i : spec.ι), spec.domain i → spec.range i → S)
+  (default_state : S) (oa : oracle_comp spec α) (s : S) (s' : unit) :
+  simulate' ⟪query_f | state_f, default_state⟫ oa s ≃ₚ simulate' ⟪query_f⟫ oa s' :=
+is_tracking.simulate'_dist_equiv_simulate' _ _ oa s s' (λ i t, by pairwise_dist_equiv)
