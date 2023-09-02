@@ -54,16 +54,16 @@ def hhs_signature (G X M : Type) (n : ℕ) [fintype G] [fintype X] [inhabited G]
   [algorithmic_homogenous_space G X] : signature :=
 { M := M, PK := X × X, SK := G, S := vector (G × bool) n,
   gen := λ _,
-  do {x₀ ←$ᵗ X, sk ←$ᵗ G,
-      return ((x₀, sk +ᵥ x₀), sk)},
+    do {x₀ ←$ᵗ X, sk ←$ᵗ G,
+        return ((x₀, sk +ᵥ x₀), sk)},
   sign := λ ⟨⟨x₀, pk⟩, sk, m⟩,
-  do {(cs : vector G n) ← repeat ($ᵗ G) n,
-      (ys : vector X n) ← return (cs.map (λ c, c +ᵥ pk)),
-      (h : vector bool n) ← query₂ () (ys, m),
-      return (zip_commits_with_hash cs h sk)},
+    do {(cs : vector G n) ← repeat ($ᵗ G) n,
+        (ys : vector X n) ← return (cs.map (λ c, c +ᵥ pk)),
+        (h : vector bool n) ← query₂ () (ys, m),
+        return (zip_commits_with_hash cs h sk)},
   verify := λ ⟨⟨x₀, pk⟩, m, σ⟩,
-  do {(h : vector bool n) ← query₂ () (retrieve_commits x₀ pk σ, m),
-      return (h = σ.map prod.snd)},
+    do {(h : vector bool n) ← query₂ () (retrieve_commits x₀ pk σ, m),
+        return (h = σ.map prod.snd)},
   random_oracle_spec := (vector X n × M) ↦ₒ vector bool n,
   decidable_eq_M := by apply_instance,
   decidable_eq_S := by apply_instance,
@@ -145,7 +145,7 @@ end
 /-- Sign always returns valid signatures, in terms of the final random oracle state. -/
 lemma is_valid_signature_of_mem_support_sign (x₀ pk : X) (sk : G) (m : M)
   (σ : vector (G × bool) n) (cache : query_cache ((vector X n × M) ↦ₒ vector bool n))
-  (h : (σ, (), cache) ∈ (default_simulate (idₛ ++ₛ randomₛₒ) $
+  (h : (σ, (), cache) ∈ (default_simulate (idₛₒ ++ₛ randomₛₒ) $
     (hhs_signature G X M n).sign ((x₀, pk), sk, m)).support) :
   is_valid_signature x₀ pk m σ cache :=
 begin
@@ -156,7 +156,7 @@ end
 assuming the state is initialized with that cache. -/
 lemma support_verify_of_is_valid_signature (x₀ pk : X) (m : M)
   (σ : vector (G × bool) n) (cache : query_cache ((vector X n × M) ↦ₒ vector bool n))
-  (h : is_valid_signature x₀ pk m σ cache) : (simulate (idₛ ++ₛ randomₛₒ)
+  (h : is_valid_signature x₀ pk m σ cache) : (simulate (idₛₒ ++ₛ randomₛₒ)
     ((hhs_signature G X M n).verify ((x₀, pk), m, σ)) ((), cache)).support = {(tt, (), cache)} :=
 begin
   sorry
@@ -215,7 +215,7 @@ section mock_signing_reduction
 /-- Fake the signing oracle, and force a query corresponding to adversary's result. -/
 def mock_signing_reduction (adversary : (hhs_signature G X M n).unforgeable_adversary)
   (x₀ pk : X) : oracle_comp (hhs_signature G X M n).base_oracle_spec (M × vector (G × bool) n) :=
-do{ ⟨m, σ⟩ ← default_simulate' (idₛ ++ₛ mock_signing_oracle x₀ pk) (adversary.run (x₀, pk)),
+do{ ⟨m, σ⟩ ← default_simulate' (idₛₒ ++ₛ mock_signing_oracle x₀ pk) (adversary.run (x₀, pk)),
     _ ← query₂ () (retrieve_commits x₀ pk σ, m), -- force a query to the final output
     return (m, σ) }
 
@@ -223,7 +223,7 @@ do{ ⟨m, σ⟩ ← default_simulate' (idₛ ++ₛ mock_signing_oracle x₀ pk) 
 def simulate_mock_signing_reduction (pk x₀ : X) :
   oracle_comp uniform_selecting (M × vector (G × bool) n ×
     query_cache (hhs_signature G X M n).random_oracle_spec) :=
-do{ ⟨⟨m, σ⟩, (), cache⟩ ← default_simulate (idₛ ++ₛ randomₛₒ)
+do{ ⟨⟨m, σ⟩, (), cache⟩ ← default_simulate (idₛₒ ++ₛ randomₛₒ)
       (mock_signing_reduction adversary x₀ pk),
     return (m, σ, cache) }
 

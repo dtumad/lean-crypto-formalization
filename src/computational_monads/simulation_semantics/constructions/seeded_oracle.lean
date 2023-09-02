@@ -26,13 +26,17 @@ open oracle_comp oracle_spec
 
 variables {spec spec' spec'' : oracle_spec} {α β γ : Type}
 
-/-- Use the first element of the `seed` as the query result if inputs match.
-  If the query values don't match then throw away the seed as computation has diverged.
-  Using this with a log from a previous computation ensures they behave identically. -/
-def seededₛₒ {spec : oracle_spec} : sim_oracle spec spec (spec.query_seed) :=
+/-- Run a computation by using a `query_seed` to answer queries when possible, and making new
+queries if there isn't a seed value. If the `query_seed` comes from executing `generate_seed`
+then this will give a computation distributionally equivalent to the original computation. -/
+def seeded_oracle (spec : oracle_spec) : sim_oracle spec spec (spec.query_seed) :=
 { o := λ i x, indexed_list.get_or_else x.2 i (query i x.1),
   default_state := ∅ }
 
-namespace seededₛₒ
+notation `seededₛₒ` := seeded_oracle _
 
-end seededₛₒ
+namespace seeded_oracle
+
+-- TODO
+
+end seeded_oracle

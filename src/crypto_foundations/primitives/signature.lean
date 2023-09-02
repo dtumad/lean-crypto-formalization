@@ -84,7 +84,7 @@ section oracle_spec
 random oracle and preserving the `uniform_selecting` oracle as is. -/
 noncomputable def base_oracle (sig : signature) :
   sim_oracle sig.base_oracle_spec uniform_selecting (query_cache sig.random_oracle_spec) :=
-sim_oracle.mask_state (idₛ ++ₛ randomₛₒ)
+sim_oracle.mask_state (idₛₒ ++ₛ randomₛₒ)
   (equiv.punit_prod (query_cache sig.random_oracle_spec))
 
 /-- A signing oracle corresponding to a given signature scheme -/
@@ -189,7 +189,7 @@ Runs the adversary with a signing oracle based on the provided public/secret key
  -/
 def simulate (pk : sig.PK) (sk : sig.SK) :
   oracle_comp sig.base_oracle_spec (sig.M × sig.S × query_cache (sig.M ↦ₒ sig.S)) :=
-do{ ((m, s), _, log) ← (default_simulate (idₛ ++ₛ signing_oracle sig pk sk) (adversary.run pk)),
+do{ ((m, s), _, log) ← (default_simulate (idₛₒ ++ₛ signing_oracle sig pk sk) (adversary.run pk)),
     return (m, s, log) }
 
 /-- Experiement for testing if a signature scheme is unforgeable.
@@ -197,12 +197,12 @@ do{ ((m, s), _, log) ← (default_simulate (idₛ ++ₛ signing_oracle sig pk sk
   Adversary succeeds if the signature verifies and the message hasn't been queried -/
 noncomputable def experiment (sig : signature) (adversary : unforgeable_adversary sig) :
   oracle_comp uniform_selecting bool :=
-default_simulate' (idₛ ++ₛ randomₛₒ)
-(do { (pk, sk) ← sig.gen (),
-      (m, σ, cache) ← adversary.simulate pk sk,
-      b ← sig.verify (pk, m, σ),
-      m' : (sig.M ↦ₒ sig.S).domain () ← return m,
-      return (if m' ∉ᵢ cache then b else ff) })
+default_simulate' (idₛₒ ++ₛ randomₛₒ)
+(do {(pk, sk) ← sig.gen (),
+  (m, σ, cache) ← adversary.simulate pk sk,
+  b ← sig.verify (pk, m, σ),
+  m' : (sig.M ↦ₒ sig.S).domain () ← return m,
+  return (if m' ∉ᵢ cache then b else ff)})
 
 /-- Adversaries success at forging a signature. -/
 noncomputable def advantage {sig : signature} (adversary : unforgeable_adversary sig) : ℝ≥0∞ :=

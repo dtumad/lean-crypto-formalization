@@ -199,7 +199,7 @@ def tracking_oracle (query_f : Π (i : spec.ι), spec.domain i → oracle_comp s
 notation `⟪` query_f `|` state_f `,` default_state `⟫` :=
   tracking_oracle query_f state_f default_state
 
-instance tacking_oracle.is_tracking
+instance tracking_oracle.is_tracking
   (query_f : Π (i : spec.ι), spec.domain i → oracle_comp spec' (spec.range i))
   (state_f : Π (s : S) (i : spec.ι), spec.domain i → spec.range i → S)
   (default_state : S) : ⟪query_f | state_f, default_state⟫.is_tracking :=

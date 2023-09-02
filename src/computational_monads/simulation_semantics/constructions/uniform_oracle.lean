@@ -18,15 +18,17 @@ open_locale ennreal big_operators
 
 variables {α β : Type} {spec : oracle_spec}
 
-noncomputable def uniformₛₒ {spec : oracle_spec} :
+noncomputable def uniform_oracle (spec : oracle_spec) :
   sim_oracle spec uniform_selecting unit := ⟪λ i t, $ᵗ (spec.range i)⟫
 
-lemma uniformₛₒ.def (spec : oracle_spec) : uniformₛₒ = ⟪λ i t, $ᵗ (spec.range i)⟫ := rfl
+notation `uniformₛₒ` := uniform_oracle _
 
-noncomputable instance uniformₛₒ.is_stateless :
-  sim_oracle.is_stateless (@uniformₛₒ spec) := stateless_oracle.is_stateless _
+lemma uniform_oracle.def (spec : oracle_spec) : uniformₛₒ = ⟪λ i t, $ᵗ (spec.range i)⟫ := rfl
 
-namespace uniformₛₒ
+noncomputable instance uniform_oracle.is_stateless : (uniform_oracle spec).is_stateless :=
+stateless_oracle.is_stateless _
+
+namespace uniform_oracle
 
 open sim_oracle
 
@@ -35,17 +37,17 @@ variables (oa : oracle_comp spec α) (i : spec.ι) (t : spec.domain i) (s : unit
 @[simp] lemma apply_eq : uniformₛₒ i (t, s) = ($ᵗ (spec.range i) ×ₘ return ()) := rfl
 
 @[pairwise_dist_equiv]
-lemma answer_query_dist_equiv : uniformₛₒ.answer_query i t ≃ₚ $ᵗ (spec.range i) :=
+lemma answer_query_dist_equiv : (uniform_oracle spec).answer_query i t ≃ₚ $ᵗ (spec.range i) :=
 stateless_oracle.answer_query_dist_equiv _ _
 
-lemma update_state_eq : uniformₛₒ.update_state s i t u = () := subsingleton.elim _ _
+lemma update_state_eq : (uniform_oracle spec).update_state s i t u = () := subsingleton.elim _ _
 
 section answer_query
 
-@[simp] lemma support_answer_query : (uniformₛₒ.answer_query i t).support = set.univ :=
+@[simp] lemma support_answer_query : ((uniform_oracle spec).answer_query i t).support = set.univ :=
 trans ((answer_query_dist_equiv i t).support_eq) (support_uniform_select_fintype _)
 
-@[simp] lemma fin_support_answer_query : (uniformₛₒ.answer_query i t).fin_support = finset.univ :=
+@[simp] lemma fin_support_answer_query : ((uniform_oracle spec).answer_query i t).fin_support = finset.univ :=
 by rw [fin_support_eq_iff_support_eq_coe, finset.coe_univ, support_answer_query]
 
 end answer_query
@@ -128,4 +130,4 @@ calc ⁅e | uniformₛₒ i (t, s)⁆
 
 end prob_event
 
-end uniformₛₒ
+end uniform_oracle

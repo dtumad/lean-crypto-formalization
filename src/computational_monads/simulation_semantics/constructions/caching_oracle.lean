@@ -30,11 +30,13 @@ variables {α β γ δ : Type} {spec spec' : oracle_spec}
 
 /-- Oracle for tracking previous queries, and returning the same value for matching inputs.
 The `query_cache.get_or_else` function allows us to run a fallback for non-cached values. -/
-def cachingₛₒ {spec : oracle_spec} : sim_oracle spec spec (query_cache spec) :=
+def caching_oracle (spec : oracle_spec) : sim_oracle spec spec (query_cache spec) :=
 { default_state := ∅,
   o := λ i ⟨t, cache⟩, cache.get_or_else i t (query i t) }
 
-namespace cachingₛₒ
+notation `cachingₛₒ` := caching_oracle _
+
+namespace caching_oracle
 
 section apply
 
@@ -266,7 +268,7 @@ begin
   {
     intros y hy,
     simp_rw [mem_support_simulate'_iff_exists_state,
-      cachingₛₒ.mem_support_simulate_bind_iff] at hy,
+      caching_oracle.mem_support_simulate_bind_iff] at hy,
 
     obtain ⟨s₁, hx⟩ := hy,
     obtain ⟨x, hxy⟩ := exists_of_exists_unique hx,
@@ -344,7 +346,7 @@ begin
   from (mem_support_simulate_bind_iff' _ _ _ _ _).2 ⟨y, hy, hz⟩,
   rw [simulate_bind, prob_output_bind_eq_tsum],
   refine tsum_eq_single y (λ y' hy', by_contra (λ h, hy' (unique_of_exists_unique
-    ((cachingₛₒ.mem_support_simulate_bind_iff _ _ _ _).1 this) _ ⟨hy, hz⟩))),
+    ((caching_oracle.mem_support_simulate_bind_iff _ _ _ _).1 this) _ ⟨hy, hz⟩))),
   simpa only [← prob_output_ne_zero_iff, ne.def, ← not_or_distrib, ← mul_eq_zero] using h,
 end
 
@@ -384,7 +386,7 @@ begin
       extra_cache_choices_self, algebra_map.coe_one, inv_one],
   },
   {
-    rw [cachingₛₒ.mem_support_simulate_bind_iff] at hz,
+    rw [caching_oracle.mem_support_simulate_bind_iff] at hz,
     obtain ⟨y, hy, hyz⟩ := exists_of_exists_unique hz,
     rw [prob_output_simulate_bind_of_mem_support _ _ _ hy hyz, hoa hy, hob y.1 hyz,
       ← ennreal.mul_inv (or.inr (ennreal.nat_ne_top _)) ((or.inl (ennreal.nat_ne_top _))),
@@ -648,4 +650,4 @@ calc ⁅= x | simulate' cachingₛₒ oa s₀⁆ ^ 2 =
   z' ← simulate cachingₛₒ oa (f z), return (z.1, z'.1)}⁆ : sorry
 
 
-end cachingₛₒ
+end caching_oracle

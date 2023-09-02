@@ -9,18 +9,27 @@ import computational_monads.simulation_semantics.is_tracking
 /-!
 # Logging Oracles
 
-This file defines a `loggingₛₒ` for simulating a computation while logging all queries.
-The implementation is as a `tracking_oracle`, using a `query_log` as the internal state to
-log the input and output of each query.
+This file defines a tracking oracle `logging_oracle` for logging all queries during execution.
+The implementation is as a `tracking_oracle`, using a `query_log` as the internal state,
+preserving the original query calls for the actual oracle responses.
 -/
 
 open oracle_comp oracle_spec
 
-variables {α β γ : Type} {spec spec' spec'' : oracle_spec}
+variables {α β γ : Type} {spec : oracle_spec}
 
-def loggingₛₒ {spec : oracle_spec} : sim_oracle spec spec (query_log spec) :=
-⟪query | λ i t u, query_log.log_query i t u, query_log.init spec⟫
+/-- Simulation oracle for logging the queries made during the computation,
+tracked via a `query_log`, whithout modifying the query calls themselves. -/
+def logging_oracle (spec : oracle_spec) : sim_oracle spec spec (query_log spec) :=
+⟪query | query_log.log_query, ∅⟫
 
-namespace loggingₛₒ
+notation `loggingₛₒ` := logging_oracle _
 
-end loggingₛₒ
+instance logging_oracle.is_tracking : (logging_oracle spec).is_tracking :=
+tracking_oracle.is_tracking query query_log.log_query ∅
+
+namespace logging_oracle
+
+-- TODO
+
+end logging_oracle
