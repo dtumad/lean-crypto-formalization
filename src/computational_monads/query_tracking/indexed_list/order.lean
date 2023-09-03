@@ -62,6 +62,26 @@ protected def inf_aux [decidable_eq α] : list α → list α → list α
 | (t :: ts) (t' :: ts') := if t = t' then t :: inf_aux ts ts' else []
 | _ _ := []
 
+@[simp] protected lemma inf_aux_nil_left [decidable_eq α] (ts : list α) :
+  indexed_list.inf_aux [] ts = [] := rfl
+
+@[simp] protected lemma inf_aux_nil_right [decidable_eq α] (ts : list α) :
+  indexed_list.inf_aux ts [] = [] := by cases ts; refl
+
+@[simp] protected lemma inf_aux_cons [decidable_eq α] (ts ts' : list α) (t t' : α) :
+  indexed_list.inf_aux (t :: ts) (t' :: ts') =
+    if t = t' then t :: indexed_list.inf_aux ts ts' else [] := rfl
+
+@[simp] protected lemma length_inf_aux_of_subsingleton [subsingleton α] (ts ts' : list α) :
+  (indexed_list.inf_aux ts ts').length = min ts.length ts'.length :=
+begin
+  induction ts with t ts h generalizing ts',
+  { simp },
+  { cases ts' with t' ts',
+    { simp } ,
+    { simp [h, min_add_add_right] } }
+end
+
 @[simp] protected lemma inf_aux_self [decidable_eq α] :
   Π (ts : list α), indexed_list.inf_aux ts ts = ts
 | (t :: ts) := by simp [indexed_list.inf_aux, inf_aux_self ts]
@@ -126,8 +146,11 @@ variables (il il' : spec.indexed_list τ)
 @[simp] lemma inf_empty : il ⊓ ∅ = ∅ := inf_bot_eq
 @[simp] lemma empty_inf : ∅ ⊓ il = ∅ := bot_inf_eq
 
-lemma active_oracles_inf : (il ⊓ il').active_oracles =
+@[simp] lemma active_oracles_inf : (il ⊓ il').active_oracles =
   {i ∈ il.active_oracles | (il i).nth 0 = (il' i).nth 0} := rfl
+
+@[simp] lemma inf_apply (i : spec.ι) : (il ⊓ il') i =
+  @indexed_list.inf_aux _ (classical.dec_eq _) (il i) (il' i) := rfl
 
 end semilattice_inf
 

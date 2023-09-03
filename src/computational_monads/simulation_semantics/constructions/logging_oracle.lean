@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
 import computational_monads.query_tracking.query_log.basic
-import computational_monads.simulation_semantics.is_tracking
+import computational_monads.simulation_semantics.constructions.counting_oracle
 
 /-!
 # Logging Oracles
@@ -63,5 +63,19 @@ by pairwise_dist_equiv
 by pairwise_dist_equiv
 
 end simulate'
+
+/-- Simulating with `countingₛₒ` is equivalent to simulating with `loggingₛₒ` and then
+reducing the final `query_log` to the associated `query_count` given by `to_query_count`. -/
+lemma map_to_query_count_dist_equiv (oa : oracle_comp spec α) (s : spec.query_log) :
+  prod.map id indexed_list.to_query_count <$> simulate loggingₛₒ oa s ≃ₚ
+    simulate countingₛₒ oa s :=
+begin
+  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t generalizing s,
+  { rw_dist_equiv [map_return_dist_equiv] },
+  { rw_dist_equiv [map_bind_dist_equiv, hob, symm (hoa _), bind_map_dist_equiv] },
+  { rw_dist_equiv [ dist_equiv_of_eq (logging_oracle.apply_eq _ _),
+      dist_equiv_of_eq (counting_oracle.apply_eq _ _), bind_map_dist_equiv],
+    refine map_dist_equiv_of_dist_equiv' (funext (λ u, by simp)) dist_equiv.rfl }
+end
 
 end logging_oracle

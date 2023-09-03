@@ -94,6 +94,8 @@ lemma prob_event_map_eq_tsum [decidable_pred (∈ e)] :
 
 end prob_event
 
+lemma map_dist_equiv_bind_return : f <$> oa ≃ₚ oa >>= (λ x, return (f x)) := dist_equiv.rfl
+
 lemma map_dist_equiv_of_dist_equiv {f g : α → β} {oa : oracle_comp spec α}
   {oa' : oracle_comp spec' α} (h : ∀ x ∈ oa.support, f x = g x) (h' : oa ≃ₚ oa') :
   f <$> oa ≃ₚ g <$> oa' :=

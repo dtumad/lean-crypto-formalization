@@ -178,7 +178,7 @@ noncomputable def generate (qc : spec.query_count) (oa : Π (i : spec.ι), oracl
   oracle_comp spec' (spec.indexed_list τ) :=
 generate_aux qc oa qc.active_oracles.to_list
 
-variables (qc : spec.query_count) (oa : Π (i : spec.ι), oracle_comp spec' (τ i))
+variables (qc qc' : spec.query_count) (oa : Π (i : spec.ι), oracle_comp spec' (τ i))
 
 lemma prob_output_generate (il : spec.indexed_list τ) (h : ↑il = qc) :
   ⁅= il | generate qc oa⁆ = ∏ j in il.active_oracles, ((il j).map ⁅oa j⁆).prod :=
@@ -192,5 +192,13 @@ lemma support_generate : (generate qc oa).support =
   {il | ↑il = qc ∧ ∀ i, (il i).all₂ (∈ (oa i).support)} :=
 by simp only [generate, support_generate_aux qc oa (finset.nodup_to_list _),
   finset.mem_to_list, sep_self]
+
+@[pairwise_dist_equiv]
+lemma generate_add_dist_equiv :
+  generate (qc + qc') oa ≃ₚ ((+) <$> generate qc oa <*> generate qc' oa) :=
+begin
+  refine dist_equiv.ext (λ il, _),
+  sorry,
+end
 
 end oracle_comp

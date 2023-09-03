@@ -22,6 +22,11 @@ open interactive interactive.types
 
 namespace oracle_comp
 
+/-- Structure to represent distributional equivalence rules.
+TODO: this could be used to add features such as reverse rewriting -/
+private meta structure d_eq_t :=
+(d_eq : pexpr) (exact_eq : bool) (symm : bool)
+
 /-- Check that an expression is a proof of the form `∀ x₁, ... ∀ xₙ, oa ≃ₚ oa'`. -/
 private meta def is_dist_equiv : expr → tactic bool
 | `(%%oa ≃ₚ %%oa') := return tt
@@ -36,12 +41,18 @@ private meta def rotate_to_dist_equiv : ℕ → tactic bool
     if b = tt then return tt else tactic.rotate 1 >> rotate_to_dist_equiv n
 
 /-- Try to apply the given expression to solve the goal, returning whether it succeeds or not. -/
-private meta def apply_dist_equiv (d_eq : pexpr) : tactic unit :=
-tactic.intros >> tactic.to_expr d_eq >>= tactic.apply >> return ()
+private meta def apply_dist_equiv (d_eq : d_eq_t) : tactic unit :=
+tactic.intros >> tactic.to_expr d_eq.d_eq >>= tactic.apply >> return ()
 
 /-- Try to apply the given expresion to rewrite the left hand side of an equivalence. -/
-private meta def apply_dist_equiv_trans (d_eq : pexpr) : tactic unit :=
+private meta def apply_dist_equiv_trans (d_eq : d_eq_t) : tactic unit :=
 do tactic.intros >> tactic.refine ``(dist_equiv.trans _ _),
+  (list.length <$> tactic.get_goals) >>= rotate_to_dist_equiv,
+  tactic.to_expr d_eq.d_eq >>= tactic.apply >> return ()
+
+/-- Try to apply the given expresion to rewrite the left hand side of an equivalence. -/
+private meta def apply_dist_eq_trans (d_eq : pexpr) : tactic unit :=
+do tactic.intros >> tactic.refine ``(dist_equiv.trans (dist_equiv_of_eq _) _),
   (list.length <$> tactic.get_goals) >>= rotate_to_dist_equiv,
   tactic.to_expr d_eq >>= tactic.apply >> return ()
 
@@ -50,10 +61,12 @@ stopping after applying it once withen the computation.
 If `fail_on_miss` is true it will throw an error if it doesn't make a rewrite.
 The additional boolean argument is whether it should also be applied symmetrically.
 Returns whether a `bool` representing if it made a rewrite somewhere. -/
-private meta def traverse_dist_equiv (d_eq : pexpr) : bool → bool → tactic bool :=
+private meta def traverse_dist_equiv (d_eq : d_eq_t) : bool → bool → tactic bool :=
 λ fail_on_miss check_symm,
   -- Try to solve the goal by applying the given expression directly.
   apply_dist_equiv_trans d_eq >> return tt <|>
+  -- Try to solve the goal by applying the given expression directly.
+  -- apply_dist_eq_trans d_eq >> return tt <|>
   -- Try to apply the expression to the left portion of the bind.
   do {tactic.refine ``(dist_equiv.trans (oracle_comp.bind_dist_equiv_bind_of_dist_equiv_left _ _)
     _), (list.length <$> tactic.get_goals) >>= rotate_to_dist_equiv,
@@ -68,9 +81,9 @@ private meta def traverse_dist_equiv (d_eq : pexpr) : bool → bool → tactic b
       >> tactic.refine ``(symm _) >> return tt) <|>
   -- Fail if none of the previous attempts worked
   if fail_on_miss = ff then return ff else
-    tactic.fail ("Failed to apply equivalence: " ++ (to_string d_eq))
+    tactic.fail ("Failed to apply equivalence: " ++ (to_string d_eq.d_eq))
 
-private meta def rec_rw_eqs (d_eq : pexpr) (fail_on_miss : bool) : ℕ → tactic unit
+private meta def rec_rw_eqs (d_eq : d_eq_t) (fail_on_miss : bool) : ℕ → tactic unit
 | 0 := return ()
 | (n + 1) := do {b ← traverse_dist_equiv d_eq fail_on_miss tt,
     if b = tt then rec_rw_eqs n <|> return () else return ()}
@@ -78,8 +91,9 @@ private meta def rec_rw_eqs (d_eq : pexpr) (fail_on_miss : bool) : ℕ → tacti
 /-- Loop through all the passed in equivalences, trying to apply them in order. -/
 private meta def apply_dist_equiv_list (fail_on_miss : bool) (iters : ℕ) : list pexpr → tactic unit
 | [] := tactic.reflexivity <|> return () -- Try to clear the final state with reflexive equality.
-| (d_eq :: d_eqs) := apply_dist_equiv d_eq <|> (rec_rw_eqs d_eq fail_on_miss iters
-    >> apply_dist_equiv_list d_eqs)
+| (d :: d_eqs) := return (d_eq_t.mk d ff ff) >>= λ d_eq,
+  (apply_dist_equiv d_eq <|> (rec_rw_eqs d_eq fail_on_miss iters
+    >> apply_dist_equiv_list d_eqs))
 
 /-- Tactic for reducing proofs of distributional equivalences between bind operations.
 This introduces goals for pairwise proofs of equivalences between each component.
@@ -143,6 +157,11 @@ by rw_dist_equiv [hoa]
 example (oa oa' : oracle_comp spec α) (ob ob' : α → oracle_comp spec β)
   (hoa : oa ≃ₚ oa') (hob : ∀ x, ob x ≃ₚ ob' x) : oa >>= ob ≃ₚ oa' >>= ob' :=
 by rw_dist_equiv [hoa, hob]
+
+-- /-- `rw_dist_equiv` should be able to work with e -/
+-- example (oa oa' : oracle_comp spec α) (ob ob' : α → oracle_comp spec β)
+--   (hoa : oa = oa') (hob : ∀ x, ob x = ob' x) : oa >>= ob ≃ₚ oa' >>= ob' :=
+-- by rw [hoa, hob]
 
 /-- `rw_dist_equiv` should be able to solve an equivalence between bind operations. -/
 example (oa oa' : oracle_comp spec α) (ob ob' : α → oracle_comp spec β)

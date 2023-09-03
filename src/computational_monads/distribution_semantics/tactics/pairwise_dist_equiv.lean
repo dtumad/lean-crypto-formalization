@@ -10,6 +10,8 @@ import computational_monads.distribution_semantics.tactics.by_dist_equiv
 
 This file defines a tactic `pairwise_dist_equiv` for working with and proving instances of
 `dist_equiv` between sequenced computations, by splitting the goal into line-by-line equivalences.
+
+TODO: Pass in custom names for new variables
 -/
 
 open interactive interactive.types
@@ -38,25 +40,17 @@ private meta def apply_dist_equivs : list pexpr → tactic unit
 /-- Destruct a distributional equivalence by recursively splitting equivalences between binds
 into multiple equivalences between their individual components.
 For other equivalences will defer to `pairwise_dist_equiv_base`. -/
-private meta def destruct_pairwise_dist_equiv (d_eq : list pexpr) : ℕ → expr → tactic unit
+private meta def destruct_pairwise_dist_equiv (d_eq : list pexpr)
+  (deep : bool) : ℕ → expr → tactic unit
 | (n + 1) `(%%oa >>= %%ob ≃ₚ %%oa' >>= %%ob') := do {
-  -- Check that the first components of each bind operation have the same type.
-  `(oracle_comp %%spec %%α) ← tactic.infer_type oa,
-  `(oracle_comp %%spec' %%α') ← tactic.infer_type oa',
-  tactic.unify α α', -- Will exit to the `pairwise_dist_equiv_base` below on failure.
   -- Split the goal into two seperate distributional equivalences.
   tactic.refine ``(oracle_comp.bind_dist_equiv_bind_of_dist_equiv _ _),
   -- Attempt to recursively solve the first equivalence.
   tactic.target >>= destruct_pairwise_dist_equiv n,
   -- Attempt to recursively solve the second equivalence
   tactic.intros >> tactic.target >>= destruct_pairwise_dist_equiv n
-  -- On failure, try to solve the equivalence without any recursion.
 } <|> refl_dist_equiv_base <|> apply_dist_equivs d_eq
 | (n + 1) `(%%f <$> %%oa ≃ₚ %%f' <$> %%oa') := do {
-  -- Check that the first components of each bind operation have the same type.
-  `(oracle_comp %%spec %%α) ← tactic.infer_type oa,
-  `(oracle_comp %%spec' %%α') ← tactic.infer_type oa',
-  tactic.unify α α', -- Will exit to the `pairwise_dist_equiv_base` below on failure.
   -- Split the goal into two seperate distributional equivalences.
   tactic.refine ``(oracle_comp.bind_dist_equiv_bind_of_dist_equiv _ _),
   -- Attempt to recursively solve the first equivalence.
@@ -65,15 +59,26 @@ private meta def destruct_pairwise_dist_equiv (d_eq : list pexpr) : ℕ → expr
   tactic.intros >> tactic.target >>= destruct_pairwise_dist_equiv n
   -- On failure, try to solve the equivalence without any recursion.
 } <|> refl_dist_equiv_base <|> apply_dist_equivs d_eq
-| _ _ := refl_dist_equiv_base <|> apply_dist_equivs d_eq
+| (n + 1) _ := if deep = ff then refl_dist_equiv_base <|> apply_dist_equivs d_eq else do {
+    tactic.refine ``(oracle_comp.bind_dist_equiv_bind_of_dist_equiv _ _),
+  -- Attempt to recursively solve the first equivalence.
+  tactic.target >>= destruct_pairwise_dist_equiv n,
+  -- Attempt to recursively solve the second equivalence
+  tactic.intros >> tactic.target >>= destruct_pairwise_dist_equiv n
+} <|> refl_dist_equiv_base <|> apply_dist_equivs d_eq
+| 0 _ := refl_dist_equiv_base <|> apply_dist_equivs d_eq
+
+meta def deep_flag : lean.parser bool := (lean.parser.tk "deep" *> return tt) <|> return ff
 
 /-- Tactic for reducing proofs of distributional equivalences between bind operations.
 This introduces goals for pairwise proofs of equivalences between each component.
 Attempts to discharge trivial goals using both `refl` and the given equivalences.
 Supports `dist_equiv`, `eval_dist`, `prob_event`, `support`, and `fin_support`,
-in each case trying to prove the goal by first proving a distributional equivalence. -/
-@[interactive] meta def pairwise_dist_equiv (opt_d_eqs : parse (optional (pexpr_list)))
-  (opt_depth : parse (optional (lean.parser.small_nat))) : tactic unit :=
+in each case trying to prove the goal by first proving a distributional equivalence.
+If `deep` is true then it will attempt to break things pairwise eagerly,
+even when the peices don't look like an equivalence between binds syntactically. -/
+private meta def pairwise_dist_equiv_aux (deep : bool)
+  (opt_d_eqs : option (list pexpr)) (opt_depth : option ℕ) : tactic unit :=
 do g ← tactic.target,
   passed_d_eqs ← return (opt_d_eqs.get_or_else []),
   passed_depth ← return (opt_depth.get_or_else 100),
@@ -81,7 +86,15 @@ do g ← tactic.target,
   tagged_d_eqs' ← get_pairwise_dist_equiv_lemmas,
   d_eqs ← return (passed_d_eqs ++ tagged_d_eqs ++ tagged_d_eqs'),
   by_dist_equiv,
-  tactic.target >>= destruct_pairwise_dist_equiv d_eqs passed_depth
+  tactic.target >>= destruct_pairwise_dist_equiv d_eqs deep passed_depth
+
+@[interactive] meta def pairwise_dist_equiv (opt_d_eqs : parse (optional (pexpr_list)))
+  (opt_depth : parse (optional (lean.parser.small_nat))) : tactic unit :=
+do pairwise_dist_equiv_aux ff opt_d_eqs opt_depth
+
+@[interactive] meta def pairwise_dist_equiv_deep (opt_d_eqs : parse (optional (pexpr_list)))
+  (opt_depth : parse (optional (lean.parser.small_nat))) : tactic unit :=
+do pairwise_dist_equiv_aux tt opt_d_eqs opt_depth
 
 end oracle_comp
 
@@ -135,6 +148,18 @@ begin
   pairwise_dist_equiv [],
   apply h, apply h', apply h'',
 end
+
+/-- `pairwise_dist_equiv` should break equivalences eagerly if the deep flag is set -/
+example (oa oa' : oracle_comp spec α) (ob ob' : α → oracle_comp spec β)
+  (h : oa ≃ₚ oa') (h' : ∀ a, ob a ≃ₚ ob' a) : oa >>= ob ≃ₚ oa' >>= ob' :=
+begin
+  let oc := oa >>= ob,
+  let oc' := oa' >>= ob',
+  show oc ≃ₚ oc',
+  pairwise_dist_equiv [h, h'], -- Shouldn't work without deep evaluation.
+  pairwise_dist_equiv_deep [h, h'], -- Works with deep evaluation.
+end
+
 
 /-- If two bind operations have mismatched intermediate types, but there is an existing equivalence
 between the two, then `pairwise_dist_equiv` should be able to solve without error. -/

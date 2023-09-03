@@ -93,6 +93,7 @@ end sup
 
 section inf
 
+/-- The `active_oracles` of `inf` can be simplified further for `query_count`. -/
 @[simp] lemma active_oracles_inf : (qc ⊓ qc').active_oracles =
   qc.active_oracles ⊓ qc'.active_oracles :=
 begin
@@ -103,11 +104,12 @@ begin
     in hu.symm.trans (trans (option.some_inj.2 (punit_eq _ _)) hu')⟩,
 end
 
+/-- We can explicitly express `get_count` of `inf` when the inputs are `query_count`s -/
 @[simp] lemma get_count_inf (i : spec.ι) : (qc ⊓ qc').get_count i =
   min (qc.get_count i) (qc'.get_count i) :=
 begin
   simp [get_count_eq_length_apply],
-  sorry,
+  convert indexed_list.length_inf_aux_of_subsingleton (qc i) (qc' i),
 end
 
 end inf
