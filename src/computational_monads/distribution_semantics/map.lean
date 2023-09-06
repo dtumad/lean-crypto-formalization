@@ -335,6 +335,26 @@ prob_output_map_eq_single' oa f x (f x) rfl (λ x' hx' hxf, hf hxf)
 
 end eq_single
 
+section cancel
+
+@[simp] lemma prob_output_map_mul_right [has_mul α] [is_right_cancel_mul α]
+  (x : α) : ⁅= (*) x | (*) <$> oa⁆ = ⁅= x | oa⁆ :=
+prob_output_map_of_injective oa (*) x (λ y y' hg, (mul_left_inj x).1 (congr_fun hg x))
+
+@[simp] lemma prob_output_map_mul_left [has_mul α] [is_left_cancel_mul α]
+  (x : α) : ⁅= (* x) | (λ y, (* y)) <$> oa⁆ = ⁅= x | oa⁆ :=
+prob_output_map_of_injective oa _ x (λ y y' hg, (mul_right_inj x).1 (congr_fun hg x))
+
+@[simp] lemma prob_output_map_add_right [has_add α] [is_right_cancel_add α]
+  (x : α) : ⁅= (+) x | (+) <$> oa⁆ = ⁅= x | oa⁆ :=
+prob_output_map_of_injective oa (+) x (λ y y' hg, (add_left_inj x).1 (congr_fun hg x))
+
+@[simp] lemma prob_output_map_add_left [has_add α] [is_left_cancel_add α]
+  (x : α) : ⁅= (+ x) | (λ y, (+ y)) <$> oa⁆ = ⁅= x | oa⁆ :=
+prob_output_map_of_injective oa _ x (λ y y' hg, (add_right_inj x).1 (congr_fun hg x))
+
+end cancel
+
 lemma prob_output_bind_map_eq_mul (f : α → β → γ) (g1 : γ → α) (g2 : γ → β)
   (h : ∀ x ∈ oa.support, ∀ y ∈ (ob x).support, ∀ z, f x y = z ↔ g1 z = x ∧ g2 z = y) (z : γ) :
   ⁅= z | oa >>= λ a, f a <$> ob a⁆ = ⁅= g1 z | oa⁆ * ⁅= g2 z | ob (g1 z)⁆ :=

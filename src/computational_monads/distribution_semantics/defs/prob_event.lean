@@ -60,13 +60,17 @@ pmf.to_outer_measure_mono ⁅oa⁆ (by simpa only [support_eval_dist])
 lemma prob_event_mono' {e e'} (h : e ⊆ e') : ⁅e | oa⁆ ≤ ⁅e' | oa⁆ :=
 prob_event_mono oa (trans (set.inter_subset_left _ _) h)
 
-/-- The probability of a singleton set happening is just the `eval_dist` of that element. -/
+/-- The probability of a singleton set happening is just the `prob_output` of that element. -/
 @[simp] lemma prob_event_singleton_eq_prob_output (x : α) : ⁅{x} | oa⁆ = ⁅= x | oa⁆ :=
 by rw [prob_event.def, pmf.to_outer_measure_apply_singleton, prob_output]
 
-/-- The probaility of the `(=) x` event is just the `eval_dist` of that element. -/
+/-- The probaility of the `(=) x` event is just the `prob_output` of that element. -/
 @[simp] lemma prob_event_eq_eq_prob_output (x : α) : ⁅(=) x | oa⁆ = ⁅= x | oa⁆ :=
 trans (congr_arg _ (set.ext $ λ y, eq_comm)) (prob_event_singleton_eq_prob_output oa x)
+
+/-- The probability of the `(= x)` event is just the `prob_output` of that element. -/
+@[simp] lemma prob_event_eq_eq_prob_output' (x : α) : ⁅(= x) | oa⁆ = ⁅= x | oa⁆ :=
+trans (congr_arg _ (funext (λ x', by simp [@eq_comm α x' x]))) (prob_event_eq_eq_prob_output oa x)
 
 lemma prob_event_eq_of_eval_dist_eq {oa : oracle_comp spec α} {oa' : oracle_comp spec' α}
   (h : ⁅oa⁆ = ⁅oa'⁆) (e : set α) : ⁅e | oa⁆ = ⁅e | oa'⁆ :=

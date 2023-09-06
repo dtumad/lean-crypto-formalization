@@ -174,4 +174,20 @@ end sep
 
 end query_count
 
+namespace indexed_list
+
+variables {spec : oracle_spec} {τ : spec.ι → Type}
+
+/-- Given `il : indexed_list` and a query count that is less than it at every index,
+we can find unique indexed lists that add to `il` and have sizes split by the query count. -/
+lemma exists_unique_split_of_count_le (il : spec.indexed_list τ)
+  (qc : query_count spec) (hqc : qc ≤ ↑il) :
+  ∃! (il₁ il₂ : spec.indexed_list τ), il₁ + il₂ = il ∧ (↑il₁ = qc ∧ ↑il₂ = (↑il - qc)) :=
+begin
+  sorry,
+end
+
+
+end indexed_list
+
 end oracle_spec

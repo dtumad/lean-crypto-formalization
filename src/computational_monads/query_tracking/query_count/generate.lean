@@ -5,6 +5,7 @@ Authors: Devon Tuma
 -/
 import computational_monads.query_tracking.query_count.possible_outcomes
 import computational_monads.constructions.repeat
+import computational_monads.distribution_semantics.seq
 
 /-!
 # Generate an Indexed List by Running a Computation According to a Count
@@ -198,7 +199,18 @@ lemma generate_add_dist_equiv :
   generate (qc + qc') oa ≃ₚ ((+) <$> generate qc oa <*> generate qc' oa) :=
 begin
   refine dist_equiv.ext (λ il, _),
-  sorry,
+  by_cases hil : ↑il = qc + qc',
+  {
+    have hqcil : qc ≤ ↑il := sorry,
+    have hqcil' : ↑il - qc = qc' := sorry,
+    have := exists_unique_split_of_count_le _ _ hqcil,
+    sorry,
+  },
+  {
+    sorry,
+  }
+  -- refine trans _ (symm (prob_output_seq_map_add_cancel_unique _ _ il
+  --   (il.fit_to_count qc) (il.fit_to_count qc') _ _)),
 end
 
 end oracle_comp
