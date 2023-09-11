@@ -53,6 +53,11 @@ begin
   }
 end
 
+variables (oa : oracle_comp spec α)
+
+lemma queries_at_most_trans (qc qc' : spec.query_count) (h : oa.queries_at_most qc)
+  (h : qc ≤ qc') : oa.queries_at_most qc' := sorry
+
 end queries_at_most
 
 section poly_num_queries

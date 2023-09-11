@@ -7,6 +7,7 @@ import algebra.add_torsor
 import computational_monads.asymptotics.polynomial_time
 import computational_monads.asymptotics.negligable
 import computational_monads.coercions.sim_oracle
+import crypto_foundations.sec_adversary
 
 /-!
 # Hard Homogeneous Spaces
@@ -39,27 +40,30 @@ namespace algorithmic_homogenous_space
 variables {G X : Type} [fintype G] [fintype X] [decidable_eq G] [decidable_eq X]
   [add_group G] [algorithmic_homogenous_space G X]
 
-structure vectorization_adversary (G X : Type) : Type 1 :=
-(adv : X × X → oracle_comp uniform_selecting G) -- TODO: name `adv` -> `alg`?
+structure vectorization_adversary (G X : Type)
+  extends sec_adversary uniform_selecting (X × X) G
+
+-- structure vectorization_adversary (G X : Type) : Type 1 :=
+-- (adv : X × X → oracle_comp uniform_selecting G) -- TODO: name `adv` -> `alg`?
 -- (adv_poly_time : poly_time_oracle_comp adv)
 
 namespace vectorization_adversary
 
 /-- Analogue of Discrete-logarithm asumption game -/
-noncomputable def experiment (adversary : vectorization_adversary G X) :
+noncomputable def experiment (adv : vectorization_adversary G X) :
   oracle_comp uniform_selecting bool :=
-do {x₁ ←$ᵗ X, x₂ ←$ᵗ X, g ← adversary.adv (x₁, x₂), return (g = x₁ -ᵥ x₂)}
+do {x₁ ←$ᵗ X, x₂ ←$ᵗ X, g ← adv.run (x₁, x₂), return (g = x₁ -ᵥ x₂)}
 
 /-- Vectorization advantage of an adversary in the vectorization experiment. -/
-noncomputable def advantage (adversary : vectorization_adversary G X) : ℝ≥0∞ :=
-⁅= tt | experiment adversary⁆
+noncomputable def advantage (adv : vectorization_adversary G X) : ℝ≥0∞ :=
+⁅= tt | experiment adv⁆
 
 /-- The adversary's advantage at vectorization is the average over all possible pairs of points
 of their advantage at vectorizing those specific points. -/
-lemma advantage_eq_tsum (adversary : vectorization_adversary G X) : adversary.advantage =
-  (∑' x₁ x₂, ⁅(=) (x₁ -ᵥ x₂) | adversary.adv (x₁, x₂)⁆) / (fintype.card X) ^ 2 :=
-calc adversary.advantage = ⁅= tt | experiment adversary⁆ : rfl
-  ... = ((fintype.card X)⁻¹ ^ 2) * (∑' x₁ x₂, ⁅adversary.adv (x₁, x₂)⁆ (x₁ -ᵥ x₂)) :
+lemma advantage_eq_tsum (adv : vectorization_adversary G X) :
+  adv.advantage = (∑' x₁ x₂, ⁅(=) (x₁ -ᵥ x₂) | adv.run (x₁, x₂)⁆) / (fintype.card X) ^ 2 :=
+calc adv.advantage = ⁅= tt | experiment adv⁆ : rfl
+  ... = ((fintype.card X)⁻¹ ^ 2) * (∑' x₁ x₂, ⁅adv.run (x₁, x₂)⁆ (x₁ -ᵥ x₂)) :
   begin
     sorry,
 
@@ -69,9 +73,9 @@ calc adversary.advantage = ⁅= tt | experiment adversary⁆ : rfl
     -- refine (eval_dist_bind_return_apply_eq_single (adversary.adv (x₁, x₂)) _ tt (x₁ -ᵥ x₂)) _,
     -- simp only [set.preimage, set.mem_singleton_iff, to_bool_iff, set.set_of_eq_eq_singleton],
   end
-  ... = (∑' x₁ x₂, ⁅adversary.adv (x₁, x₂)⁆ (x₁ -ᵥ x₂)) / (fintype.card X) ^ 2 :
+  ... = (∑' x₁ x₂, ⁅adv.run (x₁, x₂)⁆ (x₁ -ᵥ x₂)) / (fintype.card X) ^ 2 :
     by rw [div_eq_mul_inv, ennreal.inv_pow, mul_comm]
-  ... = (∑' x₁ x₂, ⁅(=) (x₁ -ᵥ x₂) | adversary.adv (x₁, x₂)⁆) / (fintype.card X) ^ 2 :
+  ... = (∑' x₁ x₂, ⁅(=) (x₁ -ᵥ x₂) | adv.run (x₁, x₂)⁆) / (fintype.card X) ^ 2 :
     sorry --by simp_rw [prob_event_eq_eq_prob_output]
 
 end vectorization_adversary

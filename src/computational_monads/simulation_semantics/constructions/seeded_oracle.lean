@@ -7,6 +7,7 @@ import computational_monads.query_tracking.query_seed.generate_seed
 import computational_monads.query_tracking.indexed_list.get_or_else
 import computational_monads.simulation_semantics.oracle_compose
 import computational_monads.coercions.instances
+import computational_monads.asymptotics.polynomial_queries
 
 /-!
 # Seeded Simulation Oracle
@@ -44,6 +45,13 @@ lemma generate_seed_bind_simulate'_dist_equiv [h : is_sub_spec uniform_selecting
 begin
 
   sorry,
+end
+
+lemma queries_at_most_simulate (qc : spec.query_count) (oa : oracle_comp spec α)
+  (h : oa.queries_at_most qc) (qs : query_seed spec) :
+  (simulate seededₛₒ oa qs).queries_at_most qc :=
+begin
+  sorry
 end
 
 end seeded_oracle

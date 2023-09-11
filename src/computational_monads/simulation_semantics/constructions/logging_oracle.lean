@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
 import computational_monads.query_tracking.query_log.basic
-import computational_monads.simulation_semantics.constructions.counting_oracle
+import computational_monads.asymptotics.polynomial_queries
 
 /-!
 # Logging Oracles
@@ -76,6 +76,14 @@ begin
   { rw_dist_equiv [ dist_equiv_of_eq (logging_oracle.apply_eq _ _),
       dist_equiv_of_eq (counting_oracle.apply_eq _ _), bind_map_dist_equiv],
     refine map_dist_equiv_of_dist_equiv' (funext (λ u, by simp)) dist_equiv.rfl }
+end
+
+-- TODO: generalize to other tracking oracles
+lemma queries_at_most_simulate (qc : spec.query_count) (oa : oracle_comp spec α)
+  (h : oa.queries_at_most qc) (ql : spec.query_log) :
+  (simulate loggingₛₒ oa ql).queries_at_most qc :=
+begin
+  sorry
 end
 
 end logging_oracle

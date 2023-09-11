@@ -21,9 +21,14 @@ namespace oracle_comp
 section sec_adversary
 
 structure sec_adversary (spec : oracle_spec) (α β : Type) :=
-(run : α → oracle_comp (uniform_selecting ++ spec) β)
-(qb : (uniform_selecting ++ spec).query_count)
+(run : α → oracle_comp (spec) β)
+(qb : (spec).query_count)
 (qb_is_bound (x : α) : queries_at_most (run x) qb)
+
+-- structure sec_adversary' (α β : Type) :=
+-- (additional_oracles : oracle_spec)
+-- (run : α → oracle_comp (uniform_selecting ++ spec) β)
+-- (S : Type) (sim_additional : sim_oracle additional_oracles spec S)
 
 end sec_adversary
 

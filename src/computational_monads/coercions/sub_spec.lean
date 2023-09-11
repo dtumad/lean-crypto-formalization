@@ -107,7 +107,7 @@ section coe_sub_spec
 
 variables (sub_spec super_spec : oracle_spec) [h : sub_spec ⊂ₒ super_spec]
   (a : α) (oa : oracle_comp sub_spec α) (ob : α → oracle_comp sub_spec β)
-  (i : sub_spec.ι) (t : sub_spec.domain i) (x : α) (e : set α)
+  (i : sub_spec.ι) (t : sub_spec.domain i) (f : α → β) (x : α) (e : set α)
 
 include h
 
@@ -129,13 +129,28 @@ begin
   rw_dist_equiv [stateless_oracle.answer_query_dist_equiv, h.to_fun_equiv],
 end
 
-lemma coe_sub_spec_bind_dist_equiv : (↑(oa >>= ob) : oracle_comp super_spec β) ≃ₚ
-  (↑oa : oracle_comp super_spec α) >>= (λ x, ↑(ob x)) :=
+@[pairwise_dist_equiv] lemma coe_sub_spec_bind_dist_equiv :
+  (↑(oa >>= ob) : oracle_comp super_spec β) ≃ₚ
+    (↑oa : oracle_comp super_spec α) >>= (λ x, ↑(ob x)) :=
 begin
-  simp only [coe_sub_spec_def],
-  rw_dist_equiv [simulate'_bind_dist_equiv],
+  rw_dist_equiv [coe_sub_spec_dist_equiv],
+  refine bind_dist_equiv_bind_of_dist_equiv _ (λ _ _, _);
+  rw_dist_equiv [coe_sub_spec_dist_equiv],
+end
 
+@[pairwise_dist_equiv] lemma coe_sub_spec_map_dist_equiv :
+  (↑(f <$> oa) : oracle_comp super_spec β) ≃ₚ f <$> (↑oa : oracle_comp super_spec α) :=
+begin
+  rw_dist_equiv [coe_sub_spec_bind_dist_equiv],
+  pairwise_dist_equiv_deep
+end
 
+@[pairwise_dist_equiv] lemma coe_sub_spec_seq_dist_equiv (og : oracle_comp sub_spec (α → β)) :
+  (↑(og <*> oa) : oracle_comp super_spec β) ≃ₚ
+    (↑og : oracle_comp super_spec (α → β)) <*> ↑oa :=
+begin
+  rw_dist_equiv [coe_sub_spec_bind_dist_equiv],
+  pairwise_dist_equiv_deep,
 end
 
 /-- `support` is unchanged after coercing a computation via a sub-spec instance. -/

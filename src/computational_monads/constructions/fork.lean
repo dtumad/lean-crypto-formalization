@@ -17,8 +17,13 @@ open oracle_comp oracle_spec
 
 variables {α β γ : Type} {spec spec' : oracle_spec} {i : spec.ι} {q : ℕ}
 
+/-- A forking adversary is a `sec_adversary _ α β` along with functions to define forking behavior.
+`i` is the index of the oracle whose queries will be forked after a first execution.
+`q` is a bound on the number of oracles made by the adversary, higher gives worse security bounds.
+The function `choose_fork` takes an input and output pair, and returns an index at which the
+queries should be forked (see `of_choose_input` to do this from a chosen query input value). -/
 structure fork_adversary (α β : Type) (i : spec.ι) (q : ℕ)
-  extends sec_adversary spec α β :=
+  extends sec_adversary (uniform_selecting ++ spec) α β :=
 (choose_fork : α → β → option (fin q.succ))
 (q_eq_bound : qb.get_count (sum.inr i) = q.succ)
 
@@ -31,25 +36,21 @@ structure run_result (adv : fork_adversary α β i q) :=
 (side_output : β)
 (seed : (uniform_selecting ++ spec).query_seed)
 
+/-- Type to store the result of running the forking adversary both times. -/
+def fork_result (adv : fork_adversary α β i q) :=
+run_result adv × run_result adv
+
 namespace run_result
 
 variable {adv : fork_adversary α β i q}
 
-/-- The index of the point in the seed chosen to fork on. -/
 def get_fp (rr : run_result adv) : fin q.succ := rr.fork_point.get_or_else 0
-
-/-- The result of the query corresponding to the point being forked on. -/
 def chosen_fork (rr : run_result adv) : option (spec.range i) :=
 (rr.seed (sum.inr i)).nth rr.get_fp
-
-/-- The part of the seed designated to be reused by the result. -/
 def shared_seed (rr : run_result adv) : (uniform_selecting ++ spec).query_seed :=
 rr.seed.take_at_index (sum.inr i) rr.get_fp
 
 end run_result
-
-def fork_result (adv : fork_adversary α β i q) :=
-run_result adv × run_result adv
 
 namespace fork_result
 
@@ -65,28 +66,49 @@ variable {adv : fork_adversary α β i q}
 @[inline, reducible] def seed₁ (fr : fork_result adv) := fr.1.seed
 @[inline, reducible] def seed₂ (fr : fork_result adv) := fr.2.seed
 
--- structure fork_result (adv : fork_adversary α β i q) :=
--- (chosen_fork₁ chosen_fork₂ : option (fin q.succ))
--- (side_output₁ side_output₂ : β)
--- (seed₁ seed₂ : query_seed (uniform_selecting ++ spec))
-
 end fork_result
 
 section success
 
 variable {adv : fork_adversary α β i q}
 
-def same_fork_point (fr : fork_result adv) : Prop :=
-match fr.fork_point₁ with
-| none := false
-| some fp := fr.fork_point₂ = some fp
-end
+@[derive decidable] def same_fork_point (fr : fork_result adv) : Prop :=
+fr.fork_point₁ ≠ none ∧ fr.fork_point₁ = fr.fork_point₂
 
-lemma prob_event_same_fork_point (ofr : oracle_comp spec' (fork_result adv)) : ⁅same_fork_point | ofr⁆ =
-  ∑ fp : fin q.succ, ⁅= (some fp, some fp) | fork_result.fork_points <$> ofr⁆ :=
-begin
-  sorry,
-end
+lemma prob_event_same_fork_point (ofr : oracle_comp spec' (fork_result adv)) :
+  ⁅same_fork_point | ofr⁆ =
+    ∑ fp : fin q.succ, ⁅= (some fp, some fp) | fork_result.fork_points <$> ofr⁆ :=
+calc ⁅same_fork_point | ofr⁆ = ⁅λ z, z.1 ≠ none ∧ z.1 = z.2 | fork_result.fork_points <$> ofr⁆ :
+    symm (prob_event_map' ofr fork_result.fork_points _)
+  ... = ∑ fp : fin q.succ, ⁅= (some fp, some fp) | fork_result.fork_points <$> ofr⁆ :
+    begin
+      rw [prob_event_eq_tsum_ite, ennreal.tsum_prod', ennreal.tsum_option],
+      refine trans _ (zero_add _),
+      congr' 1,
+      {
+        refine ennreal.tsum_eq_zero.2 (λ z, _),
+        simp only [set.mem_def, ne.def, eq_self_iff_true, not_true, false_and, if_false],
+      },
+      {
+        refine trans _ (tsum_eq_sum _),
+        {
+          refine tsum_congr (λ fp, _),
+          refine trans (tsum_eq_single (some fp) _) _,
+          {
+            simp only [set.mem_def, ne.def, not_false_iff, true_and, ite_eq_right_iff,
+              prob_output_eq_zero_iff, support_map],
+            intros fp' h1 h2,
+            refine (h1 h2.symm).elim,
+          },
+          {
+            simp only [set.mem_def, ne.def, not_false_iff, eq_self_iff_true, and_self, if_true],
+          }
+        },
+        {
+          simp only [finset.mem_univ, not_true, is_empty.forall_iff, forall_const],
+        }
+      }
+    end
 
 def fork_success (fr : fork_result adv) : Prop :=
 match fr.fork_point₁ with
@@ -123,7 +145,13 @@ variables (adv : fork_adversary α β i q) (y : α)
 lemma generate_seed_bind_seed_and_run_dist_equiv
   (qc : (uniform_selecting ++ spec).query_count) (hqc : qc ≤ adv.qb) :
   do {qs ← ↑(generate_seed qc), adv.seed_and_run y qs} ≃ₚ adv.seed_and_run y ∅ :=
-sorry
+begin
+  simp [seed_and_run],
+  rw_dist_equiv [generate_seed_bind_split_of_le _ _ hqc],
+  pairwise_dist_equiv with qs hqs,
+  rw [support_coe_sub_spec] at hqs,
+  rw [← coe_query_count_of_mem_support_generate_seed hqs, indexed_list.coe_query_count_eq],
+end
 
 lemma prob_output_fork_point_map_seed_and_run (fp : fin q.succ) :
   ⁅= some fp | run_result.fork_point <$> adv.seed_and_run y ∅⁆ =
@@ -140,7 +168,20 @@ end
 lemma to_query_count_of_mem_support_seed_and_run (qs : (uniform_selecting ++ spec).query_seed)
   (rr : run_result adv) (hrr : rr ∈ (adv.seed_and_run y qs).support)
   (h : ↑qs ≤ adv.qb) : rr.seed.to_query_count = adv.qb :=
-sorry
+begin
+  rw [seed_and_run] at hrr,
+  simp only [mem_support_bind_iff, mem_support_return_iff] at hrr,
+  obtain ⟨init_s, hinit, z, hz, hzrr⟩ := hrr,
+  rw [support_coe_sub_spec] at hinit,
+  have := coe_query_count_of_mem_support_generate_seed hinit,
+  rw [indexed_list.coe_query_count_eq] at this,
+  simp [hzrr, this],
+  refine query_count.get_count_ext _ _ (λ i, _),
+  simp,
+  rw [← nat.add_sub_assoc, nat.add_sub_cancel_left],
+  have := query_count.get_count_le_get_count h i,
+  simpa [indexed_list.get_count_to_query_count] using this,
+end
 
 lemma shared_seed_of_mem_support_seed_and_run (qs : (uniform_selecting ++ spec).query_seed)
   (rr : run_result adv) (hrr : rr ∈ (adv.seed_and_run y qs).support) :
@@ -365,19 +406,6 @@ calc adv.advantage y ^ 2 / q.succ = ⁅(≠) none | adv.choose_fork y <$> adv.ru
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 theorem prob_event_fork_success (adv : fork_adversary α β i q) :
   adv.advantage y * (adv.advantage y / q - (fintype.card (spec.range i))⁻¹) ≤
     ⁅fork_success | fork adv y⁆ :=
@@ -538,18 +566,16 @@ end oracle_comp
 -- TODO: for the hhs sig
 section of_choose_input
 
-def of_choose_input (adv : sec_adversary spec β α)
+def of_choose_input (adv : sec_adversary (uniform_selecting ++ spec) β α)
   (i : spec.ι) (choose_input : α → β → spec.domain i) :
   fork_adversary β (α × query_log (uniform_selecting ++ spec)) i (adv.qb.get_count (sum.inr i)) :=
 { run := λ y, simulate loggingₛₒ (adv.run y) ∅,
-  choose_fork := λ y z, begin
-    have inp := choose_input z.1 y,
-    have ts : list (spec.domain i) := (z.2 (sum.inr i)).map prod.fst,
-    exact if inp ∈ ts then some ↑(list.index_of inp ts) else none,
-  end,
+  choose_fork := λ y z, let inp := choose_input z.1 y in
+    let ts : list (spec.domain i) := (z.2 (sum.inr i)).map prod.fst in
+    if inp ∈ ts then some ↑(list.index_of inp ts) else none,
   qb := adv.qb.increment (sum.inr i) 1,
-  q_eq_bound := by simp,
-  qb_is_bound := sorry
-}
+  q_eq_bound := by simp only [query_count.get_count_increment, eq_self_iff_true, if_true],
+  qb_is_bound := λ y, logging_oracle.queries_at_most_simulate _ _
+    (queries_at_most_trans _ _ _ (adv.qb_is_bound y) (indexed_list.le_add_values _ _)) _ }
 
 end of_choose_input

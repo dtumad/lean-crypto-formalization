@@ -5,6 +5,7 @@ Authors: Devon Tuma
 -/
 import computational_monads.query_tracking.query_count.generate
 import computational_monads.query_tracking.query_seed.basic
+import computational_monads.coercions.instances
 
 /-!
 # Pre-Computation of Queries Made by a Computation
@@ -23,7 +24,7 @@ namespace oracle_comp
 open_locale big_operators
 open oracle_spec oracle_spec.indexed_list
 
-variables {α β γ : Type} {spec : oracle_spec}
+variables {α β γ : Type} {spec spec' : oracle_spec}
 
 /-- Given a count of queries `qc`, and an initial `query_store` seed, generate more outputs at
 random until the number of seeded outputs for each oracle is at least the value given in `qc`. -/
@@ -66,5 +67,13 @@ end
 
 lemma generate_seed_add : generate_seed (qc + qc') = (+) <$> generate_seed qc <*> generate_seed qc' :=
 sorry
+
+lemma generate_seed_bind_split_of_le [h : is_sub_spec uniform_selecting spec'] (h : qc' ≤ qc)
+  (ob : spec.query_seed → oracle_comp spec' α) :
+  do {qs ← ↑(generate_seed qc), ob qs} ≃ₚ
+    do {qs₁ ← ↑(generate_seed qc'), qs₂ ← ↑(generate_seed (qc - qc')), ob (qs₁ + qs₂)} :=
+begin
+  sorry,
+end
 
 end oracle_comp

@@ -170,14 +170,14 @@ section unforgeable
 
 /-- The adversary for the signing experiment has access to both the signature scheme's oracles,
   and a signing oracle that will be simulated with the hidden secret key. -/
-@[reducible, inline]
-def unforgeable_adversary_oracle_spec (sig : signature) : oracle_spec :=
+@[reducible, inline] def unforgeable_adversary_oracle_spec (sig : signature) : oracle_spec :=
 sig.random_oracle_spec ++ sig.signing_oracle_spec
 
 /-- An adversary for the unforgeable signature experiment.
   Note that the adversary only has access to the public key. -/
-def unforgeable_adversary (sig : signature) :=
-sec_adversary (sig.unforgeable_adversary_oracle_spec) sig.PK (sig.M × sig.S)
+structure unforgeable_adversary (sig : signature) extends
+  sec_adversary (uniform_selecting ++ sig.unforgeable_adversary_oracle_spec)
+    sig.PK (sig.M × sig.S)
 
 namespace unforgeable_adversary
 
