@@ -194,8 +194,7 @@ section mock_signing_oracle
 /-- Oracle to mock a signing oracle for messages in the vectorization reduction.
 Predetermines the random oracle results to fake a valid signature,
 keeping the results in a seperate internal mocked cache.
-Queries to the random oracle are first filtered through this,
-and are passed to the true random oracle only if the query is fresh. -/
+This also includes all caching for the simulation of the random oracles. -/
 def mock_signing_sim_oracle (x₀ pk : X) :
   sim_oracle (hhs_signature G X M n).unforgeable_adversary_oracle_spec
   (hhs_signature G X M n).base_oracle_spec
@@ -203,11 +202,11 @@ def mock_signing_sim_oracle (x₀ pk : X) :
 { default_state := ∅,
   o := λ i, match i with
     -- For random oracle queries, check if the query has been mocked.
-    -- If so, return the mocked value, otherwise call the regular random oracle
+    -- If so, return the mocked value, otherwise call the regular oracle (caching the result).
     | (sum.inl i) := λ ⟨t, mock_cache⟩, mock_cache.get_or_else i t
         (@query (hhs_signature G X M n).base_oracle_spec (sum.inr i) t)
     | (sum.inr ()) := λ ⟨m, mock_cache⟩,
-      do {bs ← repeat ($ᵗ bool) n, -- pre-select what all the bool results will be.
+        do {bs ← repeat ($ᵗ bool) n, -- pre-select what all the bool results will be.
           cs ← repeat ($ᵗ G) n,
           ys ← return (vector.zip_with (λ (b : bool) c, if b then c +ᵥ pk else c +ᵥ x₀) bs cs),
           mock_cache' ← return (mock_cache.cache_query () (ys, m) bs),
@@ -222,24 +221,8 @@ section mock_signing_reduction
 def mock_signing_reduction (adversary : (hhs_signature G X M n).unforgeable_adversary)
   (x₀ pk : X) : oracle_comp (hhs_signature G X M n).base_oracle_spec (M × vector (G × bool) n) :=
 do{ ⟨m, σ⟩ ← default_simulate' (idₛₒ ++ₛ mock_signing_sim_oracle x₀ pk) (adversary.run (x₀, pk)),
-    _ ← query₂ () (retrieve_commits x₀ pk σ, m), -- force a query to the final output
+    query₂ () (retrieve_commits x₀ pk σ, m), -- force a query to the final output
     return (m, σ) }
-
-/-- Further simulate the random oracle after mocking the signing oracle -/
-def simulate_mock_signing_reduction (pk x₀ : X) :
-  oracle_comp uniform_selecting (M × vector (G × bool) n ×
-    query_cache (hhs_signature G X M n).random_oracle_spec) :=
-do{ ⟨⟨m, σ⟩, (), cache⟩ ← default_simulate (idₛₒ ++ₛ randomₛₒ)
-      (mock_signing_reduction adversary x₀ pk),
-    return (m, σ, cache) }
-
--- theorem prob_event_is_valid_signature_ge_unforgeable_advantage (x₀ pk : X) :
---   ⁅λ ⟨m, σ, cache⟩, is_valid_signature x₀ pk m σ cache |
---     simulate_mock_signing_reduction adversary x₀ pk⁆
---       ≥ adversary.advantage :=
--- begin
---   sorry
--- end
 
 end mock_signing_reduction
 
@@ -264,9 +247,12 @@ end choose_fork
 section fork_reduction
 
 def mocked_unforgeable_adversary (adversary : (hhs_signature G X M n).unforgeable_adversary) :
-  sec_adversary ((hhs_signature G X M n).base_oracle_spec) (X × X)
+  sec_adversary (uniform_selecting ++ (hhs_signature G X M n).random_oracle_spec) (X × X)
     (M × vector (G × bool) n) :=
-{ run := λ ⟨x₀, pk⟩, mock_signing_reduction adversary x₀ pk,
+{ run := λ ⟨x₀, pk⟩,
+    do {⟨m, σ⟩ ← default_simulate' (idₛₒ ++ₛ mock_signing_sim_oracle x₀ pk) (adversary.run (x₀, pk)),
+      query₂ () (retrieve_commits x₀ pk σ, m), -- force a query to the final output
+      return (m, σ)},
   qb := sorry,
   qb_is_bound := sorry }
 
@@ -275,9 +261,10 @@ def mocked_unforgeable_adversary (adversary : (hhs_signature G X M n).unforgeabl
 vectorization in the hard homogenous space.
 `q` is the maximum number of queries made by the adversary to consider. -/
 def fork_reduction (adversary : (hhs_signature G X M n).unforgeable_adversary) :
-  fork_adversary (X × X) ((M × vector (G × bool) n) × _) _ _ :=
-forking_adversary.of_choose_input (mocked_unforgeable_adversary adversary) ()
-  (λ z y, (retrieve_commits z.1 z.2 y.2, y.1))
+  fork_adversary (hhs_signature G X M n).base_oracle_spec (X × X)
+    ((M × vector (G × bool) n) × _) _ _ :=
+forking_adversary.of_choose_input (mocked_unforgeable_adversary adversary) (sum.inr ())
+  (λ ⟨x₀, pk⟩ ⟨m, σ⟩, ((retrieve_commits x₀ pk σ, m), σ.map prod.snd))
 
 -- lemma advantage_le_forking_reduction_advantage
 --   (adversary : (hhs_signature G X M n).unforgeable_adversary) (x₀ pk : X) :
@@ -346,7 +333,7 @@ def vectorization_reduction (adv : (hhs_signature G X M n).unforgeable_adversary
 { run :=
   begin
     rintro ⟨x₀, pk⟩,
-    have := default_simulate' (idₛₒ ++ₛ randomₛₒ) (fork (fork_reduction adv) (x₀, pk)),
+    have := default_simulate' uniformₛₒ (fork (fork_reduction adv) (x₀, pk)),
     refine vectorization_of_fork_result _ x₀ pk <$> this,
   end
   ,
