@@ -13,6 +13,8 @@ General lemmas about probability computations involving `option`.
 
 namespace oracle_comp
 
+open_locale big_operators ennreal
+
 variables {α β γ : Type} {spec spec' : oracle_spec}
 
 section eval_dist
@@ -63,6 +65,9 @@ end
 lemma prob_event_ne_none_eq_tsum : ⁅(≠) none | oa⁆ = ∑' x : α, ⁅= some x | oa⁆ :=
 trans (prob_event_ext' _ _ _ (λ x hx, by rw [ne_comm, option.ne_none_iff_is_some]))
   (prob_event_is_some _)
+
+lemma prob_event_ne_none_eq_sum [fintype α] : ⁅(≠) none | oa⁆ = ∑ x : α, ⁅= some x | oa⁆ :=
+trans (prob_event_ne_none_eq_tsum oa) (tsum_eq_sum (λ x hx, (hx (finset.mem_univ x)).elim))
 
 lemma prob_event_is_some_eq_one_sub_prob_output_none :
   ⁅λ x, x.is_some | oa⁆ = 1 - ⁅= none | oa⁆ :=

@@ -187,7 +187,7 @@ def take_to_count (il : spec.indexed_list τ) (qc : spec.query_count) : spec.ind
   active_oracles := il.active_oracles ∩ qc.active_oracles,
   mem_active_oracles_iff' := by simp [not_or_distrib] }
 
-variables (il : spec.indexed_list τ) (qc : spec.query_count)
+variables (il il' : spec.indexed_list τ) (qc : spec.query_count)
 
 @[simp] lemma take_to_count_apply (i : spec.ι) : (il.take_to_count qc) i =
   (il i).take (qc.get_count i) := rfl
@@ -201,6 +201,22 @@ variables (il : spec.indexed_list τ) (qc : spec.query_count)
 @[simp] lemma to_query_count_take_to_count :
   (il.take_to_count qc).to_query_count = qc ⊓ ↑il :=
 query_count.get_count_ext _ _ (λ i, by simp [query_count.get_count_inf])
+
+@[simp] lemma take_to_count_add_left : ((il + il').take_to_count ↑il) = il :=
+fun_like.ext _ _ (λ i, by simp [get_count_eq_length_apply])
+
+-- TODO: true of any monotone decreasing function
+lemma take_to_count_take_at_index (i : spec.ι) (n : ℕ) :
+  il.take_to_count (il.take_at_index i n) = il.take_at_index i n :=
+begin
+  refine fun_like.ext _ _ (λ i', _),
+  by_cases hi : i = i',
+  { induction hi,
+    by_cases hn : (il i).length ≤ n,
+    { simp [get_count_eq_length_apply, hn, (list.take_all_of_le hn)] },
+    { simp [get_count_eq_length_apply, le_of_not_le hn] } },
+  { simp [hi, get_count_eq_length_apply] }
+end
 
 end take_to_count
 

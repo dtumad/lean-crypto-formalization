@@ -217,7 +217,10 @@ begin
       rw [← this, to_query_count_add, to_query_count_take_to_count, hil,
         to_query_count_drop_to_count],
       simp,
-
+      sorry,
+    },
+    {
+      sorry,
     }
   },
   {

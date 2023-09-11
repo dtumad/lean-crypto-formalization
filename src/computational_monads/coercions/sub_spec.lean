@@ -129,6 +129,15 @@ begin
   rw_dist_equiv [stateless_oracle.answer_query_dist_equiv, h.to_fun_equiv],
 end
 
+lemma coe_sub_spec_bind_dist_equiv : (↑(oa >>= ob) : oracle_comp super_spec β) ≃ₚ
+  (↑oa : oracle_comp super_spec α) >>= (λ x, ↑(ob x)) :=
+begin
+  simp only [coe_sub_spec_def],
+  rw_dist_equiv [simulate'_bind_dist_equiv],
+
+
+end
+
 /-- `support` is unchanged after coercing a computation via a sub-spec instance. -/
 @[simp] lemma support_coe_sub_spec : (↑oa : oracle_comp super_spec α).support = oa.support :=
 (coe_sub_spec_dist_equiv sub_spec super_spec oa).support_eq

@@ -6,6 +6,7 @@ Authors: Devon Tuma
 import computational_monads.query_tracking.query_seed.generate_seed
 import computational_monads.query_tracking.indexed_list.get_or_else
 import computational_monads.simulation_semantics.oracle_compose
+import computational_monads.coercions.instances
 
 /-!
 # Seeded Simulation Oracle
@@ -37,6 +38,12 @@ notation `seededₛₒ` := seeded_oracle _
 
 namespace seeded_oracle
 
--- TODO
+lemma generate_seed_bind_simulate'_dist_equiv [h : is_sub_spec uniform_selecting spec]
+  (qc : spec.query_count) (oa : oracle_comp spec α) :
+  do {seed ← ↑(generate_seed qc), simulate' seededₛₒ oa seed} ≃ₚ oa :=
+begin
+
+  sorry,
+end
 
 end seeded_oracle

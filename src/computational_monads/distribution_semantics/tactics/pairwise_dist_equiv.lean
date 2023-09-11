@@ -20,6 +20,11 @@ variables {α β γ : Type} {spec : oracle_spec}
 
 namespace oracle_comp
 
+private meta def intro_base : option (list name) → tactic (option (list name))
+| none := tactic.intros >> return none
+| (some []) := tactic.intros >> return none
+| (some (n :: ns)) := (tactic.intro n >> intro_base ns) <|> return (some (n :: ns))
+
 /-- Discharge a distributional equivalence between definitionally equal computations.-/
 private meta def refl_dist_equiv_base : tactic unit :=
 do `(%%oa ≃ₚ %%oa') ← tactic.target, (tactic.unify oa oa' >> tactic.reflexivity)
@@ -37,36 +42,30 @@ private meta def apply_dist_equivs : list pexpr → tactic unit
 | (d_eq :: d_eqs) := (tactic.to_expr d_eq >>= rw_dist_equiv_base >>=
     λ b, if b = tt then apply_dist_equivs d_eqs else return ())
 
+private meta def try_solve (d_eq : list pexpr) : tactic unit :=
+refl_dist_equiv_base <|> apply_dist_equivs d_eq
+
+private meta def is_shallow_equiv : expr → bool
+| `(%%oa >>= %%ob ≃ₚ %%oa' >>= %%ob') := tt
+| `(%%f <$> %%oa ≃ₚ %%f' <$> %%oa') := tt
+| _ := ff
+
 /-- Destruct a distributional equivalence by recursively splitting equivalences between binds
 into multiple equivalences between their individual components.
 For other equivalences will defer to `pairwise_dist_equiv_base`. -/
-private meta def destruct_pairwise_dist_equiv (d_eq : list pexpr)
-  (deep : bool) : ℕ → expr → tactic unit
-| (n + 1) `(%%oa >>= %%ob ≃ₚ %%oa' >>= %%ob') := do {
+private meta def destruct_pairwise_dist_equiv (d_eq : list pexpr) (deep : bool)
+  : option (list name) → ℕ → expr → tactic (option (list name))
+| opt_names (n + 1) e := if is_shallow_equiv e ∨ deep = tt then do {
   -- Split the goal into two seperate distributional equivalences.
   tactic.refine ``(oracle_comp.bind_dist_equiv_bind_of_dist_equiv _ _),
   -- Attempt to recursively solve the first equivalence.
-  tactic.target >>= destruct_pairwise_dist_equiv n,
+  opt_names' ← tactic.target >>= destruct_pairwise_dist_equiv opt_names n,
+  -- Introduce any new variables for the second equivalence.
+  opt_names'' ← intro_base opt_names',
   -- Attempt to recursively solve the second equivalence
-  tactic.intros >> tactic.target >>= destruct_pairwise_dist_equiv n
-} <|> refl_dist_equiv_base <|> apply_dist_equivs d_eq
-| (n + 1) `(%%f <$> %%oa ≃ₚ %%f' <$> %%oa') := do {
-  -- Split the goal into two seperate distributional equivalences.
-  tactic.refine ``(oracle_comp.bind_dist_equiv_bind_of_dist_equiv _ _),
-  -- Attempt to recursively solve the first equivalence.
-  tactic.target >>= destruct_pairwise_dist_equiv n,
-  -- Attempt to recursively solve the second equivalence
-  tactic.intros >> tactic.target >>= destruct_pairwise_dist_equiv n
-  -- On failure, try to solve the equivalence without any recursion.
-} <|> refl_dist_equiv_base <|> apply_dist_equivs d_eq
-| (n + 1) _ := if deep = ff then refl_dist_equiv_base <|> apply_dist_equivs d_eq else do {
-    tactic.refine ``(oracle_comp.bind_dist_equiv_bind_of_dist_equiv _ _),
-  -- Attempt to recursively solve the first equivalence.
-  tactic.target >>= destruct_pairwise_dist_equiv n,
-  -- Attempt to recursively solve the second equivalence
-  tactic.intros >> tactic.target >>= destruct_pairwise_dist_equiv n
-} <|> refl_dist_equiv_base <|> apply_dist_equivs d_eq
-| 0 _ := refl_dist_equiv_base <|> apply_dist_equivs d_eq
+  tactic.target >>= destruct_pairwise_dist_equiv opt_names'' n
+} <|> try_solve d_eq >> return opt_names else try_solve d_eq >> return opt_names
+| opt_names 0 _ := try_solve d_eq >> return opt_names
 
 meta def deep_flag : lean.parser bool := (lean.parser.tk "deep" *> return tt) <|> return ff
 
@@ -78,7 +77,8 @@ in each case trying to prove the goal by first proving a distributional equivale
 If `deep` is true then it will attempt to break things pairwise eagerly,
 even when the peices don't look like an equivalence between binds syntactically. -/
 private meta def pairwise_dist_equiv_aux (deep : bool)
-  (opt_d_eqs : option (list pexpr)) (opt_depth : option ℕ) : tactic unit :=
+  (opt_d_eqs : option (list pexpr)) (opt_depth : option ℕ)
+  (opt_names : option (list name)) : tactic unit :=
 do g ← tactic.target,
   passed_d_eqs ← return (opt_d_eqs.get_or_else []),
   passed_depth ← return (opt_depth.get_or_else 100),
@@ -86,15 +86,17 @@ do g ← tactic.target,
   tagged_d_eqs' ← get_pairwise_dist_equiv_lemmas,
   d_eqs ← return (passed_d_eqs ++ tagged_d_eqs ++ tagged_d_eqs'),
   by_dist_equiv,
-  tactic.target >>= destruct_pairwise_dist_equiv d_eqs deep passed_depth
+  tactic.target >>= destruct_pairwise_dist_equiv d_eqs deep opt_names passed_depth >> return ()
 
 @[interactive] meta def pairwise_dist_equiv (opt_d_eqs : parse (optional (pexpr_list)))
-  (opt_depth : parse (optional (lean.parser.small_nat))) : tactic unit :=
-do pairwise_dist_equiv_aux ff opt_d_eqs opt_depth
+  (opt_depth : parse (optional (lean.parser.small_nat)))
+  (opt_names : parse (optional (with_ident_list))) : tactic unit :=
+do pairwise_dist_equiv_aux ff opt_d_eqs opt_depth opt_names
 
 @[interactive] meta def pairwise_dist_equiv_deep (opt_d_eqs : parse (optional (pexpr_list)))
-  (opt_depth : parse (optional (lean.parser.small_nat))) : tactic unit :=
-do pairwise_dist_equiv_aux tt opt_d_eqs opt_depth
+  (opt_depth : parse (optional (lean.parser.small_nat)))
+  (opt_names : parse (optional (with_ident_list))): tactic unit :=
+do pairwise_dist_equiv_aux tt opt_d_eqs opt_depth opt_names
 
 end oracle_comp
 
@@ -200,5 +202,15 @@ example (oa oa' : ℕ → oracle_comp spec α) (h : ∀ n, oa n ≃ₚ oa' n):
   (do {x ← return 6, y ← oa x, return 5} : oracle_comp spec ℕ) ≃ₚ
   (do {x ← return (1 * 2 * 3), y ← oa' x, return (10 - 3 - 2)} : oracle_comp spec ℕ) :=
 by pairwise_dist_equiv [h]
+
+/-- `pairwise_dist_equiv` allows custom variable names -/
+example (oa : oracle_comp spec α) (ob ob' : α → oracle_comp spec β)
+  (oc oc' : β → oracle_comp spec γ) (h : ∀ x ∈ oa.support, ob x ≃ₚ ob' x)
+  (h' : ∀ y ∈ (oa >>= ob).support, oc y ≃ₚ oc' y) : oa >>= ob >>= oc ≃ₚ oa >>= ob' >>= oc' :=
+begin
+  pairwise_dist_equiv with xx hxx yy hyy,
+  exact h xx hxx,
+  exact h' yy hyy,
+end
 
 end tests

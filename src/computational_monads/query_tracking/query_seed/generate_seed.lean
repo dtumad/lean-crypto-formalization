@@ -31,11 +31,17 @@ noncomputable def generate_seed (qc : spec.query_count) :
   oracle_comp uniform_selecting (spec.query_seed) :=
 generate qc (λ i, $ᵗ (spec.range i))
 
-variables (qc : spec.query_count)
+variables (qc qc' : spec.query_count)
 
 @[simp] lemma support_generate_seed : (generate_seed qc).support = {qs | ↑qs = qc} :=
 by simp only [generate_seed, support_generate, mem_support_uniform_select_fintype,
   list.all₂_iff_forall, imp_true_iff, and_true]
+
+lemma coe_query_count_of_mem_support_generate_seed {qs : spec.query_seed} {qc : spec.query_count}
+  (h : qs ∈ (generate_seed qc).support) : ↑qs = qc := sorry
+
+lemma coe_query_count_of_mem_fin_support_generate_seed {qs : spec.query_seed} {qc : spec.query_count}
+  (h : qs ∈ (generate_seed qc).fin_support) : ↑qs = qc := sorry
 
 @[simp] lemma prob_output_generate_seed (qs : spec.query_seed) (h : ↑qs = qc) :
   ⁅= qs | generate_seed qc⁆ = (possible_outcomes qc)⁻¹ :=
@@ -51,5 +57,14 @@ begin
   exact ennreal.inv_mul_cancel (ennreal.pow_ne_zero (nat.cast_ne_zero.2 fintype.card_ne_zero) _)
     (ennreal.pow_ne_top (ennreal.nat_ne_top _))
 end
+
+@[simp] lemma card_fin_support_generate_seed :
+  (generate_seed qc).fin_support.card = possible_outcomes qc :=
+begin
+  sorry
+end
+
+lemma generate_seed_add : generate_seed (qc + qc') = (+) <$> generate_seed qc <*> generate_seed qc' :=
+sorry
 
 end oracle_comp
