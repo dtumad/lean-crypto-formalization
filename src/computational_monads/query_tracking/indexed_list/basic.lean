@@ -768,6 +768,14 @@ end
 
 end has_sep
 
+section value_differs
+
+-- @[derive decidable]
+def value_differs (il il' : spec.indexed_list τ) (i : spec.ι) (n : ℕ) : Prop :=
+(il i).nth n ≠ (il' i).nth n
+
+end value_differs
+
 end indexed_list
 
 end oracle_spec

@@ -24,7 +24,8 @@ namespace oracle_comp
 open oracle_spec
 open_locale big_operators ennreal
 
-variables {α β γ : Type} {spec spec' : oracle_spec} (oa : oracle_comp spec α) (e e' : set α)
+variables {α β γ : Type} {spec spec' : oracle_spec} (oa : oracle_comp spec α)
+  (e e' : set α) (p p' : α → Prop)
 
 /-- Probability of a predicate holding after running a particular experiment.
 Defined in terms of the outer measure associated to the corresponding `pmf` by `eval_dist`. -/
@@ -121,6 +122,9 @@ begin
   { rw [set.indicator_apply_eq_zero.2 (λ _, eval_dist_apply_eq_zero hx),
       set.indicator_apply_eq_zero.2 (λ _, eval_dist_apply_eq_zero hx)] }
 end
+
+lemma prob_event_ext' (h : ∀ x ∈ oa.support, p x ↔ p' x) : ⁅p | oa⁆ = ⁅p' | oa⁆ :=
+prob_event_ext oa p p' h
 
 section support
 

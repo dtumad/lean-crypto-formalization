@@ -25,14 +25,6 @@ namespace query_seed
 
 variables (qs qs' qs'' : spec.query_seed)
 
-section seed_differs
-
-/-- The `n`th seed values differ between `qs` and `qs'`. -/
-def seed_differs (qs qs' : spec.query_seed) (i : spec.ι) (n : ℕ) : Prop :=
-(qs i).nth n ≠ (qs' i).nth n
-
-end seed_differs
-
 end query_seed
 
 end oracle_spec

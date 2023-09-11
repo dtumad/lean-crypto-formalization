@@ -53,12 +53,16 @@ calc ⁅e | oa⁆ = e.indicator ⁅oa⁆ none + ∑' (a : α), e.indicator ⁅oa
   end
 
 lemma prob_event_is_some' (oa : oracle_comp spec α) (f : α → option β) [decidable_eq β] :
-  ⁅λ x, (f x).is_some | oa⁆ = ∑' (b : β), ⁅= some b | f <$> oa⁆ :=
+  ⁅λ x, (f x).is_some | oa⁆ = ∑' y : β, ⁅= some y | f <$> oa⁆ :=
 begin
   rw [← prob_event_is_some, prob_event_map],
   refine congr_arg (λ p, ⁅p | oa⁆) (set.ext (λ x, _)),
   simpa [set.preimage]
 end
+
+lemma prob_event_ne_none_eq_tsum : ⁅(≠) none | oa⁆ = ∑' x : α, ⁅= some x | oa⁆ :=
+trans (prob_event_ext' _ _ _ (λ x hx, by rw [ne_comm, option.ne_none_iff_is_some]))
+  (prob_event_is_some _)
 
 lemma prob_event_is_some_eq_one_sub_prob_output_none :
   ⁅λ x, x.is_some | oa⁆ = 1 - ⁅= none | oa⁆ :=

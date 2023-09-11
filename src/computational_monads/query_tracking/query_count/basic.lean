@@ -3,7 +3,7 @@ Copyright (c) 2023 Devon Tuma. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
-import computational_monads.query_tracking.indexed_list.basic
+import computational_monads.query_tracking.indexed_list.order
 import to_mathlib.general
 
 /-!
@@ -298,13 +298,15 @@ namespace indexed_list
 
 open query_count
 
-variables {τ : spec.ι → Type} (il il' : spec.indexed_list τ)
+variables {τ τ' : spec.ι → Type}
 
 section to_query_count
 
 /-- View any `indexed_list` as a `query_count` by replacing all values with `()`. -/
-def to_query_count {τ : spec.ι → Type} (il : spec.indexed_list τ) : spec.query_count :=
+def to_query_count (il : spec.indexed_list τ) : spec.query_count :=
 il.map (λ _ _, ())
+
+variables (il il' : spec.indexed_list τ)
 
 @[simp] lemma apply_to_query_count (i) :
   il.to_query_count i = list.replicate (il.get_count i) () := list.map_const _ _
@@ -343,7 +345,8 @@ end to_query_count
 instance coe_query_count (τ : spec.ι → Type) : has_coe (spec.indexed_list τ) (spec.query_count) :=
 { coe := to_query_count }
 
-@[simp] lemma coe_query_count_eq : (↑il : spec.query_count) = il.to_query_count := rfl
+@[simp] lemma coe_query_count_eq {τ : spec.ι → Type} (il : spec.indexed_list τ) :
+  (↑il : spec.query_count) = il.to_query_count := rfl
 
 end indexed_list
 

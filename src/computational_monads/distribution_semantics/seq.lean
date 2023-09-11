@@ -108,7 +108,7 @@ end
 /-- In an `add_cancel_monoid`, the output of adding the result of two computations has probability
 given by summing over the probabilities of each possible result of the first computation. -/
 lemma prob_output_seq_map_add_cancel [add_cancel_monoid α] (z : α) :
-  ⁅= z | (+) <$> oa <*> oa'⁆ = ∑' x, ⁅(= z) ∘ (+ x) | oa⁆ * ⁅= x | oa'⁆ :=
+  ⁅= z | (+) <$> oa <*> oa'⁆ = ∑' x₀, ⁅(= z) ∘ (+ x₀) | oa⁆ * ⁅= x₀ | oa'⁆ :=
 begin
   -- haveI : decidable_eq α := classical.dec_eq α,
   rw [prob_output_seq_eq_tsum, ennreal.tsum_comm],

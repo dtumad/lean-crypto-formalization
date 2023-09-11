@@ -178,15 +178,91 @@ namespace indexed_list
 
 variables {spec : oracle_spec} {τ : spec.ι → Type}
 
-/-- Given `il : indexed_list` and a query count that is less than it at every index,
-we can find unique indexed lists that add to `il` and have sizes split by the query count. -/
-lemma exists_unique_split_of_count_le (il : spec.indexed_list τ)
-  (qc : query_count spec) (hqc : qc ≤ ↑il) :
-  ∃! (il₁ il₂ : spec.indexed_list τ), il₁ + il₂ = il ∧ (↑il₁ = qc ∧ ↑il₂ = (↑il - qc)) :=
-begin
-  sorry,
-end
+section take_to_count
 
+/-- Reduce an indexed list to only the number of elements in a given query count.
+If the count is higher than the current number of elements default to taking the current list. -/
+def take_to_count (il : spec.indexed_list τ) (qc : spec.query_count) : spec.indexed_list τ :=
+{ to_fun := λ i, (il i).take (qc.get_count i),
+  active_oracles := il.active_oracles ∩ qc.active_oracles,
+  mem_active_oracles_iff' := by simp [not_or_distrib] }
+
+variables (il : spec.indexed_list τ) (qc : spec.query_count)
+
+@[simp] lemma take_to_count_apply (i : spec.ι) : (il.take_to_count qc) i =
+  (il i).take (qc.get_count i) := rfl
+
+@[simp] lemma active_oracles_take_to_count : (il.take_to_count qc).active_oracles =
+  il.active_oracles ∩ qc.active_oracles := rfl
+
+@[simp] lemma get_count_take_to_count (i : spec.ι) : (il.take_to_count qc).get_count i =
+  min (qc.get_count i) (il.get_count i) := by simp [get_count_eq_length_apply]
+
+@[simp] lemma to_query_count_take_to_count :
+  (il.take_to_count qc).to_query_count = qc ⊓ ↑il :=
+query_count.get_count_ext _ _ (λ i, by simp [query_count.get_count_inf])
+
+end take_to_count
+
+section drop_to_count
+
+/-- Reduce an indexed list by deleting number of elements in a given query count.
+If the count is higher than the current number of elements default to the empty list. -/
+noncomputable def drop_to_count (il : spec.indexed_list τ) (qc : spec.query_count) : spec.indexed_list τ :=
+{ to_fun := λ i, (il i).drop (qc.get_count i),
+  active_oracles := {i ∈ il.active_oracles | qc.get_count i < il.get_count i},
+  mem_active_oracles_iff' := sorry }
+
+variables (il : spec.indexed_list τ) (qc : spec.query_count)
+
+@[simp] lemma drop_to_count_apply (i : spec.ι) : (il.drop_to_count qc) i =
+  (il i).drop (qc.get_count i) := rfl
+
+@[simp] lemma active_oracles_drop_to_count : (il.drop_to_count qc).active_oracles =
+  {i ∈ il.active_oracles | qc.get_count i < il.get_count i} := rfl
+
+@[simp] lemma get_count_drop_to_count (i : spec.ι) : (il.drop_to_count qc).get_count i =
+  il.get_count i - qc.get_count i := by simp [get_count_eq_length_apply]
+
+@[simp] lemma to_query_count_drop_to_count :
+  (il.drop_to_count qc).to_query_count = ↑il - qc :=
+query_count.get_count_ext _ _ (λ i, by simp)
+
+end drop_to_count
+
+@[simp] lemma take_to_count_add_drop_to_count (il : spec.indexed_list τ) (qc : spec.query_count) :
+  (il.take_to_count qc) + (il.drop_to_count qc) = il := fun_like.ext _ _ (λ i, by simp)
+
+-- lemma query_count_le_coe_iff_exists_unique_split (il : spec.indexed_list τ)
+--   (qc : query_count spec) : qc ≤ ↑il ↔ ∃! ill : spec.indexed_list τ × spec.indexed_list τ,
+--     ill.1 + ill.2 = il ∧ (↑ill.1 = qc ∧ ↑ill.2 = ↑il - qc) :=
+-- begin
+--   refine ⟨λ h, _, λ h, _⟩,
+--   {
+--     refine ⟨⟨il.take_to_count qc, il.drop_to_count qc⟩, _, _⟩,
+--     {
+--       sorry,
+--     },
+--     {
+--       sorry,
+--     }
+--   },
+--   {
+--     sorry
+--     -- obtain ⟨il₁, ⟨il₂, h', hil₂⟩, hil₁⟩ := h,
+--     -- rw [← h'.1, coe_query_count_eq, to_query_count_add, ← h'.2.1, coe_query_count_eq],
+--     -- refine le_self_add _ _,
+--   }
+-- end
+
+-- /-- Given `il : indexed_list` and a query count that is less than it (viewed as a query count),
+-- we can find unique indexed lists that add to `il` and have sizes split by the query count. -/
+-- lemma exists_unique_split_of_count_le (il : spec.indexed_list τ)
+--   (qc : query_count spec) (hqc : qc ≤ ↑il) :
+--   ∃! (il₁ il₂ : spec.indexed_list τ), il₁ + il₂ = il ∧ (↑il₁ = qc ∧ ↑il₂ = (↑il - qc)) :=
+-- begin
+--   sorry,
+-- end
 
 end indexed_list
 

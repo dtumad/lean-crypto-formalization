@@ -194,6 +194,8 @@ lemma support_generate : (generate qc oa).support =
 by simp only [generate, support_generate_aux qc oa (finset.nodup_to_list _),
   finset.mem_to_list, sep_self]
 
+-- lemma other : generate (qc + qc') oa ≃ₚ
+
 @[pairwise_dist_equiv]
 lemma generate_add_dist_equiv :
   generate (qc + qc') oa ≃ₚ ((+) <$> generate qc oa <*> generate qc' oa) :=
@@ -201,10 +203,22 @@ begin
   refine dist_equiv.ext (λ il, _),
   by_cases hil : ↑il = qc + qc',
   {
-    have hqcil : qc ≤ ↑il := sorry,
-    have hqcil' : ↑il - qc = qc' := sorry,
-    have := exists_unique_split_of_count_le _ _ hqcil,
-    sorry,
+    have : il.take_to_count qc + il.drop_to_count qc = il := sorry,
+    have ht := prob_output_seq_map_add_cancel_unique (generate qc oa) (generate qc' oa) il
+      _ _ (this) sorry,
+    refine trans _ ht.symm,
+    rw [prob_output_generate _ _ _ hil, prob_output_generate, prob_output_generate],
+    {
+      -- simp,
+      sorry,
+    },
+    {
+      simp,
+      rw [← this, to_query_count_add, to_query_count_take_to_count, hil,
+        to_query_count_drop_to_count],
+      simp,
+
+    }
   },
   {
     sorry,

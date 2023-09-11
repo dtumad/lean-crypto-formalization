@@ -176,8 +176,8 @@ end eval_dist
 
 section prob_event
 
-lemma prob_event_diagonal [decidable_eq α] (oa : oracle_comp spec (α × α)) :
-  ⁅set.diagonal α | oa⁆ = ∑' (a : α), ⁅= (a, a) | oa⁆ :=
+@[simp] lemma prob_event_diagonal [decidable_eq α] (oa : oracle_comp spec (α × α)) :
+  ⁅set.diagonal α | oa⁆ = ∑' a : α, ⁅= (a, a) | oa⁆ :=
 calc ⁅set.diagonal α | oa⁆ = ∑' (x : α × α), ite (x ∈ set.diagonal α) ⁅= x | oa⁆ 0 :
     prob_event_eq_tsum_ite oa (set.diagonal α)
   ... = ∑' (a a' : α), ite (a = a') ⁅= (a, a') | oa⁆ 0 :
@@ -186,6 +186,18 @@ calc ⁅set.diagonal α | oa⁆ = ∑' (x : α × α), ite (x ∈ set.diagonal �
     tsum_congr (λ a, tsum_congr (λ a', by by_cases h : a = a'; simp only [h, if_false]))
   ... = ∑' (a a' : α), ite (a' = a) ⁅= (a, a) | oa⁆ 0 : by simp_rw [@eq_comm]
   ... = ∑' (a : α), ⁅= (a, a) | oa⁆ : tsum_congr (λ a, tsum_ite_eq _ _)
+
+@[simp] lemma prob_event_fst_eq_snd [decidable_eq α] (oa : oracle_comp spec (α × α)) :
+  ⁅λ x, x.1 = x.2 | oa⁆ = ∑' a : α, ⁅= (a, a) | oa⁆ :=
+prob_event_diagonal oa
+
+@[simp] lemma prob_event_diagonal_eq_sum [decidable_eq α] [fintype α] (oa : oracle_comp spec (α × α)) :
+  ⁅set.diagonal α | oa⁆ = ∑ a : α, ⁅= (a, a) | oa⁆ :=
+(prob_event_diagonal oa).trans (tsum_eq_sum (λ x hx, (hx (finset.mem_univ _)).elim))
+
+@[simp] lemma prob_event_fst_eq_snd_eq_sum [decidable_eq α] [fintype α] (oa : oracle_comp spec (α × α)) :
+  ⁅λ x, x.1 = x.2 | oa⁆ = ∑ a : α, ⁅= (a, a) | oa⁆ :=
+prob_event_diagonal_eq_sum oa
 
 end prob_event
 
