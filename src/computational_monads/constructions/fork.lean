@@ -211,10 +211,7 @@ do {
 
 variables (adv : fork_adversary α β i q) (y : α) (fr : fork_result adv)
 
--- lemma prob_output_nth_seed₁
-
-/-- Both the resulting `query_seed`s from running `fork` have the same number of seeded values.
-TODO: should this be a `to_query_count` function that matches `coe`? -/
+/-- Both the resulting `query_seed`s from running `fork` have the same number of seeded values. -/
 lemma to_query_count_seed_eq_to_query_count_seed (h : fr ∈ (fork adv y).support) :
   fr.seed₁.to_query_count = fr.seed₂.to_query_count :=
 begin
@@ -562,15 +559,18 @@ end prob_event_fork_success
 
 end oracle_comp
 
+namespace forking_adversary
 
 -- TODO: for the hhs sig
 section of_choose_input
 
-def of_choose_input (adv : sec_adversary (uniform_selecting ++ spec) β α)
+open oracle_comp
+
+def of_choose_input (adv : sec_adversary (uniform_selecting ++ spec) α β)
   (i : spec.ι) (choose_input : α → β → spec.domain i) :
-  fork_adversary β (α × query_log (uniform_selecting ++ spec)) i (adv.qb.get_count (sum.inr i)) :=
+  fork_adversary α (β × query_log (uniform_selecting ++ spec)) i (adv.qb.get_count (sum.inr i)) :=
 { run := λ y, simulate loggingₛₒ (adv.run y) ∅,
-  choose_fork := λ y z, let inp := choose_input z.1 y in
+  choose_fork := λ y z, let inp := choose_input y z.1 in
     let ts : list (spec.domain i) := (z.2 (sum.inr i)).map prod.fst in
     if inp ∈ ts then some ↑(list.index_of inp ts) else none,
   qb := adv.qb.increment (sum.inr i) 1,
@@ -578,4 +578,27 @@ def of_choose_input (adv : sec_adversary (uniform_selecting ++ spec) β α)
   qb_is_bound := λ y, logging_oracle.queries_at_most_simulate _ _
     (queries_at_most_trans _ _ _ (adv.qb_is_bound y) (indexed_list.le_add_values _ _)) _ }
 
+variables (adv : sec_adversary (uniform_selecting ++ spec) α β)
+  (choose_input : α → β → spec.domain i)
+
+lemma seed_eq_to_seed (fr : fork_result (of_choose_input adv i choose_input)) (y : α)
+  (hfr : fr ∈ (fork (of_choose_input adv i choose_input) y).support) :
+  fr.seed₁ = fr.side_output₁.2.to_seed ∧
+    fr.seed₂ = fr.side_output₂.2.to_seed :=
+sorry
+
+-- lemma mem_support_simulate (fr : fork_result (of_choose_input adv i choose_input)) (y : α)
+--   (hfr : fr ∈ (fork (of_choose_input adv i choose_input) y).support) :
+--   fr.side_output₁ ∈ (simulate seededₛₒ)
+
+-- lemma same_fork_point_of_choose_input_iff (fr : fork_result (of_choose_input adv i choose_input)) (y : α)
+--   (hfr : fr ∈ (fork (of_choose_input adv i choose_input) y).support) :
+--   same_fork_point fr ↔ ∃ z z' : β,
+--     (choose_input y fr.side_output₁.1 ∈ ) :=
+-- begin
+
+-- end
+
 end of_choose_input
+
+end forking_adversary

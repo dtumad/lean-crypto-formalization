@@ -29,21 +29,27 @@ variables {G X M : Type} [fintype G] [fintype X]
   [decidable_eq G] [decidable_eq X]
   [add_group G] [algorithmic_homogenous_space G X] {n : ℕ}
 
-/-- Function used in signing to combine the random commitments with the resulting hash,
-  using the provided secret key to prove that the secret key corresponds to the public key -/
-@[reducible, inline]
-def zip_commits_with_hash (cs : vector G n) (h : vector bool n) (sk : G) : vector (G × bool) n :=
+/-- Given a list of commitments `cs` and a hash value `h`, zip them together by adding
+the security key to indices of `cs` corresponding to `0` bits in `h`. -/
+@[reducible, inline] def zip_commits_with_hash (cs : vector G n)
+  (h : vector bool n) (sk : G) : vector (G × bool) n :=
 vector.zip_with (λ c (b : bool), (if b then c else c + sk, b)) cs h
 
-lemma zip_commits_with_hash_nil (sk : G) :
-  zip_commits_with_hash vector.nil vector.nil sk = vector.nil := rfl
-
-@[reducible, inline]
-def retrieve_commits (x₀ pk: X) (σ : vector (G × bool) n) : vector X n :=
+/-- Given a pair of points `x₀` and `pk`, attempt to retreive the commits from a signature `σ`,
+by adding the vactor to either `pk` or `x₀` depending on if the entry would have had `sk` added.
+Will result in `(cs.map (+ᵥ pk))` if the original signature is valid. -/
+@[reducible, inline] def retrieve_commits (x₀ pk : X)
+  (σ : vector (G × bool) n) : vector X n :=
 (σ.map (λ ⟨c, b⟩, if b then c +ᵥ pk else c +ᵥ x₀))
 
-lemma retrieve_commits_nil (x₀ pk : X) :
-  retrieve_commits x₀ pk (@vector.nil $ G × bool) = vector.nil := rfl
+/-- `retrieve_commits` will succeed if every hash bit is `0` or if `sk` is a true vectorization. -/
+@[simp] lemma retrieve_commits_zip_commits_with_hash_eq_iff (cs : vector G n)
+  (h : vector bool n) (sk : G) (x₀ pk : X) :
+  (retrieve_commits x₀ pk (zip_commits_with_hash cs h sk) = (cs.map (+ᵥ pk)))
+    ↔ h = vector.replicate n tt ∨ sk +ᵥ x₀ = pk :=
+begin
+  sorry
+end
 
 end commits
 
@@ -62,7 +68,7 @@ def hhs_signature (G X M : Type) (n : ℕ) [fintype G] [fintype X] [inhabited G]
   -- Sign a message by choosing `n` random commitments, and giving secret key proofs for each.
   sign := λ ⟨⟨x₀, pk⟩, sk, m⟩,
     do {(cs : vector G n) ← repeat ($ᵗ G) n,
-      (ys : vector X n) ← return (cs.map (λ c, c +ᵥ pk)),
+      (ys : vector X n) ← return (cs.map (+ᵥ pk)),
       (h : vector bool n) ← query₂ () (ys, m),
       return (zip_commits_with_hash cs h sk)},
   -- Verify a signature by checking that the commitments map to the expected values.
@@ -120,7 +126,8 @@ section verify
 variables (x₀ pk : X) (m : M) (σ : vector (G × bool) n)
 
 @[simp] lemma verify_apply : ((hhs_signature G X M n).verify ((x₀, pk), m, σ)) =
-  do{(h : vector bool n) ← query₂ () (retrieve_commits x₀ pk σ, m),
+  do {(ys : vector X n) ← return (retrieve_commits x₀ pk σ),
+    (h : vector bool n) ← query₂ () (ys, m),
     return (h = σ.map prod.snd)} := rfl
 
 end verify
@@ -226,13 +233,13 @@ do{ ⟨⟨m, σ⟩, (), cache⟩ ← default_simulate (idₛₒ ++ₛ randomₛ�
       (mock_signing_reduction adversary x₀ pk),
     return (m, σ, cache) }
 
-theorem prob_event_is_valid_signature_ge_unforgeable_advantage (x₀ pk : X) :
-  ⁅λ ⟨m, σ, cache⟩, is_valid_signature x₀ pk m σ cache |
-    simulate_mock_signing_reduction adversary x₀ pk⁆
-      ≥ adversary.advantage :=
-begin
-  sorry
-end
+-- theorem prob_event_is_valid_signature_ge_unforgeable_advantage (x₀ pk : X) :
+--   ⁅λ ⟨m, σ, cache⟩, is_valid_signature x₀ pk m σ cache |
+--     simulate_mock_signing_reduction adversary x₀ pk⁆
+--       ≥ adversary.advantage :=
+-- begin
+--   sorry
+-- end
 
 end mock_signing_reduction
 
@@ -248,9 +255,9 @@ section choose_fork
 -- | (some ⟨h, index⟩) := if hq : index < q ∧ h = σ.map prod.snd then some ⟨index, hq.1⟩ else none
 -- end
 
-def choose_input (x₀ pk : X) (m : M) (σ : vector (G × bool) n) :
-  (hhs_signature G X M n).random_oracle_spec.domain () :=
-(retrieve_commits x₀ pk σ, m)
+-- def choose_input (x₀ pk : X) (m : M) (σ : vector (G × bool) n) :
+--   (hhs_signature G X M n).random_oracle_spec.domain () :=
+-- (retrieve_commits x₀ pk σ, m)
 
 end choose_fork
 
@@ -268,23 +275,22 @@ def mocked_unforgeable_adversary (adversary : (hhs_signature G X M n).unforgeabl
 vectorization in the hard homogenous space.
 `q` is the maximum number of queries made by the adversary to consider. -/
 def fork_reduction (adversary : (hhs_signature G X M n).unforgeable_adversary) :
-  fork_adversary
-  (X × X) ((M × vector (G × bool) n) × ((hhs_signature G X M n).base_oracle_spec).query_log) _ _ :=
-of_choose_input (mocked_unforgeable_adversary adversary)
-  () (λ y z, choose_input z.1 z.2 y.1 y.2 )
+  fork_adversary (X × X) ((M × vector (G × bool) n) × _) _ _ :=
+forking_adversary.of_choose_input (mocked_unforgeable_adversary adversary) ()
+  (λ z y, (retrieve_commits z.1 z.2 y.2, y.1))
 
-lemma advantage_le_forking_reduction_advantage
-  (adversary : (hhs_signature G X M n).unforgeable_adversary) (x₀ pk : X) :
-    adversary.advantage ≤ (fork_reduction adversary).advantage (x₀, pk) :=
-begin
-  sorry
-end
+-- lemma advantage_le_forking_reduction_advantage
+--   (adversary : (hhs_signature G X M n).unforgeable_adversary) (x₀ pk : X) :
+--     adversary.advantage ≤ (fork_reduction adversary).advantage (x₀, pk) :=
+-- begin
+--   sorry
+-- end
 
 /-- If the fork succeeds, we know that there are two valid signatures
 corresponding to a query with the same input and a different output.
 This further implies that `retrieve_commits` agrees on both,
 but the actual booleans are different, which will let us get a vectorization. -/
-theorem vectorizable_of_fork_success (x₀ pk : X)
+theorem vectorizable_of_fork_success'' (x₀ pk : X)
   (fr : fork_result (fork_reduction adversary)) (hfr : fork_success fr)
   (h : fr ∈ (fork (fork_reduction adversary) (x₀, pk)).support) :
   retrieve_commits x₀ pk fr.side_output₁.1.2 = retrieve_commits x₀ pk fr.side_output₂.1.2
@@ -303,6 +309,21 @@ begin
   sorry
 end
 
+-- def vectorization_of_commits ()
+
+
+-- /-- If the fork succeeds, we know that there are two valid signatures
+-- corresponding to a query with the same input and a different output.
+-- This further implies that `retrieve_commits` agrees on both,
+-- but the actual booleans are different, which will let us get a vectorization. -/
+-- theorem vectorizable_of_fork_success (x₀ pk : X)
+--   (fr : fork_result (fork_reduction adversary)) (hfr : fork_success fr)
+--   (h : fr ∈ (fork (fork_reduction adversary) (x₀, pk)).support) :
+--   vectorization_of_fork_result _ x₀ pk fr = pk -ᵥ x₀ :=
+-- begin
+--   sorry
+-- end
+
 end fork_reduction
 
 section vectorization_reduction
@@ -310,25 +331,38 @@ section vectorization_reduction
 def vectorization_of_fork_result (adv : (hhs_signature G X M n).unforgeable_adversary)
   (x₀ pk : X) (fr : fork_result (fork_reduction adv)) : G :=
 begin
-  let σ₂ := retrieve_commits x₀ pk fr.side_output₁.1.2,
-  let σ₁ := retrieve_commits x₀ pk fr.side_output₂.1.2,
+  let σ₁ := fr.side_output₁.1.2,
+  let σ₂ := fr.side_output₂.1.2,
+  let ys₁ := retrieve_commits x₀ pk fr.side_output₁.1.2,
+  let ys₂ := retrieve_commits x₀ pk fr.side_output₂.1.2,
   let h₁ := fr.side_output₁.1.2.map prod.snd,
   let h₂ := fr.side_output₂.1.2.map prod.snd,
+  let m : fin n := sorry,
+  exact (σ₁.nth m).1 - (σ₂.nth m).1
 end
 
 def vectorization_reduction (adv : (hhs_signature G X M n).unforgeable_adversary) :
   vectorization_adversary G X :=
-{ run := begin
+{ run :=
+  begin
     rintro ⟨x₀, pk⟩,
-    have := fork (fork_reduction adv) (x₀, pk),
-    have := default_simulate' (idₛₒ ++ₛ randomₛₒ) this,
-    refine do {fr : fork_result _ ← this, _},
-    let z₁ := fr.side_output₁,
-    let z₂ := fr.side_output₂,
-  end,
+    have := default_simulate' (idₛₒ ++ₛ randomₛₒ) (fork (fork_reduction adv) (x₀, pk)),
+    refine vectorization_of_fork_result _ x₀ pk <$> this,
+  end
+  ,
   qb := sorry,
   qb_is_bound := sorry,
 }
+
+/-- The probability of the fork succeeding is at least the square of
+the original adversary's success probability, minus a small chance
+of both oracle calls giving the same result. -/
+theorem le_vectorization_advantage (x₀ pk : X) :
+  (adversary.advantage ^ 2 / (adversary.qb.get_count (sum.inr (sum.inr ())))) - (1 / 2 ^ n) ≤
+    (vectorization_reduction adversary).advantage :=
+begin
+  sorry
+end
 
 end vectorization_reduction
 

@@ -5,6 +5,7 @@ Authors: Devon Tuma
 -/
 import computational_monads.oracle_spec
 import computational_monads.query_tracking.query_count.order
+import computational_monads.query_tracking.query_seed.basic
 
 /-!
 # Oracle Query Log
@@ -58,6 +59,12 @@ variables (log : query_log spec) (i : spec.ι) (t : spec.domain i) (u : spec.ran
 @[simp] lemma le_log_query_self : log ≤ log.log_query i t u := by simp [log_query]
 
 end log_query
+
+section to_seed
+
+def to_seed (log : spec.query_log) : spec.query_seed := log.map (λ _, prod.snd)
+
+end to_seed
 
 end query_log
 
