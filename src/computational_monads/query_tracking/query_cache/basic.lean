@@ -21,6 +21,8 @@ We also define a number of basic constructors and operations on `query_cache`:
 * `query_cache.empty` has no cached inputs at all.
 -/
 
+namespace oracle_spec
+
 /-- Data type representing a cache of oracle queries for a given `oracle_spec`,
 represented as a function from inputs to optional outputs, with `none` meaning an uncached value.
 We also bundle a finset `cached_inputs` containing all the currently cached values,
@@ -557,3 +559,5 @@ end
 end singleton
 
 end query_cache
+
+end oracle_spec

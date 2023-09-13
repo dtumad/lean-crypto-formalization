@@ -46,7 +46,7 @@ section eval_dist
 @[simp] lemma eval_dist_map : ⁅f <$> oa⁆ = ⁅oa⁆.map f := eval_dist_bind oa (pure ∘ f)
 
 lemma prob_output_map_eq_tsum [decidable_eq β] :
-  ⁅= y | f <$> oa⁆ = ∑' x, if y = f x then ⁅oa⁆ x else 0 :=
+  ⁅= y | f <$> oa⁆ = ∑' x, if y = f x then ⁅= x | oa⁆ else 0 :=
 prob_output_bind_return_eq_tsum oa f y
 
 lemma prob_output_map_eq_tsum_indicator :

@@ -143,7 +143,7 @@ begin
   refine tsum_congr (λ x, (tsum_eq_single z.2 _).trans _),
   { exact λ y hy, if_neg $ by simp only [eq_iff_fst_eq_snd_eq, hy.symm,
       prod.map_mk, id.def, and_false, not_false_iff] },
-  { simpa only [eq_iff_fst_eq_snd_eq, prod.map_mk, id.def, eq_self_iff_true, and_true] },
+  { simp [eq_iff_fst_eq_snd_eq, prod.map_mk, id.def, eq_self_iff_true, and_true] },
 end
 
 /-- If only the right output is changed in mapping the result of a computation,
@@ -155,7 +155,7 @@ begin
   refine tsum_congr (λ x, (tsum_eq_single z.1 _).trans _),
   { exact λ y hy, if_neg $ by simp only [eq_iff_fst_eq_snd_eq, hy.symm,
       prod.map_mk, id.def, false_and, not_false_iff]},
-  { simpa only [eq_iff_fst_eq_snd_eq, prod.map_mk, id.def, eq_self_iff_true, true_and] },
+  { simp only [eq_iff_fst_eq_snd_eq, prod.map_mk, id.def, eq_self_iff_true, true_and] },
 end
 
 lemma bind_dist_equiv_fst_bind (oc : α × β → oracle_comp spec γ) (y : β)
