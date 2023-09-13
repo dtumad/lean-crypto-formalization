@@ -25,9 +25,11 @@ open_locale big_operators ennreal
 open oracle_comp oracle_spec
 
 /-- An `algorithmic_homogenous_space` is a homogenous space where operations are all `poly_time`.
-  Uses mathlib's definition of an `add_torsor`, which is a bijective group action -/
-class algorithmic_homogenous_space (G X : Type) [fintype G] [fintype X]
-  [decidable_eq G] [decidable_eq X] [add_group G] extends add_torsor G X :=
+Uses mathlib's definition of an `add_torsor`, which is a bijective group action.
+We also assume `G` and `X` are finite types with decidable equality. -/
+class algorithmic_homogenous_space (G X : Type) extends add_group G, add_torsor G X :=
+[fintype_G : fintype G] [fintype_X : fintype X]
+[decidable_eq_G : decidable_eq G] [decidable_eq_X : decidable_eq X]
 (poly_time_add : poly_time (λ x, x.1 + x.2 : G × G → G))
 (poly_time_inv : poly_time (λ x, -x : G → G))
 (poly_time_vadd : poly_time (λ x, x.1 +ᵥ x.2 : G × X → X))
@@ -37,11 +39,22 @@ class algorithmic_homogenous_space (G X : Type) [fintype G] [fintype X]
 
 namespace algorithmic_homogenous_space
 
-variables {G X : Type} [fintype G] [fintype X] [decidable_eq G] [decidable_eq X]
-  [add_group G] [algorithmic_homogenous_space G X]
+variables {G X : Type} [algorithmic_homogenous_space G X]
 
-structure vectorization_adversary (G X : Type)
+instance fx [h : algorithmic_homogenous_space G X] : fintype X := h.fintype_X
+instance fg [h : algorithmic_homogenous_space G X] : fintype G := h.fintype_G
+instance dx [h : algorithmic_homogenous_space G X] : decidable_eq X := h.decidable_eq_X
+instance dg [h : algorithmic_homogenous_space G X] : decidable_eq G := h.decidable_eq_G
+-- instance [h : algorithmic_homogenous_space G X] : fintype X := h.fintype_X
+
+structure vectorization_adversary (G X : Type) [algorithmic_homogenous_space G X]
   extends sec_adversary uniform_selecting (X × X) G
+-- (inp_gen := $ᵗ X ×ₘ $ᵗ X)
+
+def vectorization_experiment (adv : vectorization_adversary G X) :
+  sec_experiment uniform_selecting (X × X) G unit :=
+{inp_gen := $ᵗ X ×ₘ $ᵗ X,
+  run := }
 
 -- structure vectorization_adversary (G X : Type) : Type 1 :=
 -- (adv : X × X → oracle_comp uniform_selecting G) -- TODO: name `adv` -> `alg`?

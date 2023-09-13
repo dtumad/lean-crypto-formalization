@@ -136,7 +136,17 @@ This definition is based on the assumption that valid signatures are always acce
 If the signature has a potential chance of failure then it isn't really meaningful. -/
 def is_valid (sig : signature) (pk : sig.PK) (m : sig.M) (σ : sig.S)
   (cache : sig.random_spec.query_cache) : Prop :=
-(sig.verify (pk, m, σ)).support = {tt}
+fst '' (sig.simulate_verify cache pk m σ).support = {tt}
+
+variables (sig : signature) (pk : sig.PK) (m : sig.M) (σ : sig.S)
+  (cache : sig.random_spec.query_cache)
+
+lemma is_valid.def : sig.is_valid pk m σ cache =
+  (fst '' (sig.simulate_verify cache pk m σ).support = {tt}) := rfl
+
+lemma is_valid_iff_prob_output : sig.is_valid pk m σ cache ↔
+  ⁅= tt | fst <$> sig.simulate_verify cache pk m σ⁆ = 1 :=
+by rw [prob_output_eq_one_iff, is_valid.def, support_map]
 
 end is_valid
 

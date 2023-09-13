@@ -19,7 +19,7 @@ from signature forgery to a vectorization forgery.
 -/
 
 open_locale ennreal big_operators
-open oracle_comp oracle_spec algorithmic_homogenous_space hard_homogenous_space
+open oracle_comp oracle_spec prod algorithmic_homogenous_space hard_homogenous_space
 
 section commits
 
@@ -31,22 +31,34 @@ variables {G X M : Type} [fintype G] [fintype X]
 the security key to indices of `cs` corresponding to `0` bits in `h`. -/
 @[reducible, inline] def zip_commits_with_hash (cs : vector G n)
   (h : vector bool n) (sk : G) : vector (G × bool) n :=
-vector.zip_with (λ c (b : bool), (if b then c else c + sk, b)) cs h
+vector.zip_with (λ c b, (if b = tt then c else c + sk, b)) cs h
 
 /-- Given a pair of points `x₀` and `pk`, attempt to retreive the commits from a signature `σ`,
 by adding the vactor to either `pk` or `x₀` depending on if the entry would have had `sk` added.
 Will result in `(cs.map (+ᵥ pk))` if the original signature is valid. -/
 @[reducible, inline] def retrieve_commits (x₀ pk : X)
   (σ : vector (G × bool) n) : vector X n :=
-(σ.map (λ ⟨c, b⟩, if b then c +ᵥ pk else c +ᵥ x₀))
+(σ.map (λ s, if s.2 = tt then s.1 +ᵥ pk else s.1 +ᵥ x₀))
+
+lemma nth_retrieve_commits_zip_commits_with_hash (x₀ pk : X)
+  (cs : vector G n) (hv : vector bool n) (sk : G) (i : fin n) :
+  (retrieve_commits x₀ pk (zip_commits_with_hash cs hv sk)).nth i =
+    if hv.nth i = tt then cs.nth i +ᵥ pk else (cs.nth i + sk) +ᵥ x₀:=
+by by_cases hv : hv.nth i = tt; simp [hv]
 
 /-- `retrieve_commits` will succeed if every hash bit is `0` or if `sk` is a true vectorization. -/
-@[simp] lemma retrieve_commits_zip_commits_with_hash_eq_iff (cs : vector G n)
-  (h : vector bool n) (sk : G) (x₀ pk : X) :
-  (retrieve_commits x₀ pk (zip_commits_with_hash cs h sk) = (cs.map (+ᵥ pk)))
-    ↔ h = vector.replicate n tt ∨ sk +ᵥ x₀ = pk :=
+@[simp] lemma retrieve_commits_zip_commits_with_hash_eq_iff (x₀ pk : X)
+  (cs : vector G n) (hv : vector bool n) (sk : G) :
+  (retrieve_commits x₀ pk (zip_commits_with_hash cs hv sk) = (cs.map (+ᵥ pk))) ↔
+    hv = vector.replicate n tt ∨ sk +ᵥ x₀ = pk :=
 begin
-  sorry
+  refine ⟨λ h, _, λ h, _⟩,
+  {
+    rw [zip_commits_with_hash, retrieve_commits] at h,
+    have : ∃ i, vector.nth hv i = ff := sorry,
+
+    rw [imp_iff_not]
+  }
 end
 
 end commits
@@ -128,12 +140,12 @@ end verify
 
 section is_valid
 
-def is_valid_iff (pk : X × X) (m : M) (σ : vector (G × bool) n)
+def is_valid_iff (x₀ pk : X) (m : M) (σ : vector (G × bool) n)
   (cache : ((vector X n × M) ↦ₒ vector bool n).query_cache) :
-  (hhs_signature G X M n).is_valid pk m σ cache ↔
-    sorry :=
+  (hhs_signature G X M n).is_valid (x₀, pk) m σ cache ↔
+    cache.lookup () (retrieve_commits x₀ pk σ, m) = some (σ.map snd) :=
 begin
-
+  sorry
 end
 
 end is_valid
