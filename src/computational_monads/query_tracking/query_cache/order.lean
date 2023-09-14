@@ -15,9 +15,9 @@ allowing any fresh value in `cache` to have any value (fresh or not) in `cache'`
 We also define and `inf` operation and a `⊥` element (the empty cache).
 -/
 
-namespace query_cache
+namespace oracle_spec
 
-open oracle_spec
+namespace query_cache
 
 variables {α β γ : Type} {spec spec' : oracle_spec}
 
@@ -249,3 +249,5 @@ end
 end singleton
 
 end query_cache
+
+end oracle_spec

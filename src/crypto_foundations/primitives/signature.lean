@@ -216,7 +216,7 @@ end complete
 /-- An adversary for the unforgeable signature experiment.
   Note that the adversary only has access to the public key. -/
 structure unforgeable_adversary (sig : signature) extends
-  sec_adversary (uniform_selecting ++ (sig.random_spec ++ sig.signing_spec)) sig.PK (sig.M × sig.S)
+  sec_adversary (uniform_selecting ++ sig.random_spec ++ sig.signing_spec) sig.PK (sig.M × sig.S)
 
 namespace unforgeable_adversary
 
@@ -229,6 +229,29 @@ def simulate_signing_oracle (pk : sig.PK) (sk : sig.SK) :
   oracle_comp (uniform_selecting ++ sig.random_spec)
     ((sig.M × sig.S) × (sig.M ↦ₒ sig.S).query_cache) :=
 (prod.map id prod.snd) <$> (default_simulate (idₛₒ ++ₛ sig.signingₛₒ pk sk) (adversary.run pk))
+
+-- instance unforgeable_adversary_has_sim_oracle (adv : unforgeable_adversary sig) :
+--   adv.has_sim_oracle (sig.PK × sig.SK)
+--     (uniform_selecting ++ sig.random_spec) (sig.M ↦ₒ sig.S).query_cache :=
+-- {so := λ ks, sim_oracle.mask_state (idₛₒ ++ₛ sig.signingₛₒ ks.1 ks.2) (equiv.punit_prod _)}
+
+instance has_sim_sign (adv : sig.unforgeable_adversary) :
+  adv.has_sim_oracle sig.SK (uniform_selecting ++ sig.random_spec) (sig.M ↦ₒ sig.S).query_cache :=
+{ so := λ pk sk, sim_oracle.mask_state (idₛₒ ++ₛ sig.signingₛₒ pk sk) (equiv.punit_prod _)}
+
+def unforgeable_experiment (sig : signature) : sec_experiment (uniform_selecting ++ sig.random_spec)
+  sig.PK (sig.M × sig.S) sig.SK (sig.M ↦ₒ sig.S).query_cache :=
+{ inp_gen := sig.gen (),
+  is_valid := λ ⟨pk, ⟨m, σ⟩, cache⟩, do {b ← sig.verify (pk, m, σ),
+    return (b ∧ cache.lookup () m = none)} }
+
+
+noncomputable def unforgeable_advantage (sig : signature) (adv : unforgeable_adversary sig) : ℝ≥0∞ :=
+adv.advantage (unforgeable_experiment sig) (idₛₒ ++ₛ randomₛₒ)
+  -- (idₛₒ ++ₛ sig.signingₛₒ ks.1 ks.2).mask_state _}
+
+-- noncomputable def unforgeable_experiment :
+--   sec_experiment
 
 /-- Experiement for testing if a signature scheme is unforgeable.
 Generate the public/secret keys, then simulate the adversary to get a signature.

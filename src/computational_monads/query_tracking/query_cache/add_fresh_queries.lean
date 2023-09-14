@@ -15,6 +15,8 @@ If the two `query_cache`s are disjoint this acts like a sup operation, but in ge
 satisfy the criteria for being a `semilattice`.
 -/
 
+namespace oracle_spec
+
 namespace query_cache
 
 open oracle_spec
@@ -190,3 +192,5 @@ lemma add_fresh_queries_eq_self_of_le {cache cache' : query_cache spec} (h : cac
 (add_fresh_queries_eq_self_iff cache cache').2 (cached_inputs_subset_cached_inputs_of_le h)
 
 end query_cache
+
+end oracle_spec

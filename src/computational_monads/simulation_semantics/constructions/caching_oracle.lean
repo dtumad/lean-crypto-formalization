@@ -22,7 +22,8 @@ This is used by being composed with other oracles, such as in `random_oracle`.
 -- TODO: a lot of this isn't quite right and not needed for fork.
 -/
 
-open oracle_comp oracle_spec query_cache
+open oracle_comp oracle_spec
+open oracle_spec.query_cache
 open prod (fst) (snd)
 open_locale ennreal big_operators classical -- TODO: temp classical (maybe we should have this for all dist sem)
 

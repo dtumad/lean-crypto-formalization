@@ -14,9 +14,11 @@ This file defines a function `cache.get_or_else i t ou` that checks for a cached
 `i, t`, and if not found runs `ou` to get a new result rather than returning `none`.
 -/
 
+namespace oracle_spec
+
 namespace query_cache
 
-open oracle_spec oracle_comp
+open oracle_comp
 
 variables {α β γ : Type} {spec spec' : oracle_spec}
 
@@ -384,3 +386,5 @@ section bind_comm
 end bind_comm
 
 end query_cache
+
+end oracle_spec

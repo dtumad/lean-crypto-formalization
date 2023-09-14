@@ -5,6 +5,7 @@ Authors: Devon Tuma
 -/
 import computational_monads.simulation_semantics.simulate.return
 import computational_monads.simulation_semantics.simulate.bind
+
 /-!
 # Distributional Semantics of Simulation of a Map Operation
 
@@ -69,7 +70,7 @@ by rw [simulate_map, prob_output_map_prod_map_id_right]
 @[simp] lemma prob_output_simulate'_map [decidable_eq β]
   (y : β) : ⁅= y | simulate' so (f <$> oa) s⁆ =
     ∑' x, if y = f (prod.fst x) then ⁅= x | simulate so oa s⁆ else 0 :=
-by { rw [simulate'_map, prob_output_map_comp, prod.map_fst', prob_output_map_eq_tsum], refl }
+by { rw [simulate'_map, prob_output_map_comp, prod.map_fst', prob_output_map_eq_tsum] }
 
 end prob_output
 

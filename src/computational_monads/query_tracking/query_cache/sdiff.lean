@@ -13,6 +13,8 @@ dropping any values in `cache` that are also cached in `cache'`.
 The removal is independent of the actual values stored in the cache.
 -/
 
+namespace oracle_spec
+
 namespace query_cache
 
 variables {spec : oracle_spec}
@@ -130,3 +132,5 @@ begin
 end
 
 end query_cache
+
+end oracle_spec

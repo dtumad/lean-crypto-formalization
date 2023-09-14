@@ -56,8 +56,11 @@ begin
   {
     rw [zip_commits_with_hash, retrieve_commits] at h,
     have : ∃ i, vector.nth hv i = ff := sorry,
-
-    rw [imp_iff_not]
+    sorry,
+    -- rw [imp_iff_not]
+  },
+  {
+    sorry,
   }
 end
 

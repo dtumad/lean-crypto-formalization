@@ -30,6 +30,10 @@ structure fork_adversary (spec : oracle_spec) (α β : Type) (i : spec.ι) (q : 
 (choose_fork : α → β → option (fin q.succ))
 (q_eq_bound : qb.get_count i = q.succ)
 
+-- structure fork_adversary (spec : oracle_spec) (α β : Type) (i : spec.ι) (q : ℕ)
+--   extends sec_adversary spec α β :=
+-- (choose_fork : α → β → option (fin q.succ))
+
 noncomputable def fork_adversary.advantage (adv : fork_adversary spec α β i q) (y : α) : ℝ≥0∞ :=
 ⁅(≠) none | adv.choose_fork y <$> adv.run y⁆
 
@@ -215,8 +219,9 @@ def of_choose_input (adv : sec_adversary spec α β)
     if inp ∈ z.2 i then some ↑(list.index_of inp (z.2 i)) else none,
   qb := adv.qb.increment i 1,
   q_eq_bound := by simp only [query_count.get_count_increment, eq_self_iff_true, if_true],
-  qb_is_bound := λ y, logging_oracle.queries_at_most_simulate _ _
-    (queries_at_most_trans _ _ _ (adv.qb_is_bound y) (indexed_list.le_add_values _ _)) _ }
+  -- qb_is_bound := λ y, logging_oracle.queries_at_most_simulate _ _
+  --   (queries_at_most_trans _ _ _ (adv.qb_is_bound y) (indexed_list.le_add_values _ _)) _
+    }
 
 variables (adv : sec_adversary spec α β)
   (choose_input : α → β → spec.domain i × spec.range i)
