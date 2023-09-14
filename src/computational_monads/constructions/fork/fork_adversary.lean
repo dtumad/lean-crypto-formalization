@@ -5,6 +5,7 @@ Authors: Devon Tuma
 -/
 import computational_monads.simulation_semantics.constructions.logging_oracle
 import computational_monads.simulation_semantics.constructions.seeded_oracle
+import computational_monads.simulation_semantics.constructions.uniform_oracle
 import computational_monads.distribution_semantics.option
 import crypto_foundations.sec_adversary
 
@@ -18,34 +19,40 @@ The name adversary is based on the fact that forking is usually done in a securi
 open_locale big_operators ennreal
 open oracle_comp oracle_spec
 
-variables {α β γ : Type} {spec spec' : oracle_spec} {i : spec.ι} {q : ℕ}
+variables {α β γ : Type} {spec spec' adv_spec exp_spec : oracle_spec} {i : spec.ι} {q : ℕ}
 
 /-- A forking adversary is a `sec_adversary _ α β` along with functions to define forking behavior.
 `i` is the index of the oracle whose queries will be forked after a first execution.
 `q` is a bound on the number of oracles made by the adversary, higher gives worse security bounds.
 The function `choose_fork` takes an input and output pair, and returns an index at which the
 queries should be forked (see `of_choose_input` to do this from a chosen query input value). -/
-structure fork_adversary (spec : oracle_spec) (α β : Type) (i : spec.ι) (q : ℕ)
-  extends sec_adversary spec α β :=
+structure fork_adversary (spec : oracle_spec) (α β : Type)
+  (i : spec.ι) (q : ℕ) extends sec_adversary spec α β :=
 (choose_fork : α → β → option (fin q.succ))
-(q_eq_bound : qb.get_count i = q.succ)
 
--- structure fork_adversary (spec : oracle_spec) (α β : Type) (i : spec.ι) (q : ℕ)
---   extends sec_adversary spec α β :=
--- (choose_fork : α → β → option (fin q.succ))
+def choose_fork_experiment (adv : fork_adversary spec α β i q) (x : α) :
+  sec_experiment spec α β unit unit :=
+{ inp_gen := return (x, ()),
+  is_valid := λ x y, return (adv.choose_fork x.1 y.1 ≠ none) }
 
-noncomputable def fork_adversary.advantage (adv : fork_adversary spec α β i q) (y : α) : ℝ≥0∞ :=
-⁅(≠) none | adv.choose_fork y <$> adv.run y⁆
+noncomputable def fork_adversary.cf_advantage (adv : fork_adversary spec α β i q) (x : α) : ℝ≥0∞ :=
+adv.base_advantage (choose_fork_experiment adv x)
+
+lemma cf_advantage_eq_prob_output_ne_none (adv : fork_adversary spec α β i q) (x : α) :
+  adv.cf_advantage x = ⁅(≠) none | adv.choose_fork x <$> adv.run x⁆ :=
+begin
+  rw [fork_adversary.cf_advantage],
+  rw [base_advantage_eq_prob_output],
+end
+
+-- noncomputable def fork_adversary.advantage (adv : fork_adversary spec α β i q) (y : α) : ℝ≥0∞ :=
+-- ⁅(≠) none | adv.choose_fork y <$> adv.run y⁆
 
 /-- Type to store the result of running the forking adversary a single time. -/
 structure run_result (adv : fork_adversary spec α β i q) :=
 (fork_point : option (fin q.succ))
 (side_output : β)
 (seed : spec.query_seed)
-
-/-- Type to store the result of running the forking adversary both times. -/
-def fork_result (adv : fork_adversary spec α β i q) :=
-run_result adv × run_result adv
 
 namespace run_result
 
@@ -58,6 +65,10 @@ def shared_seed (rr : run_result adv) : spec.query_seed :=
 rr.seed.take_at_index i rr.get_fp
 
 end run_result
+
+/-- Type to store the result of running the forking adversary both times. -/
+def fork_result (adv : fork_adversary spec α β i q) :=
+run_result adv × run_result adv
 
 namespace fork_result
 
@@ -117,7 +128,7 @@ calc ⁅same_fork_point | ofr⁆ = ⁅λ z, z.1 ≠ none ∧ z.1 = z.2 | fork_re
       }
     end
 
-def fork_success (fr : fork_result adv) : Prop :=
+def fork_success (fr : fork_result adv) : bool :=
 match fr.fork_point₁ with
 | none := false
 | some fp := fr.fork_point₂ = some fp ∧
@@ -217,8 +228,8 @@ def of_choose_input (adv : sec_adversary spec α β)
 { run := λ y, simulate loggingₛₒ (adv.run y) ∅,
   choose_fork := λ y z, let inp := choose_input y z.1 in
     if inp ∈ z.2 i then some ↑(list.index_of inp (z.2 i)) else none,
-  qb := adv.qb.increment i 1,
-  q_eq_bound := by simp only [query_count.get_count_increment, eq_self_iff_true, if_true],
+  qb := adv.qb,
+  -- q_eq_bound := by simp only [query_count.get_count_increment, eq_self_iff_true, if_true],
   -- qb_is_bound := λ y, logging_oracle.queries_at_most_simulate _ _
   --   (queries_at_most_trans _ _ _ (adv.qb_is_bound y) (indexed_list.le_add_values _ _)) _
     }

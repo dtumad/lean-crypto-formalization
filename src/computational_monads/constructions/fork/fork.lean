@@ -22,6 +22,32 @@ namespace oracle_comp
 
 variable [is_sub_spec uniform_selecting spec]
 
+noncomputable def fork' (adv : fork_adversary spec α β i q) :
+  sec_adversary spec α (fork_result adv) :=
+{ run := λ y,
+    do {rr₁ ← adv.seed_and_run y ∅,
+      rr₂ ← adv.seed_and_run y (rr₁.seed.take_at_index i rr₁.get_fp),
+      return (rr₁, rr₂)},
+  qb := sorry }
+
+def fork_success_experiment (adv : fork_adversary spec α β i q) (inp_gen : oracle_comp spec α) :
+  sec_experiment spec α (fork_result adv) unit unit :=
+{ inp_gen := (λ x, (x, ())) <$> inp_gen,
+  is_valid := λ x ⟨fr, u⟩, return (fork_success fr) }
+
+-- structure forked_adversary (adv : fork_adversary spec α β i q) extends
+--   sec_adversary spec α (fork_result adv)
+
+-- noncomputable def fork' (adv : fork_adversary spec α β i q) (y : α) :
+--   forked_adversary adv :=
+-- { run := λ y, do {
+--   rr₁ ← adv.seed_and_run y ∅,
+--   rr₂ ← adv.seed_and_run y (rr₁.seed.take_at_index i rr₁.get_fp),
+--   return (rr₁, rr₂)
+-- },
+--   qb := sorry
+-- }
+
 /-- Fork a `fork_adversary` at the point defined by `cf`. -/
 noncomputable def fork (adv : fork_adversary spec α β i q) (y : α) :
   oracle_comp spec (fork_result adv) :=
@@ -183,8 +209,9 @@ calc ⁅= some fp | adv.choose_fork y <$> adv.run y⁆ ^ 2
 
 /--  -/
 lemma le_prob_event_same_fork_point (adv : fork_adversary spec α β i q) :
-  adv.advantage y ^ 2 / q.succ ≤ ⁅same_fork_point | fork adv y⁆ :=
-calc adv.advantage y ^ 2 / q.succ = ⁅(≠) none | adv.choose_fork y <$> adv.run y⁆ ^ 2 / q.succ : rfl
+  adv.cf_advantage y ^ 2 / q.succ ≤ ⁅same_fork_point | fork adv y⁆ :=
+calc adv.cf_advantage y ^ 2 / q.succ
+    = ⁅(≠) none | adv.choose_fork y <$> adv.run y⁆ ^ 2 / q.succ : sorry
   -- Rewrite the probability of not getting `none` as the sum of each `some` possibility.
   ... = (∑ fp, ⁅= some fp | adv.choose_fork y <$> adv.run y⁆) ^ 2 / q.succ :
     by rw [prob_event_ne_none_eq_sum]
@@ -222,10 +249,9 @@ calc adv.advantage y ^ 2 / q.succ = ⁅(≠) none | adv.choose_fork y <$> adv.ru
     end
 
 
-
 theorem prob_event_fork_success (adv : fork_adversary spec α β i q) :
   adv.advantage y * (adv.advantage y / q - (fintype.card (spec.range i))⁻¹) ≤
-    ⁅fork_success | fork adv y⁆ :=
+    ⁅λ z, fork_success z = tt | fork adv y⁆ :=
 begin
   sorry
 end

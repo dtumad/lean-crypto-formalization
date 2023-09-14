@@ -770,9 +770,12 @@ end has_sep
 
 section value_differs
 
--- @[derive decidable]
 def value_differs (il il' : spec.indexed_list τ) (i : spec.ι) (n : ℕ) : Prop :=
 (il i).nth n ≠ (il' i).nth n
+
+instance value_differs.decidable (il il' : spec.indexed_list τ) (i : spec.ι) (n : ℕ)
+  [decidable_eq (τ i)] : decidable (value_differs il il' i n) :=
+by {rw [value_differs], apply_instance}
 
 end value_differs
 
