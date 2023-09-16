@@ -16,24 +16,28 @@ import computational_monads.constructions.fork.fork_adversary
 open_locale big_operators ennreal
 open oracle_comp oracle_spec
 
-variables {α β γ : Type} {spec spec' : oracle_spec} {i : spec.ι} {q : ℕ}
+variables {α β γ : Type} {spec spec' : oracle_spec} {i : spec.ι}
 
 namespace oracle_comp
 
 variable [is_sub_spec uniform_selecting spec]
 
-noncomputable def fork' (adv : fork_adversary spec α β i q) :
+noncomputable def fork' (adv : fork_adversary spec α β i) :
   sec_adversary spec α (fork_result adv) :=
 { run := λ y,
     do {rr₁ ← adv.seed_and_run y ∅,
       rr₂ ← adv.seed_and_run y (rr₁.seed.take_at_index i rr₁.get_fp),
       return (rr₁, rr₂)},
-  qb := sorry }
+  qb := adv.qb + adv.qb }
 
-def fork_success_experiment (adv : fork_adversary spec α β i q) (inp_gen : oracle_comp spec α) :
-  sec_experiment spec α (fork_result adv) unit unit :=
+def fork_success_experiment (adv : fork_adversary spec α β i)
+  (inp_gen : oracle_comp spec α) : base_sec_experiment spec α (fork_result adv) :=
 { inp_gen := (λ x, (x, ())) <$> inp_gen,
-  is_valid := λ x ⟨fr, u⟩, return (fork_success fr) }
+  is_valid := λ x y, return (fork_success y.1 = tt) }
+
+noncomputable def fork_advantage (adv : fork_adversary spec α β i)
+  (inp_gen : oracle_comp spec α) : ℝ≥0∞ :=
+(fork' adv).base_advantage (fork_success_experiment adv inp_gen)
 
 -- structure forked_adversary (adv : fork_adversary spec α β i q) extends
 --   sec_adversary spec α (fork_result adv)
@@ -49,7 +53,7 @@ def fork_success_experiment (adv : fork_adversary spec α β i q) (inp_gen : ora
 -- }
 
 /-- Fork a `fork_adversary` at the point defined by `cf`. -/
-noncomputable def fork (adv : fork_adversary spec α β i q) (y : α) :
+noncomputable def fork'' (adv : fork_adversary spec α β i) (y : α) :
   oracle_comp spec (fork_result adv) :=
 do {
   rr₁ ← adv.seed_and_run y ∅,
@@ -57,7 +61,16 @@ do {
   return (rr₁, rr₂)
 }
 
-variables (adv : fork_adversary spec α β i q) (y : α) (fr : fork_result adv)
+/-- Fork a `fork_adversary` at the point defined by `cf`. -/
+noncomputable def fork (adv : fork_adversary spec α β i) (y : α) :
+  oracle_comp spec (fork_result adv) :=
+do {
+  rr₁ ← adv.seed_and_run y ∅,
+  rr₂ ← adv.seed_and_run y (rr₁.seed.take_at_index i rr₁.get_fp),
+  return (rr₁, rr₂)
+}
+
+variables (adv : fork_adversary spec α β i) (y : α) (fr : fork_result adv)
 
 /-- Both the resulting `query_seed`s from running `fork` have the same number of seeded values. -/
 lemma to_query_count_seed_eq_to_query_count_seed (h : fr ∈ (fork adv y).support) :
@@ -98,7 +111,7 @@ end
 
 /-- If `fork` returns success then the adversary must have thrown away at least one value. -/
 lemma choose_fork_ne_of_fork_success (h : fr ∈ (fork adv y).support) (hfr : fork_success fr) :
-  fr.fork_point₁ ≠ some q :=
+  fr.fork_point₁ ≠ some adv.q :=
 begin
   sorry
 end
@@ -116,11 +129,11 @@ section prob_event_fork_success
 
 /-- The set of all possible shared seeds for the two runs of the computation. -/
 noncomputable def poss_shared_seeds (qc : query_count spec)
-  (i : spec.ι) (fp : fin q.succ) : finset (query_seed spec) :=
+  (i : spec.ι) {q : ℕ} (fp : fin q.succ) : finset (query_seed spec) :=
 (generate_seed (qc.decrement i fp)).fin_support
 
 /-- -/
-lemma le_prob_output_fork_points (adv : fork_adversary spec α β i q) (fp : fin q.succ) :
+lemma le_prob_output_fork_points (adv : fork_adversary spec α β i) (fp : fin adv.q.succ) :
   ⁅= some fp | adv.choose_fork y <$> adv.run y⁆ ^ 2 ≤
     ⁅= (some fp, some fp) | do {rr₁ ← adv.seed_and_run y ∅,
       rr₂ ← adv.seed_and_run y (rr₁.seed.take_at_index i fp),
@@ -208,12 +221,12 @@ calc ⁅= some fp | adv.choose_fork y <$> adv.run y⁆ ^ 2
     end
 
 /--  -/
-lemma le_prob_event_same_fork_point (adv : fork_adversary spec α β i q) :
-  adv.cf_advantage y ^ 2 / q.succ ≤ ⁅same_fork_point | fork adv y⁆ :=
-calc adv.cf_advantage y ^ 2 / q.succ
-    = ⁅(≠) none | adv.choose_fork y <$> adv.run y⁆ ^ 2 / q.succ : sorry
+lemma le_prob_event_same_fork_point (adv : fork_adversary spec α β i) :
+  adv.cf_advantage y ^ 2 / adv.q.succ ≤ ⁅same_fork_point | fork adv y⁆ :=
+calc adv.cf_advantage y ^ 2 / adv.q.succ
+    = ⁅(≠) none | adv.choose_fork y <$> adv.run y⁆ ^ 2 / adv.q.succ : sorry
   -- Rewrite the probability of not getting `none` as the sum of each `some` possibility.
-  ... = (∑ fp, ⁅= some fp | adv.choose_fork y <$> adv.run y⁆) ^ 2 / q.succ :
+  ... = (∑ fp, ⁅= some fp | adv.choose_fork y <$> adv.run y⁆) ^ 2 / adv.q.succ :
     by rw [prob_event_ne_none_eq_sum]
   -- Apply Jensen's inequality and cancel out the factor of `q.succ`.
   ... ≤ ∑ fp, ⁅= some fp | adv.choose_fork y <$> adv.run y⁆ ^ 2 :
@@ -249,12 +262,13 @@ calc adv.cf_advantage y ^ 2 / q.succ
     end
 
 
-theorem prob_event_fork_success (adv : fork_adversary spec α β i q) :
-  adv.advantage y * (adv.advantage y / q - (fintype.card (spec.range i))⁻¹) ≤
+theorem prob_event_fork_success (adv : fork_adversary spec α β i) :
+  adv.cf_advantage y * (adv.cf_advantage y / adv.q - (fintype.card (spec.range i))⁻¹) ≤
     ⁅λ z, fork_success z = tt | fork adv y⁆ :=
 begin
   sorry
 end
+
 
 end prob_event_fork_success
 

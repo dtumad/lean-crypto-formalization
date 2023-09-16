@@ -47,7 +47,6 @@ def sec_adversary.simulate_run (adv : sec_adversary adv_spec α β)
   [adv.has_sim_oracle γ exp_spec S] (x : α × γ) : oracle_comp exp_spec (β × S) :=
 default_simulate (adv.so x) (adv.run x.1)
 
-
 section sec_experiment
 
 /-- A `sec_experiment exp_spec α β γ S` represents a security experiment for a `sec_adversary`,
@@ -92,6 +91,11 @@ noncomputable def sec_adversary.advantage_on_input (adv : sec_adversary adv_spec
 ⁅= tt | default_simulate' so
   (do {z ← default_simulate (adv.so x) (adv.run x.1),
     exp.is_valid x z})⁆
+
+-- structure adversary_reduction (adv_spec₁ adv_spec₂ : oracle_spec) (α₁ β₁ α₂ β₂ : Type)
+--   {exp_spec₁ exp_spec₂ : oracle_spec} {γ₁ γ₂ S₁ S₂} :=
+-- (reduction : sec_adversary adv_spec₁ α₁ β₁ → sec_adversary adv_spec₂ α₂ β₂)
+
 
 end advantage
 

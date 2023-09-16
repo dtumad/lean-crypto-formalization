@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
 import crypto_constructions.hhs_signatures.hhs_signature
+import computational_monads.constructions.fork.of_choose_input
 
 /-!
 # Unforgeability of HHS Signature
@@ -26,40 +27,71 @@ section unforgeable
 
 -- section mock_signing
 
--- /-- Oracle to mock a signing oracle for messages in the vectorization reduction,
--- mirroring how `signingₛₒ` would respond usually.
--- Predetermines the random oracle results to fake a valid signature,
--- keeping the results in a seperate internal mocked cache.
--- This also includes all caching for the simulation of the random oracles. -/
--- noncomputable def mock_signingₛₒ (x₀ pk : X) : sim_oracle
---   ((hhs_signature G X M n).random_spec ++ (hhs_signature G X M n).signing_spec)
---   (uniform_selecting ++ (hhs_signature G X M n).random_spec)
---   (query_cache ((vector X n × M) ↦ₒ vector bool n)) :=
--- { default_state := ∅,
---   o := λ i, match i with
---     -- For random oracle queries, check if the query has been mocked.
---     -- If so, return the mocked value, otherwise call the regular oracle (caching the result).
---     | (sum.inl i) := λ ⟨t, mock_cache⟩, mock_cache.get_or_else i t
---         (@query (hhs_signature G X M n).base_spec (sum.inr i) t)
---     | (sum.inr ()) := λ ⟨m, mock_cache⟩,
---         do {bs ← repeat ($ᵗ bool) n, cs ← repeat ($ᵗ G) n,
---           ys ← return (vector.zip_with (λ (b : bool) c, if b then c +ᵥ pk else c +ᵥ x₀) bs cs),
---           mock_cache' ← return (mock_cache.cache_query () (ys, m) bs),
---           return (vector.zip_with prod.mk cs bs, mock_cache')}
---   end }
+/-- Oracle to mock a signing oracle for messages in the vectorization reduction,
+mirroring how `signingₛₒ` would respond usually.
+Predetermines the random oracle results to fake a valid signature,
+keeping the results in a seperate internal mocked cache.
+This also includes all caching for the simulation of the random oracles. -/
+noncomputable def mock_signingₛₒ (x₀ pk : X) : sim_oracle
+  ((hhs_signature G X M n).random_spec ++ (hhs_signature G X M n).signing_spec)
+  (uniform_selecting ++ (hhs_signature G X M n).random_spec)
+  (query_cache ((vector X n × M) ↦ₒ vector bool n)) :=
+{ default_state := ∅,
+  o := λ i, match i with
+    -- For random oracle queries, check if the query has been mocked.
+    -- If so, return the mocked value, otherwise call the regular oracle (caching the result).
+    | (sum.inl i) := λ ⟨t, mock_cache⟩, mock_cache.get_or_else i t
+        (@query (hhs_signature G X M n).base_spec (sum.inr i) t)
+    | (sum.inr ()) := λ ⟨m, mock_cache⟩,
+        do {bs ← repeat ($ᵗ bool) n, cs ← repeat ($ᵗ G) n,
+          ys ← return (vector.zip_with (λ (b : bool) c, if b then c +ᵥ pk else c +ᵥ x₀) bs cs),
+          mock_cache' ← return (mock_cache.cache_query () (ys, m) bs),
+          return (vector.zip_with prod.mk cs bs, mock_cache')}
+  end }
 
--- noncomputable def mock_simulate_signing_oracle (adversary : (hhs_signature G X M n).unforgeable_adversary)
---   (x₀ pk : X) : oracle_comp (uniform_selecting ++ (hhs_signature G X M n).random_spec)
---     ((M × vector (G × bool) n) × (query_cache ((vector X n × M) ↦ₒ vector bool n))) :=
--- do {((m, σ), _, mocked_sigs) ← (default_simulate (idₛₒ ++ₛ mock_signingₛₒ x₀ pk) (adversary.run (x₀, pk))),
---   return ((m, σ), mocked_sigs)}
+noncomputable def mock_simulate_signing_oracle (adversary : (hhs_signature G X M n).unforgeable_adversary)
+  (x₀ pk : X) : oracle_comp (hhs_signature G X M n).base_spec
+    ((M × vector (G × bool) n) × (hhs_signature G X M n).random_spec.query_cache) :=
+do {((m, σ), _, mocked_sigs) ← (default_simulate (idₛₒ ++ₛ mock_signingₛₒ x₀ pk) (adversary.run (x₀, pk))),
+  return ((m, σ), mocked_sigs)}
 
--- def mock_signing_fork_adversary (adversary : (hhs_signature G X M n).unforgeable_adversary) :
+noncomputable def mocked_unforgeable_adversary
+  (adv : (hhs_signature G X M n).unforgeable_adversary) :
+  sec_adversary (hhs_signature G X M n).base_spec (X × X)
+    ((M × vector (G × bool) n) × (hhs_signature G X M n).random_spec.query_cache) :=
+{ run := λ ks, do {
+    ((m, σ), _, mocked_sigs) ← (default_simulate (idₛₒ ++ₛ mock_signingₛₒ ks.1 ks.2) (adv.run ks)),
+    return ((m, σ), mocked_sigs)
+  },
+  qb := ∅ -- TODO
+}
+
+-- TODO: this should be the right one
+noncomputable def forkable_unforgeable_adversary
+  (adv : (hhs_signature G X M n).unforgeable_adversary) :
+  fork_adversary (hhs_signature G X M n).base_spec (X × X)
+    (((M × vector (G × bool) n) × (hhs_signature G X M n).random_spec.query_cache) ×
+      (hhs_signature G X M n).base_spec.query_log)
+    (sum.inr ()) :=
+fork_adversary.of_choose_input (mocked_unforgeable_adversary adv) (sum.inr ())
+  (begin
+    intros ks z,
+    sorry
+  end)
+
+noncomputable def vectorization_adversary_of_unforgeable_adversary
+  (adv : (hhs_signature G X M n).unforgeable_adversary) :
+  vectorization_adversary G X :=
+sorry
+
+-- def mock_signing_fork_adversary (adv : (hhs_signature G X M n).unforgeable_adversary) :
 --   fork_adversary (hhs_signature G X M n).base_spec (X × X)
---     ((M × vector (G × bool) n) × (query_cache ((vector X n × M) ↦ₒ vector bool n)))
---     (sum.inr ()) (adversary.qb.get_count (sum.inr (sum.inr ()))) :=
--- sorry
--- -- fork_adversary.of_choose_input _ _ _
+--     ((M × vector (G × bool) n) × (hhs_signature G X M n).random_spec.query_cache
+--       × (query_log (hhs_signature G X M n).base_spec))
+--     (sum.inr ()) :=
+-- begin
+--   refine fork_adversary.of_choose_input adv.to_sec_adversary _ _,
+-- end
 
 -- -- { run := λ ⟨x₀, pk⟩, mock_simulate_signing_oracle adversary x₀ pk,
 -- --   choose_fork := begin

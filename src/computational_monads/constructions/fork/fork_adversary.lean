@@ -19,7 +19,7 @@ The name adversary is based on the fact that forking is usually done in a securi
 open_locale big_operators ennreal
 open oracle_comp oracle_spec
 
-variables {α β γ : Type} {spec spec' adv_spec exp_spec : oracle_spec} {i : spec.ι} {q : ℕ}
+variables {α β γ : Type} {spec spec' adv_spec exp_spec : oracle_spec} {i : spec.ι} --{q : ℕ}
 
 /-- A forking adversary is a `sec_adversary _ α β` along with functions to define forking behavior.
 `i` is the index of the oracle whose queries will be forked after a first execution.
@@ -27,38 +27,55 @@ variables {α β γ : Type} {spec spec' adv_spec exp_spec : oracle_spec} {i : sp
 The function `choose_fork` takes an input and output pair, and returns an index at which the
 queries should be forked (see `of_choose_input` to do this from a chosen query input value). -/
 structure fork_adversary (spec : oracle_spec) (α β : Type)
-  (i : spec.ι) (q : ℕ) extends sec_adversary spec α β :=
-(choose_fork : α → β → option (fin q.succ))
+  (i : spec.ι) extends sec_adversary spec α β :=
+(choose_fork : α → β → option (fin (qb.get_count i).succ))
 
-def choose_fork_experiment (adv : fork_adversary spec α β i q) (x : α) :
-  sec_experiment spec α β unit unit :=
-{ inp_gen := return (x, ()),
+@[inline, reducible] def fork_adversary.q (adv : fork_adversary spec α β i) := adv.qb.get_count i
+
+def fork_adversary.cf_experiment (adv : fork_adversary spec α β i) (inp_gen : oracle_comp spec α) :
+  base_sec_experiment spec α β :=
+{ inp_gen := (λ x, (x, ())) <$> inp_gen,
   is_valid := λ x y, return (adv.choose_fork x.1 y.1 ≠ none) }
 
-noncomputable def fork_adversary.cf_advantage (adv : fork_adversary spec α β i q) (x : α) : ℝ≥0∞ :=
-adv.base_advantage (choose_fork_experiment adv x)
+noncomputable def fork_adversary.cf_advantage' (adv : fork_adversary spec α β i)
+  (inp_gen : oracle_comp spec α) : ℝ≥0∞ :=
+adv.base_advantage (adv.cf_experiment inp_gen)
 
-lemma cf_advantage_eq_prob_output_ne_none (adv : fork_adversary spec α β i q) (x : α) :
-  adv.cf_advantage x = ⁅(≠) none | adv.choose_fork x <$> adv.run x⁆ :=
-begin
-  rw [fork_adversary.cf_advantage],
-  rw [base_advantage_eq_prob_output],
-end
+noncomputable def fork_adversary.cf_advantage (adv : fork_adversary spec α β i) (y : α) :=
+⁅(≠) none | adv.choose_fork y <$> adv.run y⁆
 
--- noncomputable def fork_adversary.advantage (adv : fork_adversary spec α β i q) (y : α) : ℝ≥0∞ :=
--- ⁅(≠) none | adv.choose_fork y <$> adv.run y⁆
+-- @[simps]
+-- def choose_fork_experiment (adv : fork_adversary spec α β i q) (x : α) :
+--   sec_experiment spec α β unit unit :=
+-- { inp_gen := return (x, ()),
+--   is_valid := λ x y, return (adv.choose_fork x.1 y.1 ≠ none) }
+
+-- -- lemma choose_fork_experiment.inp_gen_eq
+
+-- noncomputable def fork_adversary.cf_advantage (adv : fork_adversary spec α β i q) (x : α) : ℝ≥0∞ :=
+-- adv.base_advantage (choose_fork_experiment adv x)
+
+-- lemma cf_advantage_eq_prob_output_ne_none (adv : fork_adversary spec α β i q) (x : α) :
+--   adv.cf_advantage x = ⁅(≠) none | adv.choose_fork x <$> adv.simulate_run (x, ())⁆ :=
+-- begin
+--   rw [fork_adversary.cf_advantage],
+--   rw [base_advantage_eq_prob_output],
+--   rw [choose_fork_experiment_inp_gen],
+--   rw [prob_output_return_bind],
+
+-- end
 
 /-- Type to store the result of running the forking adversary a single time. -/
-structure run_result (adv : fork_adversary spec α β i q) :=
-(fork_point : option (fin q.succ))
+structure run_result (adv : fork_adversary spec α β i) :=
+(fork_point : option (fin adv.q.succ))
 (side_output : β)
 (seed : spec.query_seed)
 
 namespace run_result
 
-variable {adv : fork_adversary spec α β i q}
+variable {adv : fork_adversary spec α β i}
 
-def get_fp (rr : run_result adv) : fin q.succ := rr.fork_point.get_or_else 0
+def get_fp (rr : run_result adv) : fin adv.q.succ := rr.fork_point.get_or_else 0
 def chosen_fork (rr : run_result adv) : option (spec.range i) :=
 (rr.seed i).nth rr.get_fp
 def shared_seed (rr : run_result adv) : spec.query_seed :=
@@ -67,12 +84,12 @@ rr.seed.take_at_index i rr.get_fp
 end run_result
 
 /-- Type to store the result of running the forking adversary both times. -/
-def fork_result (adv : fork_adversary spec α β i q) :=
+def fork_result (adv : fork_adversary spec α β i) :=
 run_result adv × run_result adv
 
 namespace fork_result
 
-variable {adv : fork_adversary spec α β i q}
+variable {adv : fork_adversary spec α β i}
 
 @[inline, reducible] def fork_point₁ (fr : fork_result adv) := fr.1.fork_point
 @[inline, reducible] def fork_point₂ (fr : fork_result adv) := fr.2.fork_point
@@ -88,17 +105,17 @@ end fork_result
 
 section success
 
-variable {adv : fork_adversary spec α β i q}
+variable {adv : fork_adversary spec α β i}
 
 @[derive decidable] def same_fork_point (fr : fork_result adv) : Prop :=
 fr.fork_point₁ ≠ none ∧ fr.fork_point₁ = fr.fork_point₂
 
 lemma prob_event_same_fork_point (ofr : oracle_comp spec' (fork_result adv)) :
   ⁅same_fork_point | ofr⁆ =
-    ∑ fp : fin q.succ, ⁅= (some fp, some fp) | fork_result.fork_points <$> ofr⁆ :=
+    ∑ fp : fin adv.q.succ, ⁅= (some fp, some fp) | fork_result.fork_points <$> ofr⁆ :=
 calc ⁅same_fork_point | ofr⁆ = ⁅λ z, z.1 ≠ none ∧ z.1 = z.2 | fork_result.fork_points <$> ofr⁆ :
     symm (prob_event_map' ofr fork_result.fork_points _)
-  ... = ∑ fp : fin q.succ, ⁅= (some fp, some fp) | fork_result.fork_points <$> ofr⁆ :
+  ... = ∑ fp : fin adv.q.succ, ⁅= (some fp, some fp) | fork_result.fork_points <$> ofr⁆ :
     begin
       rw [prob_event_eq_tsum_ite, ennreal.tsum_prod', ennreal.tsum_option],
       refine trans _ (zero_add _),
@@ -139,28 +156,29 @@ end success
 
 namespace fork_adversary
 
-@[inline, reducible] def fresh_query_count (adv : fork_adversary spec α β i q)
-  (fp : fin q.succ) : query_count spec :=
-query_count.of_nat i (q.succ - fp)
+@[inline, reducible] def fresh_query_count (adv : fork_adversary spec α β i)
+  (fp : fin adv.q.succ) : query_count spec :=
+query_count.of_nat i (adv.q.succ - fp)
 
-@[inline, reducible] def shared_query_count (adv : fork_adversary spec α β i q)
-  (fp : fin q.succ) : query_count spec :=
+@[inline, reducible] def shared_query_count (adv : fork_adversary spec α β i)
+  (fp : fin adv.q.succ) : query_count spec :=
 adv.qb.take_at_index i fp
 
 section seed_and_run
 
 variable [is_sub_spec uniform_selecting spec]
 
-noncomputable def seed_and_run (adv : fork_adversary spec α β i q) (y : α)
+noncomputable def seed_and_run (adv : fork_adversary spec α β i) (y : α)
   (initial_seed : spec.query_seed) :
   oracle_comp spec (run_result adv) :=
 do {
   fresh_seed ← generate_seed (adv.qb - initial_seed),
   z ← simulate' seededₛₒ (adv.run y) (initial_seed + fresh_seed),
-  return (run_result.mk (adv.choose_fork y z) z (initial_seed + fresh_seed))
+  let cf : option (fin adv.q.succ) := adv.choose_fork y z in
+    return (run_result.mk cf z (initial_seed + fresh_seed))
 }
 
-variables (adv : fork_adversary spec α β i q) (y : α)
+variables (adv : fork_adversary spec α β i) (y : α)
 
 lemma generate_seed_bind_seed_and_run_dist_equiv
   (qc : spec.query_count) (hqc : qc ≤ adv.qb) :
@@ -173,7 +191,7 @@ begin
   rw [← coe_query_count_of_mem_support_generate_seed hqs, indexed_list.coe_query_count_eq],
 end
 
-lemma prob_output_fork_point_map_seed_and_run (fp : fin q.succ) :
+lemma prob_output_fork_point_map_seed_and_run (fp : fin adv.q.succ) :
   ⁅= some fp | run_result.fork_point <$> adv.seed_and_run y ∅⁆ =
     ⁅= some fp | adv.choose_fork y <$> adv.run y⁆ :=
 begin
@@ -215,46 +233,5 @@ end
 
 
 end seed_and_run
-
-
--- TODO: for the hhs sig
-section of_choose_input
-
-open oracle_comp
-
-def of_choose_input (adv : sec_adversary spec α β)
-  (i : spec.ι) (choose_input : α → β → spec.domain i × spec.range i) :
-  fork_adversary spec α (β × query_log spec) i (adv.qb.get_count i) :=
-{ run := λ y, simulate loggingₛₒ (adv.run y) ∅,
-  choose_fork := λ y z, let inp := choose_input y z.1 in
-    if inp ∈ z.2 i then some ↑(list.index_of inp (z.2 i)) else none,
-  qb := adv.qb,
-  -- q_eq_bound := by simp only [query_count.get_count_increment, eq_self_iff_true, if_true],
-  -- qb_is_bound := λ y, logging_oracle.queries_at_most_simulate _ _
-  --   (queries_at_most_trans _ _ _ (adv.qb_is_bound y) (indexed_list.le_add_values _ _)) _
-    }
-
-variables (adv : sec_adversary spec α β)
-  (choose_input : α → β → spec.domain i × spec.range i)
-variable [uniform_selecting ⊂ₒ spec]
-
--- lemma seed_eq_to_seed (fr : fork_result (of_choose_input adv i choose_input)) (y : α)
---   (hfr : fr ∈ (fork (of_choose_input adv i choose_input) y).support) :
---   sorry :=
--- sorry
-
--- lemma mem_support_simulate (fr : fork_result (of_choose_input adv i choose_input)) (y : α)
---   (hfr : fr ∈ (fork (of_choose_input adv i choose_input) y).support) :
---   fr.side_output₁ ∈ (simulate seededₛₒ)
-
--- lemma same_fork_point_of_choose_input_iff (fr : fork_result (of_choose_input adv i choose_input)) (y : α)
---   (hfr : fr ∈ (fork (of_choose_input adv i choose_input) y).support) :
---   same_fork_point fr ↔ ∃ z z' : β,
---     (choose_input y fr.side_output₁.1 ∈ ) :=
--- begin
-
--- end
-
-end of_choose_input
 
 end fork_adversary
