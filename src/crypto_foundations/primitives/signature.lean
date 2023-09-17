@@ -230,14 +230,17 @@ def simulate_signing_oracle (pk : sig.PK) (sk : sig.SK) :
     ((sig.M × sig.S) × (sig.M ↦ₒ sig.S).query_cache) :=
 (prod.map id prod.snd) <$> (default_simulate (idₛₒ ++ₛ sig.signingₛₒ pk sk) (adversary.run pk))
 
-instance has_sim_oracle (adv : sig.unforgeable_adversary) :
-  adv.has_sim_oracle sig.SK (uniform_selecting ++ sig.random_spec) (sig.M ↦ₒ sig.S).query_cache :=
-{ so := λ pk sk, sim_oracle.mask_state (idₛₒ ++ₛ sig.signingₛₒ pk sk) (equiv.punit_prod _)}
+-- instance has_sim_oracle (adv : sig.unforgeable_adversary) :
+--   adv.has_sim_oracle sig.SK (uniform_selecting ++ sig.random_spec) (sig.M ↦ₒ sig.S).query_cache :=
+-- { so := λ pk sk, sim_oracle.mask_state (idₛₒ ++ₛ sig.signingₛₒ pk sk) (equiv.punit_prod _)}
 
-def unforgeable_experiment (sig : signature) : sec_experiment (uniform_selecting ++ sig.random_spec)
+def unforgeable_experiment (sig : signature) : sec_experiment
+  (uniform_selecting ++ sig.random_spec ++ sig.signing_spec)
+  (uniform_selecting ++ sig.random_spec)
   sig.PK (sig.M × sig.S) sig.SK (sig.M ↦ₒ sig.S).query_cache :=
 { inp_gen := sig.gen (),
-  is_valid := λ pk ⟨⟨m, σ⟩, cache⟩, do {b ← sig.verify (pk, m, σ),
+  so := λ ks, (sim_oracle.mask_state (idₛₒ ++ₛ sig.signingₛₒ ks.1 ks.2) (equiv.punit_prod _)),
+  is_valid := λ ks ⟨⟨m, σ⟩, cache⟩, do {b ← sig.verify (ks.1, m, σ),
     return (b ∧ cache.lookup () m = none)} }
 
 noncomputable def unforgeable_advantage (sig : signature) (adv : unforgeable_adversary sig) : ℝ≥0∞ :=

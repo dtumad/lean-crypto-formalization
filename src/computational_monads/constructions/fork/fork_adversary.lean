@@ -35,6 +35,7 @@ structure fork_adversary (spec : oracle_spec) (α β : Type)
 def fork_adversary.cf_experiment (adv : fork_adversary spec α β i) (inp_gen : oracle_comp spec α) :
   base_sec_experiment spec α β :=
 { inp_gen := (λ x, (x, ())) <$> inp_gen,
+  so := λ _, idₛₒ,
   is_valid := λ x y, return (adv.choose_fork x.1 y.1 ≠ none) }
 
 noncomputable def fork_adversary.cf_advantage' (adv : fork_adversary spec α β i)

@@ -57,8 +57,9 @@ The input generator randomly chooses the challenge points for the adversary,
 and a result is valid if it is exactly the vectorization of the challenge points. -/
 noncomputable def vectorization_experiment (G X : Type)
   [add_group G] [algorithmic_homogenous_space G X] :
-  sec_experiment uniform_selecting (X × X) G unit unit :=
+  sec_experiment uniform_selecting uniform_selecting (X × X) G unit unit :=
 { inp_gen := ($ᵗ X ×ₘ $ᵗ X) ×ₘ return (),
+  so := λ _, idₛₒ,
   is_valid := λ ⟨⟨x₁, x₂⟩, _⟩ ⟨g, _⟩, return (g = x₁ -ᵥ x₂) }
 
 /-- An adversary for the parallelization game takes in a triple of base points `(x₁, x₂, x₃)`,
@@ -72,8 +73,9 @@ The input generator randomly chooses the challenge points for the adversary,
 and a result is valid if it is exactly the parallelization of the challenge points. -/
 noncomputable def parallelization_experiment (G X : Type)
   [add_group G] [algorithmic_homogenous_space G X] :
-  sec_experiment uniform_selecting (X × X × X) X unit unit :=
+  sec_experiment uniform_selecting uniform_selecting (X × X × X) X unit unit :=
 { inp_gen := ($ᵗ X ×ₘ $ᵗ X ×ₘ $ᵗ X) ×ₘ return (),
+  so := λ _, idₛₒ,
   is_valid := λ ⟨⟨x₁, x₂, x₃⟩, _⟩ ⟨x₄, _⟩, return (x₂ -ᵥ x₁ = x₄ -ᵥ x₃) }
 
 -- /-- The adversary's advantage at vectorization is the average over all possible pairs of points

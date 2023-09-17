@@ -43,21 +43,21 @@ def sec_adversary.so (adv : sec_adversary adv_spec α β) [h : adv.has_sim_oracl
 
 end has_sim_oracle
 
-def sec_adversary.simulate_run (adv : sec_adversary adv_spec α β)
-  [adv.has_sim_oracle γ exp_spec S] (x : α × γ) : oracle_comp exp_spec (β × S) :=
-default_simulate (adv.so x) (adv.run x.1)
+-- def sec_adversary.simulate_run (adv : sec_adversary adv_spec α β) (x : α × γ) : oracle_comp exp_spec (β × S) :=
+-- default_simulate (adv.so x) (adv.run x.1)
 
 section sec_experiment
 
 /-- A `sec_experiment exp_spec α β γ S` represents a security experiment for a `sec_adversary`,
 where `α` is the input type to the adversary, `β` is the result type of the adversary,
 `γ` is the secret information not shared with the adversary, and `S` is the simulation state. -/
-structure sec_experiment (exp_spec : oracle_spec) (α β γ S : Type) :=
+structure sec_experiment (adv_spec exp_spec : oracle_spec) (α β γ S : Type) :=
 (inp_gen : oracle_comp exp_spec (α × γ))
+(so : α × γ → sim_oracle adv_spec exp_spec S)
 (is_valid : α × γ → β × S → oracle_comp exp_spec bool)
 
 @[inline, reducible] def base_sec_experiment (exp_spec : oracle_spec) (α β : Type) :=
-sec_experiment exp_spec α β unit unit
+sec_experiment adv_spec exp_spec α β unit unit
 
 end sec_experiment
 
@@ -66,10 +66,10 @@ section advantage
 /-- `adv.advantage exp so` is the chance that `adv` succeeds in the experiment defined by `exp`
 when simulated using `so`, assuming we start with the default state for `so`. -/
 noncomputable def sec_adversary.advantage (adv : sec_adversary adv_spec α β)
-  (exp : sec_experiment exp_spec α β γ S) [adv.has_sim_oracle γ exp_spec S]
+  (exp : sec_experiment adv_spec exp_spec α β γ S)
   (so : sim_oracle exp_spec uniform_selecting S') : ℝ≥0∞ :=
 ⁅= tt | default_simulate' so
-  (do {x ← exp.inp_gen, z ← adv.simulate_run x, exp.is_valid x z})⁆
+  (do {x ← exp.inp_gen, z ← default_simulate (exp.so x) (adv.run x.1), exp.is_valid x z})⁆
 
 /-- Version of `sec_adversary.advantage` when there is no "hidden" information or simulation state,
 and where both the experiment and adversary use a common set of oracles. -/
@@ -79,17 +79,17 @@ adv.advantage exp uniformₛₒ
 
 lemma base_advantage_eq_prob_output (adv : sec_adversary adv_spec α β)
   (exp : base_sec_experiment adv_spec α β) : adv.base_advantage exp =
-    ⁅= tt | do {x ← exp.inp_gen, z ← adv.simulate_run x, exp.is_valid x z}⁆ :=
+    ⁅= tt | do {x ← exp.inp_gen, z ← default_simulate (exp.so x) (adv.run x.1), exp.is_valid x z}⁆ :=
 by rw [sec_adversary.base_advantage, sec_adversary.advantage,
   uniform_oracle.prob_output_simulate']
 
 /-- version of `sec_adversary.advantage` where the initial input is fixed,
 rather than being drawn from the input generator function. -/
 noncomputable def sec_adversary.advantage_on_input (adv : sec_adversary adv_spec α β)
-  (exp : sec_experiment exp_spec α β γ S) [adv.has_sim_oracle γ exp_spec S]
+  (exp : sec_experiment adv_spec exp_spec α β γ S)
   (so : sim_oracle exp_spec uniform_selecting S') (x : α × γ) : ℝ≥0∞ :=
 ⁅= tt | default_simulate' so
-  (do {z ← default_simulate (adv.so x) (adv.run x.1),
+  (do {z ← default_simulate (exp.so x) (adv.run x.1),
     exp.is_valid x z})⁆
 
 -- structure adversary_reduction (adv_spec₁ adv_spec₂ : oracle_spec) (α₁ β₁ α₂ β₂ : Type)
