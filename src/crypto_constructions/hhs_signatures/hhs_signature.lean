@@ -7,6 +7,7 @@ import data.vector.zip
 import crypto_foundations.primitives.signature
 import crypto_foundations.hardness_assumptions.hard_homogeneous_space
 import computational_monads.constructions.fork.fork
+import crypto_constructions.hhs_signatures.commits
 
 /-!
 # Signature Scheme Based On Hard Homogenous Spaces
@@ -20,72 +21,6 @@ from signature forgery to a vectorization forgery.
 
 open_locale ennreal big_operators
 open oracle_comp oracle_spec prod algorithmic_homogenous_space
-
-section commits
-
-variables {G X M : Type} [add_group G] [algorithmic_homogenous_space G X] {n : ℕ}
-
-/-- Given a list of commitments `cs` and a hash value `h`, zip them together by adding
-the security key to indices of `cs` corresponding to `0` bits in `h`. -/
-@[reducible, inline] def zip_commits_with_hash (cs : vector G n)
-  (hv : vector bool n) (sk : G) : vector (G × bool) n :=
-vector.zip_with (λ c b, (if b = tt then c else c + sk, b)) cs hv
-
-/-- Given a pair of points `x₀` and `pk`, attempt to retreive the commits from a signature `σ`,
-by adding the vactor to either `pk` or `x₀` depending on if the entry would have had `sk` added.
-Will result in `(cs.map (+ᵥ pk))` if the original signature is valid. -/
-@[reducible, inline] def retrieve_commits (x₀ pk : X)
-  (σ : vector (G × bool) n) : vector X n :=
-(σ.map (λ s, if s.2 = tt then s.1 +ᵥ pk else s.1 +ᵥ x₀))
-
-lemma nth_retrieve_commits_zip_commits_with_hash (x₀ pk : X)
-  (cs : vector G n) (hv : vector bool n) (sk : G) (i : fin n) :
-  (retrieve_commits x₀ pk (zip_commits_with_hash cs hv sk)).nth i =
-    if hv.nth i = tt then cs.nth i +ᵥ pk else (cs.nth i + sk) +ᵥ x₀:=
-by by_cases hv : hv.nth i = tt; simp [hv]
-
-/-- `retrieve_commits` will succeed if every hash bit is `0` or if `sk` is a true vectorization. -/
-@[simp] lemma retrieve_commits_zip_commits_with_hash_eq_iff (x₀ pk : X)
-  (cs : vector G n) (hv : vector bool n) (sk : G) :
-  (retrieve_commits x₀ pk (zip_commits_with_hash cs hv sk) = (cs.map (+ᵥ pk))) ↔
-    hv = vector.replicate n tt ∨ sk +ᵥ x₀ = pk :=
-begin
-  refine ⟨λ h, _, λ h, _⟩,
-  {
-    rw [zip_commits_with_hash, retrieve_commits] at h,
-    have : ∃ i, vector.nth hv i = ff := sorry,
-    sorry,
-    -- rw [imp_iff_not]
-  },
-  {
-    sorry,
-  }
-end
-
-section vectorization_of_signatures
-
-/-- Given two signatures get the expected secret key used in generating them.
-If both signatures are different but both are valid, this outputs a valid vectorization. -/
-def vectorization_of_signatures (σ σ' : vector (G × bool) n) : G :=
-let zs : option ((G × bool) × (G × bool)) :=
-  list.find (λ z, z.1.2 ≠ z.2.2) (list.zip_with prod.mk σ.1 σ'.1) in
-match zs with
-| none := 0 -- Failure case if no bits differ
-| (some ⟨⟨g1, b1⟩, ⟨g2, b2⟩⟩) := if b1 then g1 - g2 else g2 - g1
-end
-
-/-- Correctness of `vectorization_of_signatures` in finding a valid `vectorization`,
-assuming both signatures differ -/
-lemma vectorization_of_signatures_of_ne (x₀ pk : X) (σ σ' : vector (G × bool) n)
-  (h1 : σ.map snd ≠ σ'.map snd) (h2 : retrieve_commits x₀ pk σ = retrieve_commits x₀ pk σ') :
-  vectorization_of_signatures σ σ' = pk -ᵥ x₀ :=
-begin
-  sorry
-end
-
-end vectorization_of_signatures
-
-end commits
 
 /-- Schnorr signature derived from a hard homogenous space, based on the diffie helmann case.
 `X` is the space of base points in the HHS, and `G` is the space of vectors between them.
@@ -104,7 +39,7 @@ noncomputable def hhs_signature (G X M : Type) (n : ℕ) [fintype G] [fintype X]
     do {(cs : vector G n) ← repeat ($ᵗ G) n,
       (ys : vector X n) ← return (cs.map (+ᵥ pk)),
       (h : vector bool n) ← query₂ () (ys, m),
-      return (zip_commits_with_hash cs h sk)},
+      return (zip_commits cs h sk)},
   -- Verify a signature by checking that the commitments map to the expected values.
   verify := λ ⟨⟨x₀, pk⟩, m, σ⟩,
     do {(ys : vector X n) ← return (retrieve_commits x₀ pk σ),
@@ -143,10 +78,10 @@ variables (x₀ pk : X) (sk : G) (m : M)
   do {(cs : vector G n) ← repeat ($ᵗ G) n,
     (ys : vector X n) ← return (cs.map (λ c, c +ᵥ pk)),
     (h : vector bool n) ← query₂ () (ys, m),
-    return (zip_commits_with_hash cs h sk)} := rfl
+    return (zip_commits cs h sk)} := rfl
 
 @[simp] lemma support_sign : ((hhs_signature G X M n).sign ((x₀, pk), sk, m)).support =
-  ⋃ (cs : vector G n) (h : vector bool n), {zip_commits_with_hash cs h sk} :=
+  ⋃ (cs : vector G n) (h : vector bool n), {zip_commits cs h sk} :=
 sorry
 
 end sign

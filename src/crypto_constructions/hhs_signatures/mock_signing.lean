@@ -52,6 +52,21 @@ noncomputable def mock_simulate_signing_oracle (adversary : (hhs_signature G X M
 do {((m, σ), _, mocked_sigs) ← (default_simulate (idₛₒ ++ₛ mock_signingₛₒ x₀ pk) (adversary.run (x₀, pk))),
   return ((m, σ), mocked_sigs)}
 
+noncomputable def mock_signing_unforgeable_adversary :=
+sec_adversary (hhs_signature G X M n).base_spec (X × X)
+  ((M × vector (G × bool) n) × (hhs_signature G X M n).random_spec.query_cache)
+
+noncomputable def mock_signing_unforgeable_adversary.experiment :
+  sec_experiment (hhs_signature G X M n).base_spec
+    (hhs_signature G X M n).base_spec
+    (X × X) ((M × vector (G × bool) n) × (hhs_signature G X M n).random_spec.query_cache)
+    unit unit :=
+{ inp_gen := do {ks ← (hhs_signature G X M n).gen (), return (ks.1, ())},
+  so := sorry,
+  is_valid := sorry
+}
+-- def mocked_signing
+
 noncomputable def mocked_unforgeable_adversary
   (adv : (hhs_signature G X M n).unforgeable_adversary) :
   sec_adversary (hhs_signature G X M n).base_spec (X × X)
