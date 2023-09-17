@@ -33,6 +33,7 @@ noncomputable def fork' (adv : fork_adversary spec α β i) :
 def fork_success_experiment (adv : fork_adversary spec α β i)
   (inp_gen : oracle_comp spec α) : base_sec_experiment spec α (fork_result adv) :=
 { inp_gen := (λ x, (x, ())) <$> inp_gen,
+  so := λ _, idₛₒ,
   is_valid := λ x y, return (fork_success y.1 = tt) }
 
 noncomputable def fork_advantage (adv : fork_adversary spec α β i)
