@@ -55,8 +55,11 @@ variables (x₀ pk : X)
 
 lemma simulate_mock_signing_sim_oracle_dist_equiv {α : Type}
   (oa : oracle_comp (hhs_signature G X M n).full_spec α) :
-  default_simulate (mock_signingₛₒ x₀ pk) oa ≃ₚ
-    default_simulate (mock_signingₛₒ x₀ pk) oa
+  default_simulate' (mock_signingₛₒ x₀ pk) oa ≃ₚ
+    default_simulate' ((hhs_signature G X M n).signingₛₒ (x₀, pk) (pk -ᵥ x₀)) oa :=
+begin
+  sorry
+end
 
 end mock_signing_sim_oracle
 
@@ -77,11 +80,18 @@ noncomputable def mock_signing_unforgeable_experiment :
   base_sec_experiment (hhs_signature G X M n).base_spec (X × X)
     ((M × vector G n × vector bool n) × (hhs_signature G X M n).random_spec.query_cache) :=
 base_sec_experiment_of_is_valid (prod.fst <$> (hhs_signature G X M n).gen ())
-  (λ ⟨x₀, pk⟩ ⟨⟨m, zs, hash⟩, cache⟩, begin
-    let ys : vector X n := retrieve_commits x₀ pk zs hash,
-    let hash' := cache.lookup () (ys, m),
-    refine return (some hash = hash'),
-  end)
+  (λ ⟨x₀, pk⟩ ⟨⟨m, zs, hash⟩, cache⟩,
+    let ys : vector X n := retrieve_commits x₀ pk zs hash in
+    let hash' : option (vector bool n) := cache.lookup () (ys, m) in
+    return (some hash = hash'))
+
+theorem advantage_le_mocked_advantage (adv : (hhs_signature G X M n).unforgeable_adversary) :
+  (adv.advantage (hhs_signature G X M n).unforgeable_experiment (idₛₒ ++ₛ randomₛₒ)) ≤
+    ((mocked_unforgeable_adversary adv).advantage
+      mock_signing_unforgeable_experiment (idₛₒ ++ₛ randomₛₒ)) :=
+begin
+  sorry
+end
 
 end unforgeable
 

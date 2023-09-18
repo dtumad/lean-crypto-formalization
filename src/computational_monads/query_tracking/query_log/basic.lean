@@ -66,6 +66,13 @@ def to_seed (log : spec.query_log) : spec.query_seed := log.map (λ _, prod.snd)
 
 end to_seed
 
+section was_queried
+
+@[derive decidable] def was_queried (log : spec.query_log) (i : spec.ι) (t : spec.domain i) :=
+(log i).find (((=) t) ∘ prod.fst) = none
+
+end was_queried
+
 end query_log
 
 end oracle_spec

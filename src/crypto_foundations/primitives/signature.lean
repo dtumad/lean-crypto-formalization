@@ -73,25 +73,27 @@ noncomputable def baseₛₒ (sig : signature) :
 sim_oracle.mask_state (idₛₒ ++ₛ randomₛₒ)
   (equiv.punit_prod sig.random_spec.query_cache)
 
+-- def signingₛₒ (sig : signature) (pk : sig.PK) (sk : sig.SK) :
+--   sim_oracle sig.signing_spec sig.base_spec (sig.M ↦ₒ sig.S).query_cache :=
+-- sim_oracle.mask_state (⟪λ _ m, sig.sign (pk, sk, m)⟫ ∘ₛ cachingₛₒ)
+--   (equiv.prod_punit (signing_spec sig).query_cache)
+
 /-- Simulate a computation with access to a `signing_oracle_spec` to one with `base_oracle_spec`,
 using the provided public / secret keys to answer queries for signatures.
 Additionally uses `cachingₛₒ` to respond to queries, returing the resulting `query_cache`,
 which can be used to check that the adversary hadn't gotten a signature for their final output. -/
-def signingₛₒ (sig : signature) (pk : sig.PK) (sk : sig.SK) :
-  sim_oracle sig.signing_spec sig.base_spec (sig.M ↦ₒ sig.S).query_cache :=
-sim_oracle.mask_state (⟪λ _ m, sig.sign (pk, sk, m)⟫ ∘ₛ cachingₛₒ)
-  (equiv.prod_punit (signing_spec sig).query_cache)
-
 def signing_sim_oracle (sig : signature) (pk : sig.PK) (sk : sig.SK) :
-  sim_oracle sig.full_spec sig.base_spec (sig.M ↦ₒ sig.S).query_cache :=
+  sim_oracle sig.full_spec sig.base_spec (sig.M ↦ₒ sig.S).query_log :=
 begin
   let so' : sim_oracle sig.signing_spec sig.base_spec punit :=
     ⟪λ _ m, sig.sign (pk, sk, m)⟫,
   refine (idₛₒ ++ₛ _).mask_state
     (equiv.punit_prod _),
-  refine (so' ∘ₛ cachingₛₒ).mask_state (equiv.prod_punit _),
+  refine (so' ∘ₛ loggingₛₒ).mask_state (equiv.prod_punit _),
   -- refine ⟪λ _ m, sig.sign (pk, sk, m)⟫,
 end
+
+alias signing_sim_oracle ← signingₛₒ
 
 section simulate_random_oracle
 
@@ -177,11 +179,11 @@ i.e. the output of `sign` always returns true when `verify` is called.
 note that this definition doesn't allow for negligable failure of signing -/
 def complete (sig : signature) := ∀ (m : sig.M), ⁅= tt | completeness_experiment sig m⁆ = 1
 
-lemma complete_iff_forall_is_valid (sig : signature) : sig.complete ↔
-  (∀ m : sig.M, ∀ gen_z ∈ (sig.simulate_gen ∅).support,
-    ∀ sig_z ∈ (sig.simulate_sign (snd gen_z) (fst (fst gen_z)) (snd (fst gen_z)) m).support,
-      sig.is_valid gen_z.1.1 m (fst sig_z) sig_z.2) :=
-sorry
+-- lemma complete_iff_forall_is_valid (sig : signature) : sig.complete ↔
+--   (∀ m : sig.M, ∀ gen_z ∈ (sig.simulate_gen ∅).support,
+--     ∀ sig_z ∈ (sig.simulate_sign (snd gen_z) (fst (fst gen_z)) (snd (fst gen_z)) m).support,
+--       sig.is_valid gen_z.1.1 m (fst sig_z) sig_z.2) :=
+-- sorry
 
 variable (sig : signature)
 
@@ -242,51 +244,26 @@ namespace unforgeable_adversary
 
 variables {sig : signature} (adversary : unforgeable_adversary sig)
 
-/-- Wrapper function for simulation that hides the "state values" of the stateless oracles.
-Runs the adversary with a signing oracle based on the provided public/secret keys,
-returning the results of the adversary, and a log of the queries made by the adversary -/
-def simulate_signing_oracle (pk : sig.PK) (sk : sig.SK) :
-  oracle_comp (uniform_selecting ++ sig.random_spec)
-    ((sig.M × sig.S) × (sig.M ↦ₒ sig.S).query_cache) :=
-(prod.map id prod.snd) <$> (default_simulate (idₛₒ ++ₛ sig.signingₛₒ pk sk) (adversary.run pk))
+-- /-- Wrapper function for simulation that hides the "state values" of the stateless oracles.
+-- Runs the adversary with a signing oracle based on the provided public/secret keys,
+-- returning the results of the adversary, and a log of the queries made by the adversary -/
+-- def simulate_signing_oracle (pk : sig.PK) (sk : sig.SK) :
+--   oracle_comp (uniform_selecting ++ sig.random_spec)
+--     ((sig.M × sig.S) × (sig.M ↦ₒ sig.S).query_cache) :=
+-- (prod.map id prod.snd) <$> (default_simulate (idₛₒ ++ₛ sig.signingₛₒ pk sk) (adversary.run pk))
 
--- instance has_sim_oracle (adv : sig.unforgeable_adversary) :
---   adv.has_sim_oracle sig.SK (uniform_selecting ++ sig.random_spec) (sig.M ↦ₒ sig.S).query_cache :=
--- { so := λ pk sk, sim_oracle.mask_state (idₛₒ ++ₛ sig.signingₛₒ pk sk) (equiv.punit_prod _)}
+end unforgeable_adversary
 
 def unforgeable_experiment (sig : signature) : sec_experiment
-  (uniform_selecting ++ sig.random_spec ++ sig.signing_spec)
-  (uniform_selecting ++ sig.random_spec)
-  sig.PK (sig.M × sig.S) sig.SK (sig.M ↦ₒ sig.S).query_cache :=
+  sig.full_spec sig.base_spec
+  sig.PK (sig.M × sig.S) sig.SK (sig.M ↦ₒ sig.S).query_log :=
 { inp_gen := sig.gen (),
-  so := λ ks, (sim_oracle.mask_state (idₛₒ ++ₛ sig.signingₛₒ ks.1 ks.2) (equiv.punit_prod _)),
-  is_valid := λ ks ⟨⟨m, σ⟩, cache⟩, do {b ← sig.verify (ks.1, m, σ),
-    return (b ∧ cache.lookup () m = none)} }
+  so := λ ks, sig.signingₛₒ ks.1 ks.2,
+  is_valid := λ ⟨pk, sk⟩ ⟨⟨m, σ⟩, log⟩,
+    if log.was_queried () m then return ff else sig.verify (pk, m, σ) }
 
 noncomputable def unforgeable_advantage (sig : signature) (adv : unforgeable_adversary sig) : ℝ≥0∞ :=
 adv.advantage (unforgeable_experiment sig) (idₛₒ ++ₛ randomₛₒ)
-  -- (idₛₒ ++ₛ sig.signingₛₒ ks.1 ks.2).mask_state _}
-
--- noncomputable def unforgeable_experiment :
---   sec_experiment
-
-/-- Experiement for testing if a signature scheme is unforgeable.
-Generate the public/secret keys, then simulate the adversary to get a signature.
-Adversary succeeds if the signature verifies and the message hasn't been queried -/
-noncomputable def experiment (sig : signature) (adversary : unforgeable_adversary sig) :
-  oracle_comp uniform_selecting bool :=
-default_simulate' (idₛₒ ++ₛ randomₛₒ)
-(do {(pk, sk) ← sig.gen (),
-  ((m, σ), cache) ← adversary.simulate_signing_oracle pk sk,
-  b ← sig.verify (pk, m, σ),
-  return (b ∧ cache.lookup () m = none)})
-
-/-- Adversaries success at forging a signature. -/
-noncomputable def advantage {sig : signature} (adversary : unforgeable_adversary sig) : ℝ≥0∞ :=
--- sec_adversary.advantage adversary (unforgeable_experiment sig)
-⁅(= tt) | adversary.experiment sig⁆
-
-end unforgeable_adversary
 
 end signature
 
@@ -304,7 +281,7 @@ def complete (sig_scheme : signature_scheme) : Prop :=
 /-- Signature scheme is unforgeable if any polynomial time adversary has negligible advantage in
   `unforgeable_experiment` as the security parameter grows -/
 def unforgeable (sig_scheme : signature_scheme) : Prop :=
-∀ (adversary : Π (sp : ℕ), unforgeable_adversary $ sig_scheme sp),
-    negligable (λ sp, (adversary sp).advantage)
+∀ (adversary : Π (sp : ℕ), unforgeable_adversary $ sig_scheme sp), negligable (λ sp,
+    (adversary sp).advantage (sig_scheme sp).unforgeable_experiment (idₛₒ ++ₛ randomₛₒ))
 
 end signature_scheme
