@@ -61,9 +61,10 @@ instance fintype_S' (sig : signature) : fintype sig.S := sig.fintype_S
 /-- Shorthand for the combination of the uniform selection and random oracles,
 exactly the oracles available to the signature algorithms themselves -/
 @[reducible, inline] def base_spec (sig : signature) := uniform_selecting ++ sig.random_spec
-
 /-- A signing oracle corresponding to a given signature scheme -/
-@[reducible, inline] def signing_spec (sig : signature) [inhabited sig.S] := sig.M ↦ₒ sig.S
+@[reducible, inline] def signing_spec (sig : signature) := sig.M ↦ₒ sig.S
+/-- The full set of oracles available to adversaries on a signature scheme -/
+@[reducible, inline] def full_spec (sig : signature) := sig.base_spec ++ sig.signing_spec
 
 /-- Simulate the basic oracles for the signature, using `random_oracle` to simulate the
 random oracle and preserving the `uniform_selecting` oracle as is. -/
@@ -73,13 +74,24 @@ sim_oracle.mask_state (idₛₒ ++ₛ randomₛₒ)
   (equiv.punit_prod sig.random_spec.query_cache)
 
 /-- Simulate a computation with access to a `signing_oracle_spec` to one with `base_oracle_spec`,
-using the provided public/secret keys to answer queries for signatures.
+using the provided public / secret keys to answer queries for signatures.
 Additionally uses `cachingₛₒ` to respond to queries, returing the resulting `query_cache`,
 which can be used to check that the adversary hadn't gotten a signature for their final output. -/
 def signingₛₒ (sig : signature) (pk : sig.PK) (sk : sig.SK) :
   sim_oracle sig.signing_spec sig.base_spec (sig.M ↦ₒ sig.S).query_cache :=
 sim_oracle.mask_state (⟪λ _ m, sig.sign (pk, sk, m)⟫ ∘ₛ cachingₛₒ)
   (equiv.prod_punit (signing_spec sig).query_cache)
+
+def signing_sim_oracle (sig : signature) (pk : sig.PK) (sk : sig.SK) :
+  sim_oracle sig.full_spec sig.base_spec (sig.M ↦ₒ sig.S).query_cache :=
+begin
+  let so' : sim_oracle sig.signing_spec sig.base_spec punit :=
+    ⟪λ _ m, sig.sign (pk, sk, m)⟫,
+  refine (idₛₒ ++ₛ _).mask_state
+    (equiv.punit_prod _),
+  refine (so' ∘ₛ cachingₛₒ).mask_state (equiv.prod_punit _),
+  -- refine ⟪λ _ m, sig.sign (pk, sk, m)⟫,
+end
 
 section simulate_random_oracle
 

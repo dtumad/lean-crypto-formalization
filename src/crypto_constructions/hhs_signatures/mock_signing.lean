@@ -28,9 +28,8 @@ mirroring how `signingₛₒ` would respond usually.
 Predetermines the random oracle results to fake a valid signature,
 keeping the results in a seperate internal mocked cache.
 This also includes all caching for the simulation of the random oracles. -/
-noncomputable def mock_signing_sim_oracle' (x₀ pk : X) : sim_oracle
-  (uniform_selecting ++ (hhs_signature G X M n).random_spec ++ (hhs_signature G X M n).signing_spec)
-  (uniform_selecting ++ (hhs_signature G X M n).random_spec)
+noncomputable def mock_signing_sim_oracle (x₀ pk : X) : sim_oracle
+  (hhs_signature G X M n).full_spec (hhs_signature G X M n).base_spec
   (query_cache ((vector X n × M) ↦ₒ vector bool n)) :=
 { default_state := ∅,
   o := λ i, match i with
@@ -50,41 +49,14 @@ noncomputable def mock_signing_sim_oracle' (x₀ pk : X) : sim_oracle
           return ((cs, bs), mock_cache')}
   end }
 
--- /-- Oracle to mock a signing oracle for messages in the vectorization reduction,
--- mirroring how `signingₛₒ` would respond usually.
--- Predetermines the random oracle results to fake a valid signature,
--- keeping the results in a seperate internal mocked cache.
--- This also includes all caching for the simulation of the random oracles. -/
--- noncomputable def mock_signing_sim_oracle (x₀ pk : X) : sim_oracle
---   ((hhs_signature G X M n).random_spec ++ (hhs_signature G X M n).signing_spec)
---   (uniform_selecting ++ (hhs_signature G X M n).random_spec)
---   (query_cache ((vector X n × M) ↦ₒ vector bool n)) :=
--- { default_state := ∅,
---   o := λ i, match i with
---     -- For random oracle queries, check if the query has been mocked.
---     -- If so, return the mocked value, otherwise call the regular oracle (caching the result).
---     | (sum.inl i) := λ ⟨t, mock_cache⟩, mock_cache.get_or_else i t
---         (@query (hhs_signature G X M n).base_spec (sum.inr i) t)
---     -- For queries to the signing oracle, pre-select a hash value and make a signature for that.
---     -- Also update the mocked cache with the value chosen for the hash output.
---     | (sum.inr ()) := λ ⟨m, mock_cache⟩,
---         do {bs ← repeat ($ᵗ bool) n, cs ← repeat ($ᵗ G) n,
---           ys ← return (vector.zip_with (λ (b : bool) c, if b then c +ᵥ pk else c +ᵥ x₀) bs cs),
---           mock_cache' ← return (mock_cache.cache_query () (ys, m) bs),
---           return ((cs, bs), mock_cache')}
---   end }
-
-alias mock_signing_sim_oracle' ← mock_signingₛₒ
-
--- #check mock_signingₛₒ
+alias mock_signing_sim_oracle ← mock_signingₛₒ
 
 variables (x₀ pk : X)
 
--- lemma mock_signing_sim_oracle_apply_dist_equiv {α : Type}
---   (oa : oracle_comp ((uniform_selecting ++ (hhs_signature G X M n).random_spec) ++ (hhs_signature G X M n).signing_spec) α)
---   :
---   default_simulate (idₛₒ ++ₛ mock_signingₛₒ x₀ pk) oa ≃ₚ
---    default_simulate (idₛₒ ++ₛ mock_signingₛₒ x₀ pk) oa
+lemma simulate_mock_signing_sim_oracle_dist_equiv {α : Type}
+  (oa : oracle_comp (hhs_signature G X M n).full_spec α) :
+  default_simulate (mock_signingₛₒ x₀ pk) oa ≃ₚ
+    default_simulate (mock_signingₛₒ x₀ pk) oa
 
 end mock_signing_sim_oracle
 
