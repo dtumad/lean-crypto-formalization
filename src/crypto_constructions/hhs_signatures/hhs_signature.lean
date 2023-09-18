@@ -28,9 +28,8 @@ open oracle_comp oracle_spec prod algorithmic_homogenous_space
 Public keys are pairs `(x₀, pk)` of a base point and a key point.
 The secret key is the vectorization between the points `x₀` and `pk`, as an element of `G`.
 We use a random oracle `(vector X n × M) ↦ₒ vector bool n` to hash the commitment values. -/
-noncomputable def hhs_signature (G X M : Type) (n : ℕ) [fintype G] [fintype X] [inhabited G] [inhabited X]
-  [decidable_eq G] [decidable_eq X] [decidable_eq M] [add_comm_group G]
-  [algorithmic_homogenous_space G X] : signature :=
+noncomputable def hhs_signature (G X M : Type) (n : ℕ) [decidable_eq M]
+  [add_comm_group G] [algorithmic_homogenous_space G X] : signature :=
 { M := M, PK := X × X, SK := G, S := vector G n × vector bool n,
   -- Choose a public key by picking a random base point `x₀` and secret key `sk` (`pk` is forced).
   gen := λ _, do {x₀ ←$ᵗ X, sk ←$ᵗ G, return ((x₀, sk +ᵥ x₀), sk)},
@@ -52,9 +51,11 @@ noncomputable def hhs_signature (G X M : Type) (n : ℕ) [fintype G] [fintype X]
 
 namespace hhs_signature
 
-variables {G X M : Type} [fintype G] [fintype X] [inhabited G] [inhabited X]
-  [decidable_eq G] [decidable_eq X] [decidable_eq M]
-  [add_comm_group G] [algorithmic_homogenous_space G X] {n : ℕ}
+variables {G X M : Type} [decidable_eq M] [add_comm_group G]
+  [algorithmic_homogenous_space G X] {n : ℕ}
+
+@[simp] lemma random_spec_eq_singleton_spec :
+  (hhs_signature G X M n).random_spec = ((vector X n × M) ↦ₒ vector bool n) := rfl
 
 section gen
 

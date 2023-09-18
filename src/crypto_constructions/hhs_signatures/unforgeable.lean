@@ -18,24 +18,18 @@ namespace hhs_signature
 open_locale ennreal big_operators
 open oracle_comp oracle_spec algorithmic_homogenous_space hard_homogenous_space
 
-variables {G X M : Type} [fintype G] [fintype X] [inhabited G] [inhabited X]
-  [decidable_eq G] [decidable_eq X] [decidable_eq M]
+variables {G X M : Type} [decidable_eq M]
   [add_comm_group G] [algorithmic_homogenous_space G X] {n : ℕ}
 
 section unforgeable
 
--- TODO: this should be the right one
 noncomputable def forkable_unforgeable_adversary
   (adv : (hhs_signature G X M n).unforgeable_adversary) :
   fork_adversary (hhs_signature G X M n).base_spec (X × X)
     (((M × vector (G) n × vector bool n) × (hhs_signature G X M n).random_spec.query_cache) ×
-      (hhs_signature G X M n).base_spec.query_log)
-    (sum.inr ()) :=
+      (hhs_signature G X M n).base_spec.query_log) (sum.inr ()) :=
 fork_adversary.of_choose_input (mocked_unforgeable_adversary adv) (sum.inr ())
-  (begin
-    intros ks z,
-    sorry
-  end)
+  (λ ⟨x₀, pk⟩ ⟨⟨m, zs, hash⟩, cache⟩, ⟨(retrieve_commits x₀ pk zs hash, m), hash⟩)
 
 noncomputable def vectorization_adversary_of_unforgeable_adversary
   (adv : (hhs_signature G X M n).unforgeable_adversary) :

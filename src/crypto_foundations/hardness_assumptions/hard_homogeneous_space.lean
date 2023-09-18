@@ -29,6 +29,7 @@ Uses mathlib's definition of an `add_torsor`, which is a bijective group action.
 We also assume `G` and `X` are finite types with decidable equality. -/
 class algorithmic_homogenous_space (G X : Type) [add_comm_group G] extends add_torsor G X :=
 [fintype_G : fintype G] [fintype_X : fintype X]
+[inhabited_G : inhabited G] [inhabited_X : inhabited X]
 [decidable_eq_G : decidable_eq G] [decidable_eq_X : decidable_eq X]
 (poly_time_add : poly_time (λ x, x.1 + x.2 : G × G → G))
 (poly_time_inv : poly_time (λ x, -x : G → G))
@@ -43,6 +44,8 @@ variables {G X : Type} [add_comm_group G] [algorithmic_homogenous_space G X]
 
 instance fx [h : algorithmic_homogenous_space G X] : fintype X := h.fintype_X
 instance fg [h : algorithmic_homogenous_space G X] : fintype G := h.fintype_G
+instance ix [h : algorithmic_homogenous_space G X] : inhabited X := h.inhabited_X
+instance ig [h : algorithmic_homogenous_space G X] : inhabited G := h.inhabited_G
 instance dx [h : algorithmic_homogenous_space G X] : decidable_eq X := h.decidable_eq_X
 instance dg [h : algorithmic_homogenous_space G X] : decidable_eq G := h.decidable_eq_G
 
