@@ -39,6 +39,8 @@ noncomputable def mock_signingₛₒ (x₀ pk : X) : sim_oracle
     -- If so, return the mocked value, otherwise call the regular oracle (caching the result).
     | (sum.inl i) := λ ⟨t, mock_cache⟩, mock_cache.get_or_else i t
         (@query (hhs_signature G X M n).base_spec (sum.inr i) t)
+    -- For queries to the signing oracle, pre-select a hash value and make a signature for that.
+    -- Also update the mocked cache with the value chosen for the hash output.
     | (sum.inr ()) := λ ⟨m, mock_cache⟩,
         do {bs ← repeat ($ᵗ bool) n, cs ← repeat ($ᵗ G) n,
           ys ← return (vector.zip_with (λ (b : bool) c, if b then c +ᵥ pk else c +ᵥ x₀) bs cs),
@@ -46,11 +48,11 @@ noncomputable def mock_signingₛₒ (x₀ pk : X) : sim_oracle
           return ((cs, bs), mock_cache')}
   end }
 
-noncomputable def mock_simulate_signing_oracle (adversary : (hhs_signature G X M n).unforgeable_adversary)
-  (x₀ pk : X) : oracle_comp (hhs_signature G X M n).base_spec
-    ((M × vector G n × vector bool n) × (hhs_signature G X M n).random_spec.query_cache) :=
-do {((m, σ), _, mocked_sigs) ← (default_simulate (idₛₒ ++ₛ mock_signingₛₒ x₀ pk) (adversary.run (x₀, pk))),
-  return ((m, σ), mocked_sigs)}
+-- noncomputable def mock_simulate_signing_oracle (adversary : (hhs_signature G X M n).unforgeable_adversary)
+--   (x₀ pk : X) : oracle_comp (hhs_signature G X M n).base_spec
+--     ((M × vector G n × vector bool n) × (hhs_signature G X M n).random_spec.query_cache) :=
+-- do {((m, σ), _, mocked_sigs) ← (default_simulate (idₛₒ ++ₛ mock_signingₛₒ x₀ pk) (adversary.run (x₀, pk))),
+--   return ((m, σ), mocked_sigs)}
 
 noncomputable def mocked_unforgeable_adversary
   (adv : (hhs_signature G X M n).unforgeable_adversary) :

@@ -271,6 +271,7 @@ default_simulate' (idₛₒ ++ₛ randomₛₒ)
 
 /-- Adversaries success at forging a signature. -/
 noncomputable def advantage {sig : signature} (adversary : unforgeable_adversary sig) : ℝ≥0∞ :=
+-- sec_adversary.advantage adversary (unforgeable_experiment sig)
 ⁅(= tt) | adversary.experiment sig⁆
 
 end unforgeable_adversary
