@@ -27,7 +27,7 @@ open oracle_comp oracle_spec
 /-- An `algorithmic_homogenous_space` is a homogenous space where operations are all `poly_time`.
 Uses mathlib's definition of an `add_torsor`, which is a bijective group action.
 We also assume `G` and `X` are finite types with decidable equality. -/
-class algorithmic_homogenous_space (G X : Type) [add_group G] extends add_torsor G X :=
+class algorithmic_homogenous_space (G X : Type) [add_comm_group G] extends add_torsor G X :=
 [fintype_G : fintype G] [fintype_X : fintype X]
 [decidable_eq_G : decidable_eq G] [decidable_eq_X : decidable_eq X]
 (poly_time_add : poly_time (λ x, x.1 + x.2 : G × G → G))
@@ -39,7 +39,7 @@ class algorithmic_homogenous_space (G X : Type) [add_group G] extends add_torsor
 
 namespace algorithmic_homogenous_space
 
-variables {G X : Type} [add_group G] [algorithmic_homogenous_space G X]
+variables {G X : Type} [add_comm_group G] [algorithmic_homogenous_space G X]
 
 instance fx [h : algorithmic_homogenous_space G X] : fintype X := h.fintype_X
 instance fg [h : algorithmic_homogenous_space G X] : fintype G := h.fintype_G
@@ -49,14 +49,14 @@ instance dg [h : algorithmic_homogenous_space G X] : decidable_eq G := h.decidab
 /-- An adversary for the vectorization game takes in a pair of base points `(x₁, x₂)`,
 and attempts to generate a vectorization, i.g. a vector `g` with `g +ᵥ x₂ = x₁`. -/
 structure vectorization_adversary (G X : Type)
-  [add_group G] [algorithmic_homogenous_space G X]
+  [add_comm_group G] [algorithmic_homogenous_space G X]
   extends sec_adversary uniform_selecting (X × X) G
 
 /-- Analogue of the game for the discrete logarithm assumption.
 The input generator randomly chooses the challenge points for the adversary,
 and a result is valid if it is exactly the vectorization of the challenge points. -/
 noncomputable def vectorization_experiment (G X : Type)
-  [add_group G] [algorithmic_homogenous_space G X] :
+  [add_comm_group G] [algorithmic_homogenous_space G X] :
   sec_experiment uniform_selecting uniform_selecting (X × X) G unit unit :=
 { inp_gen := ($ᵗ X ×ₘ $ᵗ X) ×ₘ return (),
   so := λ _, idₛₒ,
@@ -65,14 +65,14 @@ noncomputable def vectorization_experiment (G X : Type)
 /-- An adversary for the parallelization game takes in a triple of base points `(x₁, x₂, x₃)`,
 and attempts to generate a parralelization, i.g. a vector `g` with `g +ᵥ x₂ = x₁`. -/
 structure parallelization_adversary (G X : Type)
-  [add_group G] [algorithmic_homogenous_space G X]
+  [add_comm_group G] [algorithmic_homogenous_space G X]
   extends sec_adversary uniform_selecting (X × X × X) X
 
 /-- Analogue of the computational discrete logarithm problem.
 The input generator randomly chooses the challenge points for the adversary,
 and a result is valid if it is exactly the parallelization of the challenge points. -/
 noncomputable def parallelization_experiment (G X : Type)
-  [add_group G] [algorithmic_homogenous_space G X] :
+  [add_comm_group G] [algorithmic_homogenous_space G X] :
   sec_experiment uniform_selecting uniform_selecting (X × X × X) X unit unit :=
 { inp_gen := ($ᵗ X ×ₘ $ᵗ X ×ₘ $ᵗ X) ×ₘ return (),
   so := λ _, idₛₒ,
@@ -104,7 +104,7 @@ open algorithmic_homogenous_space
 
 /-- A `hard_homogenous_space` is an indexed set of `algorithmic_homogenous_space` such that both
 vectorization and parallelization become hard as the index becomes large. -/
-class hard_homogenous_space (G X : ℕ → Type) [∀ n, add_group (G n)]
+class hard_homogenous_space (G X : ℕ → Type) [∀ n, add_comm_group (G n)]
   [∀ n, algorithmic_homogenous_space (G n) (X n)] :=
 (vectorization_hard : ∀ (adversary : Π (sp : ℕ), vectorization_adversary (G sp) (X sp)),
   negligable (λ sp, (adversary sp).advantage (vectorization_experiment (G sp) (X sp)) idₛₒ))

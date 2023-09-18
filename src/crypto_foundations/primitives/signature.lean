@@ -131,6 +131,14 @@ end completeness_experiment
 
 section is_valid
 
+/-- A signature  is valid for `sig` if it is always verified by `sig.verify`,
+assuming that the random oracle state is given by the provided `cache`.
+This definition is based on the assumption that valid signatures are accepted with probability `1`.
+If the signature has a potential chance of failure then it isn't really meaningful. -/
+def valid_signature (sig : signature) (pk : sig.PK) (m : sig.M) (σ : sig.S)
+  (cache : sig.random_spec.query_cache) : Prop :=
+(fst <$> simulate sig.baseₛₒ (sig.verify (pk, m, σ)) cache).support = {tt}
+
 /-- A signature  is valid for `sig` if it is always verified by `sig.verify`.
 This definition is based on the assumption that valid signatures are always accepted.
 If the signature has a potential chance of failure then it isn't really meaningful. -/

@@ -29,22 +29,22 @@ Public keys are pairs `(x₀, pk)` of a base point and a key point.
 The secret key is the vectorization between the points `x₀` and `pk`, as an element of `G`.
 We use a random oracle `(vector X n × M) ↦ₒ vector bool n` to hash the commitment values. -/
 noncomputable def hhs_signature (G X M : Type) (n : ℕ) [fintype G] [fintype X] [inhabited G] [inhabited X]
-  [decidable_eq G] [decidable_eq X] [decidable_eq M] [add_group G]
+  [decidable_eq G] [decidable_eq X] [decidable_eq M] [add_comm_group G]
   [algorithmic_homogenous_space G X] : signature :=
-{ M := M, PK := X × X, SK := G, S := vector (G × bool) n,
+{ M := M, PK := X × X, SK := G, S := vector G n × vector bool n,
   -- Choose a public key by picking a random base point `x₀` and secret key `sk` (`pk` is forced).
   gen := λ _, do {x₀ ←$ᵗ X, sk ←$ᵗ G, return ((x₀, sk +ᵥ x₀), sk)},
   -- Sign a message by choosing `n` random commitments, and giving secret key proofs for each.
   sign := λ ⟨⟨x₀, pk⟩, sk, m⟩,
     do {(cs : vector G n) ← repeat ($ᵗ G) n,
       (ys : vector X n) ← return (cs.map (+ᵥ pk)),
-      (h : vector bool n) ← query₂ () (ys, m),
-      return (zip_commits cs h sk)},
+      (hash : vector bool n) ← query₂ () (ys, m),
+      return (zip_commits sk cs hash, hash)},
   -- Verify a signature by checking that the commitments map to the expected values.
-  verify := λ ⟨⟨x₀, pk⟩, m, σ⟩,
-    do {(ys : vector X n) ← return (retrieve_commits x₀ pk σ),
-      (h : vector bool n) ← query₂ () (ys, m),
-      return (h = σ.map prod.snd)},
+  verify := λ ⟨⟨x₀, pk⟩, m, zs, hash⟩,
+    do {(ys : vector X n) ← return (retrieve_commits x₀ pk zs hash),
+      (hash' : vector bool n) ← query₂ () (ys, m),
+      return (hash' = hash)},
   -- Random oracle allows a commitment to be mapped to a list of bools
   random_spec := (vector X n × M) ↦ₒ vector bool n,
   decidable_eq_M := by apply_instance, decidable_eq_S := by apply_instance,
@@ -54,7 +54,7 @@ namespace hhs_signature
 
 variables {G X M : Type} [fintype G] [fintype X] [inhabited G] [inhabited X]
   [decidable_eq G] [decidable_eq X] [decidable_eq M]
-  [add_group G] [algorithmic_homogenous_space G X] {n : ℕ}
+  [add_comm_group G] [algorithmic_homogenous_space G X] {n : ℕ}
 
 section gen
 
@@ -76,36 +76,36 @@ variables (x₀ pk : X) (sk : G) (m : M)
 
 @[simp] lemma sign_apply : ((hhs_signature G X M n).sign ((x₀, pk), sk, m)) =
   do {(cs : vector G n) ← repeat ($ᵗ G) n,
-    (ys : vector X n) ← return (cs.map (λ c, c +ᵥ pk)),
-    (h : vector bool n) ← query₂ () (ys, m),
-    return (zip_commits cs h sk)} := rfl
+    (ys : vector X n) ← return (cs.map (+ᵥ pk)),
+    (hash : vector bool n) ← query₂ () (ys, m),
+    return (zip_commits sk cs hash, hash)} := rfl
 
-@[simp] lemma support_sign : ((hhs_signature G X M n).sign ((x₀, pk), sk, m)).support =
-  ⋃ (cs : vector G n) (h : vector bool n), {zip_commits cs h sk} :=
-sorry
+-- @[simp] lemma support_sign : ((hhs_signature G X M n).sign ((x₀, pk), sk, m)).support =
+--   ⋃ (cs : vector G n) (h : vector bool n), {zip_commits cs h sk} :=
+-- sorry
 
 end sign
 
 section verify
 
-variables (x₀ pk : X) (m : M) (σ : vector (G × bool) n)
+variables (x₀ pk : X) (m : M) (zs : vector G n) (hash : vector bool n)
 
-@[simp] lemma verify_apply : ((hhs_signature G X M n).verify ((x₀, pk), m, σ)) =
-  do {(ys : vector X n) ← return (retrieve_commits x₀ pk σ),
-    (h : vector bool n) ← query₂ () (ys, m),
-    return (h = σ.map prod.snd)} := rfl
+@[simp] lemma verify_apply : ((hhs_signature G X M n).verify ((x₀, pk), m, zs, hash)) =
+  do {(ys : vector X n) ← return (retrieve_commits x₀ pk zs hash),
+    (hash' : vector bool n) ← query₂ () (ys, m),
+    return (hash' = hash)} := rfl
 
 end verify
 
 section is_valid
 
-def is_valid_iff (x₀ pk : X) (m : M) (σ : vector (G × bool) n)
-  (cache : ((vector X n × M) ↦ₒ vector bool n).query_cache) :
-  (hhs_signature G X M n).is_valid (x₀, pk) m σ cache ↔
-    cache.lookup () (retrieve_commits x₀ pk σ, m) = some (σ.map snd) :=
-begin
-  sorry
-end
+-- def is_valid_iff (x₀ pk : X) (m : M) (σ : vector (G × bool) n)
+--   (cache : ((vector X n × M) ↦ₒ vector bool n).query_cache) :
+--   (hhs_signature G X M n).is_valid (x₀, pk) m σ cache ↔
+--     cache.lookup () (retrieve_commits x₀ pk σ, m) = some (σ.map snd) :=
+-- begin
+--   sorry
+-- end
 
 end is_valid
 
