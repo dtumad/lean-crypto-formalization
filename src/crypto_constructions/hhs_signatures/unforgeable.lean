@@ -40,7 +40,22 @@ fork_adversary.of_choose_input (mocked_unforgeable_adversary adv) (sum.inr ())
 noncomputable def vectorization_adversary_of_unforgeable_adversary
   (adv : (hhs_signature G X M n).unforgeable_adversary) :
   vectorization_adversary G X :=
-sorry
+{ run := λ ks, begin
+    have := fork' (forkable_unforgeable_adversary adv),
+    have := this.run ks,
+    refine default_simulate' (hhs_signature G X M n).baseₛₒ _,
+    refine _ <$> this,
+    intro fr,
+    have res1 := fr.1.side_output.1.1,
+    have res2 := fr.2.side_output.1.1,
+    refine vectorization_of_zipped_commits res1.2.1 res2.2.1 res1.2.2 res2.2.2,
+  end,
+  qb := ∅
+}
+-- begin
+--   have := forkable_unforgeable_adversary adv,
+--   have := fork' this,
+-- end
 
 -- def mock_signing_fork_adversary (adv : (hhs_signature G X M n).unforgeable_adversary) :
 --   fork_adversary (hhs_signature G X M n).base_spec (X × X)

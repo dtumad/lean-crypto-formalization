@@ -56,9 +56,6 @@ structure sec_experiment (adv_spec exp_spec : oracle_spec) (α β γ S : Type) :
 (so : α × γ → sim_oracle adv_spec exp_spec S)
 (is_valid : α × γ → β × S → oracle_comp exp_spec bool)
 
-@[inline, reducible] def base_sec_experiment (exp_spec : oracle_spec) (α β : Type) :=
-sec_experiment adv_spec exp_spec α β unit unit
-
 end sec_experiment
 
 section advantage
@@ -70,6 +67,29 @@ noncomputable def sec_adversary.advantage (adv : sec_adversary adv_spec α β)
   (so : sim_oracle exp_spec uniform_selecting S') : ℝ≥0∞ :=
 ⁅= tt | default_simulate' so
   (do {x ← exp.inp_gen, z ← default_simulate (exp.so x) (adv.run x.1), exp.is_valid x z})⁆
+
+/-- version of `sec_adversary.advantage` where the initial input is fixed,
+rather than being drawn from the input generator function. -/
+noncomputable def sec_adversary.advantage_on_input (adv : sec_adversary adv_spec α β)
+  (exp : sec_experiment adv_spec exp_spec α β γ S)
+  (so : sim_oracle exp_spec uniform_selecting S') (x : α × γ) : ℝ≥0∞ :=
+⁅= tt | default_simulate' so
+  (do {z ← default_simulate (exp.so x) (adv.run x.1),
+    exp.is_valid x z})⁆
+
+end advantage
+
+section base
+
+@[inline, reducible] def base_sec_experiment (exp_spec : oracle_spec) (α β : Type) :=
+sec_experiment exp_spec exp_spec α β unit unit
+
+def base_sec_experiment_of_is_valid {exp_spec : oracle_spec} {α β : Type}
+  (inp_gen : oracle_comp exp_spec α) (is_valid : α → β → oracle_comp exp_spec bool) :
+  base_sec_experiment exp_spec α β :=
+{ inp_gen := (λ x, (x, ())) <$> inp_gen,
+  so := λ _, idₛₒ,
+  is_valid := λ x y, is_valid x.1 y.1 }
 
 /-- Version of `sec_adversary.advantage` when there is no "hidden" information or simulation state,
 and where both the experiment and adversary use a common set of oracles. -/
@@ -83,20 +103,11 @@ lemma base_advantage_eq_prob_output (adv : sec_adversary adv_spec α β)
 by rw [sec_adversary.base_advantage, sec_adversary.advantage,
   uniform_oracle.prob_output_simulate']
 
-/-- version of `sec_adversary.advantage` where the initial input is fixed,
-rather than being drawn from the input generator function. -/
-noncomputable def sec_adversary.advantage_on_input (adv : sec_adversary adv_spec α β)
-  (exp : sec_experiment adv_spec exp_spec α β γ S)
-  (so : sim_oracle exp_spec uniform_selecting S') (x : α × γ) : ℝ≥0∞ :=
-⁅= tt | default_simulate' so
-  (do {z ← default_simulate (exp.so x) (adv.run x.1),
-    exp.is_valid x z})⁆
+
+end base
 
 -- structure adversary_reduction (adv_spec₁ adv_spec₂ : oracle_spec) (α₁ β₁ α₂ β₂ : Type)
 --   {exp_spec₁ exp_spec₂ : oracle_spec} {γ₁ γ₂ S₁ S₂} :=
 -- (reduction : sec_adversary adv_spec₁ α₁ β₁ → sec_adversary adv_spec₂ α₂ β₂)
-
-
-end advantage
 
 end oracle_comp

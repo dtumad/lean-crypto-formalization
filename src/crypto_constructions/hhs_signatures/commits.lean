@@ -50,6 +50,11 @@ variables (zs : vector G n) (x₀ pk : X) (hash : vector bool n)
   if hash.nth i = tt then zs.nth i +ᵥ pk else zs.nth i +ᵥ x₀ :=
 by rw [retrieve_commits, vector.zip_with_nth]
 
+lemma retrieve_commits_cons (z : G) (b : bool) :
+  retrieve_commits x₀ pk (z ::ᵥ zs) (b ::ᵥ hash) =
+    (if b = tt then z +ᵥ pk else z +ᵥ x₀) ::ᵥ retrieve_commits x₀ pk zs hash :=
+by cases b; simpa [vector.zip_with, retrieve_commits]
+
 end retrieve_commits
 
 section retrieve_commits_zip_commits
@@ -71,8 +76,6 @@ section vectorization_of_signatures
 
 open vector
 
-#check vector.tail
-
 /-- Given two signatures get the expected secret key used in generating them.
 If both signatures are different but both are valid, this outputs a valid vectorization. -/
 def vectorization_of_zipped_commits :
@@ -84,23 +87,8 @@ def vectorization_of_zipped_commits :
       else vectorization_of_zipped_commits (vector.tail ⟨_, hzs⟩) (vector.tail ⟨_, hzs'⟩)
         (vector.tail ⟨_, hbs⟩)(vector.tail ⟨_, hbs'⟩)
 
-
--- /-- Given two signatures get the expected secret key used in generating them.
--- If both signatures are different but both are valid, this outputs a valid vectorization. -/
--- def vectorization_of_zipped_commits' (zs zs' : vector G n) (hash hash' : vector bool n) : G :=
--- let i := list.index_of (tt, ff) (hash.zip_with prod.mk hash').1 in
--- _
-
--- /-- Given two signatures get the expected secret key used in generating them.
--- If both signatures are different but both are valid, this outputs a valid vectorization. -/
--- def vectorization_of_zipped_commits (zs zs' : vector G n) (hash hash' : vector bool n) : G :=
--- let σs : vector ((G × bool) × (G × bool)) n :=
---   vector.zip_with prod.mk (zs.zip_with prod.mk hash) (zs'.zip_with prod.mk hash') in
--- match σs.1.find (λ (z : (G × bool) × (G × bool)), z.1.2 ≠ z.2.2) with
--- | none := 0 -- Failure case if no bits differ
--- | some ⟨⟨g1, b1⟩, ⟨g2, b2⟩⟩ := if b1 then g1 - g2 else g2 - g1
--- end
-
+/-- If the two hash values differ (and so in particular one of the bits differs),
+and both commits are unzipped the same way, then we can get a valid vectorization. -/
 lemma vectorization_of_zipped_commits_eq_vsub (x₀ pk : X) :
   Π (n : ℕ) (zs zs' : vector G n) (hash hash' : vector bool n)  (h1 : hash ≠ hash')
   (h2 : retrieve_commits x₀ pk zs hash = retrieve_commits x₀ pk zs' hash'),
@@ -127,25 +115,22 @@ lemma vectorization_of_zipped_commits_eq_vsub (x₀ pk : X) :
   },
   {
     simp [vectorization_of_zipped_commits, hb1, hb2, vector.tail],
-    -- sorry,
+    simp at hb1 hb2,
     refine vectorization_of_zipped_commits_eq_vsub n _ _ _ _ _ _,
     {
-      sorry
+      simp only [ne.def, subtype.mk_eq_mk, not_and] at h1 ⊢,
+      refine h1 _,
+      cases b,
+      refine symm (hb2 rfl),
+      refine symm (hb1 rfl),
     },
     {
-      sorry,
+      simp [retrieve_commits, vector.zip_with] at h2,
+      simp only [retrieve_commits, vector.zip_with, subtype.mk_eq_mk],
+      exact h2.2,
     }
   }
 end
-
--- /-- Correctness of `vectorization_of_signatures` in finding a valid `vectorization`,
--- assuming both signatures differ -/
--- lemma vectorization_of_signatures_of_ne (x₀ pk : X) (σ σ' : vector (G × bool) n)
---   (h1 : σ.map snd ≠ σ'.map snd) (h2 : retrieve_commits x₀ pk σ = retrieve_commits x₀ pk σ') :
---   vectorization_of_signatures σ σ' = pk -ᵥ x₀ :=
--- begin
---   sorry
--- end
 
 end vectorization_of_signatures
 
