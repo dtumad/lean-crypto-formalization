@@ -30,14 +30,14 @@ noncomputable def fork' (adv : fork_adversary spec α β i) :
       return (rr₁, rr₂)},
   qb := adv.qb + adv.qb }
 
-def fork_success_experiment (adv : fork_adversary spec α β i)
+noncomputable def fork_success_experiment (adv : fork_adversary spec α β i)
   (inp_gen : oracle_comp spec α) : base_sec_experiment spec α (fork_result adv) :=
 base_sec_experiment_of_is_valid inp_gen
-  (λ x y, return (fork_success y = tt))
+  (λ x y, return (fork_success y = tt)) uniformₛₒ
 
 noncomputable def fork_advantage (adv : fork_adversary spec α β i)
   (inp_gen : oracle_comp spec α) : ℝ≥0∞ :=
-(fork' adv).base_advantage (fork_success_experiment adv inp_gen)
+(fork' adv).advantage (fork_success_experiment adv inp_gen)
 
 -- structure forked_adversary (adv : fork_adversary spec α β i q) extends
 --   sec_adversary spec α (fork_result adv)

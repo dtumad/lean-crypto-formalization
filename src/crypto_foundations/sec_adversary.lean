@@ -81,28 +81,28 @@ end sec_reduction
 section base
 
 @[inline, reducible] def base_sec_experiment (exp_spec : oracle_spec) (α β : Type) :=
-sec_experiment exp_spec exp_spec α β unit unit
+sec_experiment exp_spec exp_spec α β unit unit unit
 
 def base_sec_experiment_of_is_valid {exp_spec : oracle_spec} {α β : Type}
   (inp_gen : oracle_comp exp_spec α) (is_valid : α → β → oracle_comp exp_spec bool)
   (exp_so : sim_oracle exp_spec uniform_selecting unit) :
-  base_sec_experiment exp_spec α β unit :=
+  base_sec_experiment exp_spec α β :=
 { inp_gen := (λ x, (x, ())) <$> inp_gen,
   adv_so := λ _, idₛₒ,
   is_valid := λ x y, is_valid x.1 y.1,
   exp_so := exp_so}
 
-/-- Version of `sec_adversary.advantage` when there is no "hidden" information or simulation state,
-and where both the experiment and adversary use a common set of oracles. -/
-noncomputable def sec_adversary.base_advantage (adv : sec_adversary adv_spec α β)
-  (exp : base_sec_experiment adv_spec α β) : ℝ≥0∞ :=
-adv.advantage exp uniformₛₒ
+-- /-- Version of `sec_adversary.advantage` when there is no "hidden" information or simulation state,
+-- and where both the experiment and adversary use a common set of oracles. -/
+-- noncomputable def sec_adversary.base_advantage (adv : sec_adversary adv_spec α β)
+--   (exp : base_sec_experiment adv_spec α β) : ℝ≥0∞ :=
+-- adv.advantage exp uniformₛₒ
 
-lemma base_advantage_eq_prob_output (adv : sec_adversary adv_spec α β)
-  (exp : base_sec_experiment adv_spec α β) : adv.base_advantage exp =
-    ⁅= tt | do {x ← exp.inp_gen, z ← default_simulate (exp.so x) (adv.run x.1), exp.is_valid x z}⁆ :=
-by rw [sec_adversary.base_advantage, sec_adversary.advantage,
-  uniform_oracle.prob_output_simulate']
+-- lemma base_advantage_eq_prob_output (adv : sec_adversary adv_spec α β)
+--   (exp : base_sec_experiment adv_spec α β) : adv.base_advantage exp =
+--     ⁅= tt | do {x ← exp.inp_gen, z ← default_simulate (exp.so x) (adv.run x.1), exp.is_valid x z}⁆ :=
+-- by rw [sec_adversary.base_advantage, sec_adversary.advantage,
+--   uniform_oracle.prob_output_simulate']
 
 
 end base

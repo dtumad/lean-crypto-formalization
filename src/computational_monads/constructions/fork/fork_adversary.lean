@@ -32,13 +32,13 @@ structure fork_adversary (spec : oracle_spec) (α β : Type)
 
 @[inline, reducible] def fork_adversary.q (adv : fork_adversary spec α β i) := adv.qb.get_count i
 
-def fork_adversary.cf_experiment (adv : fork_adversary spec α β i) (inp_gen : oracle_comp spec α) :
+noncomputable def fork_adversary.cf_experiment (adv : fork_adversary spec α β i) (inp_gen : oracle_comp spec α) :
   base_sec_experiment spec α β :=
-base_sec_experiment_of_is_valid inp_gen (λ x y, return (adv.choose_fork x y ≠ none))
+base_sec_experiment_of_is_valid inp_gen (λ x y, return (adv.choose_fork x y ≠ none)) uniformₛₒ
 
 noncomputable def fork_adversary.cf_advantage' (adv : fork_adversary spec α β i)
   (inp_gen : oracle_comp spec α) : ℝ≥0∞ :=
-adv.base_advantage (adv.cf_experiment inp_gen)
+adv.advantage (adv.cf_experiment inp_gen)
 
 noncomputable def fork_adversary.cf_advantage (adv : fork_adversary spec α β i) (y : α) :=
 ⁅(≠) none | adv.choose_fork y <$> adv.run y⁆

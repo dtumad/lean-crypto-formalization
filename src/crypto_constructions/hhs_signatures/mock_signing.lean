@@ -76,22 +76,22 @@ noncomputable def mocked_unforgeable_adversary
 { run := λ ks, default_simulate (mock_signingₛₒ ks.1 ks.2) (adv.run ks),
   qb := ∅ } -- TODO: bound
 
-noncomputable def mock_signing_unforgeable_experiment :
-  base_sec_experiment (hhs_signature G X M n).base_spec (X × X)
-    ((M × vector G n × vector bool n) × (hhs_signature G X M n).random_spec.query_cache) :=
-base_sec_experiment_of_is_valid (prod.fst <$> (hhs_signature G X M n).gen ())
-  (λ ⟨x₀, pk⟩ ⟨⟨m, zs, hash⟩, cache⟩,
-    let ys : vector X n := retrieve_commits x₀ pk zs hash in
-    let hash' : option (vector bool n) := cache.lookup () (ys, m) in
-    return (some hash = hash'))
+-- noncomputable def mock_signing_unforgeable_experiment :
+--   base_sec_experiment (hhs_signature G X M n).base_spec (X × X)
+--     ((M × vector G n × vector bool n) × (hhs_signature G X M n).random_spec.query_cache) :=
+-- base_sec_experiment_of_is_valid (prod.fst <$> (hhs_signature G X M n).gen ())
+--   (λ ⟨x₀, pk⟩ ⟨⟨m, zs, hash⟩, cache⟩,
+--     let ys : vector X n := retrieve_commits x₀ pk zs hash in
+--     let hash' : option (vector bool n) := cache.lookup () (ys, m) in
+--     return (some hash = hash')) ((idₛₒ ++ₛ randomₛₒ))
 
-theorem advantage_le_mocked_advantage (adv : (hhs_signature G X M n).unforgeable_adversary) :
-  (adv.advantage (hhs_signature G X M n).unforgeable_experiment (idₛₒ ++ₛ randomₛₒ)) ≤
-    ((mocked_unforgeable_adversary adv).advantage
-      mock_signing_unforgeable_experiment (idₛₒ ++ₛ randomₛₒ)) :=
-begin
-  sorry
-end
+-- theorem advantage_le_mocked_advantage (adv : (hhs_signature G X M n).unforgeable_adversary) :
+--   (adv.advantage (hhs_signature G X M n).unforgeable_experiment (idₛₒ ++ₛ randomₛₒ)) ≤
+--     ((mocked_unforgeable_adversary adv).advantage
+--       mock_signing_unforgeable_experiment (idₛₒ ++ₛ randomₛₒ)) :=
+-- begin
+--   sorry
+-- end
 
 end unforgeable
 
