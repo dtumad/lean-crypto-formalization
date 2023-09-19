@@ -139,7 +139,7 @@ the probability of getting `c` from encrypting a message drawn from `message_dis
 is the same as the probability of getting `c` from encrypting the fixed `m`. -/
 def perfect_secrecy (se_alg : symm_enc_alg M K C) : Prop :=
 ∀ (m_dist : oracle_comp uniform_selecting M) (m : M) (c : C),
-  (se_alg.mgen_and_encrypt m_dist).indep_event (prod.fst ⁻¹' {m}) (prod.snd ⁻¹' {c})
+  (se_alg.mgen_and_encrypt m_dist).indep_event (λ x, x.1 = m) (λ x, x.2 = c)
 
 /-- Restate perfect secrecy in terms of explicit probabilities instead of indepent events.
 A symmetric encryption algorithm has perfect secrecy iff the probability of getting a given

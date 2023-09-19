@@ -25,7 +25,7 @@ variables (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) (oc : β 
 /-- Bind operations are associative under distributional equivalence.
 Intentionally avoid making this a `simp_dist_equiv` lemma, as it can be counterproductive. -/
 @[pairwise_dist_equiv]
-lemma bind_bind_dist_equiv_assoc : oa >>= (λ x, ob x >>= oc) ≃ₚ oa >>= ob >>= oc  :=
+lemma bind_bind_dist_equiv_assoc : oa >>= (λ x, ob x >>= oc) ≃ₚ oa >>= ob >>= oc :=
 dist_equiv.ext (λ x, by simp only [prob_output.def, eval_dist_bind, pmf.bind_bind])
 
 lemma support_bind_bind_assoc : (oa >>= (λ x, ob x >>= oc)).support = (oa >>= ob >>= oc).support :=

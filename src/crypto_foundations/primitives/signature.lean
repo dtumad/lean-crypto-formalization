@@ -254,16 +254,19 @@ variables {sig : signature} (adversary : unforgeable_adversary sig)
 
 end unforgeable_adversary
 
-def unforgeable_experiment (sig : signature) : sec_experiment
-  sig.full_spec sig.base_spec
-  sig.PK (sig.M × sig.S) sig.SK (sig.M ↦ₒ sig.S).query_log :=
+noncomputable def unforgeable_experiment (sig : signature) :
+  sec_experiment sig.full_spec sig.base_spec sig.PK
+    (sig.M × sig.S) sig.SK (sig.M ↦ₒ sig.S).query_log
+    sig.random_spec.query_cache :=
 { inp_gen := sig.gen (),
-  so := λ ks, sig.signingₛₒ ks.1 ks.2,
+  adv_so := λ ks, sig.signingₛₒ ks.1 ks.2,
   is_valid := λ ⟨pk, sk⟩ ⟨⟨m, σ⟩, log⟩,
-    if log.was_queried () m then return ff else sig.verify (pk, m, σ) }
+    if log.was_queried () m then return ff else sig.verify (pk, m, σ),
+  exp_so := (idₛₒ ++ₛ randomₛₒ).mask_state (equiv.punit_prod _) }
 
-noncomputable def unforgeable_advantage (sig : signature) (adv : unforgeable_adversary sig) : ℝ≥0∞ :=
-adv.advantage (unforgeable_experiment sig) (idₛₒ ++ₛ randomₛₒ)
+noncomputable def unforgeable_advantage (sig : signature)
+  (adv : unforgeable_adversary sig) : ℝ≥0∞ :=
+adv.advantage sig.unforgeable_experiment
 
 end signature
 
@@ -281,7 +284,7 @@ def complete (sig_scheme : signature_scheme) : Prop :=
 /-- Signature scheme is unforgeable if any polynomial time adversary has negligible advantage in
   `unforgeable_experiment` as the security parameter grows -/
 def unforgeable (sig_scheme : signature_scheme) : Prop :=
-∀ (adversary : Π (sp : ℕ), unforgeable_adversary $ sig_scheme sp), negligable (λ sp,
-    (adversary sp).advantage (sig_scheme sp).unforgeable_experiment (idₛₒ ++ₛ randomₛₒ))
+∀ (adv : Π (sp : ℕ), unforgeable_adversary $ sig_scheme sp),
+  negligable (λ sp, (adv sp).advantage (sig_scheme sp).unforgeable_experiment)
 
 end signature_scheme

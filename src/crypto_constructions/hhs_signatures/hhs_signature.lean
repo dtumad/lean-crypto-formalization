@@ -28,9 +28,11 @@ open oracle_comp oracle_spec prod algorithmic_homogenous_space
 Public keys are pairs `(x₀, pk)` of a base point and a key point.
 The secret key is the vectorization between the points `x₀` and `pk`, as an element of `G`.
 We use a random oracle `(vector X n × M) ↦ₒ vector bool n` to hash the commitment values. -/
-noncomputable def hhs_signature (G X M : Type) (n : ℕ) [decidable_eq M]
-  [add_comm_group G] [algorithmic_homogenous_space G X] : signature :=
+noncomputable def hhs_signature (G X M : Type) [decidable_eq M]
+  [add_comm_group G] [algorithmic_homogenous_space G X] (n : ℕ) : signature :=
 { M := M, PK := X × X, SK := G, S := vector G n × vector bool n,
+    -- Random oracle allows a commitment to be mapped to a list of bools
+  random_spec := (vector X n × M) ↦ₒ vector bool n,
   -- Choose a public key by picking a random base point `x₀` and secret key `sk` (`pk` is forced).
   gen := λ _, do {x₀ ←$ᵗ X, sk ←$ᵗ G, return ((x₀, sk +ᵥ x₀), sk)},
   -- Sign a message by choosing `n` random commitments, and giving secret key proofs for each.
@@ -44,8 +46,6 @@ noncomputable def hhs_signature (G X M : Type) (n : ℕ) [decidable_eq M]
     do {(ys : vector X n) ← return (retrieve_commits x₀ pk zs hash),
       (hash' : vector bool n) ← query₂ () (ys, m),
       return (hash' = hash)},
-  -- Random oracle allows a commitment to be mapped to a list of bools
-  random_spec := (vector X n × M) ↦ₒ vector bool n,
   decidable_eq_M := by apply_instance, decidable_eq_S := by apply_instance,
   inhabited_S := by apply_instance, fintype_S := by apply_instance }
 

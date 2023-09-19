@@ -159,7 +159,8 @@ open oracle_comp
 section examples
 
 -- This set of examples serves as sort of a "unit test" for the coercions above
-variables (spec spec' spec'' spec''' : oracle_spec) (coe_spec coe_spec' : oracle_spec)
+variables (spec spec' spec'' spec''' : oracle_spec)
+  (coe_spec coe_spec' : oracle_spec)
   [coe_spec ⊂ₒ coe_spec']
 
 -- coerce a single `coin_spec` and then append extra oracles

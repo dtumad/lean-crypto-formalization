@@ -22,8 +22,7 @@ def one_time_pad (n : ℕ) : symm_enc_alg (vector bool n) (vector bool n) (vecto
 { keygen := λ _, oracle_comp.repeat coin n,
   encrypt := λ ⟨m, k⟩, vector.zip_with bxor m k,
   decrypt := λ ⟨c, k⟩, vector.zip_with bxor c k,
-  complete := λ m k _, (vector.ext (λ i, by simp only [vector.zip_with_nth, bool.bxor_assoc,
-    bxor_self, bool.bxor_ff_right]) : vector.zip_with bxor (vector.zip_with bxor m k) k = m) }
+  complete := λ m k _, (vector.ext (λ i, by simp [vector.zip_with_nth]) : vector.zip_with bxor (vector.zip_with bxor m k) k = m) }
 
 namespace one_time_pad
 

@@ -28,7 +28,7 @@ section coe_sim_oracle
     both the initial and final `oracle_spec` are some appended set of oracles -/
 instance [coe_spec ⊂ₒ coe_spec'] :
   has_coe (sim_oracle spec coe_spec S) (sim_oracle spec coe_spec' S) :=
-{ coe := λ so, {default_state := so.default_state, o := λ i x, ↑(so i x)} }
+⟨λ so, {default_state := so.default_state, o := λ i x, ↑(so i x)}⟩
 
 /-- Coerce a simulation oracle to include an additional number of resulting oracles -/
 example (so : sim_oracle coe_spec coe_spec' S) :

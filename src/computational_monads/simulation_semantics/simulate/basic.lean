@@ -67,7 +67,7 @@ Requires providing a maximum recursion depth for the `repeat` constructor. -/
 def simulate {spec spec' : oracle_spec} (so : sim_oracle spec spec' S) :
   Π {α : Type} (oa : oracle_comp spec α), S → oracle_comp spec' (α × S)
 | _ (pure' α a) state := return ⟨a, state⟩
-| _ (bind' α β oa ob) state := simulate oa state >>= λ x, simulate (ob x.1) x.2
+| _ (bind' α β oa ob) state := do {x ← simulate oa state, simulate (ob x.1) x.2}
 | _ (query i t) state := so i (t, state)
 
 /-- Convenience definition to use the default state as the initial state for `simulate`.

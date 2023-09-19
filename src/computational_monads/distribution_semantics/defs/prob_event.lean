@@ -92,7 +92,7 @@ lemma prob_event_eq_sum_fin_support_indicator :
   λ a ha, set.indicator_apply_eq_zero.2 (λ _, prob_output_eq_zero' ha))
 
 /-- Probability of an event in terms of a decidable `ite` sum-/
-lemma prob_event_eq_tsum_ite [decidable_pred e] : ⁅e | oa⁆ = ∑' x, ite (x ∈ e) ⁅= x | oa⁆ 0 :=
+lemma prob_event_eq_tsum_ite [decidable_pred e] : ⁅e | oa⁆ = ∑' x, if x ∈ e then ⁅= x | oa⁆ else 0 :=
 trans (prob_event_eq_tsum_indicator oa e) (tsum_congr $ λ _, by { rw set.indicator, congr} )
 
 lemma prob_event_eq_sum_ite [fintype α] [decidable_pred e] :
