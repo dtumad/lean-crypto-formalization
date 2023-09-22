@@ -190,8 +190,8 @@ by rw_dist_equiv [oracle_comp.return_bind_dist_equiv]
 
 example (a : α) (b : β) (oc : α → β → oracle_comp spec γ) :
   (return a >>= (λ x, return b >>= λ y, oc x y)) ≃ₚ oc a b :=
-by rw_dist_equiv [oracle_comp.return_bind_dist_equiv,
-  oracle_comp.return_bind_dist_equiv]
+by simp_rw_dist_equiv [oracle_comp.return_bind_dist_equiv]
+
 
 example (oa : oracle_comp spec α) (b : β) (oc : α → β → oracle_comp spec γ) :
   do {x ← oa, y ← return b, oc x y} ≃ₚ do {x ← oa, oc x b} :=

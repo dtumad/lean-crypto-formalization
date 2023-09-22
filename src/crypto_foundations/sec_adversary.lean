@@ -44,11 +44,13 @@ structure sec_experiment (adv_spec exp_spec : oracle_spec) (α β γ S S' : Type
 
 end sec_experiment
 
+namespace sec_adversary
+
 section advantage
 
 /-- `adv.advantage exp so` is the chance that `adv` succeeds in the experiment defined by `exp`
 when simulated using `so`, assuming we start with the default state for `so`. -/
-noncomputable def sec_adversary.advantage (adv : sec_adversary adv_spec α β)
+noncomputable def advantage (adv : sec_adversary adv_spec α β)
   (exp : sec_experiment adv_spec exp_spec α β γ S S') : ℝ≥0∞ :=
 ⁅= tt | default_simulate' exp.exp_so
   (do {x ← exp.inp_gen, z ← default_simulate (exp.adv_so x) (adv.run x.1), exp.is_valid x z})⁆
@@ -63,6 +65,8 @@ noncomputable def sec_adversary.advantage (adv : sec_adversary adv_spec α β)
 
 end advantage
 
+end sec_adversary
+
 section sec_reduction
 
 structure sec_reduction (adv_spec exp_spec : oracle_spec) (α β γ S : Type)
@@ -74,8 +78,6 @@ structure sec_reduction (adv_spec exp_spec : oracle_spec) (α β γ S : Type)
 (h : ∀ (adv : sec_adversary adv_spec α β),
   loss_factor (adv.advantage exp1) ≤ (r adv).advantage exp2)
 
--- def sec_reduction_of_input
-
 end sec_reduction
 
 section base
@@ -84,7 +86,9 @@ section base
 sec_experiment exp_spec exp_spec α β unit unit unit
 
 def base_sec_experiment_of_is_valid {exp_spec : oracle_spec} {α β : Type}
-  (inp_gen : oracle_comp exp_spec α) (is_valid : α → β → oracle_comp exp_spec bool)
+  (inp_gen : oracle_comp exp_spec α)
+
+  (is_valid : α → β → oracle_comp exp_spec bool)
   (exp_so : sim_oracle exp_spec uniform_selecting unit) :
   base_sec_experiment exp_spec α β :=
 { inp_gen := (λ x, (x, ())) <$> inp_gen,
@@ -110,5 +114,23 @@ end base
 -- structure adversary_reduction (adv_spec₁ adv_spec₂ : oracle_spec) (α₁ β₁ α₂ β₂ : Type)
 --   {exp_spec₁ exp_spec₂ : oracle_spec} {γ₁ γ₂ S₁ S₂} :=
 -- (reduction : sec_adversary adv_spec₁ α₁ β₁ → sec_adversary adv_spec₂ α₂ β₂)
+
+section soundness
+
+/-- A `public_experiment` is a specific `sec_experiment` in which there isn't secret information
+unavailable to the adversary during simulation (in the sense that this information is only
+shared between the input generation function and the validation function). -/
+def public_experiment {adv_spec exp_spec : oracle_spec} {α β S S' : Type}
+  (inp_gen : oracle_comp exp_spec α)
+  (adv_so : α → sim_oracle adv_spec exp_spec S)
+  (is_valid : α → β → oracle_comp exp_spec bool)
+  (exp_so : sim_oracle exp_spec uniform_selecting S') :
+  sec_experiment adv_spec exp_spec α β unit S S' :=
+{ inp_gen := (λ x, (x, ())) <$> inp_gen,
+  is_valid := λ x y, is_valid x.1 y.1,
+  adv_so := λ x, adv_so x.1,
+  exp_so := exp_so }
+
+end soundness
 
 end oracle_comp

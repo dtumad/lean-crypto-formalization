@@ -29,7 +29,7 @@ variables {α β γ : Type} {spec spec' : oracle_spec}
 /-- Given a count of queries `qc`, and an initial `query_store` seed, generate more outputs at
 random until the number of seeded outputs for each oracle is at least the value given in `qc`. -/
 noncomputable def generate_seed (qc : spec.query_count) :
-  oracle_comp uniform_selecting (spec.query_seed) :=
+  prob_comp (spec.query_seed) :=
 generate qc (λ i, $ᵗ (spec.range i))
 
 variables (qc qc' : spec.query_count)

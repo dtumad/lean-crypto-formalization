@@ -21,7 +21,7 @@ open_locale classical big_operators
 The types `M`, `K`, and `C` are the types of the messages, keys, and ciphertexts respectively.
 We assume that the `keygen` has a random selection oracle, and the other two are deterministic. -/
 structure symm_enc_alg (M K C : Type) :=
-(keygen : unit → oracle_comp uniform_selecting K)
+(keygen : unit → prob_comp K)
 (encrypt : M × K → C)
 (decrypt : C × K → M)
 (complete : ∀ (m : M), ∀ k ∈ (keygen ()).support,
@@ -73,14 +73,14 @@ section mgen_and_encrypt
 /-- Computation that given a message distribution `m_dist`, will draw a message `m` from the
 distribution, generate a key `k` using `keygen`, and calculate the resulting ciphertext `c`.
 The computation returns both the chosen message and the resulting ciphertext. -/
-@[inline, reducible] def mgen_and_encrypt (m_dist : oracle_comp uniform_selecting M) :
-  oracle_comp uniform_selecting (M × C) := do {
+@[inline, reducible] def mgen_and_encrypt (m_dist : prob_comp M) :
+  prob_comp (M × C) := do {
     m ← m_dist,
     k ← se_alg.keygen (),
     return (m, se_alg.encrypt (m, k))
   }
 
-variable (m_dist : oracle_comp uniform_selecting M)
+variable (m_dist : prob_comp M)
 
 /-- Possible outputs of `mgen_and_encrypt` as a union over possible messages and keys. -/
 lemma support_mgen_and_encrypt' : (se_alg.mgen_and_encrypt m_dist).support =
@@ -138,14 +138,14 @@ distribution of messages `message_dist`, and fixed message `m` and ciphertext `c
 the probability of getting `c` from encrypting a message drawn from `message_dist`
 is the same as the probability of getting `c` from encrypting the fixed `m`. -/
 def perfect_secrecy (se_alg : symm_enc_alg M K C) : Prop :=
-∀ (m_dist : oracle_comp uniform_selecting M) (m : M) (c : C),
+∀ (m_dist : prob_comp M) (m : M) (c : C),
   (se_alg.mgen_and_encrypt m_dist).indep_event (λ x, x.1 = m) (λ x, x.2 = c)
 
 /-- Restate perfect secrecy in terms of explicit probabilities instead of indepent events.
 A symmetric encryption algorithm has perfect secrecy iff the probability of getting a given
 message-ciphertext after generating a key and encrypting is the probability of drawing the message
 times the probability of getting that ciphertext from any message, for any message distribution. -/
-theorem perfect_secrecy_iff : se_alg.perfect_secrecy ↔ ∀ (m_dist : oracle_comp uniform_selecting M)
+theorem perfect_secrecy_iff : se_alg.perfect_secrecy ↔ ∀ (m_dist : prob_comp M)
   (m : M) (c : C), ⁅= (m, c) | se_alg.mgen_and_encrypt m_dist⁆ =
     ⁅= m | m_dist⁆ * ⁅= c | prod.snd <$> se_alg.mgen_and_encrypt m_dist⁆ :=
 begin
@@ -275,7 +275,7 @@ have hk' : k' ∈ (se_alg.keygen ()).support := (se_alg.mem_support_keygen hmk h
   (h'.trans (se_alg.complete' hmk hkc c k' hk').symm)), λ h', h' ▸ se_alg.complete' hmk hkc c k hk⟩
 
 lemma eval_dist_ciphertext_eq_eval_dist_key_of_perfect_secrecy
-  (h : se_alg.perfect_secrecy) (m_dist : oracle_comp uniform_selecting M)
+  (h : se_alg.perfect_secrecy) (m_dist : prob_comp M)
   (k : K) (c : C) (h' : se_alg.decrypt (c, k) ∈ m_dist.support) :
   ⁅= c | prod.snd <$> se_alg.mgen_and_encrypt m_dist⁆ = ⁅= k | se_alg.keygen ()⁆ :=
 begin
