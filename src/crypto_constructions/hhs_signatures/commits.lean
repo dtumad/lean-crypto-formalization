@@ -79,20 +79,20 @@ open vector
 /-- Given two signatures get the expected secret key used in generating them.
 If both signatures are different but both are valid, this outputs a valid vectorization. -/
 def vectorization_of_zipped_commits :
-  Π {n : ℕ}, vector G n → vector G n → vector bool n → vector bool n → G
-| 0 ⟨list.nil, _⟩ ⟨list.nil, _⟩ ⟨list.nil, _⟩ ⟨list.nil, _⟩ := 0
-| (n + 1) ⟨z :: zs, hzs⟩ ⟨z' :: zs', hzs'⟩ ⟨b :: bs, hbs⟩ ⟨b' :: bs', hbs'⟩ :=
+  Π {n : ℕ}, vector G n × vector bool n → vector G n × vector bool n → G
+| 0 ⟨⟨list.nil, _⟩, ⟨list.nil, _⟩⟩ ⟨⟨list.nil, _⟩, ⟨list.nil, _⟩⟩ := 0
+| (n + 1) ⟨⟨z :: zs, hzs⟩, ⟨b :: bs, hbs⟩⟩ ⟨⟨z' :: zs', hzs'⟩, ⟨b' :: bs', hbs'⟩⟩ :=
     if b = tt ∧ b' = ff then z' - z
     else if b = ff ∧ b' = tt then z - z'
-      else vectorization_of_zipped_commits (vector.tail ⟨_, hzs⟩) (vector.tail ⟨_, hzs'⟩)
-        (vector.tail ⟨_, hbs⟩)(vector.tail ⟨_, hbs'⟩)
+      else vectorization_of_zipped_commits ((vector.tail ⟨_, hzs⟩), (vector.tail ⟨_, hbs⟩))
+        ((vector.tail ⟨_, hzs'⟩), (vector.tail ⟨_, hbs'⟩))
 
 /-- If the two hash values differ (and so in particular one of the bits differs),
 and both commits are unzipped the same way, then we can get a valid vectorization. -/
 lemma vectorization_of_zipped_commits_eq_vsub (x₀ pk : X) :
   Π (n : ℕ) {zs zs' : vector G n} {hash hash' : vector bool n} (h1 : hash ≠ hash')
   (h2 : retrieve_commits x₀ pk zs hash = retrieve_commits x₀ pk zs' hash'),
-  vectorization_of_zipped_commits zs zs' hash hash' = pk -ᵥ x₀
+  vectorization_of_zipped_commits (zs, hash) (zs', hash') = pk -ᵥ x₀
 | 0 ⟨list.nil, _⟩ ⟨list.nil, _⟩ ⟨list.nil, _⟩ ⟨list.nil, _⟩ h1 h2 :=
     (h1 ((vector.eq_nil _).trans (vector.eq_nil _).symm)).elim
 | (n + 1) ⟨z :: zs, hzs⟩ ⟨z' :: zs', hzs'⟩ ⟨b :: bs, hbs⟩ ⟨b' :: bs', hbs'⟩ h1 h2 := begin

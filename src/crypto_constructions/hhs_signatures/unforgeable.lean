@@ -23,6 +23,29 @@ variables {G X M : Type} [decidable_eq M]
 
 section unforgeable
 
+noncomputable def forkable_unforgeable_adversary'
+  (adv : (hhs_signature G X M n).unforgeable_adversary) :
+  fork_adversary (hhs_signature G X M n).base_spec (X × X)
+    ((M × vector G n × vector bool n) × (hhs_signature G X M n).random_spec.query_log)
+    (sum.inr ()) :=
+{ run := (mocked_unforgeable_adversary' adv).run,
+  choose_fork := begin
+    rintros ⟨x₀, pk⟩ ⟨⟨m, zs, hash⟩, mocked_cache⟩,
+    let ys : vector X n := (retrieve_commits x₀ pk zs hash),
+    refine if some hash = mocked_cache.lookup () (ys, m) then _ else none,
+    refine some (fin.of_nat (mocked_cache.lookup_index' () (ys, m)))
+  end,
+  qb := sorry -- TODO: bound
+}
+
+
+noncomputable def vectorization_of_fork_result' (x₀ : X) (pk : X)
+  {adv : (hhs_signature G X M n).unforgeable_adversary}
+  (fr : fork_result (forkable_unforgeable_adversary' adv)) : G :=
+let rr1 := fr.side_output₁.1 in let rr2 := fr.side_output₂.1 in
+  vectorization_of_zipped_commits rr1.2 rr2.2
+
+
 noncomputable def forkable_unforgeable_adversary
   (adv : (hhs_signature G X M n).unforgeable_adversary) :
   fork_adversary (hhs_signature G X M n).base_spec (X × X)
@@ -37,13 +60,13 @@ noncomputable def vectorization_of_fork_result (x₀ : X) (pk : X)
   {adv : (hhs_signature G X M n).unforgeable_adversary}
   (fr : fork_result (forkable_unforgeable_adversary adv)) : G :=
 let rr1 := fr.side_output₁.1.1 in let rr2 := fr.side_output₂.1.1 in
-  vectorization_of_zipped_commits rr1.2.1 rr2.2.1 rr1.2.2 rr2.2.2
+  vectorization_of_zipped_commits rr1.2 rr2.2
 
 def vectorization_of_fork_result_eq_vsub (x₀ : X) (pk : X)
   (adv : (hhs_signature G X M n).unforgeable_adversary)
   (fr : fork_result (forkable_unforgeable_adversary adv)) (hfr : fork_success fr)
-  (h : fr ∈ (default_simulate' (hhs_signature G X M n).baseₛₒ
-    $ (fork' (forkable_unforgeable_adversary adv)).run (x₀, pk)).support) :
+  (h : fr ∈ (default_simulate' uniformₛₒ
+    ((fork' (forkable_unforgeable_adversary adv)).run (x₀, pk))).support) :
   vectorization_of_fork_result x₀ pk fr = pk -ᵥ x₀ :=
 begin
   rw [fork_success_iff_exists] at hfr,
@@ -52,10 +75,10 @@ begin
   cases fr,
   cases fr_fst,
   cases fr_snd,
-  refine vectorization_of_zipped_commits_eq_vsub x₀ pk n _ _,
-  {
-    sorry,
-  },
+  -- refine vectorization_of_zipped_commits_eq_vsub x₀ pk n _ _,
+  -- {
+  --   sorry,
+  -- },
   {
     sorry
   }
@@ -74,7 +97,7 @@ noncomputable def vectorization_adversary_of_unforgeable_adversary
     -- refine (λ fr, _) <$> (fork' (forkable_unforgeable_adversary adv)).run ks,
     have res1 := fr.1.side_output.1.1,
     have res2 := fr.2.side_output.1.1,
-    refine vectorization_of_zipped_commits res1.2.1 res2.2.1 res1.2.2 res2.2.2,
+    refine vectorization_of_zipped_commits res1.2 res2.2,
   end,
   qb := ∅
 }

@@ -6,6 +6,7 @@ Authors: Devon Tuma
 import computational_monads.oracle_spec
 import computational_monads.query_tracking.query_count.order
 import computational_monads.query_tracking.query_seed.basic
+import computational_monads.distribution_semantics.tactics.pairwise_dist_equiv
 
 /-!
 # Oracle Query Log
@@ -72,6 +73,44 @@ section was_queried
 (log i).find (((=) t) ∘ prod.fst) = none
 
 end was_queried
+
+section lookup
+
+def lookup (log : spec.query_log) (i : spec.ι) (t : spec.domain i) :
+  option (spec.range i) :=
+prod.snd <$> (log i).find (((=) t) ∘ prod.fst)
+
+end lookup
+
+section lookup_index
+
+def lookup_index' (log : spec.query_log) (i : spec.ι) (t : spec.domain i) : ℕ :=
+(match log.lookup i t with
+| none := 0
+| some u := (log i).index_of (t, u)
+end)
+
+def lookup_index (log : spec.query_log) (i : spec.ι) (t : spec.domain i) :
+  option (fin (log.get_count i).succ) :=
+match log.lookup i t with
+| none := none
+| some u := some ⟨(log i).index_of (t, u), nat.lt_succ_of_le list.index_of_le_length⟩
+end
+
+end lookup_index
+
+section lookup_cached
+
+open oracle_comp
+
+def lookup_or_query (cache : spec.query_log) (i : spec.ι) (t : spec.domain i) :
+  oracle_comp spec (spec.range i × spec.query_log) :=
+match cache.lookup i t with
+| none := do {u ← query i t, return (u, cache.log_query i t u)}
+| (some u) := return (u, cache)
+end
+
+end lookup_cached
 
 end query_log
 

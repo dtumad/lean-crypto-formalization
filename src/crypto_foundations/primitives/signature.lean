@@ -73,6 +73,10 @@ noncomputable def baseₛₒ (sig : signature) :
 sim_oracle.mask_state (idₛₒ ++ₛ randomₛₒ)
   (equiv.punit_prod sig.random_spec.query_cache)
 
+noncomputable def baseₛₒ' (sig : signature) :
+  sim_oracle sig.base_spec uniform_selecting sig.random_spec.query_log :=
+(idₛₒ ++ₛ random_oracle' sig.random_spec).mask_state (equiv.punit_prod _)
+
 -- def signingₛₒ (sig : signature) (pk : sig.PK) (sk : sig.SK) :
 --   sim_oracle sig.signing_spec sig.base_spec (sig.M ↦ₒ sig.S).query_cache :=
 -- sim_oracle.mask_state (⟪λ _ m, sig.sign (pk, sk, m)⟫ ∘ₛ cachingₛₒ)
@@ -90,10 +94,21 @@ begin
   refine (idₛₒ ++ₛ _).mask_state
     (equiv.punit_prod _),
   refine (so' ∘ₛ loggingₛₒ).mask_state (equiv.prod_punit _),
-  -- refine ⟪λ _ m, sig.sign (pk, sk, m)⟫,
 end
 
+-- def signing_sim_oracle' (sig : signature) (pk : sig.PK) (sk : sig.SK) :
+--   sim_oracle sig.full_spec sig.base_spec unit :=
+-- (idₛₒ ++ₛ _).mask_state (equiv.punit_prod _)
+
 alias signing_sim_oracle ← signingₛₒ
+
+noncomputable def full_sim_oracle (sig : signature) (pk : sig.PK) (sk : sig.SK) :
+  sim_oracle sig.full_spec uniform_selecting
+    ((sig.M ↦ₒ sig.S).query_log × sig.random_spec.query_cache) :=
+sig.baseₛₒ ∘ₛ (sig.signingₛₒ pk sk)
+
+alias full_sim_oracle ←
+
 
 section simulate_random_oracle
 
@@ -275,6 +290,16 @@ noncomputable def unforgeable_experiment (sig : signature) :
   is_valid := λ ⟨pk, sk⟩ ⟨⟨m, σ⟩, log⟩,
     if log.was_queried () m then return ff else sig.verify (pk, m, σ),
   exp_so := (idₛₒ ++ₛ randomₛₒ).mask_state (equiv.punit_prod _) }
+
+noncomputable def unforgeable_experiment' (sig : signature) :
+  sec_experiment sig.full_spec sig.base_spec sig.PK
+    (sig.M × sig.S) sig.SK (sig.M ↦ₒ sig.S).query_log
+    sig.random_spec.query_cache :=
+{ inp_gen := sig.gen (),
+  adv_so := λ ks, sig.signingₛₒ ks.1 ks.2,
+  is_valid := λ ⟨pk, sk⟩ ⟨⟨m, σ⟩, log⟩,
+    if log.was_queried () m then return ff else sig.verify (pk, m, σ),
+  exp_so := sig.baseₛₒ }
 
 noncomputable def unforgeable_advantage (sig : signature)
   (adv : unforgeable_adversary sig) : ℝ≥0∞ :=

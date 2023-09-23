@@ -9,6 +9,7 @@ import computational_monads.query_tracking.query_cache.sdiff
 import computational_monads.simulation_semantics.simulate.monad
 import computational_monads.simulation_semantics.simulate.query
 import computational_monads.distribution_semantics.mprod
+import computational_monads.query_tracking.query_log.basic
 
 /-!
 # Caching Simulation Oracle
@@ -34,6 +35,10 @@ The `query_cache.get_or_else` function allows us to run a fallback for non-cache
 def caching_oracle (spec : oracle_spec) : sim_oracle spec spec (query_cache spec) :=
 { default_state := ∅,
   o := λ i ⟨t, cache⟩, cache.get_or_else i t (query i t) }
+
+def caching_oracle' (spec : oracle_spec) : sim_oracle spec spec spec.query_log :=
+{ default_state := ∅,
+  o := λ i ⟨t, cache⟩, cache.lookup_or_query i t }
 
 notation `cachingₛₒ` := caching_oracle _
 

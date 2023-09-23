@@ -27,9 +27,10 @@ structure sec_adversary (adv_spec : oracle_spec) (α β : Type) :=
 (run : α → oracle_comp adv_spec β)
 (qb : query_count adv_spec)
 
-/-- A `sec_experiment exp_spec α β γ S` represents a security experiment for a `sec_adversary`,
+/-- A `sec_experiment adv_spec exp_spec α β γ S S'` is a security experiment for a `sec_adversary`,
 where `α` is the input type to the adversary, `β` is the result type of the adversary,
-`γ` is the secret information not shared with the adversary, and `S` is the simulation state. -/
+`γ` is the secret information not shared with the adversary, `S` is the adversary simulation state,
+and `S'` is the experiment simulation state (which isn't used in practice). -/
 structure sec_experiment (adv_spec exp_spec : oracle_spec) (α β γ S S' : Type) :=
 (inp_gen : oracle_comp exp_spec (α × γ))
 (is_valid : α × γ → β × S → oracle_comp exp_spec bool)
@@ -69,6 +70,30 @@ def always_succeeds (exp : sec_experiment adv_spec exp_spec α β γ S S') : Pro
 end always_succeeds
 
 end sec_experiment
+
+/-- If two experiments `exp1` and `exp2` have the equivalent input generation function,
+and for each possible input `adv2` performs better than `adv1` at succeeding in the experiment,
+then `adv2` has a higher advantage than `adv1` in general.
+
+TODO: for the forking lemma portion we need to allow a loss factor. -/
+lemma advantage_le_advantage_of_inp_gen_eq {adv_spec exp_spec : oracle_spec} {α β γ S : Type}
+  {adv_spec' exp_spec' : oracle_spec} {α β' γ S' : Type} {T T' : Type}
+  (exp1 : sec_experiment adv_spec exp_spec α β γ S T)
+  (exp2 : sec_experiment adv_spec' exp_spec' α β' γ S' T')
+  (adv1 : sec_adversary adv_spec α β)
+  (adv2 : sec_adversary adv_spec' α β')
+  (h : default_simulate' exp1.exp_so exp1.inp_gen ≃ₚ
+    default_simulate' exp2.exp_so exp2.inp_gen)
+  (h' : ∀ x ∈ exp1.inp_gen.support,
+    ⁅= tt | default_simulate' exp1.exp_so
+        (do {z ← default_simulate (exp1.adv_so x) (adv1.run x.1), exp1.is_valid x z})⁆
+      ≤ ⁅= tt | default_simulate' exp2.exp_so
+          (do {z ← default_simulate (exp2.adv_so x) (adv2.run x.1), exp2.is_valid x z})⁆) :
+  adv1.advantage exp1 ≤ adv2.advantage exp2 :=
+begin
+  sorry
+end
+
 
 section sec_reduction
 
