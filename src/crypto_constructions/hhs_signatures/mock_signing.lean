@@ -29,13 +29,14 @@ Predetermines the random oracle results to fake a valid signature,
 keeping the results in a seperate internal mocked cache.
 This also includes all caching for the simulation of the random oracles. -/
 noncomputable def mock_signing_sim_oracle (x₀ pk : X) : sim_oracle
-  (hhs_signature G X M n).full_spec (hhs_signature G X M n).base_spec
+  (hhs_signature G X M n).full_spec
+  (uniform_selecting ++ ((vector X n × M) ↦ₒ vector bool n))
   (query_cache ((vector X n × M) ↦ₒ vector bool n)) :=
 { default_state := ∅,
   o := λ i, match i with
     | (sum.inl (sum.inl i)) := λ ⟨t, mock_cache⟩,
-        do { u ← query (sum.inl i) t,
-          return (u, mock_cache) }
+        do {u ← query (sum.inl i) t,
+          return (u, mock_cache)}
     -- For random oracle queries, check if the query has been mocked.
     -- If so, return the mocked value, otherwise call the regular oracle (caching the result).
     | (sum.inl (sum.inr i)) := λ ⟨t, mock_cache⟩, mock_cache.get_or_else i t

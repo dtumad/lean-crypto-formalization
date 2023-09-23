@@ -21,17 +21,11 @@ open oracle_spec
 
 variables {α β γ : Type} {adv_spec exp_spec : oracle_spec} {S S' : Type}
 
-section sec_adversary
-
 /-- A security adversary `sec_adversary adv_spec α β` is a computation taking inputs of type `α`
 and computing a result of type `β` using oracles specified by `adv_spec`. -/
 structure sec_adversary (adv_spec : oracle_spec) (α β : Type) :=
 (run : α → oracle_comp adv_spec β)
 (qb : query_count adv_spec)
-
-end sec_adversary
-
-section sec_experiment
 
 /-- A `sec_experiment exp_spec α β γ S` represents a security experiment for a `sec_adversary`,
 where `α` is the input type to the adversary, `β` is the result type of the adversary,
@@ -41,8 +35,6 @@ structure sec_experiment (adv_spec exp_spec : oracle_spec) (α β γ S S' : Type
 (is_valid : α × γ → β × S → oracle_comp exp_spec bool)
 (adv_so : α × γ → sim_oracle adv_spec exp_spec S)
 (exp_so : sim_oracle exp_spec uniform_selecting S')
-
-end sec_experiment
 
 namespace sec_adversary
 
@@ -67,10 +59,21 @@ end advantage
 
 end sec_adversary
 
+namespace sec_experiment
+
+section always_succeeds
+
+def always_succeeds (exp : sec_experiment adv_spec exp_spec α β γ S S') : Prop :=
+∀ (adv : sec_adversary adv_spec α β), adv.advantage exp = 1
+
+end always_succeeds
+
+end sec_experiment
+
 section sec_reduction
 
-structure sec_reduction (adv_spec exp_spec : oracle_spec) (α β γ S : Type)
-  (adv_spec' exp_spec' : oracle_spec) (α' β' γ' S' : Type) (T T' : Type)
+structure sec_reduction {adv_spec exp_spec : oracle_spec} {α β γ S : Type}
+  {adv_spec' exp_spec' : oracle_spec} {α' β' γ' S' : Type} {T T' : Type}
   (exp1 : sec_experiment adv_spec exp_spec α β γ S T)
   (exp2 : sec_experiment adv_spec' exp_spec' α' β' γ' S' T') :=
 (loss_factor : ℝ≥0∞ → ℝ≥0∞)
@@ -80,42 +83,41 @@ structure sec_reduction (adv_spec exp_spec : oracle_spec) (α β γ S : Type)
 
 end sec_reduction
 
-section base
+-- section base
 
-@[inline, reducible] def base_sec_experiment (exp_spec : oracle_spec) (α β : Type) :=
-sec_experiment exp_spec exp_spec α β unit unit unit
+-- @[inline, reducible] def base_sec_experiment (exp_spec : oracle_spec) (α β : Type) :=
+-- sec_experiment exp_spec exp_spec α β unit unit unit
 
-def base_sec_experiment_of_is_valid {exp_spec : oracle_spec} {α β : Type}
-  (inp_gen : oracle_comp exp_spec α)
+-- def base_sec_experiment_of_is_valid {exp_spec : oracle_spec} {α β : Type}
+--   (inp_gen : oracle_comp exp_spec α)
+--   (is_valid : α → β → oracle_comp exp_spec bool)
+--   (exp_so : sim_oracle exp_spec uniform_selecting unit) :
+--   base_sec_experiment exp_spec α β :=
+-- { inp_gen := (λ x, (x, ())) <$> inp_gen,
+--   adv_so := λ _, idₛₒ,
+--   is_valid := λ x y, is_valid x.1 y.1,
+--   exp_so := exp_so}
 
-  (is_valid : α → β → oracle_comp exp_spec bool)
-  (exp_so : sim_oracle exp_spec uniform_selecting unit) :
-  base_sec_experiment exp_spec α β :=
-{ inp_gen := (λ x, (x, ())) <$> inp_gen,
-  adv_so := λ _, idₛₒ,
-  is_valid := λ x y, is_valid x.1 y.1,
-  exp_so := exp_so}
+-- -- /-- Version of `sec_adversary.advantage` when there is no "hidden" information or simulation state,
+-- -- and where both the experiment and adversary use a common set of oracles. -/
+-- -- noncomputable def sec_adversary.base_advantage (adv : sec_adversary adv_spec α β)
+-- --   (exp : base_sec_experiment adv_spec α β) : ℝ≥0∞ :=
+-- -- adv.advantage exp uniformₛₒ
 
--- /-- Version of `sec_adversary.advantage` when there is no "hidden" information or simulation state,
--- and where both the experiment and adversary use a common set of oracles. -/
--- noncomputable def sec_adversary.base_advantage (adv : sec_adversary adv_spec α β)
---   (exp : base_sec_experiment adv_spec α β) : ℝ≥0∞ :=
--- adv.advantage exp uniformₛₒ
-
--- lemma base_advantage_eq_prob_output (adv : sec_adversary adv_spec α β)
---   (exp : base_sec_experiment adv_spec α β) : adv.base_advantage exp =
---     ⁅= tt | do {x ← exp.inp_gen, z ← default_simulate (exp.so x) (adv.run x.1), exp.is_valid x z}⁆ :=
--- by rw [sec_adversary.base_advantage, sec_adversary.advantage,
---   uniform_oracle.prob_output_simulate']
+-- -- lemma base_advantage_eq_prob_output (adv : sec_adversary adv_spec α β)
+-- --   (exp : base_sec_experiment adv_spec α β) : adv.base_advantage exp =
+-- --     ⁅= tt | do {x ← exp.inp_gen, z ← default_simulate (exp.so x) (adv.run x.1), exp.is_valid x z}⁆ :=
+-- -- by rw [sec_adversary.base_advantage, sec_adversary.advantage,
+-- --   uniform_oracle.prob_output_simulate']
 
 
-end base
+-- end base
 
 -- structure adversary_reduction (adv_spec₁ adv_spec₂ : oracle_spec) (α₁ β₁ α₂ β₂ : Type)
 --   {exp_spec₁ exp_spec₂ : oracle_spec} {γ₁ γ₂ S₁ S₂} :=
 -- (reduction : sec_adversary adv_spec₁ α₁ β₁ → sec_adversary adv_spec₂ α₂ β₂)
 
-section soundness
+-- section soundness
 
 /-- A `public_experiment` is a specific `sec_experiment` in which there isn't secret information
 unavailable to the adversary during simulation (in the sense that this information is only
@@ -131,6 +133,6 @@ def public_experiment {adv_spec exp_spec : oracle_spec} {α β S S' : Type}
   adv_so := λ x, adv_so x.1,
   exp_so := exp_so }
 
-end soundness
+-- end soundness
 
 end oracle_comp

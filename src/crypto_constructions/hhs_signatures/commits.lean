@@ -90,7 +90,7 @@ def vectorization_of_zipped_commits :
 /-- If the two hash values differ (and so in particular one of the bits differs),
 and both commits are unzipped the same way, then we can get a valid vectorization. -/
 lemma vectorization_of_zipped_commits_eq_vsub (x₀ pk : X) :
-  Π (n : ℕ) (zs zs' : vector G n) (hash hash' : vector bool n)  (h1 : hash ≠ hash')
+  Π (n : ℕ) {zs zs' : vector G n} {hash hash' : vector bool n} (h1 : hash ≠ hash')
   (h2 : retrieve_commits x₀ pk zs hash = retrieve_commits x₀ pk zs' hash'),
   vectorization_of_zipped_commits zs zs' hash hash' = pk -ᵥ x₀
 | 0 ⟨list.nil, _⟩ ⟨list.nil, _⟩ ⟨list.nil, _⟩ ⟨list.nil, _⟩ h1 h2 :=
@@ -116,7 +116,7 @@ lemma vectorization_of_zipped_commits_eq_vsub (x₀ pk : X) :
   {
     simp [vectorization_of_zipped_commits, hb1, hb2, vector.tail],
     simp at hb1 hb2,
-    refine vectorization_of_zipped_commits_eq_vsub n _ _ _ _ _ _,
+    refine vectorization_of_zipped_commits_eq_vsub n _ _,
     {
       simp only [ne.def, subtype.mk_eq_mk, not_and] at h1 ⊢,
       refine h1 _,

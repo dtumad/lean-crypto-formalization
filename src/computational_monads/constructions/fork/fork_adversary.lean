@@ -32,16 +32,23 @@ structure fork_adversary (spec : oracle_spec) (α β : Type)
 
 @[inline, reducible] def fork_adversary.q (adv : fork_adversary spec α β i) := adv.qb.get_count i
 
-noncomputable def fork_adversary.cf_experiment (adv : fork_adversary spec α β i) (inp_gen : oracle_comp spec α) :
-  base_sec_experiment spec α β :=
-base_sec_experiment_of_is_valid inp_gen (λ x y, return (adv.choose_fork x y ≠ none)) uniformₛₒ
+-- noncomputable def fork_adversary.cf_experiment (adv : fork_adversary spec α β i) (inp_gen : oracle_comp spec α) :
+--   base_sec_experiment spec α β :=
+-- base_sec_experiment_of_is_valid inp_gen (λ x y, return (adv.choose_fork x y ≠ none)) uniformₛₒ
 
-noncomputable def fork_adversary.cf_advantage' (adv : fork_adversary spec α β i)
+noncomputable def fork_adversary.cf_experiment
+  (inp_gen : oracle_comp spec α)
+  (adv : fork_adversary spec α β i) :
+  sec_experiment spec spec α β unit unit unit :=
+public_experiment inp_gen (λ _, idₛₒ)
+  (λ x y, return (adv.choose_fork x y ≠ none)) uniformₛₒ
+
+noncomputable def fork_adversary.cf_advantage (adv : fork_adversary spec α β i)
   (inp_gen : oracle_comp spec α) : ℝ≥0∞ :=
 adv.advantage (adv.cf_experiment inp_gen)
 
-noncomputable def fork_adversary.cf_advantage (adv : fork_adversary spec α β i) (y : α) :=
-⁅(≠) none | adv.choose_fork y <$> adv.run y⁆
+-- noncomputable def fork_adversary.cf_advantage (adv : fork_adversary spec α β i) (y : α) :=
+-- ⁅(≠) none | adv.choose_fork y <$> adv.run y⁆
 
 -- @[simps]
 -- def choose_fork_experiment (adv : fork_adversary spec α β i q) (x : α) :
@@ -88,17 +95,17 @@ run_result adv × run_result adv
 
 namespace fork_result
 
-variable {adv : fork_adversary spec α β i}
+variables {adv : fork_adversary spec α β i} (fr : fork_result adv)
 
-@[inline, reducible] def fork_point₁ (fr : fork_result adv) := fr.1.fork_point
-@[inline, reducible] def fork_point₂ (fr : fork_result adv) := fr.2.fork_point
-@[inline, reducible] def fork_points (fr : fork_result adv) := (fr.fork_point₁, fr.fork_point₂)
-@[inline, reducible] def chosen_fork₁ (fr : fork_result adv) := fr.1.chosen_fork
-@[inline, reducible] def chosen_fork₂ (fr : fork_result adv) := fr.2.chosen_fork
-@[inline, reducible] def side_output₁ (fr : fork_result adv) := fr.1.side_output
-@[inline, reducible] def side_output₂ (fr : fork_result adv) := fr.2.side_output
-@[inline, reducible] def seed₁ (fr : fork_result adv) := fr.1.seed
-@[inline, reducible] def seed₂ (fr : fork_result adv) := fr.2.seed
+@[simp, inline, reducible] def fork_point₁ := fr.1.fork_point
+@[simp, inline, reducible] def fork_point₂ := fr.2.fork_point
+@[simp, inline, reducible] def fork_points := (fr.fork_point₁, fr.fork_point₂)
+@[simp, inline, reducible] def chosen_fork₁ := fr.1.chosen_fork
+@[simp, inline, reducible] def chosen_fork₂ := fr.2.chosen_fork
+@[simp, inline, reducible] def side_output₁ := fr.1.side_output
+@[simp, inline, reducible] def side_output₂ := fr.2.side_output
+@[simp, inline, reducible] def seed₁ := fr.1.seed
+@[simp, inline, reducible] def seed₂ := fr.2.seed
 
 end fork_result
 
@@ -144,12 +151,18 @@ calc ⁅same_fork_point | ofr⁆ = ⁅λ z, z.1 ≠ none ∧ z.1 = z.2 | fork_re
       }
     end
 
+/-- Forking succeeds if both chosen forking points are the same,
+and the seed at that index differs with the other -/
 def fork_success (fr : fork_result adv) : bool :=
 match fr.fork_point₁ with
 | none := false
-| some fp := fr.fork_point₂ = some fp ∧
-    indexed_list.value_differs fr.seed₁ fr.seed₂ i fp
+| some fp := fr.fork_point₂ = some fp ∧ fr.seed₁.value_differs fr.seed₂ i fp
 end
+
+lemma fork_success_iff_exists (fr : fork_result adv) : fork_success fr ↔
+  ∃ fp : fin adv.q, fr.fork_point₁ = some fp ∧ fr.fork_point₂ = some fp
+    ∧ fr.seed₁.value_differs fr.seed₂ i fp :=
+sorry
 
 end success
 

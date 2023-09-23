@@ -14,7 +14,7 @@ import computational_monads.constructions.fork.fork_adversary
 -/
 
 open_locale big_operators ennreal
-open oracle_comp oracle_spec
+open oracle_comp oracle_spec fintype
 
 variables {α β γ : Type} {spec spec' : oracle_spec} {i : spec.ι}
 
@@ -31,9 +31,12 @@ noncomputable def fork' (adv : fork_adversary spec α β i) :
   qb := adv.qb + adv.qb }
 
 noncomputable def fork_success_experiment (adv : fork_adversary spec α β i)
-  (inp_gen : oracle_comp spec α) : base_sec_experiment spec α (fork_result adv) :=
-base_sec_experiment_of_is_valid inp_gen
-  (λ x y, return (fork_success y = tt)) uniformₛₒ
+  (inp_gen : oracle_comp spec α) :
+  sec_experiment spec spec α (fork_result adv) unit unit unit :=
+public_experiment inp_gen (λ _, idₛₒ)
+  (λ _ fr, return (fork_success fr)) uniformₛₒ
+-- base_sec_experiment_of_is_valid inp_gen
+--   (λ x y, return (fork_success y = tt)) uniformₛₒ
 
 noncomputable def fork_advantage (adv : fork_adversary spec α β i)
   (inp_gen : oracle_comp spec α) : ℝ≥0∞ :=
@@ -222,15 +225,15 @@ calc ⁅= some fp | adv.choose_fork y <$> adv.run y⁆ ^ 2
 
 /--  -/
 lemma le_prob_event_same_fork_point (adv : fork_adversary spec α β i) :
-  adv.cf_advantage y ^ 2 / adv.q.succ ≤ ⁅same_fork_point | fork adv y⁆ :=
-calc adv.cf_advantage y ^ 2 / adv.q.succ
-    = ⁅(≠) none | adv.choose_fork y <$> adv.run y⁆ ^ 2 / adv.q.succ : sorry
+  ⁅(≠) none | adv.choose_fork y <$> adv.run y⁆ ^ 2 / adv.q.succ
+    ≤ ⁅same_fork_point | fork adv y⁆ :=
+calc ⁅(≠) none | adv.choose_fork y <$> adv.run y⁆ ^ 2 / adv.q.succ
   -- Rewrite the probability of not getting `none` as the sum of each `some` possibility.
-  ... = (∑ fp, ⁅= some fp | adv.choose_fork y <$> adv.run y⁆) ^ 2 / adv.q.succ :
+  = (∑ fp, ⁅= some fp | adv.choose_fork y <$> adv.run y⁆) ^ 2 / adv.q.succ :
     by rw [prob_event_ne_none_eq_sum]
   -- Apply Jensen's inequality and cancel out the factor of `q.succ`.
   ... ≤ ∑ fp, ⁅= some fp | adv.choose_fork y <$> adv.run y⁆ ^ 2 :
-    le_trans (le_of_eq (by rw [one_add_one_eq_two, pow_one, ← fintype.card, fintype.card_fin]))
+    le_trans (le_of_eq (by rw [one_add_one_eq_two, pow_one, ← card, card_fin]))
       (ennreal.pow_sum_div_card_le_sum_pow _ _ (λ _ _, prob_output_ne_top _ _) 1)
   -- Apply `le_prob_output_fork_points` to the inner probability calculation.
   ... ≤ ∑ fp, ⁅= (some fp, some fp) | do {rr₁ ← adv.seed_and_run y ∅,
@@ -262,12 +265,21 @@ calc adv.cf_advantage y ^ 2 / adv.q.succ
     end
 
 
-theorem prob_event_fork_success (adv : fork_adversary spec α β i) :
-  adv.cf_advantage y * (adv.cf_advantage y / adv.q - (fintype.card (spec.range i))⁻¹) ≤
-    ⁅λ z, fork_success z = tt | fork adv y⁆ :=
+lemma prob_event_fork_success (adv : fork_adversary spec α β i) :
+  ⁅(≠) none | adv.choose_fork y <$> adv.run y⁆ *
+      (⁅(≠) none | adv.choose_fork y <$> adv.run y⁆ / adv.q - (card (spec.range i))⁻¹)
+    ≤ ⁅λ z, fork_success z = tt | fork adv y⁆ :=
 begin
   sorry
 end
+
+theorem le_fork_advantage (inp_gen : oracle_comp spec α) :
+  (adv.cf_advantage inp_gen) *
+      (adv.cf_advantage inp_gen / adv.q - (card (spec.range i))⁻¹)
+    ≤ fork_advantage adv inp_gen :=
+sorry
+
+-- theorem
 
 
 end prob_event_fork_success

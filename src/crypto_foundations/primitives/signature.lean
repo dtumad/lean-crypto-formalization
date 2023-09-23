@@ -47,7 +47,7 @@ structure signature := -- TODO: signature_alg?
 (random_spec : oracle_spec)
 -- The actual algorithms of the signature scheme.
 (gen : unit → oracle_comp (uniform_selecting ++ random_spec) (PK × SK))
-(sign : PK × SK × M → oracle_comp (uniform_selecting ++ random_spec) S)
+(sign : (PK × SK) × M → oracle_comp (uniform_selecting ++ random_spec) S)
 (verify : PK × M × S → oracle_comp (uniform_selecting ++ random_spec) bool)
 
 namespace signature
@@ -86,7 +86,7 @@ def signing_sim_oracle (sig : signature) (pk : sig.PK) (sk : sig.SK) :
   sim_oracle sig.full_spec sig.base_spec (sig.M ↦ₒ sig.S).query_log :=
 begin
   let so' : sim_oracle sig.signing_spec sig.base_spec punit :=
-    ⟪λ _ m, sig.sign (pk, sk, m)⟫,
+    ⟪λ _ m, sig.sign ((pk, sk), m)⟫,
   refine (idₛₒ ++ₛ _).mask_state
     (equiv.punit_prod _),
   refine (so' ∘ₛ loggingₛₒ).mask_state (equiv.prod_punit _),
@@ -109,7 +109,7 @@ This is assumed to be the "correct" way to sign a message, at least for security
 noncomputable def simulate_sign (sig : signature) (cache : sig.random_spec.query_cache)
   (pk : sig.PK) (sk : sig.SK) (m : sig.M) :
   prob_comp (sig.S × sig.random_spec.query_cache) :=
-simulate sig.baseₛₒ (sig.sign (pk, sk, m)) cache
+simulate sig.baseₛₒ (sig.sign ((pk, sk), m)) cache
 
 /-- Run the verification algorithm using a random oracle initialized to `cache`.
 This is assumed to be the "correct" way to verify signatures, at least for security properties. -/
@@ -124,12 +124,12 @@ end simulate_random_oracle
 
 section completeness_experiment
 
-/-- Generate a key, sign on the given message, and return the result of verify on the signature.
-Random oracles have a shared cache for the entire computation,
-and the uniform selection oracle just forwards its query on. -/
-noncomputable def completeness_experiment (sig : signature) (m : sig.M) :
-  prob_comp bool := default_simulate' sig.baseₛₒ
-    (do {ks ← sig.gen (), σ ← sig.sign (ks.1, ks.2, m), sig.verify (ks.1, m, σ)})
+-- /-- Generate a key, sign on the given message, and return the result of verify on the signature.
+-- Random oracles have a shared cache for the entire computation,
+-- and the uniform selection oracle just forwards its query on. -/
+-- noncomputable def completeness_experiment (sig : signature) (m : sig.M) :
+--   prob_comp bool := default_simulate' sig.baseₛₒ
+--     (do {ks ← sig.gen (), σ ← sig.sign (ks.1, ks.2, m), sig.verify (ks.1, m, σ)})
 
 -- lemma completeness_experiment_dist_equiv (sig : signature) (m : sig.M) :
 --   sig.completeness_experiment m ≃ₚ
@@ -153,58 +153,60 @@ def valid_signature (sig : signature) (pk : sig.PK) (m : sig.M) (σ : sig.S)
   (cache : sig.random_spec.query_cache) : Prop :=
 (fst <$> simulate sig.baseₛₒ (sig.verify (pk, m, σ)) cache).support = {tt}
 
-/-- A signature  is valid for `sig` if it is always verified by `sig.verify`.
-This definition is based on the assumption that valid signatures are always accepted.
-If the signature has a potential chance of failure then it isn't really meaningful. -/
-def is_valid (sig : signature) (pk : sig.PK) (m : sig.M) (σ : sig.S)
-  (cache : sig.random_spec.query_cache) : Prop :=
-fst '' (sig.simulate_verify cache pk m σ).support = {tt}
+-- /-- A signature  is valid for `sig` if it is always verified by `sig.verify`.
+-- This definition is based on the assumption that valid signatures are always accepted.
+-- If the signature has a potential chance of failure then it isn't really meaningful. -/
+-- def is_valid (sig : signature) (pk : sig.PK) (m : sig.M) (σ : sig.S)
+--   (cache : sig.random_spec.query_cache) : Prop :=
+-- fst '' (sig.simulate_verify cache pk m σ).support = {tt}
 
-variables (sig : signature) (pk : sig.PK) (m : sig.M) (σ : sig.S)
-  (cache : sig.random_spec.query_cache)
+-- variables (sig : signature) (pk : sig.PK) (m : sig.M) (σ : sig.S)
+--   (cache : sig.random_spec.query_cache)
 
-lemma is_valid.def : sig.is_valid pk m σ cache =
-  (fst '' (sig.simulate_verify cache pk m σ).support = {tt}) := rfl
+-- lemma is_valid.def : sig.is_valid pk m σ cache =
+--   (fst '' (sig.simulate_verify cache pk m σ).support = {tt}) := rfl
 
-lemma is_valid_iff_prob_output : sig.is_valid pk m σ cache ↔
-  ⁅= tt | fst <$> sig.simulate_verify cache pk m σ⁆ = 1 :=
-by rw [prob_output_eq_one_iff, is_valid.def, support_map]
+-- lemma is_valid_iff_prob_output : sig.is_valid pk m σ cache ↔
+--   ⁅= tt | fst <$> sig.simulate_verify cache pk m σ⁆ = 1 :=
+-- by rw [prob_output_eq_one_iff, is_valid.def, support_map]
 
 end is_valid
 
 section complete
 
-structure completeness_adversary (sig : signature)
-  extends sec_adversary (uniform_selecting ++ sig.random_spec) (sig.PK × sig.SK) sig.M
+-- /-- Adversary for the completeness experiment attempts takes in a public and secret key pair,
+-- and attempts to produce a message that will produce an invalid signature. -/
+-- structure completeness_adversary (sig : signature)
+--   extends sec_adversary (uniform_selecting ++ sig.random_spec) (sig.PK × sig.SK) sig.M
 
-def completeness_experiment (sig : signature) :
-  sec_experiment (uniform_selecting ++ sig.random_spec) (uniform_selecting ++ sig.random_spec)
-    (sig.PK × sig.SK) sig.M unit unit unit :=
-public_experiment (sig.gen ()) (λ _, idₛₒ)
-  (λ ks m, do {σ ← sig.sign (ks.1, m), sig.verify (ks.1, m, σ)})
-    (λ _, idₛₒ ++ₛ randomₛₒ)
+-- /-- Experiment for completeness generates a set of keys, runs the adversary to get a message,
+-- and then verifies that signing that message will produce a valid signature. -/
+-- noncomputable def completeness_experiment (sig : signature) :
+--   sec_experiment (uniform_selecting ++ sig.random_spec) (uniform_selecting ++ sig.random_spec)
+--     (sig.PK × sig.SK) sig.M unit unit sig.random_spec.query_cache :=
+-- public_experiment (sig.gen ()) (λ _, idₛₒ)
+--   (λ ks m, do {σ ← sig.sign (ks, m), sig.verify (ks.1, m, σ)}) sig.baseₛₒ
 
-/-- Signature is complete if for any possible message, the generated signature is valid,
-i.e. the output of `sign` always returns true when `verify` is called.
-note that this definition doesn't allow for negligable failure of signing -/
-def complete (sig : signature) := ∀ (m : sig.M), ⁅= tt | completeness_experiment sig m⁆ = 1
+/-- A signature algorithm is complete if all messages are valid. -/
+def complete (sig : signature) : Prop := ∀ m : sig.M,
+(default_simulate' sig.baseₛₒ
+  (do {ks ← sig.gen (),
+    σ ← sig.sign (ks, m),
+    sig.verify (ks.1, m, σ)})).support = {tt}
 
--- lemma complete_iff_forall_is_valid (sig : signature) : sig.complete ↔
---   (∀ m : sig.M, ∀ gen_z ∈ (sig.simulate_gen ∅).support,
---     ∀ sig_z ∈ (sig.simulate_sign (snd gen_z) (fst (fst gen_z)) (snd (fst gen_z)) m).support,
---       sig.is_valid gen_z.1.1 m (fst sig_z) sig_z.2) :=
--- sorry
-
-variable (sig : signature)
-
--- lemma completeness_experiment.def (m : sig.M) : sig.completeness_experiment m = default_simulate'
---   sig.baseₛₒ (do {k ← sig.gen (), σ ← sig.sign (k.1, k.2, m), sig.verify (k.1, m, σ)}) :=
+-- @[simp] lemma complete_iff_forall_messages (sig : signature) :
+--   sig.complete ↔ ∀ m : sig.M, (default_simulate' sig.baseₛₒ
+--     (do {ks ← sig.gen (), σ ← sig.sign (ks, m), sig.verify (ks.1, m, σ)})).support = {tt} :=
 -- begin
---   rw [completeness_experiment],
---   congr,
---   refine funext (λ x, _),
---   cases x,
---   simp [completeness_experiment._match_1],
+--   refine ⟨λ h, _, λ h, _⟩,
+--   {
+--     sorry,
+--   },
+--   {
+--     intro adv,
+--     rw [sec_adversary.advantage],
+--     rw [prob_output_eq_one_iff],
+--   }
 -- end
 
 -- /-- The possible outputs of running the completeness experiment,

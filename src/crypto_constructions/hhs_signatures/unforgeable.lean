@@ -26,20 +26,52 @@ section unforgeable
 noncomputable def forkable_unforgeable_adversary
   (adv : (hhs_signature G X M n).unforgeable_adversary) :
   fork_adversary (hhs_signature G X M n).base_spec (X × X)
-    (((M × vector (G) n × vector bool n) × (hhs_signature G X M n).random_spec.query_cache) ×
+    (((M × vector G n × vector bool n) × (hhs_signature G X M n).random_spec.query_cache) ×
       (hhs_signature G X M n).base_spec.query_log) (sum.inr ()) :=
 fork_adversary.of_choose_input (mocked_unforgeable_adversary adv) (sum.inr ())
   (λ ⟨x₀, pk⟩ ⟨⟨m, zs, hash⟩, cache⟩, ⟨(retrieve_commits x₀ pk zs hash, m), hash⟩)
+
+section vectorization_of_fork_result
+
+noncomputable def vectorization_of_fork_result (x₀ : X) (pk : X)
+  {adv : (hhs_signature G X M n).unforgeable_adversary}
+  (fr : fork_result (forkable_unforgeable_adversary adv)) : G :=
+let rr1 := fr.side_output₁.1.1 in let rr2 := fr.side_output₂.1.1 in
+  vectorization_of_zipped_commits rr1.2.1 rr2.2.1 rr1.2.2 rr2.2.2
+
+def vectorization_of_fork_result_eq_vsub (x₀ : X) (pk : X)
+  (adv : (hhs_signature G X M n).unforgeable_adversary)
+  (fr : fork_result (forkable_unforgeable_adversary adv)) (hfr : fork_success fr)
+  (h : fr ∈ (default_simulate' (hhs_signature G X M n).baseₛₒ
+    $ (fork' (forkable_unforgeable_adversary adv)).run (x₀, pk)).support) :
+  vectorization_of_fork_result x₀ pk fr = pk -ᵥ x₀ :=
+begin
+  rw [fork_success_iff_exists] at hfr,
+  obtain ⟨fp, hfp₁, hfp₂, hfp⟩ := hfr,
+  rw [vectorization_of_fork_result],
+  cases fr,
+  cases fr_fst,
+  cases fr_snd,
+  refine vectorization_of_zipped_commits_eq_vsub x₀ pk n _ _,
+  {
+    sorry,
+  },
+  {
+    sorry
+  }
+end
+
+end vectorization_of_fork_result
 
 noncomputable def vectorization_adversary_of_unforgeable_adversary
   (adv : (hhs_signature G X M n).unforgeable_adversary) :
   vectorization_adversary G X :=
 { run := λ ks, begin
-    have := fork' (forkable_unforgeable_adversary adv),
-    have := this.run ks,
-    refine default_simulate' (hhs_signature G X M n).baseₛₒ _,
-    refine _ <$> this,
-    intro fr,
+    -- have := fork' (forkable_unforgeable_adversary adv),
+    -- have := this.run ks,
+    refine default_simulate' uniformₛₒ
+      ((λ fr, _) <$> (fork' (forkable_unforgeable_adversary adv)).run ks),
+    -- refine (λ fr, _) <$> (fork' (forkable_unforgeable_adversary adv)).run ks,
     have res1 := fr.1.side_output.1.1,
     have res2 := fr.2.side_output.1.1,
     refine vectorization_of_zipped_commits res1.2.1 res2.2.1 res1.2.2 res2.2.2,
