@@ -43,7 +43,8 @@ lemma mem_fin_support_iff_mem_support (x : α) : x ∈ oa.fin_support ↔ x ∈ 
 begin
   induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t,
   { exact finset.mem_singleton.trans (set.mem_singleton_iff) },
-  { simp only [← bind'_eq_bind, fin_support, support, finset.mem_bUnion, set.mem_Union, hoa, hob] },
+  { simp only [← oracle_comp.bind'_eq_bind, fin_support, support, finset.mem_bUnion,
+      set.mem_Union, hoa, hob] },
   { simp only [fin_support, support, finset.mem_univ, set.top_eq_univ, set.mem_univ] }
 end
 

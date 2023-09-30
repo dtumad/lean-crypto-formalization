@@ -30,7 +30,9 @@ variables {spec spec' spec'' : oracle_spec} {α β γ : Type}
 
 /-- Run a computation by using a `query_seed` to answer queries when possible, and making new
 queries if there isn't a seed value. If the `query_seed` comes from executing `generate_seed`
-then this will give a computation distributionally equivalent to the original computation. -/
+then this will give a computation distributionally equivalent to the original computation.
+
+TODO: `seeded_sim_oracle` -/
 def seeded_oracle (spec : oracle_spec) : sim_oracle spec spec (spec.query_seed) :=
 { o := λ i x, indexed_list.get_or_else x.2 i (query i x.1),
   default_state := ∅ }
@@ -39,12 +41,35 @@ notation `seededₛₒ` := seeded_oracle _
 
 namespace seeded_oracle
 
+section apply
+
+variables (i : spec.ι) (z : spec.domain i × spec.query_seed)
+
+@[simp] protected lemma apply_eq : seededₛₒ i z = z.2.get_or_else i (query i z.1) := rfl
+
+@[pairwise_dist_equiv] protected lemma apply_dist_equiv :
+  seededₛₒ i z ≃ₚ z.2.get_or_else i (query i z.1) :=
+dist_equiv_of_eq (seeded_oracle.apply_eq i z)
+
+end apply
+
 lemma generate_seed_bind_simulate'_dist_equiv [h : is_sub_spec uniform_selecting spec]
   (qc : spec.query_count) (oa : oracle_comp spec α) :
   do {seed ← ↑(generate_seed qc), simulate' seededₛₒ oa seed} ≃ₚ oa :=
 begin
-
-  sorry,
+  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t,
+  {
+    rw_dist_equiv [simulate'_return_dist_equiv, bind_const_dist_equiv]
+  },
+  {
+    sorry,
+  },
+  {
+    rw_dist_equiv [simulate'_query_dist_equiv, seeded_oracle.apply_dist_equiv],
+    simp [oracle_comp.pure'_eq_return],
+    simp_rw [oracle_comp.bind_return_comp_eq_map],
+    sorry,
+  }
 end
 
 lemma queries_at_most_simulate (qc : spec.query_count) (oa : oracle_comp spec α)

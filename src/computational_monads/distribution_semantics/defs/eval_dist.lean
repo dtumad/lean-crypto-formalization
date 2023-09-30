@@ -59,7 +59,7 @@ lemma eval_dist_pure' : ⁅(pure' α a : oracle_comp spec α)⁆ = pmf.pure a :=
 lemma eval_dist_pure : ⁅(pure a : oracle_comp spec α)⁆ = pmf.pure a := rfl
 
 @[simp] lemma eval_dist_bind : ⁅oa >>= ob⁆ = ⁅oa⁆.bind (λ x, ⁅ob x⁆) :=
-by rw [← bind'_eq_bind, eval_dist]
+by rw [← oracle_comp.bind'_eq_bind, eval_dist]
 
 lemma eval_dist_bind' : ⁅bind' α β oa ob⁆ = ⁅oa⁆.bind (λ x, ⁅ob x⁆) := eval_dist_bind oa ob
 
@@ -72,8 +72,8 @@ section support
 begin
   induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t,
   { exact pmf.support_pure a },
-  { exact (set.ext $ λ x, by simp_rw [support_bind, set.mem_Union, ← bind'_eq_bind, eval_dist,
-      pmf.mem_support_bind_iff, hoa, hob]) },
+  { exact (set.ext $ λ x, by simp_rw [support_bind, set.mem_Union, ← oracle_comp.bind'_eq_bind,
+      eval_dist, pmf.mem_support_bind_iff, hoa, hob]) },
   { rw [eval_dist, pmf.support_uniform_of_fintype, support_query, set.top_eq_univ] }
 end
 

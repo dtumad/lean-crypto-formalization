@@ -49,9 +49,9 @@ variable [inhabited (τ i)]
 begin
   by_cases hi : i ∈ il.active_oracles,
   { simp only [hi, get_or_else_of_mem_active_oracles, map_ne_return, not_true, false_and] },
-  { simp only [hi, map_eq_bind_return_comp, function.funext_iff, not_false_iff, true_and,
+  { simp only [hi, oracle_comp.map_eq_bind_return_comp, function.funext_iff, not_false_iff, true_and,
       @eq_comm (τ i × spec.indexed_list τ), get_or_else_of_not_mem_active_oracles,
-      bind'_eq_bind'_iff, return_eq_return_iff] }
+      oracle_comp.bind'_eq_bind'_iff, return_eq_return_iff] }
 end
 
 @[simp] lemma get_or_else_eq_return_iff (z : τ i × spec.indexed_list τ) :

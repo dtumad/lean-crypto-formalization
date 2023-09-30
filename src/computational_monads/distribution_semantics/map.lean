@@ -136,7 +136,7 @@ lemma mem_support_map_return_iff : y ∈ (f <$> (return' !spec! a)).support ↔ 
 by simp only [support_map, support_return, set.image_singleton, set.mem_singleton_iff]
 
 @[simp] lemma fin_support_map_return : (f <$> return' !spec! a).fin_support = {f a} :=
-by simp [map_eq_bind_return_comp]
+by simp [oracle_comp.map_eq_bind_return_comp]
 
 lemma mem_fin_support_map_return_iff : y ∈ (f <$> return' !spec! a).support ↔ y = f a :=
 by simp only [support_map, support_return, set.image_singleton, set.mem_singleton_iff]
@@ -369,7 +369,7 @@ begin
     { rw [prob_output_eq_zero hxa, zero_mul] } },
   { by_cases hg1 : g1 z ∈ oa.support,
     { refine congr_arg (λ x, _ * x) _,
-      rw [map_eq_bind_return_comp, prob_output_bind_eq_tsum],
+      rw [oracle_comp.map_eq_bind_return_comp, prob_output_bind_eq_tsum],
       refine trans (tsum_eq_single (g2 z) (λ y hy, _)) _,
       { by_cases hyb : y ∈ (ob (g1 z)).support,
         { refine mul_eq_zero_of_right _ _,

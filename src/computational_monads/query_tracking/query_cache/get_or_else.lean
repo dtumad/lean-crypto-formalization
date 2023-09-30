@@ -279,6 +279,13 @@ section fst_map
 
 variables {i : spec.ι} {t : spec.domain i} (ou : oracle_comp spec' (spec.range i))
 
+lemma fst_map_get_or_else_dist_equiv :
+  prod.fst <$> cache.get_or_else i t ou ≃ₚ
+    (cache.lookup i t).elim (query i t) return :=
+begin
+  sorry
+end
+
 lemma fst_map_get_or_else_dist_equiv_fst_map_get_or_else
   (h : cache.lookup i t = cache'.lookup i t) :
   prod.fst <$> cache.get_or_else i t ou ≃ₚ prod.fst <$> cache'.get_or_else i t ou :=

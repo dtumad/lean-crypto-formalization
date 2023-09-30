@@ -179,12 +179,12 @@ by rw [mem_support_repeat_succ_iff oa, head_cons, tail_cons]
 
 lemma repeat_succ_dist_equiv : oa.repeat n.succ ≃ₚ
   (λ (x : α × vector α n), x.1 ::ᵥ x.2) <$> (oa ×ₘ oa.repeat n) :=
-by rw [dist_equiv.def, repeat_succ, map_eq_bind_return_comp,
+by rw [dist_equiv.def, repeat_succ, oracle_comp.map_eq_bind_return_comp,
   (mprod_bind_equiv_bind_bind _ _ _).eval_dist_eq]
 
 lemma eval_dist_repeat_succ' : ⁅oa.repeat n.succ⁆ =
   ⁅(λ (x : α × vector α n), x.1 ::ᵥ x.2) <$> (oa ×ₘ oa.repeat n)⁆ :=
-by rw [repeat_succ, map_eq_bind_return_comp, (mprod_bind_equiv_bind_bind _ _ _).eval_dist_eq]
+by rw [repeat_succ, oracle_comp.map_eq_bind_return_comp, (mprod_bind_equiv_bind_bind _ _ _).eval_dist_eq]
 
 @[simp] lemma eval_dist_repeat_succ :
   ⁅oa.repeat n.succ⁆ = ⁅oa ×ₘ oa.repeat n⁆.map (λ x, x.1 ::ᵥ x.2) :=
@@ -223,7 +223,7 @@ begin
         (λ y hy, (this y).trans (this _).symm)) (this default)) (hm $ i.pred hi),
       refine λ x, (map_comp_dist_equiv _ _ _).trans _,
       pairwise_dist_equiv,
-      simp only [function.comp_app, pure'_eq_return, return_dist_equiv_return_iff'],
+      simp only [function.comp_app, oracle_comp.pure'_eq_return, return_dist_equiv_return_iff'],
       exact (trans (congr_arg _ (fin.succ_pred _ _).symm) (nth_cons_succ x _ _)) } }
 end
 

@@ -65,7 +65,8 @@ lemma support_nonempty (oa : oracle_comp spec α) : oa.support.nonempty :=
 begin
   induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t,
   { exact set.singleton_nonempty a },
-  { simp only [bind'_eq_bind, support_bind, set.nonempty_bUnion, exists_prop],
+  { simp only [oracle_comp.bind'_eq_bind, support_bind,
+      set.nonempty_bUnion, exists_prop],
     exact let ⟨a, ha⟩ := hoa in ⟨a, ha, hob a⟩ },
   { simp only [support_query, set.top_eq_univ, set.univ_nonempty] }
 end
@@ -75,7 +76,8 @@ begin
   induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t,
   { exact ⟨⟨a, set.mem_singleton_of_eq rfl⟩⟩ },
   { refine ⟨⟨(hob hoa.1).1.1, _⟩⟩,
-    simp only [subtype.val_eq_coe, bind'_eq_bind, support_bind, set.mem_Union, exists_prop],
+    simp only [subtype.val_eq_coe, oracle_comp.bind'_eq_bind, support_bind,
+      set.mem_Union, exists_prop],
     exact ⟨hoa.1.1, hoa.1.2, (hob hoa.1).1.2⟩ },
   { exact ⟨⟨default, set.mem_univ _⟩⟩ }
 end
@@ -94,6 +96,8 @@ do{ β ← coin, β' ← coin,
     x ← if β then return 0 else return 1,
     y ← return (if β' then 1 else 0),
     z ← if β then return x else return (y - y),
-    return (x * y * z) }.support = {0} := by simp
+    return (x * y * z) }.support = {0} := begin
+      squeeze_simp [- oracle_comp.bind_return_comp_eq_map],
+    end
 
 end oracle_comp

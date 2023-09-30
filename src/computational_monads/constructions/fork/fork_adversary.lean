@@ -211,7 +211,7 @@ begin
   simp only [indexed_list.coe_query_count_eq, indexed_list.to_query_count_empty,
     query_count.sub_empty, indexed_list.empty_add],
   refine trans (bind_bind_dist_equiv_assoc _ _ _) _,
-  rw [map_eq_bind_return_comp],
+  rw [oracle_comp.map_eq_bind_return_comp],
   rw_dist_equiv [seeded_oracle.generate_seed_bind_simulate'_dist_equiv]
 end
 
