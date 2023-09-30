@@ -65,7 +65,7 @@ let rr1 := fr.side_output₁.1.1 in let rr2 := fr.side_output₂.1.1 in
 def vectorization_of_fork_result_eq_vsub (x₀ : X) (pk : X)
   (adv : (hhs_signature G X M n).unforgeable_adversary)
   (fr : fork_result (forkable_unforgeable_adversary adv)) (hfr : fork_success fr)
-  (h : fr ∈ (default_simulate' uniformₛₒ
+  (h : fr ∈ (dsimulate' uniformₛₒ
     ((fork' (forkable_unforgeable_adversary adv)).run (x₀, pk))).support) :
   vectorization_of_fork_result x₀ pk fr = pk -ᵥ x₀ :=
 begin
@@ -92,7 +92,7 @@ noncomputable def vectorization_adversary_of_unforgeable_adversary
 { run := λ ks, begin
     -- have := fork' (forkable_unforgeable_adversary adv),
     -- have := this.run ks,
-    refine default_simulate' uniformₛₒ
+    refine dsimulate' uniformₛₒ
       ((λ fr, _) <$> (fork' (forkable_unforgeable_adversary adv)).run ks),
     -- refine (λ fr, _) <$> (fork' (forkable_unforgeable_adversary adv)).run ks,
     have res1 := fr.1.side_output.1.1,
@@ -127,7 +127,7 @@ noncomputable def vectorization_adversary_of_unforgeable_adversary
 -- -- def mock_signing_reduction (adversary : (hhs_signature G X M n).unforgeable_adversary)
 -- --   (x₀ pk : X) : oracle_comp (hhs_signature G X M n).base_oracle_spec
 -- --     (M × vector (G × bool) n) :=
--- -- do{ ⟨m, σ⟩ ← default_simulate' (idₛₒ ++ₛ mock_signing_sim_oracle x₀ pk) (adversary.run (x₀, pk)),
+-- -- do{ ⟨m, σ⟩ ← dsimulate' (idₛₒ ++ₛ mock_signing_sim_oracle x₀ pk) (adversary.run (x₀, pk)),
 -- --     query₂ () (retrieve_commits x₀ pk σ, m), -- force a query to the commit for the final output
 -- --     return (m, σ) }
 
@@ -218,7 +218,7 @@ noncomputable def vectorization_adversary_of_unforgeable_adversary
 -- { run :=
 --   begin
 --     rintro ⟨x₀, pk⟩,
---     have := default_simulate' uniformₛₒ (fork (fork_reduction adv) (x₀, pk)),
+--     have := dsimulate' uniformₛₒ (fork (fork_reduction adv) (x₀, pk)),
 --     refine vectorization_of_fork_result _ x₀ pk <$> this,
 --   end
 --   ,

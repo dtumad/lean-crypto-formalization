@@ -24,7 +24,7 @@ variables {α β γ : Type} {spec spec' spec'' : oracle_spec} {S S' : Type}
 /-- Specifies a way to simulate a set of oracles using another set of oracles.
 e.g. using uniform selection oracles with a query cache to simulate a random oracle.
 `simulate` gives a method for applying a simulation oracle to a specific computation.
-`default_state` can be provided as a standard initial state for simulation (`default_simulate`). -/
+`default_state` can be provided as a standard initial state for simulation (`dsimulate`). -/
 structure sim_oracle (spec spec' : oracle_spec) (S : Type) :=
 (default_state : S)
 (o (i : spec.ι) : (spec.domain i × S) → oracle_comp spec' (spec.range i × S))
@@ -73,7 +73,7 @@ def simulate {spec spec' : oracle_spec} (so : sim_oracle spec spec' S) :
 /-- Convenience definition to use the default state as the initial state for `simulate`.
 Marked to be reduced and inlined, so the definition is essentially just notational. -/
 @[inline, reducible, simp]
-def default_simulate (so : sim_oracle spec spec' S) (oa : oracle_comp spec α) :
+def dsimulate (so : sim_oracle spec spec' S) (oa : oracle_comp spec α) :
   oracle_comp spec' (α × S) := simulate so oa so.default_state
 
 -- These lemmas are intentionally not marked `@[simp]`, instead the semantic lemmas of them are.
@@ -97,7 +97,7 @@ def simulate' (so : sim_oracle spec spec' S) (oa : oracle_comp spec α) (s : S) 
 /-- Convenience definition to use the default state as the initial state for `simulate'`.
 Marked to be reduced and inlined, so the definition is essentially just notation. -/
 @[inline, reducible, simp]
-def default_simulate' (so : sim_oracle spec spec' S) (oa : oracle_comp spec α) :
+def dsimulate' (so : sim_oracle spec spec' S) (oa : oracle_comp spec α) :
   oracle_comp spec' α := oa.simulate' so so.default_state
 
 lemma simulate'_def : simulate' so oa s = prod.fst <$> oa.simulate so s := rfl

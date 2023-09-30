@@ -152,36 +152,36 @@ end
 
 end answer_query
 
-section default_simulate
+section dsimulate
 
 variables [hso : so.is_stateless] (oa : oracle_comp spec α) (s s' : S)
 include hso
 
-lemma simulate_eq_default_simulate : simulate so oa s = default_simulate so oa :=
-@simulate_eq_default_simulate α spec spec' S so oa s hso.state_subsingleton
+lemma simulate_eq_dsimulate : simulate so oa s = dsimulate so oa :=
+@simulate_eq_dsimulate α spec spec' S so oa s hso.state_subsingleton
 
-lemma simulate'_eq_default_simulate' : simulate' so oa s = default_simulate' so oa :=
-@simulate'_eq_default_simulate' α spec spec' S so oa s hso.state_subsingleton
+lemma simulate'_eq_dsimulate' : simulate' so oa s = dsimulate' so oa :=
+@simulate'_eq_dsimulate' α spec spec' S so oa s hso.state_subsingleton
 
 @[pairwise_dist_equiv] lemma simulate_dist_equiv_simulate_diff_state :
   simulate so oa s ≃ₚ simulate so oa s' :=
-by rw [simulate_eq_default_simulate, simulate_eq_default_simulate]
+by rw [simulate_eq_dsimulate, simulate_eq_dsimulate]
 
 @[pairwise_dist_equiv] lemma simulate'_dist_equiv_simulate'_diff_state :
   simulate' so oa s ≃ₚ simulate' so oa s' :=
-by rw [simulate'_eq_default_simulate', simulate'_eq_default_simulate']
+by rw [simulate'_eq_dsimulate', simulate'_eq_dsimulate']
 
-lemma simulate_dist_equiv_default_simulate' : simulate so oa s ≃ₚ
-  (default_simulate' so oa ×ₘ return so.default_state) :=
+lemma simulate_dist_equiv_dsimulate' : simulate so oa s ≃ₚ
+  (dsimulate' so oa ×ₘ return so.default_state) :=
 begin
   simp_rw_dist_equiv [map_return_dist_equiv', map_bind_dist_equiv, map_return_dist_equiv'],
-  refine trans (dist_equiv_of_eq (simulate_eq_default_simulate so oa s)) _,
+  refine trans (dist_equiv_of_eq (simulate_eq_dsimulate so oa s)) _,
   refine symm (bind_dist_equiv_left _ _ (λ z hz, _)),
   simp only [eq_iff_fst_eq_snd_eq, return_dist_equiv_return_iff', eq_self_iff_true,
     default_state_eq_iff_true, and_self],
 end
 
-end default_simulate
+end dsimulate
 
 section simulate_idem
 
@@ -195,7 +195,7 @@ lemma simulate_dist_equiv_self
   (h : ∀ i t, so.answer_query i t ≃ₚ query i t) :
   simulate so oa s ≃ₚ (oa ×ₘ return so.default_state) :=
 begin
-  rw_dist_equiv [simulate_dist_equiv_default_simulate'],
+  rw_dist_equiv [simulate_dist_equiv_dsimulate'],
   refine mprod_dist_equiv_mprod _ (return_dist_equiv_return _ _ _),
   exact is_tracking.simulate'_dist_equiv_self so oa so.default_state h,
 end
@@ -203,7 +203,7 @@ end
 lemma support_simulate_eq_support
   (h : ∀ i t, (so.answer_query i t).support = set.univ) :
   (simulate so oa s).support = oa.support ×ˢ {so.default_state} :=
-trans (simulate_dist_equiv_default_simulate' so oa s).support_eq
+trans (simulate_dist_equiv_dsimulate' so oa s).support_eq
   (by rw [support_mprod, support_return, is_tracking.support_simulate'_eq_support so oa _ h])
 
 lemma fin_support_simulate_eq_fin_support

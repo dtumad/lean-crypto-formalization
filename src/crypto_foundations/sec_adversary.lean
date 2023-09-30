@@ -45,16 +45,16 @@ section advantage
 when simulated using `so`, assuming we start with the default state for `so`. -/
 noncomputable def advantage (adv : sec_adversary adv_spec α β)
   (exp : sec_experiment adv_spec exp_spec α β γ S S') : ℝ≥0∞ :=
-⁅= tt | default_simulate' exp.exp_so
-  (do {x ← exp.inp_gen, z ← default_simulate (exp.adv_so x) (adv.run x.1), exp.is_valid x z})⁆
+⁅= tt | dsimulate' exp.exp_so
+  (do {x ← exp.inp_gen, z ← dsimulate (exp.adv_so x) (adv.run x.1), exp.is_valid x z})⁆
 
 -- /-- version of `sec_adversary.advantage` where the initial input is fixed,
 -- rather than being drawn from the input generator function. -/
 -- noncomputable def sec_adversary.advantage_on_input (adv : sec_adversary adv_spec α β)
 --   (exp : sec_experiment adv_spec exp_spec α β γ S)
 --   (so : sim_oracle exp_spec uniform_selecting S') (x : α × γ) : ℝ≥0∞ :=
--- ⁅= tt | default_simulate' so
---   (do {z ← default_simulate (exp.so x) (adv.run x.1), exp.is_valid x z})⁆
+-- ⁅= tt | dsimulate' so
+--   (do {z ← dsimulate (exp.so x) (adv.run x.1), exp.is_valid x z})⁆
 
 end advantage
 
@@ -82,13 +82,13 @@ lemma advantage_le_advantage_of_inp_gen_eq {adv_spec exp_spec : oracle_spec} {α
   (exp2 : sec_experiment adv_spec' exp_spec' α β' γ S' T')
   (adv1 : sec_adversary adv_spec α β)
   (adv2 : sec_adversary adv_spec' α β')
-  (h : default_simulate' exp1.exp_so exp1.inp_gen ≃ₚ
-    default_simulate' exp2.exp_so exp2.inp_gen)
+  (h : dsimulate' exp1.exp_so exp1.inp_gen ≃ₚ
+    dsimulate' exp2.exp_so exp2.inp_gen)
   (h' : ∀ x ∈ exp1.inp_gen.support,
-    ⁅= tt | default_simulate' exp1.exp_so
-        (do {z ← default_simulate (exp1.adv_so x) (adv1.run x.1), exp1.is_valid x z})⁆
-      ≤ ⁅= tt | default_simulate' exp2.exp_so
-          (do {z ← default_simulate (exp2.adv_so x) (adv2.run x.1), exp2.is_valid x z})⁆) :
+    ⁅= tt | dsimulate' exp1.exp_so
+        (do {z ← dsimulate (exp1.adv_so x) (adv1.run x.1), exp1.is_valid x z})⁆
+      ≤ ⁅= tt | dsimulate' exp2.exp_so
+          (do {z ← dsimulate (exp2.adv_so x) (adv2.run x.1), exp2.is_valid x z})⁆) :
   adv1.advantage exp1 ≤ adv2.advantage exp2 :=
 begin
   sorry
@@ -131,7 +131,7 @@ end sec_reduction
 
 -- -- lemma base_advantage_eq_prob_output (adv : sec_adversary adv_spec α β)
 -- --   (exp : base_sec_experiment adv_spec α β) : adv.base_advantage exp =
--- --     ⁅= tt | do {x ← exp.inp_gen, z ← default_simulate (exp.so x) (adv.run x.1), exp.is_valid x z}⁆ :=
+-- --     ⁅= tt | do {x ← exp.inp_gen, z ← dsimulate (exp.so x) (adv.run x.1), exp.is_valid x z}⁆ :=
 -- -- by rw [sec_adversary.base_advantage, sec_adversary.advantage,
 -- --   uniform_oracle.prob_output_simulate']
 

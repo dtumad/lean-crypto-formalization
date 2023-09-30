@@ -97,11 +97,11 @@ open oracle_spec sim_oracle
 with oracles `sub_spec` to one with `super_spec` by simulating with `is_sub_spec.to_fun`. -/
 instance coe_sub_spec (sub_spec super_spec : oracle_spec) [h : sub_spec ⊂ₒ super_spec] (α : Type) :
   has_coe (oracle_comp sub_spec α) (oracle_comp super_spec α) :=
-{coe := λ oa, default_simulate' ⟪λ i t, h.to_fun i t⟫ oa}
+{coe := λ oa, dsimulate' ⟪λ i t, h.to_fun i t⟫ oa}
 
 lemma coe_sub_spec_def {sub_spec super_spec : oracle_spec} [h : sub_spec ⊂ₒ super_spec]
   (oa : oracle_comp sub_spec α) : (↑oa : oracle_comp super_spec α) =
-    default_simulate' ⟪λ i t, h.to_fun i t⟫ oa := rfl
+    dsimulate' ⟪λ i t, h.to_fun i t⟫ oa := rfl
 
 section coe_sub_spec
 
@@ -115,9 +115,9 @@ lemma coe_sub_spec_return : (↑(return a : oracle_comp sub_spec α) : oracle_co
   prod.fst <$> return (a, ()) := rfl
 
 lemma coe_sub_spec_bind : (↑(oa >>= ob) : oracle_comp super_spec β) =
-  prod.fst <$> (default_simulate ⟪λ i t, h.to_fun i t⟫ oa >>=
+  prod.fst <$> (dsimulate ⟪λ i t, h.to_fun i t⟫ oa >>=
     λ x, simulate ⟪λ i t, h.to_fun i t⟫ (ob x.1) x.2) :=
-by rw [coe_sub_spec_def, default_simulate', simulate'_bind]
+by rw [coe_sub_spec_def, dsimulate', simulate'_bind]
 
 lemma coe_sub_spec_query : (↑(query i t) : oracle_comp super_spec (sub_spec.range i)) =
   prod.fst <$> (h.to_fun i t ×ₘ return ()) := rfl
@@ -201,9 +201,9 @@ by simp only [support_simulate', support_simulate_coe_sub_spec_return, set.image
       (simulate so' ↑(ob $ prod.fst x) x.2).support :=
 calc (simulate so' (↑(oa >>= ob) : oracle_comp super_spec β) s').support =
   (simulate so' ↑oa s' >>= λ (x : α × S'), simulate so' ↑(ob x.1) x.2).support :
-    by simp_rw [coe_sub_spec_def, default_simulate', simulate', simulate_bind,
+    by simp_rw [coe_sub_spec_def, dsimulate', simulate', simulate_bind,
       support_simulate_map_bind, simulate_map, support_bind_map, support_map,
-      simulate_eq_default_simulate, prod.map_snd, prod.map_fst, id.def]
+      simulate_eq_dsimulate, prod.map_snd, prod.map_fst, id.def]
   ... = ⋃ x ∈ (simulate so' (↑oa : oracle_comp super_spec α) s').support,
     (simulate so' ↑(ob $ prod.fst x) x.2).support : by rw [support_bind]
 
@@ -217,7 +217,7 @@ by simp only [support_simulate', support_simulate_coe_sub_spec_bind, set.image_U
   (simulate so' (↑(query i t) : oracle_comp super_spec (sub_spec.range i)) s').support =
     (simulate so' (h.to_fun i t) s').support :=
 sorry
--- by simp_rw [coe_sub_spec_def, default_simulate', simulate'_query, stateless_oracle.apply_eq,
+-- by simp_rw [coe_sub_spec_def, dsimulate', simulate'_query, stateless_oracle.apply_eq,
 --   support_simulate_map, support_simulate_bind, support_simulate_return, set.image_Union,
 --   set.image_singleton, prod.map_mk, id.def, prod.mk.eta, set.bUnion_of_singleton]
 
@@ -270,19 +270,19 @@ by simp only [coe_sub_spec_return, simulate_map, simulate_return, eval_dist_map,
   ⁅simulate so' (↑(oa >>= ob) : oracle_comp super_spec β) s'⁆ =
     ⁅simulate so' ↑oa s'⁆.bind (λ x, ⁅simulate so' ↑(ob $ prod.fst x) x.2⁆) :=
 calc ⁅simulate so' (↑(oa >>= ob) : oracle_comp super_spec β) s'⁆
-  = ⁅simulate so' (default_simulate ⟪h.to_fun⟫ oa) s'⁆.bind (λ (x : (α × unit) × S'),
+  = ⁅simulate so' (dsimulate ⟪h.to_fun⟫ oa) s'⁆.bind (λ (x : (α × unit) × S'),
       ⁅simulate so' (simulate ⟪h.to_fun⟫ (ob x.1.1) x.1.2) x.2⁆.map (prod.map prod.fst id)) :
     by simp only [coe_sub_spec_bind, simulate_map, simulate_bind,
       eval_dist_map, eval_dist_bind, pmf.map_bind]
-  ... = (⁅simulate so' (default_simulate ⟪h.to_fun⟫ oa) s'⁆.map (prod.map prod.fst id)).bind
-      (λ x, ⁅simulate so' (default_simulate ⟪h.to_fun⟫ (ob x.1)) x.2⁆.map (prod.map prod.fst id)) :
+  ... = (⁅simulate so' (dsimulate ⟪h.to_fun⟫ oa) s'⁆.map (prod.map prod.fst id)).bind
+      (λ x, ⁅simulate so' (dsimulate ⟪h.to_fun⟫ (ob x.1)) x.2⁆.map (prod.map prod.fst id)) :
     symm (trans (pmf.bind_map _ _ _) (congr_arg (λ _, pmf.bind _ _) (funext $ λ x, by simp only
-      [function.comp_app, prod_map, id.def, is_stateless.simulate_eq_default_simulate])))
-  ... = ⁅simulate so' (default_simulate' ⟪h.to_fun⟫ oa) s'⁆.bind (λ (x : α × S'),
-      ⁅simulate so' (default_simulate ⟪h.to_fun⟫ (ob x.1)) x.2⁆.map (prod.map prod.fst id)) :
-    by rw [default_simulate', simulate', eval_dist_simulate_map]
+      [function.comp_app, prod_map, id.def, is_stateless.simulate_eq_dsimulate])))
+  ... = ⁅simulate so' (dsimulate' ⟪h.to_fun⟫ oa) s'⁆.bind (λ (x : α × S'),
+      ⁅simulate so' (dsimulate ⟪h.to_fun⟫ (ob x.1)) x.2⁆.map (prod.map prod.fst id)) :
+    by rw [dsimulate', simulate', eval_dist_simulate_map]
   ... = ⁅simulate so' ↑oa s'⁆.bind (λ (x : α × S'), ⁅simulate so' ↑(ob $ prod.fst x) x.2⁆) :
-    by simp only [coe_sub_spec_def, simulate', eval_dist_simulate_map, default_simulate']
+    by simp only [coe_sub_spec_def, simulate', eval_dist_simulate_map, dsimulate']
 
 /-- TOOD:stuff like this should use `dist_equiv` -/
 @[simp] lemma eval_dist_simulate_coe_sub_spec_query :

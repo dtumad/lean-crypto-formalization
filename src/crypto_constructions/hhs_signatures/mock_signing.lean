@@ -83,8 +83,8 @@ variables (x₀ pk : X)
 
 lemma simulate_mock_signing_sim_oracle_dist_equiv {α : Type}
   (oa : oracle_comp (hhs_signature G X M n).full_spec α) :
-  default_simulate' (mock_signingₛₒ x₀ pk) oa ≃ₚ
-    default_simulate' ((hhs_signature G X M n).baseₛₒ ∘ₛ
+  dsimulate' (mock_signingₛₒ x₀ pk) oa ≃ₚ
+    dsimulate' ((hhs_signature G X M n).baseₛₒ ∘ₛ
       (hhs_signature G X M n).signingₛₒ (x₀, pk) (pk -ᵥ x₀)) oa :=
 begin
   sorry

@@ -10,7 +10,7 @@ import computational_monads.simulation_semantics.simulate.simulate_idem
 
 This file gives additional lemmas about `simulate` and `simulate'` when
 the oracle's internal state is a `subsingleton` type.
-In particular we can often relate simulations to `default_simulate` and `default_simulate'`.
+In particular we can often relate simulations to `dsimulate` and `dsimulate'`.
 
 These lemmas are mainly used to prove things about `sim_oracle`s with a `is_stateless` instance,
 which essentially just bundles in the statelessness of the state type.
@@ -27,15 +27,15 @@ variables (so : sim_oracle spec spec' S) (so' : sim_oracle spec spec'' S')
 variables (a : α) (i : spec.ι) (t : spec.domain i)
   (oa oa' : oracle_comp spec α) (ob ob' : α → oracle_comp spec β) (s : S) (s' : S') (f : α → β)
 
-lemma simulate_eq_default_simulate [subsingleton S] :
-  simulate so oa s = default_simulate so oa := subsingleton.elim so.default_state s ▸ rfl
+lemma simulate_eq_dsimulate [subsingleton S] :
+  simulate so oa s = dsimulate so oa := subsingleton.elim so.default_state s ▸ rfl
 
-lemma simulate'_eq_default_simulate' [subsingleton S] :
-  simulate' so oa s = default_simulate' so oa := subsingleton.elim so.default_state s ▸ rfl
+lemma simulate'_eq_dsimulate' [subsingleton S] :
+  simulate' so oa s = dsimulate' so oa := subsingleton.elim so.default_state s ▸ rfl
 
 section support
 
-/-- Version of `support_simulate'_eq_support` for `default_simulate`, given a `subsingleton` state.
+/-- Version of `support_simulate'_eq_support` for `dsimulate`, given a `subsingleton` state.
 Has a weaker requirement for the hypothesis `h` than the more general lemma -/
 lemma support_simulate'_eq_support_of_subsingleton [subsingleton S] (s : S)
   (h : ∀ i t, prod.fst '' (so i (t, so.default_state)).support = ⊤) :
@@ -44,7 +44,7 @@ support_simulate'_eq_support oa s (λ i t s, subsingleton.elim so.default_state 
 
 /-- Given the state is `subsingleton`, the support of `simulate` is determined by `simulate'` -/
 lemma support_simulate_eq_preimage_support_simulate' [subsingleton S] :
-  (simulate so oa s).support = prod.fst ⁻¹' (default_simulate' so oa).support :=
+  (simulate so oa s).support = prod.fst ⁻¹' (dsimulate' so oa).support :=
 begin
   rw [support_simulate', subsingleton.elim so.default_state s],
   exact (set.ext $ λ x, ⟨λ h, ⟨x, h, rfl⟩, λ h, let ⟨y, h, h'⟩ := h in

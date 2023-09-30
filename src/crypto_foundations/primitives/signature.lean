@@ -143,7 +143,7 @@ section completeness_experiment
 -- Random oracles have a shared cache for the entire computation,
 -- and the uniform selection oracle just forwards its query on. -/
 -- noncomputable def completeness_experiment (sig : signature) (m : sig.M) :
---   prob_comp bool := default_simulate' sig.baseₛₒ
+--   prob_comp bool := dsimulate' sig.baseₛₒ
 --     (do {ks ← sig.gen (), σ ← sig.sign (ks.1, ks.2, m), sig.verify (ks.1, m, σ)})
 
 -- lemma completeness_experiment_dist_equiv (sig : signature) (m : sig.M) :
@@ -204,13 +204,13 @@ section complete
 
 /-- A signature algorithm is complete if all messages are valid. -/
 def complete (sig : signature) : Prop := ∀ m : sig.M,
-(default_simulate' sig.baseₛₒ
+(dsimulate' sig.baseₛₒ
   (do {ks ← sig.gen (),
     σ ← sig.sign (ks, m),
     sig.verify (ks.1, m, σ)})).support = {tt}
 
 -- @[simp] lemma complete_iff_forall_messages (sig : signature) :
---   sig.complete ↔ ∀ m : sig.M, (default_simulate' sig.baseₛₒ
+--   sig.complete ↔ ∀ m : sig.M, (dsimulate' sig.baseₛₒ
 --     (do {ks ← sig.gen (), σ ← sig.sign (ks, m), sig.verify (ks.1, m, σ)})).support = {tt} :=
 -- begin
 --   refine ⟨λ h, _, λ h, _⟩,
@@ -229,12 +229,12 @@ def complete (sig : signature) : Prop := ∀ m : sig.M,
 -- @[simp] lemma support_completeness_experiment (m : sig.M) :
 --   (completeness_experiment sig m).support = ⋃ (pk : sig.PK) (sk : sig.SK) (σ : sig.S)
 --     (cache cache' : sig.random_spec.query_cache)
---     (hk : ((pk, sk), cache) ∈ (default_simulate sig.baseₛₒ $ sig.gen ()).support)
+--     (hk : ((pk, sk), cache) ∈ (dsimulate sig.baseₛₒ $ sig.gen ()).support)
 --     (hσ : (σ, cache') ∈ (simulate sig.baseₛₒ (sig.sign (pk, sk, m)) cache).support),
 --       (simulate' sig.baseₛₒ (sig.verify (pk, m, σ)) cache').support :=
 -- begin
 --   ext x,
---   simp only [completeness_experiment.def, default_simulate',
+--   simp only [completeness_experiment.def, dsimulate',
 --     support_simulate'_bind, set.mem_Union],
 --   sorry,
 -- end
@@ -242,7 +242,7 @@ def complete (sig : signature) : Prop := ∀ m : sig.M,
 -- lemma complete_iff_signatures_support_subset :
 --   sig.complete ↔ ∀ (m : sig.M) (pk : sig.PK) (sk : sig.SK) (σ : sig.S)
 --     (cache cache' : sig.random_spec.query_cache),
---     ((pk, sk), cache) ∈ (default_simulate sig.baseₛₒ $ sig.gen ()).support →
+--     ((pk, sk), cache) ∈ (dsimulate sig.baseₛₒ $ sig.gen ()).support →
 --     (σ, cache') ∈ (simulate sig.baseₛₒ (sig.sign (pk, sk, m)) cache).support →
 --     (simulate' sig.baseₛₒ (sig.verify (pk, m, σ)) cache').support = {tt} :=
 -- begin
@@ -277,7 +277,7 @@ variables {sig : signature} (adversary : unforgeable_adversary sig)
 -- def simulate_signing_oracle (pk : sig.PK) (sk : sig.SK) :
 --   oracle_comp (uniform_selecting ++ sig.random_spec)
 --     ((sig.M × sig.S) × (sig.M ↦ₒ sig.S).query_cache) :=
--- (prod.map id prod.snd) <$> (default_simulate (idₛₒ ++ₛ sig.signingₛₒ pk sk) (adversary.run pk))
+-- (prod.map id prod.snd) <$> (dsimulate (idₛₒ ++ₛ sig.signingₛₒ pk sk) (adversary.run pk))
 
 end unforgeable_adversary
 
