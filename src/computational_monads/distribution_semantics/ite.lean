@@ -217,4 +217,34 @@ end
 
 end bind_ite_return
 
+section map_ite
+
+variables (f : α → β)
+
+@[pairwise_dist_equiv] lemma map_ite_dist_equiv (p : Prop) [decidable p] :
+  f <$> (if p then oa else oa') ≃ₚ
+    if p then f <$> oa else f <$> oa' := by split_ifs; refl
+
+@[simp] lemma support_map_ite (p : Prop) [decidable p] :
+  (f <$> if p then oa else oa').support =
+    if p then (f <$> oa).support else (f <$> oa').support := by split_ifs; refl
+
+@[simp] lemma fin_support_map_ite (p : Prop) [decidable p] :
+  (f <$> if p then oa else oa').fin_support =
+    if p then (f <$> oa).fin_support else (f <$> oa').fin_support := by split_ifs; refl
+
+@[simp] lemma eval_dist_map_ite (p : Prop) [decidable p] :
+  ⁅f <$> if p then oa else oa'⁆ =
+    if p then ⁅f <$> oa⁆ else ⁅f <$> oa'⁆ := by split_ifs; refl
+
+@[simp] lemma prob_output_map_ite (p : Prop) [decidable p] (y : β) :
+  ⁅= y | f <$> if p then oa else oa'⁆ =
+    if p then ⁅= y | f <$> oa⁆ else ⁅= y | f <$> oa'⁆ := by split_ifs; refl
+
+@[simp] lemma prob_event_map_ite (p : Prop) [decidable p] (e : set β) :
+  ⁅e | f <$> if p then oa else oa'⁆ =
+    if p then ⁅e | f <$> oa⁆ else ⁅e | f <$> oa'⁆ := by split_ifs; refl
+
+end map_ite
+
 end oracle_comp

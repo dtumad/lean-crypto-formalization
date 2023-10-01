@@ -66,8 +66,9 @@ begin
   },
   {
     rw_dist_equiv [simulate'_query_dist_equiv, seeded_oracle.apply_dist_equiv],
-    simp [oracle_comp.pure'_eq_return],
-    simp_rw [oracle_comp.bind_return_comp_eq_map],
+    simp [oracle_comp.pure'_eq_return, oracle_comp.bind_return_comp_eq_map],
+    rw_dist_equiv [indexed_list.get_or_else_dist_equiv],
+    simp [oracle_comp.pure'_eq_return, oracle_comp.bind_return_comp_eq_map],
     sorry,
   }
 end
