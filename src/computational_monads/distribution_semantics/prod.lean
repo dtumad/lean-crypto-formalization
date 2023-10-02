@@ -20,8 +20,6 @@ open_locale big_operators ennreal
 
 variables {α β γ δ : Type} {spec spec' : oracle_spec}
 
-section eval_dist
-
 section fst_snd_map_return_dist_equiv
 
 lemma fst_map_return_dist_equiv (x : α) (y : β) :
@@ -100,6 +98,8 @@ by rw_dist_equiv [bind_map_dist_equiv]
 
 end unused
 
+section prod_bind
+
 variables (oa : oracle_comp spec (α × β)) (oc : α × β → oracle_comp spec γ)
 
 /-- Binding on a computation of a `prod` type can be written as a double sum,
@@ -113,6 +113,12 @@ lemma prob_output_prod_bind' (c : γ) :
   ⁅= c | oa >>= oc⁆ = ∑' (b : β) (a : α), ⁅= (a, b) | oa⁆ * ⁅= c | oc (a, b)⁆ :=
 by rw [prob_output_bind_eq_tsum, ennreal.tsum_prod', ennreal.tsum_comm]
 
+end prod_bind
+
+section map_fst_snd
+
+variables (oa : oracle_comp spec (α × β))
+
 /-- The first output of a computation of a `prod` type is a sum over possible second outputs. -/
 lemma prob_output_map_fst (a : α) : ⁅= a | fst <$> oa⁆ = ∑' (b : β), ⁅= (a, b) | oa⁆ :=
 by simp only [prob_output.def, eval_dist_map, pmf.map_fst_apply]
@@ -120,6 +126,12 @@ by simp only [prob_output.def, eval_dist_map, pmf.map_fst_apply]
 /-- The second output of a computation of a `prod` type is a sum over possible first outputs -/
 lemma prob_output_map_snd (b : β) : ⁅= b | snd <$> oa⁆ = ∑' (a : α), ⁅= (a, b) | oa⁆ :=
 by simp only [prob_output.def, eval_dist_map, pmf.map_snd_apply]
+
+end map_fst_snd
+
+section prod_map
+
+variables (oa : oracle_comp spec (α × β))
 
 lemma mem_support_map_prod_map_id_right_iff (f : α → γ) (z : γ × β) :
   z ∈ (map f id <$> oa).support ↔ ∃ x, (x, z.2) ∈ oa.support ∧ f x = z.1 :=
@@ -158,6 +170,12 @@ begin
   { simp only [eq_iff_fst_eq_snd_eq, prod.map_mk, id.def, eq_self_iff_true, true_and] },
 end
 
+end prod_map
+
+section fst_snd_map_bind
+
+variables (oa : oracle_comp spec (α × β))
+
 lemma bind_dist_equiv_fst_bind (oc : α × β → oracle_comp spec γ) (y : β)
   (h : ∀ z, oc z ≃ₚ oc (z.1, y)) : oa >>= oc ≃ₚ (fst <$> oa >>= λ x, oc (x, y)) :=
 begin
@@ -172,7 +190,7 @@ begin
   refine bind_dist_equiv_bind_of_dist_equiv_right _ _ _ (λ x hx, h x)
 end
 
-end eval_dist
+end fst_snd_map_bind
 
 section prob_event
 
@@ -331,12 +349,12 @@ end bind_prod_mk_subsingleton
 
 section bind_bind_prod_mk
 
-lemma support_bind_bind_prod_mk (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) :
+variables (ob : α → oracle_comp spec β)
+
+@[simp] lemma support_bind_bind_prod_mk :
   (do {x ← oa, y ← (ob x), return (x, y)}).support =
     {z | z.1 ∈ oa.support ∧ z.2 ∈ (ob z.1).support} :=
-begin
-  sorry,
-end
+set.ext (λ z, by simp [prod.eq_iff_fst_eq_snd_eq])
 
 end bind_bind_prod_mk
 

@@ -23,19 +23,56 @@ variables {G X M : Type} [decidable_eq M]
 
 section unforgeable
 
+section queried_index
+
+variables (x₀ pk : X) (m : M) (zs : vector G n) (hash : vector bool n)
+  (mocked_cache : ((vector X n × M) ↦ₒ vector bool n).query_log) (b : ℕ)
+
+/-- Given a valid signature, return the index of the random oracle query for it. -/
+def queried_index (x₀ pk : X) (m : M) (zs : vector G n)
+  (hash : vector bool n) (mocked_cache : ((vector X n × M) ↦ₒ vector bool n).query_log)
+  (b : ℕ) : option (fin b.succ) :=
+let ys : vector X n := (retrieve_commits x₀ pk zs hash) in
+  if mocked_cache.lookup () (ys, m) = some hash then
+    (some (fin.of_nat (mocked_cache.lookup_index () (ys, m)))) else none
+
+lemma queried_index_eq_some_iff (fp : fin b.succ) :
+  let ys : vector X n := (retrieve_commits x₀ pk zs hash) in
+  queried_index x₀ pk m zs hash mocked_cache b = some fp ↔
+    ((mocked_cache ()).nth fp = some ((ys, m), hash) ∧
+      mocked_cache.lookup_index () (ys, m) = fp) :=
+begin
+  let ys : vector X n := (retrieve_commits x₀ pk zs hash),
+  refine ⟨λ h, _, λ h, _⟩,
+  {
+    by_cases hys : mocked_cache.lookup () (ys, m) = some hash,
+    {
+      rw [queried_index] at h,
+      simp [hys] at h,
+      simp [← h],
+      sorry,
+    },
+    {
+      sorry,
+    }
+  },
+  {
+    sorry,
+  }
+end
+
+end queried_index
+
 noncomputable def forkable_unforgeable_adversary'
   (adv : (hhs_signature G X M n).unforgeable_adversary) :
   fork_adversary (hhs_signature G X M n).base_spec (X × X)
     ((M × vector G n × vector bool n) × (hhs_signature G X M n).random_spec.query_log)
     (sum.inr ()) :=
-{ run := (mocked_unforgeable_adversary' adv).run,
-  choose_fork := begin
+{ choose_fork := begin
     rintros ⟨x₀, pk⟩ ⟨⟨m, zs, hash⟩, mocked_cache⟩,
-    let ys : vector X n := (retrieve_commits x₀ pk zs hash),
-    refine if some hash = mocked_cache.lookup () (ys, m) then _ else none,
-    refine some (fin.of_nat (mocked_cache.lookup_index' () (ys, m)))
+    refine queried_index x₀ pk m zs hash mocked_cache _,
   end,
-  qb := sorry -- TODO: bound
+  .. mocked_unforgeable_adversary' adv
 }
 
 
@@ -76,27 +113,27 @@ vectorization_of_zipped_commits fr.side_output₁.1.2 fr.side_output₂.1.2
 
 -- end
 
-lemma vectorization_of_fork_result_eq_vsub (x₀ : X) (pk : X)
-  (adv : (hhs_signature G X M n).unforgeable_adversary)
-  (fr : fork_result (forkable_unforgeable_adversary adv)) (hfr : fork_success fr)
-  (h : fr ∈ ((fork' (forkable_unforgeable_adversary adv)).run (x₀, pk)).support) :
-  vectorization_of_fork_result x₀ pk fr = pk -ᵥ x₀ :=
-begin
-  rcases fr with ⟨⟨fp₁, ⟨⟨⟨m₁, zs₁, bs₁⟩, cache₁⟩, log₁⟩, seed₁⟩,
-    ⟨fp₂, ⟨⟨⟨m₂, zs₂, bs₂⟩, cache₂⟩, log₂⟩, seed₂⟩⟩,
-  rw [fork_success_iff_exists] at hfr,
-  obtain ⟨fp, hfp₁, hfp₂, hfp⟩ := hfr,
-  rw [vectorization_of_fork_result],
-  simp at *,
-  -- simp only [fork_result.side_output₁, fork_result.side_output₂],
-  refine vectorization_of_zipped_commits_eq_vsub x₀ pk n _ _,
-  {
-    sorry,
-  },
-  {
-    sorry,
-  }
-end
+-- lemma vectorization_of_fork_result_eq_vsub (x₀ : X) (pk : X)
+--   (adv : (hhs_signature G X M n).unforgeable_adversary)
+--   (fr : fork_result (forkable_unforgeable_adversary adv)) (hfr : fork_success fr)
+--   (h : fr ∈ ((fork' (forkable_unforgeable_adversary adv)).run (x₀, pk)).support) :
+--   vectorization_of_fork_result x₀ pk fr = pk -ᵥ x₀ :=
+-- begin
+--   rcases fr with ⟨⟨fp₁, ⟨⟨⟨m₁, zs₁, bs₁⟩, cache₁⟩, log₁⟩, seed₁⟩,
+--     ⟨fp₂, ⟨⟨⟨m₂, zs₂, bs₂⟩, cache₂⟩, log₂⟩, seed₂⟩⟩,
+--   rw [fork_success_iff_exists] at hfr,
+--   obtain ⟨fp, hfp₁, hfp₂, hfp⟩ := hfr,
+--   rw [vectorization_of_fork_result],
+--   simp at *,
+--   -- simp only [fork_result.side_output₁, fork_result.side_output₂],
+--   refine vectorization_of_zipped_commits_eq_vsub x₀ pk n _ _,
+--   {
+--     sorry,
+--   },
+--   {
+--     sorry,
+--   }
+-- end
 
 
 lemma vectorization_of_fork_result_eq_vsub' (x₀ : X) (pk : X)
@@ -105,16 +142,30 @@ lemma vectorization_of_fork_result_eq_vsub' (x₀ : X) (pk : X)
   (h : fr ∈ ((fork' (forkable_unforgeable_adversary' adv)).run (x₀, pk)).support) :
   vectorization_of_fork_result' x₀ pk fr = pk -ᵥ x₀ :=
 begin
-  rcases fr with ⟨⟨fp₁, ⟨⟨m₁, zs₁, bs₁⟩, cache₁⟩, seed₁⟩,
-    ⟨fp₂, ⟨⟨m₂, zs₂, bs₂⟩, cache₂⟩, seed₂⟩⟩,
+  let f_adv := forkable_unforgeable_adversary' adv,
+
+  rcases fr with ⟨⟨fp₁, ⟨⟨m₁, zs₁, hash₁⟩, cache₁⟩, seed₁⟩,
+    ⟨fp₂, ⟨⟨m₂, zs₂, hash₂⟩, cache₂⟩, seed₂⟩⟩,
+
   rw [fork_success_iff_exists] at hfr,
   obtain ⟨fp, hfp₁, hfp₂, hfp⟩ := hfr,
+  cases hfp₁, cases hfp₂,
+
   rw [vectorization_of_fork_result'],
   simp at *,
-  -- simp only [fork_result.side_output₁, fork_result.side_output₂],
+
+  have hcf := fork_point_eq_of_mem_support_run_fork' f_adv _ _ h,
+  simp at hcf,
+
+  -- have hseed := take_to_count_seed_eq_take_to_count_seed f_adv _ _ h,
+  -- simp at hseed,
+
   refine vectorization_of_zipped_commits_eq_vsub x₀ pk n _ _,
   {
     rw [indexed_list.value_differs] at hfp,
+    have : (seed₁ (sum.inr ())).nth fp = some hash₁ := begin
+      sorry
+    end,
     sorry,
   },
   {

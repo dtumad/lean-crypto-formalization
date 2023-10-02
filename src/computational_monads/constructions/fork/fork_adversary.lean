@@ -160,9 +160,12 @@ match fr.fork_point₁ with
 end
 
 lemma fork_success_iff_exists (fr : fork_result adv) : fork_success fr ↔
-  ∃ fp : fin adv.q, fr.fork_point₁ = some fp ∧ fr.fork_point₂ = some fp
+  ∃ fp : fin adv.q.succ, fr.fork_point₁ = some fp ∧ fr.fork_point₂ = some fp
     ∧ fr.seed₁.value_differs fr.seed₂ i fp :=
-sorry
+begin
+  rcases fr with ⟨⟨fp₁, z₁, seed₁⟩, ⟨fp₂, z₂, seed₂⟩⟩,
+  cases fp₁; simp [fork_success]
+end
 
 end success
 
@@ -230,7 +233,7 @@ begin
   simpa [indexed_list.get_count_to_query_count] using this,
 end
 
-lemma shared_seed_of_mem_support_seed_and_run (qs : spec.query_seed)
+lemma take_to_count_seed_eq_seed (qs : spec.query_seed)
   (rr : run_result adv) (hrr : rr ∈ (adv.seed_and_run y qs).support) :
   rr.seed.take_to_count ↑qs = qs :=
 begin
@@ -240,7 +243,7 @@ begin
   simp only [hzrr, indexed_list.take_to_count_add_left],
 end
 
-lemma fork_point_eq_of_mem_support_seed_and_run (qs : spec.query_seed)
+lemma fork_point_eq_choose_fork (qs : spec.query_seed)
   (rr : run_result adv) (hrr : rr ∈ (adv.seed_and_run y qs).support) :
   rr.fork_point = adv.choose_fork y rr.side_output :=
 begin

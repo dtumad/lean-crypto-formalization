@@ -19,8 +19,6 @@ open oracle_comp oracle_spec algorithmic_homogenous_space hard_homogenous_space
 variables {G X M : Type} [decidable_eq M]
   [add_comm_group G] [algorithmic_homogenous_space G X] {n : ℕ}
 
-section unforgeable
-
 section mock_signing_sim_oracle
 
 /-- Oracle to mock a signing oracle for messages in the vectorization reduction,
@@ -99,6 +97,8 @@ noncomputable def mocked_unforgeable_adversary
 { run := λ ks, simulate (mock_signingₛₒ ks.1 ks.2) (adv.run ks) ∅,
   qb := ∅ } -- TODO: bound
 
+-- def mocked_adversary_bound (adv : (hhs_signature G X M n).unforgeable_adversary)
+
 noncomputable def mocked_unforgeable_adversary'
   (adv : (hhs_signature G X M n).unforgeable_adversary) :
   sec_adversary (hhs_signature G X M n).base_spec (X × X)
@@ -145,7 +145,5 @@ theorem le_mocked_advantage (adv : (hhs_signature G X M n).unforgeable_adversary
 begin
   sorry
 end
-
-end unforgeable
 
 end hhs_signature

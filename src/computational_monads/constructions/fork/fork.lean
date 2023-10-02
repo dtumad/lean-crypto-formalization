@@ -30,22 +30,34 @@ noncomputable def fork' (adv : fork_adversary spec α β i) :
       return (rr₁, rr₂)},
   qb := adv.qb + adv.qb }
 
-lemma mem_support_seed_and_run (adv : fork_adversary spec α β i)
-  (fr : fork_result adv) (x : α) : fr ∈ ((fork' adv).run x).support ↔
-  fr.1 ∈ (adv.seed_and_run x ∅).support ∧
-    fr.2 ∈ (adv.seed_and_run x (fr.1.seed.take_at_index i fr.1.get_fp)).support :=
+lemma support_run_fork' (adv : fork_adversary spec α β i) (x : α) :
+  ((fork' adv).run x).support = {fr | fr.1 ∈ (adv.seed_and_run x ∅).support ∧
+    fr.2 ∈ (adv.seed_and_run x (fr.1.seed.take_at_index i fr.1.get_fp)).support} :=
 begin
   simp only [fork'],
-  sorry,
+  rw [support_bind_bind_prod_mk],
+  refl,
 end
 
-lemma mem_support_fork'_iff_of_fork_success (adv : fork_adversary spec α β i)
-  (fr : fork_result adv) (hfr : fork_success fr) (x : α)
-  (h : fr ∈ ((fork' adv).run x).support) :
-  adv.choose_fork x fr.side_output₁ = fr.fork_point₁ ∧
-    adv.choose_fork x fr.side_output₂ = fr.fork_point₂ :=
+lemma fork_point_eq_of_mem_support_run_fork' (adv : fork_adversary spec α β i)
+  (fr : fork_result adv) (x : α) (h : fr ∈ ((fork' adv).run x).support) :
+  fr.fork_point₁ = adv.choose_fork x fr.side_output₁ ∧
+    fr.fork_point₂ = adv.choose_fork x fr.side_output₂ :=
 begin
-  sorry
+  simp only [support_run_fork', set.mem_set_of_eq] at h,
+  refine ⟨adv.fork_point_eq_choose_fork x ∅ fr.1 h.1,
+    adv.fork_point_eq_choose_fork x _ fr.2 h.2⟩,
+end
+
+lemma take_to_count_seed_eq_take_to_count_seed (adv : fork_adversary spec α β i)
+  (fr : fork_result adv) (x : α) (h : fr ∈ ((fork' adv).run x).support) :
+  fr.seed₁.take_to_count (fr.seed₁.take_at_index i fr.1.get_fp) =
+    fr.seed₂.take_to_count (fr.seed₁.take_at_index i fr.1.get_fp) :=
+begin
+  simp only [support_run_fork', set.mem_set_of_eq] at h,
+  have := adv.take_to_count_seed_eq_seed x _ _ h.2,
+  refine trans _ this.symm,
+  rw [indexed_list.take_to_count_take_at_index],
 end
 
 noncomputable def fork_success_experiment (adv : fork_adversary spec α β i)
@@ -221,7 +233,7 @@ calc ⁅= some fp | adv.choose_fork y <$> adv.run y⁆ ^ 2
       pairwise_dist_equiv with shared_seed hss rr hrr,
       suffices : shared_seed = indexed_list.take_at_index rr.seed i ↑fp,
       by rw [this],
-      rw ← fork_adversary.shared_seed_of_mem_support_seed_and_run adv y shared_seed rr hrr,
+      rw ← fork_adversary.take_to_count_seed_eq_seed adv y shared_seed rr hrr,
       rw [support_coe_sub_spec] at hss,
       rw [coe_query_count_of_mem_support_generate_seed hss],
       rw [← indexed_list.take_to_count_take_at_index],

@@ -84,17 +84,14 @@ end lookup
 
 section lookup_index
 
-def lookup_index' (log : spec.query_log) (i : spec.ι) (t : spec.domain i) : ℕ :=
-(match log.lookup i t with
-| none := 0
-| some u := (log i).index_of (t, u)
-end)
+def lookup_index (log : spec.query_log) (i : spec.ι) (t : spec.domain i) : ℕ :=
+match log.lookup i t with none := 0 | some u := (log i).index_of (t, u) end
 
-def lookup_index (log : spec.query_log) (i : spec.ι) (t : spec.domain i) :
-  option (fin (log.get_count i).succ) :=
-match log.lookup i t with
-| none := none
-| some u := some ⟨(log i).index_of (t, u), nat.lt_succ_of_le list.index_of_le_length⟩
+lemma nth_lookup_index (log : spec.query_log) (i : spec.ι) (t : spec.domain i)
+  (u : spec.range i) (hu : log.lookup i t = some u) :
+  (log i).nth (log.lookup_index i t) = (t, u) :=
+begin
+  sorry,
 end
 
 end lookup_index
