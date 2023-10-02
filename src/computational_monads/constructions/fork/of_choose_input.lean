@@ -52,8 +52,8 @@ begin
   sorry,
 end
 
-lemma fork_success_of_choose_input (y : α) (fr : fork_result (of_choose_input adv i choose_input))
-  (hfr : fr ∈ (fork (of_choose_input adv i choose_input) y).support) : sorry := sorry
+-- lemma fork_success_of_choose_input (y : α) (fr : fork_result (of_choose_input adv i choose_input))
+--   (hfr : fr ∈ (fork (of_choose_input adv i choose_input) y).support) : sorry := sorry
 
 
 

@@ -33,45 +33,16 @@ noncomputable def fork (adv : fork_adversary spec α β i) :
 noncomputable def fork_success_experiment (adv : fork_adversary spec α β i)
   (inp_gen : oracle_comp spec α) :
   sec_experiment spec spec α (fork_result adv) unit unit unit :=
-public_experiment inp_gen (λ _, idₛₒ)
-  (λ _ fr, return (fork_success fr)) uniformₛₒ
--- base_sec_experiment_of_is_valid inp_gen
---   (λ x y, return (fork_success y = tt)) uniformₛₒ
+public_experiment inp_gen (λ x, idₛₒ)
+  (λ x fr, return (fork_success fr)) uniformₛₒ
 
 noncomputable def fork_advantage (adv : fork_adversary spec α β i)
   (inp_gen : oracle_comp spec α) : ℝ≥0∞ :=
 (fork adv).advantage (fork_success_experiment adv inp_gen)
 
--- structure forked_adversary (adv : fork_adversary spec α β i q) extends
---   sec_adversary spec α (fork_result adv)
-
--- noncomputable def fork' (adv : fork_adversary spec α β i q) (y : α) :
---   forked_adversary adv :=
--- { run := λ y, do {
---   rr₁ ← adv.seed_and_run y ∅,
---   rr₂ ← adv.seed_and_run y (rr₁.seed.take_at_index i rr₁.get_fp),
---   return (rr₁, rr₂)
--- },
---   qb := sorry
--- }
-
--- /-- Fork a `fork_adversary` at the point defined by `cf`. -/
--- noncomputable def fork'' (adv : fork_adversary spec α β i) (y : α) :
---   oracle_comp spec (fork_result adv) :=
--- do {
---   rr₁ ← adv.seed_and_run y ∅,
---   rr₂ ← adv.seed_and_run y (rr₁.seed.take_at_index i rr₁.get_fp),
---   return (rr₁, rr₂)
--- }
-
--- /-- Fork a `fork_adversary` at the point defined by `cf`. -/
--- noncomputable def fork (adv : fork_adversary spec α β i) (y : α) :
---   oracle_comp spec (fork_result adv) :=
--- do {
---   rr₁ ← adv.seed_and_run y ∅,
---   rr₂ ← adv.seed_and_run y (rr₁.seed.take_at_index i rr₁.get_fp),
---   return (rr₁, rr₂)
--- }
+noncomputable def fork_advantage' (adv : fork_adversary spec α β i)
+  (inp_gen : oracle_comp spec α) : ℝ≥0∞ :=
+⁅λ fr, fork_success fr = tt | inp_gen >>= (fork adv).run⁆
 
 variables (adv : fork_adversary spec α β i) (y : α) (fr : fork_result adv)
 
