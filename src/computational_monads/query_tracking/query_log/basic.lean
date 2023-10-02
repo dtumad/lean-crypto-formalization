@@ -84,6 +84,9 @@ end lookup
 
 section lookup_index
 
+-- def lookup_index' (log : spec.query_log) (i : spec.ι) (t : spec.domain i) :
+--   option (spec.range i × )
+
 def lookup_index (log : spec.query_log) (i : spec.ι) (t : spec.domain i) : ℕ :=
 match log.lookup i t with none := 0 | some u := (log i).index_of (t, u) end
 

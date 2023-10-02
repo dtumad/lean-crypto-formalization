@@ -17,6 +17,7 @@ namespace hhs_signature
 
 open_locale ennreal big_operators
 open oracle_comp oracle_spec algorithmic_homogenous_space hard_homogenous_space
+open oracle_spec.indexed_list
 
 variables {G X M : Type} [decidable_eq M]
   [add_comm_group G] [algorithmic_homogenous_space G X] {n : ℕ}
@@ -34,7 +35,7 @@ def queried_index (x₀ pk : X) (m : M) (zs : vector G n)
   (b : ℕ) : option (fin b.succ) :=
 let ys : vector X n := (retrieve_commits x₀ pk zs hash) in
   if mocked_cache.lookup () (ys, m) = some hash then
-    (some (fin.of_nat (mocked_cache.lookup_index () (ys, m)))) else none
+    (some (mocked_cache.lookup_index () (ys, m))) else none
 
 lemma nth_fork_point_eq_retrieve_commits {x₀ pk : X} {m : M} {zs : vector G n}
   {hash : vector bool n} {mocked_cache : ((vector X n × M) ↦ₒ vector bool n).query_log}
@@ -42,35 +43,58 @@ lemma nth_fork_point_eq_retrieve_commits {x₀ pk : X} {m : M} {zs : vector G n}
   (hfp : queried_index x₀ pk m zs hash mocked_cache b = some fp) :
   (mocked_cache ()).nth fp = some ((retrieve_commits x₀ pk zs hash, m), hash) :=
 begin
-  sorry,
-end
-
-lemma queried_index_eq_some_iff (fp : fin b.succ) :
-  -- let ys : vector X n := (retrieve_commits x₀ pk zs hash) in
-  queried_index x₀ pk m zs hash mocked_cache b = some fp ↔
-    ((mocked_cache ()).nth fp = some ((retrieve_commits x₀ pk zs hash, m), hash) ∧
-      mocked_cache.lookup_index () (retrieve_commits x₀ pk zs hash, m) = fp) :=
-begin
-  let ys : vector X n := (retrieve_commits x₀ pk zs hash),
-  refine ⟨λ h, _, λ h, _⟩,
+  rw [queried_index] at hfp,
+  simp at hfp,
+  by_cases h : mocked_cache.lookup () (retrieve_commits x₀ pk zs hash, m) = some hash,
   {
-    by_cases hys : mocked_cache.lookup () (ys, m) = some hash,
-    {
-      rw [queried_index] at h,
-      simp [hys] at h,
-      simp [← h],
-      sorry,
-    },
-    {
-      sorry,
-    }
+    simp [h] at hfp,
+    rw [← hfp],
+    simp,
+    sorry,
   },
   {
-    sorry,
+    simp [h] at hfp,
+    exact false.elim hfp,
   }
 end
 
+-- lemma queried_index_eq_some_iff (fp : fin b.succ) :
+--   -- let ys : vector X n := (retrieve_commits x₀ pk zs hash) in
+--   queried_index x₀ pk m zs hash mocked_cache b = some fp ↔
+--     ((mocked_cache ()).nth fp = some ((retrieve_commits x₀ pk zs hash, m), hash) ∧
+--       mocked_cache.lookup_index () (retrieve_commits x₀ pk zs hash, m) = fp) :=
+-- begin
+--   let ys : vector X n := (retrieve_commits x₀ pk zs hash),
+--   refine ⟨λ h, _, λ h, _⟩,
+--   {
+--     by_cases hys : mocked_cache.lookup () (ys, m) = some hash,
+--     {
+--       rw [queried_index] at h,
+--       simp [hys] at h,
+--       simp [← h],
+--       sorry,
+--     },
+--     {
+--       sorry,
+--     }
+--   },
+--   {
+--     sorry,
+--   }
+-- end
+
 end queried_index
+
+noncomputable def mocked_unforgeable_adversary_new
+  (adv : (hhs_signature G X M n).unforgeable_adversary) :
+  fork_adversary (hhs_signature G X M n).base_spec
+    (X × X)
+    ((M × vector G n × vector bool n) × ((vector X n × M) ↦ₒ vector bool n).query_log)
+    (sum.inr ()) :=
+{ run := λ ks, simulate (mock_signing_sim_oracle' ks.1 ks.2) (adv.run ks) ∅,
+  qb := mock_query_bound adv.qb,
+  choose_fork := λ ⟨x₀, pk⟩ ⟨⟨m, zs, hash⟩, mocked_cache⟩,
+    queried_index x₀ pk m zs hash mocked_cache _ }
 
 noncomputable def forkable_unforgeable_adversary
   (adv : (hhs_signature G X M n).unforgeable_adversary) :
@@ -100,72 +124,41 @@ noncomputable def vectorization_of_fork_result
 let rr1 := fr.side_output₁.1 in let rr2 := fr.side_output₂.1 in
   vectorization_of_zipped_commits rr1.2 rr2.2
 
-
--- noncomputable def forkable_unforgeable_adversary
---   (adv : (hhs_signature G X M n).unforgeable_adversary) :
---   fork_adversary (hhs_signature G X M n).base_spec (X × X)
---     (((M × vector G n × vector bool n) × (hhs_signature G X M n).random_spec.query_cache) ×
---       (hhs_signature G X M n).base_spec.query_log) (sum.inr ()) :=
--- fork_adversary.of_choose_input (mocked_unforgeable_adversary adv) (sum.inr ())
---   (λ ⟨x₀, pk⟩ ⟨⟨m, zs, hash⟩, cache⟩, ⟨(retrieve_commits x₀ pk zs hash, m), hash⟩)
-
 section vectorization_of_fork_result
 
--- noncomputable def vectorization_of_fork_result (x₀ : X) (pk : X)
---   {adv : (hhs_signature G X M n).unforgeable_adversary}
---   (fr : fork_result (forkable_unforgeable_adversary adv)) : G :=
--- let rr1 := fr.side_output₁.1.1 in let rr2 := fr.side_output₂.1.1 in
---   vectorization_of_zipped_commits rr1.2 rr2.2
+variables (adv : (hhs_signature G X M n).unforgeable_adversary)
 
--- noncomputable def vectorization_of_fork_result'' (x₀ : X) (pk : X)
---   {adv : (hhs_signature G X M n).unforgeable_adversary}
---   (fr : fork_result (forkable_unforgeable_adversary' adv)) : G :=
--- vectorization_of_zipped_commits fr.side_output₁.1.2 fr.side_output₂.1.2
-
--- lemma helper (x₀ : X) (pk : X)
---   (adv : (hhs_signature G X M n).unforgeable_adversary)
---   (fr : fork_result (forkable_unforgeable_adversary' adv)) (hfr : fork_success fr)
---   (h : fr ∈ ((fork' (forkable_unforgeable_adversary' adv)).run (x₀, pk)).support) :
---   _ :=
--- begin
-
--- end
-
--- lemma vectorization_of_fork_result_eq_vsub (x₀ : X) (pk : X)
---   (adv : (hhs_signature G X M n).unforgeable_adversary)
---   (fr : fork_result (forkable_unforgeable_adversary adv)) (hfr : fork_success fr)
---   (h : fr ∈ ((fork' (forkable_unforgeable_adversary adv)).run (x₀, pk)).support) :
---   vectorization_of_fork_result x₀ pk fr = pk -ᵥ x₀ :=
--- begin
---   rcases fr with ⟨⟨fp₁, ⟨⟨⟨m₁, zs₁, bs₁⟩, cache₁⟩, log₁⟩, seed₁⟩,
---     ⟨fp₂, ⟨⟨⟨m₂, zs₂, bs₂⟩, cache₂⟩, log₂⟩, seed₂⟩⟩,
---   rw [fork_success_iff_exists] at hfr,
---   obtain ⟨fp, hfp₁, hfp₂, hfp⟩ := hfr,
---   rw [vectorization_of_fork_result],
---   simp at *,
---   -- simp only [fork_result.side_output₁, fork_result.side_output₂],
---   refine vectorization_of_zipped_commits_eq_vsub x₀ pk n _ _,
---   {
---     sorry,
---   },
---   {
---     sorry,
---   }
--- end
-
-
-lemma vectorization_of_fork_result_eq_vsub' (x₀ : X) (pk : X)
-  (adv : (hhs_signature G X M n).unforgeable_adversary)
-  (fr : fork_result (forkable_unforgeable_adversary adv)) (hfr : fork_success fr)
+lemma mocked_cache₁_eq_take_seed₁ (x₀ : X) (pk : X)
+  (fr : fork_result (forkable_unforgeable_adversary adv))
   (h : fr ∈ ((fork (forkable_unforgeable_adversary adv)).run (x₀, pk)).support) :
-  vectorization_of_fork_result fr = pk -ᵥ x₀ :=
+  ((fr.side_output₁.2 ()).map prod.snd).take fr.1.get_fp =
+    (fr.seed₁ (sum.inr ())).take fr.1.get_fp :=
 begin
-  let f_adv := forkable_unforgeable_adversary adv,
-
   rcases fr with ⟨⟨fp₁, ⟨⟨m₁, zs₁, hash₁⟩, mocked_cache₁⟩, seed₁⟩,
     ⟨fp₂, ⟨⟨m₂, zs₂, hash₂⟩, mocked_cache₂⟩, seed₂⟩⟩,
+  simp at *,
+  sorry,
+end
 
-  -- have hseed₁ : seed₁ (sum.inr ()) = mocked_cache
+lemma take_mocked_cache_eq_take_mocked_cache (x₀ : X) (pk : X)
+  (fr : fork_result (forkable_unforgeable_adversary adv))
+  (h : fr ∈ ((fork (forkable_unforgeable_adversary adv)).run (x₀, pk)).support) :
+  ((fr.side_output₁.2 ()).map prod.fst).take (fr.1.get_fp + 1) =
+    ((fr.side_output₂.2 ()).map prod.fst).take (fr.2.get_fp + 1) :=
+begin
+  have := take_queries_seed_eq_take_queries_seed _ _ _ h,
+  sorry,
+end
+
+lemma vectorization_of_fork_result_eq_vsub (x₀ : X) (pk : X)
+  (fr : fork_result (forkable_unforgeable_adversary adv))
+  (h : fr ∈ ((fork (forkable_unforgeable_adversary adv)).run (x₀, pk)).support) :
+  fork_success fr → vectorization_of_fork_result fr = pk -ᵥ x₀ :=
+begin
+  intro hfr,
+  let f_adv := forkable_unforgeable_adversary adv,
+  rcases fr with ⟨⟨fp₁, ⟨⟨m₁, zs₁, hash₁⟩, mocked_cache₁⟩, seed₁⟩,
+    ⟨fp₂, ⟨⟨m₂, zs₂, hash₂⟩, mocked_cache₂⟩, seed₂⟩⟩,
 
   rw [fork_success_iff_exists] at hfr,
   obtain ⟨fp, hfp₁, hfp₂, hfp⟩ := hfr,
@@ -179,173 +172,47 @@ begin
   have hcf1 := nth_fork_point_eq_retrieve_commits hcf.1,
   have hcf2 := nth_fork_point_eq_retrieve_commits hcf.2,
   clear hcf,
-  -- have hseed := take_to_count_seed_eq_take_to_count_seed f_adv _ _ h,
-  -- simp at hseed,
 
-  have hret : retrieve_commits x₀ pk zs₁ hash₁ = retrieve_commits x₀ pk zs₂ hash₂ := begin
-    sorry
-  end,
-  have hm : m₁ = m₂ := sorry,
+  have h_inp : ((mocked_cache₁ ()).nth fp).map prod.fst = ((mocked_cache₂ ()).nth fp).map prod.fst,
+  from sorry,
+  have hsm1 : (seed₁ (sum.inr ())).nth fp = ((mocked_cache₁ ()).nth fp).map prod.snd,
+  from sorry,
+  have hsm2 : (seed₂ (sum.inr ())).nth fp = ((mocked_cache₂ ()).nth fp).map prod.snd,
+  from sorry,
 
-  refine vectorization_of_zipped_commits_eq_vsub x₀ pk n _ hret,
+  simp only [hcf1, hcf2, option.map_some', prod.mk.inj_iff] at h_inp,
+  have h_inp : retrieve_commits x₀ pk zs₁ hash₁ = retrieve_commits x₀ pk zs₂ hash₂ ∧ m₁ = m₂ := h_inp,
 
-  rw [indexed_list.value_differs] at hfp,
-  have : (mocked_cache₁ ()).nth fp ≠ (mocked_cache₂ ()).nth fp := begin
-    sorry,
-  end,
-  simp [hcf1, hcf2, ne.def, option.some_inj,
-    prod.eq_iff_fst_eq_snd_eq, not_and_distrib, hret, hm] at this,
-  exact this,
+  have h_retrieve : retrieve_commits x₀ pk zs₁ hash₁ = retrieve_commits x₀ pk zs₂ hash₂ := h_inp.1,
+  have h_hash : hash₁ ≠ hash₂,
+  by simpa only [value_differs, hsm1, hsm2, hcf1, hcf2, option.map_some', ne.def] using hfp,
 
+  refine vectorization_of_zipped_commits_eq_vsub x₀ pk n h_hash h_retrieve,
 end
 
 end vectorization_of_fork_result
 
-noncomputable def vectorization_adversary_of_unforgeable_adversary
+noncomputable def vectorization_reduction
   (adv : (hhs_signature G X M n).unforgeable_adversary) :
   vectorization_adversary G X :=
-{ run := λ ks, begin
-    refine dsimulate' uniformₛₒ
-      (vectorization_of_fork_result --ks.1 ks.2
-        <$>
-        (fork (forkable_unforgeable_adversary adv)).run ks),
-  end,
-  qb := ∅
-}
--- begin
---   have := forkable_unforgeable_adversary adv,
---   have := fork' this,
--- end
+{ run := λ ks, dsimulate' uniformₛₒ
+    (vectorization_of_fork_result <$>
+      (fork (forkable_unforgeable_adversary adv)).run ks),
+  qb := ∅ }
 
--- def mock_signing_fork_adversary (adv : (hhs_signature G X M n).unforgeable_adversary) :
---   fork_adversary (hhs_signature G X M n).base_spec (X × X)
---     ((M × vector (G × bool) n) × (hhs_signature G X M n).random_spec.query_cache
---       × (query_log (hhs_signature G X M n).base_spec))
---     (sum.inr ()) :=
--- begin
---   refine fork_adversary.of_choose_input adv.to_sec_adversary _ _,
--- end
+variable (adv : (hhs_signature G X M n).unforgeable_adversary)
 
--- -- { run := λ ⟨x₀, pk⟩, mock_simulate_signing_oracle adversary x₀ pk,
--- --   choose_fork := begin
--- --     rintro ⟨x₀, pk⟩ ⟨⟨m, σ⟩, cache⟩,
--- --   end,
--- --   qb := sorry,
--- --   qb_is_bound := sorry,
--- --   q_eq_bound := sorry }
-
--- -- /-- Fake the signing oracle, and force a query corresponding to adversary's result. -/
--- -- def mock_signing_reduction (adversary : (hhs_signature G X M n).unforgeable_adversary)
--- --   (x₀ pk : X) : oracle_comp (hhs_signature G X M n).base_oracle_spec
--- --     (M × vector (G × bool) n) :=
--- -- do{ ⟨m, σ⟩ ← dsimulate' (idₛₒ ++ₛ mock_signing_sim_oracle x₀ pk) (adversary.run (x₀, pk)),
--- --     query₂ () (retrieve_commits x₀ pk σ, m), -- force a query to the commit for the final output
--- --     return (m, σ) }
-
--- end mock_signing
-
--- variable (adversary : (hhs_signature G X M n).unforgeable_adversary)
-
--- /-- Reduce an unforgeability adversery to a forking adversary that can be passed to
--- `oracle_comp.fork` to get two results, that can be used to construct a adversary for
--- vectorization in the hard homogenous space.
--- `q` is the maximum number of queries made by the adversary to consider. -/
--- def fork_reduction (adversary : (hhs_signature G X M n).unforgeable_adversary) :
---   fork_adversary (hhs_signature G X M n).base_spec (X × X)
---     ((M × vector (G × bool) n) × (query_cache ((vector X n × M) ↦ₒ vector bool n)))
---     sorry sorry :=
--- sorry
--- -- fork_adversary.of_choose_input (λ _ _, sorry) (sum.inr ())
--- --   (λ ⟨x₀, pk⟩ ⟨m, σ⟩, ((retrieve_commits x₀ pk σ, m), σ.map prod.snd))
-
--- -- lemma advantage_le_forking_reduction_advantage
--- --   (adversary : (hhs_signature G X M n).unforgeable_adversary) (x₀ pk : X) :
--- --     adversary.advantage ≤ (fork_reduction adversary).advantage (x₀, pk) :=
--- -- begin
--- --   sorry
--- -- end
-
--- /-- If the fork succeeds, we know that there are two valid signatures
--- corresponding to a query with the same input and a different output.
--- This further implies that `retrieve_commits` agrees on both,
--- but the actual booleans are different, which will let us get a vectorization. -/
--- theorem vectorizable_of_fork_success'' (x₀ pk : X)
---   (fr : fork_result (fork_reduction adversary)) (hfr : fork_success fr)
---   (h : fr ∈ (fork (fork_reduction adversary) (x₀, pk)).support) :
---   retrieve_commits x₀ pk fr.side_output₁.1.2 = retrieve_commits x₀ pk fr.side_output₂.1.2
---     ∧ fr.side_output₁.1.2.map prod.snd ≠ fr.side_output₂.1.2.map prod.snd :=
--- begin
---   sorry
--- end
-
--- /-- The probability of the fork succeeding is at least the square of
--- the original adversary's success probability, minus a small chance
--- of both oracle calls giving the same result. -/
--- theorem le_prob_event_fork_success (x₀ pk : X) :
---   (adversary.advantage ^ 2 / (adversary.qb.get_count (sum.inr (sum.inr ())))) - (1 / 2 ^ n) ≤
---     ⁅fork_success | fork (fork_reduction adversary) (x₀, pk)⁆ :=
--- begin
---   sorry
--- end
-
--- -- def vectorization_of_commits ()
-
-
--- -- /-- If the fork succeeds, we know that there are two valid signatures
--- -- corresponding to a query with the same input and a different output.
--- -- This further implies that `retrieve_commits` agrees on both,
--- -- but the actual booleans are different, which will let us get a vectorization. -/
--- -- theorem vectorizable_of_fork_success (x₀ pk : X)
--- --   (fr : fork_result (fork_reduction adversary)) (hfr : fork_success fr)
--- --   (h : fr ∈ (fork (fork_reduction adversary) (x₀, pk)).support) :
--- --   vectorization_of_fork_result _ x₀ pk fr = pk -ᵥ x₀ :=
--- -- begin
--- --   sorry
--- -- end
-
--- section vectorization_reduction
-
--- noncomputable def vectorization_of_fork_result (adv : (hhs_signature G X M n).unforgeable_adversary)
---   (x₀ pk : X) (fr : fork_result (fork_reduction adv)) : G :=
--- begin
---   let σ₁ := fr.side_output₁.1.2,
---   let σ₂ := fr.side_output₂.1.2,
---   let ys₁ := retrieve_commits x₀ pk fr.side_output₁.1.2,
---   let ys₂ := retrieve_commits x₀ pk fr.side_output₂.1.2,
---   let h₁ := fr.side_output₁.1.2.map prod.snd,
---   let h₂ := fr.side_output₂.1.2.map prod.snd,
---   let m : fin n := sorry,
---   exact (σ₁.nth m).1 - (σ₂.nth m).1
--- end
-
--- variables {spec : oracle_spec} {α β γ : Type }
-
--- example (f : α → β) (oa : oracle_comp spec α) : f <$> oa = do {x ← oa, return (f x)} := rfl
--- example (og : oracle_comp spec (α → β)) (oa : oracle_comp spec α) :
---   og <*> oa = do {g ← og, x ← oa, return (g x)} := rfl
-
--- noncomputable def vectorization_reduction (adv : (hhs_signature G X M n).unforgeable_adversary) :
---   vectorization_adversary G X :=
--- { run :=
---   begin
---     rintro ⟨x₀, pk⟩,
---     have := dsimulate' uniformₛₒ (fork (fork_reduction adv) (x₀, pk)),
---     refine vectorization_of_fork_result _ x₀ pk <$> this,
---   end
---   ,
---   qb := sorry,
---   qb_is_bound := sorry,
--- }
-
--- /-- The probability of the fork succeeding is at least the square of
--- the original adversary's success probability, minus a small chance
--- of both oracle calls giving the same result. -/
--- theorem le_vectorization_advantage (x₀ pk : X) :
---   (adversary.advantage ^ 2 / (adversary.qb.get_count (sum.inr (sum.inr ())))) - (1 / 2 ^ n) ≤
---     (vectorization_reduction adversary).advantage :=
--- begin
---   sorry
--- end
+/-- The probability of the fork succeeding is at least the square of
+the original adversary's success probability, minus a small chance
+of both oracle calls giving the same result. -/
+theorem le_vectorization_advantage (x₀ pk : X) :
+  let q := (adv.qb.get_count (sum.inr ()) + 0) in
+  let adv_advantage := adv.advantage (hhs_signature G X M n).unforgeable_experiment in
+  let vec_advantage := (vectorization_reduction adv).advantage (vectorization_experiment G X) in
+  adv_advantage * (adv_advantage / q - (1 / 2 ^ n)) ≤ vec_advantage :=
+begin
+  sorry
+end
 
 -- end vectorization_reduction
 
