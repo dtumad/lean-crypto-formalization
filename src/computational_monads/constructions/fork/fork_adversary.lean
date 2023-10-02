@@ -180,15 +180,12 @@ section seed_and_run
 
 variable [is_sub_spec uniform_selecting spec]
 
-noncomputable def seed_and_run (adv : fork_adversary spec α β i) (y : α)
-  (initial_seed : spec.query_seed) :
+noncomputable def seed_and_run (adv : fork_adversary spec α β i)
+  (y : α) (init_seed : spec.query_seed) :
   oracle_comp spec (run_result adv) :=
-do {
-  fresh_seed ← generate_seed (adv.qb - initial_seed),
-  z ← simulate' seededₛₒ (adv.run y) (initial_seed + fresh_seed),
-  let cf : option (fin adv.q.succ) := adv.choose_fork y z in
-    return (run_result.mk cf z (initial_seed + fresh_seed))
-}
+do {fresh_seed ← generate_seed (adv.qb - init_seed),
+  z ← simulate' seededₛₒ (adv.run y) (init_seed + fresh_seed),
+  return (run_result.mk (adv.choose_fork y z) z (init_seed + fresh_seed))}
 
 variables (adv : fork_adversary spec α β i) (y : α)
 
@@ -243,6 +240,15 @@ begin
   simp only [hzrr, indexed_list.take_to_count_add_left],
 end
 
+lemma fork_point_eq_of_mem_support_seed_and_run (qs : spec.query_seed)
+  (rr : run_result adv) (hrr : rr ∈ (adv.seed_and_run y qs).support) :
+  rr.fork_point = adv.choose_fork y rr.side_output :=
+begin
+  rw [seed_and_run] at hrr, -- TODO: support lemma
+  simp only [mem_support_bind_iff, mem_support_return_iff] at hrr,
+  obtain ⟨init_s, hinit, z, hz, hzrr⟩ := hrr,
+  rw [hzrr],
+end
 
 end seed_and_run
 

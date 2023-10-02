@@ -62,25 +62,63 @@ noncomputable def vectorization_of_fork_result (x₀ : X) (pk : X)
 let rr1 := fr.side_output₁.1.1 in let rr2 := fr.side_output₂.1.1 in
   vectorization_of_zipped_commits rr1.2 rr2.2
 
-def vectorization_of_fork_result_eq_vsub (x₀ : X) (pk : X)
+noncomputable def vectorization_of_fork_result'' (x₀ : X) (pk : X)
+  {adv : (hhs_signature G X M n).unforgeable_adversary}
+  (fr : fork_result (forkable_unforgeable_adversary' adv)) : G :=
+vectorization_of_zipped_commits fr.side_output₁.1.2 fr.side_output₂.1.2
+
+-- lemma helper (x₀ : X) (pk : X)
+--   (adv : (hhs_signature G X M n).unforgeable_adversary)
+--   (fr : fork_result (forkable_unforgeable_adversary' adv)) (hfr : fork_success fr)
+--   (h : fr ∈ ((fork' (forkable_unforgeable_adversary' adv)).run (x₀, pk)).support) :
+--   _ :=
+-- begin
+
+-- end
+
+lemma vectorization_of_fork_result_eq_vsub (x₀ : X) (pk : X)
   (adv : (hhs_signature G X M n).unforgeable_adversary)
   (fr : fork_result (forkable_unforgeable_adversary adv)) (hfr : fork_success fr)
-  (h : fr ∈ (dsimulate' uniformₛₒ
-    ((fork' (forkable_unforgeable_adversary adv)).run (x₀, pk))).support) :
+  (h : fr ∈ ((fork' (forkable_unforgeable_adversary adv)).run (x₀, pk)).support) :
   vectorization_of_fork_result x₀ pk fr = pk -ᵥ x₀ :=
 begin
+  rcases fr with ⟨⟨fp₁, ⟨⟨⟨m₁, zs₁, bs₁⟩, cache₁⟩, log₁⟩, seed₁⟩,
+    ⟨fp₂, ⟨⟨⟨m₂, zs₂, bs₂⟩, cache₂⟩, log₂⟩, seed₂⟩⟩,
   rw [fork_success_iff_exists] at hfr,
   obtain ⟨fp, hfp₁, hfp₂, hfp⟩ := hfr,
   rw [vectorization_of_fork_result],
-  cases fr,
-  cases fr_fst,
-  cases fr_snd,
-  -- refine vectorization_of_zipped_commits_eq_vsub x₀ pk n _ _,
-  -- {
-  --   sorry,
-  -- },
+  simp at *,
+  -- simp only [fork_result.side_output₁, fork_result.side_output₂],
+  refine vectorization_of_zipped_commits_eq_vsub x₀ pk n _ _,
   {
-    sorry
+    sorry,
+  },
+  {
+    sorry,
+  }
+end
+
+
+lemma vectorization_of_fork_result_eq_vsub' (x₀ : X) (pk : X)
+  (adv : (hhs_signature G X M n).unforgeable_adversary)
+  (fr : fork_result (forkable_unforgeable_adversary' adv)) (hfr : fork_success fr)
+  (h : fr ∈ ((fork' (forkable_unforgeable_adversary' adv)).run (x₀, pk)).support) :
+  vectorization_of_fork_result' x₀ pk fr = pk -ᵥ x₀ :=
+begin
+  rcases fr with ⟨⟨fp₁, ⟨⟨m₁, zs₁, bs₁⟩, cache₁⟩, seed₁⟩,
+    ⟨fp₂, ⟨⟨m₂, zs₂, bs₂⟩, cache₂⟩, seed₂⟩⟩,
+  rw [fork_success_iff_exists] at hfr,
+  obtain ⟨fp, hfp₁, hfp₂, hfp⟩ := hfr,
+  rw [vectorization_of_fork_result'],
+  simp at *,
+  -- simp only [fork_result.side_output₁, fork_result.side_output₂],
+  refine vectorization_of_zipped_commits_eq_vsub x₀ pk n _ _,
+  {
+    rw [indexed_list.value_differs] at hfp,
+    sorry,
+  },
+  {
+    sorry,
   }
 end
 

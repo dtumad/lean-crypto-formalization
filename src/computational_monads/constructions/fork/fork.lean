@@ -24,11 +24,29 @@ variable [is_sub_spec uniform_selecting spec]
 
 noncomputable def fork' (adv : fork_adversary spec α β i) :
   sec_adversary spec α (fork_result adv) :=
-{ run := λ y,
-    do {rr₁ ← adv.seed_and_run y ∅,
-      rr₂ ← adv.seed_and_run y (rr₁.seed.take_at_index i rr₁.get_fp),
+{ run := λ x,
+    do {rr₁ ← adv.seed_and_run x ∅,
+      rr₂ ← adv.seed_and_run x (rr₁.seed.take_at_index i rr₁.get_fp),
       return (rr₁, rr₂)},
   qb := adv.qb + adv.qb }
+
+lemma mem_support_seed_and_run (adv : fork_adversary spec α β i)
+  (fr : fork_result adv) (x : α) : fr ∈ ((fork' adv).run x).support ↔
+  fr.1 ∈ (adv.seed_and_run x ∅).support ∧
+    fr.2 ∈ (adv.seed_and_run x (fr.1.seed.take_at_index i fr.1.get_fp)).support :=
+begin
+  simp only [fork'],
+  sorry,
+end
+
+lemma mem_support_fork'_iff_of_fork_success (adv : fork_adversary spec α β i)
+  (fr : fork_result adv) (hfr : fork_success fr) (x : α)
+  (h : fr ∈ ((fork' adv).run x).support) :
+  adv.choose_fork x fr.side_output₁ = fr.fork_point₁ ∧
+    adv.choose_fork x fr.side_output₂ = fr.fork_point₂ :=
+begin
+  sorry
+end
 
 noncomputable def fork_success_experiment (adv : fork_adversary spec α β i)
   (inp_gen : oracle_comp spec α) :

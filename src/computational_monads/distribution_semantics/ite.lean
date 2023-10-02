@@ -98,11 +98,25 @@ end
 
 end bind_ite
 
+section bind_ite_eq_bind
+
+variables (ob ob' : α → oracle_comp spec β)
+
+lemma bind_ite_dist_equiv_bind_left (h : ∀ x ∈ oa.support, p x) :
+  do {x ← oa, if p x then ob x else ob' x} ≃ₚ do {x ← oa, ob x} :=
+bind_dist_equiv_bind_of_dist_equiv_right _ _ _ (λ x hx, dist_equiv_of_eq (if_pos (h x hx)))
+
+lemma bind_ite_dist_equiv_bind_right (h : ∀ x ∈ oa.support, ¬ p x) :
+  do {x ← oa, if p x then ob x else ob' x} ≃ₚ do {x ← oa, ob' x} :=
+bind_dist_equiv_bind_of_dist_equiv_right _ _ _ (λ x hx, dist_equiv_of_eq (if_neg (h x hx)))
+
+end bind_ite_eq_bind
+
 section bind_ite_const_left
 
 variables (ob : oracle_comp spec β) (ob' : α → oracle_comp spec β) (y : β) (e : set β)
 
-@[simp] lemma support_bind_ite_const_left (h : ∃ x ∈ oa.support, p x) :
+lemma support_bind_ite_const_left (h : ∃ x ∈ oa.support, p x) :
   (do {x ← oa, if p x then ob else ob' x}).support =
     ob.support ∪ (⋃ x ∈ {x ∈ oa.support | ¬ p x}, (ob' x).support) :=
 begin
@@ -130,14 +144,11 @@ section bind_ite_const_right
 variables (ob : α → oracle_comp spec β) (ob' : oracle_comp spec β) (y : β) (e : set β)
 
 /-- Version of `support_bind_ite_const` when only the right computation is constant -/
-@[simp] lemma support_bind_ite_const_right (h : ∃ x ∈ oa.support, ¬ p x) :
+lemma support_bind_ite_const_right (h : ∃ x ∈ oa.support, ¬ p x) :
   (do {x ← oa, if p x then ob x else ob'}).support =
     (⋃ x ∈ {x ∈ oa.support | p x}, (ob x).support) ∪ ob'.support :=
-begin
-  refine trans (support_bind_ite _ _ _ _)
-    (congr_arg (λ x, (⋃ x ∈ {x ∈ oa.support | p x}, (ob x).support) ∪ x) (set.ext (λ x, _))),
-  simpa using λ _, h,
-end
+trans (support_bind_ite _ _ _ _) (congr_arg (λ x,
+  (⋃ x ∈ {x ∈ oa.support | p x}, (ob x).support) ∪ x) (set.ext (λ x, by simpa using λ _, h)))
 
 /-- Version of `prob_output_bind_ite_const` when only the right computation is constant -/
 @[simp] lemma prob_output_bind_ite_const_right : ⁅= y | do {x ← oa, if p x then ob x else ob'}⁆ =

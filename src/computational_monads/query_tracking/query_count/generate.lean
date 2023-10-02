@@ -194,10 +194,7 @@ lemma support_generate : (generate qc oa).support =
 by simp only [generate, support_generate_aux qc oa (finset.nodup_to_list _),
   finset.mem_to_list, sep_self]
 
--- lemma other : generate (qc + qc') oa ≃ₚ
-
-@[pairwise_dist_equiv]
-lemma generate_add_dist_equiv :
+@[pairwise_dist_equiv] lemma generate_add_dist_equiv :
   generate (qc + qc') oa ≃ₚ ((+) <$> generate qc oa <*> generate qc' oa) :=
 begin
   refine dist_equiv.ext (λ il, _),
@@ -228,6 +225,16 @@ begin
   }
   -- refine trans _ (symm (prob_output_seq_map_add_cancel_unique _ _ il
   --   (il.fit_to_count qc) (il.fit_to_count qc') _ _)),
+end
+
+lemma generate_dist_equiv_of_mem_active_oracles (i : spec.ι)
+  (hi : i ∈ qc.active_oracles) : generate qc oa ≃ₚ
+    do {x ← oa i, il ← generate (qc.decrement i 1) oa, return (of_list [x] + il)} :=
+begin
+  have : qc = of_nat i 1 + qc.decrement i 1 := sorry,
+  rw [this],
+  rw_dist_equiv [generate_add_dist_equiv],
+  sorry,
 end
 
 end oracle_comp

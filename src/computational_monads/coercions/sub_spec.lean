@@ -145,6 +145,11 @@ begin
   pairwise_dist_equiv_deep
 end
 
+@[simp] lemma map_coe_sub_spec_dist_equiv_iff (ob : oracle_comp super_spec β) :
+  f <$> (↑oa : oracle_comp super_spec α) ≃ₚ ob ↔ f <$> oa ≃ₚ ob :=
+⟨dist_equiv.trans (map_dist_equiv_of_dist_equiv (λ _ _, rfl) (by pairwise_dist_equiv)),
+  dist_equiv.trans (map_dist_equiv_of_dist_equiv (λ _ _, rfl) (by pairwise_dist_equiv))⟩
+
 @[pairwise_dist_equiv] lemma coe_sub_spec_seq_dist_equiv (og : oracle_comp sub_spec (α → β)) :
   (↑(og <*> oa) : oracle_comp super_spec β) ≃ₚ
     (↑og : oracle_comp super_spec (α → β)) <*> ↑oa :=

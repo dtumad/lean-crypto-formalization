@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
 import computational_monads.query_tracking.query_count.generate
+import computational_monads.query_tracking.indexed_list.get_or_else
 import computational_monads.query_tracking.query_seed.basic
 import computational_monads.coercions.instances
 
@@ -28,8 +29,7 @@ variables {α β γ : Type} {spec spec' : oracle_spec}
 
 /-- Given a count of queries `qc`, and an initial `query_store` seed, generate more outputs at
 random until the number of seeded outputs for each oracle is at least the value given in `qc`. -/
-noncomputable def generate_seed (qc : spec.query_count) :
-  prob_comp (spec.query_seed) :=
+noncomputable def generate_seed (qc : spec.query_count) : prob_comp spec.query_seed :=
 generate qc (λ i, $ᵗ (spec.range i))
 
 variables (qc qc' : spec.query_count)
@@ -65,7 +65,8 @@ begin
   sorry
 end
 
-lemma generate_seed_add : generate_seed (qc + qc') = (+) <$> generate_seed qc <*> generate_seed qc' :=
+@[pairwise_dist_equiv] lemma generate_seed_add_dist_equiv :
+  generate_seed (qc + qc') ≃ₚ (+) <$> generate_seed qc <*> generate_seed qc' :=
 sorry
 
 lemma generate_seed_bind_split_of_le [h : is_sub_spec uniform_selecting spec'] (h : qc' ≤ qc)
@@ -75,5 +76,41 @@ lemma generate_seed_bind_split_of_le [h : is_sub_spec uniform_selecting spec'] (
 begin
   sorry,
 end
+
+lemma generate_seed_dist_equiv_of_mem_active_oracles
+  (i : spec.ι) (hi : i ∈ qc.active_oracles) : generate_seed qc ≃ₚ
+    do {u ←$ᵗ (spec.range i), qs ← generate_seed (qc.decrement i 1),
+      return (of_list [u] + qs)} :=
+begin
+  apply generate_dist_equiv_of_mem_active_oracles,
+  exact hi,
+end
+
+section get_head
+
+lemma map_get_head_generate_seed_dist_equiv [h : is_sub_spec uniform_selecting spec]
+  (i : spec.ι) (hi : i ∈ qc.active_oracles) :
+  (λ qc, indexed_list.get_head qc i) <$> generate_seed qc ≃ₚ
+    ($ᵗ (spec.range i) ×ₘ generate_seed (qc.decrement i 1)) :=
+begin
+  rw_dist_equiv [generate_seed_dist_equiv_of_mem_active_oracles _ _ hi],
+  simp [oracle_comp.bind_return_comp_eq_map],
+  rw_dist_equiv [map_bind_dist_equiv, map_comp_dist_equiv],
+  rw [mprod],
+  simp_rw [oracle_comp.bind_return_comp_eq_map],
+  pairwise_dist_equiv,
+  simp,
+end
+
+lemma map_fst_get_head_generate_seed_dist_equiv [h : is_sub_spec uniform_selecting spec]
+  (i : spec.ι) (hi : i ∈ qc.active_oracles) :
+  (λ qc, (indexed_list.get_head qc i).1) <$> generate_seed qc ≃ₚ $ᵗ (spec.range i) :=
+begin
+  refine trans (map_comp_dist_equiv (generate_seed qc)
+    (λ qc, indexed_list.get_head qc i) prod.fst).symm _,
+  rw_dist_equiv [map_get_head_generate_seed_dist_equiv _ _ hi, fst_map_mprod_dist_equiv],
+end
+
+end get_head
 
 end oracle_comp

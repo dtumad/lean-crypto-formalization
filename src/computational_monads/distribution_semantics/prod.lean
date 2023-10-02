@@ -329,6 +329,17 @@ end fin_support
 
 end bind_prod_mk_subsingleton
 
+section bind_bind_prod_mk
+
+lemma support_bind_bind_prod_mk (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) :
+  (do {x ← oa, y ← (ob x), return (x, y)}).support =
+    {z | z.1 ∈ oa.support ∧ z.2 ∈ (ob z.1).support} :=
+begin
+  sorry,
+end
+
+end bind_bind_prod_mk
+
 section map_fst_snd
 
 section support
