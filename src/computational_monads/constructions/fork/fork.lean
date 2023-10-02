@@ -22,43 +22,13 @@ namespace oracle_comp
 
 variable [is_sub_spec uniform_selecting spec]
 
-noncomputable def fork' (adv : fork_adversary spec α β i) :
+noncomputable def fork (adv : fork_adversary spec α β i) :
   sec_adversary spec α (fork_result adv) :=
 { run := λ x,
     do {rr₁ ← adv.seed_and_run x ∅,
       rr₂ ← adv.seed_and_run x (rr₁.seed.take_at_index i rr₁.get_fp),
       return (rr₁, rr₂)},
   qb := adv.qb + adv.qb }
-
-lemma support_run_fork' (adv : fork_adversary spec α β i) (x : α) :
-  ((fork' adv).run x).support = {fr | fr.1 ∈ (adv.seed_and_run x ∅).support ∧
-    fr.2 ∈ (adv.seed_and_run x (fr.1.seed.take_at_index i fr.1.get_fp)).support} :=
-begin
-  simp only [fork'],
-  rw [support_bind_bind_prod_mk],
-  refl,
-end
-
-lemma fork_point_eq_of_mem_support_run_fork' (adv : fork_adversary spec α β i)
-  (fr : fork_result adv) (x : α) (h : fr ∈ ((fork' adv).run x).support) :
-  fr.fork_point₁ = adv.choose_fork x fr.side_output₁ ∧
-    fr.fork_point₂ = adv.choose_fork x fr.side_output₂ :=
-begin
-  simp only [support_run_fork', set.mem_set_of_eq] at h,
-  refine ⟨adv.fork_point_eq_choose_fork x ∅ fr.1 h.1,
-    adv.fork_point_eq_choose_fork x _ fr.2 h.2⟩,
-end
-
-lemma take_to_count_seed_eq_take_to_count_seed (adv : fork_adversary spec α β i)
-  (fr : fork_result adv) (x : α) (h : fr ∈ ((fork' adv).run x).support) :
-  fr.seed₁.take_to_count (fr.seed₁.take_at_index i fr.1.get_fp) =
-    fr.seed₂.take_to_count (fr.seed₁.take_at_index i fr.1.get_fp) :=
-begin
-  simp only [support_run_fork', set.mem_set_of_eq] at h,
-  have := adv.take_to_count_seed_eq_seed x _ _ h.2,
-  refine trans _ this.symm,
-  rw [indexed_list.take_to_count_take_at_index],
-end
 
 noncomputable def fork_success_experiment (adv : fork_adversary spec α β i)
   (inp_gen : oracle_comp spec α) :
@@ -70,7 +40,7 @@ public_experiment inp_gen (λ _, idₛₒ)
 
 noncomputable def fork_advantage (adv : fork_adversary spec α β i)
   (inp_gen : oracle_comp spec α) : ℝ≥0∞ :=
-(fork' adv).advantage (fork_success_experiment adv inp_gen)
+(fork adv).advantage (fork_success_experiment adv inp_gen)
 
 -- structure forked_adversary (adv : fork_adversary spec α β i q) extends
 --   sec_adversary spec α (fork_result adv)
@@ -85,77 +55,125 @@ noncomputable def fork_advantage (adv : fork_adversary spec α β i)
 --   qb := sorry
 -- }
 
-/-- Fork a `fork_adversary` at the point defined by `cf`. -/
-noncomputable def fork'' (adv : fork_adversary spec α β i) (y : α) :
-  oracle_comp spec (fork_result adv) :=
-do {
-  rr₁ ← adv.seed_and_run y ∅,
-  rr₂ ← adv.seed_and_run y (rr₁.seed.take_at_index i rr₁.get_fp),
-  return (rr₁, rr₂)
-}
+-- /-- Fork a `fork_adversary` at the point defined by `cf`. -/
+-- noncomputable def fork'' (adv : fork_adversary spec α β i) (y : α) :
+--   oracle_comp spec (fork_result adv) :=
+-- do {
+--   rr₁ ← adv.seed_and_run y ∅,
+--   rr₂ ← adv.seed_and_run y (rr₁.seed.take_at_index i rr₁.get_fp),
+--   return (rr₁, rr₂)
+-- }
 
-/-- Fork a `fork_adversary` at the point defined by `cf`. -/
-noncomputable def fork (adv : fork_adversary spec α β i) (y : α) :
-  oracle_comp spec (fork_result adv) :=
-do {
-  rr₁ ← adv.seed_and_run y ∅,
-  rr₂ ← adv.seed_and_run y (rr₁.seed.take_at_index i rr₁.get_fp),
-  return (rr₁, rr₂)
-}
+-- /-- Fork a `fork_adversary` at the point defined by `cf`. -/
+-- noncomputable def fork (adv : fork_adversary spec α β i) (y : α) :
+--   oracle_comp spec (fork_result adv) :=
+-- do {
+--   rr₁ ← adv.seed_and_run y ∅,
+--   rr₂ ← adv.seed_and_run y (rr₁.seed.take_at_index i rr₁.get_fp),
+--   return (rr₁, rr₂)
+-- }
 
 variables (adv : fork_adversary spec α β i) (y : α) (fr : fork_result adv)
 
+lemma support_run_fork (adv : fork_adversary spec α β i) (x : α) :
+  ((fork adv).run x).support = {fr | fr.1 ∈ (adv.seed_and_run x ∅).support ∧
+    fr.2 ∈ (adv.seed_and_run x (fr.1.seed.take_at_index i fr.1.get_fp)).support} :=
+begin
+  simp only [fork],
+  rw [support_bind_bind_prod_mk],
+  refl,
+end
+
+section fork_point
+
+lemma fork_point_eq_of_mem_support_run_fork (adv : fork_adversary spec α β i)
+  (fr : fork_result adv) (x : α) (h : fr ∈ ((fork adv).run x).support) :
+  fr.fork_point₁ = adv.choose_fork x fr.side_output₁ ∧
+    fr.fork_point₂ = adv.choose_fork x fr.side_output₂ :=
+begin
+  simp only [support_run_fork, set.mem_set_of_eq] at h,
+  refine ⟨adv.fork_point_eq_choose_fork x ∅ fr.1 h.1,
+    adv.fork_point_eq_choose_fork x _ fr.2 h.2⟩,
+end
+
+/-- If `fork` returns success then both runs chose the same fork value. -/
+lemma choose_fork_eq_of_fork_success (h : fr ∈ ((fork adv).run y).support)
+  (hfr : fork_success fr) :
+  adv.choose_fork y fr.side_output₁ = adv.choose_fork y fr.side_output₂ :=
+begin
+  sorry
+end
+
+lemma fork_point_eq_of_fork_success (h : fr ∈ ((fork adv).run y).support)
+  (hfr : fork_success fr) : fr.fork_point₁ = fr.fork_point₂ :=
+begin
+  sorry
+end
+
+end fork_point
+
+lemma take_to_count_seed_eq_take_at_index_seed (adv : fork_adversary spec α β i)
+  (fr : fork_result adv) (x : α) (h : fr ∈ ((fork adv).run x).support) :
+  fr.seed₂.take_to_count (fr.seed₁.take_at_index i fr.1.get_fp) =
+    fr.seed₁.take_at_index i fr.1.get_fp :=
+begin
+  simp only [support_run_fork, set.mem_set_of_eq] at h,
+  exact adv.take_to_count_seed_eq_seed x _ _ h.2,
+end
+
 /-- Both the resulting `query_seed`s from running `fork` have the same number of seeded values. -/
-lemma to_query_count_seed_eq_to_query_count_seed (h : fr ∈ (fork adv y).support) :
+lemma to_query_count_seed_eq_to_query_count_seed (h : fr ∈ ((fork adv).run y).support) :
   fr.seed₁.to_query_count = fr.seed₂.to_query_count :=
 begin
   sorry
 end
 
 /-- Up until the forking point, both resulting `query_seed`s have the same seed values. -/
-lemma take_queries_seed_eq_take_queries_seed (h : fr ∈ (fork adv y).support) :
+lemma take_queries_seed_eq_take_queries_seed (h : fr ∈ ((fork adv).run y).support) :
   (fr.seed₁.take_at_index i fr.1.get_fp) =
     (fr.seed₂.take_at_index i fr.1.get_fp) :=
 begin
   sorry
 end
 
+section side_output
+
 /-- The first side output is in the support of simulating the adversary with the first seed. -/
-lemma mem_support_simulate'_seed₁ (h : fr ∈ (fork adv y).support) :
+lemma mem_support_simulate'_seed₁ (h : fr ∈ ((fork adv).run y).support) :
   fr.side_output₁ ∈ (simulate' seededₛₒ (adv.run y) fr.seed₁).support :=
 begin
   sorry,
 end
 
 /-- The second side output is in the support of simulating the adversary with the second seed. -/
-lemma mem_support_simulate'_seed₂ (h : fr ∈ (fork adv y).support) :
+lemma mem_support_simulate'_seed₂ (h : fr ∈ ((fork adv).run y).support) :
   fr.side_output₂ ∈ (simulate' seededₛₒ (adv.run y) fr.seed₂).support :=
 begin
   sorry,
 end
 
-/-- If `fork` returns success then both runs chose the same fork value. -/
-lemma choose_fork_eq_of_fork_success (h : fr ∈ (fork adv y).support) :
-  adv.choose_fork y fr.side_output₁ = fr.fork_point₁ ∧
-    adv.choose_fork y fr.side_output₂ = fr.fork_point₂ :=
-begin
-  sorry
-end
+end side_output
 
 /-- If `fork` returns success then the adversary must have thrown away at least one value. -/
-lemma choose_fork_ne_of_fork_success (h : fr ∈ (fork adv y).support) (hfr : fork_success fr) :
-  fr.fork_point₁ ≠ some adv.q :=
+lemma choose_fork_ne_max_of_fork_success (h : fr ∈ ((fork adv).run y).support)
+  (hfr : fork_success fr) : fr.fork_point₁ ≠ some adv.q :=
 begin
   sorry
 end
 
 /-- If `fork` returns success then the output after the forking point
 TODO: this should have a small chance to fail instead. -/
-lemma seed_differs_of_fork_success (h : fr ∈ (fork adv y).support) (hfr : fork_success fr) :
-  (fr.seed₁ i).nth (fr.1.get_fp) ≠
-    (fr.seed₂ i).nth (fr.2.get_fp) :=
+lemma seed_differs_of_fork_success (h : fr ∈ ((fork adv).run y).support) (hfr : fork_success fr) :
+  (fr.seed₁ i).nth (fr.1.get_fp) ≠ (fr.seed₂ i).nth (fr.2.get_fp) :=
 begin
-  sorry
+  rw [fork_success_iff_exists] at hfr,
+  obtain ⟨fp, hfp₁, hfp₂, hfp⟩ := hfr,
+  have h1 : fr.1.get_fp = fp,
+  from symm (trans (option.get_or_else_some fp 0).symm (congr_fun (congr_arg _ hfp₁) 0).symm),
+  have h2 : fr.2.get_fp = fp,
+  from symm (trans (option.get_or_else_some fp 0).symm (congr_fun (congr_arg _ hfp₂) 0).symm),
+  simp only [h1, h2, fork_result.seed₁, fork_result.seed₂, ne.def],
+  exact hfp,
 end
 
 section prob_event_fork_success
@@ -256,7 +274,7 @@ calc ⁅= some fp | adv.choose_fork y <$> adv.run y⁆ ^ 2
 /--  -/
 lemma le_prob_event_same_fork_point (adv : fork_adversary spec α β i) :
   ⁅(≠) none | adv.choose_fork y <$> adv.run y⁆ ^ 2 / adv.q.succ
-    ≤ ⁅same_fork_point | fork adv y⁆ :=
+    ≤ ⁅same_fork_point | (fork adv).run y⁆ :=
 calc ⁅(≠) none | adv.choose_fork y <$> adv.run y⁆ ^ 2 / adv.q.succ
   -- Rewrite the probability of not getting `none` as the sum of each `some` possibility.
   = (∑ fp, ⁅= some fp | adv.choose_fork y <$> adv.run y⁆) ^ 2 / adv.q.succ :
@@ -286,7 +304,7 @@ calc ⁅(≠) none | adv.choose_fork y <$> adv.run y⁆ ^ 2 / adv.q.succ
         simp_rw [prob_output_return_of_ne _ this, mul_zero] }
     end
   -- Replace the sum over possible outputs with the chances of fork success
-  ... ≤ ⁅same_fork_point | fork adv y⁆ :
+  ... ≤ ⁅same_fork_point | (fork adv).run y⁆ :
     begin
       rw [prob_event_same_fork_point],
       refine le_of_eq (finset.sum_congr rfl (λ fp _, _)),
@@ -298,7 +316,7 @@ calc ⁅(≠) none | adv.choose_fork y <$> adv.run y⁆ ^ 2 / adv.q.succ
 lemma prob_event_fork_success (adv : fork_adversary spec α β i) :
   ⁅(≠) none | adv.choose_fork y <$> adv.run y⁆ *
       (⁅(≠) none | adv.choose_fork y <$> adv.run y⁆ / adv.q - (card (spec.range i))⁻¹)
-    ≤ ⁅λ z, fork_success z = tt | fork adv y⁆ :=
+    ≤ ⁅λ z, fork_success z = tt | (fork adv).run y⁆ :=
 begin
   sorry
 end

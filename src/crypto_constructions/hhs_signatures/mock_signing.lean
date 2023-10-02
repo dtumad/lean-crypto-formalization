@@ -99,12 +99,22 @@ noncomputable def mocked_unforgeable_adversary
 
 -- def mocked_adversary_bound (adv : (hhs_signature G X M n).unforgeable_adversary)
 
+noncomputable def mocked_query_bound (qb : (hhs_signature G X M n).full_spec.query_count) :
+  (hhs_signature G X M n).base_spec.query_count :=
+{ to_fun := λ i, match i with
+    | (sum.inl i) := qb (sum.inl (sum.inl i))
+    | (sum.inr _) := qb (sum.inl (sum.inr ())) ++ qb (sum.inr ())
+  end,
+  active_oracles := sorry,
+  mem_active_oracles_iff' := sorry
+}
+
 noncomputable def mocked_unforgeable_adversary'
   (adv : (hhs_signature G X M n).unforgeable_adversary) :
   sec_adversary (hhs_signature G X M n).base_spec (X × X)
     ((M × vector G n × vector bool n) × (hhs_signature G X M n).random_spec.query_log) :=
 { run := λ ks, simulate (mock_signing_sim_oracle' ks.1 ks.2) (adv.run ks) ∅,
-  qb := ∅ } -- TODO: bound
+  qb := mocked_query_bound adv.qb }
 
 noncomputable def mocked_unforgeable_experiment :
   sec_experiment (hhs_signature G X M n).base_spec uniform_selecting (X × X)
