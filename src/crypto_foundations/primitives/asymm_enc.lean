@@ -41,7 +41,7 @@ def completeness_experiment' (asymm_enc : asymm_enc_alg M PK SK C)
       m' ← asymm_enc.decrypt (σ, sk),
       return (m = m')},
   adv_so := λ _, idₛₒ,
-  exp_so := idₛₒ }
+  exp_so := idₛₒ } --
 
 def completeness_experiment (asymm_enc : asymm_enc_alg M PK SK C) [decidable_eq M] :
   soundness_experiment uniform_selecting (PK × SK) M unit :=
