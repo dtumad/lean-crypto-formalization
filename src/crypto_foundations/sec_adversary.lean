@@ -19,13 +19,23 @@ namespace oracle_comp
 open_locale ennreal big_operators
 open oracle_spec
 
-variables {α β γ : Type} {adv_spec exp_spec : oracle_spec} {S S' : Type}
-
 /-- A security adversary `sec_adversary adv_spec α β` is a computation taking inputs of type `α`
 and computing a result of type `β` using oracles specified by `adv_spec`. -/
 structure sec_adversary (adv_spec : oracle_spec) (α β : Type) :=
 (run : α → oracle_comp adv_spec β)
 (qb : query_count adv_spec)
+
+/-- A `soundness_experiment exp_spec α β S` is a experiment for the correctness of a cryptographic
+algorithm, in order to check that a property always (or almost always) holds for an algorithm.
+`α` is the type returned by the input generator, `β` is the result of the psuedo-adversary,
+and `exp_spec` is the set of oracles in the experiment with `S` the internal state in simulation.
+For example `α` may be a pair of fairly generated encryption keys and `β` the possible messages,
+with `inp_gen` choosing the keys from a key generation function, and the adversary attempting
+to return a message that fails to decrypt properly after encryption (as checked by `is_valid`). -/
+structure soundness_experiment (exp_spec : oracle_spec) (α β S : Type) :=
+(inp_gen : oracle_comp exp_spec α)
+(is_valid : α → β → oracle_comp exp_spec bool)
+(exp_so : sim_oracle exp_spec uniform_selecting S)
 
 /-- A `sec_experiment adv_spec exp_spec α β γ S S'` is a security experiment for a `sec_adversary`,
 where `α` is the input type to the adversary, `β` is the result type of the adversary,
@@ -36,6 +46,26 @@ structure sec_experiment (adv_spec exp_spec : oracle_spec) (α β γ S S' : Type
 (is_valid : α × γ → β × S → oracle_comp exp_spec bool)
 (adv_so : α × γ → sim_oracle adv_spec exp_spec S)
 (exp_so : sim_oracle exp_spec uniform_selecting S')
+
+/-- View a soundness experiment as a security experiment with no hidden information
+or adversary oracles. In this case we are merely testing that some property (almost) always holds.
+This allows us to phrase e.g. the fact that messages can always be decrypted in Elgamal
+as a security experiment where an adversary attempts to find a message that can't decrypt. -/
+def soundness_experiment.to_sec_experiment {exp_spec : oracle_spec} {α β S : Type}
+  (exp : soundness_experiment exp_spec α β S) :
+  sec_experiment exp_spec exp_spec α β unit unit S :=
+{ inp_gen := exp.inp_gen ×ₘ return (),
+  is_valid := λ x y, exp.is_valid x.1 y.1,
+  adv_so := λ _, idₛₒ,
+  exp_so := exp.exp_so }
+
+/-- Automatic coercion from soundness experiment to security experiment. -/
+instance {exp_spec : oracle_spec} {α β S : Type} :
+  has_coe (soundness_experiment exp_spec α β S)
+    (sec_experiment exp_spec exp_spec α β unit unit S) :=
+⟨λ exp, soundness_experiment.to_sec_experiment exp⟩
+
+variables {α β γ : Type} {adv_spec exp_spec : oracle_spec} {S S' : Type}
 
 namespace sec_adversary
 

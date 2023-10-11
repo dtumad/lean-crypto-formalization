@@ -53,6 +53,9 @@ dist_equiv_of_eq (seeded_oracle.apply_eq i z)
 
 end apply
 
+/-- It's possible regenerate the remaining portion of the seed after simulating a computation with
+the output of `generate_seed`, by generating a new seed of the appropriate size,
+giving a still equivalent seed as before. -/
 lemma generate_seed_bind_simulate_dist_equiv [h : is_sub_spec uniform_selecting spec]
   (qc : spec.query_count) (oa : oracle_comp spec α) :
   do {seed ← ↑(generate_seed qc), simulate seededₛₒ oa seed} ≃ₚ

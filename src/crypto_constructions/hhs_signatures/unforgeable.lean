@@ -85,10 +85,9 @@ end
 
 end queried_index
 
-noncomputable def mocked_unforgeable_adversary_new
+noncomputable def mock_unforgeable_adversary
   (adv : (hhs_signature G X M n).unforgeable_adversary) :
-  fork_adversary (hhs_signature G X M n).base_spec
-    (X × X)
+  fork_adversary (hhs_signature G X M n).base_spec (X × X)
     ((M × vector G n × vector bool n) × ((vector X n × M) ↦ₒ vector bool n).query_log)
     (sum.inr ()) :=
 { run := λ ks, simulate (mock_signing_sim_oracle' ks.1 ks.2) (adv.run ks) ∅,
@@ -96,20 +95,20 @@ noncomputable def mocked_unforgeable_adversary_new
   choose_fork := λ ⟨x₀, pk⟩ ⟨⟨m, zs, hash⟩, mocked_cache⟩,
     queried_index x₀ pk m zs hash mocked_cache _ }
 
-noncomputable def forkable_unforgeable_adversary
-  (adv : (hhs_signature G X M n).unforgeable_adversary) :
-  fork_adversary (hhs_signature G X M n).base_spec
-    (X × X)
-    ((M × vector G n × vector bool n) × ((vector X n × M) ↦ₒ vector bool n).query_log)
-    (sum.inr ()) :=
-{ choose_fork := λ ⟨x₀, pk⟩ ⟨⟨m, zs, hash⟩, mocked_cache⟩,
-    queried_index x₀ pk m zs hash mocked_cache
-      (((mocked_unforgeable_adversary' adv).qb).get_count (sum.inr ())),
-  .. mocked_unforgeable_adversary' adv }
+-- noncomputable def mock_unforgeable_adversary
+--   (adv : (hhs_signature G X M n).unforgeable_adversary) :
+--   fork_adversary (hhs_signature G X M n).base_spec
+--     (X × X)
+--     ((M × vector G n × vector bool n) × ((vector X n × M) ↦ₒ vector bool n).query_log)
+--     (sum.inr ()) :=
+-- { choose_fork := λ ⟨x₀, pk⟩ ⟨⟨m, zs, hash⟩, mocked_cache⟩,
+--     queried_index x₀ pk m zs hash mocked_cache
+--       (((mocked_unforgeable_adversary' adv).qb).get_count (sum.inr ())),
+--   .. mocked_unforgeable_adversary' adv }
 
 @[simp] lemma choose_fork_eq_queried_index
   (adv : (hhs_signature G X M n).unforgeable_adversary) :
-  (forkable_unforgeable_adversary adv).choose_fork =
+  (mock_unforgeable_adversary adv).choose_fork =
     λ ks z, queried_index ks.1 ks.2 z.1.1 z.1.2.1 z.1.2.2 z.2
       ((((mocked_unforgeable_adversary' adv).qb).get_count (sum.inr ()))) :=
 begin
@@ -120,7 +119,7 @@ end
 
 noncomputable def vectorization_of_fork_result
   {adv : (hhs_signature G X M n).unforgeable_adversary}
-  (fr : fork_result (forkable_unforgeable_adversary adv)) : G :=
+  (fr : fork_result (mock_unforgeable_adversary adv)) : G :=
 let rr1 := fr.side_output₁.1 in let rr2 := fr.side_output₂.1 in
   vectorization_of_zipped_commits rr1.2 rr2.2
 
@@ -129,8 +128,8 @@ section vectorization_of_fork_result
 variables (adv : (hhs_signature G X M n).unforgeable_adversary)
 
 lemma mocked_cache₁_eq_take_seed₁ (x₀ : X) (pk : X)
-  (fr : fork_result (forkable_unforgeable_adversary adv))
-  (h : fr ∈ ((fork (forkable_unforgeable_adversary adv)).run (x₀, pk)).support) :
+  (fr : fork_result (mock_unforgeable_adversary adv))
+  (h : fr ∈ ((fork (mock_unforgeable_adversary adv)).run (x₀, pk)).support) :
   ((fr.side_output₁.2 ()).map prod.snd).take fr.1.get_fp =
     (fr.seed₁ (sum.inr ())).take fr.1.get_fp :=
 begin
@@ -141,8 +140,8 @@ begin
 end
 
 lemma take_mocked_cache_eq_take_mocked_cache (x₀ : X) (pk : X)
-  (fr : fork_result (forkable_unforgeable_adversary adv))
-  (h : fr ∈ ((fork (forkable_unforgeable_adversary adv)).run (x₀, pk)).support) :
+  (fr : fork_result (mock_unforgeable_adversary adv))
+  (h : fr ∈ ((fork (mock_unforgeable_adversary adv)).run (x₀, pk)).support) :
   ((fr.side_output₁.2 ()).map prod.fst).take (fr.1.get_fp + 1) =
     ((fr.side_output₂.2 ()).map prod.fst).take (fr.2.get_fp + 1) :=
 begin
@@ -151,12 +150,12 @@ begin
 end
 
 lemma vectorization_of_fork_result_eq_vsub (x₀ : X) (pk : X)
-  (fr : fork_result (forkable_unforgeable_adversary adv))
-  (h : fr ∈ ((fork (forkable_unforgeable_adversary adv)).run (x₀, pk)).support) :
+  (fr : fork_result (mock_unforgeable_adversary adv))
+  (h : fr ∈ ((fork (mock_unforgeable_adversary adv)).run (x₀, pk)).support) :
   fork_success fr → vectorization_of_fork_result fr = pk -ᵥ x₀ :=
 begin
   intro hfr,
-  let f_adv := forkable_unforgeable_adversary adv,
+  let f_adv := mock_unforgeable_adversary adv,
   rcases fr with ⟨⟨fp₁, ⟨⟨m₁, zs₁, hash₁⟩, mocked_cache₁⟩, seed₁⟩,
     ⟨fp₂, ⟨⟨m₂, zs₂, hash₂⟩, mocked_cache₂⟩, seed₂⟩⟩,
 
@@ -197,7 +196,7 @@ noncomputable def vectorization_reduction
   vectorization_adversary G X :=
 { run := λ ks, dsimulate' uniformₛₒ
     (vectorization_of_fork_result <$>
-      (fork (forkable_unforgeable_adversary adv)).run ks),
+      (fork (mock_unforgeable_adversary adv)).run ks),
   qb := ∅ }
 
 variable (adv : (hhs_signature G X M n).unforgeable_adversary)
@@ -205,8 +204,8 @@ variable (adv : (hhs_signature G X M n).unforgeable_adversary)
 /-- The probability of the fork succeeding is at least the square of
 the original adversary's success probability, minus a small chance
 of both oracle calls giving the same result. -/
-theorem le_vectorization_advantage (x₀ pk : X) :
-  let q := (adv.qb.get_count (sum.inr ()) + 0) in
+theorem advantage_le_vectorization_advantage :
+  let q := adv.qb.get_count (sum.inr ()) in
   let adv_advantage := adv.advantage (hhs_signature G X M n).unforgeable_experiment in
   let vec_advantage := (vectorization_reduction adv).advantage (vectorization_experiment G X) in
   adv_advantage * (adv_advantage / q - (1 / 2 ^ n)) ≤ vec_advantage :=

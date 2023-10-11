@@ -84,7 +84,8 @@ def vectorization_of_zipped_commits :
 | (n + 1) ⟨⟨z :: zs, hzs⟩, ⟨b :: bs, hbs⟩⟩ ⟨⟨z' :: zs', hzs'⟩, ⟨b' :: bs', hbs'⟩⟩ :=
     if b = tt ∧ b' = ff then z' - z
     else if b = ff ∧ b' = tt then z - z'
-      else vectorization_of_zipped_commits ((vector.tail ⟨_, hzs⟩), (vector.tail ⟨_, hbs⟩))
+      else vectorization_of_zipped_commits
+        ((vector.tail ⟨_, hzs⟩), (vector.tail ⟨_, hbs⟩))
         ((vector.tail ⟨_, hzs'⟩), (vector.tail ⟨_, hbs'⟩))
 
 /-- If the two hash values differ (and so in particular one of the bits differs),
