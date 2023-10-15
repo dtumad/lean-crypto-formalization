@@ -92,12 +92,17 @@ end sec_adversary
 
 namespace sec_experiment
 
-section always_succeeds
+section always
 
-def always_succeeds (exp : sec_experiment adv_spec exp_spec α β γ S S') : Prop :=
+/-- An experiment always succeeds if any possible adversary has an advantage of `1`. -/
+def always_success (exp : sec_experiment adv_spec exp_spec α β γ S S') : Prop :=
 ∀ (adv : sec_adversary adv_spec α β), adv.advantage exp = 1
 
-end always_succeeds
+/-- An experiment always fails if any possible adversary has an advantage of `0`. -/
+def always_failure (exp : sec_experiment adv_spec exp_spec α β γ S S') : Prop :=
+∀ (adv : sec_adversary adv_spec α β), adv.advantage exp = 0
+
+end always
 
 end sec_experiment
 

@@ -52,7 +52,6 @@ instance dg [h : algorithmic_homogenous_space G X] : decidable_eq G := h.decidab
 /-- An adversary for the vectorization game takes in a pair of base points `(x₁, x₂)`,
 and attempts to generate a vectorization, i.g. a vector `g` with `g +ᵥ x₂ = x₁`. -/
 structure vectorization_adversary (G X : Type)
-  [add_comm_group G] [algorithmic_homogenous_space G X]
   extends sec_adversary uniform_selecting (X × X) G
 
 /-- Analogue of the game for the discrete logarithm assumption.
@@ -67,10 +66,9 @@ public_experiment ($ᵗ X ×ₘ $ᵗ X) (λ _, idₛₒ)
 /-- An adversary for the parallelization game takes in a triple of base points `(x₁, x₂, x₃)`,
 and attempts to generate a parralelization, i.g. a vector `g` with `g +ᵥ x₂ = x₁`. -/
 structure parallelization_adversary (G X : Type)
-  [add_comm_group G] [algorithmic_homogenous_space G X]
   extends sec_adversary uniform_selecting (X × X × X) X
 
-/-- Analogue of the computational discrete logarithm problem.
+/-- Analogue of the Computational Diffie-Hellman problem.
 The input generator randomly chooses the challenge points for the adversary,
 and a result is valid if it is exactly the parallelization of the challenge points. -/
 noncomputable def parallelization_experiment (G X : Type)
@@ -78,6 +76,28 @@ noncomputable def parallelization_experiment (G X : Type)
   sec_experiment uniform_selecting uniform_selecting (X × X × X) X unit unit unit :=
 public_experiment ($ᵗ X ×ₘ $ᵗ X ×ₘ $ᵗ X) (λ _, idₛₒ)
   (λ ⟨x₁, x₂, x₃⟩ x₄, return (x₂ -ᵥ x₁ = x₄ -ᵥ x₃)) idₛₒ
+
+structure decisional_parallelization_adversary (G X : Type)
+  extends sec_adversary uniform_selecting (X × X × X × X) bool
+
+/-- Analogue of the Decisional Diffie-Hellman problem. -/
+noncomputable def decisional_parallelization_experiment {G X : Type}
+  [add_comm_group G] [algorithmic_homogenous_space G X]
+  (adv : decisional_parallelization_adversary G X) :
+  oracle_comp uniform_selecting bool :=
+do { x₀ ←$ᵗ X, g₁ ←$ᵗ G, g₂ ←$ᵗ G, b ← coin, x' ←$ᵗ X,
+  challenge ← return (if b then g₂ +ᵥ (g₁ +ᵥ x₀) else x'),
+  b' ← adv.run (x₀, g₁ +ᵥ x₀, g₂ +ᵥ x₀, challenge),
+  return (b = b') }
+
+namespace decisional_parallelization_adversary
+
+noncomputable def advantage {G X : Type}
+  [add_comm_group G] [algorithmic_homogenous_space G X]
+  (adv : decisional_parallelization_adversary G X) : ℝ≥0∞ :=
+⁅= tt | decisional_parallelization_experiment adv⁆ - 1 / 2
+
+end decisional_parallelization_adversary
 
 -- /-- The adversary's advantage at vectorization is the average over all possible pairs of points
 -- of their advantage at vectorizing those specific points. -/
