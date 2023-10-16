@@ -21,13 +21,13 @@ variables {α β γ : Type} {spec spec' : oracle_spec} {i : spec.ι}
 namespace oracle_comp
 
 -- TODO!!!: weird
-variable [is_sub_spec (uniform_selecting ++ ∅) spec]
+variable [is_sub_spec uniform_selecting spec]
 
 noncomputable def fork (adv : fork_adversary spec α β i) :
   sec_adversary spec α (fork_result adv) :=
 { run := λ x,
     do {rr₁ ← adv.seed_and_run x ∅,
-      rr₂ ← adv.seed_and_run x (rr₁.seed.take_at_index i rr₁.get_fp),
+      rr₂ ← adv.seed_and_run x (rr₁.seed.take_at_index (sum.inr i) rr₁.get_fp),
       return (rr₁, rr₂)},
   qb := adv.qb + adv.qb }
 
@@ -42,14 +42,14 @@ noncomputable def fork_advantage (adv : fork_adversary spec α β i)
 (fork adv).advantage (fork_success_experiment adv inp_gen)
 
 noncomputable def fork_advantage' (adv : fork_adversary spec α β i)
-  (inp_gen : oracle_comp spec α) : ℝ≥0∞ :=
+  (inp_gen : prob_comp spec α) : ℝ≥0∞ :=
 ⁅λ fr, fork_success fr = tt | inp_gen >>= (fork adv).run⁆
 
 variables (adv : fork_adversary spec α β i) (y : α) (fr : fork_result adv)
 
 lemma support_run_fork (adv : fork_adversary spec α β i) (x : α) :
   ((fork adv).run x).support = {fr | fr.1 ∈ (adv.seed_and_run x ∅).support ∧
-    fr.2 ∈ (adv.seed_and_run x (fr.1.seed.take_at_index i fr.1.get_fp)).support} :=
+    fr.2 ∈ (adv.seed_and_run x (fr.1.seed.take_at_index (sum.inr i) fr.1.get_fp)).support} :=
 begin
   simp only [fork],
   rw [support_bind_bind_prod_mk],
@@ -86,8 +86,8 @@ end fork_point
 
 lemma take_to_count_seed_eq_take_at_index_seed (adv : fork_adversary spec α β i)
   (fr : fork_result adv) (x : α) (h : fr ∈ ((fork adv).run x).support) :
-  fr.seed₂.take_to_count (fr.seed₁.take_at_index i fr.1.get_fp) =
-    fr.seed₁.take_at_index i fr.1.get_fp :=
+  fr.seed₂.take_to_count (fr.seed₁.take_at_index (sum.inr i) fr.1.get_fp) =
+    fr.seed₁.take_at_index (sum.inr i) fr.1.get_fp :=
 begin
   simp only [support_run_fork, set.mem_set_of_eq] at h,
   exact adv.take_to_count_seed_eq_seed x _ _ h.2,
@@ -102,8 +102,8 @@ end
 
 /-- Up until the forking point, both resulting `query_seed`s have the same seed values. -/
 lemma take_queries_seed_eq_take_queries_seed (h : fr ∈ ((fork adv).run y).support) :
-  (fr.seed₁.take_at_index i fr.1.get_fp) =
-    (fr.seed₂.take_at_index i fr.1.get_fp) :=
+  (fr.seed₁.take_at_index (sum.inr i) fr.1.get_fp) =
+    (fr.seed₂.take_at_index (sum.inr i) fr.1.get_fp) :=
 begin
   sorry
 end
@@ -136,7 +136,8 @@ end
 /-- If `fork` returns success then the output after the forking point
 TODO: this should have a small chance to fail instead. -/
 lemma seed_differs_of_fork_success (h : fr ∈ ((fork adv).run y).support) (hfr : fork_success fr) :
-  (fr.seed₁ i).nth (fr.1.get_fp) ≠ (fr.seed₂ i).nth (fr.2.get_fp) :=
+  (fr.seed₁ $ sum.inr i).nth (fr.1.get_fp) ≠
+    (fr.seed₂ $ sum.inr i).nth (fr.2.get_fp) :=
 begin
   rw [fork_success_iff_exists] at hfr,
   obtain ⟨fp, hfp₁, hfp₂, hfp⟩ := hfr,
@@ -159,7 +160,7 @@ noncomputable def poss_shared_seeds (qc : query_count spec)
 lemma le_prob_output_fork_points (adv : fork_adversary spec α β i) (fp : fin adv.q.succ) :
   ⁅= some fp | adv.choose_fork y <$> adv.run y⁆ ^ 2 ≤
     ⁅= (some fp, some fp) | do {rr₁ ← adv.seed_and_run y ∅,
-      rr₂ ← adv.seed_and_run y (rr₁.seed.take_at_index i fp),
+      rr₂ ← adv.seed_and_run y (rr₁.seed.take_at_index (sum.inr i) fp),
       return (rr₁.fork_point, rr₂.fork_point)}⁆ :=
 calc ⁅= some fp | adv.choose_fork y <$> adv.run y⁆ ^ 2
   -- Generate the eventual shared portion of the seed beforehand.
@@ -217,11 +218,11 @@ calc ⁅= some fp | adv.choose_fork y <$> adv.run y⁆ ^ 2
     end
   ... = ⁅= (some fp, some fp) | do {shared_seed ← ↑(generate_seed (adv.shared_query_count fp)),
           rr₁ ← adv.seed_and_run y shared_seed,
-          rr₂ ← adv.seed_and_run y (rr₁.seed.take_at_index i fp),
+          rr₂ ← adv.seed_and_run y (rr₁.seed.take_at_index (sum.inr i) fp),
           return (rr₁.fork_point, rr₂.fork_point)}⁆ :
     begin
       pairwise_dist_equiv with shared_seed hss rr hrr,
-      suffices : shared_seed = indexed_list.take_at_index rr.seed i ↑fp,
+      suffices : shared_seed = indexed_list.take_at_index rr.seed (sum.inr i) ↑fp,
       by rw [this],
       rw ← fork_adversary.take_to_count_seed_eq_seed adv y shared_seed rr hrr,
       rw [support_coe_sub_spec] at hss,
@@ -234,7 +235,7 @@ calc ⁅= some fp | adv.choose_fork y <$> adv.run y⁆ ^ 2
       refine indexed_list.take_at_index_le _ _ _,
     end
   ... = ⁅= (some fp, some fp) | do {rr₁ ← adv.seed_and_run y ∅,
-          rr₂ ← adv.seed_and_run y (rr₁.seed.take_at_index i fp),
+          rr₂ ← adv.seed_and_run y (rr₁.seed.take_at_index (sum.inr i) fp),
           return (rr₁.fork_point, rr₂.fork_point)}⁆ :
     begin
       by_dist_equiv,
@@ -257,11 +258,11 @@ calc ⁅(≠) none | adv.choose_fork y <$> adv.run y⁆ ^ 2 / adv.q.succ
       (ennreal.pow_sum_div_card_le_sum_pow _ _ (λ _ _, prob_output_ne_top _ _) 1)
   -- Apply `le_prob_output_fork_points` to the inner probability calculation.
   ... ≤ ∑ fp, ⁅= (some fp, some fp) | do {rr₁ ← adv.seed_and_run y ∅,
-            rr₂ ← adv.seed_and_run y (rr₁.seed.take_at_index i ↑fp),
+            rr₂ ← adv.seed_and_run y (rr₁.seed.take_at_index (sum.inr i) ↑fp),
             return (rr₁.fork_point, rr₂.fork_point)}⁆ :
     finset.sum_le_sum (λ fp hfp, by apply le_prob_output_fork_points)
   ... = ∑ fp, ⁅= (some fp, some fp) | do {rr₁ ← adv.seed_and_run y ∅,
-            rr₂ ← adv.seed_and_run y (rr₁.seed.take_at_index i (rr₁.fork_point.get_or_else 0)),
+            rr₂ ← adv.seed_and_run y (rr₁.seed.take_at_index (sum.inr i) (rr₁.fork_point.get_or_else 0)),
             return (rr₁.fork_point, rr₂.fork_point)}⁆ :
     begin
       refine finset.sum_congr rfl (λ fp _, _),

@@ -48,14 +48,14 @@ section sound
 --   adv_so := λ _, idₛₒ,
 --   exp_so := idₛₒ }
 
-def completeness_experiment (asymm_enc : asymm_enc_alg M PK SK C) [decidable_eq M] :
-  soundness_experiment (uniform_selecting ++ ∅) (PK × SK) M unit :=
+noncomputable def completeness_experiment (asymm_enc : asymm_enc_alg M PK SK C) [decidable_eq M] :
+  soundness_experiment ∅ (PK × SK) M unit :=
 { inp_gen := asymm_enc.keygen (),
   is_valid := λ ⟨pk, sk⟩ m,
     do {σ ← asymm_enc.encrypt (m, pk),
       m' ← asymm_enc.decrypt (σ, sk),
       return (m = m')},
-  exp_so := idₛₒ }
+  exp_so := uniformₛₒ }
 
 /-- Generate a random key, then return the result of encrypting and decrypting `m`. -/
 def soundness_experiment (enc_alg : asymm_enc_alg M PK SK C)
@@ -89,7 +89,7 @@ that given a pair of messages and an encryption, returns whether it is an encryp
 the first message or the second message. -/
 structure ind_cpa_adversary {M PK C : Type}
   (enc_alg : asymm_enc_alg M PK SK C) extends
-  sec_adversary uniform_selecting PK (M × M) :=
+  sec_adversary ∅ PK (M × M) :=
 (distinguish : PK × M × M × C → prob_comp ∅ bool)
 
 def asymm_enc_alg.ind_cpa_experiment

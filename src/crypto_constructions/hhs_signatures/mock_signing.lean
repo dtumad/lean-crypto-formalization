@@ -29,7 +29,7 @@ This also includes all caching for the simulation of the random oracles. -/
 noncomputable def mock_signing_sim_oracle (x₀ pk : X) :
   sim_oracle (hhs_signature G X M n).full_spec
   (uniform_selecting ++ ((vector X n × M) ↦ₒ vector bool n))
-  ((vector X n × M) ↦ₒ vector bool n).query_cache :=
+  (uniform_selecting ++ ((vector X n × M) ↦ₒ vector bool n)).query_cache :=
 { default_state := ∅,
   o := λ i, match i with
     -- For queries to the uniform selection oracle, just forward the queries.
@@ -38,14 +38,14 @@ noncomputable def mock_signing_sim_oracle (x₀ pk : X) :
           return (u, mock_cache)}
     -- For random oracle queries, check if the query has been mocked.
     -- If so, return the mocked value, otherwise call the regular oracle (caching the result).
-    | (sum.inl (sum.inr i)) := λ ⟨t, mock_cache⟩, mock_cache.get_or_else i t
+    | (sum.inl (sum.inr i)) := λ ⟨t, mock_cache⟩, mock_cache.get_or_else (sum.inr i) t
         (@query (hhs_signature G X M n).base_spec (sum.inr i) t)
     -- For queries to the signing oracle, pre-select a hash value and make a signature for that.
     -- Also update the mocked cache with the value chosen for the hash output.
     | (sum.inr ()) := λ ⟨m, mock_cache⟩,
         do {bs ← repeat ($ᵗ bool) n, cs ← repeat ($ᵗ G) n,
           ys ← return (vector.zip_with (λ (b : bool) c, if b then c +ᵥ pk else c +ᵥ x₀) bs cs),
-          mock_cache' ← return (mock_cache.cache_query () (ys, m) bs),
+          mock_cache' ← return (mock_cache.cache_query (sum.inr ()) (ys, m) bs),
           return ((cs, bs), mock_cache')}
   end }
 
@@ -92,10 +92,11 @@ end mock_signing_sim_oracle
 
 noncomputable def mocked_unforgeable_adversary
   (adv : (hhs_signature G X M n).unforgeable_adversary) :
-  sec_adversary (hhs_signature G X M n).base_spec (X × X)
+  sec_adversary (hhs_signature G X M n).random_spec (X × X)
     ((M × vector G n × vector bool n) × (hhs_signature G X M n).random_spec.query_cache) :=
-{ run := λ ks, simulate (mock_signingₛₒ ks.1 ks.2) (adv.run ks) ∅,
-  qb := ∅ } -- TODO: bound
+sorry
+-- { run := λ ks, simulate (mock_signingₛₒ ks.1 ks.2) (adv.run ks) ∅,
+--   qb := ∅ } -- TODO: bound
 
 -- def mocked_adversary_bound (adv : (hhs_signature G X M n).unforgeable_adversary)
 
@@ -113,8 +114,9 @@ noncomputable def mocked_unforgeable_adversary'
   (adv : (hhs_signature G X M n).unforgeable_adversary) :
   sec_adversary (hhs_signature G X M n).base_spec (X × X)
     ((M × vector G n × vector bool n) × (hhs_signature G X M n).random_spec.query_log) :=
-{ run := λ ks, simulate (mock_signing_sim_oracle' ks.1 ks.2) (adv.run ks) ∅,
-  qb := mock_query_bound adv.qb }
+sorry
+-- { run := λ ks, simulate (mock_signing_sim_oracle' ks.1 ks.2) (adv.run ks) ∅,
+--   qb := mock_query_bound adv.qb }
 
 noncomputable def mocked_unforgeable_experiment :
   sec_experiment (hhs_signature G X M n).base_spec uniform_selecting (X × X)
@@ -149,11 +151,11 @@ public_experiment (($ᵗ X) ×ₘ ($ᵗ X))
 --   end,
 --   exp_so := idₛₒ }
 
-theorem le_mocked_advantage (adv : (hhs_signature G X M n).unforgeable_adversary) :
-  adv.advantage (hhs_signature G X M n).unforgeable_experiment ≤
-    (mocked_unforgeable_adversary adv).advantage mocked_unforgeable_experiment :=
-begin
-  sorry
-end
+-- theorem le_mocked_advantage (adv : (hhs_signature G X M n).unforgeable_adversary) :
+--   adv.advantage (hhs_signature G X M n).unforgeable_experiment ≤
+--     (mocked_unforgeable_adversary adv).advantage mocked_unforgeable_experiment :=
+-- begin
+--   sorry
+-- end
 
 end hhs_signature

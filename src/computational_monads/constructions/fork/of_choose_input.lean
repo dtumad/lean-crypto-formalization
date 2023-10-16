@@ -13,6 +13,8 @@ that chooses a query given a result of the computation.
 This is often more useful than the base adversary, which expects a query index
 rather than the actual inputs and outputs of the queries.
 Done using a simulation with a logging oracle.
+
+TODO!!!!: Think we just ignore this for now
 -/
 
 
@@ -28,17 +30,17 @@ section of_choose_input
 
 open oracle_comp
 
-def of_choose_input (adv : sec_adversary spec α β)
-  (i : spec.ι) (choose_input : α → β → spec.domain i × spec.range i) :
-  fork_adversary spec α (β × query_log spec) i :=
-{ run := λ y, simulate loggingₛₒ (adv.run y) ∅,
-  choose_fork := λ y z, let inp := choose_input y z.1 in
-    if inp ∈ z.2 i then some ↑(list.index_of inp (z.2 i)) else none,
-  qb := adv.qb,
-  -- q_eq_bound := by simp only [query_count.get_count_increment, eq_self_iff_true, if_true],
-  -- qb_is_bound := λ y, logging_oracle.queries_at_most_simulate _ _
-  --   (queries_at_most_trans _ _ _ (adv.qb_is_bound y) (indexed_list.le_add_values _ _)) _
-    }
+-- def of_choose_input (adv : sec_adversary spec α β)
+--   (i : spec.ι) (choose_input : α → β → spec.domain i × spec.range i) :
+--   fork_adversary spec α (β × query_log spec) i :=
+-- { run := λ y, simulate loggingₛₒ (adv.run y) ∅,
+--   choose_fork := λ y z, let inp := choose_input y z.1 in
+--     if inp ∈ z.2 i then some ↑(list.index_of inp (z.2 i)) else none,
+--   qb := adv.qb,
+--   -- q_eq_bound := by simp only [query_count.get_count_increment, eq_self_iff_true, if_true],
+--   -- qb_is_bound := λ y, logging_oracle.queries_at_most_simulate _ _
+--   --   (queries_at_most_trans _ _ _ (adv.qb_is_bound y) (indexed_list.le_add_values _ _)) _
+--     }
 
 variables (adv : sec_adversary spec α β)
   (choose_input : α → β → spec.domain i × spec.range i)

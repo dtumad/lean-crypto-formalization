@@ -34,7 +34,7 @@ noncomputable def hhs_signature (G X M : Type) [decidable_eq M]
     -- Random oracle allows a commitment to be mapped to a list of bools
   random_spec := (vector X n × M) ↦ₒ vector bool n,
   -- Choose a public key by picking a random base point `x₀` and secret key `sk` (`pk` is forced).
-  gen := λ _, do {x₀ ←$ᵗ X, sk ←$ᵗ G, return ((x₀, sk +ᵥ x₀), sk)},
+  gen := λ u, do {x₀ ←$ᵗ X, sk ←$ᵗ G, return ((x₀, sk +ᵥ x₀), sk)},
   -- Sign a message by choosing `n` random commitments, and giving secret key proofs for each.
   sign := λ ⟨⟨⟨x₀, pk⟩, sk⟩, m⟩,
     do {(cs : vector G n) ← repeat ($ᵗ G) n,

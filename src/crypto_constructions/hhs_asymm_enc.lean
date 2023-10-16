@@ -57,15 +57,11 @@ begin
   rw [asymm_enc_alg.sound_iff_support_decrypt_eq],
   rintros m ⟨x₀, pk⟩ sk ⟨c₁, c₂⟩ hks hσ,
   have hpk : sk +ᵥ x₀ = pk,
-  by simpa only [keygen_apply, support_bind, support_uniform_select_fintype, set.top_eq_univ,
-    set.mem_univ, support_bind_return, set.image_univ, set.Union_true, set.mem_Union,
-    set.mem_range, prod.mk.inj_iff, exists_eq_right, exists_eq_left] using hks,
+  by simpa using hks,
   have hc : ∃ g : G, g +ᵥ x₀ = c₁ ∧ m * (g +ᵥ (sk +ᵥ x₀)) = c₂,
-  by simpa only [← hpk, encrypt_apply, support_bind_return, support_uniform_select_fintype,
-    set.top_eq_univ, set.image_univ, set.mem_range, prod.mk.inj_iff] using hσ,
+  by simpa [← hpk] using hσ,
   obtain ⟨g, hc₁, hc₂⟩ := hc,
-  simp only [← hc₁, ← hc₂, decrypt_apply, support_return, set.singleton_eq_singleton_iff,
-    vadd_comm sk g x₀, mul_div_cancel''],
+  simp [← hc₁, ← hc₂, vadd_comm sk g x₀],
 end
 
 end sound
@@ -83,7 +79,7 @@ noncomputable def reduction (adv : (hhs_elgamal G X).ind_cpa_adversary) :
       b' ← adv.distinguish ((x₀, x₁), m₁, m₂,
         (x₂, (if b then m₁ else m₂) * x₃)),
       return (b = b') },
-  qb := adv.qb + (query_count.of_nat (1 : ℕ) 1)}
+  qb := adv.qb + (query_count.of_nat (sum.inl (1 : ℕ)) 1)}
 
 theorem reduction_advantage (adv : (hhs_elgamal G X).ind_cpa_adversary) :
   adv.advantage / 2 ≤ (reduction adv).advantage :=

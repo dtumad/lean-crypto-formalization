@@ -28,9 +28,10 @@ The function `choose_fork` takes an input and output pair, and returns an index 
 queries should be forked (see `of_choose_input` to do this from a chosen query input value). -/
 structure fork_adversary (spec : oracle_spec) (α β : Type)
   (i : spec.ι) extends sec_adversary spec α β :=
-(choose_fork : α → β → option (fin (qb.get_count i).succ))
+(choose_fork : α → β → option (fin (qb.get_count (sum.inr i)).succ))
 
-@[inline, reducible] def fork_adversary.q (adv : fork_adversary spec α β i) := adv.qb.get_count i
+@[inline, reducible] def fork_adversary.q (adv : fork_adversary spec α β i) :=
+adv.qb.get_count (sum.inr i)
 
 -- noncomputable def fork_adversary.cf_experiment (adv : fork_adversary spec α β i) (inp_gen : oracle_comp spec α) :
 --   base_sec_experiment spec α β :=
@@ -75,7 +76,7 @@ adv.advantage (adv.cf_experiment inp_gen)
 structure run_result (adv : fork_adversary spec α β i) :=
 (fork_point : option (fin adv.q.succ))
 (side_output : β)
-(seed : spec.query_seed)
+(seed : (uniform_selecting ++ spec).query_seed)
 
 namespace run_result
 
@@ -83,9 +84,9 @@ variable {adv : fork_adversary spec α β i}
 
 def get_fp (rr : run_result adv) : fin adv.q.succ := rr.fork_point.get_or_else 0
 def chosen_fork (rr : run_result adv) : option (spec.range i) :=
-(rr.seed i).nth rr.get_fp
-def shared_seed (rr : run_result adv) : spec.query_seed :=
-rr.seed.take_at_index i rr.get_fp
+(rr.seed (sum.inr i)).nth rr.get_fp
+def shared_seed (rr : run_result adv) : (uniform_selecting ++ spec).query_seed :=
+rr.seed.take_at_index (sum.inr i) rr.get_fp
 
 end run_result
 
@@ -156,12 +157,12 @@ and the seed at that index differs with the other -/
 def fork_success (fr : fork_result adv) : bool :=
 match fr.fork_point₁ with
 | none := false
-| some fp := fr.fork_point₂ = some fp ∧ fr.seed₁.value_differs fr.seed₂ i fp
+| some fp := fr.fork_point₂ = some fp ∧ fr.seed₁.value_differs fr.seed₂ (sum.inr i) fp
 end
 
 lemma fork_success_iff_exists (fr : fork_result adv) : fork_success fr ↔
   ∃ fp : fin adv.q.succ, fr.fork_point₁ = some fp ∧ fr.fork_point₂ = some fp
-    ∧ fr.seed₁.value_differs fr.seed₂ i fp :=
+    ∧ fr.seed₁.value_differs fr.seed₂ (sum.inr i) fp :=
 begin
   rcases fr with ⟨⟨fp₁, z₁, seed₁⟩, ⟨fp₂, z₂, seed₂⟩⟩,
   cases fp₁; simp [fork_success]
@@ -172,21 +173,21 @@ end success
 namespace fork_adversary
 
 @[inline, reducible] def fresh_query_count (adv : fork_adversary spec α β i)
-  (fp : fin adv.q.succ) : query_count spec :=
-query_count.of_nat i (adv.q.succ - fp)
+  (fp : fin adv.q.succ) : query_count (uniform_selecting ++ spec) :=
+query_count.of_nat (sum.inr i) (adv.q.succ - fp)
 
 @[inline, reducible] def shared_query_count (adv : fork_adversary spec α β i)
-  (fp : fin adv.q.succ) : query_count spec :=
-adv.qb.take_at_index i fp
+  (fp : fin adv.q.succ) : query_count (uniform_selecting ++ spec) :=
+adv.qb.take_at_index (sum.inr i) fp
 
 section seed_and_run
 
 -- TODO!!!: this is really weird
-variable [is_sub_spec (uniform_selecting ++ ∅) spec]
+variable [is_sub_spec uniform_selecting spec]
 
 noncomputable def seed_and_run (adv : fork_adversary spec α β i)
-  (y : α) (init_seed : spec.query_seed) :
-  oracle_comp (spec) (run_result adv) :=
+  (y : α) (init_seed : (uniform_selecting ++ spec).query_seed) :
+  prob_comp spec (run_result adv) :=
 do {fresh_seed ← generate_seed (adv.qb - init_seed),
   z ← simulate' seededₛₒ (adv.run y) (init_seed + fresh_seed),
   return (run_result.mk (adv.choose_fork y z) z (init_seed + fresh_seed))}
@@ -194,7 +195,7 @@ do {fresh_seed ← generate_seed (adv.qb - init_seed),
 variables (adv : fork_adversary spec α β i) (y : α)
 
 lemma generate_seed_bind_seed_and_run_dist_equiv
-  (qc : spec.query_count) (hqc : qc ≤ adv.qb) :
+  (qc : (uniform_selecting ++ spec).query_count) (hqc : qc ≤ adv.qb) :
   do {qs ← ↑(generate_seed qc), adv.seed_and_run y qs} ≃ₚ adv.seed_and_run y ∅ :=
 begin
   simp [seed_and_run],
@@ -218,7 +219,7 @@ begin
   -- rw_dist_equiv [seeded_oracle.generate_seed_bind_simulate'_dist_equiv]
 end
 
-lemma to_query_count_of_mem_support_seed_and_run (qs : spec.query_seed)
+lemma to_query_count_of_mem_support_seed_and_run (qs : (uniform_selecting ++ spec).query_seed)
   (rr : run_result adv) (hrr : rr ∈ (adv.seed_and_run y qs).support)
   (h : ↑qs ≤ adv.qb) : rr.seed.to_query_count = adv.qb :=
 begin
@@ -236,7 +237,7 @@ begin
   simpa [indexed_list.get_count_to_query_count] using this,
 end
 
-lemma take_to_count_seed_eq_seed (qs : spec.query_seed)
+lemma take_to_count_seed_eq_seed (qs : (uniform_selecting ++ spec).query_seed)
   (rr : run_result adv) (hrr : rr ∈ (adv.seed_and_run y qs).support) :
   rr.seed.take_to_count ↑qs = qs :=
 begin
@@ -246,7 +247,7 @@ begin
   simp only [hzrr, indexed_list.take_to_count_add_left],
 end
 
-lemma fork_point_eq_choose_fork (qs : spec.query_seed)
+lemma fork_point_eq_choose_fork (qs : (uniform_selecting ++ spec).query_seed)
   (rr : run_result adv) (hrr : rr ∈ (adv.seed_and_run y qs).support) :
   rr.fork_point = adv.choose_fork y rr.side_output :=
 begin

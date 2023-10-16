@@ -69,7 +69,7 @@ exactly the oracles available to the signature algorithms themselves -/
 /-- Simulate the basic oracles for the signature, using `random_oracle` to simulate the
 random oracle and preserving the `uniform_selecting` oracle as is. -/
 noncomputable def baseₛₒ (sig : signature) :
-  sim_oracle sig.base_spec (uniform_selecting ++ ∅) (sig.random_spec.query_cache) :=
+  sim_oracle sig.base_spec (uniform_selecting) (sig.random_spec.query_cache) :=
 sim_oracle.mask_state (idₛₒ ++ₛ randomₛₒ)
   (equiv.punit_prod sig.random_spec.query_cache)
 
@@ -116,21 +116,21 @@ section simulate_random_oracle
 Allow for any initial random  oracle cache, usually it will be empty before any other queries.
 This is assumed to be the "correct" way to generate a key, at least for security property. -/
 noncomputable def simulate_gen (sig : signature) (cache : sig.random_spec.query_cache) :
-  prob_comp ((sig.PK × sig.SK) × sig.random_spec.query_cache) :=
+  oracle_comp uniform_selecting ((sig.PK × sig.SK) × sig.random_spec.query_cache) :=
 simulate sig.baseₛₒ (sig.gen ()) cache
 
 /-- Run the signing algorithm using a random oracle initialized to `cache`.
 This is assumed to be the "correct" way to sign a message, at least for security properties. -/
 noncomputable def simulate_sign (sig : signature) (cache : sig.random_spec.query_cache)
   (pk : sig.PK) (sk : sig.SK) (m : sig.M) :
-  prob_comp (sig.S × sig.random_spec.query_cache) :=
+  oracle_comp uniform_selecting (sig.S × sig.random_spec.query_cache) :=
 simulate sig.baseₛₒ (sig.sign ((pk, sk), m)) cache
 
 /-- Run the verification algorithm using a random oracle initialized to `cache`.
 This is assumed to be the "correct" way to verify signatures, at least for security properties. -/
 noncomputable def simulate_verify (sig : signature) (cache : sig.random_spec.query_cache)
   (pk : sig.PK) (m : sig.M) (σ : sig.S) :
-  prob_comp (bool × sig.random_spec.query_cache)  :=
+  oracle_comp uniform_selecting (bool × sig.random_spec.query_cache)  :=
 simulate sig.baseₛₒ (sig.verify (pk, m, σ)) cache
 
 variables (sig : signature) (cache : sig.random_spec.query_cache)
