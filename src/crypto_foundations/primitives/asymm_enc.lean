@@ -19,7 +19,7 @@ open_locale big_operators ennreal
 We assume that decryption can be done with only the secret keys.
 
 TODO: think about ways that we could allow random oracles in a usable way,
-assuming that in some cases there are no actual oracles (using `[]ₒ` makes it a hassle).-/
+assuming that in some cases there are no actual oracles (using `∅` makes it a hassle as of now).-/
 structure asymm_enc_alg (M PK SK C : Type) :=
 (keygen : unit → prob_comp (PK × SK))
 (encrypt : M × PK → prob_comp C)

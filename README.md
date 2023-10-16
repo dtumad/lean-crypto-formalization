@@ -17,7 +17,7 @@ Non-deterministic computation is defined as the special case of having access to
 A number of common oracle sets are pre-defined in the library, including:
 * `coin_spec` is a single oracle for flipping a coin.
 * `T ↦ₒ U` is a single oracle with input type `T` and output type `U`.
-* `[]ₒ` gives access to no oracles at all.
+* `∅` gives access to no oracles at all.
 * `spec₁ ++ spec₂` has access to all oracles of the two given oracle sets.
 
 Given some `spec : oracle_spec` and `α : Type`, `oracle_comp spec α` is the type of computations with the oracles given in `spec` and a final output of type `α`.

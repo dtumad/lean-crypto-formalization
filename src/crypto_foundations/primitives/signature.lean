@@ -24,7 +24,7 @@ Unforgeable is defined to be the property that any adversary with access to a si
 cannot forge a valid message/signature pair with more than negligable advantage.
 
 Note that the schemes assume algorithms have access to a shared random oracle.
-Signature schemes that don't need this can provide the empty spec `[]ₒ`,
+Signature schemes that don't need this can provide the empty spec `∅`,
   which has no way to actually be queried
 -/
 
@@ -34,7 +34,7 @@ open oracle_comp oracle_spec prod
 /-- Signature on messages `M`, public and secret keys `PK` and `SK`, signatures of type `S`.
   We model the algorithms as having access to a uniform selection oracle,
     and a set of random oracles that the algorithm has access to.
-  If not in the random oracle model, can just take `random_oracles := []ₒ`, the empty `oracle_spec`
+  If not in the random oracle model, can just take `random_oracles := ∅`, the empty `oracle_spec`
   We also bundle the polynomial complexity of the algorithms into the structure. -/
 structure signature := -- TODO: signature_alg?
 -- Types of the possible messages, public keys, secret keys, and signatures

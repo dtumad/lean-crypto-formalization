@@ -48,7 +48,7 @@ section empty_spec
 
 /-- Coerce a computation with no oracles to one with any potential set of oracles. -/
 @[priority std.priority.default+101]
-instance is_sub_spec_empty_spec (spec : oracle_spec) : is_sub_spec []ₒ spec :=
+instance is_sub_spec_empty_spec (spec : oracle_spec) : is_sub_spec ∅ spec :=
 { to_fun := λ i, empty.elim i,
   to_fun_equiv := λ i, empty.elim i }
 

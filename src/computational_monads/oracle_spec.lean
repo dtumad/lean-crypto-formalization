@@ -18,8 +18,8 @@ We choose to include `decidable_eq` assumptions for the types in the structure r
 as further typeclasses on `oracle_spec` for simplicity, but generally these could be seperated.
 
 We also define a number of basic constructions for common oracles:
-- `singleton_spec` represents a single oracle with a specified input and output type.
-- `empty_spec` represents a lack of any oracles.
+- `singleton_spec` represents a single oracle with a specified input and output type (`T →ₒ U`).
+- `empty_spec` represents a lack of any oracles (represented as `∅`).
 - `append` represents bringing together two sets of oracles into one combined set of oracles.
 - `coin_spec` represents access to a coin flipping oracle
 - `uniform_selecting` represents access to a uniformly random oracle on a numeric range.
@@ -74,11 +74,12 @@ We use `unit` for the input and output types but this is just a dummy value. -/
   range_decidable_eq := λ i, i.elim,
   range_fintype := λ i, i.elim }
 
-notation `[]ₒ` := empty_spec
+instance : is_empty empty_spec.ι := empty.is_empty
+instance (i : empty_spec.ι) : unique (empty_spec.domain i) := punit.unique
+instance (i : empty_spec.ι) : unique (empty_spec.range i) := punit.unique
 
-instance empty_spec_ι_subsingleton : subsingleton empty_spec.ι := empty.subsingleton
-
-instance inhabited : inhabited oracle_spec := ⟨[]ₒ⟩
+instance : has_emptyc oracle_spec := ⟨empty_spec⟩
+instance inhabited : inhabited oracle_spec := ⟨∅⟩
 
 /-- `oracle_spec` representing access to a single oracle with input type `T` and output type `U`.
 We use the `unit` type as the index since there is exactly one unique oracle available. -/
