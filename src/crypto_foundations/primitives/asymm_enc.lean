@@ -21,9 +21,9 @@ We assume that decryption can be done with only the secret keys.
 TODO: think about ways that we could allow random oracles in a usable way,
 assuming that in some cases there are no actual oracles (using `∅` makes it a hassle as of now).-/
 structure asymm_enc_alg (M PK SK C : Type) :=
-(keygen : unit → prob_comp (PK × SK))
-(encrypt : M × PK → prob_comp C)
-(decrypt : C × SK → prob_comp M)
+(keygen : unit → prob_comp ∅ (PK × SK))
+(encrypt : M × PK → prob_comp ∅ C)
+(decrypt : C × SK → prob_comp ∅ M)
 
 class asymm_enc_alg.efficient {M PK SK C : Type}
   (asymm_enc : asymm_enc_alg M PK SK C) :=
@@ -49,7 +49,7 @@ section sound
 --   exp_so := idₛₒ }
 
 def completeness_experiment (asymm_enc : asymm_enc_alg M PK SK C) [decidable_eq M] :
-  soundness_experiment uniform_selecting (PK × SK) M unit :=
+  soundness_experiment (uniform_selecting ++ ∅) (PK × SK) M unit :=
 { inp_gen := asymm_enc.keygen (),
   is_valid := λ ⟨pk, sk⟩ m,
     do {σ ← asymm_enc.encrypt (m, pk),
@@ -59,7 +59,7 @@ def completeness_experiment (asymm_enc : asymm_enc_alg M PK SK C) [decidable_eq 
 
 /-- Generate a random key, then return the result of encrypting and decrypting `m`. -/
 def soundness_experiment (enc_alg : asymm_enc_alg M PK SK C)
-  (m : M) : oracle_comp uniform_selecting M := do
+  (m : M) : oracle_comp (uniform_selecting ++ ∅) M := do
 { ⟨pk, sk⟩ ← enc_alg.keygen (),
   σ ← enc_alg.encrypt (m, pk),
   enc_alg.decrypt (σ, sk) }
@@ -90,12 +90,12 @@ the first message or the second message. -/
 structure ind_cpa_adversary {M PK C : Type}
   (enc_alg : asymm_enc_alg M PK SK C) extends
   sec_adversary uniform_selecting PK (M × M) :=
-(distinguish : PK × M × M × C → prob_comp bool)
+(distinguish : PK × M × M × C → prob_comp ∅ bool)
 
 def asymm_enc_alg.ind_cpa_experiment
   (enc_alg : asymm_enc_alg M PK SK C)
   (adv : enc_alg.ind_cpa_adversary) :
-  oracle_comp uniform_selecting bool := do
+  prob_comp ∅ bool := do
 { ⟨pk, sk⟩ ← enc_alg.keygen (),
   ⟨m₁, m₂⟩ ← adv.run pk, b ← coin,
   c ← enc_alg.encrypt (if b then m₁ else m₂, pk),

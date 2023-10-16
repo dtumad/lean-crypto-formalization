@@ -48,7 +48,7 @@ example (adv : sec_adversary spec α β)
   (choose_input : α → β → spec.domain i × spec.range i)
   [uniform_selecting ⊂ₒ spec] : sorry :=
 begin
-  have := fork (of_choose_input adv i choose_input),
+  -- have := fork (of_choose_input adv i choose_input),
   sorry,
 end
 

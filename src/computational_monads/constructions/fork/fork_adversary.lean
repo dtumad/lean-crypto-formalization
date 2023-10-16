@@ -181,11 +181,12 @@ adv.qb.take_at_index i fp
 
 section seed_and_run
 
-variable [is_sub_spec uniform_selecting spec]
+-- TODO!!!: this is really weird
+variable [is_sub_spec (uniform_selecting ++ ∅) spec]
 
 noncomputable def seed_and_run (adv : fork_adversary spec α β i)
   (y : α) (init_seed : spec.query_seed) :
-  oracle_comp spec (run_result adv) :=
+  oracle_comp (spec) (run_result adv) :=
 do {fresh_seed ← generate_seed (adv.qb - init_seed),
   z ← simulate' seededₛₒ (adv.run y) (init_seed + fresh_seed),
   return (run_result.mk (adv.choose_fork y z) z (init_seed + fresh_seed))}
@@ -197,10 +198,11 @@ lemma generate_seed_bind_seed_and_run_dist_equiv
   do {qs ← ↑(generate_seed qc), adv.seed_and_run y qs} ≃ₚ adv.seed_and_run y ∅ :=
 begin
   simp [seed_and_run],
-  rw_dist_equiv [generate_seed_bind_split_of_le _ _ hqc],
-  pairwise_dist_equiv with qs hqs,
-  rw [support_coe_sub_spec] at hqs,
-  rw [← coe_query_count_of_mem_support_generate_seed hqs, indexed_list.coe_query_count_eq],
+  sorry,
+  -- rw_dist_equiv [generate_seed_bind_split_of_le _ _ hqc],
+  -- pairwise_dist_equiv with qs hqs,
+  -- rw [support_coe_sub_spec] at hqs,
+  -- rw [← coe_query_count_of_mem_support_generate_seed hqs, indexed_list.coe_query_count_eq],
 end
 
 lemma prob_output_fork_point_map_seed_and_run (fp : fin adv.q.succ) :
@@ -212,7 +214,8 @@ begin
     query_count.sub_empty, indexed_list.empty_add],
   refine trans (bind_bind_dist_equiv_assoc _ _ _) _,
   rw [oracle_comp.map_eq_bind_return_comp],
-  rw_dist_equiv [seeded_oracle.generate_seed_bind_simulate'_dist_equiv]
+  sorry,
+  -- rw_dist_equiv [seeded_oracle.generate_seed_bind_simulate'_dist_equiv]
 end
 
 lemma to_query_count_of_mem_support_seed_and_run (qs : spec.query_seed)

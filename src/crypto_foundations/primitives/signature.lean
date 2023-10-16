@@ -46,9 +46,9 @@ structure signature := -- TODO: signature_alg?
 -- Set of random oracles available to the signature algorithms
 (random_spec : oracle_spec)
 -- The actual algorithms of the signature scheme.
-(gen : unit → oracle_comp (uniform_selecting ++ random_spec) (PK × SK))
-(sign : (PK × SK) × M → oracle_comp (uniform_selecting ++ random_spec) S)
-(verify : PK × M × S → oracle_comp (uniform_selecting ++ random_spec) bool)
+(gen : unit → prob_comp random_spec (PK × SK))
+(sign : (PK × SK) × M → prob_comp random_spec S)
+(verify : PK × M × S → prob_comp random_spec bool)
 
 namespace signature
 
@@ -69,7 +69,7 @@ exactly the oracles available to the signature algorithms themselves -/
 /-- Simulate the basic oracles for the signature, using `random_oracle` to simulate the
 random oracle and preserving the `uniform_selecting` oracle as is. -/
 noncomputable def baseₛₒ (sig : signature) :
-  sim_oracle sig.base_spec uniform_selecting (sig.random_spec.query_cache) :=
+  sim_oracle sig.base_spec (uniform_selecting ++ ∅) (sig.random_spec.query_cache) :=
 sim_oracle.mask_state (idₛₒ ++ₛ randomₛₒ)
   (equiv.punit_prod sig.random_spec.query_cache)
 

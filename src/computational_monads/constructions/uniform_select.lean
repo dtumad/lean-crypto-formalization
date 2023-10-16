@@ -29,23 +29,23 @@ open_locale big_operators ennreal
 
 /-- Shorthand for a computation that has a single oracle, allowing uniformly random sampling.
 Writting as a inlined expression to avoid needing lemma duplications with regular `oracle_comp`. -/
-@[inline, reducible] def prob_comp (α : Type) : Type 1 :=
-oracle_comp uniform_selecting α
+-- @[inline, reducible] def prob_comp (α : Type) : Type 1 :=
+-- oracle_comp uniform_selecting α
 
-@[inline, reducible] def prob_comp' (spec : oracle_spec) (α : Type) : Type 1 :=
+@[inline, reducible] def prob_comp (spec : oracle_spec) (α : Type) : Type 1 :=
 oracle_comp (uniform_selecting ++ spec) α
 
 section uniform_fin
 
 /-- Randomly choose a number `0 ≤ i < n` by querying the uniform selection oracle.
   We implicitly use a `succ` call for the resulting type since `fin 0` is unihabited as a type -/
-def uniform_fin (n : ℕ) : prob_comp (fin $ n + 1) :=
+def uniform_fin (n : ℕ) : oracle_comp uniform_selecting (fin $ n + 1) :=
 query n ()
 
 notation `$[0..` n `]` := uniform_fin n
 
 variables (n : ℕ) {m : ℕ} (i : fin m.succ)
-  (oa : (fin m.succ) → prob_comp α) (x : α)
+  (oa : (fin m.succ) → oracle_comp uniform_selecting α) (x : α)
 
 section support
 
@@ -61,7 +61,7 @@ end support
 
 section fin_support
 
-@[simp] lemma fin_support_uniform_fin : fin_support $[0..n] = finset.univ := fin_support_query n ()
+@[simp] lemma fin_support_uniform_fin : fin_support $[0..n] = finset.univ := fin_support_query _ ()
 
 lemma mem_fin_support_uniform_fin : i ∈ fin_support $[0..m] :=
 (fin_support_uniform_fin i) ▸ finset.mem_univ i
@@ -96,7 +96,7 @@ section prob_event
 @[simp] lemma prob_event_uniform_fin (e : set (fin $ m + 1)) [decidable_pred e] :
   ⁅e | $[0..m]⁆ = (fintype.card e) / (m + 1) :=
 by simp only [uniform_fin, prob_event_query_eq_div, uniform_selecting_range,
-  fintype.card_fin, nat.cast_add, nat.cast_one]
+  fintype.card_fin, nat.cast_add, nat.cast_one, append.range_inl]
 
 @[simp] lemma prob_event_uniform_fin_bind_eq_tsum (e : set α) :
   ⁅e | $[0..m] >>= oa⁆ = (∑' i, ⁅e | oa i⁆) / m.succ :=
@@ -120,13 +120,13 @@ section uniform_select
 /-- `has_uniform_select spec α β` means that for each element `x : α` there is a computation
 `select x` that returns an element of type `β`, using a `uniform_selecting` oracle. -/
 class has_uniform_select (α β : Type) :=
-(select : α → prob_comp' ∅ β)
+(select : α → prob_comp ∅ β)
 
 notation `$ᵘ` x := has_uniform_select.select x
 
 /-- Randomly choose a number `0 ≤ i < n` by querying the uniform selection oracle.
   We implicitly use a `succ` call for the resulting type since `fin 0` is unihabited as a type -/
-def uniform_fin' (n : ℕ) : prob_comp' ∅ (fin $ n + 1) :=
+def uniform_fin' (n : ℕ) : prob_comp ∅ (fin $ n + 1) :=
 @query (uniform_selecting ++ ∅) (sum.inl n : (uniform_selecting ++ ∅).ι) ()
 
 instance has_uniform_select_vector [decidable_eq α] {n : ℕ} :
@@ -144,12 +144,12 @@ section uniform_select_vector
 /-- Randomly select an element of a vector by using `uniform_of_fin`.
   Again we need to use `succ` for the vectors type to avoid sampling an empty vector -/
 def uniform_select_vector [decidable_eq α] {n : ℕ} (v : vector α (n + 1)) :
-  prob_comp α := v.nth <$> $[0..n]
+  oracle_comp uniform_selecting α := v.nth <$> $[0..n]
 
 notation `$ᵛ` v := uniform_select_vector v
 
 variables [decidable_eq α] {n : ℕ} (v : vector α (n + 1))
-  (ob : α → prob_comp β) (x : α) (y : β)
+  (ob : α → oracle_comp uniform_selecting β) (x : α) (y : β)
 
 section support
 
@@ -267,14 +267,14 @@ section uniform_select_list
 
 /-- If a list isn't empty, we can convert it to a vector and then sample from it.-/
 def uniform_select_list [decidable_eq α] (xs : list α) (h : ¬ xs.empty) :
-  prob_comp α :=
+  oracle_comp uniform_selecting α :=
 let v : vector α (xs.length.pred.succ) := ⟨xs, symm $ nat.succ_pred_eq_of_pos
   (list.length_pos_of_ne_nil (λ h', h $ list.empty_iff_eq_nil.2 h'))⟩ in uniform_select_vector v
 
 notation `$ˡ` := uniform_select_list
 
 variables [decidable_eq α] (xs : list α) (x : α) (y : β) (h : ¬ xs.empty)
-  (oa : prob_comp α) (ob : α → prob_comp β)
+  (oa : oracle_comp uniform_selecting α) (ob : α → oracle_comp uniform_selecting β)
 
 /-- Assuming we sample from `[]`, we can treat this as any other computation,
 using the provided contradictory proof that `[]` is non-empty. -/
@@ -380,18 +380,18 @@ section uniform_select_finset
 
 /-- We can sample randomly from a `finset` by converting to a list and then sampling that. -/
 noncomputable def uniform_select_finset [decidable_eq α]
-  (bag : finset α) (h : bag.nonempty) : prob_comp α :=
+  (bag : finset α) (h : bag.nonempty) : oracle_comp uniform_selecting α :=
 uniform_select_list bag.to_list (finset.nonempty.not_empty_to_list h)
 
 notation `$ˢ` := uniform_select_finset
 
 variables [decidable_eq α] (bag : finset α) (h : bag.nonempty)
-  (ob : α → prob_comp β) (x : α) (y : β)
+  (ob : α → oracle_comp uniform_selecting β) (x : α) (y : β)
 
 /-- Assuming we sample from `∅`, we can treat this as any other computation,
 using the provided contradictory proof that `∅` is non-empty. -/
 lemma uniform_select_finset_empty (h : (∅ : finset α).nonempty)
-  (oa : prob_comp α) : $ˢ ∅ h = oa :=
+  (oa : oracle_comp uniform_selecting α) : $ˢ ∅ h = oa :=
 false.elim (finset.nonempty.ne_empty h rfl)
 
 section support
@@ -472,13 +472,13 @@ section uniform_select_fintype
 /-- We can select randomly from a fintyp by using the `finset` corresponding to the `fintype`.
   Again we need to use axiom of choice so this operation is noncomputable. -/
 noncomputable def uniform_select_fintype (α : Type) [fintype α] [nonempty α]
-  [decidable_eq α] : prob_comp α :=
+  [decidable_eq α] : oracle_comp uniform_selecting α :=
 uniform_select_finset finset.univ finset.univ_nonempty
 
 notation `$ᵗ` := uniform_select_fintype
 
 variables (α) [fintype α] [nonempty α] [decidable_eq α]
-  (ob : α → prob_comp β) (x : α) (y : β)
+  (ob : α → oracle_comp uniform_selecting β) (x : α) (y : β)
 
 section support
 

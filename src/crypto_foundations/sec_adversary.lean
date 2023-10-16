@@ -35,7 +35,7 @@ to return a message that fails to decrypt properly after encryption (as checked 
 structure soundness_experiment (exp_spec : oracle_spec) (α β S : Type) :=
 (inp_gen : oracle_comp exp_spec α)
 (is_valid : α → β → oracle_comp exp_spec bool)
-(exp_so : sim_oracle exp_spec uniform_selecting S)
+(exp_so : sim_oracle exp_spec (uniform_selecting ++ ∅) S)
 
 /-- A `sec_experiment adv_spec exp_spec α β γ S S'` is a security experiment for a `sec_adversary`,
 where `α` is the input type to the adversary, `β` is the result type of the adversary,
@@ -45,7 +45,7 @@ structure sec_experiment (adv_spec exp_spec : oracle_spec) (α β γ S S' : Type
 (inp_gen : oracle_comp exp_spec (α × γ))
 (is_valid : α × γ → β × S → oracle_comp exp_spec bool)
 (adv_so : α × γ → sim_oracle adv_spec exp_spec S)
-(exp_so : sim_oracle exp_spec uniform_selecting S')
+(exp_so : sim_oracle exp_spec (uniform_selecting ++ ∅) S')
 
 /-- View a soundness experiment as a security experiment with no hidden information
 or adversary oracles. In this case we are merely testing that some property (almost) always holds.
@@ -186,7 +186,7 @@ def public_experiment {adv_spec exp_spec : oracle_spec} {α β S S' : Type}
   (inp_gen : oracle_comp exp_spec α)
   (adv_so : α → sim_oracle adv_spec exp_spec S)
   (is_valid : α → β → oracle_comp exp_spec bool)
-  (exp_so : sim_oracle exp_spec uniform_selecting S') :
+  (exp_so : sim_oracle exp_spec (uniform_selecting ++ ∅) S') :
   sec_experiment adv_spec exp_spec α β unit S S' :=
 { inp_gen := (λ x, (x, ())) <$> inp_gen,
   is_valid := λ x y, is_valid x.1 y.1,

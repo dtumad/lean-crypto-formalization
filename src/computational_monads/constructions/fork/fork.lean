@@ -20,7 +20,8 @@ variables {α β γ : Type} {spec spec' : oracle_spec} {i : spec.ι}
 
 namespace oracle_comp
 
-variable [is_sub_spec uniform_selecting spec]
+-- TODO!!!: weird
+variable [is_sub_spec (uniform_selecting ++ ∅) spec]
 
 noncomputable def fork (adv : fork_adversary spec α β i) :
   sec_adversary spec α (fork_result adv) :=
