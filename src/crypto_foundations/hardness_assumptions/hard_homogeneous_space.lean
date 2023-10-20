@@ -27,7 +27,7 @@ open oracle_comp oracle_spec
 /-- An `algorithmic_homogenous_space` is a homogenous space where operations are all `poly_time`.
 Uses mathlib's definition of an `add_torsor`, which is a bijective group action.
 We also assume `G` and `X` are finite types with decidable equality. -/
-class algorithmic_homogenous_space (G X : Type) [add_comm_group G] extends add_torsor G X :=
+class algorithmic_homogenous_space (G X : Type) [add_group G] extends add_torsor G X :=
 [fintype_G : fintype G] [fintype_X : fintype X]
 [inhabited_G : inhabited G] [inhabited_X : inhabited X]
 [decidable_eq_G : decidable_eq G] [decidable_eq_X : decidable_eq X]
@@ -40,7 +40,7 @@ class algorithmic_homogenous_space (G X : Type) [add_comm_group G] extends add_t
 
 namespace algorithmic_homogenous_space
 
-variables {G X : Type} [add_comm_group G] [algorithmic_homogenous_space G X]
+variables {G X : Type} [add_group G]
 
 instance fx [h : algorithmic_homogenous_space G X] : fintype X := h.fintype_X
 instance fg [h : algorithmic_homogenous_space G X] : fintype G := h.fintype_G
@@ -48,6 +48,10 @@ instance ix [h : algorithmic_homogenous_space G X] : inhabited X := h.inhabited_
 instance ig [h : algorithmic_homogenous_space G X] : inhabited G := h.inhabited_G
 instance dx [h : algorithmic_homogenous_space G X] : decidable_eq X := h.decidable_eq_X
 instance dg [h : algorithmic_homogenous_space G X] : decidable_eq G := h.decidable_eq_G
+
+variable [algorithmic_homogenous_space G X]
+
+section vectorization
 
 /-- An adversary for the vectorization game takes in a pair of base points `(x₁, x₂)`,
 and attempts to generate a vectorization, i.g. a vector `g` with `g +ᵥ x₂ = x₁`. -/
@@ -58,10 +62,14 @@ structure vectorization_adversary (G X : Type)
 The input generator randomly chooses the challenge points for the adversary,
 and a result is valid if it is exactly the vectorization of the challenge points. -/
 noncomputable def vectorization_experiment (G X : Type)
-  [add_comm_group G] [algorithmic_homogenous_space G X] :
+  [add_group G] [algorithmic_homogenous_space G X] :
   sec_experiment ∅ ∅ (X × X) G unit unit unit :=
 public_experiment ($ᵗ X ×ₘ $ᵗ X) (λ _, idₛₒ)
   (λ ⟨x₁, x₂⟩ g, return (g = x₁ -ᵥ x₂)) uniformₛₒ
+
+end vectorization
+
+section parallelization
 
 /-- An adversary for the parallelization game takes in a triple of base points `(x₁, x₂, x₃)`,
 and attempts to generate a parralelization, i.g. a vector `g` with `g +ᵥ x₂ = x₁`. -/
@@ -72,32 +80,61 @@ structure parallelization_adversary (G X : Type)
 The input generator randomly chooses the challenge points for the adversary,
 and a result is valid if it is exactly the parallelization of the challenge points. -/
 noncomputable def parallelization_experiment (G X : Type)
-  [add_comm_group G] [algorithmic_homogenous_space G X] :
+  [add_group G] [algorithmic_homogenous_space G X] :
   sec_experiment ∅ ∅ (X × X × X) X unit unit unit :=
 public_experiment ($ᵗ X ×ₘ $ᵗ X ×ₘ $ᵗ X) (λ _, idₛₒ)
   (λ ⟨x₁, x₂, x₃⟩ x₄, return (x₂ -ᵥ x₁ = x₄ -ᵥ x₃)) uniformₛₒ
 
-structure decisional_parallelization_adversary (G X : Type)
-  extends sec_adversary ∅ (X × X × X × X) bool
+end parallelization
+
+section decisional_parallelization
+
+/-- Takes in a set of four base points in `X`, attempting to decide if the fourth point
+is the correct parallelization of the first three points. -/
+structure decisional_parallelization_adversary (G X : Type) :=
+(run : X × X × X × X → oracle_comp uniform_selecting bool)
+
+variables (adv : decisional_parallelization_adversary G X)
+
+noncomputable def fair_decision_challenge
+  (adv : decisional_parallelization_adversary G X) :
+  oracle_comp uniform_selecting bool := do
+{ x₀ ←$ᵗ X, g₁ ←$ᵗ G, g₂ ←$ᵗ G,
+  adv.run (x₀, g₁ +ᵥ x₀, g₂ +ᵥ x₀, g₂ +ᵥ (g₁ +ᵥ x₀)) }
+
+noncomputable def unfair_decision_challenge
+  (adv : decisional_parallelization_adversary G X) :
+  oracle_comp uniform_selecting bool := do
+{ x₀ ←$ᵗ X, g₁ ←$ᵗ G, g₂ ←$ᵗ G, g₃ ←$ᵗ G,
+  bnot <$> adv.run (x₀, g₁ +ᵥ x₀, g₂ +ᵥ x₀, g₃ +ᵥ x₀) }
 
 /-- Analogue of the Decisional Diffie-Hellman problem. -/
-noncomputable def decisional_parallelization_experiment {G X : Type}
-  [add_comm_group G] [algorithmic_homogenous_space G X]
+noncomputable def decisional_parallelization_experiment
   (adv : decisional_parallelization_adversary G X) :
-  prob_comp ∅ bool :=
-do { x₀ ←$ᵗ X, g₁ ←$ᵗ G, g₂ ←$ᵗ G, b ← coin, x' ←$ᵗ X,
-  challenge ← return (if b then g₂ +ᵥ (g₁ +ᵥ x₀) else x'),
-  b' ← adv.run (x₀, g₁ +ᵥ x₀, g₂ +ᵥ x₀, challenge),
-  return (b = b') }
+  oracle_comp uniform_selecting bool := do
+{ b ←$ᵗ bool, -- For simplicity just run both experiments
+  b₁ ← fair_decision_challenge adv,
+  b₂ ← unfair_decision_challenge adv,
+  return (if b then b₁ else b₂) }
 
-namespace decisional_parallelization_adversary
-
-noncomputable def advantage {G X : Type}
-  [add_comm_group G] [algorithmic_homogenous_space G X]
+noncomputable def decisional_parallelization_adversary.advantage
   (adv : decisional_parallelization_adversary G X) : ℝ≥0∞ :=
-⁅= tt | decisional_parallelization_experiment adv⁆ - 1 / 2
+⁅= tt | decisional_parallelization_experiment adv⁆
 
-end decisional_parallelization_adversary
+lemma advantage_eq_prob_output_fair_add_prob_output_unfair
+  (adv : decisional_parallelization_adversary G X) :
+  adv.advantage = (⁅= tt | fair_decision_challenge adv⁆ +
+    ⁅= tt | unfair_decision_challenge adv⁆) / 2 :=
+begin
+  rw [decisional_parallelization_adversary.advantage,
+    decisional_parallelization_experiment, prob_output_uniform_bool_bind],
+  congr' 2,
+  { simp only [coe_sort_tt, if_true],
+    rw_dist_equiv [bind_const_dist_equiv, bind_return_id_dist_equiv] },
+  { simp only [coe_sort_ff, if_false, prob_output_bind_const, prob_output_bind_return_id] }
+end
+
+end decisional_parallelization
 
 -- /-- The adversary's advantage at vectorization is the average over all possible pairs of points
 -- of their advantage at vectorizing those specific points. -/
@@ -120,6 +157,9 @@ end decisional_parallelization_adversary
 --     sorry --by simp_rw [prob_event_eq_eq_prob_output]
 
 end algorithmic_homogenous_space
+
+
+------ Asymptotic Stuff: TODO: own file for that type of thing.
 
 open algorithmic_homogenous_space
 

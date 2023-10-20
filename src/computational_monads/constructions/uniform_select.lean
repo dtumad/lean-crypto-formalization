@@ -3,8 +3,7 @@ Copyright (c) 2022 Devon Tuma. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
-import computational_monads.distribution_semantics.map
-import computational_monads.distribution_semantics.query
+import computational_monads.prob_comp
 import to_mathlib.uniform_of_vector
 import data.vector.mem
 
@@ -26,14 +25,6 @@ variables {α β γ : Type}
 
 open oracle_spec pmf
 open_locale big_operators ennreal
-
-/-- Shorthand for a computation that has a single oracle, allowing uniformly random sampling.
-Writting as a inlined expression to avoid needing lemma duplications with regular `oracle_comp`. -/
--- @[inline, reducible] def prob_comp (α : Type) : Type 1 :=
--- oracle_comp uniform_selecting α
-
-@[inline, reducible] def prob_comp (spec : oracle_spec) (α : Type) : Type 1 :=
-oracle_comp (uniform_selecting ++ spec) α
 
 section uniform_fin
 
@@ -115,34 +106,32 @@ end prob_event
 
 end uniform_fin
 
-section uniform_select
+
+
+section has_uniform_select
 
 /-- `has_uniform_select spec α β` means that for each element `x : α` there is a computation
-`select x` that returns an element of type `β`, using a `uniform_selecting` oracle. -/
+`select x` that returns an element of type `β`, using a `uniform_selecting` oracle.
+TODO: need to figure out type inference on `β` issue -/
 class has_uniform_select (α β : Type) :=
-(select : α → prob_comp ∅ β)
+(select : α → oracle_comp uniform_selecting β)
+
 
 notation `$ᵘ` x := has_uniform_select.select x
 
-/-- Randomly choose a number `0 ≤ i < n` by querying the uniform selection oracle.
-  We implicitly use a `succ` call for the resulting type since `fin 0` is unihabited as a type -/
-def uniform_fin' (n : ℕ) : prob_comp ∅ (fin $ n + 1) :=
-@query (uniform_selecting ++ ∅) (sum.inl n : (uniform_selecting ++ ∅).ι) ()
+end has_uniform_select
 
-instance has_uniform_select_vector [decidable_eq α] {n : ℕ} :
-  has_uniform_select (vector α (n + 1)) α :=
-{ select := λ v, vector.nth v <$> (uniform_fin' n) }
 
-example [decidable_eq α] {n : ℕ}
-  (v : vector α (n + 1)) (x : α) :
-  ⁅= x | $ᵘ v⁆ = list.count x v.to_list / n := sorry
-
-end uniform_select
 
 section uniform_select_vector
 
 /-- Randomly select an element of a vector by using `uniform_of_fin`.
-  Again we need to use `succ` for the vectors type to avoid sampling an empty vector -/
+Again we need to use `succ` for the vectors type to avoid sampling an empty vector -/
+-- instance has_uniform_select_vector [decidable_eq α] {n : ℕ} :
+--   has_uniform_select (vector α (n + 1)) α :=
+-- { select := λ v, vector.nth v <$> (uniform_fin n) }
+
+
 def uniform_select_vector [decidable_eq α] {n : ℕ} (v : vector α (n + 1)) :
   oracle_comp uniform_selecting α := v.nth <$> $[0..n]
 
@@ -549,5 +538,35 @@ lemma uniform_select_fintype_dist_equiv_return {spec} {α : Type} [unique α] :
 by simp [dist_equiv.ext_iff, prob_output_query_eq_inv]
 
 end uniform_select_fintype
+
+
+-- TODO:
+lemma prob_output_uniform_bool_bind {α : Type}
+  (oa : bool → oracle_comp uniform_selecting α) (x : α) :
+  ⁅= x | $ᵗ bool >>= oa⁆ = (⁅= x | oa tt⁆ + ⁅= x | oa ff⁆) / 2 :=
+sorry
+
+lemma prob_output_uniform_bind_of_const {α β : Type} [fintype α] [nonempty α]
+  [decidable_eq α]
+  {ob : α → oracle_comp uniform_selecting β} {y : β} {m : ℝ≥0∞}
+  (hob : ∀ x, ⁅= y | ob x⁆ = m) :
+  ⁅= y | $ᵗ α >>= ob⁆ = m :=
+begin
+  sorry
+end
+
+
+lemma prob_output_bnot_map {spec : oracle_spec}
+  (oa : oracle_comp spec bool) :
+  ⁅= tt | bnot <$> oa⁆ = ⁅= ff | oa⁆ := sorry
+
+lemma prob_output_bind_mono_right {spec : oracle_spec} {α β : Type}
+  {oa : oracle_comp spec α} {ob ob' : α → oracle_comp spec β}
+  {y : β} (h : ∀ x, ⁅= y | ob x⁆ ≤ ⁅= y | ob' x⁆) :
+  ⁅= y | oa >>= ob⁆ ≤ ⁅= y | oa >>= ob'⁆ := sorry
+
+lemma bool_bind_dist_equiv_bool {spec : oracle_spec}
+  (oa : oracle_comp uniform_selecting bool) :
+  (do {b ←$ᵗ bool, b' ← oa, return (b = b' : bool)}) ≃ₚ ($ᵗ bool) := sorry
 
 end oracle_comp
