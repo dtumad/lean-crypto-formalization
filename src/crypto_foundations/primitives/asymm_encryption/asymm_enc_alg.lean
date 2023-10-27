@@ -70,18 +70,17 @@ structure ind_cpa_adversary (enc_alg : asymm_enc_alg M PK SK C) :=
 (run : PK → oracle_comp uniform_selecting (M × M))
 (distinguish : PK × (M × M) × C → oracle_comp uniform_selecting bool)
 
-
 structure sec_experiment' (spec : oracle_spec) (α β : Type) :=
 (inp_gen : oracle_comp spec α)
 (run : α → oracle_comp spec β)
 (is_valid : α × β → bool)
 
-noncomputable def advantage' {spec : oracle_spec} {α β : Type}
+noncomputable def sec_experiment'.advantage {spec : oracle_spec} {α β : Type}
   (exp : sec_experiment' spec α β) : ℝ≥0∞ :=
 ⁅= tt | do {x ← exp.inp_gen, y ← exp.run x,
   return (exp.is_valid (x, y))}⁆
 
-noncomputable def ind_cpa_experiment'
+noncomputable def ind_cpa_experiment
   {enc_alg : asymm_enc_alg M PK SK C}
   (adv : enc_alg.ind_cpa_adversary) :
   sec_experiment' uniform_selecting (PK × bool) bool :=
@@ -94,29 +93,42 @@ noncomputable def ind_cpa_experiment'
       adv.distinguish (pk, (m₁, m₂), c) },
   is_valid := λ ⟨⟨pk, b⟩, b'⟩, b = b' }
 
-/-- Generate keys, get message choices from adversary,
-flip a coin, encrypt corresponding message, see if adversary succeeds. -/
-noncomputable def ind_cpa_experiment (enc_alg : asymm_enc_alg M PK SK C)
+lemma ind_cpa_experiment_advantage_eq {enc_alg : asymm_enc_alg M PK SK C}
   (adv : enc_alg.ind_cpa_adversary) :
-  oracle_comp uniform_selecting bool := do
-{ pk ← prod.fst <$> enc_alg.keygen (),
-  ms ← adv.run pk, -- Run adversary to get a pair of messages
-  b ←$ᵗ bool, -- Choose which message to encrypt
-  c ← enc_alg.encrypt (if b then ms.1 else ms.2, pk),
-  b' ← adv.distinguish (pk, ms, c),
-  return (b = b') }
+  (ind_cpa_experiment adv).advantage = ⁅= tt | do
+    { pk ← prod.fst <$> enc_alg.keygen (),
+      ms ← adv.run pk,
+      b ←$ᵗ bool,
+      c ← enc_alg.encrypt (ite b ms.1 ms.2, pk),
+      b' ← adv.distinguish (pk, ms, c),
+      return (b = b' : bool) }⁆ :=
+begin
+  sorry,
+end
 
-lemma ind_cpa_experiment_dist_equiv (enc_alg : asymm_enc_alg M PK SK C)
-  (adv : enc_alg.ind_cpa_adversary) : enc_alg.ind_cpa_experiment adv ≃ₚ do
-    { pk ← prod.fst <$> enc_alg.keygen (), ms ← adv.run pk, b ←$ᵗ bool,
-      c ← enc_alg.encrypt (if b then ms.1 else ms.2, pk), b' ← adv.distinguish (pk, ms, c),
-      return (b = b') } := dist_equiv.rfl
+-- /-- Generate keys, get message choices from adversary,
+-- flip a coin, encrypt corresponding message, see if adversary succeeds. -/
+-- noncomputable def ind_cpa_experiment (enc_alg : asymm_enc_alg M PK SK C)
+--   (adv : enc_alg.ind_cpa_adversary) :
+--   oracle_comp uniform_selecting bool := do
+-- { pk ← prod.fst <$> enc_alg.keygen (),
+--   ms ← adv.run pk, -- Run adversary to get a pair of messages
+--   b ←$ᵗ bool, -- Choose which message to encrypt
+--   c ← enc_alg.encrypt (if b then ms.1 else ms.2, pk),
+--   b' ← adv.distinguish (pk, ms, c),
+--   return (b = b') }
+
+-- lemma ind_cpa_experiment_dist_equiv (enc_alg : asymm_enc_alg M PK SK C)
+--   (adv : enc_alg.ind_cpa_adversary) : enc_alg.ind_cpa_experiment adv ≃ₚ do
+--     { pk ← prod.fst <$> enc_alg.keygen (), ms ← adv.run pk, b ←$ᵗ bool,
+--       c ← enc_alg.encrypt (if b then ms.1 else ms.2, pk), b' ← adv.distinguish (pk, ms, c),
+--       return (b = b') } := dist_equiv.rfl
 
 namespace ind_cpa_adversary
 
-noncomputable def advantage {enc_alg : asymm_enc_alg M PK SK C}
-  (adv : enc_alg.ind_cpa_adversary) : ℝ≥0∞ :=
-⁅= tt | enc_alg.ind_cpa_experiment adv⁆
+-- noncomputable def advantage {enc_alg : asymm_enc_alg M PK SK C}
+--   (adv : enc_alg.ind_cpa_adversary) : ℝ≥0∞ :=
+-- ⁅= tt | enc_alg.ind_cpa_experiment adv⁆
 
 end ind_cpa_adversary
 

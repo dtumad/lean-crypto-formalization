@@ -74,7 +74,7 @@ section ind_cpa
 variables {G X : Type} [add_comm_group G]
   [algorithmic_homogenous_space G X] [group X]
 
-noncomputable def reduction (adv : (hhs_elgamal G X).ind_cpa_adversary) :
+noncomputable def ind_cpa_reduction (adv : (hhs_elgamal G X).ind_cpa_adversary) :
   decisional_parallelization_adversary G X :=
 { -- Try to check if `x₃` is the correct parallelization
   run := λ ⟨x₀, x₁, x₂, x₃⟩, do
@@ -84,12 +84,13 @@ noncomputable def reduction (adv : (hhs_elgamal G X).ind_cpa_adversary) :
       b' ← adv.distinguish ((x₀, x₁), ms, c),
       return (b = b') } }
 
-lemma prob_output_fair_decision_challenge_reduction (adv : (hhs_elgamal G X).ind_cpa_adversary) :
-  ⁅= tt | fair_decision_challenge (reduction adv)⁆ = adv.advantage :=
+lemma prob_output_fair_decision_challenge (adv : (hhs_elgamal G X).ind_cpa_adversary) :
+  ⁅= tt | fair_decision_challenge (ind_cpa_reduction adv)⁆ =
+    (ind_cpa_experiment adv).advantage :=
 begin
+  rw [ind_cpa_experiment_advantage_eq],
   refine dist_equiv.prob_output_eq _ _,
   rw [fair_decision_challenge],
-  rw [ind_cpa_experiment],
   rw_dist_equiv [fst_map_keygen_apply_dist_equiv G X ()],
   refine trans _ ((bind_bind_dist_equiv_assoc _ _ _)),
   pairwise_dist_equiv 1,
@@ -105,16 +106,15 @@ begin
   pairwise_dist_equiv 1,
 end
 
-lemma prob_output_unfair_decision_challenge_reduction (adv : (hhs_elgamal G X).ind_cpa_adversary) :
-  ⁅= tt | unfair_decision_challenge (reduction adv)⁆ = 1 / 2 :=
+lemma prob_output_unfair_decision_challenge (adv : (hhs_elgamal G X).ind_cpa_adversary) :
+  ⁅= tt | unfair_decision_challenge (ind_cpa_reduction adv)⁆ = 1 / 2 :=
 begin
   rw [unfair_decision_challenge],
   refine prob_output_uniform_bind_of_const (λ x₀, _),
   refine prob_output_uniform_bind_of_const (λ g₁, _),
   refine prob_output_uniform_bind_of_const (λ g₂, _),
   refine prob_output_uniform_bind_of_const (λ g₃, _),
-  rw [reduction],
-  simp only [reduction],
+  simp only [ind_cpa_reduction],
   rw [prob_output_bnot_map],
   have : ⁅= ff | $ᵗ bool⁆ = 1 / 2 := sorry,
   refine trans _ this,
@@ -127,10 +127,11 @@ begin
 end
 
 theorem reduction_advantage (adv : (hhs_elgamal G X).ind_cpa_adversary) :
-  (adv.advantage + 1 / 2) / 2 = (reduction adv).advantage :=
+  (ind_cpa_reduction adv).advantage =
+    ((ind_cpa_experiment adv).advantage + 1 / 2) / 2 :=
 by rw [advantage_eq_prob_output_fair_add_prob_output_unfair,
-  prob_output_unfair_decision_challenge_reduction,
-  prob_output_fair_decision_challenge_reduction]
+  prob_output_unfair_decision_challenge,
+  prob_output_fair_decision_challenge]
 
 end ind_cpa
 
