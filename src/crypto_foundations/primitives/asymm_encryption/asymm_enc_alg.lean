@@ -29,16 +29,56 @@ class asymm_enc_alg.poly_time (asymm_enc : asymm_enc_alg M PK SK C) :=
 (encrypt_poly_time : poly_time_oracle_comp asymm_enc.encrypt)
 (decrypt_poly_time : poly_time_oracle_comp asymm_enc.decrypt)
 
+-----------------------
+structure sec_experiment' (spec : oracle_spec) (α β : Type) :=
+(inp_gen : oracle_comp spec α)
+(run : α → oracle_comp spec β)
+(is_valid : α × β → bool)
+
+structure sec_experiment'' (spec : oracle_spec) (α β S : Type) :=
+(inp_gen : oracle_comp spec α)
+(run : α → oracle_comp spec β)
+(is_valid : α × β → oracle_comp spec bool)
+(exp_so : sim_oracle spec uniform_selecting S)
+
+def sec_experiment''.exec {spec : oracle_spec} {α β S : Type}
+  (exp : sec_experiment'' spec α β S) :
+  oracle_comp uniform_selecting bool  :=
+dsimulate' exp.exp_so (do
+  { x ← exp.inp_gen,
+    y ← exp.run x,
+    exp.is_valid (x, y) } )
+
+noncomputable def sec_experiment''.advantage
+  {spec : oracle_spec} {α β S : Type}
+  (exp : sec_experiment'' spec α β S) : ℝ≥0∞ :=
+⁅= tt | exp.exec⁆
+
+noncomputable def sec_experiment'.advantage {spec : oracle_spec} {α β : Type}
+  (exp : sec_experiment' spec α β) : ℝ≥0∞ :=
+⁅= tt | do {x ← exp.inp_gen, y ← exp.run x,
+  return (exp.is_valid (x, y))}⁆
+----------------------
+
 namespace asymm_enc_alg
 
 section sound
 
 /-- Generate a random key, then return the result of encrypting and decrypting `m`. -/
 def soundness_experiment (enc_alg : asymm_enc_alg M PK SK C)
-  (m : M) : oracle_comp (uniform_selecting ++ ∅) M := do
+  (m : M) : oracle_comp (uniform_selecting) M := do
 { ⟨pk, sk⟩ ← enc_alg.keygen (),
   σ ← enc_alg.encrypt (m, pk),
   enc_alg.decrypt (σ, sk) }
+
+def soundness_experiment' [decidable_eq M] (enc_alg : asymm_enc_alg M PK SK C)
+  (m : M) : sec_experiment'' uniform_selecting (PK × SK) C unit :=
+{ inp_gen := enc_alg.keygen (),
+  run := λ ⟨pk, sk⟩, enc_alg.encrypt (m, pk),
+  is_valid := λ ⟨⟨pk, sk⟩, σ⟩, do
+    { m' ← enc_alg.decrypt (σ, sk),
+      return (m = m') },
+  exp_so := idₛₒ }
 
 /-- An asymmetric encryption algorithm is sound if messages always decrypt to themselves. -/
 def sound (enc_alg : asymm_enc_alg M PK SK C) : Prop :=
@@ -69,16 +109,6 @@ the first message or the second message. -/
 structure ind_cpa_adversary (enc_alg : asymm_enc_alg M PK SK C) :=
 (run : PK → oracle_comp uniform_selecting (M × M))
 (distinguish : PK × (M × M) × C → oracle_comp uniform_selecting bool)
-
-structure sec_experiment' (spec : oracle_spec) (α β : Type) :=
-(inp_gen : oracle_comp spec α)
-(run : α → oracle_comp spec β)
-(is_valid : α × β → bool)
-
-noncomputable def sec_experiment'.advantage {spec : oracle_spec} {α β : Type}
-  (exp : sec_experiment' spec α β) : ℝ≥0∞ :=
-⁅= tt | do {x ← exp.inp_gen, y ← exp.run x,
-  return (exp.is_valid (x, y))}⁆
 
 noncomputable def ind_cpa_experiment
   {enc_alg : asymm_enc_alg M PK SK C}
