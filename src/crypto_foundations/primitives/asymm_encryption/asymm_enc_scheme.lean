@@ -25,6 +25,6 @@ variables {M PK SK C : ℕ → Type}
 
 def ind_cpa (enc_scheme : asymm_enc_scheme M PK SK C) : Prop :=
 ∀ (adv : Π (sp : ℕ), (enc_scheme sp).ind_cpa_adversary),
-  negligable (λ sp, (adv sp).advantage)
+  negligable (λ sp, (ind_cpa_experiment (adv sp)).advantage)
 
 end asymm_enc_scheme
