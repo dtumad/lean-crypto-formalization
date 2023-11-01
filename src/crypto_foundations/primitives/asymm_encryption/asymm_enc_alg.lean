@@ -22,6 +22,28 @@ structure asymm_enc_alg (M PK SK C : Type) :=
 (encrypt : M × PK → oracle_comp uniform_selecting C)
 (decrypt : C × SK → oracle_comp uniform_selecting M)
 
+/-- Base typeclass for building algorithms with oracle access defined by `spec : oracle_spec`.
+On its own just provides a way to simulate computations with the given oracle spec,
+but is generally meant to be extended with other computations to define a algorithm.
+For example `so` may provide a way to simulate a random oracle. -/
+structure simulation_spec (spec : oracle_spec) :=
+(S : Type) (so : sim_oracle spec uniform_selecting S)
+
+structure algorithm_base (spec : oracle_spec) :=
+(S : Type) (so : sim_oracle spec uniform_selecting S)
+
+def simulation_spec.exec {spec : oracle_spec} {α : Type}
+  (alg : simulation_spec spec) (oa : oracle_comp spec α) :
+  oracle_comp uniform_selecting α :=
+dsimulate' alg.so oa
+
+structure asymm_enc_alg' (spec : oracle_spec) (M PK SK C : Type)
+  extends algorithm_base spec :=
+(keygen : unit → oracle_comp spec (PK × SK))
+(encrypt : M × PK → oracle_comp spec C)
+(decrypt : C × SK → oracle_comp spec M)
+
+
 variables {M PK SK C : Type}
 
 class asymm_enc_alg.poly_time (asymm_enc : asymm_enc_alg M PK SK C) :=
@@ -38,21 +60,36 @@ structure sec_experiment' (spec : oracle_spec) (α β : Type) :=
 structure sec_experiment'' (spec : oracle_spec) (α β S : Type) :=
 (inp_gen : oracle_comp spec α)
 (run : α → oracle_comp spec β)
-(is_valid : α × β → oracle_comp spec bool)
+(is_valid : α × β → Prop)
 (exp_so : sim_oracle spec uniform_selecting S)
+
+structure sec_experiment₂ (spec : oracle_spec) (α β S : Type)
+  extends simulation_spec spec :=
+(inp_gen : oracle_comp spec α)
+(run : α → oracle_comp spec β)
+(is_valid : α × β → Prop)
+-- (exp_so : sim_oracle spec uniform_selecting S)
 
 def sec_experiment''.exec {spec : oracle_spec} {α β S : Type}
   (exp : sec_experiment'' spec α β S) :
-  oracle_comp uniform_selecting bool  :=
+  oracle_comp uniform_selecting (α × β)  :=
 dsimulate' exp.exp_so (do
   { x ← exp.inp_gen,
     y ← exp.run x,
-    exp.is_valid (x, y) } )
+    return (x, y) } )
+
+def sec_experiment₂.exec {spec : oracle_spec} {α β S : Type}
+  (exp : sec_experiment₂ spec α β S) :
+  oracle_comp uniform_selecting (α × β)  :=
+exp.exec (do
+  { x ← exp.inp_gen,
+    y ← exp.run x,
+    return (x, y) } )
 
 noncomputable def sec_experiment''.advantage
   {spec : oracle_spec} {α β S : Type}
   (exp : sec_experiment'' spec α β S) : ℝ≥0∞ :=
-⁅= tt | exp.exec⁆
+⁅exp.is_valid | exp.exec⁆
 
 noncomputable def sec_experiment'.advantage {spec : oracle_spec} {α β : Type}
   (exp : sec_experiment' spec α β) : ℝ≥0∞ :=
@@ -71,14 +108,15 @@ def soundness_experiment (enc_alg : asymm_enc_alg M PK SK C)
   σ ← enc_alg.encrypt (m, pk),
   enc_alg.decrypt (σ, sk) }
 
-def soundness_experiment' [decidable_eq M] (enc_alg : asymm_enc_alg M PK SK C)
-  (m : M) : sec_experiment'' uniform_selecting (PK × SK) C unit :=
+def soundness_experiment'' [decidable_eq M] {spec : oracle_spec}
+  (enc_alg : asymm_enc_alg' spec M PK SK C)
+  (m : M) : sec_experiment'' spec (PK × SK) M enc_alg.S :=
 { inp_gen := enc_alg.keygen (),
-  run := λ ⟨pk, sk⟩, enc_alg.encrypt (m, pk),
-  is_valid := λ ⟨⟨pk, sk⟩, σ⟩, do
-    { m' ← enc_alg.decrypt (σ, sk),
-      return (m = m') },
-  exp_so := idₛₒ }
+  run := λ ⟨pk, sk⟩, do
+    { σ ← enc_alg.encrypt (m, pk),
+      enc_alg.decrypt (σ, sk) },
+  is_valid := λ ⟨⟨pk, sk⟩, m'⟩, m = m',
+  exp_so := enc_alg.so }
 
 /-- An asymmetric encryption algorithm is sound if messages always decrypt to themselves. -/
 def sound (enc_alg : asymm_enc_alg M PK SK C) : Prop :=
@@ -122,6 +160,20 @@ noncomputable def ind_cpa_experiment
       c ← enc_alg.encrypt (if b then m₁ else m₂, pk),
       adv.distinguish (pk, (m₁, m₂), c) },
   is_valid := λ ⟨⟨pk, b⟩, b'⟩, b = b' }
+
+def ind_cpa_experiment'
+  {enc_alg : asymm_enc_alg M PK SK C}
+  (adv : enc_alg.ind_cpa_adversary) :
+  sec_experiment'' uniform_selecting (PK × bool) bool unit :=
+{ inp_gen := do
+    { pk ← prod.fst <$> enc_alg.keygen (),
+      b ← coin, return (pk, b) },
+  run := λ ⟨pk, b⟩, do
+    { ⟨m₁, m₂⟩ ← adv.run pk,
+      c ← enc_alg.encrypt (if b then m₁ else m₂, pk),
+      adv.distinguish (pk, (m₁, m₂), c) },
+  is_valid := λ ⟨⟨pk, b⟩, b'⟩, b = b',
+  exp_so := idₛₒ }
 
 lemma ind_cpa_experiment_advantage_eq {enc_alg : asymm_enc_alg M PK SK C}
   (adv : enc_alg.ind_cpa_adversary) :
