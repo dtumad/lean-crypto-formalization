@@ -46,9 +46,9 @@ structure signature := -- TODO: signature_alg?
 -- Set of random oracles available to the signature algorithms
 (random_spec : oracle_spec)
 -- The actual algorithms of the signature scheme.
-(gen : unit → prob_comp random_spec (PK × SK))
-(sign : (PK × SK) × M → prob_comp random_spec S)
-(verify : PK × M × S → prob_comp random_spec bool)
+(gen : unit → oracle_comp (uniform_selecting ++ random_spec) (PK × SK))
+(sign : (PK × SK) × M → oracle_comp (uniform_selecting ++ random_spec) S)
+(verify : PK × M × S → oracle_comp (uniform_selecting ++ random_spec) bool)
 
 namespace signature
 
