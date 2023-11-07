@@ -42,24 +42,20 @@ inductive oracle_comp_base (spec : oracle_spec) : Type → Type 1
 
 namespace oracle_comp_base
 
-instance monad (spec : oracle_spec) : monad (oracle_comp_base spec) :=
-{ pure := oracle_comp_base.pure',
-  bind := oracle_comp_base.bind' }
-
--- instance setoid (spec : oracle_spec) (α : Type) :
---   setoid (oracle_comp_base spec α) :=
--- { r := is_lawfully_equiv (oracle_comp_base spec),
---   iseqv := is_lawfully_equiv.equivalence (oracle_comp_base spec) α }
-
-open_locale classical
-
-#check relation.transitive_trans_gen
-
 def extract_pure {spec : oracle_spec} :
   Π {α : Type}, oracle_comp_base spec α → option α
 | _ (pure' α a) := some a
 | _ (bind' α β oa ob) := none
 | _ (query i t) := none
+
+lemma extract_pure_eq_some_iff {spec : oracle_spec} {α : Type}
+  (oa : oracle_comp_base spec α) (a : α) :
+  oa.extract_pure = some a ↔ oa = pure' α a :=
+sorry
+
+section reduce_pure
+
+open_locale classical
 
 noncomputable def reduce_pure {spec : oracle_spec} :
   Π {α : Type}, oracle_comp_base spec α → oracle_comp_base spec α
@@ -69,109 +65,62 @@ noncomputable def reduce_pure {spec : oracle_spec} :
   | (some a) := reduce_pure (ob a)
   | none := if h : β = α then
     (if h.rec_on (λ x, reduce_pure (ob x)) = (pure' α) then
-      h.symm.rec oa' else oa' >>= (λ x, reduce_pure (ob x)))
-        else oa' >>= (λ x, reduce_pure (ob x))
+      h.symm.rec oa' else bind' α β oa' (λ x, reduce_pure (ob x)))
+        else bind' α β oa' (λ x, reduce_pure (ob x))
   end
 | _ (query i t) := query i t
+
+end reduce_pure
+
+@[simp] lemma reduce_pure_idem {spec : oracle_spec} {α : Type}
+  (oa : oracle_comp_base spec α) : reduce_pure (reduce_pure oa) = reduce_pure oa :=
+begin
+  induction oa with α a α β oa ob hoa hob i t,
+  {
+    simp [reduce_pure],
+  },
+  {
+    simp [reduce_pure],
+    by_cases ha : ∃ a, oa.reduce_pure.extract_pure = some a,
+    {
+      obtain ⟨a, ha⟩ := ha,
+      simp [ha, reduce_pure, hob],
+    },
+    {
+      rw [← option.is_some_iff_exists] at ha,
+      simp [option.is_none_iff_eq_none] at ha,
+      simp [ha, reduce_pure],
+      by_cases h : β = α,
+      {
+        induction h,
+        simp,
+        split_ifs with hb,
+        {
+          exact hoa,
+        },
+        {
+          simp [reduce_pure, ha, hoa, hob, hb],
+        }
+      },
+      {
+
+        simp [h, reduce_pure, hoa, ha, hob],
+      }
+    }
+  },
+  {
+    simp [reduce_pure]
+  }
+end
+
+inductive assoc_equiv (spec : oracle_spec) :
+  Π {α : Type}, oracle_comp_base spec α →
+    oracle_comp_base spec α → Prop
 
 instance setoid (spec : oracle_spec) (α : Type) :
   setoid (oracle_comp_base spec α) :=
 { r := λ oa oa', reduce_pure oa = reduce_pure oa',
-  iseqv := sorry }
-
-
-noncomputable def lawfully_reduce {spec : oracle_spec} :
-  Π {α : Type}, oracle_comp_base spec α → oracle_comp_base spec α
-| _ (pure' α a) := pure' α a
--- | _ (bind' _ _ oa (pure' _)) := oa
-| _ (bind' _ β (pure' α a) ob) := lawfully_reduce (ob a)
-| _ (bind' _ γ (bind' α β oa ob) oc) := begin
-    -- refine if h : γ = β then _ else _,
-    -- {
-    --   induction h,
-    --   refine if oc = pure' _ then (bind' α γ oa ob) else
-    --     bind' α γ oa (λ x, bind' γ γ (ob x) oc)
-    -- },
-    refine bind' α γ (oa)
-      (λ x, bind' β γ (ob x) oc)
-
-  end
-| _ (bind' _ β (query i t) ob) := begin
-    refine if h : spec.range i = β then _ else _,
-    {
-      induction h,
-      refine if ob = pure' _ then (query i t) else
-        bind' _ _ (query i t) (λ x, (ob x)),
-    },
-    -- refine if ob = pure' _ then _ else _,
-    refine bind' _ _ (query i t) (λ x, (ob x))
-  end
-| _ (query i t) := query i t
-
-noncomputable def reduce {spec : oracle_spec} :
-  Π {α : Type}, oracle_comp_base spec α → oracle_comp_base spec α
-| _ (pure' α a) := pure' α a
--- | _ (bind' _ _ oa (pure' _)) := oa
-| _ (bind' _ β (pure' α a) ob) := ob a
-| _ (bind' _ γ (bind' α β oa ob) oc) := begin
-    refine if h : γ = β then _ else _,
-    {
-      induction h,
-      refine if oc = pure' _ then (bind' α γ oa ob) else
-        bind' α γ oa (λ x, bind' γ γ (ob x) oc)
-    },
-    refine bind' α γ oa (λ x, bind' β γ (ob x) oc)
-
-  end
-| _ (bind' _ β (query i t) ob) := begin
-    refine if h : spec.range i = β then _ else _,
-    {
-      induction h,
-      refine if ob = pure' _ then (query i t) else
-        bind' _ _ (query i t) (λ x, (ob x)),
-    },
-    -- refine if ob = pure' _ then _ else _,
-    refine bind' _ _ (query i t) (λ x, (ob x))
-  end
-| _ (query i t) := query i t
-
-lemma reduce_pure_bind {spec : oracle_spec} {α β : Type}
-  (a : α) (ob : α → oracle_comp_base spec β) :
-  reduce (bind' α β (pure' α a) ob) = ob a := rfl
-
-lemma reduce_bind_pure {spec : oracle_spec} {α : Type}
-  (oa : oracle_comp_base spec α) :
-  reduce (bind' α α oa (pure' α)) = oa :=
-begin
-  induction oa with α a α β oa ob hoa hob i t,
-  {
-    simp [reduce],
-  },
-  {
-    rw [reduce],
-    simp [reduce, eq_self_iff_true, heq_iff_eq, true_and],
-  },
-  {
-    simp [reduce],
-  }
-end
-
-lemma reduce_bind_assoc {spec : oracle_spec} {α β γ : Type}
-  (oa : oracle_comp_base spec α) (ob : α → oracle_comp_base spec β)
-  (oc : β → oracle_comp_base spec γ)
-  (hoc : Π (h : β = γ), h.rec_on oc ≠ pure' _) :
-  reduce (bind' β γ (bind' α β oa ob) oc) =
-    bind' α γ oa (λ x, bind' β γ (ob x) oc) :=
-begin
-  simp [reduce],
-  intro h,
-  induction h,
-  simp,
-  intro h',
-  simp [h'],
-  specialize hoc rfl h',
-  refine hoc.elim,
-end
+  iseqv := ⟨λ _, rfl, λ _ _, eq.symm, λ _ _ _, eq.trans⟩ }
 
 -- instance setoid (spec : oracle_spec) (α : Type) :
 --   setoid (oracle_comp_base spec α) :=
@@ -199,63 +148,89 @@ end
 
 end oracle_comp_base
 
--- def oracle_comp (spec : oracle_spec) (α : Type) : Type 1 :=
--- quot (@is_lawfully_equiv (oracle_comp_base spec) _ α)
-
--- def oracle_comp (spec : oracle_spec) (α : Type) : Type 1 :=
--- quotient (oracle_comp_base.setoid spec α)
-
 def oracle_comp (spec : oracle_spec) (α : Type) : Type 1 :=
-quotient
+quotient (oracle_comp_base.setoid spec α)
 
 namespace oracle_comp
 
--- @[simp] lemma equiv_iff (spec : oracle_spec) (α : Type)
---   (oa oa' : oracle_comp spec α) : oa ≈ oa'
-
-instance monad (spec : oracle_spec) : monad (oracle_comp spec) :=
+noncomputable instance monad (spec : oracle_spec) :
+  monad (oracle_comp spec) :=
 { pure := λ α a, ⟦oracle_comp_base.pure' α a⟧,
   bind := λ α β oa ob, begin
-    -- refine quotient.induction_on oa _ _,
-
     refine quotient.lift_on oa (λ oa', ⟦_⟧) (λ oa₁ oa₂ h, _),
     refine oracle_comp_base.bind' α β
-      (oa')
-      (λ x, quotient.lift_on (ob x) id
-      (λ ob₁ ob₂ h, _)),
-      sorry, sorry,
+      (oracle_comp_base.reduce_pure oa')
+      (λ x, quotient.lift_on (ob x) oracle_comp_base.reduce_pure
+      (λ ob₁ ob₂ h, h)),
+    refine quotient.eq.2 (by congr; exact h),
   end }
 
--- noncomputable instance monad (spec : oracle_spec) : monad (oracle_comp spec) :=
--- { pure := λ α a, ⟦oracle_comp_base.pure' α a⟧,
---   bind := λ α β oa ob, begin
---     refine quotient.lift_on oa (λ oa', ⟦_⟧) (λ oa₁ oa₂ h, _),
---     refine oracle_comp_base.bind' α β
---       (oracle_comp_base.reduce oa')
---       (λ x, quotient.lift_on (ob x) oracle_comp_base.reduce
---       (λ ob₁ ob₂ h, h)),
---     refine quotient.eq.2 (by congr; exact h),
---     -- simp only [quotient.eq],
---     -- simp [h],
---     -- congr,
---     -- exact h,
---   end }
+lemma pure_def {spec : oracle_spec} {α : Type} (a : α) :
+  (pure a : oracle_comp spec α) = ⟦oracle_comp_base.pure' α a⟧ := rfl
 
--- lemma pure_eq_thing {spec : oracle_spec} {α : Type} (a : α) :
---   (pure a : oracle_comp spec α) = ⟦oracle_comp_base.pure' α a⟧ := rfl
+lemma bind_def {spec : oracle_spec} {α β : Type}
+  (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) :
+  oa >>= ob = begin
+refine quotient.lift_on oa (λ oa', ⟦_⟧) (λ oa₁ oa₂ h, _),
+    refine oracle_comp_base.bind' α β
+      (oracle_comp_base.reduce_pure oa')
+      (λ x, quotient.lift_on (ob x) oracle_comp_base.reduce_pure
+      (λ ob₁ ob₂ h, h)),
+    refine quotient.eq.2 (by congr; exact h),
 
--- lemma bind_eq_thing {spec : oracle_spec} {α β : Type}
---   (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) :
---   oa >>= ob = begin
--- refine quotient.lift_on oa (λ oa', ⟦_⟧) (λ oa₁ oa₂ h, _),
---     refine oracle_comp_base.bind' α β
---       (oracle_comp_base.reduce oa')
---       (λ x, quotient.lift_on (ob x) oracle_comp_base.reduce
---       (λ ob₁ ob₂ h, h)),
---     refine quotient.eq.2 (by congr; exact h),
+  end  := rfl
 
---   end  := rfl
 
+instance is_lawful_monad (spec : oracle_spec) :
+  is_lawful_monad (oracle_comp spec) :=
+{ pure_bind := λ α β a ob, begin
+    simp [bind_def, pure_def, oracle_comp_base.reduce_pure],
+    obtain ⟨ob', h⟩ := quotient.exists_rep (ob a),
+    refine trans _ h,
+    refine quotient.sound _,
+    show oracle_comp_base.reduce_pure _ = oracle_comp_base.reduce_pure _,
+    simp [oracle_comp_base.reduce_pure,
+      oracle_comp_base.extract_pure, ← h],
+  end,
+  bind_assoc := begin
+
+  end,
+  id_map := λ α oa, begin
+    show oa >>= (λ x, pure x) = oa,
+    simp [bind_def, pure_def, oracle_comp_base.reduce_pure],
+    obtain ⟨oa', h⟩ := quotient.exists_rep oa,
+    simp [← h],
+    -- refine quotient.sound _,
+    show oracle_comp_base.reduce_pure _ = oracle_comp_base.reduce_pure _,
+    simp [oracle_comp_base.reduce_pure,
+      oracle_comp_base.extract_pure, ← h],
+    by_cases ha : ∃ a, oa'.reduce_pure.extract_pure = some a,
+    {
+      obtain ⟨a, ha⟩ := ha,
+      simp [ha, oracle_comp_base.reduce_pure],
+      induction oa',
+      {
+        simp [oracle_comp_base.reduce_pure,
+          oracle_comp_base.extract_pure] at ha,
+        simp [ha, oracle_comp_base.reduce_pure]
+      },
+      {
+
+        simp [oracle_comp_base.extract_pure_eq_some_iff] at ha,
+        exact symm ha,
+      },
+      {
+        simp [oracle_comp_base.extract_pure_eq_some_iff,
+          oracle_comp_base.reduce_pure] at ha,
+        exact false.elim ha,
+      }
+    },
+    {
+      rw [← option.is_some_iff_exists] at ha,
+      simp [option.is_none_iff_eq_none] at ha,
+      simp [ha, oracle_comp_base.reduce_pure],
+    }
+  end }
 
 -- instance is_lawful_monad (spec : oracle_spec) :
 --   is_lawful_monad (oracle_comp spec) :=
