@@ -5,8 +5,24 @@ Authors: Devon Tuma
 -/
 
 import computational_monads.oracle_spec
+import probability.probability_mass_function.basic
 
 universes u v
+
+
+-- inductive assoc_equiv {spec : oracle_spec} :
+--   Π {α : Type}, oracle_comp_base spec α →
+--     oracle_comp_base spec α → Prop
+-- | refl {α : Type} (oa : oracle_comp_base spec α) :
+--     assoc_equiv oa oa
+-- | symm {α : Type} (oa oa' : oracle_comp_base spec α) :
+--     assoc_equiv oa oa' → assoc_equiv oa' oa
+-- | trans {α : Type} (oa oa' oa'' : oracle_comp_base spec α) :
+--     assoc_equiv oa oa' → assoc_equiv oa' oa'' → assoc_equiv oa oa''
+-- | bind_assoc {α β γ : Type} (oa : oracle_comp_base spec α)
+--     (ob : α → oracle_comp_base spec β) (oc : β → oracle_comp_base spec γ) :
+--     assoc_equiv (bind' β γ (bind' α β oa ob) oc)
+--       (bind' α γ oa (λ x, bind' β γ (ob x) oc))
 
 inductive is_lawfully_equiv (m : Type u → Type v) [monad m] :
   Π {α : Type u}, m α → m α → Prop
@@ -34,6 +50,106 @@ lemma is_lawfully_equiv.equivalence (m : Type u → Type v) [monad m] (α : Type
 
 open oracle_spec
 
+
+inductive oracle_comp' (spec : oracle_spec) : Type → Type 1
+| pure' (α : Type) (a : α) : oracle_comp' α
+| query' (i : spec.ι) (t : spec.domain i) : oracle_comp' (spec.range i)
+| query_bind' (i : spec.ι) (t : spec.domain i) (α : Type)
+    (ou : spec.range i → oracle_comp' α) : oracle_comp' α
+
+section oracle_comp'
+
+open oracle_comp'
+
+def bind' {spec : oracle_spec} : Π (α β : Type),
+  oracle_comp' spec α → (α → oracle_comp' spec β) →
+    oracle_comp' spec β
+| _ β (pure' α a) ob := ob a
+| _ β (query' i t) ob := query_bind' i t β ob
+| _ β (query_bind' i t α ou) ob :=
+        query_bind' i t β (λ u, bind' α β (ou u) ob)
+
+lemma pure_bind {spec : oracle_spec} {α β : Type}
+  (a : α) (ob : α → oracle_comp' spec β) :
+  bind' α β (pure' α a) ob = ob a := rfl
+
+lemma bind_assoc {spec : oracle_spec} {α β γ : Type}
+  (oa : oracle_comp' spec α) (ob : α → oracle_comp' spec β)
+  (oc : β → oracle_comp' spec γ) :
+  bind' β γ (bind' α β oa ob) oc =
+    bind' α γ oa (λ x, bind' β γ (ob x) oc) :=
+begin
+  induction oa with α a i t i t α ou h,
+  { simp [bind'] },
+  { simp [bind'] },
+  { simp [bind'],
+    refine funext (λ u, h u ob) }
+end
+
+section red
+
+open_locale classical
+
+noncomputable def red {spec : oracle_spec} : Π {α : Type},
+  oracle_comp' spec α → oracle_comp' spec α
+| _ (pure' α a) := pure' α a
+| _ (query' i t) := query' i t
+| _ (query_bind' i t α ou) := begin
+  refine (if h : α = spec.range i then _ else _),
+  {
+    -- induction h,
+    refine if h.rec_on ou = pure' (spec.range i) then
+      h.symm.rec_on (query' i t) else _,
+    refine query_bind' i t α (λ u, red (ou u)),
+  },
+  refine query_bind' i t α (λ u, red (ou u))
+end
+
+lemma red_bind_pure {spec : oracle_spec} {α : Type}
+  (oa : oracle_comp' spec α) :
+  red (bind' α α oa (pure' α)) = red oa :=
+begin
+  induction oa with α a i t i t α ou h,
+  {
+    simp [red, bind'],
+  },
+  {
+    simp [red, bind'],
+  },
+  {
+    by_cases hα : spec.range i = α,
+    {
+
+      induction hα,
+      simp at h,
+      simp [red, bind', h],
+
+    }
+  }
+end
+
+end red
+
+end oracle_comp'
+
+-- instance (spec : oracle_spec) : monad (oracle_comp' spec) :=
+-- { pure := oracle_comp'.pure',
+--   bind := λ α β oa ob, match oa with
+--     | (oracle_comp'.pure' α a) := ob a
+--     | (oracle_comp'.query i t) := _
+--   end }
+
+
+
+
+
+
+
+
+
+
+
+
 /-- Type to represent computations with access so oracles specified by and `oracle_spec`. -/
 inductive oracle_comp_base (spec : oracle_spec) : Type → Type 1
 | pure' (α : Type) (a : α) : oracle_comp_base α
@@ -57,6 +173,49 @@ section reduce_pure
 
 open_locale classical
 
+
+inductive reduce_result (spec : oracle_spec) (α : Type)
+-- Computation was reduced to the form `pure' α a`
+| free_value (a : α) : reduce_result
+| bound_query (i : spec.ι) (t : spec.domain i)
+    (ob : spec.range i → oracle_comp_base spec α) : reduce_result
+| free_computation (oa : oracle_comp_base spec α) : reduce_result
+
+open reduce_result
+
+#check reduce_result.sizeof
+
+#check psigma.lex
+
+-- def unreduce {spec : oracle_spec} :
+--   Π {α : Type}, reduce_result spec α → oracle_comp_base spec α
+-- | α (free_value a) := pure' α a
+-- | β (bound_query i t ob) := bind' (spec.range i) β (query i t)
+--     (λ u, unreduce (ob u))
+
+
+def reduce_aux' {spec : oracle_spec} :
+  Π {α : Type}, reduce_result spec α →
+    oracle_comp_base spec α → reduce_result spec α
+| _ rr (query i t) := _
+| _ rr (pure' α a) := _
+| _ rr (bind' α β oa ob) := _
+
+def reduce_aux {spec : oracle_spec} :
+  Π {α : Type}, oracle_comp_base spec α → reduce_result spec α
+| _ (query i t) := reduce_result.free_computation (query i t)
+| _ (pure' α a) := reduce_result.free_value a
+| _ (bind' α β oa ob) := let oa' := reduce_aux oa in
+  match oa' with
+  | (free_value a) := reduce_aux (ob a)
+  | (bound_query i t oc) :=
+      bound_query i t (λ u, bind' _ _ (oc u) ob)
+  | (free_computation oa) :=
+      free_computation (bind' α β oa ob)
+
+  end
+
+
 noncomputable def reduce_pure {spec : oracle_spec} :
   Π {α : Type}, oracle_comp_base spec α → oracle_comp_base spec α
 | _ (pure' α a) := pure' α a
@@ -71,6 +230,16 @@ noncomputable def reduce_pure {spec : oracle_spec} :
 | _ (query i t) := query i t
 
 end reduce_pure
+
+section reduce_assoc
+
+noncomputable def reduce_assoc {spec : oracle_spec} :
+  Π {α : Type}, oracle_comp_base spec α → oracle_comp_base spec α
+| _ (pure' α a) := pure' α a
+| _ (bind' _ γ (bind' α β oa ob) oc) := sorry
+| _ (query i t) := query i t
+
+end reduce_assoc
 
 @[simp] lemma reduce_pure_idem {spec : oracle_spec} {α : Type}
   (oa : oracle_comp_base spec α) : reduce_pure (reduce_pure oa) = reduce_pure oa :=
@@ -113,38 +282,11 @@ begin
   }
 end
 
-inductive assoc_equiv (spec : oracle_spec) :
-  Π {α : Type}, oracle_comp_base spec α →
-    oracle_comp_base spec α → Prop
 
 instance setoid (spec : oracle_spec) (α : Type) :
   setoid (oracle_comp_base spec α) :=
 { r := λ oa oa', reduce_pure oa = reduce_pure oa',
   iseqv := ⟨λ _, rfl, λ _ _, eq.symm, λ _ _ _, eq.trans⟩ }
-
--- instance setoid (spec : oracle_spec) (α : Type) :
---   setoid (oracle_comp_base spec α) :=
--- { r := λ oa oa', reduce oa = reduce oa',
---   iseqv := begin
---     refine ⟨_, _, _⟩,
---     {
---       intros oa,
---       induction oa,
---       simp [reduce],
---       simp [reduce],
---       simp [reduce],
---     },
---     {
---       intros oa oa',
---       refine λ h, _,
---       -- simp at h,
---       refine symm h,
---     },
---     {
---       intros oa oa' oa'' h h',
---       refine trans h h',
---     }
---   end }
 
 end oracle_comp_base
 
