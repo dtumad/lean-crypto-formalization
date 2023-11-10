@@ -8,6 +8,8 @@ import computational_monads.oracle_spec
 /-!
 # Computations with Oracle Access
 
+TODO: some of this is out of date with the new `query_bind'` setup.
+
 This file defines a representation of a computation with access to a set of oracles,
 given by some `oracle_spec`. `oracle_comp spec α` will represent a computation
 using the oracles of `spec : oracle_spec`, returning values of type `α`.

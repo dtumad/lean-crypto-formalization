@@ -192,6 +192,16 @@ end
 /-- Simple computation for qurying a coin-flipping oracle for a single result. -/
 @[reducible, inline] def coin : oracle_comp coin_spec bool := query () ()
 
+/-- Shorthand for querying the left side of two available oracles. -/
+@[inline, reducible] def query₁ {spec spec' : oracle_spec}
+  (i : spec.ι) (t : spec.domain i) : oracle_comp (spec ++ spec') (spec.range i) :=
+@query (spec ++ spec') (sum.inl i) t
+
+/-- Shorthand for querying the right side of two available oracles. -/
+@[inline, reducible] def query₂ {spec spec' : oracle_spec}
+  (i : spec'.ι) (t : spec'.domain i) : oracle_comp (spec ++ spec') (spec'.range i) :=
+@query (spec ++ spec') (sum.inr i) t
+
 /-- Simple computation flipping two coins and returning a value based on them -/
 noncomputable example : oracle_comp coin_spec ℕ :=
 do { b ← coin, b' ← coin,
@@ -200,5 +210,97 @@ do { b ← coin, b' ← coin,
   return (x * y) }
 
 end query
+
+/-- Slightly nicer induction priciple, avoiding use of `bind'` and `pure'`.
+  Use as induction principle with `induction oa using oracle_comp.induction_on` -/
+@[elab_as_eliminator] protected def induction_on
+  {C : Π {α : Type}, oracle_comp spec α → Sort*}
+  {α : Type} (oa : oracle_comp spec α)
+  (h_return : ∀ {α : Type} (a : α), C (return a))
+  (h_bind : ∀ {α β : Type} {oa : oracle_comp spec α} {ob : α → oracle_comp spec β},
+    C oa → (∀ a, C (ob a)) → C (oa >>= ob) )
+  (h_query : ∀ i t, C (query i t)) : C oa :=
+begin
+  induction oa with α a i t α oa hoa,
+  { exact h_return a },
+  { rw [query_bind'_eq_query_bind],
+    exact h_bind (h_query i t) hoa }
+end
+
+@[elab_as_eliminator] protected def induction_on'
+  {C : Π {α : Type}, oracle_comp spec α → Sort*}
+  {α : Type} (oa : oracle_comp spec α)
+  (h_return : ∀ {α : Type} (a : α), C (return a))
+  (h_query_bind : ∀ (i : spec.ι) (t : spec.domain i) {α : Type}
+    {oa : spec.range i → oracle_comp spec α},
+    (∀ u, C (oa u)) → C (query i t >>= oa)) : C oa :=
+begin
+  induction oa with α a i t α oa hoa,
+  { exact h_return a },
+  { rw [query_bind'_eq_query_bind],
+    exact h_query_bind i t hoa }
+end
+
+/-- Check that the induction principal works properly. -/
+example (oa : oracle_comp spec α) : true :=
+by induction oa using oracle_comp.induction_on; trivial
+
+/-- Check that the induction principal works properly. -/
+example (oa : oracle_comp spec α) : true :=
+by induction oa using oracle_comp.induction_on'; trivial
+
+section tactics
+
+/-- Perform induction on the given computation, using `oracle_comp.induction_on` as the eliminator.
+This has better naming conventions, and uses `return` and `>>=` over `pure'` and `bind'`. -/
+protected meta def default_induction (h : interactive.parse lean.parser.ident) :
+  tactic (list (name × list expr × list (name × expr))) :=
+do { oa ← tactic.get_local h,
+  tactic.induction oa [`α, `a, `α, `β, `oa, `ob, `hoa, `hob, `i, `t] `oracle_comp.induction_on }
+
+/-- Perform induction on the given computation, using `oracle_comp.induction_on` as the eliminator.
+This has better naming conventions, and uses `return` and `>>=` over `pure'` and `bind'`. -/
+protected meta def default_induction' (h : interactive.parse lean.parser.ident) :
+  tactic (list (name × list expr × list (name × expr))) :=
+do { oa ← tactic.get_local h,
+  tactic.induction oa [`α, `a, `i, `t, `α, `oa, `hoa] `oracle_comp.induction_on' }
+
+end tactics
+
+-- section no_confusion
+
+-- variables (b : β) (oa : oracle_comp spec α) (ob : α → oracle_comp spec β)
+--   (i : spec.ι) (t : spec.domain i) (u : spec.range i)
+--   (ou : α → oracle_comp spec (spec.range i))
+--   (f : α → β) (g : α → spec.range i)
+
+-- @[simp] lemma return_ne_bind : (return' !spec! b) ≠ oa >>= ob := λ h, oracle_comp.no_confusion h
+-- @[simp] lemma bind_ne_return : oa >>= ob ≠ (return' !spec! b) := λ h, oracle_comp.no_confusion h
+-- @[simp] lemma return_ne_query : (return' !spec! u) ≠ query i t := λ h, oracle_comp.no_confusion h
+-- @[simp] lemma query_ne_return : query i t ≠ (return' !spec! u) := λ h, oracle_comp.no_confusion h
+-- @[simp] lemma bind_ne_query : oa >>= ou ≠ query i t := λ h, oracle_comp.no_confusion h
+-- @[simp] lemma query_ne_bind : query i t ≠ oa >>= ou := λ h, oracle_comp.no_confusion h
+
+-- @[simp] lemma map_ne_return : (return' !spec! b) ≠ f <$> oa :=
+-- by simp [oracle_comp.map_eq_bind_return_comp]
+-- @[simp] lemma return_ne_map : f <$> oa ≠ (return' !spec! b) :=
+-- by simp [oracle_comp.map_eq_bind_return_comp]
+
+-- @[simp] lemma map_ne_query : g <$> oa ≠ query i t := by simp [oracle_comp.map_eq_bind_return_comp]
+-- @[simp] lemma query_ne_map : query i t ≠ g <$> oa := by simp [oracle_comp.map_eq_bind_return_comp]
+
+-- @[simp] lemma return_eq_return_iff (spec : oracle_spec) (a a' : α) :
+--   (return' !spec! a) = (return' !spec! a') ↔ a = a' :=
+-- ⟨λ h, oracle_comp.pure'.inj h, λ h, h ▸ rfl⟩
+
+-- @[simp] lemma bind'_eq_bind'_iff (oa oa' : oracle_comp spec α) (ob ob' : α → oracle_comp spec β) :
+--   oa >>= ob = oa' >>= ob' ↔ oa = oa' ∧ ob = ob' :=
+-- ⟨λ h, let ⟨h, ha, hb⟩ := oracle_comp.bind'.inj h in
+--   ⟨eq_of_heq ha, eq_of_heq hb⟩, λ h, by simp [h.1, h.2]⟩
+
+-- @[simp] lemma query_eq_query_iff (i : spec.ι) (t t' : spec.domain i) :
+--   query i t = query i t' ↔ t = t' := ⟨λ h, oracle_comp.query.inj h, λ h, h ▸ rfl⟩
+
+-- end no_confusion
 
 end oracle_comp
