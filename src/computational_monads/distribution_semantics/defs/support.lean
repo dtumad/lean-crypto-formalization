@@ -29,8 +29,7 @@ This will generally correspond to the support of `eval_dist` (see `support_eval_
 but is slightly more general since it doesn't require α finite range. -/
 def support : Π {α : Type} (oa : oracle_comp spec α), set α
 | _ (pure' α a) := {a}
-| _ (bind' α β oa ob) := ⋃ α ∈ oa.support, (ob α).support
-| _ (query i t) := set.univ
+| _ (query_bind' i t α oa) := ⋃ u, (oa u).support
 
 @[simp] lemma support_return (spec) (a) : (return a : oracle_comp spec α).support = {a} := rfl
 
@@ -38,22 +37,35 @@ lemma support_pure' (spec) (a) : (pure' α a : oracle_comp spec α).support = {a
 
 lemma support_pure (spec) (a) : (pure a : oracle_comp spec α).support = {a} := rfl
 
+lemma support_query_bind' (i : spec.ι) (t : spec.domain i)
+  (oa : spec.range i → oracle_comp spec α) :
+  (query_bind' i t α oa).support = ⋃ u, (oa u).support := rfl
+
 @[simp] lemma support_bind (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) :
-  (oa >>= ob).support = ⋃ α ∈ oa.support, (ob α).support := rfl
+  (oa >>= ob).support = ⋃ α ∈ oa.support, (ob α).support :=
+begin
+  induction oa using oracle_comp.induction_on' with α a i t α oa hoa,
+  { simp only [pure_bind, support_return, set.mem_singleton_iff, set.Union_Union_eq_left] },
+  { simp_rw [bind_assoc, ← query_bind'_eq_query_bind,
+      support_query_bind', hoa, set.mem_Union, set.Union_exists],
+    exact set.Union_comm _ }
+end
 
 lemma support_bind' (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) :
-  (bind' α β oa ob).support = ⋃ α ∈ oa.support, (ob α).support := rfl
+  (bind' α β oa ob).support = ⋃ α ∈ oa.support, (ob α).support :=
+by rw [oracle_comp.bind'_eq_bind, support_bind]
 
 @[simp] lemma support_query (i : spec.ι) (t : spec.domain i) :
-  (query i t).support = set.univ := rfl
+  (query i t).support = set.univ :=
+by simp only [query_def, support_query_bind', support_pure',
+  set.Union_singleton_eq_range, set.range_id']
 
 /-- If the range of `spec` is a `fintype` then the support is a finite set. -/
 lemma support_finite (oa : oracle_comp spec α) : oa.support.finite :=
 begin
-  induction oa with α a α β oa ob hoa hob i t,
+  induction oa using oracle_comp.induction_on' with α a i t α oa hoa,
   { exact set.finite_singleton a },
-  { exact hoa.bind (λ a _, hob a)},
-  { exact set.finite_univ }
+  { simp only [set.finite_Union hoa, support_bind, support_query, set.Union_true] }
 end
 
 noncomputable instance support.coe_sort_fintype (oa : oracle_comp spec α) :
@@ -79,7 +91,8 @@ begin
     simp only [subtype.val_eq_coe, oracle_comp.bind'_eq_bind, support_bind,
       set.mem_Union, exists_prop],
     exact ⟨hoa.1.1, hoa.1.2, (hob hoa.1).1.2⟩ },
-  { exact ⟨⟨default, set.mem_univ _⟩⟩ }
+  { rw [support_query],
+    exact ⟨⟨default, set.mem_univ _⟩⟩ }
 end
 
 lemma support_eq_singleton_iff_forall (oa : oracle_comp spec α) (x) :

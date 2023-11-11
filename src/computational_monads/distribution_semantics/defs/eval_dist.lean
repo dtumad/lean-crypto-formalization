@@ -38,15 +38,16 @@ simulation semantics (`oracle_comp.simulate`) can be used to reduce the oracles 
 This will give a new computation which only calls some uniform oracle,  -/
 noncomputable def eval_dist {spec : oracle_spec} : Π {α : Type} (oa : oracle_comp spec α), pmf α
 | _ (pure' α a) := pmf.pure a
-| _ (bind' α β oa ob) := pmf.bind (eval_dist oa) (λ a, eval_dist $ ob a)
-| _ (query i t) := pmf.uniform_of_fintype (spec.range i)
+| _ (query_bind' i t α oa) := pmf.bind
+  (pmf.uniform_of_fintype (spec.range i)) (λ a, eval_dist $ oa a)
 
 notation `⁅` oa `⁆` := eval_dist oa
 
 -- notation `⁅=` x `|` oa `⁆` := ⁅oa⁆ x
 
 variables {α β : Type} {spec : oracle_spec} (a : α) (oa : oracle_comp spec α)
-  (ob : α → oracle_comp spec β) (i : spec.ι) (t : spec.domain i) (u : spec.range i) (x : α) (y : β)
+  (ob : α → oracle_comp spec β) (i : spec.ι) (t : spec.domain i) (u : spec.range i)
+  (ou : spec.range i → oracle_comp spec α) (x : α) (y : β)
 
 lemma eval_dist.ext (p : pmf α) (h : ∀ x, ⁅oa⁆ x = p x) : ⁅oa⁆ = p := pmf.ext h
 
@@ -58,23 +59,32 @@ lemma eval_dist_pure' : ⁅(pure' α a : oracle_comp spec α)⁆ = pmf.pure a :=
 
 lemma eval_dist_pure : ⁅(pure a : oracle_comp spec α)⁆ = pmf.pure a := rfl
 
-@[simp] lemma eval_dist_bind : ⁅oa >>= ob⁆ = ⁅oa⁆.bind (λ x, ⁅ob x⁆) :=
-by rw [← oracle_comp.bind'_eq_bind, eval_dist]
+lemma eval_dist_query_bind : ⁅query_bind' i t α ou⁆ = pmf.bind
+  (pmf.uniform_of_fintype (spec.range i)) (λ a, eval_dist $ ou a) := by rw [eval_dist]
 
-lemma eval_dist_bind' : ⁅bind' α β oa ob⁆ = ⁅oa⁆.bind (λ x, ⁅ob x⁆) := eval_dist_bind oa ob
 
-@[simp] lemma eval_dist_query : ⁅query i t⁆ = pmf.uniform_of_fintype (spec.range i) := rfl
+-- @[simp] lemma eval_dist_bind : ⁅oa >>= ob⁆ = ⁅oa⁆.bind (λ x, ⁅ob x⁆) :=
+-- by rw [← oracle_comp.bind'_eq_bind, eval_dist]
+
+-- lemma eval_dist_bind' : ⁅bind' α β oa ob⁆ = ⁅oa⁆.bind (λ x, ⁅ob x⁆) := eval_dist_bind oa ob
+
+-- @[simp] lemma eval_dist_query : ⁅query i t⁆ = pmf.uniform_of_fintype (spec.range i) := rfl
 
 section support
 
 /-- The support of the `pmf` associated to a computation is the coercion of its `support`. -/
 @[simp] lemma support_eval_dist : ⁅oa⁆.support = oa.support :=
 begin
-  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t,
-  { exact pmf.support_pure a },
-  { exact (set.ext $ λ x, by simp_rw [support_bind, set.mem_Union, ← oracle_comp.bind'_eq_bind,
-      eval_dist, pmf.mem_support_bind_iff, hoa, hob]) },
-  { rw [eval_dist, pmf.support_uniform_of_fintype, support_query, set.top_eq_univ] }
+  induction oa using oracle_comp.induction_on' with α a i t α oa hoa,
+  { rw [oracle_comp.pure'_eq_return],
+    exact pmf.support_pure a },
+
+
+  -- induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t,
+  -- { exact pmf.support_pure a },
+  -- { exact (set.ext $ λ x, by simp_rw [support_bind, set.mem_Union, ← oracle_comp.bind'_eq_bind,
+  --     eval_dist, pmf.mem_support_bind_iff, hoa, hob]) },
+  -- { rw [eval_dist, pmf.support_uniform_of_fintype, support_query, set.top_eq_univ] }
 end
 
 /-- The support of the `pmf` associated to a computation is the coercion of its `fin_support`. -/
