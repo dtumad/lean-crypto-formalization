@@ -171,7 +171,6 @@ instance is_lawful_monad (spec : oracle_spec) :
               not_false_iff, eq_self_iff_true, heq_iff_eq, and_self] } } } },
   end }
 
-
 -- Notation for `return` with an explicit `spec` argument for convenience.
 notation `return'` `!` spec `!` a := (return a : oracle_comp spec _)
 
@@ -189,6 +188,12 @@ protected lemma bind_return_comp_eq_map (oa : oracle_comp spec α) (f : α → �
 
 protected lemma map_eq_bind_return_comp (oa : oracle_comp spec α) (f : α → β) :
   f <$> oa = oa >>= return ∘ f := rfl
+
+lemma return_bind (a : α) (ob : α → oracle_comp spec β) :
+  return a >>= ob = ob a := pure_bind a ob
+
+lemma bind_return (oa : oracle_comp spec α) :
+  oa >>= return = oa := bind_pure oa
 
 end monad
 

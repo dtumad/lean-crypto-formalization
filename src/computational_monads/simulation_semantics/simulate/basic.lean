@@ -10,7 +10,7 @@ import computational_monads.distribution_semantics.prod
 
 Defines the notion of simulating a computation by defining the outputs of oracle query.
 A method of simulation is given by `sim_oracle`, which contains an internal state
-  as well as a function to return a value and update the state given a query to the oracle.
+as well as a function to return a value and update the state given a query to the oracle.
 
 It also contains a `default_state`, specifying the value to use for the default oracle state.
 For example a logging query would use an empty log as the default state.

@@ -31,8 +31,7 @@ open_locale classical
 The members exactly match those of `oracle_comp.support`, and the definition is similar. -/
 noncomputable def fin_support : Π {α : Type} (oa : oracle_comp spec α), finset α
 | _ (pure' α a) := {a}
-| _ (bind' α β oa ob) := finset.bUnion (fin_support oa) (λ x, fin_support (ob x))
-| _ (query i t) := finset.univ
+| _ (query_bind' i t α oa) := finset.bUnion finset.univ (λ u, (oa u).fin_support)
 
 section support
 
@@ -41,11 +40,10 @@ variables (oa : oracle_comp spec α) (s : finset α)
 /-- Correctness of `fin_support` with respect to `support`, i.e. the two are equal as `set` -/
 lemma mem_fin_support_iff_mem_support (x : α) : x ∈ oa.fin_support ↔ x ∈ oa.support :=
 begin
-  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t,
-  { exact finset.mem_singleton.trans (set.mem_singleton_iff) },
-  { simp only [← oracle_comp.bind'_eq_bind, fin_support, support, finset.mem_bUnion,
-      set.mem_Union, hoa, hob] },
-  { simp only [fin_support, support, finset.mem_univ, set.top_eq_univ, set.mem_univ] }
+  induction oa using oracle_comp.induction_on' with α a i t α oa hoa,
+  { exact finset.mem_singleton.trans set.mem_singleton_iff },
+  { simp only [← query_bind'_eq_query_bind, fin_support, support,
+      set.mem_Union, finset.mem_bUnion, hoa, finset.mem_univ, exists_true_left] }
 end
 
 lemma mem_fin_support_of_mem_support {x : α} (hx : x ∈ oa.support) : x ∈ oa.fin_support :=
@@ -92,6 +90,10 @@ lemma fin_support_pure' (spec) (a) : (pure' α a : oracle_comp spec α).fin_supp
 
 lemma fin_support_pure (spec) (a) : (pure a : oracle_comp spec α).fin_support = {a} := rfl
 
+lemma fin_support_query_bind' (i : spec.ι) (t : spec.domain i)
+  (oa : spec.range i → oracle_comp spec α) : (query_bind' i t α oa).fin_support =
+  finset.bUnion finset.univ (λ u, (oa u).fin_support) := by rw [fin_support]
+
 @[simp] lemma fin_support_bind (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) :
   (oa >>= ob).fin_support = finset.bUnion oa.fin_support (λ a, (ob a).fin_support) :=
 by simp only [fin_support_eq_iff_support_eq_coe, support_bind,
@@ -102,7 +104,9 @@ by simp only [fin_support_eq_iff_support_eq_coe, support_bind,
 fin_support_bind oa ob
 
 @[simp] lemma fin_support_query (i : spec.ι) (t : spec.domain i) :
-  (query i t).fin_support = finset.univ := rfl
+  (query i t).fin_support = finset.univ :=
+by simp only [query_def, fin_support_query_bind', oracle_comp.pure'_eq_return,
+  fin_support_return, finset.bUnion_singleton_eq_self]
 
 /-- The `fin_support` of a computation is never empty (since `support` is never empty). -/
 lemma fin_support_nonempty (oa : oracle_comp spec α) : oa.fin_support.nonempty :=

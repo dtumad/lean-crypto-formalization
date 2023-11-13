@@ -64,6 +64,9 @@ instance dist_equiv.is_refl : is_refl (oracle_comp spec α) (≃ₚ) := ⟨λ x,
 
 lemma dist_equiv.rfl {oa : oracle_comp spec α} : oa ≃ₚ oa := refl oa
 
+@[simp] lemma dist_equiv_self_iff (oa : oracle_comp spec α) : oa ≃ₚ oa ↔ true :=
+⟨λ h, true.intro, λ h, dist_equiv.rfl⟩
+
 /-- More general than regular `symm`, the two computations may have different `oracle_spec`. -/
 @[symm] lemma dist_equiv.symm (h : oa ≃ₚ oa') : oa' ≃ₚ oa := h.symm
 
@@ -112,5 +115,14 @@ lemma dist_equiv.indep_event_iff (h : oa ≃ₚ oa') (e e' : set α) :
   oa.indep_event e e' ↔ oa'.indep_event e e' :=
 indep_event_iff_of_eval_dist_eq oa oa' e e' h
 
-end oracle_comp
+section monad
 
+lemma return_bind_dist_equiv (a : α) (oa : α → oracle_comp spec β) :
+  return a >>= oa ≃ₚ oa a := dist_equiv.rfl
+
+lemma bind_return_dist_equiv (oa : oracle_comp spec α) :
+  oa >>= return ≃ₚ oa := by rw [bind_return]
+
+end monad
+
+end oracle_comp
