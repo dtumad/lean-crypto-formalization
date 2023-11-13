@@ -86,7 +86,7 @@ pmf.to_outer_measure_apply ⁅oa⁆ e
 lemma prob_event_eq_sum_indicator [fintype α] : ⁅e | oa⁆ = ∑ x, e.indicator ⁅oa⁆ x :=
 (prob_event_eq_tsum_indicator oa e).trans (tsum_eq_sum (λ x hx, (hx $ finset.mem_univ x).elim))
 
-lemma prob_event_eq_sum_fin_support_indicator :
+lemma prob_event_eq_sum_fin_support_indicator [decidable_eq α] :
   ⁅e | oa⁆ = ∑ x in oa.fin_support, e.indicator ⁅oa⁆ x :=
 (prob_event_eq_tsum_indicator oa e).trans (tsum_eq_sum $
   λ a ha, set.indicator_apply_eq_zero.2 (λ _, prob_output_eq_zero' ha))
@@ -100,8 +100,8 @@ lemma prob_event_eq_sum_ite [fintype α] [decidable_pred e] :
 trans (prob_event_eq_sum_indicator oa e) (finset.sum_congr rfl $
   λ _ _, by {rw set.indicator, congr})
 
-lemma prob_event_eq_sum_fin_support_ite [decidable_pred e] :
-  ⁅e | oa⁆ = ∑ x in oa.fin_support, ite (x ∈ e) (⁅oa⁆ x) 0 :=
+lemma prob_event_eq_sum_fin_support_ite [decidable_eq α] [decidable_pred e] :
+  ⁅e | oa⁆ = ∑ x in oa.fin_support, if x ∈ e then ⁅= x | oa⁆ else 0 :=
 trans (prob_event_eq_sum_fin_support_indicator oa e) (finset.sum_congr rfl $
   λ _ _, by {rw set.indicator, congr})
 

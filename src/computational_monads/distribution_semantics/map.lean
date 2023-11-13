@@ -27,11 +27,12 @@ support_bind_return oa f
 lemma mem_support_map_iff : y ∈ (f <$> oa).support ↔ ∃ x ∈ oa.support, f x = y :=
 mem_support_bind_return_iff oa f y
 
-@[simp] lemma fin_support_map [decidable_eq β] : (f <$> oa).fin_support = oa.fin_support.image f :=
+@[simp] lemma fin_support_map [decidable_eq α] [decidable_eq β] :
+  (f <$> oa).fin_support = oa.fin_support.image f :=
 by rw [fin_support_eq_iff_support_eq_coe, finset.coe_image,
   support_map, coe_fin_support_eq_support]
 
-lemma mem_fin_support_map_iff [decidable_eq β] :
+lemma mem_fin_support_map_iff [decidable_eq α] [decidable_eq β] :
   y ∈ (f <$> oa).fin_support ↔ ∃ x ∈ oa.fin_support, f x = y :=
 by rw [fin_support_map, finset.mem_image]
 
@@ -61,11 +62,11 @@ lemma prob_output_map_eq_sum_indicator [fintype α] :
   ⁅= y | f <$> oa⁆ = ∑ x, (f ⁻¹' {y}).indicator ⁅oa⁆ x :=
 prob_output_bind_return_eq_sum_indicator oa f y
 
-lemma prob_output_map_eq_sum_fin_support [decidable_eq β] :
+lemma prob_output_map_eq_sum_fin_support [decidable_eq α] [decidable_eq β] :
   ⁅= y | f <$> oa⁆ = ∑ x in oa.fin_support, if y = f x then ⁅oa⁆ x else 0 :=
 prob_output_bind_return_eq_sum_fin_support oa f y
 
-lemma prob_output_map_eq_sum_fin_support_indicator :
+lemma prob_output_map_eq_sum_fin_support_indicator [decidable_eq α] :
   ⁅= y | f <$> oa⁆ = ∑ x in oa.fin_support, (f ⁻¹' {y}).indicator ⁅oa⁆ x :=
 prob_output_bind_return_eq_sum_fin_support_indicator oa f y
 
@@ -135,7 +136,8 @@ by simp only [support_map, support_return, set.image_singleton]
 lemma mem_support_map_return_iff : y ∈ (f <$> (return' !spec! a)).support ↔ y = f a :=
 by simp only [support_map, support_return, set.image_singleton, set.mem_singleton_iff]
 
-@[simp] lemma fin_support_map_return : (f <$> return' !spec! a).fin_support = {f a} :=
+@[simp] lemma fin_support_map_return [decidable_eq β] :
+  (f <$> return' !spec! a).fin_support = {f a} :=
 by simp [oracle_comp.map_eq_bind_return_comp]
 
 lemma mem_fin_support_map_return_iff : y ∈ (f <$> return' !spec! a).support ↔ y = f a :=
@@ -162,7 +164,8 @@ by simp only [dist_equiv.def, eval_dist_map, pmf.map_comp]
 lemma support_map_comp : (g <$> (f <$> oa)).support = ((g ∘ f) <$> oa).support :=
 by pairwise_dist_equiv
 
-lemma fin_support_map_comp : (g <$> (f <$> oa)).fin_support = ((g ∘ f) <$> oa).fin_support :=
+lemma fin_support_map_comp [decidable_eq γ] :
+  (g <$> (f <$> oa)).fin_support = ((g ∘ f) <$> oa).fin_support :=
 by pairwise_dist_equiv
 
 lemma eval_dist_map_comp : ⁅g <$> (f <$> oa)⁆ = ⁅oa⁆.map (g ∘ f) :=
@@ -186,13 +189,15 @@ lemma mem_support_map_bind_iff : z ∈ (g <$> (oa >>= ob)).support ↔
   ∃ x ∈ oa.support, ∃ y ∈ (ob x).support, g y = z :=
 by simp only [support_map_bind, set.mem_Union, set.mem_image, exists_prop]
 
-@[simp] lemma fin_support_map_bind [decidable_eq γ] : (g <$> (oa >>= ob)).fin_support =
-  finset.bUnion oa.fin_support (λ a, (ob a).fin_support.image g) :=
+@[simp] lemma fin_support_map_bind [decidable_eq α] [decidable_eq β] [decidable_eq γ] :
+  (g <$> (oa >>= ob)).fin_support =
+    finset.bUnion oa.fin_support (λ a, (ob a).fin_support.image g) :=
 by simp_rw [fin_support_eq_iff_support_eq_coe, finset.coe_bUnion, finset.coe_image,
   coe_fin_support_eq_support, support_map_bind]
 
-lemma mem_fin_support_map_bind_iff [decidable_eq γ] : z ∈ (g <$> (oa >>= ob)).fin_support ↔
-  ∃ x ∈ oa.fin_support, ∃ y ∈ (ob x).fin_support, g y = z :=
+lemma mem_fin_support_map_bind_iff [decidable_eq α] [decidable_eq β] [decidable_eq γ] :
+  z ∈ (g <$> (oa >>= ob)).fin_support ↔
+    ∃ x ∈ oa.fin_support, ∃ y ∈ (ob x).fin_support, g y = z :=
 by simp only [fin_support_map_bind, finset.mem_bUnion, finset.mem_image]
 
 @[pairwise_dist_equiv] lemma map_bind_dist_equiv : g <$> (oa >>= ob) ≃ₚ oa >>= (λ x, g <$> ob x) :=
@@ -216,8 +221,9 @@ lemma prob_output_map_bind_eq_sum [fintype α] [fintype β] [decidable_eq γ] :
   ⁅= z | g <$> (oa >>= ob)⁆ = ∑ (x : α) (y : β), ⁅= x | oa⁆ * (ite (z = g y) ⁅= y | ob x⁆ 0) :=
 by simp only [prob_output_map_bind_eq_tsum, tsum_fintype]
 
-lemma prob_output_map_bind_eq_sum_fin_support [decidable_eq γ] : ⁅= z | g <$> (oa >>= ob)⁆ =
-  ∑ x in oa.fin_support, ∑ y in (ob x).fin_support, ⁅= x | oa⁆ * (ite (z = g y) ⁅= y | ob x⁆ 0) :=
+lemma prob_output_map_bind_eq_sum_fin_support [decidable_eq α] [decidable_eq β] [decidable_eq γ] :
+  ⁅= z | g <$> (oa >>= ob)⁆ = ∑ x in oa.fin_support,
+    ∑ y in (ob x).fin_support, ⁅= x | oa⁆ * (ite (z = g y) ⁅= y | ob x⁆ 0) :=
 trans ((map_bind_dist_equiv _ _ _).prob_output_eq _) (by simpa only
   [prob_output_bind_eq_sum_fin_support, prob_output_map_eq_sum_fin_support, finset.mul_sum])
 
@@ -260,12 +266,12 @@ lemma mem_support_bind_map_iff : z ∈ ((f <$> oa) >>= oc).support ↔
 by simp only [support_bind, set.mem_Union, support_map, set.mem_image,
   set.Union_exists, set.bUnion_and', set.Union_Union_eq_right]
 
-@[simp] lemma fin_support_bind_map [decidable_eq β] [decidable_eq γ] :
+@[simp] lemma fin_support_bind_map [decidable_eq α] [decidable_eq β] [decidable_eq γ] :
   ((f <$> oa) >>= oc).fin_support =
     finset.bUnion oa.fin_support (λ a, (oc (f a)).fin_support) :=
 by simp only [finset.image_bUnion, fin_support_bind, fin_support_map]; congr
 
-lemma mem_fin_support_bind_map_iff [decidable_eq β] [decidable_eq γ] :
+lemma mem_fin_support_bind_map_iff [decidable_eq α] [decidable_eq β] [decidable_eq γ] :
   z ∈ ((f <$> oa) >>= oc).fin_support ↔ ∃ x ∈ oa.fin_support, z ∈ (oc (f x)).fin_support :=
 by simp only [fin_support_bind_map, finset.mem_bUnion]
 
@@ -283,8 +289,9 @@ lemma prob_output_bind_map_eq_sum [fintype α] : ⁅= z | (f <$> oa) >>= oc⁆ =
   ∑ (x : α), ⁅oa⁆ x * ⁅oc (f x)⁆ z :=
 trans ((bind_map_dist_equiv _ _ _).prob_output_eq z) (prob_output_bind_eq_sum _ _ _)
 
-lemma prob_output_bind_map_eq_sum_fin_support : ⁅= z | (f <$> oa) >>= oc⁆ =
-  ∑ x in oa.fin_support, ⁅= x | oa⁆ * ⁅= z | oc (f x)⁆ :=
+lemma prob_output_bind_map_eq_sum_fin_support [decidable_eq α] [decidable_eq γ] :
+  ⁅= z | (f <$> oa) >>= oc⁆ =
+    ∑ x in oa.fin_support, ⁅= x | oa⁆ * ⁅= z | oc (f x)⁆ :=
 trans ((bind_map_dist_equiv _ _ _).prob_output_eq z) (prob_output_bind_eq_sum_fin_support _ _ _)
 
 end bind_map
@@ -296,7 +303,7 @@ lemma map_id_dist_equiv : id <$> oa ≃ₚ oa := by pairwise_dist_equiv
 @[simp] lemma support_map_id : (id <$> oa).support = oa.support :=
 by pairwise_dist_equiv
 
-@[simp] lemma fin_support_map_id : (id <$> oa).fin_support = oa.fin_support :=
+@[simp] lemma fin_support_map_id [decidable_eq α] : (id <$> oa).fin_support = oa.fin_support :=
 by pairwise_dist_equiv
 
 @[simp] lemma eval_dist_map_id : ⁅id <$> oa⁆ = ⁅oa⁆ :=

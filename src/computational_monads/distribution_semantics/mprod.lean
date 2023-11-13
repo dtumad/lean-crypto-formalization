@@ -136,7 +136,7 @@ by pairwise_dist_equiv
 begin
   refine trans (map_mprod_dist_equiv oa ob fst) _,
   simp only [],
-  rw_dist_equiv [bind_const_dist_equiv, bind_return_id_dist_equiv],
+  rw_dist_equiv [bind_const_dist_equiv, bind_return_dist_equiv],
 end
 
 @[pairwise_dist_equiv] lemma snd_map_mprod_dist_equiv :
@@ -144,7 +144,7 @@ end
 begin
   refine trans (map_mprod_dist_equiv oa ob snd) _,
   simp only [],
-  rw_dist_equiv [bind_const_dist_equiv, bind_return_id_dist_equiv],
+  rw_dist_equiv [bind_const_dist_equiv, bind_return_dist_equiv],
 end
 
 @[pairwise_dist_equiv] lemma map_prod_mprod_dist_equiv (f : α → γ) (g : β → δ) :

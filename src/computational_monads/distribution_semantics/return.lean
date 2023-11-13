@@ -25,24 +25,28 @@ variable (x : α)
 
 lemma mem_support_return_iff : x ∈ (return' !spec! a).support ↔ x = a := iff.rfl
 
-lemma mem_fin_support_return_iff : x ∈ (return' !spec! a).fin_support ↔ x = a :=
+lemma mem_fin_support_return_iff [decidable_eq α] : x ∈ (return' !spec! a).fin_support ↔ x = a :=
 finset.mem_singleton
 
 lemma mem_support_return_self : x ∈ (return' !spec! x).support := set.mem_singleton x
 
-lemma mem_fin_support_return_self : x ∈ (return' !spec! x).fin_support :=
+lemma mem_fin_support_return_self [decidable_eq α] : x ∈ (return' !spec! x).fin_support :=
 finset.mem_singleton_self x
 
-lemma not_mem_support_return_iff : x ∉ (return' !spec! a).support ↔ x ≠ a :=
+lemma not_mem_support_return_iff :
+  x ∉ (return' !spec! a).support ↔ x ≠ a :=
 by rw [support_return, set.mem_singleton_iff]
 
-lemma not_mem_fin_support_return_iff : x ∉ (return' !spec! a).fin_support ↔ x ≠ a :=
+lemma not_mem_fin_support_return_iff [decidable_eq α] :
+  x ∉ (return' !spec! a).fin_support ↔ x ≠ a :=
 by simp only [fin_support_return, finset.mem_singleton]
 
-lemma not_mem_support_of_ne {a x : α} (h : x ≠ a) : x ∉ (return' !spec! a).support :=
+lemma not_mem_support_of_ne {a x : α} (h : x ≠ a) :
+  x ∉ (return' !spec! a).support :=
 by simp only [h, support_return, set.mem_singleton_iff, not_false_iff]
 
-lemma not_mem_fin_support_of_ne {a x : α} (h : x ≠ a) : x ∉ (return' !spec! a).fin_support :=
+lemma not_mem_fin_support_of_ne [decidable_eq α] {a x : α} (h : x ≠ a) :
+  x ∉ (return' !spec! a).fin_support :=
 by simp only [h, fin_support_return, finset.mem_singleton, not_false_iff]
 
 end mem_support
@@ -172,7 +176,7 @@ lemma support_return_eq_iff (s : set α) :
   (return' !spec! a).support = s ↔ a ∈ s ∧ ∀ x ∈ s, x = a :=
 by rw [support_return, @eq_comm _ {a} s, set.eq_singleton_iff_unique_mem]
 
-lemma fin_support_return_eq_iff (s : finset α) :
+lemma fin_support_return_eq_iff [decidable_eq α] (s : finset α) :
   (return' !spec! a).fin_support = s ↔ a ∈ s ∧ ∀ x ∈ s, x = a :=
 by simp_rw [fin_support_eq_iff_support_eq_coe, support_return_eq_iff, finset.mem_coe]
 
@@ -209,7 +213,7 @@ lemma support_return_eq_support_return_iff :
   (return' !spec! a).support = (return' !spec'! a').support ↔ a = a' :=
 by simp only [support_return, set.singleton_eq_singleton_iff]
 
-lemma fin_support_return_eq_fin_support_return_iff :
+lemma fin_support_return_eq_fin_support_return_iff [decidable_eq α] :
   (return' !spec! a).fin_support = (return' !spec'! a').fin_support ↔ a = a' :=
 by simp only [fin_support_return, finset.singleton_inj]
 

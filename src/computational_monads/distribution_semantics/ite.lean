@@ -25,7 +25,7 @@ variables (p : Prop) [decidable p]
 @[simp] lemma support_ite : (if p then oa else oa').support =
   if p then oa.support else oa'.support := by split_ifs; refl
 
-@[simp] lemma fin_support_ite : (if p then oa else oa').fin_support =
+@[simp] lemma fin_support_ite [decidable_eq α] : (if p then oa else oa').fin_support =
   if p then oa.fin_support else oa'.fin_support := by split_ifs; refl
 
 lemma mem_support_ite_iff (x : α) : x ∈ (if p then oa else oa').support ↔
@@ -33,7 +33,7 @@ lemma mem_support_ite_iff (x : α) : x ∈ (if p then oa else oa').support ↔
 by split_ifs with h; simp only [h, true_and, not_true, false_and,
   or_false, false_and, not_false_iff, true_and, false_or]
 
-lemma mem_fin_support_ite_iff (x : α) : x ∈ (if p then oa else oa').support ↔
+lemma mem_fin_support_ite_iff [decidable_eq α] (x : α) : x ∈ (if p then oa else oa').support ↔
   (p ∧ x ∈ oa.fin_support) ∨ (¬ p ∧ x ∈ oa'.fin_support) :=
 by simp only [mem_fin_support_iff_mem_support, mem_support_ite_iff]
 
@@ -52,7 +52,7 @@ by split_ifs with hp; simp [hp]
 
 @[pairwise_dist_equiv] lemma ite_dist_equiv : (if p then oa else oa') ≃ₚ
   do {x ← oa, x' ← oa', if p then return x else return x'} :=
-by split_ifs with hp; rw_dist_equiv [bind_const_dist_equiv, bind_return_id_dist_equiv]
+by split_ifs with hp; by rw_dist_equiv [bind_const_dist_equiv, bind_return_dist_equiv]
 
 end ite
 
@@ -210,7 +210,7 @@ variables (f g : α → β) (y : β)
 (support_bind_ite oa p _ _).trans (by congr; exact set.ext (λ x, by simp only [@eq_comm _ x,
   support_return, set.mem_Union, set.mem_singleton_iff, exists_prop, set.mem_image]))
 
-@[simp] lemma fin_support_bind_ite_return [decidable_eq β] :
+@[simp] lemma fin_support_bind_ite_return [decidable_eq α] [decidable_eq β] :
   (do {x ← oa, if p x then return (f x) else return (g x)}).fin_support =
     ((oa.fin_support.filter p).image f) ∪ ((oa.fin_support.filter (not ∘ p)).image g) :=
 by simp only [fin_support_eq_iff_support_eq_coe, support_bind_ite_return,
@@ -240,7 +240,7 @@ variables (f : α → β)
   (f <$> if p then oa else oa').support =
     if p then (f <$> oa).support else (f <$> oa').support := by split_ifs; refl
 
-@[simp] lemma fin_support_map_ite (p : Prop) [decidable p] :
+@[simp] lemma fin_support_map_ite [decidable_eq β] (p : Prop) [decidable p] :
   (f <$> if p then oa else oa').fin_support =
     if p then (f <$> oa).fin_support else (f <$> oa').fin_support := by split_ifs; refl
 

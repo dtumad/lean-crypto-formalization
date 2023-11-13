@@ -29,29 +29,29 @@ such that `y` is in the support of `ob x`. -/
 lemma mem_support_bind_iff : y ∈ (oa >>= ob).support ↔ ∃ x ∈ oa.support, y ∈ (ob x).support :=
 by simp_rw [support_bind, set.mem_Union]
 
-lemma mem_fin_support_bind_iff : y ∈ (oa >>= ob).fin_support ↔
-  ∃ x ∈ oa.fin_support, y ∈ (ob x).fin_support :=
+lemma mem_fin_support_bind_iff [decidable_eq α] [decidable_eq β] :
+  y ∈ (oa >>= ob).fin_support ↔ ∃ x ∈ oa.fin_support, y ∈ (ob x).fin_support :=
 by rw [fin_support_bind, finset.mem_bUnion]
 
 lemma mem_support_bind (hx : x ∈ oa.support) (hy : y ∈ (ob x).support) : y ∈ (oa >>= ob).support :=
 (mem_support_bind_iff oa ob y).2 ⟨x, hx, hy⟩
 
-lemma mem_fin_support_bind (hx : x ∈ oa.fin_support) (hy : y ∈ (ob x).fin_support) :
-  y ∈ (oa >>= ob).fin_support :=
+lemma mem_fin_support_bind [decidable_eq α] [decidable_eq β] (hx : x ∈ oa.fin_support)
+  (hy : y ∈ (ob x).fin_support) : y ∈ (oa >>= ob).fin_support :=
 (mem_fin_support_bind_iff oa ob y).2 ⟨x, hx, hy⟩
 
 lemma not_mem_support_bind_iff : y ∉ (oa >>= ob).support ↔ ∀ x ∈ oa.support, y ∉ (ob x).support :=
 by simp only [support_bind, set.mem_Union, not_exists]
 
-lemma not_mem_fin_support_bind_iff : y ∉ (oa >>= ob).fin_support ↔
-  ∀ x ∈ oa.fin_support, y ∉ (ob x).fin_support :=
+lemma not_mem_fin_support_bind_iff [decidable_eq α] [decidable_eq β] :
+  y ∉ (oa >>= ob).fin_support ↔ ∀ x ∈ oa.fin_support, y ∉ (ob x).fin_support :=
 by simp only [fin_support_bind, finset.mem_bUnion, not_exists]
 
 lemma not_mem_support_bind (h : ∀ x ∈ oa.support, y ∉ (ob x).support) : y ∉ (oa >>= ob).support :=
 (not_mem_support_bind_iff oa ob y).2 h
 
-lemma not_mem_fin_support_bind (h : ∀ x ∈ oa.fin_support, y ∉ (ob x).fin_support) :
-  y ∉ (oa >>= ob).fin_support :=
+lemma not_mem_fin_support_bind [decidable_eq α] [decidable_eq β]
+  (h : ∀ x ∈ oa.fin_support, y ∉ (ob x).fin_support) : y ∉ (oa >>= ob).fin_support :=
 (not_mem_fin_support_bind_iff oa ob y).2 h
 
 end mem_support
@@ -80,7 +80,7 @@ by simpa only [prob_output_bind_eq_tsum]
   using tsum_eq_sum (λ x hx, (hx $ finset.mem_univ x).elim)
 
 /-- Express the probability of getting `y` from `oa >>= ob` as a sum over `oa.fin_support`. -/
-lemma prob_output_bind_eq_sum_fin_support (y : β) :
+lemma prob_output_bind_eq_sum_fin_support [decidable_eq α] [decidable_eq β] (y : β) :
   ⁅= y | oa >>= ob⁆ = ∑ x in oa.fin_support, ⁅= x | oa⁆ * ⁅= y | ob x⁆ :=
 (prob_output_bind_eq_tsum oa ob y).trans
   (tsum_eq_sum (λ x hx, (prob_output_eq_zero' hx).symm ▸ zero_mul _))
@@ -109,7 +109,7 @@ lemma prob_event_bind_eq_sum [fintype α] (e' : set β) :
   ⁅e' | oa >>= ob⁆ = ∑ x, ⁅= x | oa⁆ * ⁅e' | ob x⁆ :=
 by simpa only [prob_event_bind_eq_tsum] using tsum_eq_sum (λ x hx, (hx $ finset.mem_univ x).elim)
 
-lemma prob_event_bind_eq_sum_fin_support (e' : set β) :
+lemma prob_event_bind_eq_sum_fin_support [decidable_eq α] [decidable_eq β] (e' : set β) :
   ⁅e' | oa >>= ob⁆ = ∑ x in oa.fin_support, ⁅= x | oa⁆ * ⁅e' | ob x⁆ :=
 (prob_event_bind_eq_tsum _ _ _).trans (tsum_eq_sum (λ x h, by simp [prob_output_eq_zero' h]))
 

@@ -63,8 +63,9 @@ by rw_dist_equiv [map_bind_dist_equiv, return_bind_dist_equiv, map_id_dist_equiv
   snd <$> (oa >>= λ x, return (f x, g x)) ≃ₚ g <$> oa :=
 by pairwise_dist_equiv
 
-lemma snd_map_bind_return_id_dist_equiv : snd <$> (oa >>= λ x, return (f x, x)) ≃ₚ oa :=
-by simp_dist_equiv
+lemma snd_map_bind_return_id_dist_equiv :
+  snd <$> (oa >>= λ x, return (f x, x)) ≃ₚ oa :=
+by simp only [map_bind, map_pure, bind_pure]
 
 lemma fst_map_bind_return_dist_equiv_fst_map_bind_return :
   fst <$> (oa >>= λ x, return (f x, g x)) ≃ₚ fst <$> (oa >>= λ x, return (f x, h x)) :=
@@ -267,28 +268,30 @@ end support
 
 section fin_support
 
-lemma fin_support_bind_prod_mk [decidable_eq β] [decidable_eq γ] :
+variables [decidable_eq α] [decidable_eq β] [decidable_eq γ]
+
+lemma fin_support_bind_prod_mk :
   (oa >>= λ a, return (f a, g a)).fin_support = oa.fin_support.image (λ a, (f a, g a)) :=
 fin_support_bind_return oa _
 
-lemma mem_fin_support_bind_prod_mk [decidable_eq β] [decidable_eq γ] (x : β × γ) :
+lemma mem_fin_support_bind_prod_mk (x : β × γ) :
   x ∈ (oa >>= λ a, return (f a, g a)).fin_support ↔ ∃ y ∈ oa.fin_support, f y = x.1 ∧ g y = x.2 :=
 by simp only [mem_fin_support_iff_mem_support, mem_support_bind_prod_mk]
 
-lemma mem_fin_support_bind_prod_mk_id_fst [decidable_eq α] [decidable_eq γ] (x : α × γ) :
+lemma mem_fin_support_bind_prod_mk_id_fst (x : α × γ) :
   x ∈ (oa >>= λ a, return (a, g a)).fin_support ↔ x.1 ∈ oa.fin_support ∧ g x.1 = x.2 :=
 by simp only [mem_fin_support_iff_mem_support, mem_support_bind_prod_mk_id_fst]
 
-lemma mem_fin_support_bind_prod_mk_id_snd [decidable_eq α] [decidable_eq β] (x : β × α) :
+lemma mem_fin_support_bind_prod_mk_id_snd (x : β × α) :
   x ∈ (oa >>= λ a, return (f a, a)).fin_support ↔ x.2 ∈ oa.fin_support ∧ f x.2 = x.1  :=
 by simp only [mem_fin_support_iff_mem_support, mem_support_bind_prod_mk_id_snd]
 
-lemma mem_fin_support_bind_prod_mk_fst [decidable_eq β] [decidable_eq γ] (x : β × γ) :
+lemma mem_fin_support_bind_prod_mk_fst (x : β × γ) :
   x ∈ (oa >>= λ a, return (f a, c)).fin_support ↔ x.1 ∈ oa.fin_support.image f ∧ x.2 = c :=
 by simp only [mem_fin_support_iff_mem_support, mem_support_bind_prod_mk_fst,
   set.mem_image, finset.mem_image, exists_prop]
 
-lemma mem_fin_support_bind_prod_mk_snd [decidable_eq β] [decidable_eq γ] (x : β × γ) :
+lemma mem_fin_support_bind_prod_mk_snd (x : β × γ) :
   x ∈ (oa >>= λ a, return (b, g a)).fin_support ↔ x.1 = b ∧ x.2 ∈ oa.fin_support.image g :=
 by simp only [mem_fin_support_iff_mem_support, mem_support_bind_prod_mk_snd,
   set.mem_image, finset.mem_image, exists_prop]
@@ -322,6 +325,8 @@ by simp_rw [support_bind_prod_mk_of_fst_subsingleton, set.mem_preimage, set.mem_
 end support
 
 section fin_support
+
+variables [decidable_eq α]
 
 @[simp] lemma fin_support_bind_prod_mk_fst_of_subsingleton [decidable_eq β] [subsingleton γ] :
   (oa >>= λ a, return (f a, g a)).fin_support = (oa.fin_support.image f).preimage fst
@@ -374,11 +379,11 @@ end support
 
 section fin_support
 
-lemma mem_fin_support_map_fst_iff (oab : oracle_comp spec (α × β)) (x : α) :
+lemma mem_fin_support_map_fst_iff [decidable_eq α] (oab : oracle_comp spec (α × β)) (x : α) :
   x ∈ (fst <$> oab).fin_support ↔ ∃ y, (x, y) ∈ oab.support :=
 by rw [mem_fin_support_iff_mem_support, mem_support_map_fst_iff]
 
-lemma mem_fin_support_map_snd_iff (oab : oracle_comp spec (α × β)) (y : β) :
+lemma mem_fin_support_map_snd_iff [decidable_eq β] (oab : oracle_comp spec (α × β)) (y : β) :
   y ∈ (snd <$> oab).fin_support ↔ ∃ x, (x, y) ∈ oab.support :=
 by rw [mem_fin_support_iff_mem_support, mem_support_map_snd_iff]
 

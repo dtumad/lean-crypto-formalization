@@ -22,9 +22,11 @@ variables {α β γ : Type} {spec spec': oracle_spec} (i : spec.ι) (i' : spec'.
 section mem_support
 
 /-- Any element is a possible output of `query`. -/
-lemma mem_support_query : u ∈ (query i t).support := set.mem_univ u
+lemma mem_support_query : u ∈ (query i t).support :=
+by simp only [support_query]
 
-lemma mem_fin_support_query : u ∈ (query i t).fin_support := finset.mem_univ u
+lemma mem_fin_support_query : u ∈ (query i t).fin_support :=
+by simp only [fin_support_query, finset.mem_univ]
 
 lemma mem_support_query_iff_true : u ∈ (query i t).support ↔ true :=
 by simp only [support_query, set.top_eq_univ, set.mem_univ]
@@ -201,14 +203,14 @@ section query_bind
 variables (oa : spec.range i → oracle_comp spec α) (x : α)
 
 lemma support_query_bind : (query i t >>= oa).support = ⋃ u, (oa u).support :=
-by simp_rw [support_bind, set.Union_true]
+by simp_rw [support_bind, support_query, set.Union_true]
 
 lemma mem_support_query_bind_iff : x ∈ (query i t >>= oa).support ↔ ∃ t, x ∈ (oa t).support :=
 by rw [support_query_bind, set.mem_Union]
 
 lemma fin_support_query_bind [decidable_eq α] : (query i t >>= oa).fin_support =
   finset.bUnion finset.univ (λ u, (oa u).fin_support) :=
-by {simp only [fin_support_bind, fin_support_query, finset.top_eq_univ], congr}
+by {simp only [fin_support_bind, fin_support_query, finset.top_eq_univ] }
 
 lemma mem_fin_support_query_bind_iff [decidable_eq α] :
   x ∈ (query i t >>= oa).fin_support ↔ ∃ t, x ∈ (oa t).fin_support :=

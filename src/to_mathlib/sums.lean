@@ -60,8 +60,6 @@ end option
 section jensen
 
 
-#check real.pow_sum_div_card_le_sum_pow
-
 theorem ennreal.pow_sum_div_card_le_sum_pow (s : finset α) (f : α → ℝ≥0∞)
   (hf : ∀ x ∈ s, f x ≠ ∞) (n : ℕ) :
   (∑ x in s, f x) ^ (n + 1) / ↑(s.card) ^ n ≤ ∑ x in s, f x ^ (n + 1) :=
@@ -102,8 +100,12 @@ lemma ennreal.pow_two_sum_le_sum_pow_two (s : finset α) (f : α → ℝ≥0∞)
   (hf : ∀ x ∈ s, f x ≠ ∞) :
   (∑ x in s, f x) ^ 2 ≤ ∑ x in s, s.card * f x ^ 2 :=
 begin
-  sorry
+  rw [← finset.mul_sum, mul_comm],
+  have := ennreal.pow_sum_div_card_le_sum_pow s f hf 1,
+  simp only [pow_one, one_add_one_eq_two] at this,
+  refine (ennreal.div_le_iff_le_mul _ _).1 this,
+  { refine or.inr (ne_top_of_lt (ennreal.sum_lt_top (λ x hx, ennreal.pow_ne_top (hf x hx)))) },
+  { refine or.inl (ennreal.nat_ne_top _) }
 end
-
 
 end jensen

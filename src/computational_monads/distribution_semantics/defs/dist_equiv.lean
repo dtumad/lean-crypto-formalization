@@ -89,7 +89,8 @@ instance dist_equiv.is_equiv : is_equiv (oracle_comp spec α) dist_equiv := is_e
 lemma dist_equiv.support_eq (h : oa ≃ₚ oa') : oa.support = oa'.support :=
 (oa.support_eval_dist).symm.trans ((congr_arg pmf.support h).trans oa'.support_eval_dist)
 
-lemma dist_equiv.fin_support_eq (h : oa ≃ₚ oa') : oa.fin_support = oa'.fin_support :=
+lemma dist_equiv.fin_support_eq [decidable_eq α] (h : oa ≃ₚ oa') :
+  oa.fin_support = oa'.fin_support :=
 (fin_support_eq_fin_support_iff_support_eq_support oa oa').2 h.support_eq
 
 lemma dist_equiv.eval_dist_eq (h : oa ≃ₚ oa') : ⁅oa⁆ = ⁅oa'⁆ := h
@@ -114,15 +115,5 @@ indep_events_iff_of_eval_dist_eq oa oa' es es' h
 lemma dist_equiv.indep_event_iff (h : oa ≃ₚ oa') (e e' : set α) :
   oa.indep_event e e' ↔ oa'.indep_event e e' :=
 indep_event_iff_of_eval_dist_eq oa oa' e e' h
-
-section monad
-
-lemma return_bind_dist_equiv (a : α) (oa : α → oracle_comp spec β) :
-  return a >>= oa ≃ₚ oa a := dist_equiv.rfl
-
-lemma bind_return_dist_equiv (oa : oracle_comp spec α) :
-  oa >>= return ≃ₚ oa := by rw [bind_return]
-
-end monad
 
 end oracle_comp

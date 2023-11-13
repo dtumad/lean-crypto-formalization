@@ -29,8 +29,8 @@ lemma seq_dist_equiv_bind_map : (og <*> oa) ≃ₚ (og >>= λ g, g <$> oa) := re
 @[simp] lemma support_seq : (og <*> oa).support = ⋃ g ∈ og.support, g '' oa.support :=
 by simp only [oracle_comp.seq_eq_bind_map, support_bind, support_map]
 
-@[simp] lemma fin_support_seq [decidable_eq β] : (og <*> oa).fin_support =
-  og.fin_support.bUnion (λ g, oa.fin_support.image g) :=
+@[simp] lemma fin_support_seq [decidable_eq α] [decidable_eq (α → β)] [decidable_eq β] :
+  (og <*> oa).fin_support = og.fin_support.bUnion (λ g, oa.fin_support.image g) :=
 by simp [fin_support_eq_iff_support_eq_coe, mem_fin_support_iff_mem_support]
 
 @[simp] lemma eval_dist_seq : ⁅og <*> oa⁆ = ⁅og⁆.bind (λ g, ⁅oa⁆.map g) :=
