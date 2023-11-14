@@ -27,7 +27,7 @@ open oracle_spec
 variables {α β γ : Type} {spec spec' : oracle_spec}
 
 /-- Computation that repeats `oa` until `p` holds on the result, with at most `n` attempts. -/
-def try_until (oa : oracle_comp spec α) (p : α → Prop) [decidable_pred p]
+noncomputable def try_until (oa : oracle_comp spec α) (p : α → Prop) [decidable_pred p]
   (n : ℕ) : oracle_comp spec (option α) :=
 (λ xs, (vector.to_list xs).find p) <$> (repeat oa n)
 
@@ -38,7 +38,8 @@ lemma try_until_zero : oa.try_until p 0 =
   (λ xs, (vector.to_list xs).find p) <$> (return vector.nil) := rfl
 
 lemma try_until_succ : oa.try_until p n.succ =
-  (λ xs, (vector.to_list xs).find p) <$> do {a ← oa, as ← oa.repeat n, return (a ::ᵥ as)} := rfl
+  (λ xs, (vector.to_list xs).find p) <$> do {a ← oa, as ← oa.repeat n, return (a ::ᵥ as)} :=
+by rw [try_until, repeat_succ]
 
 /-- Any positive result of `oa.try_until p n` will be some output of `oa`. -/
 lemma mem_support_of_some_mem_support_try_until {x : α}
@@ -70,10 +71,12 @@ by simp [dist_equiv_return_iff', try_until_zero]
 lemma mem_support_try_until_zero_iff : x ∈ (oa.try_until p 0).support ↔ x = none :=
 by rw [support_try_until_zero, set.mem_singleton_iff]
 
-@[simp] lemma fin_support_try_until_zero : (oa.try_until p 0).fin_support = {none} :=
+@[simp] lemma fin_support_try_until_zero [decidable_eq α] :
+  (oa.try_until p 0).fin_support = {none} :=
 (try_until_zero_dist_equiv oa p).fin_support_eq.trans (fin_support_return _ _)
 
-lemma mem_fin_support_try_until_iff : x ∈ (oa.try_until p 0).fin_support ↔ x = none :=
+lemma mem_fin_support_try_until_iff [decidable_eq α] :
+  x ∈ (oa.try_until p 0).fin_support ↔ x = none :=
 by rw [fin_support_try_until_zero, finset.mem_singleton]
 
 @[simp] lemma eval_dist_try_until_zero : ⁅oa.try_until p 0⁆ = pmf.pure none :=
@@ -97,10 +100,13 @@ section try_until_succ
 @[pairwise_dist_equiv] lemma try_until_succ_dist_equiv : oa.try_until p n.succ ≃ₚ
   do {x ← oa, if p x then return (some x) else oa.try_until p n} :=
 begin
-  rw_dist_equiv [map_bind_dist_equiv, map_bind_dist_equiv, map_return_dist_equiv, ite_dist_equiv,
-    return_bind_dist_equiv, bind_map_dist_equiv],
-  pairwise_dist_equiv,
-  by_cases hp : p x; simp [hp],
+  simp_rw [try_until_succ, map_bind, map_pure],
+  refine bind_dist_equiv_bind_of_dist_equiv_right' _ _ _ (λ x, _),
+  by_cases hp : p x,
+  { simp only [hp, vector.to_list_cons, list.find_cons_of_pos, if_true,
+      bind_const_dist_equiv_iff] },
+  { simp only [hp, try_until, map_eq_bind_pure_comp, vector.to_list_cons,
+      list.find_cons_of_neg, not_false_iff, if_false] }
 end
 
 /-- `oa.try_until p n` can fail to find a result iff there's an output `x` of `oa` with `¬ p x`. -/

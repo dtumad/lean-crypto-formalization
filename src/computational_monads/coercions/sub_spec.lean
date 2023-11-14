@@ -40,7 +40,7 @@ open oracle_comp
 The fundamental issue being that the type system doesn't have a sense of "additional" oracles.
 In this case, performing a validity check on the adversaries results isn't easily possible.
 Note the actual version is commented out, only the un-checked version will compile. -/
-example {regular_spec adversary_spec : oracle_spec}
+noncomputable example {regular_spec adversary_spec : oracle_spec}
   (adversary : oracle_comp (regular_spec ++ adversary_spec) α)
   (validity_check : α → oracle_comp regular_spec bool) :
   oracle_comp (regular_spec ++ adversary_spec) (option α) :=
@@ -95,7 +95,8 @@ open oracle_spec sim_oracle
 
 /-- Given a `is_sub_spec` instance between `sub_spec` and `super_spec`, we can coerce a computation
 with oracles `sub_spec` to one with `super_spec` by simulating with `is_sub_spec.to_fun`. -/
-instance coe_sub_spec (sub_spec super_spec : oracle_spec) [h : sub_spec ⊂ₒ super_spec] (α : Type) :
+noncomputable instance coe_sub_spec (sub_spec super_spec : oracle_spec)
+  [h : sub_spec ⊂ₒ super_spec] (α : Type) :
   has_coe (oracle_comp sub_spec α) (oracle_comp super_spec α) :=
 {coe := λ oa, dsimulate' ⟪λ i t, h.to_fun i t⟫ oa}
 
@@ -115,12 +116,16 @@ lemma coe_sub_spec_return : (↑(return a : oracle_comp sub_spec α) : oracle_co
   prod.fst <$> return (a, ()) := rfl
 
 lemma coe_sub_spec_bind : (↑(oa >>= ob) : oracle_comp super_spec β) =
-  prod.fst <$> (dsimulate ⟪λ i t, h.to_fun i t⟫ oa >>=
-    λ x, simulate ⟪λ i t, h.to_fun i t⟫ (ob x.1) x.2) :=
+  dsimulate ⟪λ i t, h.to_fun i t⟫ oa >>=
+    λ x, simulate' ⟪λ i t, h.to_fun i t⟫ (ob x.1) x.2 :=
 by rw [coe_sub_spec_def, dsimulate', simulate'_bind]
 
-lemma coe_sub_spec_query : (↑(query i t) : oracle_comp super_spec (sub_spec.range i)) =
-  prod.fst <$> (h.to_fun i t ×ₘ return ()) := rfl
+-- lemma coe_sub_spec_query : (↑(query i t) : oracle_comp super_spec (sub_spec.range i)) =
+--   prod.fst <$> (h.to_fun i t ×ₘ return ()) :=
+-- begin
+--   rw [coe_sub_spec_def],
+--   simp [simulate'_query, is_stateless.apply_dist_equiv],
+-- end
 
 /-- Coercing a computation via a sub-spec instance doesn't change the associated distribution. -/
 @[pairwise_dist_equiv] lemma coe_sub_spec_dist_equiv : (↑oa : oracle_comp super_spec α) ≃ₚ oa :=
@@ -140,10 +145,7 @@ end
 
 @[pairwise_dist_equiv] lemma coe_sub_spec_map_dist_equiv :
   (↑(f <$> oa) : oracle_comp super_spec β) ≃ₚ f <$> (↑oa : oracle_comp super_spec α) :=
-begin
-  rw_dist_equiv [coe_sub_spec_bind_dist_equiv],
-  pairwise_dist_equiv_deep
-end
+by rw_dist_equiv [coe_sub_spec_bind_dist_equiv]
 
 @[simp] lemma map_coe_sub_spec_dist_equiv_iff (ob : oracle_comp super_spec β) :
   f <$> (↑oa : oracle_comp super_spec α) ≃ₚ ob ↔ f <$> oa ≃ₚ ob :=
@@ -163,7 +165,7 @@ end
 (coe_sub_spec_dist_equiv sub_spec super_spec oa).support_eq
 
 /-- `fin_support` is unchanged after coercing a computation via a sub-spec instance. -/
-@[simp] lemma fin_support_coe_sub_spec :
+@[simp] lemma fin_support_coe_sub_spec [decidable_eq α] :
   (↑oa : oracle_comp super_spec α).fin_support = oa.fin_support :=
 (coe_sub_spec_dist_equiv sub_spec super_spec oa).fin_support_eq
 
@@ -264,7 +266,7 @@ section fin_support
 
 end fin_support
 
-section eval_dist
+section eval_dist -- TODO: this all seems weird
 
 @[simp] lemma eval_dist_simulate_coe_sub_spec_return :
   ⁅simulate so' ↑(return a : oracle_comp sub_spec α) s'⁆ = pmf.pure (a, s') :=
@@ -277,8 +279,11 @@ by simp only [coe_sub_spec_return, simulate_map, simulate_return, eval_dist_map,
 calc ⁅simulate so' (↑(oa >>= ob) : oracle_comp super_spec β) s'⁆
   = ⁅simulate so' (dsimulate ⟪h.to_fun⟫ oa) s'⁆.bind (λ (x : (α × unit) × S'),
       ⁅simulate so' (simulate ⟪h.to_fun⟫ (ob x.1.1) x.1.2) x.2⁆.map (prod.map prod.fst id)) :
-    by simp only [coe_sub_spec_bind, simulate_map, simulate_bind,
-      eval_dist_map, eval_dist_bind, pmf.map_bind]
+    begin
+      rw [coe_sub_spec_bind, simulate_bind, eval_dist_bind],
+      sorry,
+    end -- by simp [coe_sub_spec_bind, simulate_map, simulate_bind,
+    --   eval_dist_map, eval_dist_bind, pmf.map_bind]
   ... = (⁅simulate so' (dsimulate ⟪h.to_fun⟫ oa) s'⁆.map (prod.map prod.fst id)).bind
       (λ x, ⁅simulate so' (dsimulate ⟪h.to_fun⟫ (ob x.1)) x.2⁆.map (prod.map prod.fst id)) :
     symm (trans (pmf.bind_map _ _ _) (congr_arg (λ _, pmf.bind _ _) (funext $ λ x, by simp only

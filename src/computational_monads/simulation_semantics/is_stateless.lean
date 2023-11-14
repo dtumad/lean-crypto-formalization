@@ -58,7 +58,7 @@ def is_stateless.state_unique [hso : so.is_stateless] : unique S :=
 { default := so.default_state,
   uniq := λ s, is_stateless.state_elim' so _ _}
 
-instance is_stateless.is_tracking [hso : so.is_stateless] : so.is_tracking :=
+noncomputable instance is_stateless.is_tracking [hso : so.is_stateless] : so.is_tracking :=
 { query_f := λ i t, fst <$> so i (t, so.default_state),
   state_f := λ s i t u, so.default_state,
   apply_dist_equiv_state_f_map_query_f :=
@@ -88,7 +88,7 @@ by rw_dist_equiv [is_tracking.apply_dist_equiv, map_return_dist_equiv]
 @[simp] lemma support_apply : (so i (t, s)).support = fst ⁻¹' (so.answer_query i t).support :=
 trans (is_tracking.support_apply so t s) (by simp [set.ext_iff, eq_iff_fst_eq_snd_eq])
 
-@[simp] lemma fin_support_apply : (so i (t, s)).fin_support =
+@[simp] lemma fin_support_apply [decidable_eq S] : (so i (t, s)).fin_support =
   (so.answer_query i t).fin_support.preimage fst
     (λ x hx y hy h, (eq_iff_fst_eq_snd_eq.2 ⟨h, state_elim' so x.2 y.2⟩)) :=
 by rw [fin_support_eq_iff_support_eq_coe, support_apply, finset.coe_preimage,
@@ -130,7 +130,7 @@ lemma support_answer_query :
   (so.answer_query i t).support = fst '' (so i (t, so.default_state)).support :=
 by rw [answer_query_eq_map_apply, support_map]
 
-lemma fin_support_answer_query :
+lemma fin_support_answer_query [decidable_eq S] :
   (so.answer_query i t).fin_support = (so i (t, so.default_state)).fin_support.image fst :=
 by rw [answer_query_eq_map_apply, fin_support_map]
 
@@ -206,7 +206,7 @@ lemma support_simulate_eq_support
 trans (simulate_dist_equiv_dsimulate' so oa s).support_eq
   (by rw [support_mprod, support_return, is_tracking.support_simulate'_eq_support so oa _ h])
 
-lemma fin_support_simulate_eq_fin_support
+lemma fin_support_simulate_eq_fin_support [decidable_eq α] [decidable_eq S]
   (h : ∀ i t, (so.answer_query i t).fin_support = finset.univ) :
   (simulate so oa s).fin_support = oa.fin_support ×ˢ {so.default_state} :=
 begin
@@ -277,7 +277,7 @@ begin
   simp only [← support_answer_query, h, eq_self_iff_true, forall_2_true_iff],
 end
 
-lemma fin_support_simulate_eq_fin_support_simulate
+lemma fin_support_simulate_eq_fin_support_simulate [decidable_eq α] [decidable_eq S]
   (h : ∀ i t, (so.answer_query i t).fin_support = (so'.answer_query i t).fin_support) :
   (simulate so oa s).fin_support = (simulate so' oa s').fin_support :=
 begin
@@ -313,7 +313,8 @@ end sim_oracle
 We use the `unit` type as the state in this case, so all possible states are equal.
 We avoid making this a special case of `tracking_oracle` to give better equalities for
 `answer_query`, as otherwise many equalities hold only distributionally. -/
-def stateless_oracle (query_f : Π (i : spec.ι), spec.domain i → oracle_comp spec' (spec.range i)) :
+noncomputable def stateless_oracle
+  (query_f : Π (i : spec.ι), spec.domain i → oracle_comp spec' (spec.range i)) :
   sim_oracle spec spec' unit :=
 { default_state := (),
   o := λ i ⟨t, s⟩, query_f i t ×ₘ return () }

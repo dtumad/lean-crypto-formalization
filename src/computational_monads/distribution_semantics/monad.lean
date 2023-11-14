@@ -130,6 +130,11 @@ variables (oa : oracle_comp spec α) (ob : oracle_comp spec β)
 @[simp_dist_equiv] lemma bind_const_dist_equiv : oa >>= (λ _, ob) ≃ₚ ob :=
 by rw [dist_equiv.def, eval_dist_bind, pmf.bind_const]
 
+@[simp] lemma bind_const_dist_equiv_iff (ob' : oracle_comp spec β) :
+  oa >>= (λ _, ob) ≃ₚ ob' ↔ ob ≃ₚ ob' :=
+⟨λ h, (bind_const_dist_equiv _ _).symm.trans h,
+  λ h, trans (bind_const_dist_equiv _ _) h⟩
+
 @[simp] lemma support_bind_const : (oa >>= (λ _, ob)).support = ob.support :=
 (bind_const_dist_equiv oa ob).support_eq
 

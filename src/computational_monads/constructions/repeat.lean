@@ -28,7 +28,7 @@ open oracle_spec vector
 variables {α β γ : Type} {spec spec' : oracle_spec}
 
 /-- Repeat the computation `oa` independently `n` times to get a length `n` vector of results. -/
-def repeat (oa : oracle_comp spec α) : Π (n : ℕ), oracle_comp spec (vector α n)
+noncomputable def repeat (oa : oracle_comp spec α) : Π (n : ℕ), oracle_comp spec (vector α n)
 | 0 := return nil
 | (n + 1) := do { a ← oa, as ← repeat n, return (a ::ᵥ as) }
 
@@ -38,7 +38,8 @@ variables (oa oa' : oracle_comp spec α) (n : ℕ) {m : ℕ} (x x' : α) (xs : v
 
 @[simp] lemma repeat_zero : oa.repeat 0 = return nil := rfl
 
-lemma repeat_succ : oa.repeat n.succ = do {a ← oa, as ← oa.repeat n, return (a ::ᵥ as)} := rfl
+lemma repeat_succ : oa.repeat n.succ = do {a ← oa, as ← oa.repeat n, return (a ::ᵥ as)} :=
+by rw [repeat]
 
 section all₂
 
@@ -66,11 +67,11 @@ lemma mem_support_repeat_iff_forall :
   xs ∈ (oa.repeat m).support ↔ ∀ x ∈ xs.to_list, x ∈ oa.support :=
 by rw [support_repeat_eq_forall, set.mem_set_of_eq]
 
-lemma mem_fin_support_repeat_iff_all₂ :
+lemma mem_fin_support_repeat_iff_all₂ [decidable_eq α] :
   xs ∈ (oa.repeat m).fin_support ↔ xs.to_list.all₂ (∈ oa.fin_support) :=
 by simp only [mem_fin_support_iff_mem_support, mem_support_repeat_iff_all₂]
 
-lemma mem_fin_support_repeat_iff_forall :
+lemma mem_fin_support_repeat_iff_forall [decidable_eq α] :
   xs ∈ (oa.repeat m).fin_support ↔ ∀ x ∈ xs.to_list, x ∈ oa.fin_support :=
 by simp only [mem_fin_support_iff_mem_support, mem_support_repeat_iff_forall]
 
@@ -217,7 +218,8 @@ begin
       intros y hy,
       simp at hy,
       exact hy.2 },
-    { suffices : ∀ x, (λ xs, nth xs i) <$> (oa.repeat m >>= λ xs, return (x ::ᵥ xs)) ≃ₚ
+    { rw [repeat_succ],
+      suffices : ∀ x, (λ xs, nth xs i) <$> (oa.repeat m >>= λ xs, return (x ::ᵥ xs)) ≃ₚ
         (λ xs, nth xs (i.pred hi)) <$> oa.repeat m,
       from trans (trans (map_bind_dist_equiv_right default
         (λ y hy, (this y).trans (this _).symm)) (this default)) (hm $ i.pred hi),

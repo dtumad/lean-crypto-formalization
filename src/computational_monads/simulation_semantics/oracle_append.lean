@@ -23,7 +23,8 @@ variables {spec spec' spec'' spec''' : oracle_spec} {α β γ : Type} {S S' : Ty
 
 namespace sim_oracle
 
-def oracle_append (so : sim_oracle spec spec'' S) (so' : sim_oracle spec' spec'' S') :
+noncomputable def oracle_append
+  (so : sim_oracle spec spec'' S) (so' : sim_oracle spec' spec'' S') :
   sim_oracle (spec ++ spec') spec'' (S × S') :=
 { default_state := (so.default_state, so'.default_state),
   o := λ i, match i with

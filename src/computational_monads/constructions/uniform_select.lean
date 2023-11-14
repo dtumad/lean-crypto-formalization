@@ -43,10 +43,10 @@ section support
 @[simp] lemma support_uniform_fin : support $[0..n] = ⊤ := support_query n ()
 
 lemma mem_support_uniform_fin_iff : i ∈ support $[0..m] :=
-(support_uniform_fin n).symm ▸ set.mem_univ i
+(support_uniform_fin m).symm ▸ set.mem_univ i
 
 @[simp] lemma support_uniform_fin_bind : ($[0..m] >>= oa).support = ⋃ i, (oa i).support :=
-by simp only [support_bind, set.Union_true]
+by simp only [support_bind, support_uniform_fin, set.Union_true]
 
 end support
 
@@ -55,17 +55,18 @@ section fin_support
 @[simp] lemma fin_support_uniform_fin : fin_support $[0..n] = finset.univ := fin_support_query _ ()
 
 lemma mem_fin_support_uniform_fin : i ∈ fin_support $[0..m] :=
-(fin_support_uniform_fin i) ▸ finset.mem_univ i
+(fin_support_uniform_fin m).symm ▸ finset.mem_univ i
 
 lemma fin_support_uniform_fin_bind [decidable_eq α] :
   ($[0..m] >>= oa).fin_support = finset.bUnion finset.univ (λ i, (oa i).fin_support) :=
-by {rw [fin_support_bind, fin_support_uniform_fin], congr}
+by {rw [fin_support_bind, fin_support_uniform_fin] }
 
 end fin_support
 
 section eval_dist
 
-@[simp] lemma eval_dist_uniform_fin : ⁅$[0..n]⁆ = pmf.uniform_of_fintype (fin $ n + 1) := rfl
+@[simp] lemma eval_dist_uniform_fin : ⁅$[0..n]⁆ = pmf.uniform_of_fintype (fin $ n + 1) :=
+by simpa only [uniform_fin, eval_dist_query]
 
 @[simp] lemma prob_output_uniform_fin : ⁅= i | $[0..m]⁆ = m.succ⁻¹ :=
 by rw [prob_output.def, eval_dist_uniform_fin m, pmf.uniform_of_fintype_apply i, fintype.card_fin]
@@ -106,33 +107,11 @@ end prob_event
 
 end uniform_fin
 
-
-
-section has_uniform_select
-
-/-- `has_uniform_select spec α β` means that for each element `x : α` there is a computation
-`select x` that returns an element of type `β`, using a `uniform_selecting` oracle.
-TODO: need to figure out type inference on `β` issue -/
-class has_uniform_select (α β : Type) :=
-(select : α → oracle_comp uniform_selecting β)
-
-
-notation `$ᵘ` x := has_uniform_select.select x
-
-end has_uniform_select
-
-
-
 section uniform_select_vector
 
 /-- Randomly select an element of a vector by using `uniform_of_fin`.
 Again we need to use `succ` for the vectors type to avoid sampling an empty vector -/
--- instance has_uniform_select_vector [decidable_eq α] {n : ℕ} :
---   has_uniform_select (vector α (n + 1)) α :=
--- { select := λ v, vector.nth v <$> (uniform_fin n) }
-
-
-def uniform_select_vector [decidable_eq α] {n : ℕ} (v : vector α (n + 1)) :
+noncomputable def uniform_select_vector [decidable_eq α] {n : ℕ} (v : vector α (n + 1)) :
   oracle_comp uniform_selecting α := v.nth <$> $[0..n]
 
 notation `$ᵛ` v := uniform_select_vector v
@@ -255,7 +234,7 @@ end uniform_select_vector
 section uniform_select_list
 
 /-- If a list isn't empty, we can convert it to a vector and then sample from it.-/
-def uniform_select_list [decidable_eq α] (xs : list α) (h : ¬ xs.empty) :
+noncomputable def uniform_select_list [decidable_eq α] (xs : list α) (h : ¬ xs.empty) :
   oracle_comp uniform_selecting α :=
 let v : vector α (xs.length.pred.succ) := ⟨xs, symm $ nat.succ_pred_eq_of_pos
   (list.length_pos_of_ne_nil (λ h', h $ list.empty_iff_eq_nil.2 h'))⟩ in uniform_select_vector v
@@ -538,35 +517,5 @@ lemma uniform_select_fintype_dist_equiv_return {spec} {α : Type} [unique α] :
 by simp [dist_equiv.ext_iff, prob_output_query_eq_inv]
 
 end uniform_select_fintype
-
-
--- TODO:
-lemma prob_output_uniform_bool_bind {α : Type}
-  (oa : bool → oracle_comp uniform_selecting α) (x : α) :
-  ⁅= x | $ᵗ bool >>= oa⁆ = (⁅= x | oa tt⁆ + ⁅= x | oa ff⁆) / 2 :=
-sorry
-
-lemma prob_output_uniform_bind_of_const {α β : Type} [fintype α] [nonempty α]
-  [decidable_eq α]
-  {ob : α → oracle_comp uniform_selecting β} {y : β} {m : ℝ≥0∞}
-  (hob : ∀ x, ⁅= y | ob x⁆ = m) :
-  ⁅= y | $ᵗ α >>= ob⁆ = m :=
-begin
-  sorry
-end
-
-
-lemma prob_output_bnot_map {spec : oracle_spec}
-  (oa : oracle_comp spec bool) :
-  ⁅= tt | bnot <$> oa⁆ = ⁅= ff | oa⁆ := sorry
-
-lemma prob_output_bind_mono_right {spec : oracle_spec} {α β : Type}
-  {oa : oracle_comp spec α} {ob ob' : α → oracle_comp spec β}
-  {y : β} (h : ∀ x, ⁅= y | ob x⁆ ≤ ⁅= y | ob' x⁆) :
-  ⁅= y | oa >>= ob⁆ ≤ ⁅= y | oa >>= ob'⁆ := sorry
-
-lemma bool_bind_dist_equiv_bool {spec : oracle_spec}
-  (oa : oracle_comp uniform_selecting bool) :
-  (do {b ←$ᵗ bool, b' ← oa, return (b = b' : bool)}) ≃ₚ ($ᵗ bool) := sorry
 
 end oracle_comp

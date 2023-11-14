@@ -53,7 +53,7 @@ by {by_dist_equiv, exact hoa}
 example (hoa : oa ≃ₚ oa') : oa.support = oa'.support :=
 by {by_dist_equiv, exact hoa}
 
-example (hoa : oa ≃ₚ oa') : oa.fin_support = oa'.fin_support :=
+example [decidable_eq α] (hoa : oa ≃ₚ oa') : oa.fin_support = oa'.fin_support :=
 by {by_dist_equiv, exact hoa}
 
 example (hoa : oa ≃ₚ oa') : ⁅oa⁆ = ⁅oa'⁆ :=

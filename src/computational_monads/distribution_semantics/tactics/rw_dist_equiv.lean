@@ -206,7 +206,7 @@ by rw_dist_equiv [oracle_comp.return_bind_dist_equiv,
   oracle_comp.return_bind_dist_equiv, oracle_comp.bind_const_dist_equiv]
 
 example (oa oa₀ : oracle_comp spec α) : do {oa₀, x ← oa, return x} ≃ₚ oa₀ >> oa :=
-by rw_dist_equiv [oracle_comp.bind_return_id_dist_equiv]
+by rw_dist_equiv [oracle_comp.bind_return_dist_equiv]
 
 end rw_dist_equiv
 

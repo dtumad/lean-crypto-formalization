@@ -132,7 +132,7 @@ example (oa oa' : oracle_comp spec α) (ob : α → oracle_comp spec β)
 by pairwise_dist_equiv [h]
 
 /-- `pairwise_dist_equiv` should work on `fin_support`. -/
-example (oa oa' : oracle_comp spec α) (ob : α → oracle_comp spec β)
+example [decidable_eq β] (oa oa' : oracle_comp spec α) (ob : α → oracle_comp spec β)
   (h : oa ≃ₚ oa') : (oa >>= ob).fin_support = (oa' >>= ob).fin_support :=
 by pairwise_dist_equiv [h]
 

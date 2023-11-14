@@ -219,4 +219,48 @@ lemma bind_dist_equiv_left (oa : oracle_comp spec α) (oa' : α → oracle_comp 
 
 end equiv
 
+section bind_mono
+
+lemma prob_output_bind_mono_left {oa oa' : oracle_comp spec α} {ob : α → oracle_comp spec β}
+  {y : β} (h : ∀ x, y ∈ (ob x).support → ⁅= x | oa⁆ ≤ ⁅= x | oa'⁆) :
+  ⁅= y | oa >>= ob⁆ ≤ ⁅= y | oa' >>= ob⁆ :=
+begin
+  simp_rw [prob_output_bind_eq_tsum],
+  refine ennreal.tsum_le_tsum (λ x, _),
+  by_cases hy : ⁅= y | ob x⁆ = 0,
+  { simp only [hy, mul_zero, le_zero_iff] },
+  { refine (ennreal.mul_le_mul_right hy (prob_output_ne_top _ _)).2
+      (h x $ (prob_output_ne_zero_iff _ _).1 hy) }
+end
+
+lemma prob_output_bind_mono_right {oa : oracle_comp spec α} {ob ob' : α → oracle_comp spec β}
+  {y : β} (h : ∀ x ∈ oa.support, ⁅= y | ob x⁆ ≤ ⁅= y | ob' x⁆) :
+  ⁅= y | oa >>= ob⁆ ≤ ⁅= y | oa >>= ob'⁆ :=
+begin
+  simp_rw [prob_output_bind_eq_tsum],
+  refine ennreal.tsum_le_tsum (λ x, _),
+  by_cases hx : ⁅= x | oa⁆ = 0,
+  { simp only [hx, zero_mul, le_zero_iff] },
+  { exact (ennreal.mul_le_mul_left hx (prob_output_ne_top _ _)).2
+      (h x $ (prob_output_ne_zero_iff _ _).1 hx) }
+end
+
+end bind_mono
+
+section bind_of_const
+
+lemma prob_output_bind_of_const {oa : oracle_comp spec α} {ob : α → oracle_comp spec β}
+  (y : β) (r : ℝ≥0∞) (hr : ∀ x ∈ oa.support, ⁅= y | ob x⁆ = r) :
+  ⁅= y | oa >>= ob⁆ = r :=
+begin
+  have : ∑' x, ⁅= x | oa⁆ * r = r,
+  by simp [ennreal.tsum_mul_right],
+  refine trans (trans (prob_output_bind_eq_tsum _ _ _) (tsum_congr (λ x, _))) this,
+  by_cases hx : ⁅= x | oa⁆ = 0,
+  { simp only [hx, zero_mul] },
+  { rw [hr x ((prob_output_ne_zero_iff _ _).1 hx)] }
+end
+
+end bind_of_const
+
 end oracle_comp

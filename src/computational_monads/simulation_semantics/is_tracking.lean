@@ -110,7 +110,7 @@ begin
 end
 
 /-- Version of `support_simulate'_eq_support` for `fin_support`. -/
-lemma fin_support_simulate'_eq_fin_support
+lemma fin_support_simulate'_eq_fin_support [decidable_eq α]
   (h : ∀ i (t : spec.domain i), (so.answer_query i t).fin_support = finset.univ) :
   (simulate' so oa s).fin_support = oa.fin_support :=
 begin
@@ -126,7 +126,7 @@ lemma simulate'_dist_equiv_self
   simulate' so oa s ≃ₚ oa :=
 begin
   refine simulate'_dist_equiv_self oa s (λ i t s, _),
-  rw_dist_equiv [is_tracking.apply_dist_equiv, map_comp_dist_equiv, bind_return_id_dist_equiv],
+  rw_dist_equiv [is_tracking.apply_dist_equiv, map_comp_dist_equiv, bind_return_dist_equiv],
   exact h i t,
 end
 
@@ -190,7 +190,8 @@ For example a logging oracle that just tracks the input and output of queries.
 `o` is the way the oracle responds to queries, which doesn't have access to the state.
 `update_state` takes a query and internal state and returns the new internal state.
 Note that `update_state` is not a probabalistic function, and has no oracle access -/
-def tracking_oracle (query_f : Π (i : spec.ι), spec.domain i → oracle_comp spec' (spec.range i))
+noncomputable def tracking_oracle
+  (query_f : Π (i : spec.ι), spec.domain i → oracle_comp spec' (spec.range i))
   (state_f : Π (s : S) (i : spec.ι), spec.domain i → spec.range i → S)
   (default_state : S) : sim_oracle spec spec' S :=
 { default_state := default_state,
