@@ -29,7 +29,7 @@ namespace sim_oracle
 We capture this unchanged functionality by using an equivalence for the masking.
 Convenient when working with composed or appended oracles, to remove unneeded state elements.
 In particular `unit` state values that start spreading can be avoided. -/
-def mask_state (so : sim_oracle spec spec' S) (mask : S ≃ S') :
+noncomputable def mask_state (so : sim_oracle spec spec' S) (mask : S ≃ S') :
   sim_oracle spec spec' S' :=
 { default_state := mask so.default_state,
   o := λ i x, prod.map id mask <$> (so.o i (prod.map id mask.symm x)) }
@@ -70,12 +70,14 @@ trans (simulate_dist_equiv_map_simulate so mask oa s').support_eq (support_map _
 by rw [support_simulate_eq_image_support_simulate, set.image_eq_preimage_of_inverse];
   exact λ z, by simp only [prod_map, id.def, symm_apply_apply, apply_symm_apply, prod.mk.eta]
 
-lemma fin_support_simulate_eq_image_support_simulate [decidable_eq α] [decidable_eq S'] :
+lemma fin_support_simulate_eq_image_support_simulate
+  [decidable_eq α] [decidable_eq S] [decidable_eq S'] :
   (simulate (so.mask_state mask) oa s').fin_support =
     (simulate so oa (mask.symm s')).fin_support.image (prod.map id mask) :=
 trans (simulate_dist_equiv_map_simulate so mask oa s').fin_support_eq (fin_support_map _ _)
 
-@[simp] lemma fin_support_simulate_eq_preimage_fin_support_simulate :
+@[simp] lemma fin_support_simulate_eq_preimage_fin_support_simulate
+  [decidable_eq α] [decidable_eq S] [decidable_eq S'] :
   (simulate (so.mask_state mask) oa s').fin_support =
     (simulate so oa (mask.symm s')).fin_support.preimage (prod.map id mask.symm) (λ z hz z' hz' h,
     by simpa only [prod.eq_iff_fst_eq_snd_eq, prod_map, embedding_like.apply_eq_iff_eq] using h) :=
@@ -130,7 +132,7 @@ by rw_dist_equiv [simulate'_dist_equiv, simulate_dist_equiv_map_simulate,
   (simulate' (so.mask_state mask) oa s').support = (simulate' so oa (mask.symm s')).support :=
 by pairwise_dist_equiv
 
-@[simp] lemma fin_support_simulate'_eq_fin_support_simulate' :
+@[simp] lemma fin_support_simulate'_eq_fin_support_simulate' [decidable_eq α] :
   (simulate' (so.mask_state mask) oa s').fin_support =
     (simulate' so oa (mask.symm s')).fin_support :=
 by pairwise_dist_equiv

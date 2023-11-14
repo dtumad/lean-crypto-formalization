@@ -29,7 +29,7 @@ variables {K I O : Type} (h : hash_function K I O)
 variables [decidable_eq O]
 
 /-- The security game for collision resistance as a probabalistic function. -/
-def collision_finding_experiment (h : hash_function K I O)
+noncomputable def collision_finding_experiment (h : hash_function K I O)
   (adversary : K → oracle_comp coin_spec (I × I)) : oracle_comp coin_spec bool :=
 do{ k ← (h.keygen ()),
     xs ← (adversary k),

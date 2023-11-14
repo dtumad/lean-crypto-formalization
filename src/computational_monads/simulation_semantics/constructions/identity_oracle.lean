@@ -20,7 +20,7 @@ variables {α β γ : Type} {spec : oracle_spec}
 /-- Simulation oracle for preserving the current oracle queries as is.
 Can be combined with other simulation oracles to preserve some subset of queries,
 e.g. `so ++ₛₒ idₛₒ` will simulate the left side oracles and preserve right side oracles. -/
-@[inline, reducible] def identity_oracle (spec : oracle_spec) :
+@[inline, reducible] noncomputable def identity_oracle (spec : oracle_spec) :
   sim_oracle spec spec unit := ⟪query⟫
 
 notation `idₛₒ` := identity_oracle _
@@ -51,7 +51,8 @@ is_tracking.simulate'_dist_equiv_self idₛₒ oa s
 @[simp] lemma support_simulate' : (simulate' idₛₒ oa s).support = oa.support :=
 by pairwise_dist_equiv
 
-@[simp] lemma fin_support_simulate' : (simulate' idₛₒ oa s).fin_support = oa.fin_support :=
+@[simp] lemma fin_support_simulate' [decidable_eq α] :
+  (simulate' idₛₒ oa s).fin_support = oa.fin_support :=
 by pairwise_dist_equiv
 
 @[simp] lemma eval_dist_simulate' : ⁅simulate' idₛₒ oa s⁆ = ⁅oa⁆ :=
@@ -76,7 +77,7 @@ is_stateless.simulate_dist_equiv_self idₛₒ oa s
 @[simp] lemma support_simulate : (simulate idₛₒ oa s).support = oa.support ×ˢ {()} :=
 is_stateless.support_simulate_eq_support idₛₒ oa s (by simp)
 
-@[simp] lemma fin_support_simulate : (simulate idₛₒ oa s).fin_support = oa.fin_support ×ˢ {()} :=
+@[simp] lemma fin_support_simulate [decidable_eq α] : (simulate idₛₒ oa s).fin_support = oa.fin_support ×ˢ {()} :=
 is_stateless.fin_support_simulate_eq_fin_support idₛₒ oa s (by simp)
 
 @[simp] lemma eval_dist_simulate : ⁅simulate idₛₒ oa s⁆ = ⁅oa ×ₘ return ()⁆ :=

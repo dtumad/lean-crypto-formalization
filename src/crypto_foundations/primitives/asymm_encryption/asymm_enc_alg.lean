@@ -32,7 +32,7 @@ structure simulation_spec (spec : oracle_spec) :=
 structure algorithm_base (spec : oracle_spec) :=
 (S : Type) (so : sim_oracle spec uniform_selecting S)
 
-def simulation_spec.exec {spec : oracle_spec} {α : Type}
+noncomputable def simulation_spec.exec {spec : oracle_spec} {α : Type}
   (alg : simulation_spec spec) (oa : oracle_comp spec α) :
   oracle_comp uniform_selecting α :=
 dsimulate' alg.so oa
@@ -70,7 +70,7 @@ structure sec_experiment₂ (spec : oracle_spec) (α β S : Type)
 (is_valid : α × β → Prop)
 -- (exp_so : sim_oracle spec uniform_selecting S)
 
-def sec_experiment''.exec {spec : oracle_spec} {α β S : Type}
+noncomputable def sec_experiment''.exec {spec : oracle_spec} {α β S : Type}
   (exp : sec_experiment'' spec α β S) :
   oracle_comp uniform_selecting (α × β)  :=
 dsimulate' exp.exp_so (do
@@ -78,7 +78,7 @@ dsimulate' exp.exp_so (do
     y ← exp.run x,
     return (x, y) } )
 
-def sec_experiment₂.exec {spec : oracle_spec} {α β S : Type}
+noncomputable def sec_experiment₂.exec {spec : oracle_spec} {α β S : Type}
   (exp : sec_experiment₂ spec α β S) :
   oracle_comp uniform_selecting (α × β)  :=
 exp.exec (do
@@ -102,13 +102,13 @@ namespace asymm_enc_alg
 section sound
 
 /-- Generate a random key, then return the result of encrypting and decrypting `m`. -/
-def soundness_experiment (enc_alg : asymm_enc_alg M PK SK C)
+noncomputable def soundness_experiment (enc_alg : asymm_enc_alg M PK SK C)
   (m : M) : oracle_comp (uniform_selecting) M := do
 { ⟨pk, sk⟩ ← enc_alg.keygen (),
   σ ← enc_alg.encrypt (m, pk),
   enc_alg.decrypt (σ, sk) }
 
-def soundness_experiment'' [decidable_eq M] {spec : oracle_spec}
+noncomputable def soundness_experiment'' [decidable_eq M] {spec : oracle_spec}
   (enc_alg : asymm_enc_alg' spec M PK SK C)
   (m : M) : sec_experiment'' spec (PK × SK) M enc_alg.S :=
 { inp_gen := enc_alg.keygen (),
@@ -161,7 +161,7 @@ noncomputable def ind_cpa_experiment
       adv.distinguish (pk, (m₁, m₂), c) },
   is_valid := λ ⟨⟨pk, b⟩, b'⟩, b = b' }
 
-def ind_cpa_experiment'
+noncomputable def ind_cpa_experiment'
   {enc_alg : asymm_enc_alg M PK SK C}
   (adv : enc_alg.ind_cpa_adversary) :
   sec_experiment'' uniform_selecting (PK × bool) bool unit :=

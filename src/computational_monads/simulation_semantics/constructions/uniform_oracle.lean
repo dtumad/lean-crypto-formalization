@@ -54,7 +54,8 @@ is_tracking.simulate'_dist_equiv_self uniformₛₒ oa s
 @[simp] lemma support_simulate' : (simulate' uniformₛₒ oa s).support = oa.support :=
 by pairwise_dist_equiv
 
-@[simp] lemma fin_support_simulate' : (simulate' uniformₛₒ oa s).fin_support = oa.fin_support :=
+@[simp] lemma fin_support_simulate' [decidable_eq α] :
+  (simulate' uniformₛₒ oa s).fin_support = oa.fin_support :=
 by pairwise_dist_equiv
 
 @[simp] lemma eval_dist_simulate' : ⁅simulate' uniformₛₒ oa s⁆ = ⁅oa⁆ :=
@@ -80,7 +81,8 @@ is_stateless.simulate_dist_equiv_self uniformₛₒ oa s
 @[simp] lemma support_simulate : (simulate uniformₛₒ oa s).support = oa.support ×ˢ {()} :=
 is_stateless.support_simulate_eq_support uniformₛₒ oa s (by simp)
 
-@[simp] lemma fin_support_simulate : (simulate uniformₛₒ oa s).fin_support = oa.fin_support ×ˢ {()} :=
+@[simp] lemma fin_support_simulate [decidable_eq α] :
+  (simulate uniformₛₒ oa s).fin_support = oa.fin_support ×ˢ {()} :=
 is_stateless.fin_support_simulate_eq_fin_support uniformₛₒ oa s (by simp)
 
 @[simp] lemma eval_dist_simulate : ⁅simulate uniformₛₒ oa s⁆ = ⁅oa ×ₘ return ()⁆ :=

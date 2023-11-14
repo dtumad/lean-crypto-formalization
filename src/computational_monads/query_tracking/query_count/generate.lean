@@ -25,7 +25,8 @@ variables {α β γ : Type} {spec spec' : oracle_spec} {τ τ' : spec.ι → Typ
 
 section generate_aux
 
-def generate_aux (qc : spec.query_count) (oa : Π (i : spec.ι), oracle_comp spec' (τ i)) :
+noncomputable def generate_aux (qc : spec.query_count)
+  (oa : Π (i : spec.ι), oracle_comp spec' (τ i)) :
   list spec.ι → oracle_comp spec' (spec.indexed_list τ)
 | (j :: js) := do { ts ← vector.to_list <$> repeat (oa j) (qc.get_count j),
     ((+) (of_list ts)) <$> generate_aux js }
@@ -37,7 +38,7 @@ variables (qc : spec.query_count) (oa : Π (i : spec.ι), oracle_comp spec' (τ 
 
 lemma generate_aux_cons (j js) : generate_aux qc oa (j :: js) =
   vector.to_list <$> repeat (oa j) (qc.get_count j) >>= λ ts,
-    ((+) (of_list ts)) <$> generate_aux qc oa js := rfl
+    ((+) (of_list ts)) <$> generate_aux qc oa js := by rw [generate_aux]
 
 lemma generate_aux_cons_dist_equiv_drop (j js) (h : j ∉ qc.active_oracles) :
   generate_aux qc oa (j :: js) ≃ₚ generate_aux qc oa js :=

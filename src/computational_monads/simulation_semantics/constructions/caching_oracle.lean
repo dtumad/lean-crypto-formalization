@@ -32,11 +32,11 @@ variables {α β γ δ : Type} {spec spec' : oracle_spec}
 
 /-- Oracle for tracking previous queries, and returning the same value for matching inputs.
 The `query_cache.get_or_else` function allows us to run a fallback for non-cached values. -/
-def caching_oracle (spec : oracle_spec) : sim_oracle spec spec (query_cache spec) :=
+noncomputable def caching_oracle (spec : oracle_spec) : sim_oracle spec spec (query_cache spec) :=
 { default_state := ∅,
   o := λ i ⟨t, cache⟩, cache.get_or_else i t (query i t) }
 
-def caching_oracle' (spec : oracle_spec) : sim_oracle spec spec spec.query_log :=
+noncomputable def caching_oracle' (spec : oracle_spec) : sim_oracle spec spec spec.query_log :=
 { default_state := ∅,
   o := λ i ⟨t, cache⟩, cache.lookup_or_query i t }
 
@@ -85,7 +85,8 @@ begin
   { rw [mem_support_simulate_bind_iff] at hz,
     obtain ⟨x, s, hs, hzx⟩ := hz,
     exact (hoa (x, s) hs).trans (hob x z hzx) },
-  { exact s₀.le_of_mem_support_get_or_else z hz }
+  { rw [simulate_query] at hz,
+    exact s₀.le_of_mem_support_get_or_else z hz }
 end
 
 /-- The output of two simulations of a computation using `cachingₛₒ` differ iff there is some

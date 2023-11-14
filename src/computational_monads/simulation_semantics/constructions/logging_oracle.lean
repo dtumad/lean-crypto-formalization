@@ -20,7 +20,7 @@ variables {α β γ : Type} {spec : oracle_spec}
 
 /-- Simulation oracle for logging the queries made during the computation,
 tracked via a `query_log`, whithout modifying the query calls themselves. -/
-@[inline, reducible] def logging_oracle (spec : oracle_spec) :
+@[inline, reducible] noncomputable def logging_oracle (spec : oracle_spec) :
   sim_oracle spec spec (query_log spec) :=
 ⟪query | query_log.log_query, ∅⟫
 
@@ -50,7 +50,8 @@ is_tracking.simulate'_dist_equiv_self loggingₛₒ oa s (λ i t, dist_equiv.rfl
 @[simp] lemma support_simulate' : (simulate' loggingₛₒ oa s).support = oa.support :=
 by pairwise_dist_equiv
 
-@[simp] lemma fin_support_simulate' : (simulate' loggingₛₒ oa s).fin_support = oa.fin_support :=
+@[simp] lemma fin_support_simulate' [decidable_eq α] :
+  (simulate' loggingₛₒ oa s).fin_support = oa.fin_support :=
 by pairwise_dist_equiv
 
 @[simp] lemma eval_dist_simulate' : ⁅simulate' loggingₛₒ oa s⁆ = ⁅oa⁆ :=
@@ -72,10 +73,11 @@ lemma map_to_query_count_dist_equiv (oa : oracle_comp spec α) (s : spec.query_l
 begin
   induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t generalizing s,
   { rw_dist_equiv [map_return_dist_equiv] },
-  { rw_dist_equiv [map_bind_dist_equiv, hob, symm (hoa _), bind_map_dist_equiv] },
-  { rw_dist_equiv [ dist_equiv_of_eq (logging_oracle.apply_eq _ _),
-      dist_equiv_of_eq (counting_oracle.apply_eq _ _), bind_map_dist_equiv],
-    refine map_dist_equiv_of_dist_equiv' (funext (λ u, by simp)) dist_equiv.rfl }
+  { simp_rw [simulate_bind],
+    rw_dist_equiv [map_bind_dist_equiv, hob, symm (hoa _), bind_map_dist_equiv] },
+  { simp only [simulate_query, tracking_oracle.apply_eq, map_map_eq_map_comp,
+      indexed_list.coe_query_count_eq],
+    exact map_dist_equiv_of_dist_equiv' (funext (λ u, by simp)) dist_equiv.rfl }
 end
 
 -- TODO: generalize to other tracking oracles

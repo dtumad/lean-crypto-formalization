@@ -24,14 +24,14 @@ variables {α β γ : Type} {spec spec' : oracle_spec}
 
 /-- Lookup the given value in the cache and return it without changing the cache,
 using `ou` as a fallback instead if the query is fresh to the cache. -/
-def get_or_else (cache : query_cache spec) (i : spec.ι) (t : spec.domain i)
+noncomputable def get_or_else (cache : query_cache spec) (i : spec.ι) (t : spec.domain i)
   (ou : oracle_comp spec' (spec.range i)) : oracle_comp spec' (spec.range i × query_cache spec) :=
 match cache.lookup i t with
 | none := do {u ← ou, return (u, [i, t ↦ u; cache])}
 | (some u) := return (u, cache)
 end
 
-@[inline, reducible] def get_or_query (cache : query_cache spec) (i : spec.ι)
+@[inline, reducible] noncomputable def get_or_query (cache : query_cache spec) (i : spec.ι)
   (t : spec.domain i) := cache.get_or_else i t (query i t)
 
 variables (cache cache' : query_cache spec)
@@ -291,18 +291,13 @@ lemma fst_map_get_or_else_dist_equiv_fst_map_get_or_else
   prod.fst <$> cache.get_or_else i t ou ≃ₚ prod.fst <$> cache'.get_or_else i t ou :=
 begin
   by_cases h' : t ∈ᵢ cache,
-  {
-
-    have : t ∈ᵢ cache := sorry,
-    simp [h', this, h],
-    rw_dist_equiv [map_return_dist_equiv],
-    sorry,
-  },
-  {
-    have : t ∉ᵢ cache' := sorry,
+  { have : t ∈ᵢ cache',
+    by simpa only [mem_iff_lookup_ne_none, h] using h',
+    simp [h', h, this] },
+  { have : t ∉ᵢ cache',
+    by simpa only [mem_iff_lookup_ne_none, h] using h',
     simp [h, h', this],
-    simp_rw_dist_equiv [map_bind_dist_equiv, map_return_dist_equiv],
-  }
+    simp_rw_dist_equiv [map_bind_dist_equiv, map_return_dist_equiv] }
 end
 
 end fst_map

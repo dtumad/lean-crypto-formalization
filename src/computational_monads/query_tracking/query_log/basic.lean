@@ -103,7 +103,7 @@ section lookup_cached
 
 open oracle_comp
 
-def lookup_or_query (cache : spec.query_log) (i : spec.ι) (t : spec.domain i) :
+noncomputable def lookup_or_query (cache : spec.query_log) (i : spec.ι) (t : spec.domain i) :
   oracle_comp spec (spec.range i × spec.query_log) :=
 match cache.lookup i t with
 | none := do {u ← query i t, return (u, cache.log_query i t u)}

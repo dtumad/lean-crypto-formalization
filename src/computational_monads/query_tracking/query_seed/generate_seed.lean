@@ -42,7 +42,8 @@ by simp only [generate_seed, support_generate, mem_support_uniform_select_fintyp
 lemma coe_query_count_of_mem_support_generate_seed {qs : spec.query_seed} {qc : spec.query_count}
   (h : qs ∈ (generate_seed qc).support) : ↑qs = qc := sorry
 
-lemma coe_query_count_of_mem_fin_support_generate_seed {qs : spec.query_seed} {qc : spec.query_count}
+lemma coe_query_count_of_mem_fin_support_generate_seed [decidable_eq (spec.query_seed)]
+  {qs : spec.query_seed} {qc : spec.query_count}
   (h : qs ∈ (generate_seed qc).fin_support) : ↑qs = qc := sorry
 
 @[simp] lemma prob_output_generate_seed (qs : spec.query_seed) (h : ↑qs = qc) :
@@ -60,7 +61,7 @@ begin
     (ennreal.pow_ne_top (ennreal.nat_ne_top _))
 end
 
-@[simp] lemma card_fin_support_generate_seed :
+@[simp] lemma card_fin_support_generate_seed [decidable_eq spec.query_seed] :
   (generate_seed qc).fin_support.card = possible_outcomes qc :=
 begin
   sorry

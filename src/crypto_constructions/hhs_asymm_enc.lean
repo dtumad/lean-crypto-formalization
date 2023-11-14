@@ -5,6 +5,7 @@ Authors: Devon Tuma
 -/
 import crypto_foundations.primitives.asymm_encryption.asymm_enc_scheme
 import crypto_foundations.hardness_assumptions.hard_homogeneous_space
+import computational_monads.distribution_semantics.bool
 
 /-!
 # Symmetric-Key Encryption Schemes
@@ -92,28 +93,23 @@ begin
   refine dist_equiv.prob_output_eq _ _,
   rw [fair_decision_challenge],
   rw_dist_equiv [fst_map_keygen_apply_dist_equiv G X ()],
-  refine trans _ ((bind_bind_dist_equiv_assoc _ _ _)),
-  pairwise_dist_equiv 1,
-  refine trans _ ((bind_bind_dist_equiv_assoc _ _ _)),
-  pairwise_dist_equiv 1,
-  rw_dist_equiv [return_bind_dist_equiv, return_bind_dist_equiv],
+  simp [bind_assoc],
+  pairwise_dist_equiv 2,
   refine trans (bind_bind_dist_equiv_comm _ _ _) _,
   pairwise_dist_equiv 1,
   refine trans (bind_bind_dist_equiv_comm _ _ _) _,
   pairwise_dist_equiv 1,
-  rw [encrypt_apply],
-  refine trans _ ((bind_bind_dist_equiv_assoc _ _ _)),
-  pairwise_dist_equiv 1,
+  simp [pure_bind],
 end
 
 lemma prob_output_unfair_decision_challenge (adv : (hhs_elgamal G X).ind_cpa_adversary) :
   ⁅= tt | unfair_decision_challenge (ind_cpa_reduction adv)⁆ = 1 / 2 :=
 begin
   rw [unfair_decision_challenge],
-  refine prob_output_uniform_bind_of_const (λ x₀, _),
-  refine prob_output_uniform_bind_of_const (λ g₁, _),
-  refine prob_output_uniform_bind_of_const (λ g₂, _),
-  refine prob_output_uniform_bind_of_const (λ g₃, _),
+  refine prob_output_bind_of_const _ _ (λ x₀ _, _),
+  refine prob_output_bind_of_const _ _ (λ g₁ _, _),
+  refine prob_output_bind_of_const _ _ (λ g₂ _, _),
+  refine prob_output_bind_of_const _ _ (λ g₃ _, _),
   simp only [ind_cpa_reduction],
   rw [prob_output_bnot_map],
   have : ⁅= ff | $ᵗ bool⁆ = 1 / 2 := sorry,
@@ -121,8 +117,8 @@ begin
   by_dist_equiv,
   rw_dist_equiv [return_bind_dist_equiv],
   refine trans (bind_bind_dist_equiv_comm _ _ _) _,
-  refine trans (bind_dist_equiv_bind_of_dist_equiv_right _ _ _
-    (λ _ _, (bind_bind_dist_equiv_assoc _ _ _))) _,
+  -- refine trans (bind_dist_equiv_bind_of_dist_equiv_right _ _ _
+  --   (λ _ _, (bind_bind_dist_equiv_assoc _ _ _))) _,
   sorry -- Need to show that the uniformity "cancels out".
 end
 

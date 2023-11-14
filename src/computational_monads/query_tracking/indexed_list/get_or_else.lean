@@ -31,7 +31,7 @@ variables {α β γ : Type} {spec spec' : oracle_spec} {τ τ' : spec.ι → Typ
 
 /-- Get the first value from an `indexed_list` at an index, and remove it from the list.
 If the list at that index is empty, instead run the computation `oa` and return the result. -/
-def get_or_else (il : spec.indexed_list τ) (i : spec.ι) [inhabited (τ i)]
+noncomputable def get_or_else (il : spec.indexed_list τ) (i : spec.ι) [inhabited (τ i)]
   (oa : oracle_comp spec' (τ i)) : oracle_comp spec' (τ i × spec.indexed_list τ) :=
 if i ∈ il.active_oracles then return (il.get_head i) else (λ t, (t, il)) <$> oa
 
@@ -43,20 +43,6 @@ variable [inhabited (τ i)]
 
 @[simp] lemma get_or_else_of_not_mem_active_oracles (hi : i ∉ il.active_oracles) :
   il.get_or_else i oa = (λ t, (t, il)) <$> oa := if_neg hi
-
-@[simp] lemma get_or_else_eq_map_iff (f : τ i → τ i × spec.indexed_list τ) :
-  il.get_or_else i oa = f <$> oa' ↔ (i ∉ il.active_oracles ∧ oa = oa' ∧ ∀ t, f t = (t, il)) :=
-begin
-  by_cases hi : i ∈ il.active_oracles,
-  { simp only [hi, get_or_else_of_mem_active_oracles, map_ne_return, not_true, false_and] },
-  { simp only [hi, oracle_comp.map_eq_bind_return_comp, function.funext_iff, not_false_iff, true_and,
-      @eq_comm (τ i × spec.indexed_list τ), get_or_else_of_not_mem_active_oracles,
-      oracle_comp.bind'_eq_bind'_iff, return_eq_return_iff] }
-end
-
-@[simp] lemma get_or_else_eq_return_iff (z : τ i × spec.indexed_list τ) :
-  il.get_or_else i oa = return z ↔ i ∈ il.active_oracles ∧ z = il.get_head i :=
-by by_cases hi : i ∈ il.active_oracles; simp [hi, @eq_comm _ z]
 
 lemma get_or_else_of_eq_nil (h : il i = []) : il.get_or_else i oa = (λ t, (t, il)) <$> oa :=
 by simp [get_or_else, il.not_mem_active_oracles h]

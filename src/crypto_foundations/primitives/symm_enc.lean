@@ -73,12 +73,10 @@ section mgen_and_encrypt
 /-- Computation that given a message distribution `m_dist`, will draw a message `m` from the
 distribution, generate a key `k` using `keygen`, and calculate the resulting ciphertext `c`.
 The computation returns both the chosen message and the resulting ciphertext. -/
-@[inline, reducible] def mgen_and_encrypt (m_dist : oracle_comp uniform_selecting M) :
-  oracle_comp uniform_selecting (M × C) := do {
-    m ← m_dist,
-    k ← se_alg.keygen (),
-    return (m, se_alg.encrypt (m, k))
-  }
+@[inline, reducible] noncomputable def mgen_and_encrypt
+  (m_dist : oracle_comp uniform_selecting M) :
+  oracle_comp uniform_selecting (M × C) :=
+do { m ← m_dist, k ← se_alg.keygen (), return (m, se_alg.encrypt (m, k)) }
 
 variable (m_dist : oracle_comp uniform_selecting M)
 

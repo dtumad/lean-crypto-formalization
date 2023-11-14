@@ -17,6 +17,7 @@ open_locale ennreal
 
 ------------------------------------------------
 
+--- `oracle_algorithm`
 structure algorithm_base (spec : oracle_spec) :=
 (base_S : Type)
 (base_so : sim_oracle spec uniform_selecting base_S)
@@ -28,7 +29,7 @@ namespace algorithm_base
 
 variables {spec : oracle_spec} {α β : Type}
 
-def exec (alg : algorithm_base spec)
+noncomputable def exec (alg : algorithm_base spec)
   (oa : oracle_comp spec α) : prob_comp' α :=
 dsimulate' alg.base_so oa
 
@@ -42,7 +43,7 @@ structure asymm_enc_alg (spec : oracle_spec) (M PK SK C : Type)
 (encrypt : M × PK → oracle_comp spec C)
 (decrypt : C × SK → oracle_comp spec M)
 
-example {spec : oracle_spec} {M PK SK C : Type}
+noncomputable example {spec : oracle_spec} {M PK SK C : Type}
   (asymm_enc : asymm_enc_alg spec M PK SK C) :
   prob_comp' (PK × SK) :=
 asymm_enc.exec (asymm_enc.keygen ())
@@ -59,7 +60,7 @@ namespace sec_experiment
 
 variables {exp_spec : oracle_spec} {α β : Type}
 
-def run_experiment (exp : sec_experiment exp_spec α β) :
+noncomputable def run_experiment (exp : sec_experiment exp_spec α β) :
   oracle_comp uniform_selecting (α × β)  :=
 exp.exec (do
   { x ← exp.inp_gen,
@@ -83,7 +84,7 @@ namespace signature_alg
 
 variables {spec : oracle_spec} {M PK SK S : Type}
 
-def soundness_experiment (sig : signature_alg spec M PK SK S) (m : M) :
+noncomputable def soundness_experiment (sig : signature_alg spec M PK SK S) (m : M) :
   sec_experiment spec (PK × SK) bool :=
 { inp_gen := sig.keygen (),
   run := λ ⟨pk, sk⟩, do

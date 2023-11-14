@@ -70,7 +70,8 @@ section coin_spec_uniform_selecting
 /-- Coerce a coin flip into a uniform random selection of a `bool`.
 Use uniform selection from the vector `[tt, ff]` to get constructiveness. -/
 @[priority std.priority.default+100]
-instance is_sub_spec_coin_spec_uniform_selecting : is_sub_spec coin_spec uniform_selecting :=
+noncomputable instance is_sub_spec_coin_spec_uniform_selecting :
+  is_sub_spec coin_spec uniform_selecting :=
 { to_fun := λ i t, do {
     b ← query (1 : ℕ) (),
     return (if b = (1 : fin 2) then tt else ff)
@@ -108,7 +109,8 @@ lemma is_sub_spec_append_right_apply {spec spec' : oracle_spec} (i : spec.ι) (t
 /-- Coerce an oracle and then append to the left. Already sort of exists,
   but the instance priorities don't work without explicitly having this. -/
 @[priority std.priority.default+10]
-instance is_sub_spec_append_left_of_is_sub_spec (spec sub_spec super_spec : oracle_spec)
+noncomputable instance is_sub_spec_append_left_of_is_sub_spec
+  (spec sub_spec super_spec : oracle_spec)
   [h : is_sub_spec sub_spec super_spec] : is_sub_spec sub_spec (spec ++ super_spec) :=
 { to_fun := λ i t, ↑(h.to_fun i t),
   to_fun_equiv := λ i t, (eval_dist_coe_sub_spec _ _ _).trans (is_sub_spec.to_fun_equiv _ _) }
@@ -116,14 +118,16 @@ instance is_sub_spec_append_left_of_is_sub_spec (spec sub_spec super_spec : orac
 /-- Coerce an oracle and then append to the right. Already sort of exists,
   but the instance priorities don't work without explicitly having this. -/
 @[priority std.priority.default+11]
-instance is_sub_spec_append_right_of_is_sub_spec (spec sub_spec super_spec : oracle_spec)
+noncomputable instance is_sub_spec_append_right_of_is_sub_spec
+  (spec sub_spec super_spec : oracle_spec)
   [h : is_sub_spec sub_spec super_spec] : is_sub_spec sub_spec (super_spec ++ spec) :=
 { to_fun := λ i t, ↑(h.to_fun i t),
   to_fun_equiv := λ i t, (eval_dist_coe_sub_spec _ _ _).trans (is_sub_spec.to_fun_equiv _ _) }
 
 /-- Coerce the oracle on the right side of an existing set of appended oracles. -/
 @[priority std.priority.default+20]
-instance is_sub_spec_left_side_append (spec sub_spec super_spec : oracle_spec)
+noncomputable instance is_sub_spec_left_side_append
+  (spec sub_spec super_spec : oracle_spec)
   [h : is_sub_spec sub_spec super_spec] : is_sub_spec (sub_spec ++ spec) (super_spec ++ spec) :=
 { to_fun := λ i, match i with
   | (sum.inl i) := λ t, (append.range_inl sub_spec spec i).symm.rec (h.to_fun i t)
@@ -137,7 +141,7 @@ instance is_sub_spec_left_side_append (spec sub_spec super_spec : oracle_spec)
 
 /-- Coerce the oracle on the right side of an existing set of appended oracles. -/
 @[priority std.priority.default+21]
-instance is_sub_spec_right_side_append (spec sub_spec super_spec : oracle_spec)
+noncomputable instance is_sub_spec_right_side_append (spec sub_spec super_spec : oracle_spec)
   [h : is_sub_spec sub_spec super_spec] : is_sub_spec (spec ++ sub_spec) (spec ++ super_spec) :=
 { to_fun := λ i, match i with
   | (sum.inl i) := λ t, @query (_ ++ super_spec) (sum.inl i) t
@@ -171,6 +175,8 @@ namespace oracle_spec
 open oracle_comp
 
 section examples
+
+noncomputable theory
 
 -- This set of examples serves as sort of a "unit test" for the coercions above
 variables (spec spec' spec'' spec''' : oracle_spec)

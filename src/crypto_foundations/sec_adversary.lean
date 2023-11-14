@@ -53,7 +53,7 @@ structure sec_experiment (adv_spec exp_spec : oracle_spec) (α β γ S S' : Type
 or adversary oracles. In this case we are merely testing that some property (almost) always holds.
 This allows us to phrase e.g. the fact that messages can always be decrypted in Elgamal
 as a security experiment where an adversary attempts to find a message that can't decrypt. -/
-def soundness_experiment.to_sec_experiment {exp_spec : oracle_spec} {α β S : Type}
+noncomputable def soundness_experiment.to_sec_experiment {exp_spec : oracle_spec} {α β S : Type}
   (exp : soundness_experiment exp_spec α β S) :
   sec_experiment exp_spec exp_spec α β unit unit S :=
 { inp_gen := exp.inp_gen ×ₘ return (),
@@ -62,7 +62,7 @@ def soundness_experiment.to_sec_experiment {exp_spec : oracle_spec} {α β S : T
   exp_so := exp.exp_so }
 
 /-- Automatic coercion from soundness experiment to security experiment. -/
-instance {exp_spec : oracle_spec} {α β S : Type} :
+noncomputable instance {exp_spec : oracle_spec} {α β S : Type} :
   has_coe (soundness_experiment exp_spec α β S)
     (sec_experiment exp_spec exp_spec α β unit unit S) :=
 ⟨λ exp, soundness_experiment.to_sec_experiment exp⟩
@@ -195,7 +195,7 @@ end sec_reduction
 /-- A `public_experiment` is a specific `sec_experiment` in which there isn't secret information
 unavailable to the adversary during simulation (in the sense that this information is only
 shared between the input generation function and the validation function). -/
-def public_experiment {adv_spec exp_spec : oracle_spec} {α β S S' : Type}
+noncomputable def public_experiment {adv_spec exp_spec : oracle_spec} {α β S S' : Type}
   (inp_gen : prob_comp exp_spec α)
   (adv_so : α → sim_oracle adv_spec exp_spec S)
   (is_valid : α → β → prob_comp exp_spec bool)

@@ -42,7 +42,11 @@ namespace sim_oracle
 /-- Typeclass for oracles in which the query responses are independent of the current oracle state.
 We define this in terms of the existence of two functions `query_f` and `state_f`
 that represent the behaviour of the oracle result and state update respectively.
-`apply_dist_equiv_state_f_map_query_f` asserts that the oracle behaviour is captured correctly. -/
+`apply_dist_equiv_state_f_map_query_f` asserts that the oracle behaviour is captured correctly.
+
+TODO: I think the way to fix the bytecode generation issue is going to be making
+tracking oracles an explicit extension of sim oracles, and then making this typeclass one
+about existence rather than explicit values? -/
 class is_tracking (so : sim_oracle spec spec' S) :=
 (query_f : Π (i : spec.ι), spec.domain i → oracle_comp spec' (spec.range i))
 (state_f : Π (s : S) (i : spec.ι), spec.domain i → spec.range i → S)
