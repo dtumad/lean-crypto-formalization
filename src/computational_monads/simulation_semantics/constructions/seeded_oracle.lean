@@ -32,8 +32,8 @@ variables {spec spec' spec'' : oracle_spec} {α β γ : Type}
 queries if there isn't a seed value. If the `query_seed` comes from executing `generate_seed`
 then this will give a computation distributionally equivalent to the original computation.
 
-TODO: `seeded_sim_oracle` -/
-def seeded_oracle (spec : oracle_spec) : sim_oracle spec spec (spec.query_seed) :=
+TODO: `seeded_sim_oracle`? `uniform_selecting` --> `uniform_oracle` -/
+noncomputable def seeded_oracle (spec : oracle_spec) : sim_oracle spec spec (spec.query_seed) :=
 { o := λ i x, indexed_list.get_or_else x.2 i (query i x.1),
   default_state := ∅ }
 
@@ -75,11 +75,11 @@ begin
   {
     rw_dist_equiv [simulate'_return_dist_equiv, bind_const_dist_equiv]
   },
-  {
-    rw_dist_equiv [simulate'_bind_dist_equiv, bind_bind_dist_equiv_assoc,
-      generate_seed_bind_simulate_dist_equiv],
-    simp_rw_dist_equiv [bind_bind_dist_equiv_assoc],
-    sorry,
+  { sorry,
+    -- rw_dist_equiv [simulate'_bind_dist_equiv, bind_bind_dist_equiv_assoc,
+    --   generate_seed_bind_simulate_dist_equiv],
+    -- simp_rw_dist_equiv [bind_bind_dist_equiv_assoc],
+    -- sorry,
   },
   {
     rw_dist_equiv [simulate'_query_dist_equiv, seeded_oracle.apply_dist_equiv,

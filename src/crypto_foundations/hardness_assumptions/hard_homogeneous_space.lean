@@ -8,6 +8,7 @@ import computational_monads.asymptotics.polynomial_time
 import computational_monads.asymptotics.negligable
 import computational_monads.coercions.sim_oracle
 import crypto_foundations.sec_adversary
+import computational_monads.distribution_semantics.bool
 
 /-!
 # Hard Homogeneous Spaces
@@ -127,11 +128,10 @@ lemma advantage_eq_prob_output_fair_add_prob_output_unfair
     ⁅= tt | unfair_decision_challenge adv⁆) / 2 :=
 begin
   rw [decisional_parallelization_adversary.advantage,
-    decisional_parallelization_experiment, prob_output_uniform_bool_bind],
+    decisional_parallelization_experiment, prob_output_uniform_select_bool_bind],
+  simp [coe_sort_tt, if_true, ← bind_assoc],
   congr' 2,
-  { simp only [coe_sort_tt, if_true],
-    rw_dist_equiv [bind_const_dist_equiv, bind_return_id_dist_equiv] },
-  { simp only [coe_sort_ff, if_false, prob_output_bind_const, prob_output_bind_return_id] }
+  rw_dist_equiv [bind_const_dist_equiv, bind_return_dist_equiv]
 end
 
 end decisional_parallelization

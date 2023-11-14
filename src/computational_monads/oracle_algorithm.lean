@@ -31,7 +31,7 @@ def unif_oracle := uniform_selecting
 
 section exec
 
-def exec (alg : oracle_algorithm alg_spec) {α : Type}
+noncomputable def exec (alg : oracle_algorithm alg_spec) {α : Type}
   (oa : oracle_comp alg_spec α) : oracle_comp unif_oracle α :=
 dsimulate' alg.base_sim_oracle oa
 

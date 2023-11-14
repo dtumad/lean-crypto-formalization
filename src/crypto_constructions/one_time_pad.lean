@@ -18,11 +18,13 @@ and proves that it satisfies perfect secrecy.
 
 open oracle_comp oracle_spec
 
-def one_time_pad (n : ℕ) : symm_enc_alg (vector bool n) (vector bool n) (vector bool n) :=
+noncomputable def one_time_pad (n : ℕ) :
+  symm_enc_alg (vector bool n) (vector bool n) (vector bool n) :=
 { keygen := λ _, oracle_comp.repeat coin n,
   encrypt := λ ⟨m, k⟩, vector.zip_with bxor m k,
   decrypt := λ ⟨c, k⟩, vector.zip_with bxor c k,
-  complete := λ m k _, (vector.ext (λ i, by simp [vector.zip_with_nth]) : vector.zip_with bxor (vector.zip_with bxor m k) k = m) }
+  complete := λ m k _, (vector.ext (λ i, by simp [vector.zip_with_nth]) :
+    vector.zip_with bxor (vector.zip_with bxor m k) k = m) }
 
 namespace one_time_pad
 

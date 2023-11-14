@@ -151,6 +151,8 @@ end
 
 section prob_event_fork_success
 
+open_locale classical
+
 /-- The set of all possible shared seeds for the two runs of the computation. -/
 noncomputable def poss_shared_seeds (qc : query_count spec)
   (i : spec.ι) {q : ℕ} (fp : fin q.succ) : finset (query_seed spec) :=
@@ -162,87 +164,88 @@ lemma le_prob_output_fork_points (adv : fork_adversary spec α β i) (fp : fin a
     ⁅= (some fp, some fp) | do {rr₁ ← adv.seed_and_run y ∅,
       rr₂ ← adv.seed_and_run y (rr₁.seed.take_at_index (sum.inr i) fp),
       return (rr₁.fork_point, rr₂.fork_point)}⁆ :=
-calc ⁅= some fp | adv.choose_fork y <$> adv.run y⁆ ^ 2
-  -- Generate the eventual shared portion of the seed beforehand.
-  = ⁅= some fp | do {shared_seed ← ↑(generate_seed (adv.shared_query_count fp)),
-      run_result.fork_point <$> adv.seed_and_run y shared_seed}⁆ ^ 2 :
-    begin
-      rw [← fork_adversary.prob_output_fork_point_map_seed_and_run],
-      have : adv.shared_query_count fp ≤ adv.qb := indexed_list.take_at_index_le _ _ _,
-      refine congr_arg (λ z : ℝ≥0∞, z ^ 2) _,
-      rw_dist_equiv [(fork_adversary.generate_seed_bind_seed_and_run_dist_equiv adv y _ this).symm],
-      rw_dist_equiv [map_bind_dist_equiv],
-    end
-  -- Sum over the possible values of the shared portion of the seed.
-  ... = (∑ shared_seed in (generate_seed (adv.shared_query_count fp)).fin_support,
-          ⁅= shared_seed | generate_seed (adv.shared_query_count fp)⁆ *
-            ⁅= some fp | run_result.fork_point <$> adv.seed_and_run y shared_seed⁆) ^ 2 :
-    congr_arg (λ z : ℝ≥0∞, z ^ 2) (by simp_rw [prob_output_bind_eq_sum_fin_support,
-      fin_support_coe_sub_spec, prob_output_coe_sub_spec])
-  -- Apply Jensen's inequality to the sum over shared seed values.
-  ... ≤ ∑ shared_seed in (generate_seed (adv.shared_query_count fp)).fin_support,
-          ⁅= shared_seed | generate_seed (adv.shared_query_count fp)⁆ *
-            ⁅= some fp | run_result.fork_point <$> adv.seed_and_run y shared_seed⁆ ^ 2 :
-    begin
-      refine le_trans (ennreal.pow_two_sum_le_sum_pow_two _ _ ((λ _ _, ennreal.mul_ne_top
-        (prob_output_ne_top _ _) (prob_output_ne_top _ _)))) _,
-      refine le_of_eq (finset.sum_congr rfl (λ shared_seed hss, _)),
-      have hsfp := (coe_query_count_of_mem_fin_support_generate_seed hss),
-      rw [mul_pow, prob_output_generate_seed _ _ hsfp, card_fin_support_generate_seed, pow_two,
-        ← mul_assoc, ← mul_assoc, ennreal.mul_inv_cancel (nat.cast_ne_zero.2
-        (possible_outcomes_ne_zero _)) (ennreal.nat_ne_top _), one_mul]
-    end
-  -- Combine the two seperate runs of the adversary into one computation.
-  ... = ∑ shared_seed in (generate_seed (adv.shared_query_count fp)).fin_support,
-    ⁅= shared_seed | generate_seed (adv.shared_query_count fp)⁆ *
-      ⁅= (some fp, some fp) | do {
-        rr₁ ← adv.seed_and_run y shared_seed,
-        rr₂ ← adv.seed_and_run y shared_seed,
-        return (rr₁.fork_point, rr₂.fork_point)
-      }⁆ :
-    begin
-      refine finset.sum_congr rfl (λ shared_seed _, congr_arg (λ z : ℝ≥0∞, _ * z) _),
-      rw [pow_two],
-      refine trans (symm (prob_output_mprod _ _ (some fp, some fp))) _,
-      rw_dist_equiv [bind_map_dist_equiv _ _ run_result.fork_point,
-        bind_map_dist_equiv _ _ run_result.fork_point]
-    end
-  -- Reduce the shared seed generation back inside the main computation.
-  ... = ⁅= (some fp, some fp) | do {shared_seed ← ↑(generate_seed (adv.shared_query_count fp)),
-          rr₁ ← adv.seed_and_run y shared_seed,
-          rr₂ ← adv.seed_and_run y shared_seed,
-          return (rr₁.fork_point, rr₂.fork_point)}⁆ :
-    begin
-      rw [prob_output_bind_eq_sum_fin_support],
-      simp_rw [fin_support_coe_sub_spec, prob_output_coe_sub_spec],
-    end
-  ... = ⁅= (some fp, some fp) | do {shared_seed ← ↑(generate_seed (adv.shared_query_count fp)),
-          rr₁ ← adv.seed_and_run y shared_seed,
-          rr₂ ← adv.seed_and_run y (rr₁.seed.take_at_index (sum.inr i) fp),
-          return (rr₁.fork_point, rr₂.fork_point)}⁆ :
-    begin
-      pairwise_dist_equiv with shared_seed hss rr hrr,
-      suffices : shared_seed = indexed_list.take_at_index rr.seed (sum.inr i) ↑fp,
-      by rw [this],
-      rw ← fork_adversary.take_to_count_seed_eq_seed adv y shared_seed rr hrr,
-      rw [support_coe_sub_spec] at hss,
-      rw [coe_query_count_of_mem_support_generate_seed hss],
-      rw [← indexed_list.take_to_count_take_at_index],
-      rw [fork_adversary.shared_query_count, indexed_list.coe_query_count_eq,
-        indexed_list.to_query_count_take_at_index],
-      rw [adv.to_query_count_of_mem_support_seed_and_run _ _ _ hrr],
-      rw [coe_query_count_of_mem_support_generate_seed hss],
-      refine indexed_list.take_at_index_le _ _ _,
-    end
-  ... = ⁅= (some fp, some fp) | do {rr₁ ← adv.seed_and_run y ∅,
-          rr₂ ← adv.seed_and_run y (rr₁.seed.take_at_index (sum.inr i) fp),
-          return (rr₁.fork_point, rr₂.fork_point)}⁆ :
-    begin
-      by_dist_equiv,
-      have := adv.generate_seed_bind_seed_and_run_dist_equiv y (adv.shared_query_count fp)
-        (indexed_list.take_at_index_le _ _ _),
-      rw_dist_equiv [this.symm, bind_bind_dist_equiv_assoc]
-    end
+sorry
+-- calc ⁅= some fp | adv.choose_fork y <$> adv.run y⁆ ^ 2
+--   -- Generate the eventual shared portion of the seed beforehand.
+--   = ⁅= some fp | do {shared_seed ← ↑(generate_seed (adv.shared_query_count fp)),
+--       run_result.fork_point <$> adv.seed_and_run y shared_seed}⁆ ^ 2 :
+--     begin
+--       rw [← fork_adversary.prob_output_fork_point_map_seed_and_run],
+--       have : adv.shared_query_count fp ≤ adv.qb := indexed_list.take_at_index_le _ _ _,
+--       refine congr_arg (λ z : ℝ≥0∞, z ^ 2) _,
+--       rw_dist_equiv [(fork_adversary.generate_seed_bind_seed_and_run_dist_equiv adv y _ this).symm],
+--       rw_dist_equiv [map_bind_dist_equiv],
+--     end
+--   -- Sum over the possible values of the shared portion of the seed.
+--   ... = (∑ shared_seed in (generate_seed (adv.shared_query_count fp)).fin_support,
+--           ⁅= shared_seed | generate_seed (adv.shared_query_count fp)⁆ *
+--             ⁅= some fp | run_result.fork_point <$> adv.seed_and_run y shared_seed⁆) ^ 2 :
+--     congr_arg (λ z : ℝ≥0∞, z ^ 2) (by simp_rw [prob_output_bind_eq_sum_fin_support,
+--       fin_support_coe_sub_spec, prob_output_coe_sub_spec])
+--   -- Apply Jensen's inequality to the sum over shared seed values.
+--   ... ≤ ∑ shared_seed in (generate_seed (adv.shared_query_count fp)).fin_support,
+--           ⁅= shared_seed | generate_seed (adv.shared_query_count fp)⁆ *
+--             ⁅= some fp | run_result.fork_point <$> adv.seed_and_run y shared_seed⁆ ^ 2 :
+--     begin
+--       refine le_trans (ennreal.pow_two_sum_le_sum_pow_two _ _ ((λ _ _, ennreal.mul_ne_top
+--         (prob_output_ne_top _ _) (prob_output_ne_top _ _)))) _,
+--       refine le_of_eq (finset.sum_congr rfl (λ shared_seed hss, _)),
+--       have hsfp := (coe_query_count_of_mem_fin_support_generate_seed hss),
+--       rw [mul_pow, prob_output_generate_seed _ _ hsfp, card_fin_support_generate_seed, pow_two,
+--         ← mul_assoc, ← mul_assoc, ennreal.mul_inv_cancel (nat.cast_ne_zero.2
+--         (possible_outcomes_ne_zero _)) (ennreal.nat_ne_top _), one_mul]
+--     end
+--   -- Combine the two seperate runs of the adversary into one computation.
+--   ... = ∑ shared_seed in (generate_seed (adv.shared_query_count fp)).fin_support,
+--     ⁅= shared_seed | generate_seed (adv.shared_query_count fp)⁆ *
+--       ⁅= (some fp, some fp) | do {
+--         rr₁ ← adv.seed_and_run y shared_seed,
+--         rr₂ ← adv.seed_and_run y shared_seed,
+--         return (rr₁.fork_point, rr₂.fork_point)
+--       }⁆ :
+--     begin
+--       refine finset.sum_congr rfl (λ shared_seed _, congr_arg (λ z : ℝ≥0∞, _ * z) _),
+--       rw [pow_two],
+--       refine trans (symm (prob_output_mprod _ _ (some fp, some fp))) _,
+--       rw_dist_equiv [bind_map_dist_equiv _ _ run_result.fork_point,
+--         bind_map_dist_equiv _ _ run_result.fork_point]
+--     end
+--   -- Reduce the shared seed generation back inside the main computation.
+--   ... = ⁅= (some fp, some fp) | do {shared_seed ← ↑(generate_seed (adv.shared_query_count fp)),
+--           rr₁ ← adv.seed_and_run y shared_seed,
+--           rr₂ ← adv.seed_and_run y shared_seed,
+--           return (rr₁.fork_point, rr₂.fork_point)}⁆ :
+--     begin
+--       rw [prob_output_bind_eq_sum_fin_support],
+--       simp_rw [fin_support_coe_sub_spec, prob_output_coe_sub_spec],
+--     end
+--   ... = ⁅= (some fp, some fp) | do {shared_seed ← ↑(generate_seed (adv.shared_query_count fp)),
+--           rr₁ ← adv.seed_and_run y shared_seed,
+--           rr₂ ← adv.seed_and_run y (rr₁.seed.take_at_index (sum.inr i) fp),
+--           return (rr₁.fork_point, rr₂.fork_point)}⁆ :
+--     begin
+--       pairwise_dist_equiv with shared_seed hss rr hrr,
+--       suffices : shared_seed = indexed_list.take_at_index rr.seed (sum.inr i) ↑fp,
+--       by rw [this],
+--       rw ← fork_adversary.take_to_count_seed_eq_seed adv y shared_seed rr hrr,
+--       rw [support_coe_sub_spec] at hss,
+--       rw [coe_query_count_of_mem_support_generate_seed hss],
+--       rw [← indexed_list.take_to_count_take_at_index],
+--       rw [fork_adversary.shared_query_count, indexed_list.coe_query_count_eq,
+--         indexed_list.to_query_count_take_at_index],
+--       rw [adv.to_query_count_of_mem_support_seed_and_run _ _ _ hrr],
+--       rw [coe_query_count_of_mem_support_generate_seed hss],
+--       refine indexed_list.take_at_index_le _ _ _,
+--     end
+--   ... = ⁅= (some fp, some fp) | do {rr₁ ← adv.seed_and_run y ∅,
+--           rr₂ ← adv.seed_and_run y (rr₁.seed.take_at_index (sum.inr i) fp),
+--           return (rr₁.fork_point, rr₂.fork_point)}⁆ :
+--     begin
+--       by_dist_equiv,
+--       have := adv.generate_seed_bind_seed_and_run_dist_equiv y (adv.shared_query_count fp)
+--         (indexed_list.take_at_index_le _ _ _),
+--       rw_dist_equiv [this.symm, bind_bind_dist_equiv_assoc]
+--     end
 
 /--  -/
 lemma le_prob_event_same_fork_point (adv : fork_adversary spec α β i) :
@@ -295,8 +298,7 @@ begin
 end
 
 theorem le_fork_advantage (inp_gen : oracle_comp spec α) :
-  (adv.cf_advantage inp_gen) *
-      (adv.cf_advantage inp_gen / adv.q - (card (spec.range i))⁻¹)
+  (adv.cf_advantage inp_gen) * (adv.cf_advantage inp_gen / adv.q - (card (spec.range i))⁻¹)
     ≤ fork_advantage adv inp_gen :=
 sorry
 

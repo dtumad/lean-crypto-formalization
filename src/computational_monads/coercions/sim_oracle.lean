@@ -26,16 +26,16 @@ section coe_sim_oracle
 /-- Use a coercion on the resulting type of a simulation to coerce the simulation oracle itself.
   This allows for greater flexibility when specifying the simulation oracle when
     both the initial and final `oracle_spec` are some appended set of oracles -/
-instance [coe_spec ⊂ₒ coe_spec'] :
+noncomputable instance [coe_spec ⊂ₒ coe_spec'] :
   has_coe (sim_oracle spec coe_spec S) (sim_oracle spec coe_spec' S) :=
 ⟨λ so, {default_state := so.default_state, o := λ i x, ↑(so i x)}⟩
 
 /-- Coerce a simulation oracle to include an additional number of resulting oracles -/
-example (so : sim_oracle coe_spec coe_spec' S) :
+noncomputable example (so : sim_oracle coe_spec coe_spec' S) :
   sim_oracle coe_spec (coe_spec' ++ spec ++ spec') S := ↑so
 
 /-- Can use coercions to seperately simulate both sides of appended oracle specs -/
-example (so : sim_oracle spec spec'' S) (so' : sim_oracle spec' spec''' S') :
+noncomputable example (so : sim_oracle spec spec'' S) (so' : sim_oracle spec' spec''' S') :
   sim_oracle (spec ++ spec') (spec'' ++ spec''') (S × S') :=
 ↑so ++ₛ ↑so'
 
