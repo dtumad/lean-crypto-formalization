@@ -36,7 +36,8 @@ by simp only [simulate', support_map, support_simulate_map, set.image_image, pro
 
 lemma mem_support_simulate'_map_iff (y : β) : y ∈ (simulate' so (f <$> oa) s).support ↔
   ∃ x s', (x, s') ∈ (simulate so oa s).support ∧ f x = y :=
-by rw [simulate'_map, support_map_comp, prod.map_fst', support_map, set.mem_image, prod.exists]
+by simp_rw [simulate'_map, support_map, set.mem_image, mem_support_simulate'_iff_exists_state,
+  exists_and_distrib_right]
 
 end support
 
@@ -52,8 +53,8 @@ end eval_dist
 
 section dist_equiv
 
-lemma simulate_map_dist_equiv : simulate so (f <$> oa) s ≃ₚ (prod.map f id) <$> simulate so oa s :=
-by pairwise_dist_equiv
+@[pairwise_dist_equiv] lemma simulate_map_dist_equiv :
+  simulate so (f <$> oa) s ≃ₚ (prod.map f id) <$> simulate so oa s := by rw [simulate_map]
 
 lemma simulate'_map_dist_equiv : simulate' so (f <$> oa) s ≃ₚ f <$> simulate' so oa s :=
 by simp [dist_equiv.def, pmf.map_comp, prod.map_fst']
@@ -69,8 +70,8 @@ by rw [simulate_map, prob_output_map_prod_map_id_right]
 
 @[simp] lemma prob_output_simulate'_map [decidable_eq β]
   (y : β) : ⁅= y | simulate' so (f <$> oa) s⁆ =
-    ∑' x, if y = f (prod.fst x) then ⁅= x | simulate so oa s⁆ else 0 :=
-by { rw [simulate'_map, prob_output_map_comp, prod.map_fst', prob_output_map_eq_tsum] }
+    ∑' x, if y = f x then ⁅= x | simulate' so oa s⁆ else 0 :=
+by rw [simulate'_map, prob_output_map_eq_tsum]
 
 end prob_output
 

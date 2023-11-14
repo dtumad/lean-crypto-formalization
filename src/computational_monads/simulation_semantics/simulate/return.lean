@@ -43,18 +43,19 @@ end support
 
 section fin_support
 
-@[simp] lemma fin_support_simulate_return :
+@[simp] lemma fin_support_simulate_return [decidable_eq α] [decidable_eq S] :
   (simulate so (return a) s).fin_support = {(a, s)} := rfl
 
-lemma mem_fin_support_simulate_return_iff (x : α × S) :
+lemma mem_fin_support_simulate_return_iff [decidable_eq α] [decidable_eq S] (x : α × S) :
   x ∈ (simulate so (return a) s).fin_support ↔ x.1 = a ∧ x.2 = s :=
 by simp [prod.eq_iff_fst_eq_snd_eq]
 
-@[simp] lemma fin_support_simulate'_return : (simulate' so (return a) s).fin_support = {a} :=
+@[simp] lemma fin_support_simulate'_return [decidable_eq α] :
+  (simulate' so (return a) s).fin_support = {a} :=
 by simp [simulate'_return]
 
-lemma mem_fin_support_simulate'_return_iff (x : α) :
-  x ∈ (simulate' so (return a) s).support ↔ x = a := by simp
+lemma mem_fin_support_simulate'_return_iff [decidable_eq α] (x : α) :
+  x ∈ (simulate' so (return a) s).fin_support ↔ x = a := by simp
 
 end fin_support
 

@@ -36,7 +36,7 @@ by simp only [simulate_map, simulate_bind, eval_dist_map, eval_dist_bind, pmf.ma
 
 @[pairwise_dist_equiv] lemma simulate_map_bind_dist_equiv : simulate so (g <$> (oa >>= ob)) s ≃ₚ
   simulate so oa s >>= λ x, prod.map g id <$> simulate so (ob x.1) x.2 :=
-by pairwise_dist_equiv
+by rw [simulate_map, simulate_bind, map_bind]
 
 @[simp] lemma prob_output_simulate_map_bind [decidable_eq γ] [decidable_eq S]
   (z : γ × S) : ⁅= z | simulate so (g <$> (oa >>= ob)) s⁆ =
@@ -71,8 +71,9 @@ by pairwise_dist_equiv
 lemma support_simulate_return_bind : (simulate so (return a >>= ob) s).support =
   (simulate so (ob a) s).support := by pairwise_dist_equiv
 
-lemma fin_support_simulate_return_bind : (simulate so (return a >>= ob) s).fin_support =
-  (simulate so (ob a) s).fin_support := by pairwise_dist_equiv
+lemma fin_support_simulate_return_bind [decidable_eq β] [decidable_eq S] :
+  (simulate so (return a >>= ob) s).fin_support = (simulate so (ob a) s).fin_support :=
+by pairwise_dist_equiv
 
 lemma eval_dist_simulate_return_bind : ⁅simulate so (return a >>= ob) s⁆ =
   ⁅simulate so (ob a) s⁆ := by pairwise_dist_equiv

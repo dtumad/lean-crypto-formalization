@@ -24,7 +24,8 @@ variables (so : sim_oracle spec spec' S) (oa : oracle_comp spec α)
 section support
 
 @[simp] lemma support_simulate_bind : (simulate so (oa >>= ob) s).support =
-  ⋃ x ∈ (simulate so oa s).support, (simulate so (ob $ prod.fst x) x.2).support := rfl
+  ⋃ x ∈ (simulate so oa s).support, (simulate so (ob $ prod.fst x) x.2).support :=
+by rw [simulate_bind, support_bind]
 
 lemma mem_support_simulate_bind_iff (y : β × S) : y ∈ (simulate so (oa >>= ob) s).support ↔
   ∃ a s', (a, s') ∈ (simulate so oa s).support ∧ y ∈ (simulate so (ob a) s').support :=
@@ -59,11 +60,11 @@ end eval_dist
 
 section dist_equiv
 
-lemma simulate_bind_dist_equiv : simulate so (oa >>= ob) s ≃ₚ
-  simulate so oa s >>= λ x, simulate so (ob x.1) x.2 := refl _
+@[pairwise_dist_equiv] lemma simulate_bind_dist_equiv : simulate so (oa >>= ob) s ≃ₚ
+  simulate so oa s >>= λ x, simulate so (ob x.1) x.2 := by simp [simulate_bind]
 
-lemma simulate'_bind_dist_equiv : simulate' so (oa >>= ob) s ≃ₚ
-  simulate so oa s >>= λ x, simulate' so (ob x.1) x.2 := by pairwise_dist_equiv
+@[pairwise_dist_equiv] lemma simulate'_bind_dist_equiv : simulate' so (oa >>= ob) s ≃ₚ
+  simulate so oa s >>= λ x, simulate' so (ob x.1) x.2 := by simp [simulate'_bind]
 
 lemma simulate_bind_dist_equiv_simulate'_bind
   (oz : α × S → oracle_comp spec' β) (s₀ s : S) (h : ∀ z, oz z ≃ₚ oz (z.1, s)) :

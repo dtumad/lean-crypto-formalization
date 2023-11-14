@@ -17,6 +17,11 @@ For example a logging query would use an empty log as the default state.
 
 We define `simulate'` to be simulation followed by discarding the state.
 This is useful for things like a random oracle, where the final log isn't relevant in general.
+
+We intentionally avoid marking lemmas like `simulate_return` as `@[simp]`, as some proofs
+are expressed more easily when things haven't been reduced like this.
+Instead we mark things like `support_simulate_return`.
+TODO: we should evaluate if this approach is actually always better.
 -/
 
 variables {α β γ : Type} {spec spec' spec'' : oracle_spec} {S S' : Type}
@@ -32,8 +37,8 @@ structure sim_oracle (spec spec' : oracle_spec) (S : Type) :=
 namespace sim_oracle
 
 /-- Example of an oracle maintaining in internal incrementing value,
-  and returning a fake coin flip based on whether the state is even. -/
-example : sim_oracle oracle_spec.coin_spec oracle_spec.coin_spec ℕ :=
+and returning a fake coin flip that alternates between heads and tails. -/
+noncomputable example : sim_oracle oracle_spec.coin_spec oracle_spec.coin_spec ℕ :=
 { default_state := 0,
   o := λ i ⟨t, n⟩, return (if even n then tt else ff, n + 1) }
 
@@ -48,7 +53,7 @@ lemma has_coe_to_fun.def (so : sim_oracle spec spec' S) (i : spec.ι)
 def inhabited_state (so : sim_oracle spec spec' S) : inhabited S := ⟨so.default_state⟩
 
 instance inhabited [inhabited S] : inhabited (sim_oracle spec spec' S) :=
-⟨{default_state := default, o := λ _ _, return default}⟩
+⟨{default_state := default, o := λ _ _, oracle_comp.pure' _ default}⟩
 
 end sim_oracle
 
@@ -62,42 +67,47 @@ variables (so : sim_oracle spec spec' S) (a : α) (i : spec.ι) (t : spec.domain
 
 section simulate
 
-/-- Simulate an oracle comp to an oracle comp with a different spec.
-Requires providing a maximum recursion depth for the `repeat` constructor. -/
-def simulate {spec spec' : oracle_spec} (so : sim_oracle spec spec' S) :
-  Π {α : Type} (oa : oracle_comp spec α), S → oracle_comp spec' (α × S)
+/-- Simulate a computation by replacing queries to the oracle with some new computation.
+Additionally returns the final internal state after the simulation. -/
+noncomputable def simulate (so : sim_oracle spec spec' S) : Π {α : Type},
+  oracle_comp spec α → S → oracle_comp spec' (α × S)
 | _ (pure' α a) state := return ⟨a, state⟩
-| _ (bind' α β oa ob) state := do {x ← simulate oa state, simulate (ob x.1) x.2}
-| _ (query i t) state := so i (t, state)
+| _ (query_bind' i t α oa) state := do {x ← so i (t, state), simulate (oa x.1) x.2}
 
 /-- Convenience definition to use the default state as the initial state for `simulate`.
 Marked to be reduced and inlined, so the definition is essentially just notational. -/
 @[inline, reducible, simp]
-def dsimulate (so : sim_oracle spec spec' S) (oa : oracle_comp spec α) :
+noncomputable def dsimulate (so : sim_oracle spec spec' S) (oa : oracle_comp spec α) :
   oracle_comp spec' (α × S) := simulate so oa so.default_state
 
--- These lemmas are intentionally not marked `@[simp]`, instead the semantic lemmas of them are.
 lemma simulate_return : simulate so (return a) s = return (a, s) := rfl
 
 lemma simulate_bind : simulate so (oa >>= ob) s =
-  simulate so oa s >>= λ x, simulate so (ob x.1) x.2 := rfl
+  simulate so oa s >>= λ x, simulate so (ob x.1) x.2 :=
+begin
+  induction oa using oracle_comp.induction_on' with α a i t α oa hoa generalizing s,
+  { simp [simulate_return] },
+  { simp_rw [bind_assoc, ← query_bind'_eq_query_bind, simulate, hoa, ← bind_assoc] }
+end
 
-lemma simulate_query : simulate so (query i t) s = so i (t, s) := rfl
+lemma simulate_query : simulate so (query i t) s = so i (t, s) :=
+by simp_rw [query_def, simulate, prod.mk.eta, bind_pure]
 
-lemma simulate_map : simulate so (f <$> oa) s = prod.map f id <$> simulate so oa s := rfl
+lemma simulate_map : simulate so (f <$> oa) s = prod.map f id <$> simulate so oa s :=
+by simpa only [map_eq_bind_pure_comp, simulate_bind]
 
 end simulate
 
 section simulate'
 
 /-- Get the result of simulation without returning the internal oracle state -/
-def simulate' (so : sim_oracle spec spec' S) (oa : oracle_comp spec α) (s : S) :
+noncomputable def simulate' (so : sim_oracle spec spec' S) (oa : oracle_comp spec α) (s : S) :
   oracle_comp spec' α := prod.fst <$> oa.simulate so s
 
 /-- Convenience definition to use the default state as the initial state for `simulate'`.
 Marked to be reduced and inlined, so the definition is essentially just notation. -/
 @[inline, reducible, simp]
-def dsimulate' (so : sim_oracle spec spec' S) (oa : oracle_comp spec α) :
+noncomputable def dsimulate' (so : sim_oracle spec spec' S) (oa : oracle_comp spec α) :
   oracle_comp spec' α := oa.simulate' so so.default_state
 
 lemma simulate'_def : simulate' so oa s = prod.fst <$> oa.simulate so s := rfl
@@ -105,20 +115,15 @@ lemma simulate'_def : simulate' so oa s = prod.fst <$> oa.simulate so s := rfl
 -- TODO: these should have a special simp category, to not be eagerly applied
 lemma simulate'_return : simulate' so (return a) s = prod.fst <$> (return (a, s)) := rfl
 
-lemma simulate'_pure' : simulate' so (pure' α a) s = prod.fst <$> (return (a, s)) := rfl
-
-lemma simulate'_pure : simulate' so (pure a) s = prod.fst <$> (return (a, s)) := rfl
-
 lemma simulate'_bind : simulate' so (oa >>= ob) s =
-  prod.fst <$> (simulate so oa s >>= λ x, simulate so (ob x.1) x.2) := rfl
+  simulate so oa s >>= λ x, simulate' so (ob x.1) x.2 :=
+by simp [simulate'_def, simulate_bind, map_bind]
 
-lemma simulate'_bind' : simulate' so (bind' α β oa ob) s =
-  prod.fst <$> (simulate so oa s >>= λ x, simulate so (ob x.1) x.2) := rfl
+lemma simulate'_query : simulate' so (query i t) s = prod.fst <$> so i (t, s) :=
+by rw [simulate'_def, simulate_query]
 
-lemma simulate'_query : simulate' so (query i t) s = prod.fst <$> so i (t, s) := rfl
-
-lemma simulate'_map : simulate' so (f <$> oa) s =
-  prod.fst <$> (prod.map f id <$> simulate so oa s) := rfl
+lemma simulate'_map : simulate' so (f <$> oa) s = f <$> simulate' so oa s :=
+by simpa [simulate'_def, simulate_map]
 
 @[simp] lemma support_simulate' :
   (simulate' so oa s).support = prod.fst '' (simulate so oa s).support :=
@@ -166,11 +171,11 @@ lemma state_invariant_of_preserved (so : sim_oracle spec spec' S) (P : S → Pro
   (hso : ∀ i t s, ∀ x ∈ (so i (t, s)).support, P s → P (prod.snd x)) (s : S) (hs : P s)
   (oa : oracle_comp spec α) (x : α × S) (hx : x ∈ (simulate so oa s).support) : P x.2 :=
 begin
-  induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i' t' generalizing s,
+  induction oa using oracle_comp.induction_on' with α a i t α oa hoa generalizing s,
   { exact (symm hx) ▸ hs },
-  { obtain ⟨x', h, hx⟩ := (mem_support_bind_iff _ _ _).1 hx,
-    exact hob x'.1 x x'.2 (hoa x' s hs h) hx },
-  { exact hso i' t' s x hx hs }
+  { rw [simulate_bind, simulate_query] at hx,
+    obtain ⟨x', h, hx⟩ := (mem_support_bind_iff _ _ _).1 hx,
+    exact hoa x'.1 x x'.2 (hso i t s x' h hs) hx }
 end
 
 section support_subset

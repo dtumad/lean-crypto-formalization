@@ -37,7 +37,7 @@ begin
     refine dist_equiv.ext (λ y, _),
     simp_rw [prob_output_simulate'_bind_eq_tsum_tsum, hob, ennreal.tsum_mul_right,
       ← prob_output_simulate', hoa, prob_output_bind_eq_tsum] },
-  { exact h i t s }
+  { rw_dist_equiv [simulate'_query_dist_equiv, h i t s] }
 end
 
 /-- If the distribution of the first output of `sim_oracle` is uniform
@@ -90,7 +90,7 @@ begin
 end
 
 /-- Version of `support_simulate'_eq_support` for `simulate'`. -/
-lemma fin_support_simulate'_eq_fin_support
+lemma fin_support_simulate'_eq_fin_support [decidable_eq α] [decidable_eq S]
   (h : ∀ i t s, (so i (t, s)).fin_support.image fst = finset.univ) :
   (simulate' so oa s).fin_support = oa.fin_support :=
 begin
@@ -121,7 +121,8 @@ begin
       ← prob_output_simulate', hoa s s', prob_output_simulate' _ oa, ← ennreal.tsum_mul_right],
     exact tsum_congr (λ x, tsum_congr (λ s₁, congr_arg (λ r, _ * r)
       (trans (hob _ s _ z).symm (hob _ _ _ z)))) },
-  { exact h i t s s' }
+  { simp_rw_dist_equiv [simulate'_query_dist_equiv],
+    exact h i t s s' }
 end
 
 /-- If the distributions of the first result of two oracles are the same for any input,
@@ -185,6 +186,7 @@ begin
 end
 
 lemma fin_support_simulate'_eq_fin_support_simulate'
+  [decidable_eq α] [decidable_eq S] [decidable_eq S']
   (h : ∀ i t s s', (so i (t, s)).fin_support.image fst = (so' i (t, s')).fin_support.image fst) :
   (simulate' so oa s).fin_support = (simulate' so' oa s').fin_support :=
 fin_support_eq_fin_support_of_support_eq_support _ _ (support_simulate'_eq_support_simulate' oa s
@@ -213,6 +215,7 @@ end
 
 /-- Version of `support_simulate_eq_support_simulate` for `fin_support`. -/
 lemma fin_support_simulate_eq_fin_support_simulate
+  [decidable_eq α] [decidable_eq S] [decidable_eq S']
   (h : ∀ i t s s', (so i (t, s)).fin_support = (so' i (t, s')).fin_support) :
   (simulate so oa s).fin_support = (simulate so' oa s).fin_support :=
 fin_support_eq_fin_support_of_support_eq_support _ _ (support_simulate_eq_support_simulate

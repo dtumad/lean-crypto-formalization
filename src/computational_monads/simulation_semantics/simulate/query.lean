@@ -21,13 +21,23 @@ open_locale big_operators ennreal
 
 variables (so : sim_oracle spec spec' S) (i : spec.ι) (t : spec.domain i) (s : S)
 
+section dist_equiv
+
+@[simp, pairwise_dist_equiv] lemma simulate_query_dist_equiv :
+  simulate so (query i t) s ≃ₚ so i (t, s) := by rw [simulate_query]
+
+@[simp] lemma simulate'_query_dist_equiv :
+  simulate' so (query i t) s ≃ₚ prod.fst <$> so i (t, s) := by pairwise_dist_equiv
+
+end dist_equiv
+
 section support
 
 @[simp] lemma support_simulate_query :
-  (simulate so (query i t) s).support = (so i (t, s)).support := rfl
+  (simulate so (query i t) s).support = (so i (t, s)).support := by rw [simulate_query]
 
 lemma mem_support_simulate_query_iff (z : spec.range i × S) :
-  z ∈ (simulate so (query i t) s).support ↔ z ∈ (so i (t, s)).support := iff.rfl
+  z ∈ (simulate so (query i t) s).support ↔ z ∈ (so i (t, s)).support := by rw [simulate_query]
 
 lemma support_simulate'_query : (simulate' so (query i t) s).support =
   prod.fst '' (so i (t, s)).support := by simp
@@ -41,8 +51,8 @@ end support
 
 section fin_support
 
-@[simp] lemma fin_support_simulate_query :
-  (simulate so (query i t) s).fin_support = (so i (t, s)).fin_support := rfl
+@[simp] lemma fin_support_simulate_query [decidable_eq S] :
+  (simulate so (query i t) s).fin_support = (so i (t, s)).fin_support := by rw [simulate_query]
 
 @[simp] lemma fin_support_simulate'_query [decidable_eq S] :
   (simulate' so (query i t) s).fin_support = (so i (t, s)).fin_support.image prod.fst := by simp
@@ -52,7 +62,7 @@ end fin_support
 section eval_dist
 
 @[simp] lemma eval_dist_simulate_query :
-  ⁅simulate so (query i t) s⁆ = ⁅so i (t, s)⁆ := rfl
+  ⁅simulate so (query i t) s⁆ = ⁅so i (t, s)⁆ := by rw [simulate_query]
 
 @[simp] lemma eval_dist_simulate'_query :
   ⁅simulate' so (query i t) s⁆ = ⁅so i (t, s)⁆.map prod.fst :=
@@ -60,20 +70,10 @@ by simp only [simulate'_query, eval_dist_map]
 
 end eval_dist
 
-section dist_equiv
-
-@[simp] lemma simulate_query_dist_equiv :
-  simulate so (query i t) s ≃ₚ so i (t, s) := by pairwise_dist_equiv
-
-@[simp] lemma simulate'_query_dist_equiv :
-  simulate' so (query i t) s ≃ₚ prod.fst <$> so i (t, s) := by pairwise_dist_equiv
-
-end dist_equiv
-
 section prob_output
 
 @[simp] lemma prob_output_simulate_query (x : spec.range i × S) :
-  ⁅= x | simulate so (query i t) s⁆ = ⁅= x | so i (t, s)⁆ := rfl
+  ⁅= x | simulate so (query i t) s⁆ = ⁅= x | so i (t, s)⁆ := by pairwise_dist_equiv
 
 @[simp] lemma prob_output_simulate'_query_eq_tsum (x : spec.range i) :
   ⁅= x | simulate' so (query i t) s⁆ = ∑' s', ⁅= (x, s') | so i (t, s)⁆ :=
@@ -84,7 +84,7 @@ end prob_output
 section prob_event
 
 @[simp] lemma prob_event_simulate_query (e : set (spec.range i × S)) :
-  ⁅e | simulate so (query i t) s⁆ = ⁅e | so i (t, s)⁆ := rfl
+  ⁅e | simulate so (query i t) s⁆ = ⁅e | so i (t, s)⁆ := by pairwise_dist_equiv
 
 @[simp] lemma prob_event_simulate'_query (e : set (spec.range i)) :
   ⁅e | simulate' so (query i t) s⁆ = ⁅prod.fst ⁻¹' e | so i (t, s)⁆ :=

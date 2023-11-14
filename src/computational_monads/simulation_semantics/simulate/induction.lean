@@ -13,6 +13,8 @@ This file contains convenience lemmas for showing that the distribution semantic
 of `simulate so oa s` take a certain form via induction on `oa`.
 The only difference between direct induction on `oa` is that it pre-emptively simplifies
 the applications of `simulate` and the other side.
+
+TODO: would be nice to have versions analogous to `oracle_comp.induction_on'` as well.
 -/
 
 namespace oracle_comp
@@ -51,7 +53,7 @@ lemma support_simulate'_eq_induction {supp : Π (α : Type), oracle_comp spec α
 begin
   induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t generalizing s,
   { simp only [h_ret, simulate'_return, support_map, support_return, set.image_singleton] },
-  { simp only [h_bind, ←hob, simulate'_bind, support_map_bind, support_simulate'] },
+  { simp only [h_bind, ←hob, simulate'_bind, support_map_bind, support_simulate', support_bind] },
   { simp only [h_query, simulate'_query, support_map] }
 end
 
@@ -72,8 +74,8 @@ lemma simulate_dist_equiv_induction
 begin
   induction oa using oracle_comp.induction_on with α a' α β oa ob hoa hob i t generalizing s,
   { rw_dist_equiv [h_ret] },
-  { rw_dist_equiv [h_bind, hoa, hob] },
-  { rw_dist_equiv [h_query] }
+  { rw_dist_equiv [simulate_bind_dist_equiv, h_bind, hoa, hob] },
+  { rw_dist_equiv [h_query, simulate_query_dist_equiv] }
 end
 
 end dist_equiv

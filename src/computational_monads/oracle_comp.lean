@@ -195,6 +195,10 @@ lemma return_bind (a : α) (ob : α → oracle_comp spec β) :
 lemma bind_return (oa : oracle_comp spec α) :
   oa >>= return = oa := bind_pure oa
 
+@[simp] lemma map_map_eq_map_comp (oa : oracle_comp spec α) (f : α → β) (g : β → γ) :
+  g <$> (f <$> oa) = (g ∘ f) <$> oa :=
+by simp [oracle_comp.map_eq_bind_return_comp, bind_assoc]
+
 end monad
 
 section query
