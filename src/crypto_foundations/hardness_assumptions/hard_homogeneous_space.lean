@@ -171,3 +171,5 @@ class hard_homogenous_space (G X : ℕ → Type) [∀ n, add_comm_group (G n)]
   negligable (λ sp, (adversary sp).advantage (vectorization_experiment (G sp) (X sp))))
 (parallelization_hard : ∀ (adversary : Π (sp : ℕ), parallelization_adversary (G sp) (X sp)),
   negligable (λ sp, (adversary sp).advantage (parallelization_experiment (G sp) (X sp))))
+(test : poly_time (λ z, ⟨z.1, z.2.1 + z.2.2⟩ :
+  (Σ sp : ℕ, G sp × G sp) → (Σ sp : ℕ, G sp)))
