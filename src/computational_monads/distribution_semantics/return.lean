@@ -51,7 +51,7 @@ by simp only [h, fin_support_return, finset.mem_singleton, not_false_iff]
 
 end mem_support
 
-section eval_dist
+section prob_output
 
 /-- The probability of getting `x` from `return a` is `1` if `x = a` and `0` if `x ≠ a`.
 Without a `decidable_eq` instance the output probabilities use `set.indicator`. -/
@@ -59,10 +59,10 @@ lemma prob_output_return_eq_indicator (x : α) :
   ⁅= x | return' !spec! a⁆ = set.indicator {a} (λ _, 1) x := rfl
 
 /-- The probability of getting `x` from `return a` is `1` if `x = a` and `0` if `x ≠ a`. -/
-lemma prob_output_return [decidable_eq α] (x : α) :
+@[simp] lemma prob_output_return [decidable_eq α] (x : α) :
   ⁅= x | return' !spec! a⁆ = ite (x = a) 1 0 := by convert rfl
 
-end eval_dist
+end prob_output
 
 section prob_event
 

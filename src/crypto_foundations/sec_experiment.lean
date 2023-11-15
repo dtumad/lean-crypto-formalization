@@ -16,21 +16,27 @@ import computational_monads.asymptotics.negligable
 open_locale ennreal
 open oracle_spec
 
+/-- A security adversary `sec_adversary adv_spec α β` is a computation taking inputs of type `α`
+and computing a result of type `β` using oracles specified by `adv_spec`. -/
+structure sec_adversary (adv_spec : oracle_spec) (α β : Type) :=
+(run : α → oracle_comp adv_spec β)
+(qb : query_count adv_spec)
+
 structure sec_experiment (exp_spec : oracle_spec) (α β : Type)
   extends oracle_algorithm exp_spec :=
 (inp_gen : oracle_comp exp_spec α)
 (main : α → oracle_comp exp_spec β)
-(is_valid : α × β → Prop)
+(is_valid : α → β → Prop)
 
 namespace sec_experiment
 
 variables {exp_spec : oracle_spec} {α β γ : Type}
 
-noncomputable def run_experiment (exp : sec_experiment exp_spec α β) :
+noncomputable def run (exp : sec_experiment exp_spec α β) :
   oracle_comp uniform_selecting (α × β) :=
 exp.exec (do {x ← exp.inp_gen, y ← exp.main x, return (x, y)} )
 
 noncomputable def advantage (exp : sec_experiment exp_spec α β) : ℝ≥0∞ :=
-⁅exp.is_valid | exp.run_experiment⁆
+⁅λ z, exp.is_valid z.1 z.2 | exp.run⁆
 
 end sec_experiment

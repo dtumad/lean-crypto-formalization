@@ -220,11 +220,7 @@ lemma prob_output_bind_ite_return [decidable_eq β] :
   ⁅= y | do {x ← oa, if p x then return (f x) else return (g x)}⁆ =
     (∑' x, if p x ∧ y = f x then ⁅= x | oa⁆ else 0) +
       (∑' x, if ¬ p x ∧ y = g x then ⁅= x | oa⁆ else 0) :=
-begin
-  simp [ite_and, ← tsum_add, -eval_dist_ite],
-  refine tsum_congr (λ x, _),
-  by_cases hp : p x; simp [hp, prob_output_return]
-end
+by simp only [ite_and, prob_output_bind_ite, prob_output_return, mul_boole]
 
 end bind_ite_return
 

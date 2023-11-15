@@ -20,6 +20,24 @@ open_locale big_operators ennreal
 
 variables {α β γ δ : Type} {spec spec' : oracle_spec}
 
+@[simp] lemma prob_output_return_prod_mk_fst (x x' : α) (y : β) :
+  ⁅= (x, y) | return' !spec! (x', y)⁆ = ⁅= x | return' !spec! x'⁆ :=
+begin
+  by_cases h : x = x',
+  { simp only [h, prob_output_return_self] },
+  { rw [(prob_output_return_eq_zero_iff _ _ _).2 h],
+    refine prob_output_eq_zero (by simp [h]) }
+end
+
+@[simp] lemma prob_output_return_prod_mk_snd (x : α) (y y' : β) :
+  ⁅= (x, y) | return' !spec! (x, y')⁆ = ⁅= y | return' !spec! y'⁆ :=
+begin
+  by_cases h : y = y',
+  { simp only [h, prob_output_return_self] },
+  { rw [(prob_output_return_eq_zero_iff _ _ _).2 h],
+    refine prob_output_eq_zero (by simp [h]) }
+end
+
 section fst_snd_map_return_dist_equiv
 
 lemma fst_map_return_dist_equiv (x : α) (y : β) :
@@ -297,6 +315,38 @@ by simp only [mem_fin_support_iff_mem_support, mem_support_bind_prod_mk_snd,
   set.mem_image, finset.mem_image, exists_prop]
 
 end fin_support
+
+section prob_output
+
+@[simp] lemma prob_output_bind_prod_mk_fst
+  (x : β × γ) : ⁅= x | oa >>= λ a, return (f a, c)⁆ =
+    ⁅= x.1 | f <$> oa⁆ * ⁅= x.2 | return' !spec! c⁆ :=
+begin
+  cases x with y z,
+  by_cases hz : z = c,
+  { induction hz,
+    simp only [prob_output_bind_eq_tsum, map_eq_bind_pure_comp, prob_output_return_prod_mk_fst,
+      prob_output_return_self, mul_one]},
+  { simp only [hz, prob_output_bind_eq_tsum, (prob_output_return_eq_zero_iff spec _ _).2 hz,
+      mul_zero, ennreal.tsum_eq_zero, mul_eq_zero, prob_output_eq_zero_iff, support_return,
+      set.mem_singleton_iff, mk.inj_iff, and_false, not_false_iff, or_true, implies_true_iff] }
+end
+
+@[simp] lemma prob_output_bind_prod_mk_snd
+  (x : β × γ) : ⁅= x | oa >>= λ a, return (b, g a)⁆ =
+    ⁅= x.1 | return' !spec! b⁆ * ⁅= x.2 | g <$> oa⁆ :=
+begin
+  cases x with y z,
+  by_cases hz : y = b,
+  { induction hz,
+    simp only [prob_output_bind_eq_tsum, map_eq_bind_pure_comp, prob_output_return_prod_mk_snd,
+      prob_output_return_self, one_mul]},
+  { simp only [hz, prob_output_bind_eq_tsum, (prob_output_return_eq_zero_iff spec _ _).2 hz,
+      zero_mul, ennreal.tsum_eq_zero, mul_eq_zero, prob_output_eq_zero_iff, support_return,
+      set.mem_singleton_iff, mk.inj_iff, false_and, not_false_iff, or_true, implies_true_iff] }
+end
+
+end prob_output
 
 end bind_prod_mk
 

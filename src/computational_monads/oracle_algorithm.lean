@@ -17,7 +17,11 @@ semantics of the globally available oracles, and is meant to be extended with fu
 representing the actual algorithms themselves.
 -/
 
+def unif_oracle := oracle_spec.uniform_selecting
+
 open oracle_comp oracle_spec
+
+variables {alg_spec : oracle_spec} {α β γ : Type}
 
 structure oracle_algorithm (alg_spec : oracle_spec) :=
 (base_S : Type) -- Oracle state when simulating computations
@@ -25,29 +29,48 @@ structure oracle_algorithm (alg_spec : oracle_spec) :=
 
 namespace oracle_algorithm
 
-variables {alg_spec : oracle_spec} (alg : oracle_algorithm alg_spec)
-
-def unif_oracle := uniform_selecting
-
 section exec
 
-noncomputable def exec (alg : oracle_algorithm alg_spec) {α : Type}
+/-- Use the algorithm's simulation oracle to run a computation. -/
+noncomputable def exec (alg : oracle_algorithm alg_spec)
   (oa : oracle_comp alg_spec α) : oracle_comp unif_oracle α :=
 dsimulate' alg.base_sim_oracle oa
 
-section return
+variable (alg : oracle_algorithm alg_spec)
 
-variables {α : Type} (a : α)
-
-@[pairwise_dist_equiv] lemma exec_return_dist_equiv :
+lemma exec_return_dist_equiv (a : α) :
   alg.exec (return' !alg_spec! a) ≃ₚ return' !unif_oracle! a :=
-simulate'_return_dist_equiv' _ _ _
-
-
-
-
-end return
+by pairwise_dist_equiv --simulate'_return_dist_equiv' _ _ _
 
 end exec
 
 end oracle_algorithm
+
+/-- Can be used to default the simulation oracle in cases with no extra oracles. -/
+noncomputable def base_oracle_algorithm :
+  oracle_algorithm uniform_selecting :=
+{ base_S := unit, base_sim_oracle := idₛₒ }
+
+namespace base_oracle_algorithm
+
+@[simp] lemma exec_eq (oa : oracle_comp uniform_selecting α) :
+  base_oracle_algorithm.exec oa = oa :=
+begin
+  simp [oracle_algorithm.exec, base_oracle_algorithm],
+  induction oa using oracle_comp.induction_on' with α a i t α oa hoa,
+  {
+    simp [simulate'_return],
+  },
+  {
+    simp [simulate'_bind, simulate_query,
+      identity_oracle.apply_eq, mprod.def],
+    rw [bind_assoc],
+    simp_rw [return_bind],
+    congr' 1,
+    refine funext (λ u, _),
+    specialize hoa u,
+    exact hoa,
+  }
+end
+
+end base_oracle_algorithm

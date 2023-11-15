@@ -75,10 +75,10 @@ by rw [mem_fin_support_iff_mem_support, prob_output_ne_zero_iff]
 
 variables {oa x}
 
-@[simp] lemma prob_output_eq_zero (h : x ∉ oa.support) :
+lemma prob_output_eq_zero (h : x ∉ oa.support) :
   ⁅= x | oa⁆ = 0 := (prob_output_eq_zero_iff oa x).2 h
 
-@[simp] lemma prob_output_eq_zero' [decidable_eq α] (h : x ∉ oa.fin_support) :
+lemma prob_output_eq_zero' [decidable_eq α] (h : x ∉ oa.fin_support) :
   ⁅= x | oa⁆ = 0 := (prob_output_eq_zero_iff' oa x).2 h
 
 lemma prob_output_ne_zero (h : x ∈ oa.support) : ⁅= x | oa⁆ ≠ 0 :=
