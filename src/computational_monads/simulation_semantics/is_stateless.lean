@@ -58,7 +58,7 @@ def is_stateless.state_unique [hso : so.is_stateless] : unique S :=
 { default := so.default_state,
   uniq := λ s, is_stateless.state_elim' so _ _}
 
-noncomputable instance is_stateless.is_tracking [hso : so.is_stateless] : so.is_tracking :=
+instance is_stateless.is_tracking [hso : so.is_stateless] : so.is_tracking :=
 { query_f := λ i t, fst <$> so i (t, so.default_state),
   state_f := λ s i t u, so.default_state,
   apply_dist_equiv_state_f_map_query_f :=
@@ -313,7 +313,7 @@ end sim_oracle
 We use the `unit` type as the state in this case, so all possible states are equal.
 We avoid making this a special case of `tracking_oracle` to give better equalities for
 `answer_query`, as otherwise many equalities hold only distributionally. -/
-noncomputable def stateless_oracle
+def stateless_oracle
   (query_f : Π (i : spec.ι), spec.domain i → oracle_comp spec' (spec.range i)) :
   sim_oracle spec spec' unit :=
 { default_state := (),

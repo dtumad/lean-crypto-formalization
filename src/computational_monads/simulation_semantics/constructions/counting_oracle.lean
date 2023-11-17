@@ -20,7 +20,7 @@ variables {α β γ : Type} {spec spec' : oracle_spec}
 
 /-- Simulation oracle for counting the queries made during the computation,
 tracked via a `query_count`, whithout modifying the query calls themselves. -/
-@[inline, reducible] noncomputable def counting_oracle (spec : oracle_spec) :
+@[inline, reducible] def counting_oracle (spec : oracle_spec) :
   sim_oracle spec spec (query_count spec) :=
 -- { default_state := ∅,
 --   o := λ i ⟨t, qc⟩, query_bind' i t _ (λ u, pure' _ (u, qc.increment i 1)) }

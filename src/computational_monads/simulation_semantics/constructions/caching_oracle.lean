@@ -31,12 +31,13 @@ open_locale ennreal big_operators classical -- TODO: temp classical (maybe we sh
 variables {α β γ δ : Type} {spec spec' : oracle_spec}
 
 /-- Oracle for tracking previous queries, and returning the same value for matching inputs.
-The `query_cache.get_or_else` function allows us to run a fallback for non-cached values. -/
-noncomputable def caching_oracle (spec : oracle_spec) : sim_oracle spec spec (query_cache spec) :=
+The `query_cache.get_or_else` function allows us to run a fallback for non-cached values.
+TODO: `caching_sim_oracle` -/
+def caching_oracle (spec : oracle_spec) : sim_oracle spec spec (query_cache spec) :=
 { default_state := ∅,
   o := λ i ⟨t, cache⟩, cache.get_or_else i t (query i t) }
 
-noncomputable def caching_oracle' (spec : oracle_spec) : sim_oracle spec spec spec.query_log :=
+def caching_oracle' (spec : oracle_spec) : sim_oracle spec spec spec.query_log :=
 { default_state := ∅,
   o := λ i ⟨t, cache⟩, cache.lookup_or_query i t }
 

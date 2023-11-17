@@ -111,12 +111,12 @@ section uniform_select_vector
 
 /-- Randomly select an element of a vector by using `uniform_of_fin`.
 Again we need to use `succ` for the vectors type to avoid sampling an empty vector -/
-noncomputable def uniform_select_vector [decidable_eq α] {n : ℕ} (v : vector α (n + 1)) :
+def uniform_select_vector {n : ℕ} (v : vector α (n + 1)) :
   oracle_comp uniform_selecting α := v.nth <$> $[0..n]
 
 notation `$ᵛ` v := uniform_select_vector v
 
-variables [decidable_eq α] {n : ℕ} (v : vector α (n + 1))
+variables {n : ℕ} (v : vector α (n + 1))
   (ob : α → oracle_comp uniform_selecting β) (x : α) (y : β)
 
 section support
@@ -125,7 +125,7 @@ section support
 (support_map $[0..n] v.nth).trans (set.ext (λ a, by simp only [vector.mem_iff_nth,
   support_uniform_fin, set.top_eq_univ, set.image_univ, set.mem_range, set.mem_set_of_eq]))
 
-lemma support_uniform_select_vector_eq_coe_to_finset :
+lemma support_uniform_select_vector_eq_coe_to_finset [decidable_eq α] :
   ($ᵛ v).support = ↑v.to_list.to_finset :=
 by simp only [support_uniform_select_vector, list.coe_to_finset]
 
@@ -143,6 +143,8 @@ by simp only [support_uniform_select_vector, vector.to_list_singleton,
 end support
 
 section fin_support
+
+variable [decidable_eq α]
 
 @[simp] lemma fin_support_uniform_select_vector : ($ᵛ v).fin_support = finset.univ.image v.nth :=
 begin
@@ -175,35 +177,37 @@ section eval_dist
 by rw [uniform_select_vector, pmf.uniform_of_vector_eq_nth_map_uniform_of_fintype,
   eval_dist_map, eval_dist_uniform_fin]
 
-@[simp] lemma prob_output_uniform_select_vector : ⁅= x | $ᵛ v⁆ = v.to_list.count x / n.succ :=
+@[simp] lemma prob_output_uniform_select_vector [decidable_eq α] :
+  ⁅= x | $ᵛ v⁆ = v.to_list.count x / n.succ :=
 by { rw [prob_output.def, eval_dist_uniform_select_vector, pmf.uniform_of_vector_apply], congr }
 
-lemma prob_output_uniform_select_vector_bind_eq_tsum : ⁅= y | ($ᵛ v) >>= ob⁆ =
-  (∑' x, v.to_list.count x * ⁅= y | ob x⁆) / n.succ :=
+lemma prob_output_uniform_select_vector_bind_eq_tsum [decidable_eq α] :
+  ⁅= y | ($ᵛ v) >>= ob⁆ = (∑' x, v.to_list.count x * ⁅= y | ob x⁆) / n.succ :=
 begin
   simp only [prob_output_bind_eq_tsum, div_eq_mul_inv, ← ennreal.tsum_mul_right,
     prob_output_uniform_select_vector],
   exact tsum_congr (λ _, by ring),
 end
 
-@[simp] lemma prob_output_uniform_select_vector_bind_eq_sum : ⁅= y | ($ᵛ v) >>= ob⁆ =
-  (∑ x in v.to_list.to_finset, v.to_list.count x * ⁅= y | ob x⁆) / n.succ :=
+@[simp] lemma prob_output_uniform_select_vector_bind_eq_sum [decidable_eq α] :
+  ⁅= y | ($ᵛ v) >>= ob⁆ = (∑ x in v.1.to_finset, v.1.count x * ⁅= y | ob x⁆) / n.succ :=
 begin
   rw [prob_output_uniform_select_vector_bind_eq_tsum],
   refine congr_arg (λ x, x / (n.succ : ℝ≥0∞)) (tsum_eq_sum $ λ x hx, _),
-  rw [list.count_eq_zero_of_not_mem (λ h, hx $ list.mem_to_finset.2 h), nat.cast_zero, zero_mul],
+  rw [vector.to_list, list.count_eq_zero_of_not_mem (λ h, hx $ list.mem_to_finset.2 h),
+    nat.cast_zero, zero_mul],
 end
 
 end eval_dist
 
 section prob_event
 
-@[simp] lemma prob_event_uniform_select_vector (e : set α) [decidable_pred e] :
+@[simp] lemma prob_event_uniform_select_vector (e : set α) [decidable_pred (∈ e)] :
   ⁅e | $ᵛ v⁆ = (v.to_list.countp e) / n.succ :=
 by { rw [prob_event.def, eval_dist_uniform_select_vector,
   to_outer_measure_uniform_of_vector_apply], congr }
 
-@[simp] lemma prob_event_uniform_select_vector_bind_eq_tsum (e : set β) :
+@[simp] lemma prob_event_uniform_select_vector_bind_eq_tsum [decidable_eq α] (e : set β) :
   ⁅e | ($ᵛ v) >>= ob⁆ = (∑' x, (v.to_list.count x) * ⁅e | ob x⁆) / n.succ :=
 begin
   simp_rw [prob_event_bind_eq_tsum ($ᵛ v) ob e, prob_output_uniform_select_vector,
@@ -211,7 +215,7 @@ begin
   exact tsum_congr (λ _, by ring)
 end
 
-lemma prob_event_uniform_select_vector_bind_eq_sum (e : set β) :
+lemma prob_event_uniform_select_vector_bind_eq_sum [decidable_eq α] (e : set β) :
   ⁅e | ($ᵛ v) >>= ob⁆ = (∑ x in v.to_list.to_finset, (v.to_list.count x) * ⁅e | ob x⁆) / n.succ :=
 begin
   rw [prob_event_uniform_select_vector_bind_eq_tsum],
@@ -359,7 +363,7 @@ variables [decidable_eq α] (bag : finset α) (h : bag.nonempty)
 /-- Assuming we sample from `∅`, we can treat this as any other computation,
 using the provided contradictory proof that `∅` is non-empty. -/
 lemma uniform_select_finset_empty (h : (∅ : finset α).nonempty)
-  (oa : oracle_comp uniform_selecting α) : $ˢ ∅ h = oa :=
+  (oa : oracle_comp uniform_selecting α) : $ˢ ∅ = oa :=
 false.elim (finset.nonempty.ne_empty h rfl)
 
 section support

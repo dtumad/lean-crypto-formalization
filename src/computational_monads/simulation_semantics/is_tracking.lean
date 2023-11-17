@@ -194,7 +194,7 @@ For example a logging oracle that just tracks the input and output of queries.
 `o` is the way the oracle responds to queries, which doesn't have access to the state.
 `update_state` takes a query and internal state and returns the new internal state.
 Note that `update_state` is not a probabalistic function, and has no oracle access -/
-noncomputable def tracking_oracle
+def tracking_oracle
   (query_f : Π (i : spec.ι), spec.domain i → oracle_comp spec' (spec.range i))
   (state_f : Π (s : S) (i : spec.ι), spec.domain i → spec.range i → S)
   (default_state : S) : sim_oracle spec spec' S :=

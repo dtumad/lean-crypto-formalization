@@ -105,12 +105,10 @@ by simp only [support_eq_singleton_iff_forall, set.subset_singleton_iff]
 
 /-- Should be able to automatically derive the support for most simple computations -/
 example :
-do{ β ← coin, β' ← coin,
-    x ← if β then return 0 else return 1,
-    y ← return (if β' then 1 else 0),
-    z ← if β then return x else return (y - y),
-    return (x * y * z) }.support = {0} := begin
-      squeeze_simp [- oracle_comp.bind_return_comp_eq_map],
-    end
+do{ b ← coin, b' ← coin,
+    x ← if b then return 0 else return 1,
+    y ← return (if b' then 1 else 2),
+    z ← if b then return x else return (y - y),
+    return (x * y * z) }.support = {0} := by simp
 
 end oracle_comp

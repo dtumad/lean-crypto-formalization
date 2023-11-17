@@ -29,7 +29,7 @@ namespace sim_oracle
 We capture this unchanged functionality by using an equivalence for the masking.
 Convenient when working with composed or appended oracles, to remove unneeded state elements.
 In particular `unit` state values that start spreading can be avoided. -/
-noncomputable def mask_state (so : sim_oracle spec spec' S) (mask : S ≃ S') :
+def mask_state (so : sim_oracle spec spec' S) (mask : S ≃ S') :
   sim_oracle spec spec' S' :=
 { default_state := mask so.default_state,
   o := λ i x, prod.map id mask <$> (so.o i (prod.map id mask.symm x)) }

@@ -33,7 +33,7 @@ queries if there isn't a seed value. If the `query_seed` comes from executing `g
 then this will give a computation distributionally equivalent to the original computation.
 
 TODO: `seeded_sim_oracle`? `uniform_selecting` --> `uniform_oracle` -/
-noncomputable def seeded_oracle (spec : oracle_spec) : sim_oracle spec spec (spec.query_seed) :=
+def seeded_oracle (spec : oracle_spec) : sim_oracle spec spec (spec.query_seed) :=
 { o := λ i x, indexed_list.get_or_else x.2 i (query i x.1),
   default_state := ∅ }
 

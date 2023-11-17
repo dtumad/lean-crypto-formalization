@@ -38,7 +38,7 @@ namespace sim_oracle
 
 /-- Example of an oracle maintaining in internal incrementing value,
 and returning a fake coin flip that alternates between heads and tails. -/
-noncomputable example : sim_oracle oracle_spec.coin_spec oracle_spec.coin_spec ℕ :=
+example : sim_oracle oracle_spec.coin_spec oracle_spec.coin_spec ℕ :=
 { default_state := 0,
   o := λ i ⟨t, n⟩, return (if even n then tt else ff, n + 1) }
 
@@ -69,7 +69,7 @@ section simulate
 
 /-- Simulate a computation by replacing queries to the oracle with some new computation.
 Additionally returns the final internal state after the simulation. -/
-noncomputable def simulate (so : sim_oracle spec spec' S) : Π {α : Type},
+def simulate (so : sim_oracle spec spec' S) : Π {α : Type},
   oracle_comp spec α → S → oracle_comp spec' (α × S)
 | _ (pure' α a) state := return ⟨a, state⟩
 | _ (query_bind' i t α oa) state := do {x ← so i (t, state), simulate (oa x.1) x.2}
@@ -77,7 +77,7 @@ noncomputable def simulate (so : sim_oracle spec spec' S) : Π {α : Type},
 /-- Convenience definition to use the default state as the initial state for `simulate`.
 Marked to be reduced and inlined, so the definition is essentially just notational. -/
 @[inline, reducible, simp]
-noncomputable def dsimulate (so : sim_oracle spec spec' S) (oa : oracle_comp spec α) :
+def dsimulate (so : sim_oracle spec spec' S) (oa : oracle_comp spec α) :
   oracle_comp spec' (α × S) := simulate so oa so.default_state
 
 lemma simulate_return : simulate so (return a) s = return (a, s) := rfl
@@ -101,13 +101,13 @@ end simulate
 section simulate'
 
 /-- Get the result of simulation without returning the internal oracle state -/
-noncomputable def simulate' (so : sim_oracle spec spec' S) (oa : oracle_comp spec α) (s : S) :
+def simulate' (so : sim_oracle spec spec' S) (oa : oracle_comp spec α) (s : S) :
   oracle_comp spec' α := prod.fst <$> oa.simulate so s
 
 /-- Convenience definition to use the default state as the initial state for `simulate'`.
 Marked to be reduced and inlined, so the definition is essentially just notation. -/
 @[inline, reducible, simp]
-noncomputable def dsimulate' (so : sim_oracle spec spec' S) (oa : oracle_comp spec α) :
+def dsimulate' (so : sim_oracle spec spec' S) (oa : oracle_comp spec α) :
   oracle_comp spec' α := oa.simulate' so so.default_state
 
 lemma simulate'_def : simulate' so oa s = prod.fst <$> oa.simulate so s := rfl

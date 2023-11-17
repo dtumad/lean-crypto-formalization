@@ -20,7 +20,7 @@ variables {α β γ : Type} {spec : oracle_spec}
 
 /-- Simulation oracle for logging the queries made during the computation,
 tracked via a `query_log`, whithout modifying the query calls themselves. -/
-@[inline, reducible] noncomputable def logging_oracle (spec : oracle_spec) :
+@[inline, reducible] def logging_oracle (spec : oracle_spec) :
   sim_oracle spec spec (query_log spec) :=
 ⟪query | query_log.log_query, ∅⟫
 
