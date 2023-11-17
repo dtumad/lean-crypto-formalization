@@ -46,8 +46,8 @@ noncomputable def hhs_signature (G X M : Type) [decidable_eq M]
     do {(ys : vector X n) ← return (retrieve_commits x₀ pk zs hash),
       (hash' : vector bool n) ← query₂ () (ys, m),
       return (hash' = hash)},
-  decidable_eq_M := by apply_instance, decidable_eq_S := by apply_instance,
-  inhabited_S := by apply_instance, fintype_S := by apply_instance }
+  decidable_eq_M := infer_instance, decidable_eq_S := infer_instance,
+  inhabited_S := infer_instance, fintype_S := infer_instance }
 
 namespace hhs_signature
 

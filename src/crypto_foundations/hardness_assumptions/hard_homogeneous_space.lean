@@ -30,7 +30,8 @@ open oracle_comp oracle_spec
 /-- An `algorithmic_homogenous_space` is a homogenous space where operations are all `poly_time`.
 Uses mathlib's definition of an `add_torsor`, which is a bijective group action.
 We also assume `G` and `X` are finite types with decidable equality. -/
-class algorithmic_homogenous_space (G X : Type) [add_group G] extends add_torsor G X :=
+class algorithmic_homogenous_space (G X : Type)
+  [add_group G] extends add_torsor G X :=
 [fintype_G : fintype G] [fintype_X : fintype X]
 [inhabited_G : inhabited G] [inhabited_X : inhabited X]
 [decidable_eq_G : decidable_eq G] [decidable_eq_X : decidable_eq X]
@@ -56,50 +57,50 @@ variable [algorithmic_homogenous_space G X]
 
 /-- An adversary for the vectorization game takes in a pair of base points `(x₁, x₂)`,
 and attempts to generate a vectorization, i.g. a vector `g` with `g +ᵥ x₂ = x₁`. -/
-def vectorization_adversary (G X : Type) :=
-sec_adversary uniform_selecting (X × X) G
-
-namespace vectorization_adversary
+def vectorization_adv (G X : Type) :=
+sec_adv uniform_selecting (X × X) G
 
 /-- Analogue of the game for the discrete logarithm assumption.
 The input generator randomly chooses the challenge points for the adversary,
 and a result is valid if it is exactly the vectorization of the challenge points. -/
-@[simps] noncomputable def vectorization_experiment
-  (adv : vectorization_adversary G X) :
-  sec_experiment uniform_selecting (X × X) G :=
+noncomputable def vectorization_exp (adv : vectorization_adv G X) :
+  sec_exp uniform_selecting (X × X) G :=
 { inp_gen := do {x₁ ←$ᵗ X, x₂ ←$ᵗ X, return (x₁, x₂)},
   main := adv.run,
   is_valid := λ ⟨x₁, x₂⟩ g, g = x₁ -ᵥ x₂,
   .. base_oracle_algorithm }
 
-noncomputable def advantage (adv : vectorization_adversary G X) : ℝ≥0∞ :=
-adv.vectorization_experiment.advantage
+namespace vectorization_exp
 
-variable (adv : vectorization_adversary G X)
+variables (adv : vectorization_adv G X)
 
-@[simp] lemma run_experiment_eq : adv.vectorization_experiment.run =
+@[simp] lemma inp_gen_eq : (vectorization_exp adv).inp_gen =
+  do {x₁ ←$ᵗ X, x₂ ←$ᵗ X, return (x₁, x₂)} := rfl
+
+@[simp] lemma main_eq : (vectorization_exp adv).main  = adv.run := rfl
+
+@[simp] lemma is_valid_eq : (vectorization_exp adv).is_valid =
+  λ xs g, g = xs.1 -ᵥ xs.2 := funext (λ xs, prod.rec_on xs (λ _ _, rfl))
+
+@[simp] lemma exec_eq : (vectorization_exp adv).to_oracle_algorithm = base_oracle_algorithm := rfl
+
+@[simp] lemma run_eq : (vectorization_exp adv).run =
   do {x₁ ←$ᵗ X, x₂ ←$ᵗ X, g ← adv.run (x₁, x₂), return ((x₁, x₂), g)} :=
-by simp [sec_experiment.run, bind_assoc]
+by simp [sec_exp.run, bind_assoc]
 
-lemma advantage_eq_sum_prob_output : adv.advantage =
+lemma advantage_eq_sum_prob_output : (vectorization_exp adv).advantage =
   (∑ x₁ x₂, ⁅= x₁ -ᵥ x₂ | adv.run (x₁, x₂)⁆) / (fintype.card X) ^ 2 :=
-begin
-  rw [advantage, sec_experiment.advantage],
-  simp only [vectorization_adversary.run_experiment_eq, vectorization_experiment_is_valid,
-    prob_event_uniform_select_fintype_bind_eq_sum, prob_event_bind_return],
-  simp only [div_eq_mul_inv, ←finset.sum_mul, mul_assoc, ennreal.inv_pow, ← pow_two],
-  congr' 1,
-  refine finset.sum_congr rfl (λ x1 _, finset.sum_congr rfl (λ x2 _, _)),
-  refine prob_event_eq_prob_output _ _ (set.mem_preimage.2 rfl)
-    (λ y hy hy', (hy hy').elim)
-end
+by simp only [sec_exp.advantage, div_eq_mul_inv, ←finset.sum_mul, mul_assoc, ennreal.inv_pow,
+  ← pow_two, vectorization_exp.run_eq, vectorization_exp.is_valid_eq, prob_event_bind_return,
+  prob_event_uniform_select_fintype_bind_eq_sum, set.preimage, set.mem_def,
+  set.set_of_eq_eq_singleton, prob_event_singleton_eq_prob_output]
 
-end vectorization_adversary
+end vectorization_exp
 
 /-- An adversary for the parallelization game takes in a triple of base points `(x₁, x₂, x₃)`,
 and attempts to generate a parralelization, i.g. a vector `g` with `g +ᵥ x₂ = x₁`. -/
-def parallelization_adversary (G X : Type) :=
-sec_adversary uniform_selecting (X × X × X) X
+def parallelization_adv (G X : Type) :=
+sec_adv uniform_selecting (X × X × X) X
 
 namespace parallelization_adversary
 
@@ -131,68 +132,53 @@ end parallelization_adversary
 
 /-- Takes in a set of four base points in `X`, attempting to decide if the fourth point
 is the correct parallelization of the first three points. -/
-def decisional_parallelization_adversary (G X : Type) :=
+def dec_parallelization_adversary (G X : Type) :=
 sec_adversary uniform_selecting (X × X × X × X) bool
 
-namespace decisional_parallelization_adversary
-
-noncomputable def fair_decision_challenge
-  (adv : decisional_parallelization_adversary G X) :
+noncomputable def fair_decision_exp
+  (adv : dec_parallelization_adversary G X) :
   oracle_comp uniform_selecting bool := do
 { x₀ ←$ᵗ X, g₁ ←$ᵗ G, g₂ ←$ᵗ G,
   adv.run (x₀, g₁ +ᵥ x₀, g₂ +ᵥ x₀, g₂ +ᵥ (g₁ +ᵥ x₀)) }
 
-noncomputable def unfair_decision_challenge
-  (adv : decisional_parallelization_adversary G X) :
+noncomputable def unfair_decision_exp
+  (adv : dec_parallelization_adversary G X) :
   oracle_comp uniform_selecting bool := do
 { x₀ ←$ᵗ X, g₁ ←$ᵗ G, g₂ ←$ᵗ G, g₃ ←$ᵗ G,
   adv.run (x₀, g₁ +ᵥ x₀, g₂ +ᵥ x₀, g₃ +ᵥ x₀) }
 
 /-- Analogue of the Decisional Diffie-Hellman problem. -/
-@[simps] noncomputable def decisional_parallelization_experiment
-  (adv : decisional_parallelization_adversary G X) :
+@[simps] noncomputable def dec_parallelization_exp
+  (adv : dec_parallelization_adversary G X) :
   sec_experiment unif_oracle bool bool :=
 { inp_gen := $ᵗ bool,
-  main := λ b, if b then adv.fair_decision_challenge
-    else adv.unfair_decision_challenge,
-  is_valid := (=),
+  main := λ b, if b then fair_decision_exp adv
+    else unfair_decision_exp adv,
+  is_valid := λ b b', b = b',
   .. base_oracle_algorithm }
 
+namespace decisional_parallelization_adversary
+
 /-- A `decisional_parallelization_adversary` advantage at the experiment. -/
-noncomputable def advantage (adv : decisional_parallelization_adversary G X) : ℝ≥0∞ :=
-adv.decisional_parallelization_experiment.advantage
+noncomputable def advantage (adv : dec_parallelization_adversary G X) : ℝ≥0∞ :=
+(dec_parallelization_exp adv).advantage
 
-variables (adv : decisional_parallelization_adversary G X)
+variables (adv : dec_parallelization_adversary G X)
 
-@[simp] lemma run_experiment_eq : adv.decisional_parallelization_experiment.run =
-  do {b ←$ᵗ bool, b' ← if b then adv.fair_decision_challenge
-    else adv.unfair_decision_challenge, return (b, b')} :=
+@[simp] lemma run_experiment_eq : (dec_parallelization_exp adv).run =
+  do {b ←$ᵗ bool, b' ← if b then fair_decision_exp adv
+    else unfair_decision_exp adv, return (b, b')} :=
 by simp [sec_experiment.run]
 
-lemma advantage_eq_prob_output_add_prob_output :
-  adv.advantage = (⁅= tt | fair_decision_challenge adv⁆ +
-    ⁅= ff | unfair_decision_challenge adv⁆) / 2 :=
-begin
-  rw [advantage, sec_experiment.advantage],
-  simp only [decisional_parallelization_experiment_is_valid],
-  rw [prob_event_fst_eq_snd_eq_sum],
-  simp only [fintype.univ_bool, finset.sum_insert, finset.mem_singleton, not_false_iff, finset.sum_singleton],
-  rw [run_experiment_eq],
-  simp_rw [prob_output_uniform_select_bool_bind,
-    coe_sort_tt, coe_sort_ff, if_true, if_false],
-  simp,
-  -- simp [sec_experiment.advantage],
-
-  -- rw [decisional_parallelization_adversary.advantage,
-  --   decisional_parallelization_experiment, prob_output_uniform_select_bool_bind],
-  -- simp [coe_sort_tt, if_true, ← bind_assoc],
-  -- congr' 2,
-  -- rw_dist_equiv [bind_const_dist_equiv, bind_return_dist_equiv]
-end
+lemma advantage_eq_prob_output_add_prob_output : advantage adv =
+  (⁅= tt | fair_decision_exp adv⁆ + ⁅= ff | unfair_decision_exp adv⁆) / 2 :=
+by simp [advantage, sec_experiment.advantage]
 
 end decisional_parallelization_adversary
 
 end algorithmic_homogenous_space
+
+section hard_homogenous_space
 
 open algorithmic_homogenous_space
 
@@ -200,7 +186,9 @@ open algorithmic_homogenous_space
 vectorization and parallelization become hard as the index becomes large. -/
 class hard_homogenous_space (G X : ℕ → Type) [∀ sp, add_comm_group (G sp)]
   [∀ sp, algorithmic_homogenous_space (G sp) (X sp)] :=
-(vectorization_hard : ∀ (adversary : Π sp, vectorization_adversary (G sp) (X sp)),
-  negligable (λ sp, (adversary sp).advantage))
+(vectorization_hard : ∀ (adversary : Π sp, vectorization_adv (G sp) (X sp)),
+  negligable (λ sp, (vectorization_exp (adversary sp)).advantage))
 (parallelization_hard : ∀ (adversary : Π (sp : ℕ), parallelization_adversary (G sp) (X sp)),
   negligable (λ sp, (adversary sp).advantage))
+
+end hard_homogenous_space

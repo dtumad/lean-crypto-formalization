@@ -32,7 +32,7 @@ namespace oracle_algorithm
 section exec
 
 /-- Use the algorithm's simulation oracle to run a computation. -/
-noncomputable def exec (alg : oracle_algorithm alg_spec)
+def exec (alg : oracle_algorithm alg_spec)
   (oa : oracle_comp alg_spec α) : oracle_comp unif_oracle α :=
 dsimulate' alg.base_sim_oracle oa
 
@@ -47,7 +47,7 @@ end exec
 end oracle_algorithm
 
 /-- Can be used to default the simulation oracle in cases with no extra oracles. -/
-noncomputable def base_oracle_algorithm :
+def base_oracle_algorithm :
   oracle_algorithm uniform_selecting :=
 { base_S := unit, base_sim_oracle := idₛₒ }
 

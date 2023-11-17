@@ -68,7 +68,7 @@ We use `unit` for the input and output types but this is just a dummy value. -/
 { ι := empty,
   domain := λ _, unit,
   range := λ _, unit,
-  range_inhabited := λ _, by apply_instance,
+  range_inhabited := λ _, infer_instance,
   ι_decidable_eq := empty.decidable_eq,
   domain_decidable_eq := λ i, i.elim,
   range_decidable_eq := λ i, i.elim,

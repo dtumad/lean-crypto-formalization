@@ -3,7 +3,6 @@ Copyright (c) 2023 Devon Tuma. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
-import crypto_foundations.sec_adversary
 import crypto_foundations.sec_experiment
 
 /-!
@@ -15,13 +14,10 @@ This file defines asymmetric encryption algorithms as a type `asymm_enc_alg spec
 open oracle_spec oracle_comp
 open_locale big_operators ennreal
 
-/-- `asymm_enc_alg M PK SK C` is an asymmetric encryption scheme, with `M` the space of messages,
-`PK` and `SK` the public and secret keys, and `C` is the space of ciphertexts.
+/-- `asymm_enc_alg spec M PK SK C` is an asymmetric encryption scheme,
+with `spec` the set of oracles available, `M` the type of messages,
+`PK` and `SK` the type of public and secret keys, and `C` is the type of ciphertexts.
 We assume that decryption can be done with only the secret keys. -/
--- structure asymm_enc_alg (M PK SK C : Type) :=
--- (keygen : unit → oracle_comp uniform_selecting (PK × SK))
--- (encrypt : M × PK → oracle_comp uniform_selecting C)
--- (decrypt : C × SK → oracle_comp uniform_selecting M)
 structure asymm_enc_alg (spec : oracle_spec) (M PK SK C : Type)
   extends oracle_algorithm spec :=
 (keygen : unit → oracle_comp spec (PK × SK))
@@ -39,13 +35,13 @@ section sound
 `main` encrypts then decrypts the message `m`, and `is_valid` checks the new message is the same.
 The algorithm will be sound if this experiment always succeeds. -/
 noncomputable def soundness_experiment
-  (enc_alg : asymm_enc_alg spec M PK SK C) (m : M) :
-  sec_experiment spec (PK × SK) M :=
+  (enc_alg : asymm_enc_alg spec M PK SK C)
+  (m : M) : sec_experiment spec (PK × SK) M :=
 { inp_gen := enc_alg.keygen (),
   main := λ ⟨pk, sk⟩, do
     { σ ← enc_alg.encrypt (m, pk),
       enc_alg.decrypt (σ, sk) },
-  is_valid := λ ⟨⟨pk, sk⟩, m'⟩, m' = m,
+  is_valid := λ ⟨pk, sk⟩ m', m = m',
   .. enc_alg }
 
 /-- An asymmetric encryption algorithm is sound if messages always decrypt to themselves. -/
@@ -72,9 +68,10 @@ Adversary is given a public key and returns a pair of messages that it thinks
 it can distinguish the encryption of. It addionally has a `distinguish` function
 that given a pair of messages and an encryption, returns whether it is an encryption of
 the first message or the second message. -/
-structure ind_cpa_adversary (enc_alg : asymm_enc_alg spec M PK SK C) :=
-(run : PK → oracle_comp spec (M × M))
+structure ind_cpa_adversary (enc_alg : asymm_enc_alg spec M PK SK C)
+  extends sec_adversary spec PK (M × M) :=
 (distinguish : PK × (M × M) × C → oracle_comp spec bool)
+(distinguish_qb : query_count spec)
 
 variable {enc_alg : asymm_enc_alg spec M PK SK C}
 
@@ -84,19 +81,18 @@ variable {enc_alg : asymm_enc_alg spec M PK SK C}
 the boolean chosen in `inp_gen`, finally asking the adversary to determine the boolean
 given the messages and resulting ciphertext. `is_valid` checks that this choice is correct.
 The simulation oracles are pulled in directly from the encryption algorithm. -/
-noncomputable def ind_cpa_experiment [is_sub_spec uniform_selecting spec]
+noncomputable def ind_cpa_experiment [is_sub_spec coin_spec spec]
   (adv : enc_alg.ind_cpa_adversary) :
   sec_experiment spec (PK × bool) bool :=
 { inp_gen := do
     { pk ← prod.fst <$> enc_alg.keygen (),
-      b ←$ᵗ bool, return (pk, b) },
+      b ← coin, return (pk, b) },
   main := λ ⟨pk, b⟩, do
     { ⟨m₁, m₂⟩ ← adv.run pk,
       c ← enc_alg.encrypt (if b then m₁ else m₂, pk),
       adv.distinguish (pk, (m₁, m₂), c) },
-  is_valid := λ ⟨⟨pk, b⟩, b'⟩, b = b',
-  .. enc_alg
-}
+  is_valid := λ ⟨pk, b⟩ b', b = b',
+  .. enc_alg }
 
 namespace ind_cpa_experiment
 
@@ -118,3 +114,8 @@ end ind_cpa_experiment
 end ind_cpa
 
 end asymm_enc_alg
+
+namespace asymm_enc_scheme
+
+
+end asymm_enc_scheme

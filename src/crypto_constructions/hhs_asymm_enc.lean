@@ -22,7 +22,7 @@ The public key is a pair of base points in `X` chosen uniformly at random,
 and the secret key is their vectorization in `G`. Signatures are also a pair of base points. -/
 noncomputable def hhs_elgamal (G X : Type) [add_comm_group G]
   [algorithmic_homogenous_space G X] [group X] :
-  asymm_enc_alg X (X × X) G (X × X) :=
+  asymm_enc_alg uniform_selecting X (X × X) G (X × X) :=
 { keygen := λ u, do
     { x₀ ←$ᵗ X, sk ←$ᵗ G,
       pk ← return (sk +ᵥ x₀),
@@ -30,7 +30,8 @@ noncomputable def hhs_elgamal (G X : Type) [add_comm_group G]
   encrypt := λ ⟨m, x₀, pk⟩, do
     { g ←$ᵗ G, return (g +ᵥ x₀, m * (g +ᵥ pk)) },
   decrypt := λ ⟨⟨c₁, c₂⟩, sk⟩, do
-    { return (c₂ / (sk +ᵥ c₁)) } }
+    { return (c₂ / (sk +ᵥ c₁)) },
+  .. base_oracle_algorithm }
 
 namespace hhs_elgamal
 
@@ -41,10 +42,6 @@ variables (G X : Type) [add_comm_group G]
 
 @[simp] lemma keygen_apply (u : unit) : (hhs_elgamal G X).keygen u =
   do {x₀ ←$ᵗ X, sk ←$ᵗ G, pk ← return (sk +ᵥ x₀), return ((x₀, pk), sk)} := rfl
-
-lemma fst_map_keygen_apply_dist_equiv (u : unit) :
-  prod.fst <$> (hhs_elgamal G X).keygen () ≃ₚ
-    do {x₀ ←$ᵗ X, sk ←$ᵗ G, return (x₀, sk +ᵥ x₀)} := sorry
 
 @[simp] lemma encrypt_apply (z : X × (X × X)) : (hhs_elgamal G X).encrypt z =
   do {g ←$ᵗ G, return (g +ᵥ z.2.1, z.1 * (g +ᵥ z.2.2))} :=
@@ -83,10 +80,11 @@ noncomputable def ind_cpa_reduction (adv : (hhs_elgamal G X).ind_cpa_adversary) 
       b ←$ᵗ bool,
       c ← return (x₂, (if b then ms.1 else ms.2) * x₃),
       b' ← adv.distinguish ((x₀, x₁), ms, c),
-      return (b = b') } }
+      return (b = b') },
+  run_qb := adv.run_qb + adv.distinguish_qb }
 
 lemma prob_output_fair_decision_challenge (adv : (hhs_elgamal G X).ind_cpa_adversary) :
-  ⁅= tt | fair_decision_challenge (ind_cpa_reduction adv)⁆ =
+  ⁅= tt | (ind_cpa_reduction adv).fair_decision_challenge⁆ =
     (ind_cpa_experiment adv).advantage :=
 begin
   rw [ind_cpa_experiment_advantage_eq],
