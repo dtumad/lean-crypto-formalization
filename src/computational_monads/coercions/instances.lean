@@ -72,19 +72,15 @@ Use uniform selection from the vector `[tt, ff]` to get constructiveness. -/
 @[priority std.priority.default+100]
 noncomputable instance is_sub_spec_coin_spec_uniform_selecting :
   is_sub_spec coin_spec uniform_selecting :=
-{ to_fun := λ i t, do {
-    b ← query (1 : ℕ) (),
-    return (if b = (1 : fin 2) then tt else ff)
-  },
-  -- $ᵛ (tt ::ᵥ ff ::ᵥ vector.nil),
-  to_fun_equiv := sorry
-  -- λ i t, symm ((query_dist_equiv_iff i t _).2
-  --   (λ u u', by cases u; cases u'; simp))
-     }
+{ to_fun := λ i t, $ᵗ bool,
+  to_fun_equiv := λ i t, symm ((query_dist_equiv_iff i t _).2
+    (λ u u', by cases u; cases u'; simp [prob_output_uniform_select_fintype bool])) }
 
--- @[simp] lemma is_sub_spec_coin_uniform_selecting_apply (i t : unit) :
---   (oracle_spec.is_sub_spec_coin_spec_uniform_selecting).to_fun i t =
---     $ᵛ (tt ::ᵥ ff ::ᵥ vector.nil) := rfl
+@[simp] lemma is_sub_spec_coin_uniform_selecting_apply (i t : unit) :
+  (oracle_spec.is_sub_spec_coin_spec_uniform_selecting).to_fun i t = $ᵗ bool := rfl
+
+@[simp] lemma coe_coin_uniform_selecting :
+  (↑coin : oracle_comp uniform_selecting bool) = $ᵗ bool := rfl
 
 end coin_spec_uniform_selecting
 

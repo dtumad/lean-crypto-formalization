@@ -238,14 +238,14 @@ end uniform_select_vector
 section uniform_select_list
 
 /-- If a list isn't empty, we can convert it to a vector and then sample from it.-/
-noncomputable def uniform_select_list [decidable_eq α] (xs : list α) (h : ¬ xs.empty) :
+def uniform_select_list (xs : list α) (h : ¬ xs.empty) :
   oracle_comp uniform_selecting α :=
 let v : vector α (xs.length.pred.succ) := ⟨xs, symm $ nat.succ_pred_eq_of_pos
   (list.length_pos_of_ne_nil (λ h', h $ list.empty_iff_eq_nil.2 h'))⟩ in uniform_select_vector v
 
 notation `$ˡ` := uniform_select_list
 
-variables [decidable_eq α] (xs : list α) (x : α) (y : β) (h : ¬ xs.empty)
+variables (xs : list α) (x : α) (y : β) (h : ¬ xs.empty)
   (oa : oracle_comp uniform_selecting α) (ob : α → oracle_comp uniform_selecting β)
 
 /-- Assuming we sample from `[]`, we can treat this as any other computation,
@@ -266,7 +266,8 @@ begin
       mem_support_uniform_select_vector_iff, vector.to_list_mk, set.mem_set_of]) }
 end
 
-lemma support_uniform_select_list_eq_coe_to_finset : ($ˡ xs h).support = ↑xs.to_finset :=
+lemma support_uniform_select_list_eq_coe_to_finset [decidable_eq α] :
+  ($ˡ xs h).support = ↑xs.to_finset :=
 by simp only [support_uniform_select_list, list.coe_to_finset]
 
 lemma mem_support_uniform_select_list_iff : x ∈ ($ˡ xs h).support ↔ x ∈ xs :=
@@ -275,6 +276,8 @@ by rw [oracle_comp.support_uniform_select_list, set.mem_set_of_eq]
 end support
 
 section fin_support
+
+variable [decidable_eq α]
 
 @[simp] lemma fin_support_uniform_select_list : ($ˡ xs h).fin_support = xs.to_finset :=
 (fin_support_eq_iff_support_eq_coe _ _).2 (set.ext $ λ x, by simp only [finset.mem_coe,
@@ -296,6 +299,8 @@ begin
   { exact eval_dist_uniform_select_list_nil h _ },
   { simpa only [uniform_select_list_cons, eval_dist_uniform_select_vector] }
 end
+
+variable [decidable_eq α]
 
 @[simp] lemma prob_output_uniform_select_list : ⁅= x | $ˡ xs h⁆ = xs.count x / xs.length :=
 by { rw [prob_output.def, eval_dist_uniform_select_list, pmf.uniform_of_list_apply], congr }
@@ -325,7 +330,7 @@ section prob_event
 by { rw [prob_event.def, eval_dist_uniform_select_list,
   to_outer_measure_uniform_of_list_apply], congr }
 
-@[simp] lemma prob_event_uniform_select_list_bind_eq_tsum (e : set β) :
+@[simp] lemma prob_event_uniform_select_list_bind_eq_tsum [decidable_eq α] (e : set β) :
   ⁅e | $ˡ xs h >>= ob⁆ = (∑' x, xs.count x * ⁅e | ob x⁆) / xs.length :=
 begin
   rw [list.empty_iff_eq_nil] at h,
@@ -333,7 +338,7 @@ begin
     vector.to_list_mk, nat.succ_pred_eq_of_pos (list.length_pos_of_ne_nil h)],
 end
 
-lemma prob_event_uniform_select_list_bind_eq_sum (e : set β) :
+lemma prob_event_uniform_select_list_bind_eq_sum [decidable_eq α] (e : set β) :
   ⁅e | $ˡ xs h >>= ob⁆ = (∑ x in xs.to_finset, xs.count x * ⁅e | ob x⁆) / xs.length :=
 begin
   rw [list.empty_iff_eq_nil] at h,
@@ -351,19 +356,19 @@ end uniform_select_list
 section uniform_select_finset
 
 /-- We can sample randomly from a `finset` by converting to a list and then sampling that. -/
-noncomputable def uniform_select_finset [decidable_eq α]
-  (bag : finset α) (h : bag.nonempty) : oracle_comp uniform_selecting α :=
+noncomputable def uniform_select_finset (bag : finset α) (h : bag.nonempty) :
+  oracle_comp uniform_selecting α :=
 uniform_select_list bag.to_list (finset.nonempty.not_empty_to_list h)
 
 notation `$ˢ` := uniform_select_finset
 
-variables [decidable_eq α] (bag : finset α) (h : bag.nonempty)
+variables (bag : finset α) (h : bag.nonempty)
   (ob : α → oracle_comp uniform_selecting β) (x : α) (y : β)
 
 /-- Assuming we sample from `∅`, we can treat this as any other computation,
 using the provided contradictory proof that `∅` is non-empty. -/
 lemma uniform_select_finset_empty (h : (∅ : finset α).nonempty)
-  (oa : oracle_comp uniform_selecting α) : $ˢ ∅ = oa :=
+  (oa : oracle_comp uniform_selecting α) : $ˢ ∅ h = oa :=
 false.elim (finset.nonempty.ne_empty h rfl)
 
 section support
@@ -378,6 +383,8 @@ by rw [support_uniform_select_finset, finset.mem_coe]
 end support
 
 section fin_support
+
+variable [decidable_eq α]
 
 @[simp] lemma fin_support_uniform_select_finset : ($ˢ bag h).fin_support = bag :=
 by rw [fin_support_eq_iff_support_eq_coe, support_uniform_select_finset]
@@ -394,16 +401,17 @@ section eval_dist
   uniform_of_list_apply, finset.count_to_list, nat.cast_ite, algebra_map.coe_one,
   algebra_map.coe_zero, finset.length_to_list, boole_mul, uniform_of_finset_apply])
 
-@[simp] lemma prob_output_uniform_select_finset : ⁅= x | $ˢ bag h⁆ = ite (x ∈ bag) bag.card⁻¹ 0 :=
+@[simp] lemma prob_output_uniform_select_finset [decidable_eq α] :
+  ⁅= x | $ˢ bag h⁆ = ite (x ∈ bag) bag.card⁻¹ 0 :=
 by { rw [prob_output.def, eval_dist_uniform_select_finset, pmf.uniform_of_finset_apply], congr }
 
-lemma prob_output_uniform_select_finset_bind_eq_tsum :
+lemma prob_output_uniform_select_finset_bind_eq_tsum [decidable_eq α] :
   ⁅= y | $ˢ bag h >>= ob⁆ = (∑' x, ite (x ∈ bag) ⁅= y | ob x⁆ 0) / bag.card :=
 by simp only [uniform_select_finset, prob_output_uniform_select_list_bind_eq_tsum,
   finset.count_to_list, finset.to_list_to_finset, nat.cast_ite, algebra_map.coe_one,
   algebra_map.coe_zero, boole_mul, finset.sum_ite_mem, finset.inter_self, finset.length_to_list]
 
-@[simp] lemma prob_output_uniform_select_finset_bind_eq_sum  :
+@[simp] lemma prob_output_uniform_select_finset_bind_eq_sum [decidable_eq α] :
   ⁅= y | $ˢ bag h >>= ob⁆ = (∑ x in bag, ⁅= y | ob x⁆) / bag.card :=
 by simp only [uniform_select_finset, prob_output_uniform_select_list_bind_eq_sum,
   finset.count_to_list, finset.to_list_to_finset, nat.cast_ite, algebra_map.coe_one,
@@ -418,13 +426,13 @@ section prob_event
 by { rw [prob_event.def, eval_dist_uniform_select_finset,
   to_outer_measure_uniform_of_finset_apply], congr }
 
-lemma prob_event_uniform_select_finset_bind_eq_tsum (e : set β) :
+lemma prob_event_uniform_select_finset_bind_eq_tsum [decidable_eq α] (e : set β) :
   ⁅e | $ˢ bag h >>= ob⁆ = (∑' x, ite (x ∈ bag) ⁅e | ob x⁆ 0) / bag.card :=
 by simp only [uniform_select_finset, prob_event_uniform_select_list_bind_eq_tsum,
   finset.count_to_list, finset.to_list_to_finset, nat.cast_ite, algebra_map.coe_one,
   algebra_map.coe_zero, boole_mul, finset.sum_ite_mem, finset.inter_self, finset.length_to_list]
 
-lemma prob_event_uniform_select_finset_bind_eq_sum (e : set β) :
+lemma prob_event_uniform_select_finset_bind_eq_sum [decidable_eq α] (e : set β) :
   ⁅e | $ˢ bag h >>= ob⁆ = (∑ x in bag, ⁅e | ob x⁆) / bag.card :=
 by simp only [uniform_select_finset, prob_event_uniform_select_list_bind_eq_sum,
   finset.count_to_list, finset.to_list_to_finset, nat.cast_ite, algebra_map.coe_one,
@@ -443,13 +451,13 @@ section uniform_select_fintype
 
 /-- We can select randomly from a fintyp by using the `finset` corresponding to the `fintype`.
   Again we need to use axiom of choice so this operation is noncomputable. -/
-noncomputable def uniform_select_fintype (α : Type) [fintype α] [nonempty α]
-  [decidable_eq α] : oracle_comp uniform_selecting α :=
+noncomputable def uniform_select_fintype (α : Type) [fintype α] [nonempty α] :
+  oracle_comp uniform_selecting α :=
 uniform_select_finset finset.univ finset.univ_nonempty
 
 notation `$ᵗ` := uniform_select_fintype
 
-variables (α) [fintype α] [nonempty α] [decidable_eq α]
+variables (α) [fintype α] [nonempty α]
   (ob : α → oracle_comp uniform_selecting β) (x : α) (y : β)
 
 section support
@@ -465,6 +473,8 @@ end support
 
 section fin_support
 
+variable [decidable_eq α]
+
 @[simp] lemma fin_support_uniform_select_fintype : ($ᵗ α).fin_support = finset.univ :=
 by rw [fin_support_eq_iff_support_eq_coe, support_uniform_select_fintype,
   set.top_eq_univ, finset.coe_univ]
@@ -479,20 +489,54 @@ section eval_dist
 @[simp] lemma eval_dist_uniform_select_fintype : ⁅$ᵗ α⁆ = pmf.uniform_of_fintype α :=
 by rw [uniform_select_fintype, eval_dist_uniform_select_finset, pmf.uniform_of_fintype]
 
+end eval_dist
+
+section prob_output
+
 @[simp] lemma prob_output_uniform_select_fintype : ⁅= x | $ᵗ α⁆ = (fintype.card α)⁻¹ :=
 by rw [prob_output.def, eval_dist_uniform_select_fintype, pmf.uniform_of_fintype_apply]
 
-lemma prob_output_uniform_select_fintype_bind_eq_tsum :
+lemma prob_output_uniform_select_fintype_bind_eq_tsum [decidable_eq α] :
   ⁅= y | $ᵗ α >>= ob⁆ = (∑' x, ⁅= y | ob x⁆) / fintype.card α :=
 by simp only [uniform_select_fintype, prob_output_uniform_select_finset_bind_eq_tsum,
   finset.mem_univ, if_true, finset.card_univ]
 
-@[simp] lemma eval_dist_uniform_select_fintype_bind_apply_eq_sum :
+lemma prob_output_uniform_select_fintype_bind_apply_eq_sum [decidable_eq α] :
   ⁅= y | $ᵗ α >>= ob⁆ = (∑ x, ⁅= y | ob x⁆) / fintype.card α :=
 by simp only [uniform_select_fintype, prob_output_uniform_select_finset_bind_eq_sum,
   finset.mem_univ, if_true, finset.card_univ]
 
-end eval_dist
+@[simp] lemma uniform_select_fintype_bind_const_bind_eq
+  {α : Type} [fintype α] [inhabited α] [decidable_eq α]
+  (oa : oracle_comp uniform_selecting α) (b : bool) :
+  ⁅= b | do {x ← $ᵗ α, x' ← oa, return (x = x' : bool)}⁆ =
+    if b then (fintype.card α)⁻¹ else 1 - (fintype.card α)⁻¹ :=
+begin
+  cases b,
+  {
+    have hα : fintype.card α ≠ 0 := sorry,
+    simp only [prob_output_bind_eq_tsum, ennreal.tsum_mul_left, prob_output_uniform_select_fintype, prob_output_return,
+      bool.ff_eq_to_bool_iff, ite_not, coe_sort_ff, if_false],
+    have : ∑' (x x' : α), ⁅= x |oa⁆ * ite (x' = x) 0 1 =
+      ∑' x, ⁅= x | oa⁆ * (fintype.card α - 1) := begin
+      -- rw [ennreal.tsum_comm],
+      refine tsum_congr (λ x, _),
+      rw [ennreal.tsum_mul_left],
+      refine congr_arg (λ r, _ * r) _,
+      sorry,
+    end,
+    rw [ennreal.tsum_comm, this, ennreal.tsum_mul_right, tsum_prob_output, one_mul, ennreal.mul_sub,
+      ennreal.inv_mul_cancel, mul_one]; simp [hα],
+  },
+  {
+    simp only [prob_output_bind_eq_tsum, ennreal.tsum_mul_left, prob_output_uniform_select_fintype, prob_output_return,
+  bool.tt_eq_to_bool_iff, coe_sort_tt, if_true],
+    rw [ennreal.tsum_comm],
+    simp_rw [ennreal.tsum_mul_left, tsum_ite_eq, mul_one, tsum_prob_output, mul_one]
+  }
+end
+
+end prob_output
 
 section prob_event
 
@@ -501,12 +545,12 @@ section prob_event
 by { simp only [prob_event.def, eval_dist_uniform_select_fintype,
   to_outer_measure_uniform_of_fintype_apply, finset.mem_univ, if_true, finset.card_univ], congr }
 
-lemma prob_event_uniform_select_fintype_bind_eq_tsum (e : set β) :
+lemma prob_event_uniform_select_fintype_bind_eq_tsum [decidable_eq α] (e : set β) :
   ⁅e | $ᵗ α >>= ob⁆ = (∑' a, ⁅e | ob a⁆) / fintype.card α :=
 by simp only [uniform_select_fintype, prob_event_uniform_select_finset_bind_eq_tsum,
   finset.mem_univ, if_true, finset.card_univ]
 
-@[simp] lemma prob_event_uniform_select_fintype_bind_eq_sum (e : set β) :
+lemma prob_event_uniform_select_fintype_bind_eq_sum [decidable_eq α] (e : set β) :
   ⁅e | $ᵗ α >>= ob⁆ = (∑ a, ⁅e | ob a⁆) / fintype.card α :=
 by simp only [uniform_select_fintype, prob_event_uniform_select_finset_bind_eq_sum,
   finset.mem_univ, if_true, finset.card_univ]
@@ -519,6 +563,13 @@ lemma uniform_select_fintype_dist_equiv_return {spec} {α : Type} [unique α] :
 @[pairwise_dist_equiv] lemma uniform_select_fintype_range {spec : oracle_spec} {i : spec.ι}
   (t : spec.domain i) : $ᵗ (spec.range i) ≃ₚ query i t :=
 by simp [dist_equiv.ext_iff, prob_output_query_eq_inv]
+
+lemma uniform_select_fintype_map_bij (f : α → α) (hf : f.bijective) :
+  f <$> $ᵗ α ≃ₚ $ᵗ α :=
+begin
+  refine dist_equiv.ext (λ x, _),
+  sorry,
+end
 
 end uniform_select_fintype
 

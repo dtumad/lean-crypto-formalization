@@ -119,6 +119,10 @@ begin
   refine tsum_congr (λ x, by simpa only [prob_event_return_eq_indicator, set.indicator, mul_boole])
 end
 
+lemma prob_event_bind_return' (p : β → Prop) :
+  ⁅p | oa >>= λ a, return (f a)⁆ = ⁅p ∘ f | oa⁆ :=
+prob_event_bind_return oa f p
+
 end prob_event
 
 end bind_return

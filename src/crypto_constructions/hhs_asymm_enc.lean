@@ -51,16 +51,20 @@ by rcases z with ⟨m, x₀, pk⟩; refl
   return (z.1.2 / (z.2 +ᵥ z.1.1)) :=
 by rcases z with ⟨⟨c₁, c₂⟩, sk⟩; refl
 
+@[simp] lemma to_oracle_algorithm_eq : (hhs_elgamal G X).to_oracle_algorithm =
+  base_oracle_algorithm := rfl
+
 end apply
 
 /-- Elgamal encryption always returns the correct decryption of arbitrary messages. -/
 theorem is_sound (G X : Type) [add_comm_group G] [algorithmic_homogenous_space G X] [group X] :
   (hhs_elgamal G X).sound :=
 begin
-  rw [asymm_enc_alg.sound_iff_support_decrypt_eq],
+  refine (hhs_elgamal G X).sound_iff_support_decrypt_eq.2 _,
   rintros m ⟨x₀, pk⟩ sk ⟨c₁, c₂⟩ hks hσ,
-  have hpk : sk +ᵥ x₀ = pk,
-  by simpa using hks,
+  suffices : c₂ / (sk +ᵥ c₁) = m,
+  by rwa [decrypt_apply, support_return, set.singleton_eq_singleton_iff],
+  have hpk : sk +ᵥ x₀ = pk := by simpa using hks,
   have hc : ∃ g : G, g +ᵥ x₀ = c₁ ∧ m * (g +ᵥ (sk +ᵥ x₀)) = c₂,
   by simpa [← hpk] using hσ,
   obtain ⟨g, hc₁, hc₂⟩ := hc,
@@ -72,60 +76,75 @@ section ind_cpa
 variables {G X : Type} [add_comm_group G]
   [algorithmic_homogenous_space G X] [group X]
 
-noncomputable def ind_cpa_reduction (adv : (hhs_elgamal G X).ind_cpa_adversary) :
-  decisional_parallelization_adversary G X :=
+noncomputable def ind_cpa_reduction (adv : (hhs_elgamal G X).ind_cpa_adv) :
+  dec_parallelization_adv G X :=
 { -- Try to check if `x₃` is the correct parallelization
   run := λ ⟨x₀, x₁, x₂, x₃⟩, do
-    { ms ← adv.run (x₀, x₁),
-      b ←$ᵗ bool,
+    { b ←$ᵗ bool,
+      ms ← adv.run (x₀, x₁),
       c ← return (x₂, (if b then ms.1 else ms.2) * x₃),
       b' ← adv.distinguish ((x₀, x₁), ms, c),
       return (b = b') },
-  run_qb := adv.run_qb + adv.distinguish_qb }
+  run_qb := (query_count.of_nat (1 : ℕ) 1) + adv.run_qb + adv.distinguish_qb }
 
-lemma prob_output_fair_decision_challenge (adv : (hhs_elgamal G X).ind_cpa_adversary) :
-  ⁅= tt | (ind_cpa_reduction adv).fair_decision_challenge⁆ =
-    (ind_cpa_experiment adv).advantage :=
+theorem reduction_advantage (adv : (hhs_elgamal G X).ind_cpa_adv) :
+  (dec_parallelization_exp $ ind_cpa_reduction adv).advantage =
+    ((ind_cpa_exp adv).advantage + 1 / 2) / 2 :=
 begin
-  rw [ind_cpa_experiment_advantage_eq],
-  refine dist_equiv.prob_output_eq _ _,
-  rw [fair_decision_challenge],
-  rw_dist_equiv [fst_map_keygen_apply_dist_equiv G X ()],
-  simp [bind_assoc],
-  pairwise_dist_equiv 2,
-  refine trans (bind_bind_dist_equiv_comm _ _ _) _,
-  pairwise_dist_equiv 1,
-  refine trans (bind_bind_dist_equiv_comm _ _ _) _,
-  pairwise_dist_equiv 1,
-  simp [pure_bind],
+  simp only [decisional_parallelization_exp.advantage_eq_add, ind_cpa_exp.advantage_eq, map_bind,
+    bind_assoc, ind_cpa_reduction, ite_mul, pure_bind, to_oracle_algorithm_eq, keygen_apply,
+    map_pure, coe_coin_uniform_selecting, encrypt_apply, base_oracle_algorithm.exec_eq],
+  congr' 2,
+  { pairwise_dist_equiv,
+    rw_dist_equiv [bind_bind_dist_equiv_comm ($ᵗ G), bind_bind_dist_equiv_comm ($ᵗ G),
+      bind_bind_dist_equiv_comm ($ᵗ bool)] },
+  { refine prob_output_bind_of_const _ _ (λ x hx, _),
+    refine prob_output_bind_of_const _ _ (λ g₁ hg₁, _),
+    refine prob_output_bind_of_const _ _ (λ g₂ hg₂, _),
+    rw [← prob_output_uniform_select_bool ff],
+    rw_dist_equiv [bind_bind_dist_equiv_comm ($ᵗ G), bind_bind_dist_equiv_comm ($ᵗ G),
+      bind_bind_dist_equiv_comm ($ᵗ bool)],
+    refine dist_equiv.ext (λ b, _),
+    refine prob_output_bind_of_const _ _ (λ ms hms, _),
+    have : ∀ a : bool, ($ᵗ G >>= λ g, adv.distinguish ((x, g₁ +ᵥ x), ms, g₂ +ᵥ x, ite a (ms.1 * (g +ᵥ x)) (ms.2 * (g +ᵥ x))))
+      ≃ₚ ($ᵗ G >>= λ g, adv.distinguish ((x, g₁ +ᵥ x), ms, g₂ +ᵥ x, (g +ᵥ x))),
+    begin
+      intro b,
+      cases b,
+      {
+        simp,
+        have : $ᵗ G ≃ₚ $ᵗ G >>= λ g, return ((ms.2⁻¹ * (g +ᵥ x)) -ᵥ x) :=
+        begin
+          refine dist_equiv.symm (uniform_select_fintype_map_bij _ _ _),
+          have hv : function.bijective (-ᵥ x) := vsub_bijective x,
+          have hv' : function.bijective (+ᵥ x) := vadd_bijective x,
+          refine function.bijective.comp hv _,
+          refine function.bijective.comp (group.mul_left_bijective (ms.2⁻¹)) _,
+          refine hv'
+        end,
+        rw_dist_equiv [this],
+        simp [bind_assoc],
+      },
+      {
+        simp,
+        have : $ᵗ G ≃ₚ $ᵗ G >>= λ g, return ((ms.1⁻¹ * (g +ᵥ x)) -ᵥ x) :=
+        begin
+          refine dist_equiv.symm (uniform_select_fintype_map_bij _ _ _),
+          have hv : function.bijective (-ᵥ x) := vsub_bijective x,
+          have hv' : function.bijective (+ᵥ x) := vadd_bijective x,
+          refine function.bijective.comp hv _,
+          refine function.bijective.comp (group.mul_left_bijective (ms.1⁻¹)) _,
+          refine hv'
+        end,
+        rw_dist_equiv [this],
+        simp [bind_assoc],
+      }
+    end,
+    simp only [← bind_assoc],
+    rw_dist_equiv [this],
+    refine dist_equiv.ext (λ b, _),
+    cases b; simp }
 end
-
-lemma prob_output_unfair_decision_challenge (adv : (hhs_elgamal G X).ind_cpa_adversary) :
-  ⁅= tt | unfair_decision_challenge (ind_cpa_reduction adv)⁆ = 1 / 2 :=
-begin
-  rw [unfair_decision_challenge],
-  refine prob_output_bind_of_const _ _ (λ x₀ _, _),
-  refine prob_output_bind_of_const _ _ (λ g₁ _, _),
-  refine prob_output_bind_of_const _ _ (λ g₂ _, _),
-  refine prob_output_bind_of_const _ _ (λ g₃ _, _),
-  simp only [ind_cpa_reduction],
-  rw [prob_output_bnot_map],
-  have : ⁅= ff | $ᵗ bool⁆ = 1 / 2 := sorry,
-  refine trans _ this,
-  by_dist_equiv,
-  rw_dist_equiv [return_bind_dist_equiv],
-  refine trans (bind_bind_dist_equiv_comm _ _ _) _,
-  -- refine trans (bind_dist_equiv_bind_of_dist_equiv_right _ _ _
-  --   (λ _ _, (bind_bind_dist_equiv_assoc _ _ _))) _,
-  sorry -- Need to show that the uniformity "cancels out".
-end
-
-theorem reduction_advantage (adv : (hhs_elgamal G X).ind_cpa_adversary) :
-  (ind_cpa_reduction adv).advantage =
-    ((ind_cpa_experiment adv).advantage + 1 / 2) / 2 :=
-by rw [advantage_eq_prob_output_fair_add_prob_output_unfair,
-  prob_output_unfair_decision_challenge,
-  prob_output_fair_decision_challenge]
 
 end ind_cpa
 

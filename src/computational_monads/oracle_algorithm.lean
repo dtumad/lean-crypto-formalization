@@ -38,9 +38,10 @@ dsimulate' alg.base_sim_oracle oa
 
 variable (alg : oracle_algorithm alg_spec)
 
-lemma exec_return_dist_equiv (a : α) :
-  alg.exec (return' !alg_spec! a) ≃ₚ return' !unif_oracle! a :=
-by pairwise_dist_equiv --simulate'_return_dist_equiv' _ _ _
+@[simp] lemma exec_return (a : α) :
+  alg.exec (return' !alg_spec! a) = return' !unif_oracle! a := rfl
+
+
 
 end exec
 

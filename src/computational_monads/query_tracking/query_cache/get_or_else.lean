@@ -24,7 +24,7 @@ variables {α β γ : Type} {spec spec' : oracle_spec}
 
 /-- Lookup the given value in the cache and return it without changing the cache,
 using `ou` as a fallback instead if the query is fresh to the cache. -/
-noncomputable def get_or_else (cache : query_cache spec) (i : spec.ι) (t : spec.domain i)
+def get_or_else (cache : query_cache spec) (i : spec.ι) (t : spec.domain i)
   (ou : oracle_comp spec' (spec.range i)) : oracle_comp spec' (spec.range i × query_cache spec) :=
 match cache.lookup i t with
 | none := do {u ← ou, return (u, [i, t ↦ u; cache])}
