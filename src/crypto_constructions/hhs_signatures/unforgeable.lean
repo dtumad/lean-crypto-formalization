@@ -17,7 +17,7 @@ namespace hhs_signature
 
 open_locale ennreal big_operators
 open oracle_comp oracle_spec algorithmic_homogenous_space hard_homogenous_space
-open oracle_spec.indexed_list
+open oracle_spec.indexed_list signature_alg
 
 variables {G X M : Type} [decidable_eq M]
   [add_comm_group G] [algorithmic_homogenous_space G X] {n : ℕ}
@@ -86,8 +86,8 @@ end
 end queried_index
 
 def mock_unforgeable_adversary
-  (adv : (hhs_signature G X M n).unforgeable_adversary) :
-  fork_adversary (hhs_signature G X M n).base_spec (X × X)
+  (adv : (hhs_signature G X M n).unforgeable_adv) :
+  fork_adversary (uniform_selecting ++ ((vector X n × M) ↦ₒ vector bool n)) (X × X)
     ((M × vector G n × vector bool n) × ((vector X n × M) ↦ₒ vector bool n).query_log)
     (sum.inr ()) :=
 sorry
@@ -119,14 +119,14 @@ sorry
 -- end
 
 noncomputable def vectorization_of_fork_result
-  {adv : (hhs_signature G X M n).unforgeable_adversary}
+  {adv : (hhs_signature G X M n).unforgeable_adv}
   (fr : fork_result (mock_unforgeable_adversary adv)) : G :=
 let rr1 := fr.side_output₁.1 in let rr2 := fr.side_output₂.1 in
   vectorization_of_zipped_commits rr1.2 rr2.2
 
 section vectorization_of_fork_result
 
-variables (adv : (hhs_signature G X M n).unforgeable_adversary)
+variables (adv : (hhs_signature G X M n).unforgeable_adv)
 
 -- lemma mocked_cache₁_eq_take_seed₁ (x₀ : X) (pk : X)
 --   (fr : fork_result (mock_unforgeable_adversary adv))
@@ -193,27 +193,27 @@ end
 
 end vectorization_of_fork_result
 
--- noncomputable def vectorization_reduction
---   (adv : (hhs_signature G X M n).unforgeable_adversary) :
---   vectorization_adversary G X :=
--- { run := λ ks, dsimulate' uniformₛₒ
---     (vectorization_of_fork_result <$>
---       (fork (mock_unforgeable_adversary adv)).run ks),
---   qb := ∅ }
+noncomputable def vectorization_reduction
+  (adv : (hhs_signature G X M n).unforgeable_adv) :
+  vectorization_adv G X :=
+{ run := λ ks, dsimulate' uniformₛₒ
+    (vectorization_of_fork_result <$>
+      (fork (mock_unforgeable_adversary adv)).run ks),
+  run_qb := ∅ }
 
--- variable (adv : (hhs_signature G X M n).unforgeable_adversary)
+variable (adv : (hhs_signature G X M n).unforgeable_adv)
 
--- /-- The probability of the fork succeeding is at least the square of
--- the original adversary's success probability, minus a small chance
--- of both oracle calls giving the same result. -/
--- theorem advantage_le_vectorization_advantage :
---   let q := adv.qb.get_count (sum.inr ()) in
---   let adv_advantage := adv.advantage (hhs_signature G X M n).unforgeable_experiment in
---   let vec_advantage := (vectorization_reduction adv).advantage (vectorization_experiment G X) in
---   adv_advantage * (adv_advantage / q - (1 / 2 ^ n)) ≤ vec_advantage :=
--- begin
---   sorry
--- end
+/-- The probability of the fork succeeding is at least the square of
+the original adversary's success probability, minus a small chance
+of both oracle calls giving the same result. -/
+theorem advantage_le_vectorization_advantage :
+  let q := adv.run_qb.get_count (sum.inr ()) in
+  let adv_advantage := (unforgeable_exp adv).advantage in
+  let vec_advantage := (vectorization_exp (vectorization_reduction adv)).advantage in
+  adv_advantage * (adv_advantage / q - (1 / 2 ^ n)) ≤ vec_advantage :=
+begin
+  sorry
+end
 
 -- end vectorization_reduction
 

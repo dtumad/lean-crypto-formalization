@@ -7,7 +7,7 @@ import computational_monads.simulation_semantics.constructions.random_oracle
 import computational_monads.simulation_semantics.constructions.logging_oracle
 import computational_monads.simulation_semantics.constructions.identity_oracle
 import computational_monads.simulation_semantics.oracle_append
-import crypto_foundations.sec_adversary
+import crypto_foundations.sec_experiment
 
 /-!
 # Cryptographic Signature Schemes
@@ -31,70 +31,64 @@ Signature schemes that don't need this can provide the empty spec `∅`,
 open_locale ennreal big_operators
 open oracle_comp oracle_spec prod
 
-/-- Signature on messages `M`, public and secret keys `PK` and `SK`, signatures of type `S`.
-  We model the algorithms as having access to a uniform selection oracle,
-    and a set of random oracles that the algorithm has access to.
-  If not in the random oracle model, can just take `random_oracles := ∅`, the empty `oracle_spec`
-  We also bundle the polynomial complexity of the algorithms into the structure. -/
-structure signature := -- TODO: signature_alg?
+/-- Signature on messages `M`, public and secret keys `PK` and `SK`, signatures of type `S`. -/
+structure signature_alg (spec : oracle_spec) (M PK SK S : Type)
+  extends oracle_algorithm spec :=
 -- Types of the possible messages, public keys, secret keys, and signatures
-(M PK SK S : Type)
+-- (M PK SK S : Type)
 -- Equality between messages and between signatures is decidable (unneeded for `PK` and `SK`)
-(decidable_eq_M : decidable_eq M) (decidable_eq_S : decidable_eq S)
--- There exists finitely many (but not-zero) possible signatures
-(inhabited_S : inhabited S) (fintype_S : fintype S)
+-- (decidable_eq_M : decidable_eq M) (decidable_eq_S : decidable_eq S)
+-- -- There exists finitely many (but not-zero) possible signatures
+-- (inhabited_S : inhabited S) (fintype_S : fintype S)
 -- Set of random oracles available to the signature algorithms
-(random_spec : oracle_spec)
+-- (random_spec : oracle_spec)
 -- The actual algorithms of the signature scheme.
-(gen : unit → oracle_comp (uniform_selecting ++ random_spec) (PK × SK))
-(sign : (PK × SK) × M → oracle_comp (uniform_selecting ++ random_spec) S)
-(verify : PK × M × S → oracle_comp (uniform_selecting ++ random_spec) bool)
+(keygen : unit → oracle_comp spec (PK × SK))
+(sign : (PK × SK) × M → oracle_comp spec S)
+(verify : PK × M × S → oracle_comp spec bool)
 
-namespace signature
+namespace signature_alg
 
--- Add type-class instances of the type classes bundled into a signature algorithm.
-instance decidable_eq_S' (sig : signature) : decidable_eq sig.S := sig.decidable_eq_S
-instance decidable_eq_M' (sig : signature) : decidable_eq sig.M := sig.decidable_eq_M
-instance inhabited_S' (sig : signature) : inhabited sig.S := sig.inhabited_S
-instance fintype_S' (sig : signature) : fintype sig.S := sig.fintype_S
+-- -- Add type-class instances of the type classes bundled into a signature algorithm.
+-- instance decidable_eq_S' (sig : signature_alg M PK SK S) : decidable_eq sig.S := sig.decidable_eq_S
+-- instance decidable_eq_M' (sig : signature_alg) : decidable_eq sig.M := sig.decidable_eq_M
+-- instance inhabited_S' (sig : signature_alg) : inhabited sig.S := sig.inhabited_S
+-- instance fintype_S' (sig : signature_alg) : fintype sig.S := sig.fintype_S
 
-/-- Shorthand for the combination of the uniform selection and random oracles,
-exactly the oracles available to the signature algorithms themselves -/
-@[reducible, inline] def base_spec (sig : signature) := uniform_selecting ++ sig.random_spec
-/-- A signing oracle corresponding to a given signature scheme -/
-@[reducible, inline] def signing_spec (sig : signature) := sig.M ↦ₒ sig.S
-/-- The full set of oracles available to adversaries on a signature scheme -/
-@[reducible, inline] def full_spec (sig : signature) := sig.base_spec ++ sig.signing_spec
+-- /-- Shorthand for the combination of the uniform selection and random oracles,
+-- exactly the oracles available to the signature algorithms themselves -/
+-- @[reducible, inline] def base_spec (sig : signature_alg) := uniform_selecting ++ sig.random_spec
+-- /-- A signing oracle corresponding to a given signature scheme -/
+-- @[reducible, inline] def signing_spec (sig : signature_alg) := sig.M ↦ₒ sig.S
+-- /-- The full set of oracles available to adversaries on a signature scheme -/
+-- @[reducible, inline] def full_spec (sig : signature_alg) := sig.base_spec ++ sig.signing_spec
 
-/-- Simulate the basic oracles for the signature, using `random_oracle` to simulate the
-random oracle and preserving the `uniform_selecting` oracle as is. -/
-noncomputable def baseₛₒ (sig : signature) :
-  sim_oracle sig.base_spec (uniform_selecting) (sig.random_spec.query_cache) :=
-sim_oracle.mask_state (idₛₒ ++ₛ randomₛₒ)
-  (equiv.punit_prod sig.random_spec.query_cache)
+-- /-- Simulate the basic oracles for the signature, using `random_oracle` to simulate the
+-- random oracle and preserving the `uniform_selecting` oracle as is. -/
+-- noncomputable def baseₛₒ (sig : signature) :
+--   sim_oracle sig.base_spec (uniform_selecting) (sig.random_spec.query_cache) :=
+-- sim_oracle.mask_state (idₛₒ ++ₛ randomₛₒ)
+--   (equiv.punit_prod sig.random_spec.query_cache)
 
-noncomputable def baseₛₒ' (sig : signature) :
-  sim_oracle sig.base_spec uniform_selecting sig.random_spec.query_log :=
-(idₛₒ ++ₛ random_oracle' sig.random_spec).mask_state (equiv.punit_prod _)
+-- noncomputable def baseₛₒ' (sig : signature) :
+--   sim_oracle sig.base_spec uniform_selecting sig.random_spec.query_log :=
+-- (idₛₒ ++ₛ random_oracle' sig.random_spec).mask_state (equiv.punit_prod _)
 
 -- def signingₛₒ (sig : signature) (pk : sig.PK) (sk : sig.SK) :
 --   sim_oracle sig.signing_spec sig.base_spec (sig.M ↦ₒ sig.S).query_cache :=
 -- sim_oracle.mask_state (⟪λ _ m, sig.sign (pk, sk, m)⟫ ∘ₛ cachingₛₒ)
 --   (equiv.prod_punit (signing_spec sig).query_cache)
 
+variables {spec : oracle_spec} {M PK SK S : Type}
 /-- Simulate a computation with access to a `signing_oracle_spec` to one with `base_oracle_spec`,
 using the provided public / secret keys to answer queries for signatures.
-Additionally uses `cachingₛₒ` to respond to queries, returing the resulting `query_cache`,
+Additionally tracks responses to queries, returing the resulting `query_cache`,
 which can be used to check that the adversary hadn't gotten a signature for their final output. -/
-def signing_sim_oracle (sig : signature) (pk : sig.PK) (sk : sig.SK) :
-  sim_oracle sig.full_spec sig.base_spec (sig.M ↦ₒ sig.S).query_log :=
-begin
-  let so' : sim_oracle sig.signing_spec sig.base_spec punit :=
-    ⟪λ _ m, sig.sign ((pk, sk), m)⟫,
-  refine (idₛₒ ++ₛ _).mask_state
-    (equiv.punit_prod _),
-  refine (so' ∘ₛ loggingₛₒ).mask_state (equiv.prod_punit _),
-end
+def signing_sim_oracle (sig : signature_alg spec M PK SK S) (pk : PK) (sk : SK)
+  [inhabited S] [fintype S] [decidable_eq M] [decidable_eq S] :
+  sim_oracle (spec ++ (M ↦ₒ S)) spec (M ↦ₒ S).query_log :=
+let so' : sim_oracle (M ↦ₒ S) spec punit := ⟪λ _ m, sig.sign ((pk, sk), m)⟫ in
+(idₛₒ ++ₛ ((so' ∘ₛ loggingₛₒ).mask_state (equiv.prod_punit _))).mask_state (equiv.punit_prod _)
 
 -- def signing_sim_oracle' (sig : signature) (pk : sig.PK) (sk : sig.SK) :
 --   sim_oracle sig.full_spec sig.base_spec unit :=
@@ -102,38 +96,38 @@ end
 
 alias signing_sim_oracle ← signingₛₒ
 
-noncomputable def full_sim_oracle (sig : signature) (pk : sig.PK) (sk : sig.SK) :
-  sim_oracle sig.full_spec uniform_selecting
-    ((sig.M ↦ₒ sig.S).query_log × sig.random_spec.query_cache) :=
-sig.baseₛₒ ∘ₛ (sig.signingₛₒ pk sk)
+-- noncomputable def full_sim_oracle (sig : signature) (pk : sig.PK) (sk : sig.SK) :
+--   sim_oracle sig.full_spec uniform_selecting
+--     ((sig.M ↦ₒ sig.S).query_log × sig.random_spec.query_cache) :=
+-- sig.baseₛₒ ∘ₛ (sig.signingₛₒ pk sk)
 
-alias full_sim_oracle ←
+-- alias full_sim_oracle ←
 
 
 section simulate_random_oracle
 
-/-- Run `sig.simulate` with a random oracle for `random_spec`.
-Allow for any initial random  oracle cache, usually it will be empty before any other queries.
-This is assumed to be the "correct" way to generate a key, at least for security property. -/
-noncomputable def simulate_gen (sig : signature) (cache : sig.random_spec.query_cache) :
-  oracle_comp uniform_selecting ((sig.PK × sig.SK) × sig.random_spec.query_cache) :=
-simulate sig.baseₛₒ (sig.gen ()) cache
+-- /-- Run `sig.simulate` with a random oracle for `random_spec`.
+-- Allow for any initial random  oracle cache, usually it will be empty before any other queries.
+-- This is assumed to be the "correct" way to generate a key, at least for security property. -/
+-- noncomputable def simulate_gen (sig : signature) (cache : sig.random_spec.query_cache) :
+--   oracle_comp uniform_selecting ((sig.PK × sig.SK) × sig.random_spec.query_cache) :=
+-- simulate sig.baseₛₒ (sig.gen ()) cache
 
-/-- Run the signing algorithm using a random oracle initialized to `cache`.
-This is assumed to be the "correct" way to sign a message, at least for security properties. -/
-noncomputable def simulate_sign (sig : signature) (cache : sig.random_spec.query_cache)
-  (pk : sig.PK) (sk : sig.SK) (m : sig.M) :
-  oracle_comp uniform_selecting (sig.S × sig.random_spec.query_cache) :=
-simulate sig.baseₛₒ (sig.sign ((pk, sk), m)) cache
+-- /-- Run the signing algorithm using a random oracle initialized to `cache`.
+-- This is assumed to be the "correct" way to sign a message, at least for security properties. -/
+-- noncomputable def simulate_sign (sig : signature) (cache : sig.random_spec.query_cache)
+--   (pk : sig.PK) (sk : sig.SK) (m : sig.M) :
+--   oracle_comp uniform_selecting (sig.S × sig.random_spec.query_cache) :=
+-- simulate sig.baseₛₒ (sig.sign ((pk, sk), m)) cache
 
-/-- Run the verification algorithm using a random oracle initialized to `cache`.
-This is assumed to be the "correct" way to verify signatures, at least for security properties. -/
-noncomputable def simulate_verify (sig : signature) (cache : sig.random_spec.query_cache)
-  (pk : sig.PK) (m : sig.M) (σ : sig.S) :
-  oracle_comp uniform_selecting (bool × sig.random_spec.query_cache)  :=
-simulate sig.baseₛₒ (sig.verify (pk, m, σ)) cache
+-- /-- Run the verification algorithm using a random oracle initialized to `cache`.
+-- This is assumed to be the "correct" way to verify signatures, at least for security properties. -/
+-- noncomputable def simulate_verify (sig : signature) (cache : sig.random_spec.query_cache)
+--   (pk : sig.PK) (m : sig.M) (σ : sig.S) :
+--   oracle_comp uniform_selecting (bool × sig.random_spec.query_cache)  :=
+-- simulate sig.baseₛₒ (sig.verify (pk, m, σ)) cache
 
-variables (sig : signature) (cache : sig.random_spec.query_cache)
+-- variables (sig : signature) (cache : sig.random_spec.query_cache)
 
 end simulate_random_oracle
 
@@ -160,13 +154,13 @@ end completeness_experiment
 
 section is_valid
 
-/-- A signature  is valid for `sig` if it is always verified by `sig.verify`,
-assuming that the random oracle state is given by the provided `cache`.
-This definition is based on the assumption that valid signatures are accepted with probability `1`.
-If the signature has a potential chance of failure then it isn't really meaningful. -/
-def valid_signature (sig : signature) (pk : sig.PK) (m : sig.M) (σ : sig.S)
-  (cache : sig.random_spec.query_cache) : Prop :=
-(fst <$> simulate sig.baseₛₒ (sig.verify (pk, m, σ)) cache).support = {tt}
+-- /-- A signature  is valid for `sig` if it is always verified by `sig.verify`,
+-- assuming that the random oracle state is given by the provided `cache`.
+-- This definition is based on the assumption that valid signatures are accepted with probability `1`.
+-- If the signature has a potential chance of failure then it isn't really meaningful. -/
+-- def valid_signature (sig : signature) (pk : sig.PK) (m : sig.M) (σ : sig.S)
+--   (cache : sig.random_spec.query_cache) : Prop :=
+-- (fst <$> simulate sig.baseₛₒ (sig.verify (pk, m, σ)) cache).support = {tt}
 
 -- /-- A signature  is valid for `sig` if it is always verified by `sig.verify`.
 -- This definition is based on the assumption that valid signatures are always accepted.
@@ -202,12 +196,22 @@ section complete
 -- public_experiment (sig.gen ()) (λ _, idₛₒ)
 --   (λ ks m, do {σ ← sig.sign (ks, m), sig.verify (ks.1, m, σ)}) sig.baseₛₒ
 
+def completeness_exp (sig : signature_alg spec M PK SK S) (m : M) :
+  sec_exp spec (PK × SK) bool :=
+{ inp_gen := sig.keygen (),
+  main := λ ⟨pk, sk⟩,
+    do {σ ← sig.sign ((pk, sk), m),
+      sig.verify (pk, m, σ) },
+  is_valid := λ ks b, b = tt,
+  .. sig }
+
 /-- A signature algorithm is complete if all messages are valid. -/
-def complete (sig : signature) : Prop := ∀ m : sig.M,
-(dsimulate' sig.baseₛₒ
-  (do {ks ← sig.gen (),
-    σ ← sig.sign (ks, m),
-    sig.verify (ks.1, m, σ)})).support = {tt}
+def complete (sig : signature_alg spec M PK SK S) : Prop :=
+∀ m, (completeness_exp sig m).advantage = 1
+-- (dsimulate' sig.baseₛₒ
+--   (do {ks ← sig.gen (),
+--     σ ← sig.sign (ks, m),
+--     sig.verify (ks.1, m, σ)})).support = {tt}
 
 -- @[simp] lemma complete_iff_forall_messages (sig : signature) :
 --   sig.complete ↔ ∀ m : sig.M, (dsimulate' sig.baseₛₒ
@@ -262,14 +266,23 @@ def complete (sig : signature) : Prop := ∀ m : sig.M,
 
 end complete
 
+section unforgeable
+
+variables [inhabited S] [fintype S] [decidable_eq M] [decidable_eq S]
+
+@[inline, reducible] def unforgeable_adv_spec (sig : signature_alg spec M PK SK S) :
+  oracle_spec := spec ++ (M ↦ₒ S)
+
 /-- An adversary for the unforgeable signature experiment.
   Note that the adversary only has access to the public key. -/
-structure unforgeable_adversary (sig : signature) extends
-  sec_adversary (uniform_selecting ++ sig.random_spec ++ sig.signing_spec) sig.PK (sig.M × sig.S)
+-- structure unforgeable_adversary (sig : signature) extends
+--   sec_adversary (uniform_selecting ++ sig.random_spec ++ sig.signing_spec) sig.PK (sig.M × sig.S)
+def unforgeable_adv (sig : signature_alg spec M PK SK S) :=
+sec_adv sig.unforgeable_adv_spec PK (M × S)
 
 namespace unforgeable_adversary
 
-variables {sig : signature} (adversary : unforgeable_adversary sig)
+-- variables {sig : signature} (adversary : unforgeable_adversary sig)
 
 -- /-- Wrapper function for simulation that hides the "state values" of the stateless oracles.
 -- Runs the adversary with a signing oracle based on the provided public/secret keys,
@@ -281,47 +294,60 @@ variables {sig : signature} (adversary : unforgeable_adversary sig)
 
 end unforgeable_adversary
 
-noncomputable def unforgeable_experiment (sig : signature) :
-  sec_experiment sig.full_spec sig.base_spec sig.PK
-    (sig.M × sig.S) sig.SK (sig.M ↦ₒ sig.S).query_log
-    sig.random_spec.query_cache :=
-{ inp_gen := sig.gen (),
-  adv_so := λ ks, sig.signingₛₒ ks.1 ks.2,
-  is_valid := λ ⟨pk, sk⟩ ⟨⟨m, σ⟩, log⟩,
-    if log.was_queried () m then return ff else sig.verify (pk, m, σ),
-  exp_so := (idₛₒ ++ₛ randomₛₒ).mask_state (equiv.punit_prod _) }
+def unforgeable_exp {sig : signature_alg spec M PK SK S} (adv : unforgeable_adv sig) :
+  sec_exp spec (PK × SK) (bool) := --(M × S) × (M ↦ₒ S).query_log) :=
+{ inp_gen := sig.keygen (),
+  main := λ ⟨pk, sk⟩, do
+    { ⟨⟨m, σ⟩, log⟩ ← dsimulate (sig.signingₛₒ pk sk) (adv.run pk),
+      b ← sig.verify (pk, m, σ),
+      return (b && !(log.was_queried () m)) },
+  is_valid := λ _ b, b = tt,
+  .. sig }
 
-noncomputable def unforgeable_experiment' (sig : signature) :
-  sec_experiment sig.full_spec sig.base_spec sig.PK
-    (sig.M × sig.S) sig.SK (sig.M ↦ₒ sig.S).query_log
-    sig.random_spec.query_cache :=
-{ inp_gen := sig.gen (),
-  adv_so := λ ks, sig.signingₛₒ ks.1 ks.2,
-  is_valid := λ ⟨pk, sk⟩ ⟨⟨m, σ⟩, log⟩,
-    if log.was_queried () m then return ff else sig.verify (pk, m, σ),
-  exp_so := sig.baseₛₒ }
+-- noncomputable def unforgeable_experiment (sig : signature) :
+--   sec_experiment sig.full_spec sig.base_spec sig.PK
+--     (sig.M × sig.S) sig.SK (sig.M ↦ₒ sig.S).query_log
+--     sig.random_spec.query_cache :=
+-- { inp_gen := sig.gen (),
+--   adv_so := λ ks, sig.signingₛₒ ks.1 ks.2,
+--   is_valid := λ ⟨pk, sk⟩ ⟨⟨m, σ⟩, log⟩,
+--     if log.was_queried () m then return ff else sig.verify (pk, m, σ),
+--   exp_so := (idₛₒ ++ₛ randomₛₒ).mask_state (equiv.punit_prod _) }
 
-noncomputable def unforgeable_advantage (sig : signature)
-  (adv : unforgeable_adversary sig) : ℝ≥0∞ :=
-adv.advantage sig.unforgeable_experiment
+-- noncomputable def unforgeable_experiment' (sig : signature) :
+--   sec_experiment sig.full_spec sig.base_spec sig.PK
+--     (sig.M × sig.S) sig.SK (sig.M ↦ₒ sig.S).query_log
+--     sig.random_spec.query_cache :=
+-- { inp_gen := sig.gen (),
+--   adv_so := λ ks, sig.signingₛₒ ks.1 ks.2,
+--   is_valid := λ ⟨pk, sk⟩ ⟨⟨m, σ⟩, log⟩,
+--     if log.was_queried () m then return ff else sig.verify (pk, m, σ),
+--   exp_so := sig.baseₛₒ }
 
-end signature
+-- noncomputable def unforgeable_advantage (sig : signature)
+--   (adv : unforgeable_adversary sig) : ℝ≥0∞ :=
+-- adv.advantage sig.unforgeable_experiment
 
-/-- signature scheme is a set of signature algorithms indexed by a security parameter -/
-def signature_scheme := Π (sp : ℕ), signature
+end unforgeable
 
-namespace signature_scheme
+end signature_alg
 
-open signature
+-- /-- signature scheme is a set of signature algorithms indexed by a security parameter -/
+-- def signature_scheme :=
+-- Π (sp : ℕ), signature
 
-/-- Scheme is complete if it is complete for each security parameter -/
-def complete (sig_scheme : signature_scheme) : Prop :=
-∀ (sp : ℕ), (sig_scheme sp).complete
+-- namespace signature_scheme
 
-/-- Signature scheme is unforgeable if any polynomial time adversary has negligible advantage in
-  `unforgeable_experiment` as the security parameter grows -/
-def unforgeable (sig_scheme : signature_scheme) : Prop :=
-∀ (adv : Π (sp : ℕ), unforgeable_adversary $ sig_scheme sp),
-  negligable (λ sp, (adv sp).advantage (sig_scheme sp).unforgeable_experiment)
+-- open signature
 
-end signature_scheme
+-- /-- Scheme is complete if it is complete for each security parameter -/
+-- def complete (sig_scheme : signature_scheme) : Prop :=
+-- ∀ (sp : ℕ), (sig_scheme sp).complete
+
+-- /-- Signature scheme is unforgeable if any polynomial time adversary has negligible advantage in
+--   `unforgeable_experiment` as the security parameter grows -/
+-- def unforgeable (sig_scheme : signature_scheme) : Prop :=
+-- ∀ (adv : Π (sp : ℕ), unforgeable_adversary $ sig_scheme sp),
+--   negligable (λ sp, (adv sp).advantage (sig_scheme sp).unforgeable_experiment)
+
+-- end signature_scheme
