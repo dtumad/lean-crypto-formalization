@@ -32,7 +32,7 @@ namespace sec_exp
 
 variables {exp_spec : oracle_spec} {α β γ : Type}
 
-noncomputable def run (exp : sec_exp exp_spec α β) :
+def run (exp : sec_exp exp_spec α β) :
   oracle_comp uniform_selecting (α × β) :=
 exp.exec (do {x ← exp.inp_gen, y ← exp.main x, return (x, y)} )
 

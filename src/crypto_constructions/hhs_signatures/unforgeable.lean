@@ -85,7 +85,7 @@ end
 
 end queried_index
 
-noncomputable def mock_unforgeable_adversary
+def mock_unforgeable_adversary
   (adv : (hhs_signature G X M n).unforgeable_adversary) :
   fork_adversary (hhs_signature G X M n).base_spec (X × X)
     ((M × vector G n × vector bool n) × ((vector X n × M) ↦ₒ vector bool n).query_log)

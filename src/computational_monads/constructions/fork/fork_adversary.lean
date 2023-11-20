@@ -7,7 +7,7 @@ import computational_monads.simulation_semantics.constructions.logging_oracle
 import computational_monads.simulation_semantics.constructions.seeded_oracle
 import computational_monads.simulation_semantics.constructions.uniform_oracle
 import computational_monads.distribution_semantics.option
-import crypto_foundations.sec_adversary
+import crypto_foundations.sec_experiment
 
 /-!
 # Forkable Computations
@@ -27,15 +27,18 @@ variables {α β γ : Type} {spec spec' adv_spec exp_spec : oracle_spec} {i : sp
 The function `choose_fork` takes an input and output pair, and returns an index at which the
 queries should be forked (see `of_choose_input` to do this from a chosen query input value). -/
 structure fork_adversary (spec : oracle_spec) (α β : Type)
-  (i : spec.ι) extends sec_adversary spec α β :=
-(choose_fork : α → β → option (fin (qb.get_count (sum.inr i)).succ))
+  (i : spec.ι) extends sec_adv spec α β :=
+(choose_fork : α → β → option (fin (run_qb.get_count i).succ))
 
 @[inline, reducible] def fork_adversary.q (adv : fork_adversary spec α β i) :=
-adv.qb.get_count (sum.inr i)
+adv.run_qb.get_count i
 
 -- noncomputable def fork_adversary.cf_experiment (adv : fork_adversary spec α β i) (inp_gen : oracle_comp spec α) :
 --   base_sec_experiment spec α β :=
 -- base_sec_experiment_of_is_valid inp_gen (λ x y, return (adv.choose_fork x y ≠ none)) uniformₛₒ
+
+-- def choose_fork_exp (adv : fork_adversary spec α β i) :
+--   sec_exp spec α β i
 
 noncomputable def fork_adversary.cf_experiment
   (inp_gen : oracle_comp spec α)

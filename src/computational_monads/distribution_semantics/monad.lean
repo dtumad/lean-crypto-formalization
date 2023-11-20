@@ -41,6 +41,18 @@ begin
   refine λ z, ennreal.tsum_comm.trans (tsum_congr (λ y, by simp_rw [mul_comm ⁅= y | ob⁆]))
 end
 
+lemma support_bind_bind_comm : (do {a ← oa, b ← ob, oc a b}).support =
+  (do {b ← ob, a ← oa, oc a b}).support := by pairwise_dist_equiv
+
+lemma fin_support_bind_bind_comm : (do {a ← oa, b ← ob, oc a b}).support =
+  (do {b ← ob, a ← oa, oc a b}).support := by pairwise_dist_equiv
+
+lemma prob_output_bind_bind_comm (z : γ) : ⁅= z | do {a ← oa, b ← ob, oc a b}⁆ =
+  ⁅= z | do {b ← ob, a ← oa, oc a b}⁆ := by pairwise_dist_equiv
+
+lemma prob_event_bind_bind_comm (e : set γ) : ⁅e | do {a ← oa, b ← ob, oc a b}⁆ =
+  ⁅e | do {b ← ob, a ← oa, oc a b}⁆ := by pairwise_dist_equiv
+
 end bind_bind_dist_equiv_comm
 
 section bind_return

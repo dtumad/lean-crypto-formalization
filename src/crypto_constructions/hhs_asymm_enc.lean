@@ -80,8 +80,8 @@ noncomputable def ind_cpa_reduction (adv : (hhs_elgamal G X).ind_cpa_adv) :
   dec_parallelization_adv G X :=
 { -- Try to check if `x₃` is the correct parallelization
   run := λ ⟨x₀, x₁, x₂, x₃⟩, do
-    { b ←$ᵗ bool,
-      ms ← adv.run (x₀, x₁),
+    { ms ← adv.run (x₀, x₁),
+      b ←$ᵗ bool,
       c ← return (x₂, (if b then ms.1 else ms.2) * x₃),
       b' ← adv.distinguish ((x₀, x₁), ms, c),
       return (b = b') },
@@ -96,53 +96,22 @@ begin
     map_pure, coe_coin_uniform_selecting, encrypt_apply, base_oracle_algorithm.exec_eq],
   congr' 2,
   { pairwise_dist_equiv,
-    rw_dist_equiv [bind_bind_dist_equiv_comm ($ᵗ G), bind_bind_dist_equiv_comm ($ᵗ G),
-      bind_bind_dist_equiv_comm ($ᵗ bool)] },
+    rw_dist_equiv [bind_bind_dist_equiv_comm ($ᵗ G), bind_bind_dist_equiv_comm ($ᵗ G)] },
   { refine prob_output_bind_of_const _ _ (λ x hx, _),
     refine prob_output_bind_of_const _ _ (λ g₁ hg₁, _),
     refine prob_output_bind_of_const _ _ (λ g₂ hg₂, _),
-    rw [← prob_output_uniform_select_bool ff],
-    rw_dist_equiv [bind_bind_dist_equiv_comm ($ᵗ G), bind_bind_dist_equiv_comm ($ᵗ G),
-      bind_bind_dist_equiv_comm ($ᵗ bool)],
-    refine dist_equiv.ext (λ b, _),
+    rw [prob_output_bind_bind_comm ($ᵗ G)],
     refine prob_output_bind_of_const _ _ (λ ms hms, _),
-    have : ∀ a : bool, ($ᵗ G >>= λ g, adv.distinguish ((x, g₁ +ᵥ x), ms, g₂ +ᵥ x, ite a (ms.1 * (g +ᵥ x)) (ms.2 * (g +ᵥ x))))
-      ≃ₚ ($ᵗ G >>= λ g, adv.distinguish ((x, g₁ +ᵥ x), ms, g₂ +ᵥ x, (g +ᵥ x))),
-    begin
-      intro b,
-      cases b,
-      {
-        simp,
-        have : $ᵗ G ≃ₚ $ᵗ G >>= λ g, return ((ms.2⁻¹ * (g +ᵥ x)) -ᵥ x) :=
-        begin
-          refine dist_equiv.symm (uniform_select_fintype_map_bij _ _ _),
-          have hv : function.bijective (-ᵥ x) := vsub_bijective x,
-          have hv' : function.bijective (+ᵥ x) := vadd_bijective x,
-          refine function.bijective.comp hv _,
-          refine function.bijective.comp (group.mul_left_bijective (ms.2⁻¹)) _,
-          refine hv'
-        end,
-        rw_dist_equiv [this],
-        simp [bind_assoc],
-      },
-      {
-        simp,
-        have : $ᵗ G ≃ₚ $ᵗ G >>= λ g, return ((ms.1⁻¹ * (g +ᵥ x)) -ᵥ x) :=
-        begin
-          refine dist_equiv.symm (uniform_select_fintype_map_bij _ _ _),
-          have hv : function.bijective (-ᵥ x) := vsub_bijective x,
-          have hv' : function.bijective (+ᵥ x) := vadd_bijective x,
-          refine function.bijective.comp hv _,
-          refine function.bijective.comp (group.mul_left_bijective (ms.1⁻¹)) _,
-          refine hv'
-        end,
-        rw_dist_equiv [this],
-        simp [bind_assoc],
-      }
-    end,
-    simp only [← bind_assoc],
-    rw_dist_equiv [this],
-    refine dist_equiv.ext (λ b, _),
+    rw [prob_output_bind_bind_comm ($ᵗ G), prob_output_eq_one_div_two_iff, bool.bnot_ff],
+    simp_rw [← bind_assoc ($ᵗ G)],
+    let adv₀ := ($ᵗ G >>= λ g, adv.distinguish ((x, g₁ +ᵥ x), ms, g₂ +ᵥ x, (g +ᵥ x))),
+    have : (fintype.card bool : ℝ≥0∞)⁻¹ = 1 / 2 := by simp,
+    refine trans (prob_output_uniform_select_fintype_bind_bind_eq_of_const _ ⟨adv₀, λ b, _⟩) this,
+    let f : G → G := λ g, ((ite b ms.1 ms.2)⁻¹ * (g +ᵥ x)) -ᵥ x,
+    have hf : f.bijective := function.bijective.comp (vsub_bijective _)
+      (function.bijective.comp (group.mul_left_bijective _) (vadd_bijective _)),
+    rw_dist_equiv [uniform_select_fintype_bind_bij_dist_equiv G f hf],
+    refine bind_dist_equiv_bind_of_dist_equiv_right' _ _ _ (λ g, _),
     cases b; simp }
 end
 

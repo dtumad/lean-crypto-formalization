@@ -18,6 +18,32 @@ open_locale big_operators ennreal
 
 variables {α β γ : Type} {spec spec' : oracle_spec}
 
+lemma prob_output_ff_eq_one_sub (oa : oracle_comp spec bool) :
+  ⁅= ff | oa⁆ = 1 - ⁅= tt | oa⁆ :=
+by rw [← sum_prob_output oa, fintype.sum_bool,
+  ennreal.add_sub_cancel_left (prob_output_ne_top _ _)]
+
+lemma prob_output_tt_eq_one_sub (oa : oracle_comp spec bool) :
+  ⁅= tt | oa⁆ = 1 - ⁅= ff | oa⁆ :=
+by rw [← sum_prob_output oa, fintype.sum_bool,
+  ennreal.add_sub_cancel_right (prob_output_ne_top _ _)]
+
+lemma prob_output_eq_one_div_two_iff (oa : oracle_comp spec bool) (b : bool) :
+  ⁅= b | oa⁆ = 1 / 2 ↔ ⁅= !b | oa⁆ = 1 / 2 :=
+begin
+  cases b,
+  { simp [prob_output_ff_eq_one_sub],
+    refine ⟨λ h, _, λ h, _⟩,
+    { rw [← ennreal.one_sub_inv_two, ← h,
+        ennreal.sub_sub_cancel ennreal.one_ne_top (prob_output_le_one oa _)] },
+    { rw [h, ennreal.one_sub_inv_two] } },
+  { simp [prob_output_ff_eq_one_sub],
+    refine ⟨λ h, _, λ h, _⟩,
+    { rw [h, ennreal.one_sub_inv_two] },
+    { rw [← ennreal.one_sub_inv_two, ← h,
+        ennreal.sub_sub_cancel ennreal.one_ne_top (prob_output_le_one oa _)] } },
+end
+
 @[simp] lemma prob_output_bnot_map (oa : oracle_comp spec bool) (b : bool) :
   ⁅= b | bnot <$> oa⁆ = ⁅= bnot b | oa⁆ :=
 begin

@@ -506,34 +506,26 @@ lemma prob_output_uniform_select_fintype_bind_apply_eq_sum [decidable_eq α] :
 by simp only [uniform_select_fintype, prob_output_uniform_select_finset_bind_eq_sum,
   finset.mem_univ, if_true, finset.card_univ]
 
-@[simp] lemma uniform_select_fintype_bind_const_bind_eq
+@[simp] lemma prob_output_uniform_select_fintype_bind_const_bind_eq
   {α : Type} [fintype α] [inhabited α] [decidable_eq α]
-  (oa : oracle_comp uniform_selecting α) (b : bool) :
-  ⁅= b | do {x ← $ᵗ α, x' ← oa, return (x = x' : bool)}⁆ =
-    if b then (fintype.card α)⁻¹ else 1 - (fintype.card α)⁻¹ :=
+  (oa : oracle_comp uniform_selecting α) :
+  ⁅= tt | do {x ← $ᵗ α, x' ← oa, return (x = x' : bool)}⁆ = (fintype.card α)⁻¹ :=
 begin
-  cases b,
-  {
-    have hα : fintype.card α ≠ 0 := sorry,
-    simp only [prob_output_bind_eq_tsum, ennreal.tsum_mul_left, prob_output_uniform_select_fintype, prob_output_return,
-      bool.ff_eq_to_bool_iff, ite_not, coe_sort_ff, if_false],
-    have : ∑' (x x' : α), ⁅= x |oa⁆ * ite (x' = x) 0 1 =
-      ∑' x, ⁅= x | oa⁆ * (fintype.card α - 1) := begin
-      -- rw [ennreal.tsum_comm],
-      refine tsum_congr (λ x, _),
-      rw [ennreal.tsum_mul_left],
-      refine congr_arg (λ r, _ * r) _,
-      sorry,
-    end,
-    rw [ennreal.tsum_comm, this, ennreal.tsum_mul_right, tsum_prob_output, one_mul, ennreal.mul_sub,
-      ennreal.inv_mul_cancel, mul_one]; simp [hα],
-  },
-  {
-    simp only [prob_output_bind_eq_tsum, ennreal.tsum_mul_left, prob_output_uniform_select_fintype, prob_output_return,
-  bool.tt_eq_to_bool_iff, coe_sort_tt, if_true],
-    rw [ennreal.tsum_comm],
-    simp_rw [ennreal.tsum_mul_left, tsum_ite_eq, mul_one, tsum_prob_output, mul_one]
-  }
+  simp only [prob_output_bind_eq_tsum, ennreal.tsum_mul_left, prob_output_uniform_select_fintype,
+    prob_output_return, bool.tt_eq_to_bool_iff, coe_sort_tt, if_true],
+  rw [ennreal.tsum_comm],
+  simp_rw [ennreal.tsum_mul_left, tsum_ite_eq, mul_one, tsum_prob_output, mul_one]
+end
+
+lemma prob_output_uniform_select_fintype_bind_bind_eq_of_const
+  {α : Type} [fintype α] [inhabited α] [decidable_eq α]
+  (oa : α → oracle_comp uniform_selecting α)
+  (hoa : ∃ oa₀ : oracle_comp uniform_selecting α, ∀ x, oa x ≃ₚ oa₀) :
+  ⁅= tt | do {x ← $ᵗ α, x' ← oa x, return (x = x' : bool)}⁆ = (fintype.card α)⁻¹ :=
+begin
+  obtain ⟨oa₀, h⟩ := hoa,
+  refine trans _ (prob_output_uniform_select_fintype_bind_const_bind_eq oa₀),
+  rw_dist_equiv [h],
 end
 
 end prob_output
@@ -564,11 +556,35 @@ lemma uniform_select_fintype_dist_equiv_return {spec} {α : Type} [unique α] :
   (t : spec.domain i) : $ᵗ (spec.range i) ≃ₚ query i t :=
 by simp [dist_equiv.ext_iff, prob_output_query_eq_inv]
 
-lemma uniform_select_fintype_map_bij (f : α → α) (hf : f.bijective) :
-  f <$> $ᵗ α ≃ₚ $ᵗ α :=
+lemma prob_output_uniform_select_fintype_bind_bij [decidable_eq α]
+  (f : α → α) (hf : f.bijective) (ob : α → oracle_comp uniform_selecting β)
+  (y : β) : ⁅= y | $ᵗ α >>= ob⁆ = ⁅= y | $ᵗ α >>= (ob ∘ f)⁆ :=
 begin
-  refine dist_equiv.ext (λ x, _),
-  sorry,
+  simp [prob_output_uniform_select_fintype_bind_apply_eq_sum],
+  refine congr_arg (λ r : ℝ≥0∞, r / fintype.card α) _,
+  obtain ⟨g, hg⟩ := function.bijective_iff_has_inverse.1 hf,
+  simp [function.left_inverse, function.right_inverse] at hg,
+  refine finset.sum_bij' (λ x _, g x) (λ _ _, finset.mem_univ _) _
+    (λ x _, f x) (λ _ _, finset.mem_univ _) _ _; simp [hg.1, hg.2],
+end
+
+lemma uniform_select_fintype_bind_bij_dist_equiv [decidable_eq α]
+  (f : α → α) (hf : f.bijective) (ob : α → oracle_comp uniform_selecting β) :
+  $ᵗ α >>= ob ≃ₚ $ᵗ α >>= (ob ∘ f) :=
+dist_equiv.ext (λ y, prob_output_uniform_select_fintype_bind_bij α f hf ob y)
+
+lemma uniform_select_fintype_map_dist_equiv_of_bijective [decidable_eq α]
+  (f : α → α) (hf : f.bijective) : f <$> $ᵗ α ≃ₚ $ᵗ α :=
+symm (uniform_select_fintype_bind_bij_dist_equiv α f hf return)
+
+lemma prob_output_uniform_select_fintype_prod {α β : Type}
+  [nonempty α] [fintype α] [nonempty β] [fintype β]
+  (oc : α → β → oracle_comp uniform_selecting γ) (z : γ) :
+  ⁅= z | do {x ←$ᵗ α, y ←$ᵗ β, oc x y}⁆ =
+    ⁅= z | do {xy ←$ᵗ (α × β), oc xy.1 xy.2}⁆ :=
+begin
+  simp [prob_output_bind_eq_tsum, tsum_prod', ennreal.tsum_mul_left],
+  rw [ennreal.mul_inv (or.inr (ennreal.nat_ne_top _)) (or.inl (ennreal.nat_ne_top _)), mul_assoc],
 end
 
 end uniform_select_fintype

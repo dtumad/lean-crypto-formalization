@@ -57,6 +57,9 @@ lemma eval_dist.prob_output_ext (oa : oracle_comp spec α) (oa' : oracle_comp sp
 
 @[simp] lemma tsum_prob_output (oa : oracle_comp spec α) : ∑' x, ⁅= x | oa⁆ = 1 := ⁅oa⁆.tsum_coe
 
+@[simp] lemma sum_prob_output [fintype α] (oa : oracle_comp spec α) : ∑ x, ⁅= x | oa⁆ = 1 :=
+trans (tsum_eq_sum (λ _ h, (h (finset.mem_univ _)).elim)).symm (⁅oa⁆.tsum_coe)
+
 section eq_zero
 
 variables (oa : oracle_comp spec α) (x : α)

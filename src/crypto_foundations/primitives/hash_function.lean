@@ -3,57 +3,51 @@ Copyright (c) 2022 Devon Tuma. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
-import computational_monads.asymptotics.polynomial_time
-import computational_monads.asymptotics.negligable
+import crypto_foundations.sec_experiment
 
 /-!
 # Hash Functions
 
-This file defines a basic version of a hash function.
-
+This file defines a basic version of a hash function and collision resistance.
 -/
 
 open oracle_comp oracle_spec
 
-/-- TODO -/
-structure hash_function (K I O : Type) :=
-(keygen : unit → oracle_comp coin_spec K)
+structure hash_function (spec : oracle_spec) (K I O : Type)
+  extends oracle_algorithm spec :=
+(keygen : unit → oracle_comp spec K)
 (hash : K × I → O)
--- (keygen_poly_time : poly_time_oracle_comp keygen)
--- (hash_poly_time : poly_time hash)
 
 namespace hash_function
 
-variables {K I O : Type} (h : hash_function K I O)
+variables {spec : oracle_spec} {K I O : Type} [decidable_eq O]
 
-variables [decidable_eq O]
+def collision_finding_adv (hf : hash_function spec K I O) :=
+sec_adv spec K (I × I)
 
-/-- The security game for collision resistance as a probabalistic function. -/
-noncomputable def collision_finding_experiment (h : hash_function K I O)
-  (adversary : K → oracle_comp coin_spec (I × I)) : oracle_comp coin_spec bool :=
-do{ k ← (h.keygen ()),
-    xs ← (adversary k),
-    return (h.hash (k, xs.1) = h.hash (k, xs.2)) }
+def collision_finding_exp {hf : hash_function spec K I O}
+  (adv : collision_finding_adv hf) : sec_exp spec K (I × I) :=
+{ inp_gen := hf.keygen (),
+  main := adv.run,
+  is_valid := λ k ⟨m, m'⟩, hf.hash (k, m) = hf.hash (k, m'),
+  .. hf }
 
 end hash_function
 
-def hash_scheme (K I O : ℕ → Type) :=
-Π (sp : ℕ), hash_function (K sp) (I sp) (O sp)
+def hash_scheme (spec : ℕ → oracle_spec) (K I O : ℕ → Type) :=
+Π (sp : ℕ), hash_function (spec sp) (K sp) (I sp) (O sp)
 
 namespace hash_scheme
 
-variables {K I O : ℕ → Type} {H : hash_scheme K I O}
+open hash_function
 
-variables [∀ n, decidable_eq $ O n]
-
-structure collision_finding_adversary (H : hash_scheme K I O) :=
-(adv : Π (sp : ℕ), K sp → oracle_comp coin_spec ((I sp) × (I sp)))
-(adv_poly_time : ∀ sp, poly_time_oracle_comp $ adv sp)
+variables {spec : ℕ → oracle_spec} {K I O : ℕ → Type}
+  [∀ n, decidable_eq $ O n]
 
 /-- Collision resistant if all polynomial time adversaries have neglibable chance
   of winning the `collision_finding_experiment` as the security parameter increases -/
-def collision_resistant (H : hash_scheme K I O) : Prop :=
-∀ (adversary : collision_finding_adversary H),
-negligable (λ sp, ⁅(H sp).collision_finding_experiment (adversary.adv sp)⁆ tt)
+def collision_resistant (hf : hash_scheme spec K I O) : Prop :=
+∀ (adv : Π (sp : ℕ), (hf sp).collision_finding_adv),
+negligable (λ sp, (collision_finding_exp (adv sp)).advantage)
 
 end hash_scheme
