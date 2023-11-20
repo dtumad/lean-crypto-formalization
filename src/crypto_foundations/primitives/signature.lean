@@ -86,7 +86,7 @@ noncomputable def baseₛₒ' (sig : signature) :
 using the provided public / secret keys to answer queries for signatures.
 Additionally uses `cachingₛₒ` to respond to queries, returing the resulting `query_cache`,
 which can be used to check that the adversary hadn't gotten a signature for their final output. -/
-noncomputable def signing_sim_oracle (sig : signature) (pk : sig.PK) (sk : sig.SK) :
+def signing_sim_oracle (sig : signature) (pk : sig.PK) (sk : sig.SK) :
   sim_oracle sig.full_spec sig.base_spec (sig.M ↦ₒ sig.S).query_log :=
 begin
   let so' : sim_oracle sig.signing_spec sig.base_spec punit :=

@@ -6,7 +6,7 @@ Authors: Devon Tuma
 import computational_monads.simulation_semantics.constructions.logging_oracle
 import computational_monads.simulation_semantics.constructions.seeded_oracle
 import computational_monads.distribution_semantics.option
-import crypto_foundations.sec_adversary
+-- import crypto_foundations.sec_adversary
 import computational_monads.constructions.fork.fork_adversary
 
 /-!
@@ -24,32 +24,40 @@ namespace oracle_comp
 variable [is_sub_spec uniform_selecting spec]
 
 noncomputable def fork (adv : fork_adversary spec α β i) :
-  sec_adversary spec α (fork_result adv) :=
+  sec_adv spec α (fork_result adv) :=
 { run := λ x,
     do {rr₁ ← adv.seed_and_run x ∅,
-      rr₂ ← adv.seed_and_run x (rr₁.seed.take_at_index (sum.inr i) rr₁.get_fp),
+      rr₂ ← adv.seed_and_run x (rr₁.seed.take_at_index i rr₁.get_fp),
       return (rr₁, rr₂)},
-  qb := adv.qb + adv.qb }
+  run_qb := 2 • adv.run_qb }
 
-noncomputable def fork_success_experiment (adv : fork_adversary spec α β i)
-  (inp_gen : oracle_comp spec α) :
-  sec_experiment spec spec α (fork_result adv) unit unit unit :=
-public_experiment inp_gen (λ x, idₛₒ)
-  (λ x fr, return (fork_success fr)) uniformₛₒ
+noncomputable def fork_success_exp (adv : fork_adversary spec α β i)
+  (inp_gen : oracle_comp spec α) : sec_exp spec α (fork_result adv) :=
+{ inp_gen := inp_gen,
+  main := (fork adv).run,
+  is_valid := λ x fr, fork_success fr,
+  base_S := unit,
+  base_sim_oracle := uniformₛₒ }
 
-noncomputable def fork_advantage (adv : fork_adversary spec α β i)
-  (inp_gen : oracle_comp spec α) : ℝ≥0∞ :=
-(fork adv).advantage (fork_success_experiment adv inp_gen)
+-- noncomputable def fork_success_experiment (adv : fork_adversary spec α β i)
+--   (inp_gen : oracle_comp spec α) :
+--   sec_experiment spec spec α (fork_result adv) unit unit unit :=
+-- public_experiment inp_gen (λ x, idₛₒ)
+--   (λ x fr, return (fork_success fr)) uniformₛₒ
 
-noncomputable def fork_advantage' (adv : fork_adversary spec α β i)
-  (inp_gen : prob_comp spec α) : ℝ≥0∞ :=
-⁅λ fr, fork_success fr = tt | inp_gen >>= (fork adv).run⁆
+-- noncomputable def fork_advantage (adv : fork_adversary spec α β i)
+--   (inp_gen : oracle_comp spec α) : ℝ≥0∞ :=
+-- (fork adv).advantage (fork_success_experiment adv inp_gen)
+
+-- noncomputable def fork_advantage' (adv : fork_adversary spec α β i)
+--   (inp_gen : prob_comp spec α) : ℝ≥0∞ :=
+-- ⁅λ fr, fork_success fr = tt | inp_gen >>= (fork adv).run⁆
 
 variables (adv : fork_adversary spec α β i) (y : α) (fr : fork_result adv)
 
 lemma support_run_fork (adv : fork_adversary spec α β i) (x : α) :
   ((fork adv).run x).support = {fr | fr.1 ∈ (adv.seed_and_run x ∅).support ∧
-    fr.2 ∈ (adv.seed_and_run x (fr.1.seed.take_at_index (sum.inr i) fr.1.get_fp)).support} :=
+    fr.2 ∈ (adv.seed_and_run x (fr.1.seed.take_at_index i fr.1.get_fp)).support} :=
 begin
   simp only [fork],
   rw [support_bind_bind_prod_mk],
@@ -86,8 +94,8 @@ end fork_point
 
 lemma take_to_count_seed_eq_take_at_index_seed (adv : fork_adversary spec α β i)
   (fr : fork_result adv) (x : α) (h : fr ∈ ((fork adv).run x).support) :
-  fr.seed₂.take_to_count (fr.seed₁.take_at_index (sum.inr i) fr.1.get_fp) =
-    fr.seed₁.take_at_index (sum.inr i) fr.1.get_fp :=
+  fr.seed₂.take_to_count (fr.seed₁.take_at_index i fr.1.get_fp) =
+    fr.seed₁.take_at_index i fr.1.get_fp :=
 begin
   simp only [support_run_fork, set.mem_set_of_eq] at h,
   exact adv.take_to_count_seed_eq_seed x _ _ h.2,
@@ -102,8 +110,8 @@ end
 
 /-- Up until the forking point, both resulting `query_seed`s have the same seed values. -/
 lemma take_queries_seed_eq_take_queries_seed (h : fr ∈ ((fork adv).run y).support) :
-  (fr.seed₁.take_at_index (sum.inr i) fr.1.get_fp) =
-    (fr.seed₂.take_at_index (sum.inr i) fr.1.get_fp) :=
+  (fr.seed₁.take_at_index i fr.1.get_fp) =
+    (fr.seed₂.take_at_index i fr.1.get_fp) :=
 begin
   sorry
 end
@@ -136,8 +144,7 @@ end
 /-- If `fork` returns success then the output after the forking point
 TODO: this should have a small chance to fail instead. -/
 lemma seed_differs_of_fork_success (h : fr ∈ ((fork adv).run y).support) (hfr : fork_success fr) :
-  (fr.seed₁ $ sum.inr i).nth (fr.1.get_fp) ≠
-    (fr.seed₂ $ sum.inr i).nth (fr.2.get_fp) :=
+  (fr.seed₁ i).nth (fr.1.get_fp) ≠ (fr.seed₂ i).nth (fr.2.get_fp) :=
 begin
   rw [fork_success_iff_exists] at hfr,
   obtain ⟨fp, hfp₁, hfp₂, hfp⟩ := hfr,
@@ -162,7 +169,7 @@ noncomputable def poss_shared_seeds (qc : query_count spec)
 lemma le_prob_output_fork_points (adv : fork_adversary spec α β i) (fp : fin adv.q.succ) :
   ⁅= some fp | adv.choose_fork y <$> adv.run y⁆ ^ 2 ≤
     ⁅= (some fp, some fp) | do {rr₁ ← adv.seed_and_run y ∅,
-      rr₂ ← adv.seed_and_run y (rr₁.seed.take_at_index (sum.inr i) fp),
+      rr₂ ← adv.seed_and_run y (rr₁.seed.take_at_index i fp),
       return (rr₁.fork_point, rr₂.fork_point)}⁆ :=
 sorry
 -- calc ⁅= some fp | adv.choose_fork y <$> adv.run y⁆ ^ 2
@@ -261,11 +268,11 @@ calc ⁅(≠) none | adv.choose_fork y <$> adv.run y⁆ ^ 2 / adv.q.succ
       (ennreal.pow_sum_div_card_le_sum_pow _ _ (λ _ _, prob_output_ne_top _ _) 1)
   -- Apply `le_prob_output_fork_points` to the inner probability calculation.
   ... ≤ ∑ fp, ⁅= (some fp, some fp) | do {rr₁ ← adv.seed_and_run y ∅,
-            rr₂ ← adv.seed_and_run y (rr₁.seed.take_at_index (sum.inr i) ↑fp),
+            rr₂ ← adv.seed_and_run y (rr₁.seed.take_at_index i ↑fp),
             return (rr₁.fork_point, rr₂.fork_point)}⁆ :
     finset.sum_le_sum (λ fp hfp, by apply le_prob_output_fork_points)
   ... = ∑ fp, ⁅= (some fp, some fp) | do {rr₁ ← adv.seed_and_run y ∅,
-            rr₂ ← adv.seed_and_run y (rr₁.seed.take_at_index (sum.inr i) (rr₁.fork_point.get_or_else 0)),
+            rr₂ ← adv.seed_and_run y (rr₁.seed.take_at_index i (rr₁.fork_point.get_or_else 0)),
             return (rr₁.fork_point, rr₂.fork_point)}⁆ :
     begin
       refine finset.sum_congr rfl (λ fp _, _),
@@ -298,12 +305,11 @@ begin
 end
 
 theorem le_fork_advantage (inp_gen : oracle_comp spec α) :
-  (adv.cf_advantage inp_gen) * (adv.cf_advantage inp_gen / adv.q - (card (spec.range i))⁻¹)
-    ≤ fork_advantage adv inp_gen :=
+  let cf_advantage := (choose_fork_exp adv inp_gen).advantage in
+  let fr_advantage := (fork_success_exp adv inp_gen).advantage in
+  cf_advantage * (cf_advantage / adv.q - (card (spec.range i))⁻¹)
+    ≤ fr_advantage :=
 sorry
-
--- theorem
-
 
 end prob_event_fork_success
 

@@ -16,7 +16,7 @@ import computational_monads.asymptotics.negligable
 open_locale ennreal
 open oracle_spec
 
-/-- A security adversary `sec_adversary adv_spec α β` is a computation taking inputs of type `α`
+/-- A security adversary `sec_adv adv_spec α β` is a computation taking inputs of type `α`
 and computing a result of type `β` using oracles specified by `adv_spec`. -/
 structure sec_adv (adv_spec : oracle_spec) (α β : Type) :=
 (run : α → oracle_comp adv_spec β)
