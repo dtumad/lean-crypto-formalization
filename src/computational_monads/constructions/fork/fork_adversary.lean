@@ -192,7 +192,7 @@ adv.run_qb.take_at_index i fp
 
 section seed_and_run
 
-variable [is_sub_spec uniform_selecting spec]
+variable [is_sub_spec unif_spec spec]
 
 noncomputable def seed_and_run (adv : fork_adversary spec α β i)
   (y : α) (init_seed : spec.query_seed) :

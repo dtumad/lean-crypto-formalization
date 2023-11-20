@@ -10,7 +10,7 @@ import computational_monads.coercions.sub_spec
 
 This file defines `is_sub_spec` instances for common coercions.
 The first is a coercion from `empty_spec` to any other `oracle_spec` (since there are no queries).
-Another is a simple coercion from `coin_spec` to `uniform_selecting`,
+Another is a simple coercion from `coin_spec` to `unif_spec`,
 by selecting the coin result from a uniform selection between `0` and `1`.
 
 We also define a number of coercions involving append.
@@ -22,7 +22,7 @@ We also include associativity instances, so parenthisization of the sequence is 
 Note that this requires the ordering of oracles in each to match,
 and so we generally adopt a standard ordering of `oracle_spec` for computations
 in order to make this apply as often as possible. We specifically adopt the following convention:
-  `{coin_oracle} ++ {uniform_selecting} ++ {random oracle} ++ {adversary oracles} ++ ...`,
+  `{coin_oracle} ++ {unif_spec} ++ {random oracle} ++ {adversary oracles} ++ ...`,
 where any of the individual parts may be ommited. The adversary oracles are for
 things like a signing oracle in unforgeability experiments of a signature scheme.
 
@@ -60,29 +60,29 @@ end empty_spec
 -- section prob_comp_empty
 
 -- instance has_coe_prob_comp_empty (α : Type) : has_coe (prob_comp ∅ α)
---   (oracle_comp uniform_selecting α) := ⟨λ oa,
+--   (oracle_comp unif_spec α) := ⟨λ oa,
 --     dsimulate' _ oa⟩
 
 -- end prob_comp_empty
 
-section coin_spec_uniform_selecting
+section coin_spec_unif_spec
 
 /-- Coerce a coin flip into a uniform random selection of a `bool`.
 Use uniform selection from the vector `[tt, ff]` to get constructiveness. -/
 @[priority std.priority.default+100]
-noncomputable instance is_sub_spec_coin_spec_uniform_selecting :
-  is_sub_spec coin_spec uniform_selecting :=
+noncomputable instance is_sub_spec_coin_spec_unif_spec :
+  is_sub_spec coin_spec unif_spec :=
 { to_fun := λ i t, $ᵗ bool,
   to_fun_equiv := λ i t, symm ((query_dist_equiv_iff i t _).2
     (λ u u', by cases u; cases u'; simp [prob_output_uniform_select_fintype bool])) }
 
-@[simp] lemma is_sub_spec_coin_uniform_selecting_apply (i t : unit) :
-  (oracle_spec.is_sub_spec_coin_spec_uniform_selecting).to_fun i t = $ᵗ bool := rfl
+@[simp] lemma is_sub_spec_coin_unif_spec_apply (i t : unit) :
+  (oracle_spec.is_sub_spec_coin_spec_unif_spec).to_fun i t = $ᵗ bool := rfl
 
-@[simp] lemma coe_coin_uniform_selecting :
-  (↑coin : oracle_comp uniform_selecting bool) = $ᵗ bool := rfl
+@[simp] lemma coe_coin_unif_spec :
+  (↑coin : oracle_comp unif_spec bool) = $ᵗ bool := rfl
 
-end coin_spec_uniform_selecting
+end coin_spec_unif_spec
 
 /-- Coerce a computation to one with access to another oracle on the left,
 forwarding the old queries to the left side of the combined set of oracles. -/
@@ -246,11 +246,11 @@ example (oa : oracle_comp ((spec ++ spec') ++ (spec'' ++ coe_spec')) α) :
   oracle_comp (spec ++ spec' ++ spec'' ++ coe_spec') α := ↑oa
 
 /-- coercion makes it possible to mix computations on individual oracles -/
-example {spec : oracle_spec} : oracle_comp (uniform_selecting ++ spec) bool :=
+example {spec : oracle_spec} : oracle_comp (unif_spec ++ spec) bool :=
 do { n ←$[0..3141], b ← coin, if n ≤ 1618 ∧ b = tt then return ff else coin }
 
 -- TODO!!!: does this work ever without deep recursion? probably not?
--- example (oa : prob_comp ∅ α) : oracle_comp uniform_selecting α := ↑oa
+-- example (oa : prob_comp ∅ α) : oracle_comp unif_spec α := ↑oa
 
 end examples
 

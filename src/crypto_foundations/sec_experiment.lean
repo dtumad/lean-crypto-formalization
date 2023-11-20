@@ -14,7 +14,7 @@ import computational_monads.asymptotics.negligable
 -/
 
 open_locale ennreal
-open oracle_spec
+open oracle_spec oracle_comp
 
 /-- A security adversary `sec_adv adv_spec α β` is a computation taking inputs of type `α`
 and computing a result of type `β` using oracles specified by `adv_spec`. -/
@@ -33,10 +33,19 @@ namespace sec_exp
 variables {exp_spec : oracle_spec} {α β γ : Type}
 
 def run (exp : sec_exp exp_spec α β) :
-  oracle_comp uniform_selecting (α × β) :=
+  oracle_comp unif_spec (α × β) :=
 exp.exec (do {x ← exp.inp_gen, y ← exp.main x, return (x, y)} )
 
 noncomputable def advantage (exp : sec_exp exp_spec α β) : ℝ≥0∞ :=
 ⁅λ z, exp.is_valid z.1 z.2 | exp.run⁆
+
+-- lemma le_advantage_of_forall_inp (exp : sec_exp exp_spec α β) (r : ℝ≥0∞)
+--   (h : ∀ x ∈ (exp.exec exp.inp_gen).support,
+--     r ≤ ⁅λ y, exp.is_valid x y | exp.exec (exp.main x)⁆) :
+--   r ≤ exp.advantage :=
+-- begin
+--   rw [advantage, run, oracle_algorithm.exec_bind],
+--   refine trans _ (prob_event_bind_mono_right _),
+-- end
 
 end sec_exp

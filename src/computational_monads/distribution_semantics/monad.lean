@@ -139,6 +139,31 @@ end prob_event
 
 end bind_return
 
+section bind_return_eq_single
+
+variables (oa : oracle_comp spec α) (f : α → β) (y : β) (e' : set β)
+
+lemma prob_output_bind_return_eq_single' (x : α) (hx : f x = y)
+  (h : ∀ x' ∈ oa.support, f x' = y → x' = x) : ⁅= y | oa >>= λ x, return (f x)⁆ = ⁅= x | oa⁆ :=
+begin
+  rw [prob_output_bind_return_eq_tsum_indicator, prob_output.def],
+  refine trans (tsum_eq_single x $ λ x' hx', set.indicator_apply_eq_zero.2 _) _,
+  { exact λ hx'', prob_output_eq_zero (λ hxs, hx' (h x' hxs hx'')) },
+  { simp only [set.mem_preimage, set.mem_singleton_iff, hx, set.indicator_of_mem] }
+end
+
+/-- If a function `f` returns `y` iff the input is `x`, then the probability of outputting
+`y` after running a computation and applying `f` is the probability of outputting `x`-/
+lemma prob_output_bind_return_eq_single (x : α) (hx : f ⁻¹' {y} = {x}) :
+  ⁅= y | oa >>= λ x, return (f x)⁆ = ⁅= x | oa⁆ :=
+begin
+  simp only [prob_output_bind_return_eq_tsum_indicator, hx],
+  exact trans (tsum_eq_single x (λ x' hx', set.indicator_apply_eq_zero.2 (λ h', (hx' h').elim)))
+    (set.indicator_apply_eq_self.2 (λ h, (h rfl).elim)),
+end
+
+end bind_return_eq_single
+
 section bind_const
 
 variables (oa : oracle_comp spec α) (ob : oracle_comp spec β)
@@ -169,29 +194,15 @@ by rw [dist_equiv.def, eval_dist_bind, pmf.bind_const]
 
 end bind_const
 
-section bind_return_eq_single
+section bind_const_bind
 
-variables (oa : oracle_comp spec α) (f : α → β) (y : β) (e' : set β)
+variables (oa : oracle_comp spec α) (ob : oracle_comp spec β)
+  (oc : α → oracle_comp spec γ)
 
-lemma prob_output_bind_return_eq_single' (x : α) (hx : f x = y)
-  (h : ∀ x' ∈ oa.support, f x' = y → x' = x) : ⁅= y | oa >>= λ x, return (f x)⁆ = ⁅= x | oa⁆ :=
-begin
-  rw [prob_output_bind_return_eq_tsum_indicator, prob_output.def],
-  refine trans (tsum_eq_single x $ λ x' hx', set.indicator_apply_eq_zero.2 _) _,
-  { exact λ hx'', prob_output_eq_zero (λ hxs, hx' (h x' hxs hx'')) },
-  { simp only [set.mem_preimage, set.mem_singleton_iff, hx, set.indicator_of_mem] }
-end
+@[simp] lemma prob_output_bind_const_bind (z : γ) :
+  ⁅= z | do {x ← oa, y ← ob, oc x}⁆ = ⁅= z | oa >>= oc⁆ :=
+by pairwise_dist_equiv
 
-/-- If a function `f` returns `y` iff the input is `x`, then the probability of outputting
-`y` after running a computation and applying `f` is the probability of outputting `x`-/
-lemma prob_output_bind_return_eq_single (x : α) (hx : f ⁻¹' {y} = {x}) :
-  ⁅= y | oa >>= λ x, return (f x)⁆ = ⁅= x | oa⁆ :=
-begin
-  simp only [prob_output_bind_return_eq_tsum_indicator, hx],
-  exact trans (tsum_eq_single x (λ x' hx', set.indicator_apply_eq_zero.2 (λ h', (hx' h').elim)))
-    (set.indicator_apply_eq_self.2 (λ h, (h rfl).elim)),
-end
-
-end bind_return_eq_single
+end bind_const_bind
 
 end oracle_comp

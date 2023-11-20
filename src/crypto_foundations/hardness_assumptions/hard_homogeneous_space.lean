@@ -69,13 +69,13 @@ lemma vsub_bijective (x : X) : function.bijective (λ x', x' -ᵥ x : X → G) :
 /-- An adversary for the vectorization game takes in a pair of base points `(x₁, x₂)`,
 and attempts to generate a vectorization, i.g. a vector `g` with `g +ᵥ x₂ = x₁`. -/
 def vectorization_adv (G X : Type) :=
-sec_adv uniform_selecting (X × X) G
+sec_adv unif_spec (X × X) G
 
 /-- Analogue of the game for the discrete logarithm assumption.
 The input generator randomly chooses the challenge points for the adversary,
 and a result is valid if it is exactly the vectorization of the challenge points. -/
 noncomputable def vectorization_exp (adv : vectorization_adv G X) :
-  sec_exp uniform_selecting (X × X) G :=
+  sec_exp unif_spec (X × X) G :=
 { inp_gen := do {x₁ ←$ᵗ X, x₂ ←$ᵗ X, return (x₁, x₂)},
   main := adv.run,
   is_valid := λ ⟨x₁, x₂⟩ g, g = x₁ -ᵥ x₂,
@@ -106,12 +106,22 @@ by simp only [sec_exp.advantage, div_eq_mul_inv, ←finset.sum_mul, mul_assoc, e
   prob_event_uniform_select_fintype_bind_eq_sum, set.preimage, set.mem_def,
   set.set_of_eq_eq_singleton, prob_event_singleton_eq_prob_output]
 
+lemma advantage_eq_tsum : (vectorization_exp adv).advantage =
+  (∑' x₁ x₂, ⁅= x₁ -ᵥ x₂ | adv.run (x₁, x₂)⁆) / (fintype.card X) ^ 2 :=
+begin
+  rw [advantage_eq_sum],
+  refine congr_arg (λ r : ℝ≥0∞, r / ((fintype.card X) ^ 2)) _,
+  refine trans (symm (tsum_eq_sum (λ _ h, (h (finset.mem_univ _)).elim))) _,
+  refine tsum_congr (λ x₁, _),
+  refine (symm (tsum_eq_sum (λ _ h, (h (finset.mem_univ _)).elim))),
+end
+
 end vectorization_exp
 
 /-- An adversary for the parallelization game takes in a triple of base points `(x₁, x₂, x₃)`,
 and attempts to generate a parralelization, i.g. a vector `g` with `g +ᵥ x₂ = x₁`. -/
 def parallelization_adv (G X : Type) :=
-sec_adv uniform_selecting (X × X × X) X
+sec_adv unif_spec (X × X × X) X
 
 /-- Analogue of the Computational Diffie-Hellman problem.
 The input generator randomly chooses the challenge points for the adversary,
@@ -159,7 +169,7 @@ end parallelization_exp
 /-- Takes in a set of four base points in `X`, attempting to decide if the fourth point
 is the correct parallelization of the first three points. -/
 def dec_parallelization_adv (G X : Type) :=
-sec_adv uniform_selecting (X × X × X × X) bool
+sec_adv unif_spec (X × X × X × X) bool
 
 /-- Analogue of the Decisional Diffie-Hellman problem. -/
 noncomputable def dec_parallelization_exp (adv : dec_parallelization_adv G X) :

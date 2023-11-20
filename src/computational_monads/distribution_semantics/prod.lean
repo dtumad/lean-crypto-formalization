@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
 import computational_monads.distribution_semantics.tactics.push_map_dist_equiv
+import computational_monads.distribution_semantics.mprod
 
 /-!
 # Probabilities for Computations Over Prod Type
@@ -236,6 +237,14 @@ prob_event_diagonal oa
   ⁅λ x, x.1 = x.2 | oa⁆ = ∑ a : α, ⁅= (a, a) | oa⁆ :=
 prob_event_diagonal_eq_sum oa
 
+@[simp] lemma prob_event_fst_eq (oa : oracle_comp spec (α × β)) (x : α) :
+  ⁅λ z, z.1 = x | oa⁆ = ⁅= x | fst <$> oa⁆ :=
+by simpa only [prob_output_map_eq_tsum_indicator, prob_event_eq_tsum_indicator, ennreal.tsum_prod']
+
+@[simp] lemma prob_event_snd_eq (oa : oracle_comp spec (α × β)) (y : β) :
+  ⁅λ z, z.2 = y | oa⁆ = ⁅= y | snd <$> oa⁆ :=
+by simpa only [prob_output_map_eq_tsum_indicator, prob_event_eq_tsum_indicator, ennreal.tsum_prod']
+
 end prob_event
 
 variables (oa : oracle_comp spec α) (f : α → β) (g : α → γ) (b : β) (c : γ)
@@ -317,6 +326,12 @@ by simp only [mem_fin_support_iff_mem_support, mem_support_bind_prod_mk_snd,
 end fin_support
 
 section prob_output
+
+@[simp] lemma prob_output_bind_prod_mk (z : α × β)
+  (oa : oracle_comp spec α) (ob : oracle_comp spec β) :
+  ⁅= z | do {x ← oa, y ← ob, return (x, y)}⁆ =
+    ⁅= z.1 | oa⁆ * ⁅= z.2 | ob⁆ :=
+by rw [← mprod, prob_output_mprod]
 
 @[simp] lemma prob_output_bind_prod_mk_fst
   (x : β × γ) : ⁅= x | oa >>= λ a, return (f a, c)⁆ =

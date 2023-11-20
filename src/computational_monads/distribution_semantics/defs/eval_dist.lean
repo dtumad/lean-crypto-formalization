@@ -11,7 +11,7 @@ import computational_monads.distribution_semantics.defs.fin_support
 
 Denotational semantics for `oracle_comp`, associating a probability distribution to a computation.
 For the purpose of this we assume that each oracle query has a uniform resulting distribution,
-giving correct semantics for oracles like a `coin_oracle` or `uniform_selecting` oracle.
+giving correct semantics for oracles like a `coin_oracle` or `unif_spec` oracle.
 More general oracles need to first be simulated using `oracle_comp.simulate`,
 in order to give the oracle's semantics in terms of simpler oracles like a coin oracle.
 
@@ -31,7 +31,7 @@ open_locale big_operators
 
 /- Denotational semantics for a computation with access to a set of oracles.
 We assume that query results are uniformly distributed regardless of oracle inputs.
-Usually the `spec` when calling this would just be `coin_oracle` or `uniform_selecting`,
+Usually the `spec` when calling this would just be `coin_oracle` or `unif_spec`,
 as oracles like these are expected to return values essentially randomly.
 For more complex oracles such as a random oracle which may not always respond randomly,
 simulation semantics (`oracle_comp.simulate`) can be used to reduce the oracles of the computation.

@@ -22,7 +22,7 @@ The public key is a pair of base points in `X` chosen uniformly at random,
 and the secret key is their vectorization in `G`. Signatures are also a pair of base points. -/
 noncomputable def hhs_elgamal (G X : Type) [add_comm_group G]
   [algorithmic_homogenous_space G X] [group X] :
-  asymm_enc_alg uniform_selecting X (X × X) G (X × X) :=
+  asymm_enc_alg unif_spec X (X × X) G (X × X) :=
 { keygen := λ u, do
     { x₀ ←$ᵗ X, sk ←$ᵗ G,
       pk ← return (sk +ᵥ x₀),
@@ -93,7 +93,7 @@ theorem reduction_advantage (adv : (hhs_elgamal G X).ind_cpa_adv) :
 begin
   simp only [decisional_parallelization_exp.advantage_eq_add, ind_cpa_exp.advantage_eq, map_bind,
     bind_assoc, ind_cpa_reduction, ite_mul, pure_bind, to_oracle_algorithm_eq, keygen_apply,
-    map_pure, coe_coin_uniform_selecting, encrypt_apply, base_oracle_algorithm.exec_eq],
+    map_pure, coe_coin_unif_spec, encrypt_apply, base_oracle_algorithm.exec_eq],
   congr' 2,
   { pairwise_dist_equiv,
     rw_dist_equiv [bind_bind_dist_equiv_comm ($ᵗ G), bind_bind_dist_equiv_comm ($ᵗ G)] },

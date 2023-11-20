@@ -9,7 +9,7 @@ import computational_monads.simulation_semantics.is_stateless
 # Uniform Oracles
 
 This file defines a simulation oracle called `uniformₛₒ` that reduces any computation to
-one with only a `uniform_selecting` oracle by responding uniformly at random to any query.
+one with only a `unif_spec` oracle by responding uniformly at random to any query.
 Because of the way `eval_dist` is defined this doesn't change the associated distribution,
 only the representation in terms of oracles available.
 The main use case is in later defining random oracles (see `randomₛₒ`).
@@ -20,7 +20,7 @@ open oracle_comp oracle_spec sim_oracle prod
 variables {α β : Type} {spec : oracle_spec}
 
 @[inline, reducible] noncomputable def uniform_oracle (spec : oracle_spec) :
-  sim_oracle spec uniform_selecting unit := ⟪λ i t, $ᵗ (spec.range i)⟫
+  sim_oracle spec unif_spec unit := ⟪λ i t, $ᵗ (spec.range i)⟫
 
 notation `uniformₛₒ` := uniform_oracle _
 

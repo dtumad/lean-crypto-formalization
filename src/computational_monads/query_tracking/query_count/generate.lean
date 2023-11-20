@@ -18,14 +18,14 @@ back to the original count under `indexed_list.coe_query_count`.
 
 namespace oracle_comp
 
-open_locale big_operators
+open_locale big_operators classical
 open oracle_spec oracle_spec.indexed_list oracle_spec.query_count
 
 variables {α β γ : Type} {spec spec' : oracle_spec} {τ τ' : spec.ι → Type}
 
 section generate_aux
 
-noncomputable def generate_aux (qc : spec.query_count)
+def generate_aux (qc : spec.query_count)
   (oa : Π (i : spec.ι), oracle_comp spec' (τ i)) :
   list spec.ι → oracle_comp spec' (spec.indexed_list τ)
 | (j :: js) := do { ts ← vector.to_list <$> repeat (oa j) (qc.get_count j),

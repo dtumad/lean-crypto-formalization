@@ -30,7 +30,7 @@ variables {α β γ : Type} {spec spec' : oracle_spec}
 /-- Given a count of queries `qc`, and an initial `query_store` seed, generate more outputs at
 random until the number of seeded outputs for each oracle is at least the value given in `qc`. -/
 noncomputable def generate_seed (qc : spec.query_count) :
-  oracle_comp uniform_selecting spec.query_seed :=
+  oracle_comp unif_spec spec.query_seed :=
 generate qc (λ i, $ᵗ (spec.range i))
 
 variables (qc qc' : spec.query_count)
@@ -86,7 +86,7 @@ end
 
 section get_head
 
-lemma map_get_head_generate_seed_dist_equiv [h : is_sub_spec uniform_selecting spec]
+lemma map_get_head_generate_seed_dist_equiv [h : is_sub_spec unif_spec spec]
   (i : spec.ι) (hi : i ∈ qc.active_oracles) :
   (λ qc, indexed_list.get_head qc i) <$> generate_seed qc ≃ₚ
     ($ᵗ (spec.range i) ×ₘ generate_seed (qc.decrement i 1)) :=
@@ -100,7 +100,7 @@ begin
   simp,
 end
 
-lemma map_fst_get_head_generate_seed_dist_equiv [h : is_sub_spec uniform_selecting spec]
+lemma map_fst_get_head_generate_seed_dist_equiv [h : is_sub_spec unif_spec spec]
   (i : spec.ι) (hi : i ∈ qc.active_oracles) :
   (λ qc, (indexed_list.get_head qc i).1) <$> generate_seed qc ≃ₚ $ᵗ (spec.range i) :=
 begin

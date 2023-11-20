@@ -10,7 +10,7 @@ import data.vector.mem
 /-!
 # Computations Uniformly Drawing From Data Structures
 
-This file defines different uniform computations derived from a `uniform_selecting` oracle.
+This file defines different uniform computations derived from a `unif_spec` oracle.
 The base construction is `uniform_fin`, suggestively denoted `$[0..n]`.
 From this we build corresponding computations for `vector`, `list`, `finset`, and `fintype`,
 using the notations `$ᵛ`, `$ˡ`, `$ˢ`, and `$ᵗ` respectively.
@@ -30,13 +30,13 @@ section uniform_fin
 
 /-- Randomly choose a number `0 ≤ i < n` by querying the uniform selection oracle.
   We implicitly use a `succ` call for the resulting type since `fin 0` is unihabited as a type -/
-def uniform_fin (n : ℕ) : oracle_comp uniform_selecting (fin $ n + 1) :=
+def uniform_fin (n : ℕ) : oracle_comp unif_spec (fin $ n + 1) :=
 query n ()
 
 notation `$[0..` n `]` := uniform_fin n
 
 variables (n : ℕ) {m : ℕ} (i : fin m.succ)
-  (oa : (fin m.succ) → oracle_comp uniform_selecting α) (x : α)
+  (oa : (fin m.succ) → oracle_comp unif_spec α) (x : α)
 
 section support
 
@@ -87,7 +87,7 @@ section prob_event
 
 @[simp] lemma prob_event_uniform_fin (e : set (fin $ m + 1)) [decidable_pred e] :
   ⁅e | $[0..m]⁆ = (fintype.card e) / (m + 1) :=
-by simp only [uniform_fin, prob_event_query_eq_div, uniform_selecting_range,
+by simp only [uniform_fin, prob_event_query_eq_div, unif_spec_range,
   fintype.card_fin, nat.cast_add, nat.cast_one, append.range_inl]
 
 @[simp] lemma prob_event_uniform_fin_bind_eq_tsum (e : set α) :
@@ -112,12 +112,12 @@ section uniform_select_vector
 /-- Randomly select an element of a vector by using `uniform_of_fin`.
 Again we need to use `succ` for the vectors type to avoid sampling an empty vector -/
 def uniform_select_vector {n : ℕ} (v : vector α (n + 1)) :
-  oracle_comp uniform_selecting α := v.nth <$> $[0..n]
+  oracle_comp unif_spec α := v.nth <$> $[0..n]
 
 notation `$ᵛ` v := uniform_select_vector v
 
 variables {n : ℕ} (v : vector α (n + 1))
-  (ob : α → oracle_comp uniform_selecting β) (x : α) (y : β)
+  (ob : α → oracle_comp unif_spec β) (x : α) (y : β)
 
 section support
 
@@ -239,14 +239,14 @@ section uniform_select_list
 
 /-- If a list isn't empty, we can convert it to a vector and then sample from it.-/
 def uniform_select_list (xs : list α) (h : ¬ xs.empty) :
-  oracle_comp uniform_selecting α :=
+  oracle_comp unif_spec α :=
 let v : vector α (xs.length.pred.succ) := ⟨xs, symm $ nat.succ_pred_eq_of_pos
   (list.length_pos_of_ne_nil (λ h', h $ list.empty_iff_eq_nil.2 h'))⟩ in uniform_select_vector v
 
 notation `$ˡ` := uniform_select_list
 
 variables (xs : list α) (x : α) (y : β) (h : ¬ xs.empty)
-  (oa : oracle_comp uniform_selecting α) (ob : α → oracle_comp uniform_selecting β)
+  (oa : oracle_comp unif_spec α) (ob : α → oracle_comp unif_spec β)
 
 /-- Assuming we sample from `[]`, we can treat this as any other computation,
 using the provided contradictory proof that `[]` is non-empty. -/
@@ -357,18 +357,18 @@ section uniform_select_finset
 
 /-- We can sample randomly from a `finset` by converting to a list and then sampling that. -/
 noncomputable def uniform_select_finset (bag : finset α) (h : bag.nonempty) :
-  oracle_comp uniform_selecting α :=
+  oracle_comp unif_spec α :=
 uniform_select_list bag.to_list (finset.nonempty.not_empty_to_list h)
 
 notation `$ˢ` := uniform_select_finset
 
 variables (bag : finset α) (h : bag.nonempty)
-  (ob : α → oracle_comp uniform_selecting β) (x : α) (y : β)
+  (ob : α → oracle_comp unif_spec β) (x : α) (y : β)
 
 /-- Assuming we sample from `∅`, we can treat this as any other computation,
 using the provided contradictory proof that `∅` is non-empty. -/
 lemma uniform_select_finset_empty (h : (∅ : finset α).nonempty)
-  (oa : oracle_comp uniform_selecting α) : $ˢ ∅ h = oa :=
+  (oa : oracle_comp unif_spec α) : $ˢ ∅ h = oa :=
 false.elim (finset.nonempty.ne_empty h rfl)
 
 section support
@@ -452,13 +452,13 @@ section uniform_select_fintype
 /-- We can select randomly from a fintyp by using the `finset` corresponding to the `fintype`.
   Again we need to use axiom of choice so this operation is noncomputable. -/
 noncomputable def uniform_select_fintype (α : Type) [fintype α] [nonempty α] :
-  oracle_comp uniform_selecting α :=
+  oracle_comp unif_spec α :=
 uniform_select_finset finset.univ finset.univ_nonempty
 
 notation `$ᵗ` := uniform_select_fintype
 
 variables (α) [fintype α] [nonempty α]
-  (ob : α → oracle_comp uniform_selecting β) (x : α) (y : β)
+  (ob : α → oracle_comp unif_spec β) (x : α) (y : β)
 
 section support
 
@@ -508,7 +508,7 @@ by simp only [uniform_select_fintype, prob_output_uniform_select_finset_bind_eq_
 
 @[simp] lemma prob_output_uniform_select_fintype_bind_const_bind_eq
   {α : Type} [fintype α] [inhabited α] [decidable_eq α]
-  (oa : oracle_comp uniform_selecting α) :
+  (oa : oracle_comp unif_spec α) :
   ⁅= tt | do {x ← $ᵗ α, x' ← oa, return (x = x' : bool)}⁆ = (fintype.card α)⁻¹ :=
 begin
   simp only [prob_output_bind_eq_tsum, ennreal.tsum_mul_left, prob_output_uniform_select_fintype,
@@ -519,8 +519,8 @@ end
 
 lemma prob_output_uniform_select_fintype_bind_bind_eq_of_const
   {α : Type} [fintype α] [inhabited α] [decidable_eq α]
-  (oa : α → oracle_comp uniform_selecting α)
-  (hoa : ∃ oa₀ : oracle_comp uniform_selecting α, ∀ x, oa x ≃ₚ oa₀) :
+  (oa : α → oracle_comp unif_spec α)
+  (hoa : ∃ oa₀ : oracle_comp unif_spec α, ∀ x, oa x ≃ₚ oa₀) :
   ⁅= tt | do {x ← $ᵗ α, x' ← oa x, return (x = x' : bool)}⁆ = (fintype.card α)⁻¹ :=
 begin
   obtain ⟨oa₀, h⟩ := hoa,
@@ -557,7 +557,7 @@ lemma uniform_select_fintype_dist_equiv_return {spec} {α : Type} [unique α] :
 by simp [dist_equiv.ext_iff, prob_output_query_eq_inv]
 
 lemma prob_output_uniform_select_fintype_bind_bij [decidable_eq α]
-  (f : α → α) (hf : f.bijective) (ob : α → oracle_comp uniform_selecting β)
+  (f : α → α) (hf : f.bijective) (ob : α → oracle_comp unif_spec β)
   (y : β) : ⁅= y | $ᵗ α >>= ob⁆ = ⁅= y | $ᵗ α >>= (ob ∘ f)⁆ :=
 begin
   simp [prob_output_uniform_select_fintype_bind_apply_eq_sum],
@@ -569,7 +569,7 @@ begin
 end
 
 lemma uniform_select_fintype_bind_bij_dist_equiv [decidable_eq α]
-  (f : α → α) (hf : f.bijective) (ob : α → oracle_comp uniform_selecting β) :
+  (f : α → α) (hf : f.bijective) (ob : α → oracle_comp unif_spec β) :
   $ᵗ α >>= ob ≃ₚ $ᵗ α >>= (ob ∘ f) :=
 dist_equiv.ext (λ y, prob_output_uniform_select_fintype_bind_bij α f hf ob y)
 
@@ -579,7 +579,7 @@ symm (uniform_select_fintype_bind_bij_dist_equiv α f hf return)
 
 lemma prob_output_uniform_select_fintype_prod {α β : Type}
   [nonempty α] [fintype α] [nonempty β] [fintype β]
-  (oc : α → β → oracle_comp uniform_selecting γ) (z : γ) :
+  (oc : α → β → oracle_comp unif_spec γ) (z : γ) :
   ⁅= z | do {x ←$ᵗ α, y ←$ᵗ β, oc x y}⁆ =
     ⁅= z | do {xy ←$ᵗ (α × β), oc xy.1 xy.2}⁆ :=
 begin

@@ -21,6 +21,8 @@ variables {G X M : Type} [decidable_eq M]
 
 section mock_signing_sim_oracle
 
+#check query_log.lookup_or_query
+
 /-- Oracle to mock a signing oracle for messages in the vectorization reduction,
 mirroring how `signingₛₒ` would respond usually.
 Predetermines the random oracle results to fake a valid signature,
@@ -28,8 +30,8 @@ keeping the results in a seperate internal mocked cache.
 This also includes all caching for the simulation of the random oracles. -/
 noncomputable def mock_signing_sim_oracle (x₀ pk : X) :
   sim_oracle (hhs_signature G X M n).unforgeable_adv_spec
-  (uniform_selecting ++ ((vector X n × M) ↦ₒ vector bool n))
-  ((vector X n × M) ↦ₒ vector bool n).query_cache :=
+  (unif_spec ++ ((vector X n × M) ↦ₒ vector bool n))
+  ((vector X n × M) ↦ₒ vector bool n).query_log :=
 { default_state := ∅,
   o := λ i, match i with
     -- For queries to the uniform selection oracle, just forward the queries.
@@ -39,20 +41,20 @@ noncomputable def mock_signing_sim_oracle (x₀ pk : X) :
     -- For random oracle queries, check if the query has been mocked.
     -- If so, return the mocked value, otherwise call the regular oracle (caching the result).
     | (sum.inl (sum.inr i)) := λ ⟨t, mock_cache⟩,
-        mock_cache.get_or_else i t (query i t)
+        mock_cache.lookup_or_else i t (query i t)
     -- For queries to the signing oracle, pre-select a hash value and make a signature for that.
     -- Also update the mocked cache with the value chosen for the hash output.
     | (sum.inr ()) := λ ⟨m, mock_cache⟩, do
         { bs ← repeat ($ᵗ bool) n,
           cs ← repeat ($ᵗ G) n,
           ys ← return (vector.zip_with (λ (b : bool) c, if b then c +ᵥ pk else c +ᵥ x₀) bs cs),
-          mock_cache' ← return (mock_cache.cache_query () (ys, m) bs),
+          mock_cache' ← return (mock_cache.log_query () (ys, m) bs),
           return ((cs, bs), mock_cache')}
   end }
 
 -- noncomputable def mock_signing_sim_oracle' (x₀ pk : X) :
 --   sim_oracle (hhs_signature G X M n).full_spec
---   (uniform_selecting ++ ((vector X n × M) ↦ₒ vector bool n))
+--   (unif_spec ++ ((vector X n × M) ↦ₒ vector bool n))
 --   ((vector X n × M) ↦ₒ vector bool n).query_log :=
 -- { default_state := ∅,
 --   o := λ i, match i with
@@ -120,7 +122,7 @@ end mock_signing_sim_oracle
 -- --   qb := mock_query_bound adv.qb }
 
 -- noncomputable def mocked_unforgeable_experiment :
---   sec_experiment (hhs_signature G X M n).base_spec uniform_selecting (X × X)
+--   sec_experiment (hhs_signature G X M n).base_spec unif_spec (X × X)
 --     (((M × vector G n × vector bool n) × (hhs_signature G X M n).random_spec.query_cache))
 --     unit unit unit :=
 -- { inp_gen := (($ᵗ X) ×ₘ ($ᵗ X)) ×ₘ (return ()),
@@ -133,7 +135,7 @@ end mock_signing_sim_oracle
 --   exp_so := idₛₒ }
 
 -- noncomputable def mocked_unforgeable_experiment' :
---   sec_experiment (hhs_signature G X M n).base_spec uniform_selecting (X × X)
+--   sec_experiment (hhs_signature G X M n).base_spec unif_spec (X × X)
 --     (((M × vector G n × vector bool n) × (hhs_signature G X M n).random_spec.query_log))
 --     unit unit unit :=
 -- public_experiment (($ᵗ X) ×ₘ ($ᵗ X))

@@ -30,7 +30,7 @@ The secret key is the vectorization between the points `x₀` and `pk`, as an el
 We use a random oracle `(vector X n × M) ↦ₒ vector bool n` to hash the commitment values. -/
 noncomputable def hhs_signature (G X M : Type) [decidable_eq M]
   [add_comm_group G] [algorithmic_homogenous_space G X] (n : ℕ) :
-  signature_alg (uniform_selecting ++ ((vector X n × M) ↦ₒ vector bool n))
+  signature_alg (unif_spec ++ ((vector X n × M) ↦ₒ vector bool n))
     M (X × X) G (vector G n × vector bool n) :=
 { keygen := λ u, do {x₀ ←$ᵗ X, sk ←$ᵗ G, return ((x₀, sk +ᵥ x₀), sk)},
   -- Sign a message by choosing `n` random commitments, and giving secret key proofs for each.

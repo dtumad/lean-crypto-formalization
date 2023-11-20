@@ -85,16 +85,17 @@ end
 
 end queried_index
 
-def mock_unforgeable_adversary
+noncomputable def mock_unforgeable_adversary
   (adv : (hhs_signature G X M n).unforgeable_adv) :
-  fork_adversary (uniform_selecting ++ ((vector X n × M) ↦ₒ vector bool n)) (X × X)
+  fork_adversary (unif_spec ++ ((vector X n × M) ↦ₒ vector bool n))
+    (X × X)
     ((M × vector G n × vector bool n) × ((vector X n × M) ↦ₒ vector bool n).query_log)
     (sum.inr ()) :=
-sorry
--- { run := λ ks, simulate (mock_signing_sim_oracle' ks.1 ks.2) (adv.run ks) ∅,
---   qb := mock_query_bound adv.qb,
---   choose_fork := λ ⟨x₀, pk⟩ ⟨⟨m, zs, hash⟩, mocked_cache⟩,
---     queried_index x₀ pk m zs hash mocked_cache _ }
+-- sorry
+{ run := λ ks, dsimulate (mock_signing_sim_oracle ks.1 ks.2) (adv.run ks),
+  run_qb := ∅,
+  choose_fork := λ ⟨x₀, pk⟩ ⟨⟨m, zs, hash⟩, mocked_cache⟩,
+    queried_index x₀ pk m zs hash mocked_cache _ }
 
 -- noncomputable def mock_unforgeable_adversary
 --   (adv : (hhs_signature G X M n).unforgeable_adversary) :
@@ -118,11 +119,10 @@ sorry
 --   refl,
 -- end
 
-noncomputable def vectorization_of_fork_result
-  {adv : (hhs_signature G X M n).unforgeable_adv}
+noncomputable def vectorization_of_fork_result {adv : (hhs_signature G X M n).unforgeable_adv}
   (fr : fork_result (mock_unforgeable_adversary adv)) : G :=
 let rr1 := fr.side_output₁.1 in let rr2 := fr.side_output₂.1 in
-  vectorization_of_zipped_commits rr1.2 rr2.2
+  vectorization_of_zipped_commits rr2.2 rr1.2
 
 section vectorization_of_fork_result
 
@@ -152,7 +152,7 @@ end
 
 lemma vectorization_of_fork_result_eq_vsub (x₀ : X) (pk : X)
   (fr : fork_result (mock_unforgeable_adversary adv))
-  (h : fr ∈ ((fork (mock_unforgeable_adversary adv)).run (x₀, pk)).support) :
+  (h : fr ∈ ((fork (mock_unforgeable_adversary adv)).run (pk, x₀)).support) :
   fork_success fr → vectorization_of_fork_result fr = pk -ᵥ x₀ :=
 begin
   intro hfr,
@@ -203,6 +203,10 @@ noncomputable def vectorization_reduction
 
 variable (adv : (hhs_signature G X M n).unforgeable_adv)
 
+-- lemma prob_output_vsub_vectorization_reduction (x₁ x₂ : X) :
+--   ⁅= x₁ -ᵥ x₂ | (vectorization_reduction adv).run (x₁, x₂)⁆ =
+--     (fork_success_exp (mock_unforgeable_adversary adv)).advantage
+
 /-- The probability of the fork succeeding is at least the square of
 the original adversary's success probability, minus a small chance
 of both oracle calls giving the same result. -/
@@ -212,7 +216,39 @@ theorem advantage_le_vectorization_advantage :
   let vec_advantage := (vectorization_exp (vectorization_reduction adv)).advantage in
   adv_advantage * (adv_advantage / q - (1 / 2 ^ n)) ≤ vec_advantage :=
 begin
-  sorry
+  have hX : fintype.card X ≠ 0 := sorry,
+  let inp_gen := do {x₁ ←$ᵗ X, x₂ ←$ᵗ X, return (x₁, x₂)},
+  have : (fork_success_exp (mock_unforgeable_adversary adv) inp_gen).advantage ≤
+    (vectorization_exp (vectorization_reduction adv)).advantage,
+
+  begin
+    simp_rw [vectorization_exp.advantage_eq_tsum, fork_success_exp.advantage_eq_tsum, ennreal.tsum_prod',
+      div_eq_mul_inv, ← ennreal.tsum_mul_right],
+    refine ennreal.tsum_le_tsum (λ x₁, ennreal.tsum_le_tsum (λ x₂, _)),
+    simp only [prob_output_bind_prod_mk, ←pow_two, ennreal.inv_pow, prob_output_coe_sub_spec,
+      prob_output_uniform_select_fintype, prob_event_coe_sort],
+    rw [mul_comm],
+    refine (ennreal.mul_le_mul_right _ _).2 _,
+    simp, simp [hX],
+    simp only [vectorization_reduction,
+      uniform_oracle.prob_output_simulate'],
+    rw [← prob_event_singleton_eq_prob_output,
+      prob_event_map],
+    refine prob_event_mono _ (λ fr hfr, _),
+    have := vectorization_of_fork_result_eq_vsub _ x₂ x₁ fr hfr.2 hfr.1,
+    simp [this],
+  end,
+
+  have h' : (unforgeable_exp adv).advantage ≤
+    (choose_fork_exp (mock_unforgeable_adversary adv ) inp_gen).advantage,
+  begin
+    sorry,
+  end,
+
+  refine le_trans _ this,
+  refine le_trans (le_of_eq _) (le_fork_advantage _ _),
+  simp,
+  sorry,
 end
 
 -- end vectorization_reduction

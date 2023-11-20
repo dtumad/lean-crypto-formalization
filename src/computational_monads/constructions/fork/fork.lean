@@ -21,7 +21,7 @@ variables {α β γ : Type} {spec spec' : oracle_spec} {i : spec.ι}
 namespace oracle_comp
 
 -- TODO!!!: weird
-variable [is_sub_spec uniform_selecting spec]
+variable [is_sub_spec unif_spec spec]
 
 noncomputable def fork (adv : fork_adversary spec α β i) :
   sec_adv spec α (fork_result adv) :=
@@ -36,8 +36,36 @@ noncomputable def fork_success_exp (adv : fork_adversary spec α β i)
 { inp_gen := inp_gen,
   main := (fork adv).run,
   is_valid := λ x fr, fork_success fr,
-  base_S := unit,
-  base_sim_oracle := uniformₛₒ }
+  base_sim_oracle := uniformₛₒ, .. }
+
+namespace fork_success_exp
+
+variables (adv : fork_adversary spec α β i)
+  (inp_gen : oracle_comp spec α)
+
+@[simp] lemma inp_gen_eq : (fork_success_exp adv inp_gen).inp_gen = inp_gen := rfl
+
+@[simp] lemma main_eq : (fork_success_exp adv inp_gen).main = (fork adv).run := rfl
+
+@[simp] lemma is_valid_eq : (fork_success_exp adv inp_gen).is_valid =
+  λ x fr, fork_success fr := rfl
+
+@[simp] lemma base_S_eq : (fork_success_exp adv inp_gen).base_S = unit := rfl
+
+@[simp] lemma base_sim_oracle_eq : (fork_success_exp adv inp_gen).base_sim_oracle =
+  uniformₛₒ := rfl
+
+@[simp] lemma run_eq : (fork_success_exp adv inp_gen).run =
+  dsimulate' uniformₛₒ (do {x ← inp_gen, y ← (fork adv).run x, return (x, y)}) := rfl
+
+lemma advantage_eq_tsum : (fork_success_exp adv inp_gen).advantage =
+  ∑' x, ⁅= x | inp_gen⁆ * ⁅λ fr, fork_success fr | (fork adv).run x⁆ :=
+begin
+  rw [sec_exp.advantage, run_eq, uniform_oracle.prob_event_simulate', prob_event_bind_eq_tsum],
+  simpa only [prob_event_bind_return],
+end
+
+end fork_success_exp
 
 -- noncomputable def fork_success_experiment (adv : fork_adversary spec α β i)
 --   (inp_gen : oracle_comp spec α) :
@@ -158,12 +186,10 @@ end
 
 section prob_event_fork_success
 
-open_locale classical
-
-/-- The set of all possible shared seeds for the two runs of the computation. -/
-noncomputable def poss_shared_seeds (qc : query_count spec)
-  (i : spec.ι) {q : ℕ} (fp : fin q.succ) : finset (query_seed spec) :=
-(generate_seed (qc.decrement i fp)).fin_support
+-- /-- The set of all possible shared seeds for the two runs of the computation. -/
+-- noncomputable def poss_shared_seeds (qc : query_count spec)
+--   (i : spec.ι) {q : ℕ} (fp : fin q.succ) : finset (query_seed spec) :=
+-- (generate_seed (qc.decrement i fp)).fin_support
 
 /-- -/
 lemma le_prob_output_fork_points (adv : fork_adversary spec α β i) (fp : fin adv.q.succ) :

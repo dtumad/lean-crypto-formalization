@@ -22,7 +22,7 @@ We also define a number of basic constructions for common oracles:
 - `empty_spec` represents a lack of any oracles (represented as `∅`).
 - `append` represents bringing together two sets of oracles into one combined set of oracles.
 - `coin_spec` represents access to a coin flipping oracle
-- `uniform_selecting` represents access to a uniformly random oracle on a numeric range.
+- `unif_spec` represents access to a uniformly random oracle on a numeric range.
 -/
 
 /-- Specification of the various oracles available to a computation.
@@ -135,7 +135,7 @@ representing oracle access to a fair coin flip. -/
 /-- Access to a `fin n` oracle for each `n : ℕ`, representing an oracle for evenly sampling
 from a range of numbers. The output of the `n` query is actually in `fin (n + 1)`,
 avoiding a return type of the empty `fin 0` type. -/
-@[simps] def uniform_selecting : oracle_spec :=
+@[simps] def unif_spec : oracle_spec :=
 { ι := ℕ,
   domain := λ n, unit,
   range := λ n, fin (n + 1),
@@ -145,8 +145,8 @@ avoiding a return type of the empty `fin 0` type. -/
   range_decidable_eq := λ n, fin.decidable_eq (n + 1),
   range_fintype := λ n, fin.fintype (n + 1) }
 
-@[simp] lemma card_range_uniform_selecting (n : ℕ) :
-  fintype.card (uniform_selecting.range n) = n + 1 := finset.card_fin (n + 1)
+@[simp] lemma card_range_unif_spec (n : ℕ) :
+  fintype.card (unif_spec.range n) = n + 1 := finset.card_fin (n + 1)
 
 /-- Example of an `oracle_spec` for a pair of oracles each taking a natural `n : ℕ` as input,
 returning a value of type `fin 100` or `bool` respectively, using a sum type for indexing.

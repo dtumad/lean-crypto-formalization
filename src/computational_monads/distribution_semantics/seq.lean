@@ -75,11 +75,9 @@ end comm
 
 section cancel
 
-open_locale classical
-
 /-- In an `cancel_monoid`, the output of multiplying the result of two computations has probability
 given by summing over the probabilities of each possible result of the first computation. -/
-lemma prob_output_seq_map_mul_cancel [cancel_monoid α] (z : α) :
+lemma prob_output_seq_map_mul_cancel [decidable_eq α] [cancel_monoid α] (z : α) :
   ⁅= z | (*) <$> oa <*> oa'⁆ = ∑' x, ⁅(= z) ∘ (* x) | oa⁆ * ⁅= x | oa'⁆ :=
 begin
   -- haveI : decidable_eq α := classical.dec_eq α,
@@ -107,7 +105,7 @@ end
 
 /-- In an `add_cancel_monoid`, the output of adding the result of two computations has probability
 given by summing over the probabilities of each possible result of the first computation. -/
-lemma prob_output_seq_map_add_cancel [add_cancel_monoid α] (z : α) :
+lemma prob_output_seq_map_add_cancel [decidable_eq α] [add_cancel_monoid α] (z : α) :
   ⁅= z | (+) <$> oa <*> oa'⁆ = ∑' x₀, ⁅(= z) ∘ (+ x₀) | oa⁆ * ⁅= x₀ | oa'⁆ :=
 begin
   -- haveI : decidable_eq α := classical.dec_eq α,
@@ -136,8 +134,9 @@ end
 /-- Given two computations `oa` and `oa'`, if there are unique outputs of each such that their
 sum is equval to `z`, then the probability of getting `z` from the sum of running both computations
 can be written as a product of probabilities of getting each of them.-/
-lemma prob_output_seq_map_add_cancel_unique [has_add α] [is_right_cancel_add α] (z : α) (x y : α)
-  (h : x + y = z) (h' : ∀ x' ∈ oa.support, ∀ y' ∈ oa'.support, x' + y' = z → x' = x ∧ y' = y) :
+lemma prob_output_seq_map_add_cancel_unique [decidable_eq α] [has_add α] [is_right_cancel_add α]
+  (z : α) (x y : α) (h : x + y = z)
+  (h' : ∀ x' ∈ oa.support, ∀ y' ∈ oa'.support, x' + y' = z → x' = x ∧ y' = y) :
   ⁅= z | (+) <$> oa <*> oa'⁆ = ⁅= x | oa⁆ * ⁅= y | oa'⁆ :=
 begin
   rw [prob_output_seq_eq_tsum, ← ennreal.tsum_prod],
