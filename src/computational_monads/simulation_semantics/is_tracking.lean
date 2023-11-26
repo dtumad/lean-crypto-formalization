@@ -53,6 +53,11 @@ class is_tracking (so : sim_oracle spec spec' S) :=
 (apply_dist_equiv_state_f_map_query_f : ∀ (i : spec.ι) (t : spec.domain i) (s : S),
   so i (t, s) ≃ₚ (λ u, (u, state_f s i t u)) <$> query_f i t)
 
+class is_tracking' (so : sim_oracle spec spec S) :=
+-- (state_f : Π (s : S) (i : spec.ι), spec.domain i → spec.range i → S)
+(fst_map_apply_eq_query : ∀ (i : spec.ι) (t : spec.domain i) (s : S),
+  fst <$> so i (t, s) = query i t)
+
 variables (so : sim_oracle spec spec' S) (so' : sim_oracle spec spec'' S')
 
 /-- Alias to be able to refer to the query function from the `sim_oracle` namespace. -/
@@ -203,6 +208,15 @@ def tracking_oracle
 
 notation `⟪` query_f `|` state_f `,` default_state `⟫` :=
   tracking_oracle query_f state_f default_state
+
+def tracking_oracle'
+  (update_state : Π (s : S) (i : spec.ι), spec.domain i → spec.range i → S)
+  (default_state : S) : sim_oracle spec spec S :=
+{ default_state := default_state,
+  o := λ i ⟨t, s⟩, do {u ← query i t, return (u, update_state s i t u)} }
+
+notation `⟪` update_state `,` default_state `⟫ₜ` :=
+tracking_oracle' update_state default_state
 
 instance tracking_oracle.is_tracking
   (query_f : Π (i : spec.ι), spec.domain i → oracle_comp spec' (spec.range i))

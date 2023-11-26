@@ -36,6 +36,15 @@ namespace logging_oracle
 lemma apply_eq {i : spec.ι} (t : spec.domain i) (qc : spec.query_log) :
   loggingₛₒ i (t, qc) = (λ u, (u, qc.log_query i t u)) <$> (query i t) := rfl
 
+
+instance logging_oracle.is_tracking' : (logging_oracle spec).is_tracking' :=
+{ fst_map_apply_eq_query := begin
+  intros i t s,
+  rw [apply_eq, map_map_eq_map_comp, id_map'],
+end
+
+}
+
 lemma answer_query_eq : (logging_oracle spec).answer_query = query := rfl
 
 lemma update_state_eq : (logging_oracle spec).update_state = query_log.log_query := rfl
