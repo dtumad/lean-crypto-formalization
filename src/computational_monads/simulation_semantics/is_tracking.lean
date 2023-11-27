@@ -215,7 +215,7 @@ def tracking_oracle'
 { default_state := default_state,
   o := λ i ⟨t, s⟩, do {u ← query i t, return (u, update_state s i t u)} }
 
-notation `⟪` update_state `,` default_state `⟫ₜ` :=
+notation `⟪query|` update_state `,` default_state `⟫` :=
 tracking_oracle' update_state default_state
 
 instance tracking_oracle.is_tracking
