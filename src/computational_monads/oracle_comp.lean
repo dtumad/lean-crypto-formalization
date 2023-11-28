@@ -33,6 +33,9 @@ and only defining distributions on computations with such an instance.
 However without a clear use case, we avoid doing this for simplicity.
 -/
 
+/-- Representation of computations with oracle access.
+`oracle_comp spec α` is a computation returning a value of type `α`,
+potentially calling oracles given by `spec : oracle_spec`. -/
 inductive oracle_comp (spec : oracle_spec) : Type → Type 1
 | pure' (α : Type) (a : α) : oracle_comp α
 | query_bind' (i : spec.ι) (t : spec.domain i) (α : Type)
@@ -63,11 +66,11 @@ def default_result : Π {α : Type}, oracle_comp spec α → α
   The assumption that the range of the oracles is `inhabited` is the key point for this. -/
 def base_inhabited (oa : oracle_comp spec α) : inhabited α := ⟨oa.default_result⟩
 
-def bind' : Π (α β : Type), oracle_comp spec α →
-  (α → oracle_comp spec β) → oracle_comp spec β
+/-- We define a monadic bind operation on `oracle_comp` by induction on the first computation.
+With this definition `oracle_comp` satisfies the monad laws (see `oracle_comp.is_lawful_monad`). -/
+def bind' : Π (α β : Type), oracle_comp spec α → (α → oracle_comp spec β) → oracle_comp spec β
 | _ β (pure' α a) ob := ob a
-| _ β (query_bind' i t α oa) ob :=
-  query_bind' i t β (λ u, bind' α β (oa u) ob)
+| _ β (query_bind' i t α oa) ob := query_bind' i t β (λ u, bind' α β (oa u) ob)
 
 section monad
 
@@ -117,11 +120,13 @@ protected lemma bind_return_comp_eq_map (oa : oracle_comp spec α) (f : α → �
 protected lemma map_eq_bind_return_comp (oa : oracle_comp spec α) (f : α → β) :
   f <$> oa = oa >>= return ∘ f := rfl
 
-lemma return_bind (a : α) (ob : α → oracle_comp spec β) :
-  return a >>= ob = ob a := pure_bind a ob
+lemma return_bind (a : α) (ob : α → oracle_comp spec β) : return a >>= ob = ob a := pure_bind a ob
 
-lemma bind_return (oa : oracle_comp spec α) :
-  oa >>= return = oa := bind_pure oa
+lemma bind_return (oa : oracle_comp spec α) : oa >>= return = oa := bind_pure oa
+
+@[simp] lemma bind_query_bind' (i : spec.ι) (t : spec.domain i)
+  (oa : spec.range i → oracle_comp spec α) (ob : α → oracle_comp spec β) :
+  (query_bind' i t α oa) >>= ob = query_bind' i t β (λ u, oa u >>= ob) := rfl
 
 @[simp] lemma map_map_eq_map_comp (oa : oracle_comp spec α) (f : α → β) (g : β → γ) :
   g <$> (f <$> oa) = (g ∘ f) <$> oa :=
@@ -160,7 +165,8 @@ end
   (i : spec.ι) (t : spec.domain i) : oracle_comp (spec ++ spec') (spec.range i) :=
 @query (spec ++ spec') (sum.inl i) t
 
-/-- Shorthand for querying the right side of two available oracles. -/
+/-- Shorthand for querying the right side of two available oracles.
+TODO: remove -/
 @[inline, reducible] def query₂ {spec spec' : oracle_spec}
   (i : spec'.ι) (t : spec'.domain i) : oracle_comp (spec ++ spec') (spec'.range i) :=
 @query (spec ++ spec') (sum.inr i) t
@@ -230,40 +236,67 @@ do { oa ← tactic.get_local h,
 
 end tactics
 
--- section no_confusion
+section no_confusion
 
--- variables (b : β) (oa : oracle_comp spec α) (ob : α → oracle_comp spec β)
---   (i : spec.ι) (t : spec.domain i) (u : spec.range i)
---   (ou : α → oracle_comp spec (spec.range i))
---   (f : α → β) (g : α → spec.range i)
+@[simp] protected lemma pure'_ne_query_bind' (a : α) (i : spec.ι) (t : spec.domain i)
+  (oa : spec.range i → oracle_comp spec α) : pure' α a ≠ query_bind' i t α oa :=
+λ h, oracle_comp.no_confusion h
 
--- @[simp] lemma return_ne_bind : (return' !spec! b) ≠ oa >>= ob := λ h, oracle_comp.no_confusion h
--- @[simp] lemma bind_ne_return : oa >>= ob ≠ (return' !spec! b) := λ h, oracle_comp.no_confusion h
--- @[simp] lemma return_ne_query : (return' !spec! u) ≠ query i t := λ h, oracle_comp.no_confusion h
--- @[simp] lemma query_ne_return : query i t ≠ (return' !spec! u) := λ h, oracle_comp.no_confusion h
--- @[simp] lemma bind_ne_query : oa >>= ou ≠ query i t := λ h, oracle_comp.no_confusion h
--- @[simp] lemma query_ne_bind : query i t ≠ oa >>= ou := λ h, oracle_comp.no_confusion h
+@[simp] protected lemma query_bind'_ne_pure' (a : α) (i : spec.ι) (t : spec.domain i)
+  (oa : spec.range i → oracle_comp spec α) : query_bind' i t α oa ≠ pure' α a :=
+λ h, oracle_comp.no_confusion h
 
--- @[simp] lemma map_ne_return : (return' !spec! b) ≠ f <$> oa :=
--- by simp [oracle_comp.map_eq_bind_return_comp]
--- @[simp] lemma return_ne_map : f <$> oa ≠ (return' !spec! b) :=
--- by simp [oracle_comp.map_eq_bind_return_comp]
+@[simp] protected lemma return_eq_return_iff (a a' : α) :
+  (return a : oracle_comp spec α) = return a' ↔ a = a' :=
+⟨oracle_comp.pure'.inj, λ h, h ▸ rfl⟩
 
--- @[simp] lemma map_ne_query : g <$> oa ≠ query i t := by simp [oracle_comp.map_eq_bind_return_comp]
--- @[simp] lemma query_ne_map : query i t ≠ g <$> oa := by simp [oracle_comp.map_eq_bind_return_comp]
+@[simp] protected lemma query_eq_query_iff (i : spec.ι) (t t' : spec.domain i) :
+  query i t = query i t' ↔ t = t' :=
+⟨λ h, eq_of_heq (oracle_comp.query_bind'.inj h).2.1, λ h, h ▸ rfl⟩
 
--- @[simp] lemma return_eq_return_iff (spec : oracle_spec) (a a' : α) :
---   (return' !spec! a) = (return' !spec! a') ↔ a = a' :=
--- ⟨λ h, oracle_comp.pure'.inj h, λ h, h ▸ rfl⟩
+@[simp] protected lemma return_eq_bind_iff (b : β) (oa : oracle_comp spec α)
+  (ob : α → oracle_comp spec β) : return b = oa >>= ob ↔ ∃ a, oa = return a ∧ ob a = return b :=
+begin
+  refine ⟨λ h, _, λ h, _⟩,
+  { cases oa with α a i t α oa,
+    { exact ⟨a, rfl, symm h⟩ },
+    { exact false.elim (oracle_comp.no_confusion h) } },
+  { obtain ⟨a, ha⟩ := h,
+    rw [ha.1, return_bind, ha.2] }
+end
 
--- @[simp] lemma bind'_eq_bind'_iff (oa oa' : oracle_comp spec α) (ob ob' : α → oracle_comp spec β) :
---   oa >>= ob = oa' >>= ob' ↔ oa = oa' ∧ ob = ob' :=
--- ⟨λ h, let ⟨h, ha, hb⟩ := oracle_comp.bind'.inj h in
---   ⟨eq_of_heq ha, eq_of_heq hb⟩, λ h, by simp [h.1, h.2]⟩
+@[simp] protected lemma bind_eq_return_iff (b : β) (oa : oracle_comp spec α)
+  (ob : α → oracle_comp spec β) : oa >>= ob = return b ↔ ∃ a, oa = return a ∧ ob a = return b :=
+eq_comm.trans (oracle_comp.return_eq_bind_iff b oa ob)
 
--- @[simp] lemma query_eq_query_iff (i : spec.ι) (t t' : spec.domain i) :
---   query i t = query i t' ↔ t = t' := ⟨λ h, oracle_comp.query.inj h, λ h, h ▸ rfl⟩
+@[simp] protected lemma query_ne_return (i : spec.ι) (t : spec.domain i) (u : spec.range i) :
+  query i t ≠ return u := λ h, oracle_comp.no_confusion h
 
--- end no_confusion
+@[simp] protected lemma return_ne_query (i : spec.ι) (t : spec.domain i) (u : spec.range i) :
+  return u ≠ query i t := λ h, oracle_comp.no_confusion h
+
+protected lemma bind_eq_bind_iff (oa : oracle_comp spec α) (ob : oracle_comp spec β)
+  (oc : α → oracle_comp spec γ) (oc' : β → oracle_comp spec γ) : oa >>= oc = ob >>= oc' ↔
+  ((∃ a, oa = return a ∧ oc a = ob >>= oc') ∨ (∃ b, ob = return b ∧ oa >>= oc = oc' b) ∨
+    (∃ (i : spec.ι) (t : spec.domain i) (oa' : spec.range i → oracle_comp spec α)
+      (ob' : spec.range i → oracle_comp spec β), oa = query_bind' i t α oa' ∧
+        ob = query_bind' i t β ob' ∧ (∀ u, oa' u >>= oc = ob' u >>= oc'))) :=
+begin
+  refine ⟨λ h, _, λ h, _⟩,
+  { cases oa with α a i t α oa,
+    { exact or.inl ⟨a, rfl, h⟩ },
+    { cases ob with β b i' t' β ob,
+      { exact or.inr (or.inl ⟨b, rfl, h⟩) },
+      { simp_rw [← oracle_comp.bind'_eq_bind, bind'] at h,
+        obtain ⟨rfl, rfl, h⟩ := h,
+        refine or.inr (or.inr ⟨i, t, oa, ob, ⟨rfl, rfl, λ u, _⟩⟩),
+        convert function.funext_iff.1 (eq_of_heq h) u } } },
+  { rcases h with ⟨a, ha, ha'⟩ | ⟨b, hb, hb'⟩ | ⟨i, t, oa', ob', h1, h2, h3⟩,
+    { exact ha.symm ▸ ha' },
+    { exact hb.symm ▸ hb' },
+    { simp_rw [h1, h2, bind_query_bind', eq_self_iff_true, heq_self_iff_true, true_and, h3] } }
+end
+
+end no_confusion
 
 end oracle_comp
