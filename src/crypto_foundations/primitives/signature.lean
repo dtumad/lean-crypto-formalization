@@ -88,7 +88,7 @@ def signing_sim_oracle (sig : signature_alg spec M PK SK S) (pk : PK) (sk : SK)
   [inhabited S] [fintype S] [decidable_eq M] [decidable_eq S] :
   sim_oracle (spec ++ (M ↦ₒ S)) spec (M ↦ₒ S).query_log :=
 let so' : sim_oracle (M ↦ₒ S) spec punit := ⟪λ _ m, sig.sign ((pk, sk), m)⟫ in
-(idₛₒ ++ₛ ((so' ∘ₛ loggingₛₒ).mask_state (equiv.prod_punit _))).mask_state (equiv.punit_prod _)
+(idₛₒ ++ₛ ((so' ∘ₛₒ loggingₛₒ).mask_state (equiv.prod_punit _))).mask_state (equiv.punit_prod _)
 
 -- def signing_sim_oracle' (sig : signature) (pk : sig.PK) (sk : sig.SK) :
 --   sim_oracle sig.full_spec sig.base_spec unit :=
@@ -278,7 +278,7 @@ variables [inhabited S] [fintype S] [decidable_eq M] [decidable_eq S]
 -- structure unforgeable_adversary (sig : signature) extends
 --   sec_adversary (unif_spec ++ sig.random_spec ++ sig.signing_spec) sig.PK (sig.M × sig.S)
 def unforgeable_adv (sig : signature_alg spec M PK SK S) :=
-sec_adv sig.unforgeable_adv_spec PK (M × S)
+sec_adv (spec ++ (M ↦ₒ S)) PK (M × S)
 
 namespace unforgeable_adversary
 
@@ -298,31 +298,11 @@ def unforgeable_exp {sig : signature_alg spec M PK SK S} (adv : unforgeable_adv 
   sec_exp spec (PK × SK) (bool) := --(M × S) × (M ↦ₒ S).query_log) :=
 { inp_gen := sig.keygen (),
   main := λ ⟨pk, sk⟩, do
-    { ⟨⟨m, σ⟩, log⟩ ← dsimulate (sig.signingₛₒ pk sk) (adv.run pk),
+    { ⟨⟨m, σ⟩, log⟩ ← simulate (sig.signingₛₒ pk sk) (adv.run pk) ∅,
       b ← sig.verify (pk, m, σ),
       return (b && !(log.was_queried () m)) },
   is_valid := λ _ b, b = tt,
   .. sig }
-
--- noncomputable def unforgeable_experiment (sig : signature) :
---   sec_experiment sig.full_spec sig.base_spec sig.PK
---     (sig.M × sig.S) sig.SK (sig.M ↦ₒ sig.S).query_log
---     sig.random_spec.query_cache :=
--- { inp_gen := sig.gen (),
---   adv_so := λ ks, sig.signingₛₒ ks.1 ks.2,
---   is_valid := λ ⟨pk, sk⟩ ⟨⟨m, σ⟩, log⟩,
---     if log.was_queried () m then return ff else sig.verify (pk, m, σ),
---   exp_so := (idₛₒ ++ₛ randomₛₒ).mask_state (equiv.punit_prod _) }
-
--- noncomputable def unforgeable_experiment' (sig : signature) :
---   sec_experiment sig.full_spec sig.base_spec sig.PK
---     (sig.M × sig.S) sig.SK (sig.M ↦ₒ sig.S).query_log
---     sig.random_spec.query_cache :=
--- { inp_gen := sig.gen (),
---   adv_so := λ ks, sig.signingₛₒ ks.1 ks.2,
---   is_valid := λ ⟨pk, sk⟩ ⟨⟨m, σ⟩, log⟩,
---     if log.was_queried () m then return ff else sig.verify (pk, m, σ),
---   exp_so := sig.baseₛₒ }
 
 -- noncomputable def unforgeable_advantage (sig : signature)
 --   (adv : unforgeable_adversary sig) : ℝ≥0∞ :=

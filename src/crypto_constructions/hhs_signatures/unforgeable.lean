@@ -92,7 +92,7 @@ noncomputable def mock_unforgeable_adversary
     ((M × vector G n × vector bool n) × ((vector X n × M) ↦ₒ vector bool n).query_log)
     (sum.inr ()) :=
 -- sorry
-{ run := λ ks, dsimulate (mock_signing_sim_oracle ks.1 ks.2) (adv.run ks),
+{ run := λ ks, simulate (mock_signing_sim_oracle ks.1 ks.2) (adv.run ks) ∅,
   run_qb := ∅,
   choose_fork := λ ⟨x₀, pk⟩ ⟨⟨m, zs, hash⟩, mocked_cache⟩,
     queried_index x₀ pk m zs hash mocked_cache _ }
@@ -196,9 +196,9 @@ end vectorization_of_fork_result
 noncomputable def vectorization_reduction
   (adv : (hhs_signature G X M n).unforgeable_adv) :
   vectorization_adv G X :=
-{ run := λ ks, dsimulate' uniformₛₒ
+{ run := λ ks, simulate' uniformₛₒ
     (vectorization_of_fork_result <$>
-      (fork (mock_unforgeable_adversary adv)).run ks),
+      (fork (mock_unforgeable_adversary adv)).run ks) (),
   run_qb := ∅ }
 
 variable (adv : (hhs_signature G X M n).unforgeable_adv)

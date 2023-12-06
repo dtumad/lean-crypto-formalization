@@ -42,7 +42,7 @@ noncomputable def choose_fork_exp (adv : fork_adversary spec α β i)
 { inp_gen := inp_gen,
   main := adv.run,
   is_valid := λ x y, adv.choose_fork x y ≠ none,
-  base_S := unit,
+  base_S := unit, init_state := (),
   base_sim_oracle := uniformₛₒ }
 
 -- def fork_adversary.cf_advantage

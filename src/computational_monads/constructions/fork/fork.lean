@@ -6,7 +6,6 @@ Authors: Devon Tuma
 import computational_monads.simulation_semantics.constructions.logging_oracle
 import computational_monads.simulation_semantics.constructions.seeded_oracle
 import computational_monads.distribution_semantics.option
--- import crypto_foundations.sec_adversary
 import computational_monads.constructions.fork.fork_adversary
 
 /-!
@@ -36,7 +35,7 @@ noncomputable def fork_success_exp (adv : fork_adversary spec α β i)
 { inp_gen := inp_gen,
   main := (fork adv).run,
   is_valid := λ x fr, fork_success fr,
-  base_sim_oracle := uniformₛₒ, .. }
+  base_sim_oracle := uniformₛₒ, init_state := (), .. }
 
 namespace fork_success_exp
 
@@ -56,7 +55,7 @@ variables (adv : fork_adversary spec α β i)
   uniformₛₒ := rfl
 
 @[simp] lemma run_eq : (fork_success_exp adv inp_gen).run =
-  dsimulate' uniformₛₒ (do {x ← inp_gen, y ← (fork adv).run x, return (x, y)}) := rfl
+  simulate' uniformₛₒ (do {x ← inp_gen, y ← (fork adv).run x, return (x, y)}) () := rfl
 
 lemma advantage_eq_tsum : (fork_success_exp adv inp_gen).advantage =
   ∑' x, ⁅= x | inp_gen⁆ * ⁅λ fr, fork_success fr | (fork adv).run x⁆ :=

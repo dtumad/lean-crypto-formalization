@@ -21,8 +21,6 @@ variables {G X M : Type} [decidable_eq M]
 
 section mock_signing_sim_oracle
 
-#check query_log.lookup_or_query
-
 /-- Oracle to mock a signing oracle for messages in the vectorization reduction,
 mirroring how `signingₛₒ` would respond usually.
 Predetermines the random oracle results to fake a valid signature,
@@ -31,9 +29,8 @@ This also includes all caching for the simulation of the random oracles. -/
 noncomputable def mock_signing_sim_oracle (x₀ pk : X) :
   sim_oracle (hhs_signature G X M n).unforgeable_adv_spec
   (unif_spec ++ ((vector X n × M) ↦ₒ vector bool n))
-  ((vector X n × M) ↦ₒ vector bool n).query_log :=
-{ default_state := ∅,
-  o := λ i, match i with
+  (query_log ((vector X n × M) ↦ₒ vector bool n)) :=
+λ i, match i with
     -- For queries to the uniform selection oracle, just forward the queries.
     | (sum.inl (sum.inl i)) := λ ⟨t, mock_cache⟩, do
         { u ← query (sum.inl i) t,
@@ -50,7 +47,7 @@ noncomputable def mock_signing_sim_oracle (x₀ pk : X) :
           ys ← return (vector.zip_with (λ (b : bool) c, if b then c +ᵥ pk else c +ᵥ x₀) bs cs),
           mock_cache' ← return (mock_cache.log_query () (ys, m) bs),
           return ((cs, bs), mock_cache')}
-  end }
+  end
 
 -- noncomputable def mock_signing_sim_oracle' (x₀ pk : X) :
 --   sim_oracle (hhs_signature G X M n).full_spec

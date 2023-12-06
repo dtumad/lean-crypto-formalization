@@ -45,6 +45,7 @@ noncomputable def hhs_signature (G X M : Type) [decidable_eq M]
       (hash' : vector bool n) ← query₂ () (ys, m),
       return (hash' = hash)},
   base_sim_oracle := (idₛₒ ++ₛ randomₛₒ).mask_state (equiv.punit_prod _),
+  init_state := ∅,
   .. }
 
 namespace hhs_signature
@@ -63,9 +64,10 @@ variables (u : unit)
   do {x₀ ←$ᵗ X, sk ←$ᵗ G, return ((x₀, sk +ᵥ x₀), sk)} := rfl
 
 lemma support_gen : ((hhs_signature G X M n).keygen u).support =
-  ⋃ (x₀ : X) (sk : G), {((x₀, sk +ᵥ x₀), sk)} := sorry
--- by simp only [gen_apply, support_bind, support_coe_sub_spec,
---   support_uniform_select_fintype, support_return, set.Union_true]
+  ⋃ (x₀ : X) (sk : G), {((x₀, sk +ᵥ x₀), sk)} := 
+by simp only [keygen_apply, support_bind, support_coe_sub_spec, support_uniform_select_fintype,
+  set.top_eq_univ, set.mem_univ, support_bind_return, set.image_univ,
+  set.Union_true, set.Union_singleton_eq_range]
 
 end gen
 
