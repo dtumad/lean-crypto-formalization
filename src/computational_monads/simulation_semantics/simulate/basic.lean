@@ -26,34 +26,36 @@ TODO: we should evaluate if this approach is actually always better.
 
 variables {α β γ : Type} {spec spec' spec'' : oracle_spec} {S S' : Type}
 
-/-- Specifies a way to simulate a set of oracles using another set of oracles.
-e.g. using uniform selection oracles with a query cache to simulate a random oracle.
-`simulate` gives a method for applying a simulation oracle to a specific computation.
-`default_state` can be provided as a standard initial state for simulation (`dsimulate`). -/
-structure sim_oracle (spec spec' : oracle_spec) (S : Type) :=
-(default_state : S)
-(o (i : spec.ι) : (spec.domain i × S) → oracle_comp spec' (spec.range i × S))
+def sim_oracle (spec spec' : oracle_spec) (S : Type) :=
+Π (i : spec.ι), spec.domain i × S → oracle_comp spec' (spec.range i × S)
+
+-- /-- Specifies a way to simulate a set of oracles using another set of oracles.
+-- e.g. using uniform selection oracles with a query cache to simulate a random oracle.
+-- `simulate` gives a method for applying a simulation oracle to a specific computation.
+-- `default_state` can be provided as a standard initial state for simulation (`dsimulate`). -/
+-- structure sim_oracle (spec spec' : oracle_spec) (S : Type) :=
+-- (default_state : S)
+-- (o (i : spec.ι) : (spec.domain i × S) → oracle_comp spec' (spec.range i × S))
 
 namespace sim_oracle
 
 /-- Example of an oracle maintaining in internal incrementing value,
 and returning a fake coin flip that alternates between heads and tails. -/
 example : sim_oracle oracle_spec.coin_spec oracle_spec.coin_spec ℕ :=
-{ default_state := 0,
-  o := λ i ⟨t, n⟩, return (if even n then tt else ff, n + 1) }
+λ i ⟨t, n⟩, return (if even n then tt else ff, n + 1)
 
-/-- View a simulation oracle as a function corresponding to the internal oracle `o` -/
-instance has_coe_to_fun : has_coe_to_fun (sim_oracle spec spec' S)
-  (λ so, Π (i : spec.ι), spec.domain i × S → oracle_comp spec' (spec.range i × S)) :=
-{ coe := λ so, so.o }
+-- /-- View a simulation oracle as a function corresponding to the internal oracle `o` -/
+-- instance has_coe_to_fun : has_coe_to_fun (sim_oracle spec spec' S)
+--   (λ so, Π (i : spec.ι), spec.domain i × S → oracle_comp spec' (spec.range i × S)) :=
+-- { coe := λ so, so.o }
 
-lemma has_coe_to_fun.def (so : sim_oracle spec spec' S) (i : spec.ι)
-  (x : spec.domain i × S) : so i x = so.o i x := rfl
+-- lemma has_coe_to_fun.def (so : sim_oracle spec spec' S) (i : spec.ι)
+--   (x : spec.domain i × S) : so i x = so.o i x := rfl
 
-def inhabited_state (so : sim_oracle spec spec' S) : inhabited S := ⟨so.default_state⟩
+-- def inhabited_state (so : sim_oracle spec spec' S) : inhabited S := ⟨so.default_state⟩
 
 instance inhabited [inhabited S] : inhabited (sim_oracle spec spec' S) :=
-⟨{default_state := default, o := λ _ _, oracle_comp.pure' _ default}⟩
+⟨λ _ _, oracle_comp.pure' _ default⟩
 
 end sim_oracle
 
@@ -74,11 +76,11 @@ def simulate (so : sim_oracle spec spec' S) : Π {α : Type},
 | _ (pure' α a) state := return ⟨a, state⟩
 | _ (query_bind' i t α oa) state := do {x ← so i (t, state), simulate (oa x.1) x.2}
 
-/-- Convenience definition to use the default state as the initial state for `simulate`.
-Marked to be reduced and inlined, so the definition is essentially just notational. -/
-@[inline, reducible, simp]
-def dsimulate (so : sim_oracle spec spec' S) (oa : oracle_comp spec α) :
-  oracle_comp spec' (α × S) := simulate so oa so.default_state
+-- /-- Convenience definition to use the default state as the initial state for `simulate`.
+-- Marked to be reduced and inlined, so the definition is essentially just notational. -/
+-- @[inline, reducible, simp]
+-- def dsimulate (so : sim_oracle spec spec' S) (oa : oracle_comp spec α) :
+--   oracle_comp spec' (α × S) := simulate so oa so.default_state
 
 lemma simulate_return : simulate so (return a) s = return (a, s) := rfl
 
@@ -104,11 +106,11 @@ section simulate'
 def simulate' (so : sim_oracle spec spec' S) (oa : oracle_comp spec α) (s : S) :
   oracle_comp spec' α := prod.fst <$> oa.simulate so s
 
-/-- Convenience definition to use the default state as the initial state for `simulate'`.
-Marked to be reduced and inlined, so the definition is essentially just notation. -/
-@[inline, reducible, simp]
-def dsimulate' (so : sim_oracle spec spec' S) (oa : oracle_comp spec α) :
-  oracle_comp spec' α := oa.simulate' so so.default_state
+-- /-- Convenience definition to use the default state as the initial state for `simulate'`.
+-- Marked to be reduced and inlined, so the definition is essentially just notation. -/
+-- @[inline, reducible, simp]
+-- def dsimulate' (so : sim_oracle spec spec' S) (oa : oracle_comp spec α) :
+--   oracle_comp spec' α := oa.simulate' so so.default_state
 
 lemma simulate'_def : simulate' so oa s = prod.fst <$> oa.simulate so s := rfl
 
