@@ -227,7 +227,12 @@ If the count is higher than the current number of elements default to the empty 
 noncomputable def drop_to_count (il : spec.indexed_list τ) (qc : spec.query_count) : spec.indexed_list τ :=
 { to_fun := λ i, (il i).drop (qc.get_count i),
   active_oracles := {i ∈ il.active_oracles | qc.get_count i < il.get_count i},
-  mem_active_oracles_iff' := sorry }
+  mem_active_oracles_iff' := λ i, begin
+    simp only [list.drop_eq_nil_iff_le, not_le, get_count, finset.sep_def,
+      finset.mem_filter, ne.def, and_iff_right_iff_imp],
+    refine λ h, mem_active_oracles_of_length_pos _ _,
+    refine pos_of_gt h,
+  end }
 
 variables (il : spec.indexed_list τ) (qc : spec.query_count)
 

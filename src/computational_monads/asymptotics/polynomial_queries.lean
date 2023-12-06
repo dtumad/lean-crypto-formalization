@@ -36,28 +36,6 @@ begin
   exact h.2.symm ▸ (indexed_list.empty_le qc)
 end
 
-/-- The number of queries made by `query i t` is bounded by any count with `i` as an active oracle
-(equivalently any count with a non-zero count for the index `i` oracle). -/
-@[simp] lemma queries_at_most_query_iff (i : spec.ι) (t : spec.domain i) (qc : spec.query_count) :
-  (query i t).queries_at_most qc ↔ i ∈ qc.active_oracles :=
-begin
-  refine ⟨λ h, _, λ h, _⟩,
-  {
-    specialize h default (query_count.of_nat i 1),
-    simp at h,
-    sorry,
-
-  },
-  {
-    sorry,
-  }
-end
-
-variables (oa : oracle_comp spec α)
-
-lemma queries_at_most_trans (qc qc' : spec.query_count) (h : oa.queries_at_most qc)
-  (h : qc ≤ qc') : oa.queries_at_most qc' := sorry
-
 end queries_at_most
 
 section poly_num_queries

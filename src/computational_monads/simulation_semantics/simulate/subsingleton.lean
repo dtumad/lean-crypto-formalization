@@ -27,64 +27,64 @@ variables (so : sim_oracle spec spec' S) (so' : sim_oracle spec spec'' S')
 variables (a : α) (i : spec.ι) (t : spec.domain i)
   (oa oa' : oracle_comp spec α) (ob ob' : α → oracle_comp spec β) (s : S) (s' : S') (f : α → β)
 
-lemma simulate_eq_dsimulate [subsingleton S] :
-  simulate so oa s = dsimulate so oa := subsingleton.elim so.default_state s ▸ rfl
+-- lemma simulate_eq_dsimulate [subsingleton S] :
+--   simulate so oa s = dsimulate so oa := subsingleton.elim so.default_state s ▸ rfl
 
-lemma simulate'_eq_dsimulate' [subsingleton S] :
-  simulate' so oa s = dsimulate' so oa := subsingleton.elim so.default_state s ▸ rfl
+-- lemma simulate'_eq_dsimulate' [subsingleton S] :
+--   simulate' so oa s = dsimulate' so oa := subsingleton.elim so.default_state s ▸ rfl
 
 section support
 
-/-- Version of `support_simulate'_eq_support` for `dsimulate`, given a `subsingleton` state.
-Has a weaker requirement for the hypothesis `h` than the more general lemma -/
-lemma support_simulate'_eq_support_of_subsingleton [subsingleton S] (s : S)
-  (h : ∀ i t, prod.fst '' (so i (t, so.default_state)).support = ⊤) :
-  (simulate' so oa s).support = oa.support :=
-support_simulate'_eq_support oa s (λ i t s, subsingleton.elim so.default_state s ▸ h i t)
+-- /-- Version of `support_simulate'_eq_support` for `dsimulate`, given a `subsingleton` state.
+-- Has a weaker requirement for the hypothesis `h` than the more general lemma -/
+-- lemma support_simulate'_eq_support_of_subsingleton [subsingleton S] (s : S)
+--   (h : ∀ i t, prod.fst '' (so i (t, so.default_state)).support = ⊤) :
+--   (simulate' so oa s).support = oa.support :=
+-- support_simulate'_eq_support oa s (λ i t s, subsingleton.elim so.default_state s ▸ h i t)
 
-/-- Given the state is `subsingleton`, the support of `simulate` is determined by `simulate'` -/
-lemma support_simulate_eq_preimage_support_simulate' [subsingleton S] :
-  (simulate so oa s).support = prod.fst ⁻¹' (dsimulate' so oa).support :=
-begin
-  rw [support_simulate', subsingleton.elim so.default_state s],
-  exact (set.ext $ λ x, ⟨λ h, ⟨x, h, rfl⟩, λ h, let ⟨y, h, h'⟩ := h in
-    (prod.eq_iff_fst_eq_snd_eq.2 ⟨h', subsingleton.elim y.2 x.2⟩) ▸ h⟩),
-end
+-- /-- Given the state is `subsingleton`, the support of `simulate` is determined by `simulate'` -/
+-- lemma support_simulate_eq_preimage_support_simulate' [subsingleton S] :
+--   (simulate so oa s).support = prod.fst ⁻¹' (dsimulate' so oa).support :=
+-- begin
+--   rw [support_simulate', subsingleton.elim so.default_state s],
+--   exact (set.ext $ λ x, ⟨λ h, ⟨x, h, rfl⟩, λ h, let ⟨y, h, h'⟩ := h in
+--     (prod.eq_iff_fst_eq_snd_eq.2 ⟨h', subsingleton.elim y.2 x.2⟩) ▸ h⟩),
+-- end
 
-/-- If the state has at most one elements, we can express the support of `simulate` in terms
-of only `simulate'`. For example in a `stateless_oracle` or `uniformₛₒ`.
-TODO: above is basically the same statement -/
-lemma support_simulate_eq_support_simulate'_of_subsingleton [subsingleton S]
-  (so : sim_oracle spec spec' S) : (simulate so oa s).support =
-    {x | x.1 ∈ (simulate' so oa s).support} :=
-begin
-  refine set.ext (λ x, _),
-  rw [set.mem_set_of, support_simulate', set.mem_image],
-  refine ⟨λ h, ⟨x, h, rfl⟩, λ h, _⟩,
-  obtain ⟨y, hy, h⟩ := h,
-  rwa [← @prod.mk.eta _ _ x, ← h, subsingleton.elim x.2 y.2, prod.mk.eta],
-end
+-- /-- If the state has at most one elements, we can express the support of `simulate` in terms
+-- of only `simulate'`. For example in a `stateless_oracle` or `uniformₛₒ`.
+-- TODO: above is basically the same statement -/
+-- lemma support_simulate_eq_support_simulate'_of_subsingleton [subsingleton S]
+--   (so : sim_oracle spec spec' S) : (simulate so oa s).support =
+--     {x | x.1 ∈ (simulate' so oa s).support} :=
+-- begin
+--   refine set.ext (λ x, _),
+--   rw [set.mem_set_of, support_simulate', set.mem_image],
+--   refine ⟨λ h, ⟨x, h, rfl⟩, λ h, _⟩,
+--   obtain ⟨y, hy, h⟩ := h,
+--   rwa [← @prod.mk.eta _ _ x, ← h, subsingleton.elim x.2 y.2, prod.mk.eta],
+-- end
 
-/-- Given the state is `subsingleton`, membership in `support` of `simulate` can be checked
-by just checking that the first component is in the support of `simulate'` -/
-lemma mem_support_simulate_iff_fst_mem_support_simulate' (x : α × S) [subsingleton S] :
-  x ∈ (simulate so oa s).support ↔ x.fst ∈ (simulate' so oa s).support :=
-begin
-  refine subsingleton.elim so.default_state s ▸ _,
-  rw [support_simulate_eq_preimage_support_simulate', set.mem_preimage],
-end
+-- /-- Given the state is `subsingleton`, membership in `support` of `simulate` can be checked
+-- by just checking that the first component is in the support of `simulate'` -/
+-- lemma mem_support_simulate_iff_fst_mem_support_simulate' (x : α × S) [subsingleton S] :
+--   x ∈ (simulate so oa s).support ↔ x.fst ∈ (simulate' so oa s).support :=
+-- begin
+--   refine subsingleton.elim so.default_state s ▸ _,
+--   rw [support_simulate_eq_preimage_support_simulate', set.mem_preimage],
+-- end
 
-lemma support_simulate_eq_support_simulate_of_subsingleton [subsingleton S]
-  (so : sim_oracle spec spec' S) (so' : sim_oracle spec spec'' S) (s s' : S)
-  (h : ∀ i t, prod.fst '' (so i (t, so.default_state)).support =
-    prod.fst '' (so' i (t, so'.default_state)).support) :
-  (simulate so oa s).support = (simulate so' oa s').support :=
-begin
-  simp only [support_simulate_eq_preimage_support_simulate'],
-  refine congr_arg _ (support_simulate'_eq_support_simulate' oa _ _ _),
-  intros i t s s',
-  rw [subsingleton.elim s so.default_state, subsingleton.elim s' so'.default_state, h i t],
-end
+-- lemma support_simulate_eq_support_simulate_of_subsingleton [subsingleton S]
+--   (so : sim_oracle spec spec' S) (so' : sim_oracle spec spec'' S) (s s' : S)
+--   (h : ∀ i t, prod.fst '' (so i (t, so.default_state)).support =
+--     prod.fst '' (so' i (t, so'.default_state)).support) :
+--   (simulate so oa s).support = (simulate so' oa s').support :=
+-- begin
+--   simp only [support_simulate_eq_preimage_support_simulate'],
+--   refine congr_arg _ (support_simulate'_eq_support_simulate' oa _ _ _),
+--   intros i t s s',
+--   rw [subsingleton.elim s so.default_state, subsingleton.elim s' so'.default_state, h i t],
+-- end
 
 end support
 

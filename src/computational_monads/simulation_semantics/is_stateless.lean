@@ -335,7 +335,7 @@ open sim_oracle
 
 variables {i : spec.ι} (t : spec.domain i) (s : unit) (u : spec.range i)
 
-lemma apply_eq : ⟪query_f⟫ i (t, s) = (query_f i t ×ₘ return ()) := rfl
+@[simp] lemma apply_eq : ⟪query_f⟫ i (t, s) = do {u ← query_f i t, return (u, ())} := rfl
 
 -- lemma answer_query_eq : ⟪query_f⟫.answer_query i t = fst <$> (query_f i t ×ₘ return ()) := rfl
 

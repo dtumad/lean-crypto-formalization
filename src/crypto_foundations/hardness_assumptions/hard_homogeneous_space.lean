@@ -62,9 +62,17 @@ lemma card_eq_card (G X : Type) [add_comm_group G] [algorithmic_homogenous_space
   fintype.card G = fintype.card X :=
 fintype.card_congr (algorithmic_homogenous_space.equiv G X)
 
-lemma vadd_bijective (x : X) : function.bijective (λ g, g +ᵥ x : G → X) := sorry
+lemma vadd_bijective (x : X) : function.bijective (λ g, g +ᵥ x : G → X) :=
+begin
+  refine ⟨λ g g' h, _, λ x', ⟨x' -ᵥ x, vsub_vadd _ _⟩⟩,
+  simpa only [vadd_right_cancel_iff] using h,
+end
 
-lemma vsub_bijective (x : X) : function.bijective (λ x', x' -ᵥ x : X → G) := sorry
+lemma vsub_bijective (x : X) : function.bijective (λ x', x' -ᵥ x : X → G) :=
+begin
+  refine ⟨λ x' x'' h, _, λ g, ⟨g +ᵥ x, vadd_vsub _ _⟩⟩,
+  simpa only [vsub_left_cancel_iff] using h,
+end
 
 /-- An adversary for the vectorization game takes in a pair of base points `(x₁, x₂)`,
 and attempts to generate a vectorization, i.g. a vector `g` with `g +ᵥ x₂ = x₁`. -/

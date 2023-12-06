@@ -57,14 +57,6 @@ instance is_sub_spec_empty_spec (spec : oracle_spec) : is_sub_spec ∅ spec :=
 
 end empty_spec
 
--- section prob_comp_empty
-
--- instance has_coe_prob_comp_empty (α : Type) : has_coe (prob_comp ∅ α)
---   (oracle_comp unif_spec α) := ⟨λ oa,
---     dsimulate' _ oa⟩
-
--- end prob_comp_empty
-
 section coin_spec_unif_spec
 
 /-- Coerce a coin flip into a uniform random selection of a `bool`.
@@ -105,7 +97,7 @@ lemma is_sub_spec_append_right_apply {spec spec' : oracle_spec} (i : spec.ι) (t
 /-- Coerce an oracle and then append to the left. Already sort of exists,
   but the instance priorities don't work without explicitly having this. -/
 @[priority std.priority.default+10]
-noncomputable instance is_sub_spec_append_left_of_is_sub_spec
+instance is_sub_spec_append_left_of_is_sub_spec
   (spec sub_spec super_spec : oracle_spec)
   [h : is_sub_spec sub_spec super_spec] : is_sub_spec sub_spec (spec ++ super_spec) :=
 { to_fun := λ i t, ↑(h.to_fun i t),
@@ -114,7 +106,7 @@ noncomputable instance is_sub_spec_append_left_of_is_sub_spec
 /-- Coerce an oracle and then append to the right. Already sort of exists,
   but the instance priorities don't work without explicitly having this. -/
 @[priority std.priority.default+11]
-noncomputable instance is_sub_spec_append_right_of_is_sub_spec
+instance is_sub_spec_append_right_of_is_sub_spec
   (spec sub_spec super_spec : oracle_spec)
   [h : is_sub_spec sub_spec super_spec] : is_sub_spec sub_spec (super_spec ++ spec) :=
 { to_fun := λ i t, ↑(h.to_fun i t),
@@ -122,7 +114,7 @@ noncomputable instance is_sub_spec_append_right_of_is_sub_spec
 
 /-- Coerce the oracle on the right side of an existing set of appended oracles. -/
 @[priority std.priority.default+20]
-noncomputable instance is_sub_spec_left_side_append
+instance is_sub_spec_left_side_append
   (spec sub_spec super_spec : oracle_spec)
   [h : is_sub_spec sub_spec super_spec] : is_sub_spec (sub_spec ++ spec) (super_spec ++ spec) :=
 { to_fun := λ i, match i with
@@ -137,7 +129,7 @@ noncomputable instance is_sub_spec_left_side_append
 
 /-- Coerce the oracle on the right side of an existing set of appended oracles. -/
 @[priority std.priority.default+21]
-noncomputable instance is_sub_spec_right_side_append (spec sub_spec super_spec : oracle_spec)
+instance is_sub_spec_right_side_append (spec sub_spec super_spec : oracle_spec)
   [h : is_sub_spec sub_spec super_spec] : is_sub_spec (spec ++ sub_spec) (spec ++ super_spec) :=
 { to_fun := λ i, match i with
   | (sum.inl i) := λ t, @query (_ ++ super_spec) (sum.inl i) t
