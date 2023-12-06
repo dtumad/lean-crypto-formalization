@@ -76,12 +76,6 @@ def simulate (so : sim_oracle spec spec' S) : Π {α : Type},
 | _ (pure' α a) state := return ⟨a, state⟩
 | _ (query_bind' i t α oa) state := do {x ← so i (t, state), simulate (oa x.1) x.2}
 
--- /-- Convenience definition to use the default state as the initial state for `simulate`.
--- Marked to be reduced and inlined, so the definition is essentially just notational. -/
--- @[inline, reducible, simp]
--- def dsimulate (so : sim_oracle spec spec' S) (oa : oracle_comp spec α) :
---   oracle_comp spec' (α × S) := simulate so oa so.default_state
-
 lemma simulate_return : simulate so (return a) s = return (a, s) := rfl
 
 lemma simulate_bind : simulate so (oa >>= ob) s =
@@ -105,12 +99,6 @@ section simulate'
 /-- Get the result of simulation without returning the internal oracle state -/
 def simulate' (so : sim_oracle spec spec' S) (oa : oracle_comp spec α) (s : S) :
   oracle_comp spec' α := prod.fst <$> oa.simulate so s
-
--- /-- Convenience definition to use the default state as the initial state for `simulate'`.
--- Marked to be reduced and inlined, so the definition is essentially just notation. -/
--- @[inline, reducible, simp]
--- def dsimulate' (so : sim_oracle spec spec' S) (oa : oracle_comp spec α) :
---   oracle_comp spec' α := oa.simulate' so so.default_state
 
 lemma simulate'_def : simulate' so oa s = prod.fst <$> oa.simulate so s := rfl
 

@@ -31,15 +31,14 @@ Convenient when working with composed or appended oracles, to remove unneeded st
 In particular `unit` state values that start spreading can be avoided. -/
 def mask_state (so : sim_oracle spec spec' S) (mask : S ≃ S') :
   sim_oracle spec spec' S' :=
-{ default_state := mask so.default_state,
-  o := λ i x, prod.map id mask <$> (so.o i (prod.map id mask.symm x)) }
+λ i x, prod.map id mask <$> (so i (prod.map id mask.symm x))
 
 namespace mask_state
 
 variables (so : sim_oracle spec spec' S) (mask : S ≃ S')
 
 lemma mask_state_apply_eq {i : spec.ι} (z : spec.domain i × S') : so.mask_state mask i z =
-  prod.map id mask <$> (so.o i (prod.map id mask.symm z)) := rfl
+  prod.map id mask <$> (so i (prod.map id mask.symm z)) := rfl
 
 section simulate
 
@@ -154,17 +153,19 @@ end simulate'
 section is_tracking
 
 /-- Masking the state of a tracking oracle will produce another tracking oracle. -/
-instance is_tracking [hso : so.is_tracking] : (so.mask_state mask).is_tracking :=
-{ query_f := hso.query_f,
-  state_f := λ s i t u, mask (hso.state_f (mask.symm s) i t u),
-  apply_dist_equiv_state_f_map_query_f := λ i t s, by rw_dist_equiv
-    [hso.apply_dist_equiv_state_f_map_query_f i t (mask.symm s), bind_map_dist_equiv] }
+instance is_tracking (so : sim_oracle spec spec S) [hso : so.is_tracking] :
+  (so.mask_state mask).is_tracking :=
+{ fst_map_apply_eq_query' := begin
+    refine λ i t s, trans _ (is_tracking.fst_map_apply_eq_query so i t (mask.symm s)),
+    rw [mask_state, map_map_eq_map_comp, prod.map],
+    congr,
+  end }
 
-@[simp] lemma answer_query_eq [so.is_tracking] :
-  (so.mask_state mask).answer_query = so.answer_query := rfl
+-- @[simp] lemma answer_query_eq [so.is_tracking] :
+--   (so.mask_state mask).answer_query = so.answer_query := rfl
 
-@[simp] lemma update_state_eq [so.is_tracking] :
-  (so.mask_state mask).update_state = λ s i t u, mask (so.update_state (mask.symm s) i t u) := rfl
+-- @[simp] lemma update_state_eq [so.is_tracking] :
+--   (so.mask_state mask).update_state = λ s i t u, mask (so.update_state (mask.symm s) i t u) := rfl
 
 end is_tracking
 

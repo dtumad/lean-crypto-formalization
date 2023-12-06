@@ -34,8 +34,7 @@ then this will give a computation distributionally equivalent to the original co
 
 TODO: `seeded_sim_oracle`? `unif_spec` --> `uniform_oracle` -/
 def seeded_oracle (spec : oracle_spec) : sim_oracle spec spec (spec.query_seed) :=
-{ o := λ i x, indexed_list.get_or_else x.2 i (query i x.1),
-  default_state := ∅ }
+λ i x, indexed_list.get_or_else x.2 i (query i x.1)
 
 notation `seededₛₒ` := seeded_oracle _
 

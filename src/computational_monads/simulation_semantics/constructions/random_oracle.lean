@@ -25,11 +25,11 @@ but returns the same result to subsequent oracle queries.
 Masking is used to hide the irrelevent state of the `uniform_oracle` -/
 noncomputable def random_oracle (spec : oracle_spec) :
   sim_oracle spec unif_spec (query_cache spec) :=
-(uniformₛₒ ∘ₛ cachingₛₒ).mask_state (equiv.prod_punit (query_cache spec))
+(uniformₛₒ ∘ₛₒ cachingₛₒ).mask_state (equiv.prod_punit (query_cache spec))
 
 noncomputable def random_oracle' (spec : oracle_spec) :
   sim_oracle spec unif_spec spec.query_log :=
-(uniformₛₒ ∘ₛ (caching_oracle' spec)).mask_state (equiv.prod_punit _)
+(uniformₛₒ ∘ₛₒ (caching_oracle' spec)).mask_state (equiv.prod_punit _)
 
 notation `randomₛₒ` := random_oracle _
 

@@ -34,12 +34,10 @@ variables {α β γ δ : Type} {spec spec' : oracle_spec}
 The `query_cache.get_or_else` function allows us to run a fallback for non-cached values.
 TODO: `caching_sim_oracle` -/
 def caching_oracle (spec : oracle_spec) : sim_oracle spec spec (query_cache spec) :=
-{ default_state := ∅,
-  o := λ i ⟨t, cache⟩, cache.get_or_else i t (query i t) }
+λ i ⟨t, cache⟩, cache.get_or_else i t (query i t)
 
-def caching_oracle' (spec : oracle_spec) : sim_oracle spec spec spec.query_log :=
-{ default_state := ∅,
-  o := λ i ⟨t, cache⟩, cache.lookup_or_query i t }
+def caching_oracle' (spec : oracle_spec) : sim_oracle spec spec (query_log spec) :=
+λ i ⟨t, cache⟩, cache.lookup_or_query i t
 
 notation `cachingₛₒ` := caching_oracle _
 

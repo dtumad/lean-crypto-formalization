@@ -20,76 +20,38 @@ variables {α β γ : Type} {spec : oracle_spec}
 /-- Simulation oracle for preserving the current oracle queries as is.
 Can be combined with other simulation oracles to preserve some subset of queries,
 e.g. `so ++ₛₒ idₛₒ` will simulate the left side oracles and preserve right side oracles. -/
-@[inline, reducible] def identity_oracle (spec : oracle_spec) :
-  sim_oracle spec spec unit := ⟪query⟫
+def identity_oracle (spec : oracle_spec) : sim_oracle spec spec unit :=
+tracking_oracle (λ _ _ _ _, ())
 
 notation `idₛₒ` := identity_oracle _
 
-lemma identity_oracle.def : identity_oracle spec = ⟪query⟫ := rfl
+lemma identity_oracle.def : identity_oracle spec = tracking_oracle (λ _ _ _ _, ()) := rfl
 
 instance identity_oracle.is_stateless : (identity_oracle spec).is_stateless :=
-stateless_oracle.is_stateless query
+{ state_subsingleton := punit.subsingleton }
+
+instance identity_oracle.is_tracking : (identity_oracle spec).is_tracking :=
+tracking_oracle.is_tracking _
 
 namespace identity_oracle
 
-lemma apply_eq {i : spec.ι} (t : spec.domain i) (s : unit) :
-  idₛₒ i (t, s) = (query i t ×ₘ return ()) := rfl
-
-lemma answer_query_eq {i : spec.ι} (t : spec.domain i) :
-  (identity_oracle spec).answer_query i t = fst <$> (query i t ×ₘ return ()) := rfl
-
-lemma update_state_eq : (identity_oracle spec).update_state = λ _ _ _ _, () := rfl
-
-section simulate'
+@[simp] lemma apply_eq {i : spec.ι} (t : spec.domain i) (s : unit) :
+  idₛₒ i (t, s) = do {u ← query i t, return (u, ())} := rfl
 
 variables (oa : oracle_comp spec α) (s : unit)
 
-@[pairwise_dist_equiv] lemma simulate'_dist_equiv : simulate' idₛₒ oa s ≃ₚ oa :=
-is_tracking.simulate'_dist_equiv_self idₛₒ oa s
-  (λ i t, stateless_oracle.answer_query_dist_equiv _ _)
+@[simp] lemma simulate'_eq_self : simulate' idₛₒ oa s = oa :=
+begin
+  induction oa using oracle_comp.induction_on' with α a i t α oa hoa generalizing s,
+  { refl },
+  { simp_rw [simulate'_bind, simulate_query, apply_eq, bind_assoc, hoa, return_bind] }
+end 
 
-@[simp] lemma support_simulate' : (simulate' idₛₒ oa s).support = oa.support :=
-by pairwise_dist_equiv
-
-@[simp] lemma fin_support_simulate' [decidable_eq α] :
-  (simulate' idₛₒ oa s).fin_support = oa.fin_support :=
-by pairwise_dist_equiv
-
-@[simp] lemma eval_dist_simulate' : ⁅simulate' idₛₒ oa s⁆ = ⁅oa⁆ :=
-by pairwise_dist_equiv
-
-@[simp] lemma prob_output_simulate' (x : α) : ⁅= x | simulate' idₛₒ oa s⁆ = ⁅= x | oa⁆ :=
-by pairwise_dist_equiv
-
-@[simp] lemma prob_event_simulate' (e : set α) : ⁅e | simulate' idₛₒ oa s⁆ = ⁅e | oa⁆ :=
-by pairwise_dist_equiv
-
-end simulate'
-
-section simulate
-
-variables (oa : oracle_comp spec α) (s : unit)
-
-@[pairwise_dist_equiv] lemma simulate_dist_equiv : simulate idₛₒ oa s ≃ₚ (oa ×ₘ return ()) :=
-is_stateless.simulate_dist_equiv_self idₛₒ oa s
-  (λ i t, stateless_oracle.answer_query_dist_equiv _ _)
-
-@[simp] lemma support_simulate : (simulate idₛₒ oa s).support = oa.support ×ˢ {()} :=
-is_stateless.support_simulate_eq_support idₛₒ oa s (by simp)
-
-@[simp] lemma fin_support_simulate [decidable_eq α] : (simulate idₛₒ oa s).fin_support = oa.fin_support ×ˢ {()} :=
-is_stateless.fin_support_simulate_eq_fin_support idₛₒ oa s (by simp)
-
-@[simp] lemma eval_dist_simulate : ⁅simulate idₛₒ oa s⁆ = ⁅oa ×ₘ return ()⁆ :=
-is_stateless.eval_dist_simulate_eq_eval_dist idₛₒ oa s (by simp)
-
-@[simp] lemma prob_output_simulate (z : α × unit) : ⁅= z | simulate idₛₒ oa s⁆ = ⁅= z.1 | oa⁆ :=
-is_stateless.prob_output_simulate_eq_prob_output idₛₒ oa s (by simp [prob_output_query_eq_inv]) z
-
-@[simp] lemma prob_event_simulate (e : set (α × unit)) :
-  ⁅e | simulate idₛₒ oa s⁆ = ⁅fst '' e | oa⁆ :=
-is_stateless.prob_event_simulate_eq_prob_event idₛₒ oa s (by simp [prob_output_query_eq_inv]) e
-
-end simulate
+@[simp] lemma simulate_eq_self : simulate idₛₒ oa s = do {x ← oa, return (x, ())} :=
+begin
+  induction oa using oracle_comp.induction_on' with α a i t α oa hoa generalizing s,
+  { rw [simulate_return, return_bind, punit_eq s ()] },
+  { simp_rw [simulate_bind, simulate_query, apply_eq, bind_assoc, return_bind, hoa] }
+end
 
 end identity_oracle

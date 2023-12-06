@@ -3,7 +3,8 @@ Copyright (c) 2022 Devon Tuma. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
-import computational_monads.prob_comp
+import computational_monads.distribution_semantics.map
+import computational_monads.distribution_semantics.query
 import to_mathlib.uniform_of_vector
 import data.vector.mem
 

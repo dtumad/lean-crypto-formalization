@@ -33,21 +33,21 @@ section exec
 
 /-- Use the algorithm's simulation oracle to run a computation. -/
 def exec (alg : oracle_algorithm alg_spec)
-  (oa : oracle_comp alg_spec α) : oracle_comp unif_oracle α :=
-dsimulate' alg.base_sim_oracle oa
+  (oa : oracle_comp alg_spec α) (s : alg.base_S) : oracle_comp unif_oracle α :=
+simulate' alg.base_sim_oracle oa s
 
-variable (alg : oracle_algorithm alg_spec)
+variables (alg : oracle_algorithm alg_spec) (s : alg.base_S)
 
 @[simp] lemma exec_return (a : α) :
-  alg.exec (return' !alg_spec! a) = return' !unif_oracle! a := rfl
+  alg.exec (return' !alg_spec! a) s = return' !unif_oracle! a := rfl
 
 @[simp] lemma exec_bind (oa : oracle_comp alg_spec α) (ob : α → oracle_comp alg_spec β) :
-  alg.exec (oa >>= ob) = (dsimulate alg.base_sim_oracle oa) >>=
+  alg.exec (oa >>= ob) s = (simulate alg.base_sim_oracle oa s) >>=
     λ z, (simulate' alg.base_sim_oracle (ob z.1) z.2) :=
 simulate'_bind _ _ _ _
 
-@[simp] lemma exec_query (i : alg_spec.ι) (t : alg_spec.domain i) : alg.exec (query i t) =
-  prod.fst <$> alg.base_sim_oracle i (t, alg.base_sim_oracle.default_state) :=
+@[simp] lemma exec_query (i : alg_spec.ι) (t : alg_spec.domain i) :
+  alg.exec (query i t) s = prod.fst <$> alg.base_sim_oracle i (t, s) :=
 simulate'_query _ _ _ _
 
 end exec
@@ -61,24 +61,8 @@ def base_oracle_algorithm :
 
 namespace base_oracle_algorithm
 
-@[simp] lemma exec_eq (oa : oracle_comp unif_spec α) :
-  base_oracle_algorithm.exec oa = oa :=
-begin
-  simp [oracle_algorithm.exec, base_oracle_algorithm],
-  induction oa using oracle_comp.induction_on' with α a i t α oa hoa,
-  {
-    simp [simulate'_return],
-  },
-  {
-    simp [simulate'_bind, simulate_query,
-      identity_oracle.apply_eq, mprod.def],
-    rw [bind_assoc],
-    simp_rw [return_bind],
-    congr' 1,
-    refine funext (λ u, _),
-    specialize hoa u,
-    exact hoa,
-  }
-end
+@[simp] lemma exec_eq (oa : oracle_comp unif_spec α) (s : unit) :
+  base_oracle_algorithm.exec oa s = oa :=
+identity_oracle.simulate'_eq_self oa s
 
 end base_oracle_algorithm

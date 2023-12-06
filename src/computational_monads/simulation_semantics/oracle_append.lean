@@ -25,11 +25,10 @@ namespace sim_oracle
 
 def oracle_append (so : sim_oracle spec spec'' S) (so' : sim_oracle spec' spec'' S') :
   sim_oracle (spec ++ spec') spec'' (S × S') :=
-{ default_state := (so.default_state, so'.default_state),
-  o := λ i, match i with
-    | (sum.inl i) := λ ⟨t, s₁, s₂⟩, do {⟨u, s₁'⟩ ← so i (t, s₁), return (u, s₁', s₂)}
-    | (sum.inr i) := λ ⟨t, s₁, s₂⟩, do {⟨u, s₂'⟩ ← so' i (t, s₂), return (u, s₁, s₂')}
-  end }
+λ i, match i with
+| (sum.inl i) := λ ⟨t, s₁, s₂⟩, do {⟨u, s₁'⟩ ← so i (t, s₁), return (u, s₁', s₂)}
+| (sum.inr i) := λ ⟨t, s₁, s₂⟩, do {⟨u, s₂'⟩ ← so' i (t, s₂), return (u, s₁, s₂')}
+end
 
 infixl ` ++ₛ `:65 := oracle_append
 
@@ -115,25 +114,16 @@ end coe_append_right
 
 section is_tracking
 
-instance is_tracking [hso : so.is_tracking] [hso' : so'.is_tracking] :
-  (so ++ₛ so').is_tracking :=
-{ query_f := λ i, sum.rec_on i so.answer_query so'.answer_query,
-  state_f := λ s i, sum.rec_on i (λ i t u, (so.update_state s.1 i t u, s.2))
-    (λ i t u, (s.1, so'.update_state s.2 i t u)),
-  apply_dist_equiv_state_f_map_query_f := λ i t s, begin
-    cases i; simp only [apply_inl_eq, apply_inr_eq],
-    { rw_dist_equiv [hso.apply_dist_equiv_state_f_map_query_f,
-        map_bind_dist_equiv, map_return_dist_equiv] },
-    { rw_dist_equiv [hso'.apply_dist_equiv_state_f_map_query_f,
-        map_bind_dist_equiv, map_return_dist_equiv] }
-  end }
+-- instance is_tracking [hso : so.is_tracking] [hso' : so'.is_tracking] :
+--   (so ++ₛ so').is_tracking :=
+-- {  }
 
-@[simp] lemma answer_query_eq [so.is_tracking] [so'.is_tracking] :
-  (so ++ₛ so').answer_query = λ i, sum.rec_on i so.answer_query so'.answer_query := rfl
+-- @[simp] lemma answer_query_eq [so.is_tracking] [so'.is_tracking] :
+--   (so ++ₛ so').answer_query = λ i, sum.rec_on i so.answer_query so'.answer_query := rfl
 
-@[simp] lemma update_state_eq [so.is_tracking] [so'.is_tracking] :
-  (so ++ₛ so').update_state = λ s i, sum.rec_on i (λ i t u, (so.update_state s.1 i t u, s.2))
-    (λ i t u, (s.1, so'.update_state s.2 i t u)) := rfl
+-- @[simp] lemma update_state_eq [so.is_tracking] [so'.is_tracking] :
+--   (so ++ₛ so').update_state = λ s i, sum.rec_on i (λ i t u, (so.update_state s.1 i t u, s.2))
+--     (λ i t u, (s.1, so'.update_state s.2 i t u)) := rfl
 
 end is_tracking
 
