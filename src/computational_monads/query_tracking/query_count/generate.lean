@@ -203,7 +203,9 @@ begin
   {
     have : il.take_to_count qc + il.drop_to_count qc = il := sorry,
     have ht := prob_output_seq_map_add_cancel_unique (generate qc oa) (generate qc' oa) il
-      _ _ (this) sorry,
+      _ _ (this) begin
+        sorry,
+      end,
     refine trans _ ht.symm,
     rw [prob_output_generate _ _ _ hil, prob_output_generate, prob_output_generate],
     {

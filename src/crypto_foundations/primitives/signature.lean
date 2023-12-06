@@ -304,6 +304,23 @@ def unforgeable_exp {sig : signature_alg spec M PK SK S} (adv : unforgeable_adv 
   is_valid := λ _ b, b = tt,
   .. sig }
 
+namespace unforgeable_exp
+
+variables {sig : signature_alg spec M PK SK S} (adv : unforgeable_adv sig)
+
+lemma advantage_eq_prob_output : (unforgeable_exp adv).advantage =
+  ⁅= tt | sig.exec (do {⟨pk, sk⟩ ← sig.keygen (),
+    ⟨⟨m, σ⟩, log⟩ ← simulate (sig.signingₛₒ pk sk) (adv.run pk) ∅,
+    b ← sig.verify (pk, m, σ),
+    return (b && !(log.was_queried () m))})⁆ :=
+begin
+  rw [sec_exp.advantage, unforgeable_exp],
+  simp only,
+  sorry,
+end
+
+end unforgeable_exp
+
 -- noncomputable def unforgeable_advantage (sig : signature)
 --   (adv : unforgeable_adversary sig) : ℝ≥0∞ :=
 -- adv.advantage sig.unforgeable_experiment

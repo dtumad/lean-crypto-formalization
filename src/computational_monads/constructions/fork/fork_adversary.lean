@@ -45,32 +45,11 @@ noncomputable def choose_fork_exp (adv : fork_adversary spec α β i)
   base_S := unit, init_state := (),
   base_sim_oracle := uniformₛₒ }
 
--- def fork_adversary.cf_advantage
+namespace choose_fork_exp
 
--- noncomputable def fork_adversary.cf_experiment
---   (inp_gen : oracle_comp spec α)
---   (adv : fork_adversary spec α β i) :
---   sec_experiment spec spec α β unit unit unit :=
--- public_experiment inp_gen (λ _, idₛₒ)
---   (λ x y, return (adv.choose_fork x y ≠ none)) uniformₛₒ
 
--- noncomputable def fork_adversary.cf_advantage (adv : fork_adversary spec α β i)
---   (inp_gen : oracle_comp spec α) : ℝ≥0∞ :=
--- adv.advantage (adv.cf_experiment inp_gen)
 
--- noncomputable def fork_adversary.cf_advantage (adv : fork_adversary spec α β i) (y : α) :=
--- ⁅(≠) none | adv.choose_fork y <$> adv.run y⁆
-
--- @[simps]
--- def choose_fork_experiment (adv : fork_adversary spec α β i q) (x : α) :
---   sec_experiment spec α β unit unit :=
--- { inp_gen := return (x, ()),
---   is_valid := λ x y, return (adv.choose_fork x.1 y.1 ≠ none) }
-
--- -- lemma choose_fork_experiment.inp_gen_eq
-
--- noncomputable def fork_adversary.cf_advantage (adv : fork_adversary spec α β i q) (x : α) : ℝ≥0∞ :=
--- adv.base_advantage (choose_fork_experiment adv x)
+end choose_fork_exp
 
 -- lemma cf_advantage_eq_prob_output_ne_none (adv : fork_adversary spec α β i q) (x : α) :
 --   adv.cf_advantage x = ⁅(≠) none | adv.choose_fork x <$> adv.simulate_run (x, ())⁆ :=

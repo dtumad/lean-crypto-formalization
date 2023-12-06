@@ -35,7 +35,8 @@ noncomputable def fork_success_exp (adv : fork_adversary spec α β i)
 { inp_gen := inp_gen,
   main := (fork adv).run,
   is_valid := λ x fr, fork_success fr,
-  base_sim_oracle := uniformₛₒ, init_state := (), .. }
+  base_sim_oracle := uniformₛₒ,
+  init_state := (), .. }
 
 namespace fork_success_exp
 

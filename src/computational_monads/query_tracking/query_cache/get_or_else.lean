@@ -31,7 +31,7 @@ match cache.lookup i t with
 | (some u) := return (u, cache)
 end
 
-@[inline, reducible] noncomputable def get_or_query (cache : query_cache spec) (i : spec.ι)
+@[inline, reducible] def get_or_query (cache : query_cache spec) (i : spec.ι)
   (t : spec.domain i) := cache.get_or_else i t (query i t)
 
 variables (cache cache' : query_cache spec)
@@ -283,7 +283,15 @@ lemma fst_map_get_or_else_dist_equiv :
   prod.fst <$> cache.get_or_else i t ou ≃ₚ
     (cache.lookup i t).elim (query i t) return :=
 begin
-  sorry
+  by_cases h : t ∈ᵢ cache,
+  {
+    simp [get_or_else_eq_ite, h],
+    sorry,
+  },
+  {
+    sorry,
+  }
+  -- rw [get_or_else_eq_ite],
 end
 
 lemma fst_map_get_or_else_dist_equiv_fst_map_get_or_else

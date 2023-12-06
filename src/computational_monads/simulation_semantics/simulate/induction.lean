@@ -135,35 +135,4 @@ section prob_event
 
 end prob_event
 
--- section to_move
-
--- /-- Let `so` and `so'` be two simulation oracles-/
--- lemma support_simulate_resimulate_eq_support_simulate (so : sim_oracle spec spec' S)
---   (so' : sim_oracle spec spec' S) (f : S → S)
---   (h : ∀ i t s, (⋃ x ∈ (so i (t, s)).support, (so' i (t, f (prod.snd x))).support) =
---     (so i (t, s)).support)
---   (oa : oracle_comp spec α) (s : S) :
---   (simulate so oa s >>= λ x, simulate so' oa (f x.2)).support = (simulate so oa s).support :=
--- begin
---   sorry
--- end
-
--- /-- Simulating a computation, and then -/
--- lemma support_simulate_simulate_eq_support_simulate (so so' : sim_oracle spec spec' S)
---   (h : ∀ i t s, (⋃ x ∈ (so i (t, s)).support, (so' i (t, prod.snd x)).support) =
---     (so i (t, s)).support) (s : S) (oa : oracle_comp spec α) :
---   (simulate so oa s >>= λ x, simulate so' oa x.2).support = (simulate so oa s).support :=
--- begin
---   refine symm (support_simulate_eq_induction so oa s (λ α a s, _) _ _),
---   { simp only [simulate_return, support_bind_return, support_return, set.image_singleton] },
---   { intros α β oa ob s,
---     ext x,
---     simp,
-
---     sorry },
---   { exact h }
--- end
-
--- end to_move
-
 end oracle_comp
