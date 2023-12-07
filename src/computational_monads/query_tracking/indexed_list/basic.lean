@@ -145,6 +145,8 @@ def empty (spec : oracle_spec) (τ : spec.ι → Type) : spec.indexed_list τ :=
 
 instance : has_emptyc (spec.indexed_list τ) := ⟨empty spec τ⟩
 
+instance : inhabited (spec.indexed_list τ) := ⟨∅⟩
+
 @[simp] lemma empty_apply (i) : (∅ : spec.indexed_list τ) i = [] := rfl
 @[simp] lemma active_oracles_empty : (∅ : spec.indexed_list τ).active_oracles = ∅ := rfl
 @[simp] lemma get_count_empty (i) : (∅ : spec.indexed_list τ).get_count i = 0 := rfl

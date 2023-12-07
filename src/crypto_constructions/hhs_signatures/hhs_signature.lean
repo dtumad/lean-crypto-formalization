@@ -37,16 +37,15 @@ noncomputable def hhs_signature (G X M : Type) [decidable_eq M]
   sign := λ ⟨⟨⟨x₀, pk⟩, sk⟩, m⟩,
     do {(cs : vector G n) ← repeat ($ᵗ G) n,
       (ys : vector X n) ← return (cs.map (+ᵥ pk)),
-      (hash : vector bool n) ← query₂ () (ys, m),
+      (hash : vector bool n) ← query (sum.inr ()) (ys, m),
       return (zip_commits sk cs hash, hash)},
   -- Verify a signature by checking that the commitments map to the expected values.
   verify := λ ⟨⟨x₀, pk⟩, m, zs, hash⟩,
     do {(ys : vector X n) ← return (retrieve_commits x₀ pk zs hash),
-      (hash' : vector bool n) ← query₂ () (ys, m),
+      (hash' : vector bool n) ← query (sum.inr ()) (ys, m),
       return (hash' = hash)},
   base_sim_oracle := (idₛₒ ++ₛ randomₛₒ).mask_state (equiv.punit_prod _),
-  init_state := ∅,
-  .. }
+  init_state := ∅, .. }
 
 namespace hhs_signature
 

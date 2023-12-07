@@ -120,7 +120,6 @@ begin
   rw [unforgeable_exp.advantage_eq_prob_output],
   sorry,
 end
-
 -- @[simp] lemma choose_fork_eq_queried_index
 --   (adv : (hhs_signature G X M n).unforgeable_adversary) :
 --   (mock_unforgeable_adversary adv).choose_fork =
