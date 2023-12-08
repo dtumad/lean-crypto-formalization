@@ -25,7 +25,7 @@ variables {alg_spec : oracle_spec} {α β γ : Type}
 
 structure oracle_algorithm (alg_spec : oracle_spec) :=
 (base_S : Type) -- Oracle state when simulating computations
-(init_state : base_S) -- Initial state for the experiment
+(init_state : base_S) -- Initial state for the oracle
 (base_sim_oracle : sim_oracle alg_spec unif_spec base_S)
 
 namespace oracle_algorithm

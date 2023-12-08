@@ -125,41 +125,42 @@ open sum (inl) (inr)
 def mock_signing_sim_oracle_k (x₀ pk : X) :
   sim_oracle (hhs_signature G X M n).unforgeable_adv_spec
   (unif_spec ++ ((vector X n × M) ↦ₒ vector bool n))
-  (list (vector X n × vector G n × vector bool n) ×
+  (ℕ × list (vector X n × vector G n × vector bool n) ×
     query_log ((vector X n × M) ↦ₒ (vector G n × vector bool n))) :=
 λ i, match i with
-  -- For queries to `unif_spec` just forward them through
-  | (inl (inl i)) := λ ⟨t, ⟨seed, cache⟩⟩, do
-      { u ← query (inl i) t,
-        return (u, (seed, cache)) }
-  | (inl (inr ())) := λ ⟨⟨ys, m⟩, ⟨seed, cache⟩⟩,
-      -- Check if the query is already cached
+-- For queries to `unif_spec` just forward them through
+| (inl (inl i)) := λ ⟨t, ⟨j, seed, cache⟩⟩, do
+    { u ← query (inl i) t,
+      return (u, (j, seed, cache)) }
+| (inl (inr ())) := λ ⟨⟨ys, m⟩, ⟨j, seed, cache⟩⟩,
+    -- Check if the query is already cached
+    match cache.lookup () (ys, m) with
+    | (some (zs, bs)) := return (bs, (j, seed, cache))
+    | none :=
+      -- Check if this `ys` is seeded already
+      match seed.find (λ v, fst v = ys) with
+      | (some (ys', zs, bs)) :=
+          let seed' := seed.erase (ys', zs, bs) in
+          return (bs, (j, seed', cache.log_query () (ys, m) (zs, bs)))
+      | none := do
+          { bs ← query (inr ()) (ys, m),
+            return (bs, (j + 1, seed,
+              cache.log_query () (ys, m) (default, bs)))}
+      end
+    end
+| (inr ()) := λ ⟨m, ⟨j, seed, cache⟩⟩,
+    -- Grab the next seed value
+    match seed with
+    | ((ys, zs, bs) :: seed') :=
       match cache.lookup () (ys, m) with
-      | (some (zs, bs)) := return (bs, (seed, cache))
+      | (some (zs', bs')) := 
+          return ((zs', bs'), (j, seed', cache))
       | none :=
-          -- Check if this `ys` is seeded already
-          match seed.find (λ v, fst v = ys) with
-          | (some (ys', zs, bs)) :=
-              let seed' := seed.erase (ys', zs, bs) in
-              return (bs, (seed', cache.log_query () (ys, m) (zs, bs)))
-          | none := do
-              { bs ← query (inr ()) (ys, m),
-                return (bs, (seed, cache.log_query () (ys, m) (default, bs)))}
-          end
+          return ((zs, bs), (j, seed', cache.log_query () (ys, m) (zs, bs)))
       end
-  | (inr ()) := λ ⟨m, ⟨seed, cache⟩⟩,
-      -- Grab the next seed value
-      match seed with
-      | ((ys, zs, bs) :: seed') :=
-          match cache.lookup () (ys, m) with
-          | (some (zs', bs')) := 
-              return ((zs', bs'), (seed', cache.log_query () (ys, m) (zs', bs')))
-          | none :=
-              return ((zs, bs), (seed', cache.log_query () (ys, m) (zs, bs)))
-          end
-      -- This case shouldn't happen in practice
-      | list.nil := return default
-      end
+    -- This case shouldn't happen in practice
+    | list.nil := return default
+    end
 end
 
 

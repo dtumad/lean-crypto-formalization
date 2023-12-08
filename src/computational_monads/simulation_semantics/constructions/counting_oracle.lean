@@ -23,6 +23,8 @@ tracked via a `query_count`, whithout modifying the query calls themselves. -/
 def counting_oracle (spec : oracle_spec) : sim_oracle spec spec (query_count spec) :=
 tracking_oracle (λ i t u qc, qc.increment i 1)
 
+
+
 notation `countingₛₒ` := counting_oracle _
 
 instance counting_oracle.is_tracking : (counting_oracle spec).is_tracking :=
