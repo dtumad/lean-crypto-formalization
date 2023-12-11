@@ -31,7 +31,7 @@ variables {α β γ : Type} {spec spec' : oracle_spec} {τ τ' : spec.ι → Typ
 
 /-- Get the first value from an `indexed_list` at an index, and remove it from the list.
 If the list at that index is empty, instead run the computation `oa` and return the result. -/
-noncomputable def get_or_else (il : spec.indexed_list τ) (i : spec.ι) [inhabited (τ i)]
+def get_or_else (il : spec.indexed_list τ) (i : spec.ι) [inhabited (τ i)]
   (oa : oracle_comp spec' (τ i)) : oracle_comp spec' (τ i × spec.indexed_list τ) :=
 if i ∈ il.active_oracles then return (il.get_head i) else (λ t, (t, il)) <$> oa
 

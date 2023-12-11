@@ -27,7 +27,7 @@ open oracle_spec
 variables {α β γ : Type} {spec spec' : oracle_spec}
 
 /-- Computation that repeats `oa` until `p` holds on the result, with at most `n` attempts. -/
-noncomputable def try_until (oa : oracle_comp spec α) (p : α → Prop) [decidable_pred p]
+def try_until (oa : oracle_comp spec α) (p : α → Prop) [decidable_pred p]
   (n : ℕ) : oracle_comp spec (option α) :=
 (λ xs, (vector.to_list xs).find p) <$> (repeat oa n)
 

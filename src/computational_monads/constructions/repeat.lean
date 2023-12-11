@@ -28,7 +28,7 @@ open oracle_spec vector
 variables {α β γ : Type} {spec spec' : oracle_spec}
 
 /-- Repeat the computation `oa` independently `n` times to get a length `n` vector of results. -/
-noncomputable def repeat (oa : oracle_comp spec α) : Π (n : ℕ), oracle_comp spec (vector α n)
+def repeat (oa : oracle_comp spec α) : Π (n : ℕ), oracle_comp spec (vector α n)
 | 0 := return nil
 | (n + 1) := do { a ← oa, as ← repeat n, return (a ::ᵥ as) }
 
