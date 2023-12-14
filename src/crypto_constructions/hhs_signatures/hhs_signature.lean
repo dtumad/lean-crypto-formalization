@@ -63,7 +63,7 @@ variables (u : unit)
   do {x₀ ←$ᵗ X, sk ←$ᵗ G, return ((x₀, sk +ᵥ x₀), sk)} := rfl
 
 lemma support_gen : ((hhs_signature G X M n).keygen u).support =
-  ⋃ (x₀ : X) (sk : G), {((x₀, sk +ᵥ x₀), sk)} := 
+  ⋃ (x₀ : X) (sk : G), {((x₀, sk +ᵥ x₀), sk)} :=
 by simp only [keygen_apply, support_bind, support_coe_sub_spec, support_uniform_select_fintype,
   set.top_eq_univ, set.mem_univ, support_bind_return, set.image_univ,
   set.Union_true, set.Union_singleton_eq_range]
@@ -108,5 +108,16 @@ section is_valid
 -- end
 
 end is_valid
+
+section unforgeable_advantage
+
+lemma unforgeable_advantage_eq :
+  (signature_alg.unforgeable_exp (hhs_signature G X M n).unforgeable_adv).advantage =
+    _ :=
+begin
+
+end
+
+end unforgeable_advantage
 
 end hhs_signature

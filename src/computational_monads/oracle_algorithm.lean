@@ -51,6 +51,10 @@ simulate'_bind _ _ _ _
   alg.exec (query i t) = prod.fst <$> alg.base_sim_oracle i (t, alg.init_state) :=
 simulate'_query _ _ _ _
 
+@[simp] lemma map_exec (f : α → β) (oa : oracle_comp alg_spec α) :
+  f <$> (alg.exec oa) = alg.exec (f <$> oa) :=
+by simp_rw [exec, simulate'_map]
+
 end exec
 
 end oracle_algorithm

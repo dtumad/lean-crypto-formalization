@@ -72,6 +72,11 @@ prob_output_bind_return_eq_sum_fin_support_indicator oa f y
 
 end eval_dist
 
+section prob_output
+
+
+end prob_output
+
 section prob_event
 
 variable (e : set β)
@@ -93,6 +98,14 @@ lemma prob_event_map_eq_tsum [decidable_pred (∈ e)] :
 (prob_event_map_eq_tsum_indicator oa f e).trans
   (tsum_congr (λ x, by simp only [set.indicator, set.mem_preimage]))
 
+@[simp] lemma prob_event_eq_eq_prob_output_map (y : β) (f : α → β) :
+  ⁅λ x, f x = y | oa⁆ = ⁅= y | f <$> oa⁆ :=
+by simpa only [← prob_event_eq_eq_prob_output, prob_event_map, @eq_comm β _ y, set.preimage]
+
+@[simp] lemma prob_event_eq_eq_prob_output_map' (y : β) (f : α → β) :
+  ⁅λ x, y = f x | oa⁆ = ⁅= y | f <$> oa⁆ :=
+by simpa only [← prob_event_eq_eq_prob_output, prob_event_map, set.preimage]
+
 end prob_event
 
 lemma map_dist_equiv_bind_return : f <$> oa ≃ₚ oa >>= (λ x, return (f x)) := dist_equiv.rfl
@@ -113,22 +126,13 @@ variable (a : α)
 /-- This version of a map-return lemma preserves the original `oracle_spec`,
 which works well with `rw_dist_equiv`-/
 lemma map_return_dist_equiv : f <$> (return' !spec! a) ≃ₚ (return' !spec! (f a)) :=
-by pairwise_dist_equiv
+by rw [map_pure]
 
 /-- This version of a map-return lemma allows for an arbitrary `oracle_spec` on both sides,
 which works well with `pairwise_dist_equiv`. -/
-@[pairwise_dist_equiv]
-lemma map_return_dist_equiv' : f <$> (return' !spec! a) ≃ₚ (return' !spec'! (f a)) :=
-begin
-  refine dist_equiv.ext (λ x, _),
-  by_cases hx : f a = x,
-  { induction hx,
-    simp only [prob_output_eq_one_of_subset, set.subset_singleton_iff, support_map, support_return,
-      set.image_singleton, set.mem_singleton_iff, imp_self, implies_true_iff] },
-  { simp only [(prob_output_return_eq_zero_iff _ _ _).2 (ne.symm hx), prob_output_eq_zero_iff,
-      ne.symm hx, support_map, support_return, set.image_singleton,
-      set.mem_singleton_iff, not_false_iff] }
-end
+@[pairwise_dist_equiv] lemma map_return_dist_equiv' :
+  f <$> (return' !spec! a) ≃ₚ (return' !spec'! (f a)) :=
+dist_equiv.ext (λ x, rfl)
 
 lemma support_map_return : (f <$> (return' !spec! a)).support = {f a} :=
 by simp only [support_map, support_return, set.image_singleton]
@@ -136,9 +140,9 @@ by simp only [support_map, support_return, set.image_singleton]
 lemma mem_support_map_return_iff : y ∈ (f <$> (return' !spec! a)).support ↔ y = f a :=
 by simp only [support_map, support_return, set.image_singleton, set.mem_singleton_iff]
 
-@[simp] lemma fin_support_map_return [decidable_eq β] :
+lemma fin_support_map_return [decidable_eq β] :
   (f <$> return' !spec! a).fin_support = {f a} :=
-by simp [oracle_comp.map_eq_bind_return_comp]
+by simp only [map_pure, fin_support_return]
 
 lemma mem_fin_support_map_return_iff : y ∈ (f <$> return' !spec! a).support ↔ y = f a :=
 by simp only [support_map, support_return, set.image_singleton, set.mem_singleton_iff]
@@ -146,20 +150,20 @@ by simp only [support_map, support_return, set.image_singleton, set.mem_singleto
 lemma eval_dist_map_return : ⁅f <$> return' !spec! a⁆ = pmf.pure (f a) :=
 by simp only [eval_dist_map, eval_dist_return, pmf.map_pure]
 
-@[simp] lemma prob_output_map_return (x : β) :
+lemma prob_output_map_return (x : β) :
   ⁅= x | f <$> return' !spec! a⁆ = ⁅= x | return' !spec! (f a)⁆ :=
 by pairwise_dist_equiv
 
-@[simp] lemma prob_event_map_return (e : set β) :
+lemma prob_event_map_return (e : set β) :
   ⁅e | f <$> (return' !spec! a)⁆ = ⁅e | return' !spec! (f a)⁆ :=
-by pairwise_dist_equiv
+by rw [map_pure]
 
 end map_return
 
 section map_comp
 
 @[pairwise_dist_equiv] lemma map_comp_dist_equiv : g <$> (f <$> oa) ≃ₚ (g ∘ f) <$> oa :=
-by simp only [dist_equiv.def, eval_dist_map, pmf.map_comp]
+by simp only [map_map_eq_map_comp]
 
 lemma support_map_comp : (g <$> (f <$> oa)).support = ((g ∘ f) <$> oa).support :=
 by pairwise_dist_equiv
@@ -181,7 +185,10 @@ end map_comp
 
 section map_bind
 
-@[simp] lemma support_map_bind : (g <$> (oa >>= ob)).support =
+@[simp] lemma map_bind : g <$> (oa >>= ob) = oa >>= λ x, g <$> (ob x) :=
+by rw [map_bind]
+
+lemma support_map_bind : (g <$> (oa >>= ob)).support =
   ⋃ a ∈ oa.support, g '' (ob a).support :=
 by simp_rw [support_map, support_bind, set.image_Union]
 
@@ -189,11 +196,10 @@ lemma mem_support_map_bind_iff : z ∈ (g <$> (oa >>= ob)).support ↔
   ∃ x ∈ oa.support, ∃ y ∈ (ob x).support, g y = z :=
 by simp only [support_map_bind, set.mem_Union, set.mem_image, exists_prop]
 
-@[simp] lemma fin_support_map_bind [decidable_eq α] [decidable_eq β] [decidable_eq γ] :
+lemma fin_support_map_bind [decidable_eq α] [decidable_eq β] [decidable_eq γ] :
   (g <$> (oa >>= ob)).fin_support =
     finset.bUnion oa.fin_support (λ a, (ob a).fin_support.image g) :=
-by simp_rw [fin_support_eq_iff_support_eq_coe, finset.coe_bUnion, finset.coe_image,
-  coe_fin_support_eq_support, support_map_bind]
+by simp only [map_bind, fin_support_bind, fin_support_map]
 
 lemma mem_fin_support_map_bind_iff [decidable_eq α] [decidable_eq β] [decidable_eq γ] :
   z ∈ (g <$> (oa >>= ob)).fin_support ↔
@@ -296,34 +302,36 @@ trans ((bind_map_dist_equiv _ _ _).prob_output_eq z) (prob_output_bind_eq_sum_fi
 
 end bind_map
 
-section map_id
-
-lemma map_id_dist_equiv : id <$> oa ≃ₚ oa := by pairwise_dist_equiv
-
-@[simp] lemma support_map_id : (id <$> oa).support = oa.support :=
-by pairwise_dist_equiv
-
-@[simp] lemma fin_support_map_id [decidable_eq α] : (id <$> oa).fin_support = oa.fin_support :=
-by pairwise_dist_equiv
-
-@[simp] lemma eval_dist_map_id : ⁅id <$> oa⁆ = ⁅oa⁆ :=
-by pairwise_dist_equiv
-
-@[simp] lemma prob_output_map_id (x : α) : ⁅= x | id <$> oa⁆ = ⁅= x | oa⁆ :=
-by pairwise_dist_equiv
-
-@[simp] lemma prob_event_map_id (e : set α) : ⁅e | id <$> oa⁆ = ⁅e | oa⁆ :=
-by pairwise_dist_equiv
-
-end map_id
-
 section map_const
 
-@[simp_dist_equiv] lemma map_const_dist_equiv (b : β) : (λ _, b) <$> oa ≃ₚ return' !spec! b :=
-bind_const_dist_equiv oa (return b)
+variable (b : β)
 
--- TODO: other lemmas
--- @[sipm] lemma
+@[simp_dist_equiv] lemma map_const_dist_equiv : (λ _, b) <$> oa ≃ₚ return' !spec'! b :=
+begin
+  refine dist_equiv.ext (λ y, _),
+  by_cases hy : b = y,
+  { simp only [hy, prob_output_eq_one_of_subset, set.subset_singleton_iff, support_map,
+      set.mem_image, and_imp, forall_exists_index, forall_apply_eq_imp_iff₂,
+      eq_self_iff_true, implies_true_iff, prob_output_return_self] },
+  { simp only [prob_output_return_of_ne _ (ne.symm hy), hy, prob_output_eq_zero_iff, support_map,
+      set.mem_image, and_false, exists_false, not_false_iff] }
+end
+
+@[simp] lemma support_map_const : ((λ _, b) <$> oa).support = {b} :=
+by simp [map_eq_bind_pure_comp]
+
+@[simp] lemma fin_support_map_const [decidable_eq β] :
+  ((λ _, b) <$> oa).fin_support = {b} :=
+by simp only [fin_support_eq_iff_support_eq_coe, support_map_const, finset.coe_singleton]
+
+@[simp] lemma eval_dist_map_const : ⁅(λ _, b) <$> oa⁆ = pmf.pure b :=
+trans (by pairwise_dist_equiv) (@eval_dist_pure _ spec b)
+
+@[simp] lemma prob_output_map_const (y : β) : ⁅= y | (λ _, b) <$> oa⁆ = ⁅= y | return' !spec! b⁆ :=
+by pairwise_dist_equiv
+
+@[simp] lemma prob_event_map_const (e : set β) : ⁅e | (λ _, b) <$> oa⁆ = ⁅e | return' !spec! b⁆ :=
+by pairwise_dist_equiv
 
 end map_const
 

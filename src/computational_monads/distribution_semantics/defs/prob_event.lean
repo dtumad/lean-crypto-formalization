@@ -73,6 +73,12 @@ trans (congr_arg _ (set.ext $ λ y, eq_comm)) (prob_event_singleton_eq_prob_outp
 @[simp] lemma prob_event_eq_eq_prob_output' (x : α) : ⁅(= x) | oa⁆ = ⁅= x | oa⁆ :=
 trans (congr_arg _ (funext (λ x', by simp [@eq_comm α x' x]))) (prob_event_eq_eq_prob_output oa x)
 
+-- @[simp] lemma prob_event_eq_eq_prob_output'' (y : β) (f : α → β) :
+--   ⁅λ x, f x = y | oa⁆ = ⁅= y | f <$> oa⁆ :=
+-- begin
+
+-- end
+
 lemma prob_event_eq_of_eval_dist_eq {oa : oracle_comp spec α} {oa' : oracle_comp spec' α}
   (h : ⁅oa⁆ = ⁅oa'⁆) (e : set α) : ⁅e | oa⁆ = ⁅e | oa'⁆ :=
 by simp only [h, prob_event.def]

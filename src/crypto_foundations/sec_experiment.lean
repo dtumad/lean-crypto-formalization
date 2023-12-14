@@ -34,10 +34,20 @@ variables {exp_spec : oracle_spec} {α β γ : Type}
 
 def run (exp : sec_exp exp_spec α β) :
   oracle_comp unif_spec (α × β) :=
-exp.exec (do {x ← exp.inp_gen, y ← exp.main x, return (x, y)} )
+exp.exec (do {x ← exp.inp_gen, y ← exp.main x, return (x, y)})
+
+lemma run_def (exp : sec_exp exp_spec α β) :
+  exp.run = exp.exec (do {x ← exp.inp_gen, y ← exp.main x, return (x, y)}) := rfl
+
+-- lemma run_eq_simulate' (exp : sec_exp exp_spec α β) :
+--   exp.run = simulate' exp.base_sim_oracle
+--     (do {x ← exp.inp_gen, y ← exp.main x, return (x, y)}) exp.init_state := rfl
 
 noncomputable def advantage (exp : sec_exp exp_spec α β) : ℝ≥0∞ :=
 ⁅λ z, exp.is_valid z.1 z.2 | exp.run⁆
+
+lemma advantage_eq_prob_event (exp : sec_exp exp_spec α β) :
+  exp.advantage = ⁅λ z, exp.is_valid z.1 z.2 | exp.run⁆ := rfl
 
 -- lemma le_advantage_of_forall_inp (exp : sec_exp exp_spec α β) (r : ℝ≥0∞)
 --   (h : ∀ x ∈ (exp.exec exp.inp_gen).support,
