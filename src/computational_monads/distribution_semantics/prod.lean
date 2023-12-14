@@ -71,42 +71,35 @@ section fst_snd_map_bind_return_dist_equiv
 
 variables (oa : oracle_comp spec α) (f : α → β) (g : α → γ) (h : α → δ)
 
-@[simp_dist_equiv] lemma fst_map_bind_return_dist_equiv :
+@[simp] lemma fst_map_bind_return :
+  (fst <$> (do {x ← oa, return (f x, g x)}) : oracle_comp spec β) = f <$> oa :=
+by simpa only [map_bind]
+
+@[simp] lemma snd_map_bind_return :
+  (snd <$> (do {x ← oa, return (f x, g x)}) : oracle_comp spec γ) = g <$> oa :=
+by simpa only [map_bind]
+
+lemma fst_map_bind_return_dist_equiv :
   fst <$> (oa >>= λ x, return (f x, g x)) ≃ₚ f <$> oa :=
-by pairwise_dist_equiv
+by rw [fst_map_bind_return]
 
-lemma fst_map_bind_return_id_dist_equiv : fst <$> (oa >>= λ x, return (x, g x)) ≃ₚ oa :=
-by rw_dist_equiv [map_bind_dist_equiv, return_bind_dist_equiv, map_id_dist_equiv]
-
-@[simp_dist_equiv] lemma snd_map_bind_return_dist_equiv :
+lemma snd_map_bind_return_dist_equiv :
   snd <$> (oa >>= λ x, return (f x, g x)) ≃ₚ g <$> oa :=
-by pairwise_dist_equiv
-
-lemma snd_map_bind_return_id_dist_equiv :
-  snd <$> (oa >>= λ x, return (f x, x)) ≃ₚ oa :=
-by simp only [map_bind, map_pure, bind_pure]
-
-lemma fst_map_bind_return_dist_equiv_fst_map_bind_return :
-  fst <$> (oa >>= λ x, return (f x, g x)) ≃ₚ fst <$> (oa >>= λ x, return (f x, h x)) :=
-by push_map_dist_equiv
-
-lemma snd_map_bind_return_dist_equiv_snd_map_bind_return :
-  snd <$> (oa >>= λ x, return (f x, g x)) ≃ₚ snd <$> (oa >>= λ x, return (h x, g x)) :=
-by push_map_dist_equiv
-
-lemma fst_map_bind_return_dist_equiv_snd_map_bind_return :
-  fst <$> (oa >>= λ x, return (f x, g x)) ≃ₚ snd <$> (oa >>= λ x, return (h x, f x)) :=
-by push_map_dist_equiv
-
-lemma snd_map_bind_return_dist_equiv_fst_map_bind_return :
-  snd <$> (oa >>= λ x, return (f x, g x)) ≃ₚ fst <$> (oa >>= λ x, return (g x, h x)) :=
-by push_map_dist_equiv
+by rw [snd_map_bind_return]
 
 end fst_snd_map_bind_return_dist_equiv
 
 section unused
 
 variables (oa : oracle_comp spec (α × β))
+
+@[simp] lemma bind_eq_fst_bind_of_unused (oc : α → oracle_comp spec γ) :
+  oa >>= (λ x, oc x.1) = (fst <$> oa) >>= oc :=
+by simp only [map_eq_bind_pure_comp, bind_assoc, pure_bind]
+
+@[simp] lemma bind_eq_snd_bind_of_unused (oc' : β → oracle_comp spec γ) :
+  oa >>= (λ x, oc' x.2) = (snd <$> oa) >>= oc' :=
+by simp only [map_eq_bind_pure_comp, bind_assoc, pure_bind]
 
 @[pairwise_dist_equiv] lemma bind_dist_equiv_fst_bind_of_unused (oc : α → oracle_comp spec γ) :
   oa >>= (λ x, oc x.1) ≃ₚ (fst <$> oa) >>= oc :=
@@ -122,8 +115,8 @@ section prod_bind
 
 variables (oa : oracle_comp spec (α × β)) (oc : α × β → oracle_comp spec γ)
 
-/-- Binding on a computation of a `prod` type can be written as a double sum,
-instead of a sum of the product type. -/
+/-- The probability on binding on a computation of a `prod` type can be written as a double sum,
+by splitting the sum over the regular product type -/
 lemma prob_output_prod_bind (c : γ) :
   ⁅= c | oa >>= oc⁆ = ∑' (a : α) (b : β), ⁅= (a, b) | oa⁆ * ⁅= c | oc (a, b)⁆ :=
 by rw [prob_output_bind_eq_tsum, ennreal.tsum_prod']
@@ -131,7 +124,15 @@ by rw [prob_output_bind_eq_tsum, ennreal.tsum_prod']
 /-- Version of `prob_output_prod_bind` with summation arguments swapped. -/
 lemma prob_output_prod_bind' (c : γ) :
   ⁅= c | oa >>= oc⁆ = ∑' (b : β) (a : α), ⁅= (a, b) | oa⁆ * ⁅= c | oc (a, b)⁆ :=
-by rw [prob_output_bind_eq_tsum, ennreal.tsum_prod', ennreal.tsum_comm]
+by rw [prob_output_prod_bind, ennreal.tsum_comm]
+
+lemma prob_event_prod_bind (e : set γ) :
+  ⁅e | oa >>= oc⁆ = ∑' (a : α) (b : β), ⁅= (a, b) | oa⁆ * ⁅e | oc (a, b)⁆ :=
+by rw [prob_event_bind_eq_tsum, ennreal.tsum_prod']
+
+lemma prob_event_prod_bind' (e : set γ) :
+  ⁅e | oa >>= oc⁆ = ∑' (b : β) (a : α), ⁅= (a, b) | oa⁆ * ⁅e | oc (a, b)⁆ :=
+by rw [prob_event_prod_bind, ennreal.tsum_comm]
 
 end prod_bind
 
@@ -139,7 +140,9 @@ section map_fst_snd
 
 variables (oa : oracle_comp spec (α × β))
 
-/-- The first output of a computation of a `prod` type is a sum over possible second outputs. -/
+/-- The first output of a computation of a `prod` type is a sum over possible second outputs.
+TODO: decide on `simp` conventions for lemmas like this one.
+maybe have both this and a version with `sum` be simp, prioritizing the second? -/
 lemma prob_output_map_fst (a : α) : ⁅= a | fst <$> oa⁆ = ∑' (b : β), ⁅= (a, b) | oa⁆ :=
 by simp only [prob_output.def, eval_dist_map, pmf.map_fst_apply]
 
@@ -149,22 +152,32 @@ by simp only [prob_output.def, eval_dist_map, pmf.map_snd_apply]
 
 end map_fst_snd
 
-section prod_map
+section prod_map_id
 
 variables (oa : oracle_comp spec (α × β))
+
+lemma support_map_prob_map_id_right (f : α → γ) :
+  (map f id <$> oa).support = {z | ∃ x, f x = z.1 ∧ (x, z.2) ∈ oa.support} :=
+begin
+  simp [set.image],
+end
 
 lemma mem_support_map_prod_map_id_right_iff (f : α → γ) (z : γ × β) :
   z ∈ (map f id <$> oa).support ↔ ∃ x, (x, z.2) ∈ oa.support ∧ f x = z.1 :=
 by simp [eq_iff_fst_eq_snd_eq]
 
+-- example (f : α → γ) (z : γ × β) :
+--   z ∈ (map f id <$> oa).support ↔ ∃ x, (x, z.2) ∈ oa.support ∧ f x = z.1 :=
+-- by simp
+
 lemma mem_support_map_prod_map_id_left_iff (f : β → γ) (z : α × γ) :
   z ∈ (prod.map id f <$> oa).support ↔ ∃ y, (z.1, y) ∈ oa.support ∧ f y = z.2 :=
-begin
-  simp only [support_map, prod_map, id.def, set.mem_image, prod.exists],
-  refine ⟨λ h, let ⟨x, y, hy, hx⟩ := h in ⟨y, (eq_iff_fst_eq_snd_eq.1 hx).1 ▸
-    ⟨hy, (eq_iff_fst_eq_snd_eq.1 hx).2⟩⟩, λ h, let ⟨y, hy, hy'⟩ := h in
-      ⟨z.1, y, hy, eq_iff_fst_eq_snd_eq.2 ⟨rfl, hy'⟩⟩⟩
-end
+-- begin
+--   simp only [support_map, prod_map, id.def, set.mem_image, prod.exists],
+--   refine ⟨λ h, let ⟨x, y, hy, hx⟩ := h in ⟨y, (eq_iff_fst_eq_snd_eq.1 hx).1 ▸
+--     ⟨hy, (eq_iff_fst_eq_snd_eq.1 hx).2⟩⟩, λ h, let ⟨y, hy, hy'⟩ := h in
+--       ⟨z.1, y, hy, eq_iff_fst_eq_snd_eq.2 ⟨rfl, hy'⟩⟩⟩
+-- end
 
 /-- If only the left output is changed in mapping the result of a computation,
 then the resulting distribution sums only over the left type in the product type. -/
@@ -190,7 +203,7 @@ begin
   { simp only [eq_iff_fst_eq_snd_eq, prod.map_mk, id.def, eq_self_iff_true, true_and] },
 end
 
-end prod_map
+end prod_map_id
 
 section fst_snd_map_bind
 
