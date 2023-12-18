@@ -77,10 +77,10 @@ section monad
 instance (spec : oracle_spec) : monad (oracle_comp spec) :=
 { pure := pure', bind := bind' }
 
-lemma pure_def (spec : oracle_spec) {α : Type} (a : α) :
+protected lemma pure_def (spec : oracle_spec) {α : Type} (a : α) :
   (pure a : oracle_comp spec α) = pure' α a := rfl
 
-lemma bind_def {spec : oracle_spec} {α β : Type}
+protected lemma bind_def {spec : oracle_spec} {α β : Type}
   (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) :
   oa >>= ob = bind' α β oa ob := rfl
 
@@ -120,9 +120,10 @@ protected lemma bind_return_comp_eq_map (oa : oracle_comp spec α) (f : α → �
 protected lemma map_eq_bind_return_comp (oa : oracle_comp spec α) (f : α → β) :
   f <$> oa = oa >>= return ∘ f := rfl
 
-lemma return_bind (a : α) (ob : α → oracle_comp spec β) : return a >>= ob = ob a := pure_bind a ob
+protected lemma return_bind (a : α) (ob : α → oracle_comp spec β) :
+  return a >>= ob = ob a := pure_bind a ob
 
-lemma bind_return (oa : oracle_comp spec α) : oa >>= return = oa := bind_pure oa
+protected lemma bind_return (oa : oracle_comp spec α) : oa >>= return = oa := bind_pure oa
 
 @[simp] lemma bind_query_bind' (i : spec.ι) (t : spec.domain i)
   (oa : spec.range i → oracle_comp spec α) (ob : α → oracle_comp spec β) :
@@ -151,7 +152,7 @@ lemma query_def : query i t = query_bind' i t (spec.range i) (pure' (spec.range 
 @[simp] lemma query_bind'_eq_query_bind :
   query_bind' i t α oa = query i t >>= oa :=
 begin
-  rw [query_def, bind_def],
+  rw [query_def, oracle_comp.bind_def],
   by_cases ha : spec.range i = α,
   { induction ha,
     by_cases h : oa = pure' _; simp [bind', - oracle_comp.bind'_eq_bind,
@@ -264,7 +265,7 @@ begin
     { exact ⟨a, rfl, symm h⟩ },
     { exact false.elim (oracle_comp.no_confusion h) } },
   { obtain ⟨a, ha⟩ := h,
-    rw [ha.1, return_bind, ha.2] }
+    rw [ha.1, oracle_comp.return_bind, ha.2] }
 end
 
 @[simp] protected lemma bind_eq_return_iff (b : β) (oa : oracle_comp spec α)

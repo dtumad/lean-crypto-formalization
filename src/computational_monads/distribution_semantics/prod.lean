@@ -156,28 +156,22 @@ section prod_map_id
 
 variables (oa : oracle_comp spec (α × β))
 
-lemma support_map_prob_map_id_right (f : α → γ) :
-  (map f id <$> oa).support = {z | ∃ x, f x = z.1 ∧ (x, z.2) ∈ oa.support} :=
+@[simp] lemma support_map_prod_map_id_right (f : α → γ) :
+  (map f id <$> oa).support = {z | ∃ x, (x, z.2) ∈ oa.support ∧ f x = z.1} :=
 begin
-  simp [set.image],
+  simp only [set.ext_iff, set.image, eq_iff_fst_eq_snd_eq, support_map, prod_map, id.def,
+    exists_eq_right_right,
+    set.mem_set_of_eq, prod.exists, prod.forall],
+  simp only [iff_self, forall_2_true_iff],
 end
 
-lemma mem_support_map_prod_map_id_right_iff (f : α → γ) (z : γ × β) :
-  z ∈ (map f id <$> oa).support ↔ ∃ x, (x, z.2) ∈ oa.support ∧ f x = z.1 :=
-by simp [eq_iff_fst_eq_snd_eq]
-
--- example (f : α → γ) (z : γ × β) :
---   z ∈ (map f id <$> oa).support ↔ ∃ x, (x, z.2) ∈ oa.support ∧ f x = z.1 :=
--- by simp
-
-lemma mem_support_map_prod_map_id_left_iff (f : β → γ) (z : α × γ) :
-  z ∈ (prod.map id f <$> oa).support ↔ ∃ y, (z.1, y) ∈ oa.support ∧ f y = z.2 :=
--- begin
---   simp only [support_map, prod_map, id.def, set.mem_image, prod.exists],
---   refine ⟨λ h, let ⟨x, y, hy, hx⟩ := h in ⟨y, (eq_iff_fst_eq_snd_eq.1 hx).1 ▸
---     ⟨hy, (eq_iff_fst_eq_snd_eq.1 hx).2⟩⟩, λ h, let ⟨y, hy, hy'⟩ := h in
---       ⟨z.1, y, hy, eq_iff_fst_eq_snd_eq.2 ⟨rfl, hy'⟩⟩⟩
--- end
+@[simp] lemma support_map_prod_map_id_left (g : β → γ) :
+  (map id g <$> oa).support = {z | ∃ y, (z.1, y) ∈ oa.support ∧ g y = z.2} :=
+begin
+  refine set.ext (λ z, _),
+  cases z with x y,
+  simp [and_comm (_ = x), @exists_comm α],
+end
 
 /-- If only the left output is changed in mapping the result of a computation,
 then the resulting distribution sums only over the left type in the product type. -/

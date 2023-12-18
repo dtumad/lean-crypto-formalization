@@ -304,8 +304,7 @@ begin
     simp [h', h, this] },
   { have : t ∉ᵢ cache',
     by simpa only [mem_iff_lookup_ne_none, h] using h',
-    simp [h, h', this],
-    simp_rw_dist_equiv [map_bind_dist_equiv, map_return_dist_equiv] }
+    simp [h, h', this] }
 end
 
 end fst_map

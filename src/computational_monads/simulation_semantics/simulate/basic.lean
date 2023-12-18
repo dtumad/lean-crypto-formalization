@@ -154,6 +154,14 @@ by rw [← prob_event_singleton_eq_prob_output, prob_event_simulate']
 
 end simulate'
 
+lemma simulate_eq_map_simulate'_of_subsingleton [subsingleton S] (s s' : S) :
+  simulate so oa s = (λ x, (x, s')) <$> simulate' so oa s :=
+begin
+  rw [simulate', map_map_eq_map_comp],
+  refine trans (symm (id_map' _)) (congr_fun (congr_arg _ (funext (λ z, _))) _),
+  simp [prod.eq_iff_fst_eq_snd_eq],
+end
+
 /-- If some invariant `P` on the state of a simulation oracle is preserved by any query
 where the input state satisfies `P`, and some initial state also satisfies `P`,
 then any result of the simulation will have a final state satisfying `P`. -/

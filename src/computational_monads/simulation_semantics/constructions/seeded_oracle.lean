@@ -46,9 +46,8 @@ variables (i : spec.ι) (z : spec.domain i × spec.query_seed)
 
 @[simp] protected lemma apply_eq : seededₛₒ i z = z.2.get_or_else i (query i z.1) := rfl
 
-@[pairwise_dist_equiv] protected lemma apply_dist_equiv :
-  seededₛₒ i z ≃ₚ z.2.get_or_else i (query i z.1) :=
-dist_equiv_of_eq (seeded_oracle.apply_eq i z)
+protected lemma apply_dist_equiv : seededₛₒ i z ≃ₚ z.2.get_or_else i (query i z.1) :=
+dist_equiv.rfl
 
 end apply
 
@@ -110,8 +109,7 @@ begin
         exact hi,
       },
       {
-        rw_dist_equiv [map_comp_dist_equiv, map_id_dist_equiv,
-          bind_const_dist_equiv],
+        simp only [map_map_eq_map_comp, id_map', bind_const_dist_equiv_iff],
       }
     }
   }

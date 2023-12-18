@@ -19,7 +19,9 @@ open_locale classical big_operators
 
 /-- A symmetric-key encryption algorithm is a set of functions `gen`, `encrypt`, and `decrypt`.
 The types `M`, `K`, and `C` are the types of the messages, keys, and ciphertexts respectively.
-We assume that the `keygen` has a random selection oracle, and the other two are deterministic. -/
+We assume that the `keygen` has a random selection oracle, and the other two are deterministic.
+
+TODO: oracle_algorithm -/
 structure symm_enc_alg (M K C : Type) :=
 (keygen : unit → oracle_comp unif_spec K)
 (encrypt : M × K → C)
@@ -150,9 +152,9 @@ begin
   rw [indep_event_iff],
   simp only [indep_event_iff, ← prob_event_map, prob_event_singleton_eq_prob_output,
     eval_dist_fst_map_mgen_and_encrypt, this],
-  simp only [mgen_and_encrypt, map_bind, map_pure, oracle_comp.pure_eq_return,
+  simp only [mgen_and_encrypt, oracle_comp.map_bind, map_pure, oracle_comp.pure_eq_return,
     prob_event_fst_eq, prob_event_snd_eq],
-  rw [prob_output_bind_const_bind, bind_return],
+  rw [prob_output_bind_const_bind, oracle_comp.bind_return],
 end
 
 section equal_card

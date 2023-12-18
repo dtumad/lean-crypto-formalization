@@ -3,7 +3,7 @@ Copyright (c) 2022 Devon Tuma. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
-import computational_monads.simulation_semantics.is_stateless
+import computational_monads.simulation_semantics.simulate.induction
 
 /-!
 # Coercions Between Computations With Additional Oracles
@@ -40,7 +40,7 @@ open oracle_comp
 The fundamental issue being that the type system doesn't have a sense of "additional" oracles.
 In this case, performing a validity check on the adversaries results isn't easily possible.
 Note the actual version is commented out, only the un-checked version will compile. -/
-noncomputable example {regular_spec adversary_spec : oracle_spec}
+example {regular_spec adversary_spec : oracle_spec}
   (adversary : oracle_comp (regular_spec ++ adversary_spec) α)
   (validity_check : α → oracle_comp regular_spec bool) :
   oracle_comp (regular_spec ++ adversary_spec) (option α) :=
@@ -98,11 +98,11 @@ with oracles `sub_spec` to one with `super_spec` by simulating with `is_sub_spec
 instance coe_sub_spec (sub_spec super_spec : oracle_spec)
   [h : sub_spec ⊂ₒ super_spec] (α : Type) :
   has_coe (oracle_comp sub_spec α) (oracle_comp super_spec α) :=
-{coe := λ oa, simulate' ⟪λ i t, h.to_fun i t⟫ oa ()}
+{coe := λ oa, simulate' (λ i z, do {u ← h.to_fun i z.1, return (u, ())}) oa ()}
 
 lemma coe_sub_spec_def {sub_spec super_spec : oracle_spec} [h : sub_spec ⊂ₒ super_spec]
   (oa : oracle_comp sub_spec α) : (↑oa : oracle_comp super_spec α) =
-    simulate' ⟪λ i t, h.to_fun i t⟫ oa () := rfl
+    simulate' (λ i z, do {u ← h.to_fun i z.1, return (u, ())}) oa () := rfl
 
 section coe_sub_spec
 
@@ -126,8 +126,7 @@ end
 
 @[simp] lemma coe_sub_spec_query :
   (↑(query i t) : oracle_comp super_spec (sub_spec.range i)) = h.to_fun i t :=
-by simp only [coe_sub_spec_def, simulate'_query,
-  stateless_oracle.apply_eq, map_bind, map_pure, bind_pure]
+by simp only [coe_sub_spec_def, simulate'_query, map_bind, map_pure, bind_pure]
 
 /-- Coercing a computation via a sub-spec instance doesn't change the associated distribution. -/
 @[pairwise_dist_equiv] lemma coe_sub_spec_dist_equiv : (↑oa : oracle_comp super_spec α) ≃ₚ oa :=

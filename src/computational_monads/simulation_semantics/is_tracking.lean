@@ -3,7 +3,7 @@ Copyright (c) 2023 Devon Tuma. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
-import computational_monads.simulation_semantics.simulate.subsingleton
+import computational_monads.simulation_semantics.simulate.induction
 import computational_monads.distribution_semantics.mprod
 
 /-!
@@ -25,7 +25,6 @@ Generally it's best to avoid situations with multiple distinct instances.
 
 For example in `loggingₛₒ` the internal state doesn't change the main output, it just records it.
 This allows for many lemmas to be automatically shared between these sorts of oracles.
-`sim_oracle.is_stateless` extends this further to oracles with no internal state at all.
 
 We also construct a `tracking_oracle` that creates a simulation oracle from a direct specification
 of `query_f` and `state_f`, that satisfies `is_tracking` by construction.
@@ -41,7 +40,8 @@ variables {α β γ : Type} {spec : oracle_spec} {S : Type}
 namespace sim_oracle
 
 /-- Typeclass for simulation oracles that don't modify the query result,
-but just do some -/
+but just use the internal state to track some aspect of the computation.
+We assume exact equality rather than distributional equivalence for simplicity. -/
 class is_tracking (so : sim_oracle spec spec S) :=
 (fst_map_apply_eq_query' : ∀ (i : spec.ι) (t : spec.domain i) (s : S),
   fst <$> so i (t, s) = query i t)

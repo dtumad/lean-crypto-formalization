@@ -22,12 +22,11 @@ lemma return_bind_dist_equiv (a : α) (oa : α → oracle_comp spec β) :
   return a >>= oa ≃ₚ oa a := dist_equiv.rfl
 
 @[pairwise_dist_equiv] lemma bind_return_dist_equiv (oa : oracle_comp spec α) :
-  oa >>= return ≃ₚ oa := by rw [bind_return]
+  oa >>= return ≃ₚ oa := by rw [oracle_comp.bind_return]
 
 @[pairwise_dist_equiv] lemma bind_dist_equiv_assoc (oa : oracle_comp spec α)
   (ob : α → oracle_comp spec β) (oc : β → oracle_comp spec γ) :
-  oa >>= (λ x, ob x >>= oc) ≃ₚ oa >>= ob >>= oc :=
-by simp only [bind_assoc]
+  oa >>= (λ x, ob x >>= oc) ≃ₚ oa >>= ob >>= oc := by rw [bind_assoc]
 
 section bind_bind_dist_equiv_comm
 

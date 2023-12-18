@@ -3,7 +3,8 @@ Copyright (c) 2022 Devon Tuma. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
-import computational_monads.simulation_semantics.is_stateless
+import computational_monads.simulation_semantics.is_tracking
+import computational_monads.constructions.uniform_select
 
 /-!
 # Uniform Oracles
@@ -24,9 +25,6 @@ noncomputable def uniform_oracle (spec : oracle_spec) : sim_oracle spec unif_spe
 
 notation `uniformₛₒ` := uniform_oracle _
 
-instance uniform_oracle.is_stateless : (uniform_oracle spec).is_stateless :=
-{ state_subsingleton := punit.subsingleton }
-
 namespace uniform_oracle
 
 lemma apply_eq {i : spec.ι} (t : spec.domain i) (s : unit) :
@@ -37,10 +35,10 @@ section simulate'
 variables (oa : oracle_comp spec α) (s : unit)
 
 @[pairwise_dist_equiv] lemma simulate'_dist_equiv : simulate' uniformₛₒ oa s ≃ₚ oa :=
-begin 
+begin
   induction oa using oracle_comp.induction_on' with α a i t α oa hoa generalizing s,
   { rw [simulate'_return, map_return, return_dist_equiv_return_iff'] },
-  { simp_rw [simulate'_bind, simulate_query, apply_eq, bind_assoc, return_bind],
+  { simp_rw [simulate'_bind, simulate_query, apply_eq, bind_assoc, oracle_comp.return_bind],
     refine bind_dist_equiv_bind_of_dist_equiv _ (λ _ _, _); pairwise_dist_equiv [hoa] }
 end
 
@@ -70,9 +68,9 @@ variables (oa : oracle_comp spec α) (s : unit)
   simulate uniformₛₒ oa s ≃ₚ do {x ← oa, return (x, ())} :=
 begin
   induction oa using oracle_comp.induction_on' with α a i t α oa hoa generalizing s,
-  { rw [simulate_return, return_bind, punit_eq s ()],
+  { rw [simulate_return, oracle_comp.return_bind, punit_eq s ()],
     exact return_dist_equiv_return _ _ _ },
-  { simp_rw [simulate_bind, simulate_query, apply_eq, bind_assoc, return_bind],
+  { simp_rw [simulate_bind, simulate_query, apply_eq, bind_assoc, oracle_comp.return_bind],
     refine bind_dist_equiv_bind_of_dist_equiv _ (λ _ _, _); pairwise_dist_equiv [hoa] }
 end
 

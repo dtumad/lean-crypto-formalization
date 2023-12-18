@@ -185,7 +185,7 @@ end map_comp
 
 section map_bind
 
-@[simp] lemma map_bind : g <$> (oa >>= ob) = oa >>= λ x, g <$> (ob x) :=
+@[simp] protected lemma map_bind : g <$> (oa >>= ob) = oa >>= λ x, g <$> (ob x) :=
 by rw [map_bind]
 
 lemma support_map_bind : (g <$> (oa >>= ob)).support =

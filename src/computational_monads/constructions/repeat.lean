@@ -217,7 +217,7 @@ begin
       rw [← support_map, support_eq_singleton_iff_forall],
       intros y hy,
       simp at hy,
-      exact hy.2 },
+      exact hy },
     { rw [repeat_succ],
       suffices : ∀ x, (λ xs, nth xs i) <$> (oa.repeat m >>= λ xs, return (x ::ᵥ xs)) ≃ₚ
         (λ xs, nth xs (i.pred hi)) <$> oa.repeat m,

@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
 import computational_monads.coercions.sub_spec
+import computational_monads.constructions.uniform_select
 
 /-!
 # Sub-Spec Instances for Common Sets of Oracles

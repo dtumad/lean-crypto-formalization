@@ -153,7 +153,7 @@ def mock_signing_sim_oracle_k (x₀ pk : X) :
     match seed with
     | ((ys, zs, bs) :: seed') :=
       match cache.lookup () (ys, m) with
-      | (some (zs', bs')) := 
+      | (some (zs', bs')) :=
           return ((zs', bs'), (j, seed', cache))
       | none :=
           return ((zs, bs), (j, seed', cache.log_query () (ys, m) (zs, bs)))

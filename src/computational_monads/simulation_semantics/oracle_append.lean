@@ -30,6 +30,7 @@ def oracle_append (so : sim_oracle spec spec'' S) (so' : sim_oracle spec' spec''
 | (sum.inr i) := λ ⟨t, s₁, s₂⟩, do {⟨u, s₂'⟩ ← so' i (t, s₂), return (u, s₁, s₂')}
 end
 
+-- TODO: `++ₛₒ`??
 infixl ` ++ₛ `:65 := oracle_append
 
 namespace oracle_append
@@ -126,15 +127,6 @@ section is_tracking
 --     (λ i t u, (s.1, so'.update_state s.2 i t u)) := rfl
 
 end is_tracking
-
-section is_stateless
-
-/-- Appending two stateless oracles together gives another stateless oracle. -/
-instance is_stateless [hso : so.is_stateless] [hso' : so'.is_stateless] :
-  (so ++ₛ so').is_stateless :=
-{ state_subsingleton := @subsingleton.prod S S' hso.state_subsingleton hso'.state_subsingleton }
-
-end is_stateless
 
 end oracle_append
 

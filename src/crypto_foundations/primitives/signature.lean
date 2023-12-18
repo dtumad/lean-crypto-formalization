@@ -85,11 +85,12 @@ begin
   rw [sec_exp.advantage_eq_prob_event],
   simp_rw [is_valid_iff],
   rw [run_eq],
-  rw [prob_event_eq_eq_prob_output_map]
+  rw [prob_event_eq_eq_prob_output_map],
+  sorry,
   -- simp [-prob_event_eq_eq_prob_output_map],
   -- rw [prob_event_eq_eq_prob_output_map, run_eq],
   -- rw [oracle_algorithm.map_exec],
-  -- simp_rw [map_bind, map_return, bind_return],
+  -- simp_rw [map_bind, map_return, oracle_comp.bind_return],
 end
 
 end soundness_exp
@@ -145,8 +146,10 @@ which can be used to check that the adversary hadn't gotten a signature for thei
 def signing_sim_oracle (sig : signature_alg spec M PK SK S) (pk : PK) (sk : SK)
   [inhabited S] [fintype S] [decidable_eq M] [decidable_eq S] :
   sim_oracle (spec ++ (M ↦ₒ S)) spec (M ↦ₒ S).query_log :=
-let so' : sim_oracle (M ↦ₒ S) spec punit := ⟪λ _ m, sig.sign ((pk, sk), m)⟫ in
-(idₛₒ ++ₛ ((so' ∘ₛₒ loggingₛₒ).mask_state (equiv.prod_punit _))).mask_state (equiv.punit_prod _)
+let so' : sim_oracle (M ↦ₒ S) spec punit :=
+  λ _ m, do {σ ← sig.sign ((pk, sk), m.1), return (σ, ())} in
+(idₛₒ ++ₛ ((so' ∘ₛₒ loggingₛₒ).mask_state
+  (equiv.prod_punit _))).mask_state (equiv.punit_prod _)
 
 alias signing_sim_oracle ← signingₛₒ
 

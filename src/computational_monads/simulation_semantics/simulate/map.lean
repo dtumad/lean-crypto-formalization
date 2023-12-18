@@ -28,7 +28,8 @@ section support
 
 lemma mem_support_simulate_map_iff (y : β × S) : y ∈ (simulate so (f <$> oa) s).support ↔
   ∃ x, (x, y.2) ∈ (simulate so oa s).support ∧ f x = y.1 :=
-by rw [simulate_map, mem_support_map_prod_map_id_right_iff]
+by simp only [simulate_map, support_map, set.image, prod.eq_iff_fst_eq_snd_eq, prod_map, id.def,
+  prod.exists, exists_eq_right_right, set.mem_set_of_eq]
 
 @[simp] lemma support_simulate'_map : (simulate' so (f <$> oa) s).support =
   f '' (simulate' so oa s).support :=

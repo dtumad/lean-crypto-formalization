@@ -111,12 +111,12 @@ end is_valid
 
 section unforgeable_advantage
 
-lemma unforgeable_advantage_eq :
-  (signature_alg.unforgeable_exp (hhs_signature G X M n).unforgeable_adv).advantage =
-    _ :=
-begin
+-- lemma unforgeable_advantage_eq :
+--   (signature_alg.unforgeable_exp (hhs_signature G X M n).unforgeable_adv).advantage =
+--     _ :=
+-- begin
 
-end
+-- end
 
 end unforgeable_advantage
 

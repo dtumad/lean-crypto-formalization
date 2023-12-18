@@ -93,7 +93,7 @@ lemma map_get_head_generate_seed_dist_equiv [h : is_sub_spec unif_spec spec]
 begin
   rw_dist_equiv [generate_seed_dist_equiv_of_mem_active_oracles _ _ hi],
   simp [oracle_comp.bind_return_comp_eq_map],
-  rw_dist_equiv [map_bind_dist_equiv, map_comp_dist_equiv],
+  -- rw_dist_equiv [map_bind_dist_equiv, map_comp_dist_equiv],
   rw [mprod],
   simp_rw [oracle_comp.bind_return_comp_eq_map],
   pairwise_dist_equiv,

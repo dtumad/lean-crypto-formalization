@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
 import computational_monads.simulation_semantics.simulate.induction
-import computational_monads.simulation_semantics.is_stateless
+import computational_monads.simulation_semantics.is_tracking
 
 /-!
 # State Masking for Simulation Oracles
@@ -168,14 +168,6 @@ instance is_tracking (so : sim_oracle spec spec S) [hso : so.is_tracking] :
 --   (so.mask_state mask).update_state = λ s i t u, mask (so.update_state (mask.symm s) i t u) := rfl
 
 end is_tracking
-
-section is_stateless
-
-/-- Masking the state of a stateless oracle will produce another stateless oracle. -/
-instance is_stateless [hso : so.is_stateless] : (so.mask_state mask).is_stateless :=
-{ state_subsingleton := @equiv.subsingleton.symm _ _ mask hso.state_subsingleton }
-
-end is_stateless
 
 end mask_state
 
