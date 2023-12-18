@@ -35,14 +35,14 @@ noncomputable def hhs_signature (G X M : Type) [decidable_eq M]
 { keygen := λ u, do {x₀ ←$ᵗ X, sk ←$ᵗ G, return ((x₀, sk +ᵥ x₀), sk)},
   -- Sign a message by choosing `n` random commitments, and giving secret key proofs for each.
   sign := λ ⟨⟨⟨x₀, pk⟩, sk⟩, m⟩,
-    do {(cs : vector G n) ← repeat ($ᵗ G) n,
-      (ys : vector X n) ← return (cs.map (+ᵥ pk)),
-      (hash : vector bool n) ← query (sum.inr ()) (ys, m),
-      return (zip_commits sk cs hash, hash)},
+    do {(gs : vector G n) ← repeat ($ᵗ G) n,
+      (xs : vector X n) ← return (gs.map (+ᵥ pk)),
+      (hash : vector bool n) ← query (sum.inr ()) (xs, m),
+      return (zip_commits sk gs hash, hash)},
   -- Verify a signature by checking that the commitments map to the expected values.
   verify := λ ⟨⟨x₀, pk⟩, m, zs, hash⟩,
-    do {(ys : vector X n) ← return (retrieve_commits x₀ pk zs hash),
-      (hash' : vector bool n) ← query (sum.inr ()) (ys, m),
+    do {(xs : vector X n) ← return (retrieve_commits x₀ pk zs hash),
+      (hash' : vector bool n) ← query (sum.inr ()) (xs, m),
       return (hash' = hash)},
   base_sim_oracle := (idₛₒ ++ₛ randomₛₒ).mask_state (equiv.punit_prod _),
   init_state := ∅, .. }
