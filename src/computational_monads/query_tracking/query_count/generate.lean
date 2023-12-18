@@ -5,7 +5,7 @@ Authors: Devon Tuma
 -/
 import computational_monads.query_tracking.query_count.possible_outcomes
 import computational_monads.constructions.repeat
-import computational_monads.distribution_semantics.seq
+import computational_monads.distribution_semantics.algebra
 
 /-!
 # Generate an Indexed List by Running a Computation According to a Count
