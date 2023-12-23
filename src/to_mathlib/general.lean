@@ -5,6 +5,7 @@ Authors: Devon Tuma
 -/
 import data.finset.basic
 import data.vector.mem
+import data.real.ennreal
 
 /-!
 # Misc Lemmas That Ideally Should Port to Mathlib

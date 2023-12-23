@@ -21,8 +21,6 @@ variables {G X M : Type} [decidable_eq M]
 
 section mock_signing_sim_oracle
 
-#check list.find
-
 -- noncomputable def mock_signing_sim_oracle'' (x₀ pk : X) :
 --   sim_oracle (hhs_signature G X M n).unforgeable_adv_spec
 --     (unif_spec ++ ((vector X n × M) ↦ₒ vector bool n))
@@ -52,20 +50,20 @@ section mock_signing_sim_oracle
 --         mock_cache' ← return (mock_cache.log_query () (ys, m) bs),
 --         return ((cs, bs), mock_cache') }
 
-def signature_seed (G X : Type) (n : ℕ) :=
-(list (vector bool n × vector G n))
+-- def signature_seed (G X : Type) (n : ℕ) :=
+-- (list (vector bool n × vector G n))
 
-@[inline, reducible] def mock_signing_state (G X M : Type) [decidable_eq M]
-  [add_comm_group G] [algorithmic_homogenous_space G X] (n b : ℕ) :=
-(vector (vector bool n × vector G n) b)
-  × (query_log ((vector X n × M) ↦ₒ vector bool n))
+-- @[inline, reducible] def mock_signing_state (G X M : Type) [decidable_eq M]
+--   [add_comm_group G] [algorithmic_homogenous_space G X] (n b : ℕ) :=
+-- (vector (vector bool n × vector G n) b)
+--   × (query_log ((vector X n × M) ↦ₒ vector bool n))
 
-noncomputable def preseed_values (n b : ℕ) (x₀ pk : X) :
-  oracle_comp unif_spec (signature_seed G X n) :=
-vector.to_list <$> repeat (do
-  { bs ← repeat ($ᵗ bool) n,
-    zs ← repeat ($ᵗ G) n,
-    return (bs, zs) }) b
+-- noncomputable def preseed_values (n b : ℕ) (x₀ pk : X) :
+--   oracle_comp unif_spec (signature_seed G X n) :=
+-- vector.to_list <$> repeat (do
+--   { bs ← repeat ($ᵗ bool) n,
+--     zs ← repeat ($ᵗ G) n,
+--     return (bs, zs) }) b
 
 -- def mock_signing_state (G X M : Type) [decidable_eq M] [add_comm_group G]
 --   [algorithmic_homogenous_space G X] (n : ℕ) :=
@@ -122,133 +120,191 @@ vector.to_list <$> repeat (do
 open prod (fst) (snd)
 open sum (inl) (inr)
 
-@[derive decidable_eq]
+@[derive [decidable_eq, inhabited]]
+structure signature_seed (G X : Type) (n : ℕ) :=
+(index : ℕ) -- Index of the query that created `bs`
+(bs : vector bool n)
+-- (xs : vector X n)
+(gs : vector G n)
+
+@[derive [decidable_eq, inhabited]]
 structure mocked_signature (G X M : Type) (n : ℕ) :=
 (index : ℕ) -- Index of the query that created `bs`
 (xs : vector X n)
-(gs : vector G n)
 (bs : vector bool n)
-(m : option M) -- Potentially associated message
+(gs : option (vector G n))
+(m : M)
 
 def find_is_cached (xs : vector X n) (m : M)
   (mock_cache : list (mocked_signature G X M n)) :
   option (mocked_signature G X M n) :=
 let is_cached : mocked_signature G X M n → Prop :=
-  λ mσ, mσ.xs = xs ∧ mσ.m = some m in
-(mock_cache.find is_cached)
+  λ mσ, mσ.xs = xs ∧ mσ.m = m in
+mock_cache.find is_cached
 
-def find_is_seeded (xs : vector X n) (m : M)
-  (mock_cache : list (mocked_signature G X M n)) :
-  option (vector bool n × list (mocked_signature G X M n)) :=
-let is_seeded : mocked_signature G X M n → Prop :=
-  λ mσ, mσ.xs = xs ∧ mσ.m = none in
-match mock_cache.find is_seeded with
-| none := none
-| (some mσ) := let mσ' : mocked_signature G X M n := {m := some m, .. mσ} in
-    some (mσ.bs, mσ' :: mock_cache.erase mσ)
-end
+def find_is_seeded (xs : vector X n) (m : M) (x₀ pk : X)
+  (pre_seeds : list (signature_seed G X n)) :
+  option (signature_seed G X n) :=
+let is_seeded : signature_seed G X n → Prop :=
+  λ mσ, retrieve_commits x₀ pk mσ.gs mσ.bs = xs in
+pre_seeds.find is_seeded
 
-def lookup_mock_signature (m : M)
-  (mock_cache : list (mocked_signature G X M n)) :
-  option ((vector X n × vector bool n) × list (mocked_signature G X M n)) :=
-let is_unused : mocked_signature G X M n → Prop :=
-  λ mσ, mσ.m = none in
-match mock_cache.find is_unused with
-| none := none
-| (some mσ) :=
-  match find_is_cached mσ.xs m mock_cache with
-  | none := let mσ' : mocked_signature G X M n := {m := some m, .. mσ} in
-      some ((mσ.xs, mσ.bs), mσ' :: mock_cache.erase mσ)
-  | (some mσ') := some ((mσ'.xs, mσ'.bs), mock_cache)
-  end
-end
+#check function.argmin
 
 def mock_signing_sim_oracle_basic (x₀ pk : X) :
   sim_oracle (hhs_signature G X M n).unforgeable_adv_spec
-  (unif_spec ++ (unit ↦ₒ vector bool n))
-  (ℕ × list (mocked_signature G X M n)) :=
+    (unif_spec ++ (unit ↦ₒ vector bool n))
+    (ℕ × list (signature_seed G X n) × list (mocked_signature G X M n)) :=
 λ i, match i with
 -- For queries to `unif_spec` just forward them through
-| (inl (inl i)) := λ ⟨t, ⟨k, mock_cache⟩⟩, do
-    { u ← query (inl i) t,
-      return (u, (k, mock_cache)) }
-| (inl (inr ())) := λ ⟨⟨xs, m⟩, ⟨k, mock_cache⟩⟩,
+| (inl (inl i)) := λ z, do {u ← query (inl i) z.1, return (u, z.2)}
+| (inl (inr ())) := λ ⟨⟨xs, m⟩, ⟨k, pre_seed, mock_cache⟩⟩,
     match find_is_cached xs m mock_cache with
-    | none := match find_is_seeded xs m mock_cache with
-      | none := do
-        { bs ← query (inr ()) (),
-          let mσ : (mocked_signature G X M n) :=
-            mocked_signature.mk k xs none bs (some m) in
-          return (bs, (k + 1, mσ :: mock_cache)) }
-      | (some (bs, mock_cache')) := return (bs, (k, mock_cache'))
+    | none := match find_is_seeded xs m x₀ pk pre_seed with
+      -- If totally fresh then query and increment counter
+      | none := do { bs ← query (inr ()) (),
+          return (bs, (k + 1, pre_seed,
+            ⟨k, xs, bs, none, m⟩ :: mock_cache)) }
+      -- If seeded for signing use the seeded `bs`
+      | (some mσ) :=
+          return (mσ.bs, (k, pre_seed.erase mσ,
+            ⟨mσ.index, xs, mσ.bs, some mσ.gs, m⟩ :: mock_cache))
       end
-    | (some mσ) := return (mσ.bs, (k, mock_cache))
+    -- If already cached return the existing value
+    | (some mσ) := return (mσ.bs, (k, pre_seed, mock_cache))
     end
-| (inr ()) := λ ⟨m, ⟨k, mock_cache⟩⟩,
-let is_unused : mocked_signature G X M n → Prop :=
-  λ mσ, mσ.m = none in
-match mock_cache.find is_unused with
-| none := return default
-| (some mσ) :=
-  match find_is_cached mσ.xs m mock_cache with
-  | none := let mσ' : mocked_signature G X M n := {m := some m, .. mσ} in
-      return ((_, mσ.bs), (k, mσ' :: mock_cache.erase mσ))
-  | (some mσ') := return ((_, mσ'.bs), (k, mock_cache.erase mσ))
-  end
-end
-end
-
-noncomputable def preseed_values' (n b : ℕ) (x₀ pk : X) :
-  oracle_comp (unif_spec ++ (unit ↦ₒ vector bool n)) (signature_seed G X n) :=
-vector.to_list <$> repeat (do
-  { bs ← repeat ($ᵗ bool) n,
-    zs ← repeat ($ᵗ G) n,
-    return (bs, zs) }) b
-
--- def mock_signing {α : Type} (oa : oracle_comp ((hhs_signature G X M n).unforgeable_adv_spec) α)
---   (x₀ pk : X) : oracle_comp (unif_spec ++ (unit ↦ₒ vector bool n))
---     (α)
-
-def mock_signing_sim_oracle_k (x₀ pk : X) :
-  sim_oracle (hhs_signature G X M n).unforgeable_adv_spec
-  (unif_spec ++ ((vector X n × M) ↦ₒ vector bool n))
-  (ℕ × list (vector X n × vector G n × vector bool n) ×
-    query_log ((vector X n × M) ↦ₒ (vector G n × vector bool n))) :=
-λ i, match i with
--- For queries to `unif_spec` just forward them through
-| (inl (inl i)) := λ ⟨t, ⟨j, seed, cache⟩⟩, do
-    { u ← query (inl i) t,
-      return (u, (j, seed, cache)) }
-| (inl (inr ())) := λ ⟨⟨ys, m⟩, ⟨j, seed, cache⟩⟩,
-    -- Check if the query is already cached
-    match cache.lookup () (ys, m) with
-    | (some (zs, bs)) := return (bs, (j, seed, cache))
-    | none :=
-      -- Check if this `ys` is seeded already
-      match seed.find (λ v, fst v = ys) with
-      | (some (ys', zs, bs)) :=
-          let seed' := seed.erase (ys', zs, bs) in
-          return (bs, (j, seed', cache.log_query () (ys, m) (zs, bs)))
-      | none := do
-          { bs ← query (inr ()) (ys, m),
-            return (bs, (j + 1, seed,
-              cache.log_query () (ys, m) (default, bs)))}
-      end
-    end
-| (inr ()) := λ ⟨m, ⟨j, seed, cache⟩⟩,
-    -- Grab the next seed value
-    match seed with
-    | ((ys, zs, bs) :: seed') :=
-      match cache.lookup () (ys, m) with
-      | (some (zs', bs')) :=
-          return ((zs', bs'), (j, seed', cache))
-      | none :=
-          return ((zs, bs), (j, seed', cache.log_query () (ys, m) (zs, bs)))
-      end
-    -- This case shouldn't happen in practice
-    | list.nil := return default
+| (inr ()) := λ ⟨m, ⟨k, pre_seed, mock_cache⟩⟩,
+    let ⟨j, bs, gs⟩ := pre_seed.head in
+    let xs := retrieve_commits x₀ pk gs bs in
+    match find_is_cached xs m mock_cache with
+    -- If not cached use the given seed values
+    | none := return ((gs, bs),
+        (k, pre_seed.tail, ⟨j, xs, bs, gs, m⟩ :: mock_cache))
+    -- If this is cached, there should be a `gs` associated
+    | (some mσ) := return ((mσ.gs.get_or_else default, mσ.bs),
+        (k, pre_seed.tail, mock_cache))
     end
 end
+
+-- def find_is_cached (xs : vector X n) (m : M)
+--   (mock_cache : list (mocked_signature G X M n)) :
+--   option (mocked_signature G X M n) :=
+-- let is_cached : mocked_signature G X M n → Prop :=
+--   λ mσ, mσ.xs = xs ∧ mσ.m = some m in
+-- (mock_cache.find is_cached)
+
+-- def find_is_seeded (xs : vector X n) (m : M)
+--   (mock_cache : list (mocked_signature G X M n)) :
+--   option (vector bool n × list (mocked_signature G X M n)) :=
+-- let is_seeded : mocked_signature G X M n → Prop :=
+--   λ mσ, mσ.xs = xs ∧ mσ.m = none in
+-- match mock_cache.find is_seeded with
+-- | none := none
+-- | (some mσ) := let mσ' : mocked_signature G X M n := {m := some m, .. mσ} in
+--     some (mσ.bs, mσ' :: mock_cache.erase mσ)
+-- end
+
+-- def lookup_mock_signature (m : M)
+--   (mock_cache : list (mocked_signature G X M n)) :
+--   option ((vector X n × vector bool n) × list (mocked_signature G X M n)) :=
+-- let is_unused : mocked_signature G X M n → Prop :=
+--   λ mσ, mσ.m = none in
+-- match mock_cache.find is_unused with
+-- | none := none
+-- | (some mσ) :=
+--   match find_is_cached mσ.xs m mock_cache with
+--   | none := let mσ' : mocked_signature G X M n := {m := some m, .. mσ} in
+--       some ((mσ.xs, mσ.bs), mσ' :: mock_cache.erase mσ)
+--   | (some mσ') := some ((mσ'.xs, mσ'.bs), mock_cache)
+--   end
+-- end
+
+-- def mock_signing_sim_oracle_basic (x₀ pk : X) :
+--   sim_oracle (hhs_signature G X M n).unforgeable_adv_spec
+--   (unif_spec ++ (unit ↦ₒ vector bool n))
+--   (ℕ × list (mocked_signature G X M n)) :=
+-- λ i, match i with
+-- -- For queries to `unif_spec` just forward them through
+-- | (inl (inl i)) := λ ⟨t, ⟨k, mock_cache⟩⟩, do
+--     { u ← query (inl i) t,
+--       return (u, (k, mock_cache)) }
+-- | (inl (inr ())) := λ ⟨⟨xs, m⟩, ⟨k, mock_cache⟩⟩,
+--     match find_is_cached xs m mock_cache with
+--     | none := match find_is_seeded xs m mock_cache with
+--       | none := do
+--         { bs ← query (inr ()) (),
+--           let mσ : (mocked_signature G X M n) :=
+--             mocked_signature.mk k xs none bs (some m) in
+--           return (bs, (k + 1, mσ :: mock_cache)) }
+--       | (some (bs, mock_cache')) := return (bs, (k, mock_cache'))
+--       end
+--     | (some mσ) := return (mσ.bs, (k, mock_cache))
+--     end
+-- | (inr ()) := λ ⟨m, ⟨k, mock_cache⟩⟩,
+-- let is_unused : mocked_signature G X M n → Prop :=
+--   λ mσ, mσ.m = none in
+-- match mock_cache.find is_unused with
+-- | none := return default
+-- | (some mσ) :=
+--   match find_is_cached mσ.xs m mock_cache with
+--   | none := let mσ' : mocked_signature G X M n := {m := some m, .. mσ} in
+--       return ((mσ.gs.get_or_else default, mσ.bs), (k, mσ' :: mock_cache.erase mσ))
+--   | (some mσ') := return ((mσ'.gs.get_or_else default, mσ'.bs), (k, mock_cache.erase mσ))
+--   end
+-- end
+-- end
+
+-- noncomputable def preseed_values' (n b : ℕ) (x₀ pk : X) :
+--   oracle_comp (unif_spec ++ (unit ↦ₒ vector bool n)) (signature_seed G X n) :=
+-- vector.to_list <$> repeat (do
+--   { bs ← repeat ($ᵗ bool) n,
+--     zs ← repeat ($ᵗ G) n,
+--     return (bs, zs) }) b
+
+-- -- def mock_signing {α : Type} (oa : oracle_comp ((hhs_signature G X M n).unforgeable_adv_spec) α)
+-- --   (x₀ pk : X) : oracle_comp (unif_spec ++ (unit ↦ₒ vector bool n))
+-- --     (α)
+
+-- def mock_signing_sim_oracle_k (x₀ pk : X) :
+--   sim_oracle (hhs_signature G X M n).unforgeable_adv_spec
+--   (unif_spec ++ ((vector X n × M) ↦ₒ vector bool n))
+--   (ℕ × list (vector X n × vector G n × vector bool n) ×
+--     query_log ((vector X n × M) ↦ₒ (vector G n × vector bool n))) :=
+-- λ i, match i with
+-- -- For queries to `unif_spec` just forward them through
+-- | (inl (inl i)) := λ ⟨t, ⟨j, seed, cache⟩⟩, do
+--     { u ← query (inl i) t,
+--       return (u, (j, seed, cache)) }
+-- | (inl (inr ())) := λ ⟨⟨ys, m⟩, ⟨j, seed, cache⟩⟩,
+--     -- Check if the query is already cached
+--     match cache.lookup () (ys, m) with
+--     | (some (zs, bs)) := return (bs, (j, seed, cache))
+--     | none :=
+--       -- Check if this `ys` is seeded already
+--       match seed.find (λ v, fst v = ys) with
+--       | (some (ys', zs, bs)) :=
+--           let seed' := seed.erase (ys', zs, bs) in
+--           return (bs, (j, seed', cache.log_query () (ys, m) (zs, bs)))
+--       | none := do
+--           { bs ← query (inr ()) (ys, m),
+--             return (bs, (j + 1, seed,
+--               cache.log_query () (ys, m) (default, bs)))}
+--       end
+--     end
+-- | (inr ()) := λ ⟨m, ⟨j, seed, cache⟩⟩,
+--     -- Grab the next seed value
+--     match seed with
+--     | ((ys, zs, bs) :: seed') :=
+--       match cache.lookup () (ys, m) with
+--       | (some (zs', bs')) :=
+--           return ((zs', bs'), (j, seed', cache))
+--       | none :=
+--           return ((zs, bs), (j, seed', cache.log_query () (ys, m) (zs, bs)))
+--       end
+--     -- This case shouldn't happen in practice
+--     | list.nil := return default
+--     end
+-- end
 
 
 /-- Oracle to mock a signing oracle for messages in the vectorization reduction,
