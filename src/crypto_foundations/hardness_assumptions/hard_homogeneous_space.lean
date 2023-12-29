@@ -135,7 +135,7 @@ sec_adv unif_spec (X × X × X) X
 The input generator randomly chooses the challenge points for the adversary,
 and a result is valid if it is exactly the parallelization of the challenge points. -/
 noncomputable def parallelization_exp (adv : parallelization_adv G X) :
-  sec_exp unif_oracle (X × X × X) X :=
+  sec_exp unif_spec (X × X × X) X :=
 { inp_gen := do
     { x₁ ←$ᵗ X, x₂ ←$ᵗ X, x₃ ←$ᵗ X,
       return (x₁, x₂, x₃) },
@@ -181,7 +181,7 @@ sec_adv unif_spec (X × X × X × X) bool
 
 /-- Analogue of the Decisional Diffie-Hellman problem. -/
 noncomputable def dec_parallelization_exp (adv : dec_parallelization_adv G X) :
-  sec_exp unif_oracle bool bool :=
+  sec_exp unif_spec bool bool :=
 { inp_gen := $ᵗ bool,
   main := λ b, do
     { x₀ ←$ᵗ X, g₁ ←$ᵗ G, g₂ ←$ᵗ G, g₃ ←$ᵗ G,

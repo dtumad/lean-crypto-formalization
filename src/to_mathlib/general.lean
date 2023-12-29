@@ -39,8 +39,7 @@ begin
       end,
       rwa [this, eq_comm, nat.sub_eq_zero_iff_le, nat.le_sub_iff_right h, nat.succ_add,
         nat.succ_le_iff],
-    }
-
+    },
 
   }
 end

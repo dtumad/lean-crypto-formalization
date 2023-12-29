@@ -149,8 +149,6 @@ let is_seeded : signature_seed G X n → Prop :=
   λ mσ, retrieve_commits x₀ pk mσ.gs mσ.bs = xs in
 pre_seeds.find is_seeded
 
-#check function.argmin
-
 def mock_signing_sim_oracle_basic (x₀ pk : X) :
   sim_oracle (hhs_signature G X M n).unforgeable_adv_spec
     (unif_spec ++ (unit ↦ₒ vector bool n))

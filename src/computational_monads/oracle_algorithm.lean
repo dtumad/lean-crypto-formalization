@@ -17,7 +17,7 @@ semantics of the globally available oracles, and is meant to be extended with fu
 representing the actual algorithms themselves.
 -/
 
-def unif_oracle := oracle_spec.unif_spec
+-- def unif_spec := oracle_spec.unif_spec
 
 open oracle_comp oracle_spec
 
@@ -34,13 +34,13 @@ section exec
 
 /-- Use the algorithm's simulation oracle to run a computation. -/
 def exec (alg : oracle_algorithm alg_spec)
-  (oa : oracle_comp alg_spec α) : oracle_comp unif_oracle α :=
+  (oa : oracle_comp alg_spec α) : oracle_comp unif_spec α :=
 simulate' alg.base_sim_oracle oa alg.init_state
 
 variables (alg : oracle_algorithm alg_spec)
 
 @[simp] lemma exec_return (a : α) :
-  alg.exec (return' !alg_spec! a) = return' !unif_oracle! a := rfl
+  alg.exec (return' !alg_spec! a) = return' !unif_spec! a := rfl
 
 @[simp] lemma exec_bind (oa : oracle_comp alg_spec α) (ob : α → oracle_comp alg_spec β) :
   alg.exec (oa >>= ob) = (simulate alg.base_sim_oracle oa alg.init_state) >>=

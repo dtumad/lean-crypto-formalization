@@ -38,8 +38,8 @@ variables (oa oa' : oracle_comp spec α) (n : ℕ) {m : ℕ} (x x' : α) (xs : v
 
 @[simp] lemma repeat_zero : oa.repeat 0 = return nil := rfl
 
-lemma repeat_succ : oa.repeat n.succ = do {a ← oa, as ← oa.repeat n, return (a ::ᵥ as)} :=
-by rw [repeat]
+@[simp] lemma repeat_succ : oa.repeat n.succ =
+  do {a ← oa, as ← oa.repeat n, return (a ::ᵥ as)} := rfl
 
 section all₂
 
@@ -116,11 +116,11 @@ section repeat_zero
 
 /-- Repeating a computation `0` times is equivalent to any other computation,
 since the output type is `vector α 0` which is a subsingleton type. -/
-@[pairwise_dist_equiv] lemma repeat_zero_dist_equiv (oa₀ : oracle_comp spec' (vector α 0)) :
+lemma repeat_zero_dist_equiv (oa₀ : oracle_comp spec' (vector α 0)) :
   oa.repeat 0 ≃ₚ oa₀ := by pairwise_dist_equiv
 
-@[pairwise_dist_equiv] lemma repeat_zero_dist_equiv_return :
-  oa.repeat 0 ≃ₚ return' !spec! nil := refl _
+lemma repeat_zero_dist_equiv_return :
+  oa.repeat 0 ≃ₚ return' !spec! nil := by pairwise_dist_equiv
 
 lemma support_repeat_zero : (oa.repeat 0).support = {nil} := rfl
 
