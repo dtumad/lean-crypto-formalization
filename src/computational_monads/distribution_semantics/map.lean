@@ -377,4 +377,20 @@ begin
     { simp only [prob_output_eq_zero hg1, zero_mul] } }
 end
 
+-- TODO: actual place for this
+@[simp] lemma prob_output_map_to_list {n : ℕ} (xs : list α) (oa : oracle_comp spec (vector α n)) :
+  ⁅= xs | vector.to_list <$> oa⁆ = if h : xs.length = n then ⁅= ⟨xs, h⟩ | oa⁆ else 0 :=
+begin
+  split_ifs with h,
+  {
+    exact (prob_output_map_of_injective oa
+      vector.to_list ⟨xs, h⟩ vector.to_list_injective),
+  },
+  {
+    simp_rw [prob_output_eq_zero_iff, support_map, set.mem_image, not_exists, not_and_distrib],
+    refine λ xs', or.inr (λ hxs', h (hxs' ▸ xs'.to_list_length)),
+
+  }
+end
+
 end oracle_comp

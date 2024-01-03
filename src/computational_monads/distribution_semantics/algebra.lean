@@ -29,6 +29,16 @@ section comm
 
 end comm
 
+section mul_one_class
+
+@[pairwise_dist_equiv, to_additive] lemma map_mul_one [mul_one_class α] :
+  ((* 1) : α → α) <$> oa ≃ₚ oa := by rw [mul_one_eq_id, id_map]
+
+@[pairwise_dist_equiv, to_additive] lemma map_one_mul [mul_one_class α] :
+  (((*) 1) : α → α) <$> oa ≃ₚ oa := by rw [one_mul_eq_id, id_map]
+
+end mul_one_class
+
 section is_cancel
 
 variables [has_mul α]

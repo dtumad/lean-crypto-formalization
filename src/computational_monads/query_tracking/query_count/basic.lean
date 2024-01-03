@@ -168,15 +168,34 @@ by simp [-active_oracles_increment, mem_active_oracles_increment_iff]
 ⟨λ h, by simpa using congr_arg (λ il, get_count il i) h,
   λ h, query_count.get_count_ext _ _ (λ i', by rw [get_count_increment, h, if_t_t, add_zero])⟩
 
-lemma increment_zero (i) : qc.increment i 0 = qc := by simp
+@[simp] lemma increment_zero (i) : qc.increment i 0 = qc := by simp only [increment_eq_self_iff]
 
 @[simp] lemma increment_increment (i n m) :
   (qc.increment i n).increment i m = qc.increment i (n + m) :=
 by simp [increment, of_nat_add, add_assoc]
 
 @[simp] lemma add_values_eq_increment (i) (ts : list unit) :
-  @add_values _ _ qc i ts = qc.increment i ts.length :=
+  @add_values _ _ i qc ts = qc.increment i ts.length :=
 by rw [increment, add_values, of_list_eq_of_nat_length]
+
+lemma increment_add (i n) : qc.increment i n + qc' = (qc + qc').increment i n :=
+by rw [increment, add_comm _ qc', ← add_assoc, increment, add_comm qc']
+
+lemma add_increment (i n) : qc + qc'.increment i n = (qc + qc').increment i n :=
+by rw [add_comm qc, increment_add, add_comm qc]
+
+lemma increment_eq_of_nat_add (i n) : qc.increment i n = of_nat i n + qc :=
+by simp only [increment, add_comm]
+
+lemma increment_eq_add_of_nat (i n) : qc.increment i n = qc + of_nat i n :=
+by simp only [increment]
+
+lemma increment_succ (i n) : qc.increment i (n + 1) = qc.increment i n + of_nat i 1 :=
+by rw [increment_eq_add_of_nat, of_nat_add, ← add_assoc, ← increment_eq_add_of_nat qc]
+
+lemma increment_increment_comm (i j n m) :
+  (qc.increment i n).increment j m = (qc.increment j m).increment i n :=
+by simp_rw [increment_eq_of_nat_add, ← add_assoc, add_comm (of_nat j m)]
 
 end increment
 

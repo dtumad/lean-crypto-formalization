@@ -10,6 +10,8 @@ import computational_monads.simulation_semantics.simulate.bind
 # Distributional Semantics of Simulation of a Map Operation
 
 This file contains lemmas about the computation `simulate so (f <$> oa) s`.
+
+TODO: might be fine to get rid of these kinds of files
 -/
 
 variables {α β γ : Type} {spec spec' spec'' : oracle_spec} {S S' : Type}

@@ -47,12 +47,6 @@ open oracle_spec
 
 variables {spec : oracle_spec} {α β γ : Type}
 
-instance nonempty (spec : oracle_spec) (α : Type) [h : nonempty α] :
-  nonempty (oracle_comp spec α) := h.elim (λ x, ⟨pure' α x⟩)
-
-instance inhabited (spec : oracle_spec) (α : Type) [h : inhabited α] :
-  inhabited (oracle_comp spec α) := ⟨pure' α default⟩
-
 /-- The eventual return type of a computation is never empty,
 since it must eventually terminate by returning a value.
 Uses the fact that the range of all oracles is inhabited in order
@@ -61,6 +55,15 @@ Equivalently this is the final result if each oracle returns `default : spec.ran
 def default_result : Π {α : Type}, oracle_comp spec α → α
 | _ (pure' α a) := a
 | _ (query_bind' i t α oa) := default_result (oa default)
+
+instance nonempty (spec : oracle_spec) (α : Type) [h : nonempty α] :
+  nonempty (oracle_comp spec α) := h.elim (λ x, ⟨pure' α x⟩)
+
+instance inhabited (spec : oracle_spec) (α : Type) [h : inhabited α] :
+  inhabited (oracle_comp spec α) := ⟨pure' α default⟩
+
+instance is_empty (spec : oracle_spec) (α : Type) [h : is_empty α] :
+  is_empty (oracle_comp spec α) := ⟨λ oa, h.1 (default_result oa)⟩
 
 /-- Constructing an `oracle_comp` implies the existence of some element of the underlying type.
   The assumption that the range of the oracles is `inhabited` is the key point for this. -/

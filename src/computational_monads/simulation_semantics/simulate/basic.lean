@@ -26,16 +26,11 @@ TODO: we should evaluate if this approach is actually always better.
 
 variables {α β γ : Type} {spec spec' spec'' : oracle_spec} {S S' : Type}
 
+/-- Specifies a way to simulate a set of oracles using another set of oracles.
+e.g. using uniform selection oracles with a query cache to simulate a random oracle.
+`simulate` gives a method for applying a simulation oracle to a specific computation. -/
 def sim_oracle (spec spec' : oracle_spec) (S : Type) :=
 Π (i : spec.ι), spec.domain i × S → oracle_comp spec' (spec.range i × S)
-
--- /-- Specifies a way to simulate a set of oracles using another set of oracles.
--- e.g. using uniform selection oracles with a query cache to simulate a random oracle.
--- `simulate` gives a method for applying a simulation oracle to a specific computation.
--- `default_state` can be provided as a standard initial state for simulation (`dsimulate`). -/
--- structure sim_oracle (spec spec' : oracle_spec) (S : Type) :=
--- (default_state : S)
--- (o (i : spec.ι) : (spec.domain i × S) → oracle_comp spec' (spec.range i × S))
 
 namespace sim_oracle
 
@@ -43,16 +38,6 @@ namespace sim_oracle
 and returning a fake coin flip that alternates between heads and tails. -/
 example : sim_oracle oracle_spec.coin_spec oracle_spec.coin_spec ℕ :=
 λ i ⟨t, n⟩, return (if even n then tt else ff, n + 1)
-
--- /-- View a simulation oracle as a function corresponding to the internal oracle `o` -/
--- instance has_coe_to_fun : has_coe_to_fun (sim_oracle spec spec' S)
---   (λ so, Π (i : spec.ι), spec.domain i × S → oracle_comp spec' (spec.range i × S)) :=
--- { coe := λ so, so.o }
-
--- lemma has_coe_to_fun.def (so : sim_oracle spec spec' S) (i : spec.ι)
---   (x : spec.domain i × S) : so i x = so.o i x := rfl
-
--- def inhabited_state (so : sim_oracle spec spec' S) : inhabited S := ⟨so.default_state⟩
 
 instance inhabited [inhabited S] : inhabited (sim_oracle spec spec' S) :=
 ⟨λ _ _, oracle_comp.pure' _ default⟩
@@ -104,6 +89,9 @@ lemma simulate'_def : simulate' so oa s = prod.fst <$> oa.simulate so s := rfl
 
 -- TODO: these should have a special simp category, to not be eagerly applied
 lemma simulate'_return : simulate' so (return a) s = prod.fst <$> (return (a, s)) := rfl
+
+-- TODO: Get a `@[simp]` tag for stuff like this
+lemma simulate'_return' : simulate' so (return a) s = return a := rfl
 
 lemma simulate'_bind : simulate' so (oa >>= ob) s =
   simulate so oa s >>= λ x, simulate' so (ob x.1) x.2 :=

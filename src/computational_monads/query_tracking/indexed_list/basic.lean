@@ -314,7 +314,7 @@ end of_list
 section add_values
 
 /-- Add a list of values to an existing indexed list. -/
-def add_values (il : spec.indexed_list τ) {i} (ts : list (τ i)) : spec.indexed_list τ :=
+def add_values {i} (il : spec.indexed_list τ) (ts : list (τ i)) : spec.indexed_list τ :=
 il + of_list ts
 
 variables {i : spec.ι} (ts ts' : list (τ i))
