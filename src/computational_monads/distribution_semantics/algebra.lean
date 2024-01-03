@@ -6,12 +6,9 @@ Authors: Devon Tuma
 import computational_monads.distribution_semantics.seq
 
 /-!
-# Distribution Semantics of Sequence Operation
+# Distribution Semantics of Algebra Operations
 
-This file contains lemmas about the distribution semantics of `<*>`, which can be use
-to combine two computations with some operation.
-For example given `oa ob : oracle_comp spec ℕ`, `(+) <$> oa <*> ob` is the computation that
-runs `oa` and `ob` independently to get `x` and `y`, returning the sum `x + y`.
+This file contains lemmas about computations where the return type has some algebraic structure.
 -/
 
 namespace oracle_comp
@@ -24,15 +21,6 @@ variables {α β γ δ : Type} {spec spec' : oracle_spec}
 
 section comm
 
-lemma seq_map_dist_equiv_comm (f : α → α → β) (hf : ∀ x x', f x x' = f x' x) :
-  f <$> oa <*> oa' ≃ₚ f <$> oa' <*> oa :=
-begin
-  rw_dist_equiv [seq_dist_equiv_bind_map, seq_dist_equiv_bind_map, bind_map_dist_equiv,
-    bind_map_dist_equiv, map_dist_equiv_bind_return, bind_bind_dist_equiv_comm],
-  pairwise_dist_equiv_deep,
-  refine return_dist_equiv_return_of_eq _ _ _ _ (hf _ _)
-end
-
 @[pairwise_dist_equiv] lemma seq_map_mul_dist_equiv_comm [comm_monoid α] :
   (*) <$> oa <*> oa' ≃ₚ (*) <$> oa' <*> oa := seq_map_dist_equiv_comm oa oa' (*) mul_comm
 
@@ -43,17 +31,19 @@ end comm
 
 section is_cancel
 
-@[simp, to_additive] lemma prob_output_map_mul_right [has_mul α] [is_right_cancel_mul α]
-  (x : α) : ⁅= (*) x | (*) <$> oa⁆ = ⁅= x | oa⁆ :=
+variables [has_mul α]
+
+@[simp, to_additive] lemma prob_output_map_mul_right [is_right_cancel_mul α] (x : α) :
+  ⁅= (*) x | (*) <$> oa⁆ = ⁅= x | oa⁆ :=
 prob_output_map_of_injective oa (*) x (λ y y' hg, (mul_left_inj x).1 (congr_fun hg x))
 
-@[simp, to_additive] lemma prob_output_map_mul_left [has_mul α] [is_left_cancel_mul α]
-  (x : α) : ⁅= (* x) | (λ y, (* y)) <$> oa⁆ = ⁅= x | oa⁆ :=
+@[simp, to_additive] lemma prob_output_map_mul_left [is_left_cancel_mul α] (x : α) :
+  ⁅= (* x) | (λ y, (* y)) <$> oa⁆ = ⁅= x | oa⁆ :=
 prob_output_map_of_injective oa _ x (λ y y' hg, (mul_right_inj x).1 (congr_fun hg x))
 
 /-- If a multiplication has an `is_right_cancel` instance then the result of multiplying the result
 of two computations has probability given by summing over only the possible first results. -/
-@[simp, to_additive] lemma prob_output_seq_map_mul [has_mul α] [is_right_cancel_mul α]
+@[simp, to_additive] lemma prob_output_seq_map_mul [is_right_cancel_mul α]
   (z : α) : ⁅= z | (*) <$> oa <*> oa'⁆ = ∑' x, ⁅(= z) ∘ (* x) | oa⁆ * ⁅= x | oa'⁆ :=
 begin
   rw [prob_output_seq_eq_tsum_indicator, ennreal.tsum_comm],
@@ -92,7 +82,7 @@ end
 /-- Given two computations `oa` and `oa'`, if there are unique outputs of each such that their
 product is equal to `z`, then the probability of getting `z` from the sum of running both
 computations can be written as a product of probabilities of getting each of them.-/
-@[to_additive] lemma prob_output_seq_map_mul_cancel_unique [has_mul α] [is_right_cancel_mul α] (z : α) (x y : α)
+@[to_additive] lemma prob_output_seq_map_mul_cancel_unique [is_right_cancel_mul α] (z x y : α)
   (h : x * y = z) (h' : ∀ x' ∈ oa.support, ∀ y' ∈ oa'.support, x' * y' = z → y' = y) :
   ⁅= z | (*) <$> oa <*> oa'⁆ = ⁅= x | oa⁆ * ⁅= y | oa'⁆ :=
 begin

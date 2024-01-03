@@ -138,6 +138,22 @@ end prob_event
 
 end bind_return
 
+section bind_eq_single
+
+variables (oa : oracle_comp spec α) (ob : α → oracle_comp spec β)
+
+lemma prob_output_bind_eq_single' (y : β) (x : α)
+  (hx : ∀ x' ∈ oa.support, y ∈ (ob x').support → x' = x) :
+  ⁅= y | oa >>= ob⁆ = ⁅= x | oa⁆ * ⁅= y | ob x⁆ :=
+begin
+  rw [prob_output_bind_eq_tsum],
+  refine tsum_eq_single x (λ x' hx', _),
+  simp [← not_and_distrib],
+  refine (λ h1 h2, hx' (hx x' h1 h2)),
+end
+
+end bind_eq_single
+
 section bind_return_eq_single
 
 variables (oa : oracle_comp spec α) (f : α → β) (y : β) (e' : set β)

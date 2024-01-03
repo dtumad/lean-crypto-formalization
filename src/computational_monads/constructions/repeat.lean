@@ -40,6 +40,14 @@ variables (oa oa' : oracle_comp spec α) (n : ℕ) {m : ℕ} (x x' : α) (xs : v
 
 lemma repeat_succ : oa.repeat n.succ = do {a ← oa, as ← oa.repeat n, return (a ::ᵥ as)} := rfl
 
+lemma repeat_succ' : oa.repeat n.succ =
+  cons <$> oa <*> oa.repeat n :=
+begin
+  rw [map_eq_bind_pure_comp, repeat_succ],
+  rw [seq_eq_bind_map],
+  simp [bind_assoc, map_eq_bind_pure_comp],
+end
+
 section all₂
 
 /-- The support of `oa.repeat n` is the set of vectors where every element is in `oa.support`. -/
@@ -281,6 +289,53 @@ begin
     simp only [prob_output_repeat_succ],
     rw [fin.prod_univ_succ, nth_zero, hm],
     simp only [nth_tail_succ],
+  }
+end
+
+#check prob_event_bind_return
+
+lemma prob_event_bind_bind_return (oa : oracle_comp spec α) (ob : oracle_comp spec β)
+  (f : α → β → γ) (p : γ → Prop) :
+  ⁅p | do {x ← oa, y ← ob, return (f x y)}⁆ =
+    ⁅λ z, p (f (prod.fst z) (prod.snd z)) | do {x ← oa, y ← ob, return (x, y)}⁆ :=
+begin
+
+end
+
+-- #check prob_event_bind_eq_mul
+-- #check prob_output_bind_return_eq_single
+lemma prob_event_bind_eq_mul (oa : oracle_comp spec α) (ob : α → oracle_comp spec β)
+  (p : β → Prop) (q : α → Prop) (p' : β → Prop) (ob' : oracle_comp spec β)
+  (h : ∀ x ∈ oa.support, ∀ y ∈ (ob x).support, p y ↔ q x ∧ p' y) :
+  ⁅p | oa >>= ob⁆ = ⁅q | oa⁆ * ⁅p' | ob'⁆ :=
+begin
+
+end
+
+lemma prob_event_bind_bind_return_eq_mul (oa : oracle_comp spec α) (ob : oracle_comp spec β)
+  (f : α → β → γ) (p : γ → Prop) (pa : α → Prop) (pb : β → Prop)
+  (h : ∀ x y, p (f x y) ↔ pa x ∧ pb y) :
+  ⁅p | do {x ← oa, y ← ob, return (f x y)}⁆ =
+    ⁅pa | oa⁆ * ⁅pb | ob⁆ :=
+begin
+
+end
+
+-- #check <|>
+-- lemma prob_event_
+
+@[simp] lemma prob_event_all₂' (p : α → Prop) :
+  ⁅λ xs, xs.to_list.all₂ p | oa.repeat m⁆ = ⁅p | oa⁆ ^ m :=
+begin
+  induction m with m hm,
+  {
+    simp,
+  },
+  {
+    rw [repeat_succ', pow_succ, ← hm],
+    apply prob_event_bind_bind_return_eq_mul',
+    simp,
+    -- rw [prob_event_bind_bind_return],
   }
 end
 
