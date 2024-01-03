@@ -43,3 +43,15 @@ begin
 
   }
 end
+
+
+@[simp] lemma vector.nth_cons {n : ℕ} (x : α) (xs : vector α n) (i : fin n.succ) :
+  (x ::ᵥ xs).nth i = if hi : i = 0 then x else xs.nth (i.pred hi) :=
+begin
+  split_ifs with hi,
+  { rw [hi, vector.nth_zero, vector.head_cons] },
+  {
+    obtain ⟨j, rfl⟩ := fin.exists_succ_eq_iff.2 hi,
+    rw [vector.nth_cons_succ, fin.pred_succ],
+  }
+end

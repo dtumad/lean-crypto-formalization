@@ -22,7 +22,7 @@ is the product over the vector of the probabilities of getting the individual ou
 
 namespace oracle_comp
 
-open_locale ennreal
+open_locale big_operators ennreal
 open oracle_spec vector
 
 variables {α β γ : Type} {spec spec' : oracle_spec}
@@ -30,7 +30,7 @@ variables {α β γ : Type} {spec spec' : oracle_spec}
 /-- Repeat the computation `oa` independently `n` times to get a length `n` vector of results. -/
 def repeat (oa : oracle_comp spec α) : Π (n : ℕ), oracle_comp spec (vector α n)
 | 0 := return nil
-| (n + 1) := do { a ← oa, as ← repeat n, return (a ::ᵥ as) }
+| (n + 1) := do {a ← oa, as ← repeat n, return (a ::ᵥ as)}
 
 variables (oa oa' : oracle_comp spec α) (n : ℕ) {m : ℕ} (x x' : α) (xs : vector α m)
   (xs₀ : vector α 0) (xsₛ : vector α m.succ) (e : set (vector α m))
@@ -38,8 +38,7 @@ variables (oa oa' : oracle_comp spec α) (n : ℕ) {m : ℕ} (x x' : α) (xs : v
 
 @[simp] lemma repeat_zero : oa.repeat 0 = return nil := rfl
 
-@[simp] lemma repeat_succ : oa.repeat n.succ =
-  do {a ← oa, as ← oa.repeat n, return (a ::ᵥ as)} := rfl
+lemma repeat_succ : oa.repeat n.succ = do {a ← oa, as ← oa.repeat n, return (a ::ᵥ as)} := rfl
 
 section all₂
 
@@ -78,11 +77,17 @@ by simp only [mem_fin_support_iff_mem_support, mem_support_repeat_iff_forall]
 /-- If a vector is in the support of `oa.repeat m` then any of its members is in `oa.support`. -/
 lemma mem_support_of_mem_of_support_repeat {oa : oracle_comp spec α} {x : α} {xs : vector α m}
   (hxs : xs ∈ (oa.repeat m).support) (hx : x ∈ xs.to_list) : x ∈ oa.support :=
-by { rw mem_support_repeat_iff_forall at hxs, exact hxs x hx }
+begin
+  rw [mem_support_repeat_iff_all₂, list.all₂_iff_forall] at hxs,
+  exact hxs x hx
+end
 
 lemma replicate_mem_support_repeat {oa : oracle_comp spec α} {x : α} (n : ℕ) (hx : x ∈ oa.support) :
   replicate n x ∈ (oa.repeat n).support :=
-by { rw [mem_support_repeat_iff_forall], exact (λ y hy, (list.eq_of_mem_replicate hy).symm ▸ hx) }
+begin
+  rw [mem_support_repeat_iff_all₂, list.all₂_iff_forall],
+  exact (λ y hy, (list.eq_of_mem_replicate hy).symm ▸ hx)
+end
 
 /-- For any output `xs` of `oa.repeat m` the probability that all elements of `xs` satisfy `p`
 is the probability of a single output of `oa` satisfying `p` raised to the `m`. -/
@@ -151,6 +156,7 @@ the computation's support and the tail is in the support of running it `n` times
 @[simp] lemma support_repeat_succ : (oa.repeat n.succ).support =
   {xs | xs.head ∈ oa.support ∧ xs.tail ∈ (oa.repeat n).support} :=
 begin
+  -- simp only [repeat_succ, support_bind, support_bind_return, support_repeat_eq_all₂],
   refine set.ext (λ xs, _),
   obtain ⟨x, xs, rfl⟩ := exists_eq_cons xs,
   simpa only [support_repeat_eq_all₂, set.mem_set_of_eq, to_list_cons,
@@ -191,7 +197,7 @@ by rw [repeat_succ, oracle_comp.map_eq_bind_return_comp, (mprod_bind_equiv_bind_
   ⁅oa.repeat n.succ⁆ = ⁅oa ×ₘ oa.repeat n⁆.map (λ x, x.1 ::ᵥ x.2) :=
 (oa.eval_dist_repeat_succ' n).trans (eval_dist_map _ _)
 
-lemma prob_output_repeat_succ :
+@[simp] lemma prob_output_repeat_succ :
   ⁅= xsₛ | oa.repeat m.succ⁆ = ⁅= xsₛ.head | oa⁆ * ⁅= xsₛ.tail | oa.repeat m⁆ :=
 calc ⁅= xsₛ | oa.repeat m.succ⁆ =
   ⁅(λ (x : α × vector α m), x.1 ::ᵥ x.2) <$> (oa ×ₘ oa.repeat m)⁆ xsₛ :
@@ -203,7 +209,7 @@ calc ⁅= xsₛ | oa.repeat m.succ⁆ =
 
 end repeat_succ
 
-section nth
+section map
 
 @[pairwise_dist_equiv] lemma map_nth_repeat_dist_equiv (i : fin m) :
   (λ xs, nth xs i) <$> oa.repeat m ≃ₚ oa :=
@@ -211,31 +217,26 @@ begin
   haveI : inhabited α := ⟨oa.default_result⟩,
   induction m with m hm,
   { exact fin.elim0 i },
-  { by_cases hi : i = 0,
-    { simp only [hi, repeat_succ, nth_zero],
-      refine map_bind_dist_equiv_left _ _ _ (λ x hx, _),
-      rw [← support_map, support_eq_singleton_iff_forall],
-      intros y hy,
-      simp at hy,
-      exact hy },
-    { rw [repeat_succ],
-      suffices : ∀ x, (λ xs, nth xs i) <$> (oa.repeat m >>= λ xs, return (x ::ᵥ xs)) ≃ₚ
-        (λ xs, nth xs (i.pred hi)) <$> oa.repeat m,
-      from trans (trans (map_bind_dist_equiv_right default
-        (λ y hy, (this y).trans (this _).symm)) (this default)) (hm $ i.pred hi),
-      refine λ x, (map_comp_dist_equiv _ _ _).trans _,
-      pairwise_dist_equiv,
-      simp only [function.comp_app, oracle_comp.pure'_eq_return, return_dist_equiv_return_iff'],
-      exact (trans (congr_arg _ (fin.succ_pred _ _).symm) (nth_cons_succ x _ _)) } }
+  { refine fin.induction_on i _ (λ i hi, _),
+    { simp only [nth_zero, repeat_succ, oracle_comp.map_bind, map_pure,
+        cons_head, oracle_comp.pure_eq_return],
+      rw_dist_equiv [bind_const_dist_equiv, bind_return_dist_equiv] },
+    { simpa only [repeat_succ, oracle_comp.map_bind, map_pure, nth_cons_succ,
+        bind_const_dist_equiv_iff] using hm i} }
 end
 
-@[pairwise_dist_equiv] lemma map_head_repeat_dist_equiv : head <$> oa.repeat m.succ ≃ₚ oa :=
+@[pairwise_dist_equiv] lemma map_head_repeat_dist_equiv (m : ℕ) :
+  head <$> oa.repeat m.succ ≃ₚ oa :=
 calc head <$> oa.repeat m.succ ≃ₚ (λ xs, nth xs 0) <$> oa.repeat m.succ :
   by simp only [nth_zero] ... ≃ₚ oa : by pairwise_dist_equiv
 
 @[simp] lemma prob_output_map_nth_repeat (i : fin m) (x : α) :
   ⁅= x | (λ xs, nth xs i) <$> oa.repeat m⁆ = ⁅= x | oa⁆ :=
-dist_equiv.prob_output_eq (by pairwise_dist_equiv) x
+dist_equiv.prob_output_eq (map_nth_repeat_dist_equiv oa i) x
+
+@[simp] lemma prob_output_map_head_repeat (m : ℕ) (x : α) :
+  ⁅= x | head <$> oa.repeat m.succ⁆ = ⁅= x | oa⁆ :=
+dist_equiv.prob_output_eq (map_head_repeat_dist_equiv oa m) x
 
 /-- After repeating a computation the probability of an event holding on any single
 result is the same as the probability of the event holding after running the computation once. -/
@@ -250,7 +251,38 @@ calc ⁅λ xs, xs.head ∈ e | oa.repeat m.succ⁆ = ⁅λ xs, xs.nth 0 ∈ e | 
     by simp only [nth_zero]
   ... = ⁅e | oa⁆ : prob_event_nth_repeat oa e 0
 
-end nth
+end map
+
+section tail
+
+@[pairwise_dist_equiv] lemma map_tail_repeat_dist_equiv :
+  tail <$> oa.repeat n ≃ₚ oa.repeat n.pred :=
+begin
+  induction n with n hn,
+  {
+    simp,
+  },
+  {
+    rw [repeat_succ],
+    simpa,
+  }
+end
+
+end tail
+
+@[simp] lemma prob_output_repeat' : ⁅= xs | oa.repeat m⁆ = ∏ i, ⁅= xs.nth i | oa⁆ :=
+begin
+  induction m with m hm,
+  {
+    rw [repeat_zero],
+    simp only [prob_output_of_subsingleton, fintype.univ_of_is_empty, finset.prod_empty],
+  },
+  {
+    simp only [prob_output_repeat_succ],
+    rw [fin.prod_univ_succ, nth_zero, hm],
+    simp only [nth_tail_succ],
+  }
+end
 
 /-- The probability of getting `xs` after `oa.repeat n` is the product of the probability
 of getting each individual output, since each computation runs independently. -/
@@ -298,9 +330,9 @@ end
   oa.repeat n.succ ≃ₚ oa'.repeat n.succ ↔ oa ≃ₚ oa' :=
 begin
   refine ⟨λ h, _, repeat_dist_equiv_repeat_of_dist_equiv oa oa' n.succ⟩,
-  calc oa ≃ₚ head <$> oa.repeat n.succ : (map_head_repeat_dist_equiv oa).symm
+  calc oa ≃ₚ head <$> oa.repeat n.succ : (map_head_repeat_dist_equiv oa n).symm
     ... ≃ₚ head <$> oa'.repeat n.succ : map_dist_equiv_of_dist_equiv' rfl h
-    ... ≃ₚ oa' : map_head_repeat_dist_equiv oa'
+    ... ≃ₚ oa' : map_head_repeat_dist_equiv oa' n
 end
 
 @[pairwise_dist_equiv] lemma repeat_uniform_select_fintype_dist_equiv [fintype α] [inhabited α]
@@ -313,17 +345,25 @@ begin
     this, list.prod_replicate, ← ennreal.inv_pow, nat.cast_pow],
 end
 
+@[simp] lemma prob_output_map_to_list (xs : list α) (oa : oracle_comp spec (vector α n)) :
+  ⁅= xs | to_list <$> oa⁆ = if h : xs.length = n then ⁅= ⟨xs, h⟩ | oa⁆ else 0 :=
+begin
+  split_ifs with h,
+  {
+    exact (prob_output_map_of_injective oa
+      vector.to_list ⟨xs, h⟩ vector.to_list_injective),
+  },
+  {
+    simp_rw [prob_output_eq_zero_iff, support_map, set.mem_image, not_exists, not_and_distrib],
+    refine λ xs', or.inr (λ hxs', h (hxs' ▸ xs'.to_list_length)),
+
+  }
+end
+
 @[simp] lemma prob_output_to_list_map_repeat (xs : list α) :
   ⁅= xs | vector.to_list <$> repeat oa n⁆ = if xs.length = n then (xs.map ⁅oa⁆).prod else 0 :=
 begin
-  by_cases hn : xs.length = n,
-  { induction hn,
-    rw [← to_list_mk xs rfl],
-    refine trans (prob_output_map_of_injective (oa.repeat xs.length)
-      vector.to_list ⟨xs, rfl⟩ vector.to_list_injective) _,
-    simp only [prob_output_repeat, eq_self_iff_true, if_true] },
-  { simp [hn],
-    refine λ xs' hxs' h, (hn (trans (congr_arg _ h).symm (xs'.to_list_length))) }
+  simp,
 end
 
 end oracle_comp
