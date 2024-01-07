@@ -241,6 +241,11 @@ begin
   { simp only [hi, add_apply, apply_eq_nil, not_false_iff, list.nil_append, list.append_nil] }
 end
 
+@[simp] lemma add_eq_empty : il + il' = ∅ ↔ il = ∅ ∧ il' = ∅ :=
+by simp only [finset.union_eq_empty_iff, eq_empty_iff, active_oracles_add]
+@[simp] lemma empty_eq_add : ∅ = il + il' ↔ il = ∅ ∧ il' = ∅ :=
+eq_comm.trans (add_eq_empty il il')
+
 end add
 
 section of_list
@@ -369,6 +374,9 @@ lemma mem_active_oracles_add_values' (hts : ts ≠ []) :
   il.add_values (ts ++ ts') := by simp [add_values, add_assoc, of_list_append]
 
 lemma add_values_cons (t) : il.add_values (t :: ts) = (il.add_values [t]).add_values ts := by simp
+
+lemma add_values_add_eq_add_add_values : (il + il').add_values ts = il + il'.add_values ts :=
+by rw [add_values, add_values, add_assoc]
 
 end add_values
 

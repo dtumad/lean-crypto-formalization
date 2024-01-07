@@ -200,6 +200,15 @@ lemma increment_increment_comm (i j n m) :
   (qc.increment i n).increment j m = (qc.increment j m).increment i n :=
 by simp_rw [increment_eq_of_nat_add, ← add_assoc, add_comm (of_nat j m)]
 
+lemma increment_add_eq_add_increment (i n) :
+  (qc + qc').increment i n = qc + qc'.increment i n :=
+begin
+  refine fun_like.ext_iff.2 (λ j, _),
+  by_cases hj : i = j,
+  { simp only [hj, increment_apply, eq_self_iff_true, add_apply, list.append_assoc, if_true] },
+  { simp only [hj, increment_apply, add_apply, if_false] }
+end
+
 end increment
 
 section decrement
@@ -248,6 +257,16 @@ lemma decrement_empty (i n) : (∅ : spec.query_count).decrement i n = ∅ := by
 @[simp] lemma decrement_add (i n m) :
   qc.decrement i (n + m) = (qc.decrement i n).decrement i m :=
 by simp [decrement, query_count.sub_sub, of_nat_add]
+
+lemma decrement_add_eq_add_decrement (i n) :
+  (qc + qc').decrement i n = qc.decrement i n + qc'.decrement i (n - qc.get_count i) :=
+begin
+  refine fun_like.ext_iff.2 (λ j, _),
+  by_cases hj : i = j,
+  { simp only [hj, list.drop_append_eq_append_drop, get_count_eq_length_apply, decrement_apply,
+      eq_self_iff_true, add_apply, if_true] },
+  { simp only [hj, decrement_apply, add_apply, if_false] }
+end
 
 end decrement
 
@@ -301,6 +320,25 @@ by simp [decrement_increment_eq_increment qc i le_rfl]
 lemma increment_decrement_eq_self (i n) (hm : n ≤ qc.get_count i) :
   (qc.decrement i n).increment i n = qc :=
 by simp [increment_decrement_eq_increment qc i hm le_rfl]
+
+@[simp] lemma increment_decrement_eq_self_iff (i n m) :
+  (qc.decrement i n).increment i m = qc ↔ m = min (qc.get_count i) n :=
+begin
+  refine query_count.get_count_ext_iff.trans ⟨λ h, _, λ h j, _⟩,
+  { specialize h i,
+    simp only [get_count_increment, get_count_decrement, eq_self_iff_true, if_true] at h,
+    rw [eq_comm, min_eq_iff, get_count_eq_length_apply],
+    by_cases hn : n ≤ qc.get_count i,
+    { rw [← nat.sub_add_comm hn, nat.sub_eq_iff_eq_add (le_trans hn (le_add_right le_rfl))] at h,
+      exact or.inr ⟨(add_left_cancel h).symm, hn⟩ },
+    { rw [nat.sub_eq_zero_of_le (le_of_not_le hn), zero_add] at h,
+      refine or.inl ⟨h.symm, le_of_not_le hn⟩ } },
+  { by_cases hj : i = j,
+    { induction hj,
+      simp only [get_count_increment, get_count_decrement, eq_self_iff_true, if_true],
+      rw [h, nat.sub_add_min_cancel] },
+    { simp only [hj, get_count_increment, get_count_decrement, if_false, tsub_zero, add_zero] } }
+end
 
 /-- Simplified version of `indexed_list.add_values_induction` for the case of `query_count`.
 Makes use of `increment` and simplifies some assumptions from lists to integers. -/
@@ -360,6 +398,44 @@ by simp [add_values, increment]
 
 @[simp] lemma to_query_count_drop_at_index (i n) : (il.drop_at_index i n).to_query_count =
   drop_at_index il.to_query_count i n := map_drop_at_index _ _ _ _
+
+lemma to_query_count_eq_add_iff (qc qc' : spec.query_count) : il.to_query_count = qc + qc' ↔
+  ∃ il₁ il₂, il₁ + il₂ = il ∧ il₁.to_query_count = qc ∧ il₂.to_query_count = qc' :=
+begin
+  refine ⟨_, λ h, _⟩,
+  { revert qc qc',
+    refine add_values_induction il _ _,
+    { simp only [to_query_count_empty, empty_eq_add, add_eq_empty, and_imp],
+      refine λ qc qc' hqc hqc', ⟨∅, ∅, _⟩,
+      rw [hqc, hqc', to_query_count_empty],
+      tauto },
+    { intros i ts il hts hil h qc qc' h',
+      rw [to_query_count_add_values] at h',
+      have : il.to_query_count = (qc + qc').decrement i ts.length,
+      by rw [← h', decrement_increment_eq_self],
+      rw [decrement_add_eq_add_decrement] at this,
+      specialize h _ _ this,
+      obtain ⟨il₁', il₂', hil', h1, h2⟩ := h,
+      refine ⟨il₁'.add_values (ts.take (qc.get_count i)),
+        il₂'.add_values (ts.drop (qc.get_count i)), _, _, _⟩,
+      { refine fun_like.ext_iff.2 (λ j, _),
+        by_cases hj : i = j,
+        { induction hj,
+          have h : i ∉ (il₁' + il₂').active_oracles := hil'.symm ▸ hil,
+          rw [active_oracles_add, finset.not_mem_union] at h,
+          simp only [apply_eq_nil, hil, h.1, h.2, add_apply, add_values_apply, eq_self_iff_true,
+            not_false_iff, list.nil_append, dite_eq_ite, if_true, list.take_append_drop] },
+        { simp only [hj, ←hil', add_apply, not_false_iff, add_values_apply, dif_neg] } },
+      { rw [to_query_count_add_values, h1, increment_decrement_eq_self_iff, list.length_take] },
+      { rw [to_query_count_add_values, h2, list.length_drop, increment_decrement_eq_self_iff,
+          eq_comm, min_eq_right_iff],
+        have := congr_arg (λ qc, get_count qc i) h',
+        simp only [get_count_eq_zero _ hil, get_count_increment, get_count_to_query_count,
+          eq_self_iff_true, if_true, zero_add, get_count_add] at this,
+        rw [this, add_tsub_cancel_left] } } },
+  { obtain ⟨il₁, il₂, h1, h2⟩ := h,
+    rw [← h1, to_query_count_add, h2.1, h2.2] }
+end
 
 end to_query_count
 

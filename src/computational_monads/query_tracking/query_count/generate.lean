@@ -252,18 +252,25 @@ begin
   congr; simp only [finset.mem_singleton, eq_self_iff_true, if_true, mul_one]
 end
 
-lemma prob_output_generate (il : spec.indexed_list τ) (h : ↑il = qc) :
-  ⁅= il | generate qc oa⁆ = ∏ j in il.active_oracles, ((il j).map ⁅oa j⁆).prod :=
-begin
-  have : ↑il = {i ∈ qc | i ∈ qc.active_oracles.to_list} := by simp [h],
-  rw [generate, prob_output_generate_aux qc oa (finset.nodup_to_list _) this,
-    finset.to_list_to_finset, ← h, coe_query_count_eq, active_oracles_to_query_count]
-end
-
 lemma support_generate : (generate qc oa).support =
   {il | ↑il = qc ∧ ∀ i, (il i).all₂ (∈ (oa i).support)} :=
 by simp only [generate, support_generate_aux qc oa (finset.nodup_to_list _),
   finset.mem_to_list, sep_self]
+
+lemma prob_output_generate' (il : spec.indexed_list τ) : ⁅= il | generate qc oa⁆ =
+  if ↑il = qc then ∏ j in il.active_oracles, ((il j).map ⁅oa j⁆).prod else 0 :=
+begin
+  split_ifs with h,
+  { have : ↑il = {i ∈ qc | i ∈ qc.active_oracles.to_list} := by simp [h],
+    rw [generate, prob_output_generate_aux qc oa (finset.nodup_to_list _) this,
+      finset.to_list_to_finset, ← h, coe_query_count_eq, active_oracles_to_query_count] },
+  { rw [prob_output_eq_zero_iff, support_generate, set.mem_set_of_eq, not_and_distrib],
+    exact or.inl h }
+end
+
+lemma prob_output_generate (il : spec.indexed_list τ) (h : ↑il = qc) :
+  ⁅= il | generate qc oa⁆ = ∏ j in il.active_oracles, ((il j).map ⁅oa j⁆).prod :=
+by simp only [h, prob_output_generate', eq_self_iff_true, if_true]
 
 @[simp] lemma seq_return (f : α → β) (oa : oracle_comp spec α) : return f <*> oa = f <$> oa := rfl
 
@@ -292,6 +299,39 @@ begin
     sorry,
   }
   
+end
+
+
+@[pairwise_dist_equiv] lemma generate_add_dist_equiv' :
+  generate (qc + qc') oa ≃ₚ ((+) <$> generate qc oa <*> generate qc' oa) :=
+begin
+  refine dist_equiv.ext (λ il, _),
+  rw [prob_output_generate'],
+  split_ifs with hil,
+  {
+    have := hil,
+    rw [coe_query_count_eq, to_query_count_eq_add_iff] at this,
+    obtain ⟨il₁, il₂, h, h'⟩ := this,
+    -- induction h,
+    rw [prob_output_seq_map_add_cancel_unique _ _ _ il₁ il₂],
+    {
+      rw [prob_output_generate _ _ _ h'.1, prob_output_generate _ _ _ h'.2], 
+      rw [← h, active_oracles_add],
+      sorry,
+    },
+    {
+      exact h,
+    },
+    {
+      intros jl hjl jl' hjl' h,
+      simp [support_generate] at hjl hjl',
+      sorry,
+    }
+  },
+  {
+    rw [eq_comm, prob_output_eq_zero],
+    sorry,
+  }
 end
 
 @[pairwise_dist_equiv] lemma generate_add_dist_equiv :

@@ -74,7 +74,13 @@ variables (oa oa' : oracle_comp spec α) (ob ob' : oracle_comp spec β)
 
 lemma seq_map_eq_bind_bind (f : α → β → γ) :
   f <$> oa <*> ob = do {x ← oa, y ← ob, return (f x y)} :=
-by simp [seq_eq_bind_map, map_eq_bind_pure_comp, bind_assoc]
+by simp only [seq_eq_bind_map, map_eq_bind_pure_comp, bind_assoc, pure_bind]
+
+@[simp] lemma support_seq_map (f : α → β → γ) : (f <$> oa <*> ob).support =
+  {z | ∃ x ∈ oa.support, ∃ y ∈ ob.support, f x y = z} :=
+by simp only [set.ext_iff, support_seq, support_map, set.mem_image, set.Union_exists,
+  set.bUnion_and', set.Union_Union_eq_right, exists_prop, set.mem_Union, set.mem_set_of_eq,
+  iff_self, implies_true_iff]
 
 section comm
 
