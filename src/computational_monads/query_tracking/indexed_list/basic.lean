@@ -149,7 +149,7 @@ instance : inhabited (spec.indexed_list τ) := ⟨∅⟩
 
 @[simp] lemma empty_apply (i) : (∅ : spec.indexed_list τ) i = [] := rfl
 @[simp] lemma active_oracles_empty : (∅ : spec.indexed_list τ).active_oracles = ∅ := rfl
-@[simp] lemma get_count_empty (i) : (∅ : spec.indexed_list τ).get_count i = 0 := rfl
+@[simp] lemma get_count_empty (τ i) : (∅ : spec.indexed_list τ).get_count i = 0 := rfl
 
 lemma not_mem_active_oracles_empty (i) : i ∉ (∅ : spec.indexed_list τ).active_oracles :=
 finset.not_mem_empty i
@@ -209,6 +209,11 @@ lemma zero_eq_empty : (0 : spec.indexed_list τ) = ∅ := rfl
 
 @[simp] lemma add_empty : il + ∅ = il := add_zero il
 @[simp] lemma empty_add : ∅ + il = il := zero_add il
+
+@[simp] lemma empty_add_eq_id : ((+) ∅ : spec.indexed_list τ → spec.indexed_list τ) = id :=
+by simp [function.funext_iff]
+@[simp] lemma add_empty_eq_id : ((+ ∅) : spec.indexed_list τ → spec.indexed_list τ) = id :=
+by simp [function.funext_iff]
 
 lemma list_sum_apply (qcs : list (spec.indexed_list τ)) (i : spec.ι) :
   qcs.sum i = (qcs.map (λ (qc : spec.indexed_list τ), qc i)).join :=
@@ -293,7 +298,7 @@ end
 lemma of_list_cons (t : τ i) : of_list (t :: ts) = of_list [t] + of_list ts :=
 by rw [← list.singleton_append, of_list_append]
 
-@[simp] lemma of_list_nil : (of_list ([] : list (τ i))) = ∅ :=
+@[simp] lemma of_list_nil : of_list ([] : list (τ i)) = ∅ :=
 begin
   refine fun_like.ext _ _ (λ i', _),
   by_cases hi : i = i',
@@ -301,6 +306,8 @@ begin
     simp },
   { simp [hi] }
 end
+
+lemma of_list_vector_to_list_nil : of_list (vector.nil : vector (τ i) 0).to_list = ∅ := of_list_nil
 
 @[simp] lemma of_list_inj : of_list ts = of_list ts' ↔ ts = ts' :=
 ⟨λ h, by simpa [of_list] using congr_arg (λ il, to_fun il i) h, λ h, congr_arg _ h⟩

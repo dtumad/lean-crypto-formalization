@@ -41,12 +41,16 @@ variables (oa oa' : oracle_comp spec α) (n : ℕ) {m : ℕ} (x x' : α) (xs : v
 
 lemma repeat_succ : oa.repeat n.succ = do {a ← oa, as ← oa.repeat n, return (a ::ᵥ as)} := rfl
 
-lemma repeat_succ' : oa.repeat n.succ =
-  cons <$> oa <*> oa.repeat n :=
+lemma repeat_succ' : oa.repeat n.succ = cons <$> oa <*> oa.repeat n :=
 begin
   rw [map_eq_bind_pure_comp, repeat_succ],
   rw [seq_eq_bind_map],
   simp [bind_assoc, map_eq_bind_pure_comp],
+end
+
+lemma repeat_add : oa.repeat (n + m) = vector.append <$> oa.repeat n <*> oa.repeat m :=
+begin
+  sorry,
 end
 
 section all₂

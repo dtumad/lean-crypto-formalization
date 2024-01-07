@@ -101,6 +101,9 @@ by simp [of_nat, list.empty_iff_eq_nil, list.eq_nil_iff_forall_not_mem, list.mem
 @[simp] lemma get_count_of_nat (i') : (of_nat i n).get_count i' = if i = i' then n else 0 :=
 by simp [of_nat]
 
+lemma get_count_of_nat_self : (of_nat i n).get_count i = n :=
+by simp only [get_count_of_nat, eq_self_iff_true, if_true]
+
 @[simp] lemma of_nat_zero : of_nat i 0 = ∅ := by simp [fun_like.ext_iff]
 
 lemma of_nat_add : of_nat i (n + m) = of_nat i n + of_nat i m :=

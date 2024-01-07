@@ -28,8 +28,9 @@ section generate_aux
 def generate_aux (qc : spec.query_count)
   (oa : Π (i : spec.ι), oracle_comp spec' (τ i)) :
   list spec.ι → oracle_comp spec' (spec.indexed_list τ)
-| (j :: js) := do { ts ← vector.to_list <$> repeat (oa j) (qc.get_count j),
-    ((+) (of_list ts)) <$> generate_aux js }
+| (j :: js) :=
+  do {ts ← vector.to_list <$> repeat (oa j) (qc.get_count j),
+      (+) (of_list ts) <$> generate_aux js}
 | [] := return ∅
 
 variables (qc : spec.query_count) (oa : Π (i : spec.ι), oracle_comp spec' (τ i))
@@ -39,6 +40,61 @@ variables (qc : spec.query_count) (oa : Π (i : spec.ι), oracle_comp spec' (τ 
 lemma generate_aux_cons (j js) : generate_aux qc oa (j :: js) =
   vector.to_list <$> repeat (oa j) (qc.get_count j) >>= λ ts,
     ((+) (of_list ts)) <$> generate_aux qc oa js := by rw [generate_aux]
+
+@[simp] lemma generate_aux_singleton (j : spec.ι) : generate_aux qc oa [j] =
+  of_list <$> vector.to_list <$> repeat (oa j) (qc.get_count j) :=
+by simpa only [generate_aux, map_return, add_empty]
+
+@[simp] lemma generate_aux_empty (js : list spec.ι) : generate_aux ∅ oa js = return ∅ :=
+begin
+  induction js with j js hjs,
+  { refl },
+  { rw [generate_aux_cons, get_count_empty, repeat_zero, map_return, oracle_comp.return_bind,
+      vector.to_list_nil, of_list_nil, empty_add_eq_id, id_map, hjs] }
+end
+
+lemma generate_aux_eq_generate_aux_filter (js : list spec.ι) : generate_aux qc oa js =
+  generate_aux qc oa (js.filter (∈ qc.active_oracles)) :=
+begin
+  induction js with j js hjs,
+  { rw [list.filter_nil] },
+  { by_cases hj : (∈ qc.active_oracles) j,
+    { simp_rw [list.filter, hj, if_true, generate_aux_cons, hjs] },
+    { simp_rw [list.filter, hj, if_false, generate_aux_cons],
+      rw [get_count_eq_zero qc hj, repeat_zero, map_return, vector.to_list_nil,
+        oracle_comp.return_bind, of_list_nil, empty_add_eq_id, id_map, hjs] } }
+end
+
+-- lemma generate_aux_eq_generate_aux_filter' (js : list spec.ι) : generate_aux qc oa js =
+--   generate_aux {i ∈ qc | i ∈ js} oa (js.filter (∈ qc.active_oracles)) :=
+-- begin
+--   induction js with j js hjs,
+--   { simp only [list.filter_nil, generate_aux_nil] },
+--   { by_cases hj : (∈ qc.active_oracles) j,
+--     { simp_rw [list.filter, hj, if_true, generate_aux_cons],
+--       rw [get_count_sep, list.mem_cons_iff, eq_self_iff_true, true_or, if_true],
+--      },
+--     { simp_rw [list.filter, hj, if_false, generate_aux_cons],
+--       rw [get_count_eq_zero qc hj, repeat_zero, map_return, vector.to_list_nil,
+--         oracle_comp.return_bind, of_list_nil, empty_add_eq_id, id_map, hjs] } }
+-- end
+
+@[simp] lemma generate_aux_of_nat (js : list spec.ι) (j n) : generate_aux (of_nat j n) oa js =
+  of_list <$> vector.to_list <$> repeat (oa j) (n * js.count j) :=
+begin
+  induction js with j' js hjs,
+  { rw [generate_aux_nil, list.count_nil, mul_zero, repeat_zero, map_return, map_return,
+      of_list_vector_to_list_nil] },
+  { by_cases hj : j = j',
+    { induction hj,
+      rw [generate_aux_cons, get_count_of_nat_self, list.count_cons_self, mul_add,
+        mul_one, add_comm, hjs],
+      simp only [map_eq_bind_pure_comp, bind_assoc, repeat_add, seq_eq_bind_map, function.comp_app,
+        pure_bind, vector.to_list_append, of_list_append] },
+    { rw [generate_aux_cons, get_count_of_nat, if_neg hj, repeat_zero, list.count_cons_of_ne hj],
+      simp only [hjs, map_pure, vector.to_list_empty, map_map_eq_map_comp, pure_bind, of_list_nil,
+        empty_add_eq_id, function.comp.left_id] } }
+end
 
 lemma generate_aux_cons_dist_equiv_drop (j js) (h : j ∉ qc.active_oracles) :
   generate_aux qc oa (j :: js) ≃ₚ generate_aux qc oa js :=
@@ -172,7 +228,9 @@ end
 end generate_aux
 
 /-- Run a computation `oa` for each of the active oracles in the query count `qc`,
-aggregating the results into an indexed list. -/
+aggregating the results into an indexed list.
+Unlike `generate_aux` this is noncomputable, as we need to extract a list from the
+finite set of active oracles, which requires choice. -/
 noncomputable def generate (qc : spec.query_count) (oa : Π (i : spec.ι), oracle_comp spec' (τ i)) :
   oracle_comp spec' (spec.indexed_list τ) :=
 generate_aux qc oa qc.active_oracles.to_list
@@ -187,7 +245,11 @@ by simp only [generate, active_oracles_empty, finset.to_list_empty, generate_aux
 @[simp] lemma generate_of_nat (i n) : generate (of_nat i n) oa =
   of_list <$> vector.to_list <$> repeat (oa i) n :=
 begin
-  sorry
+  cases n with n,
+  simp_rw [of_nat_zero, generate_empty, repeat_zero, map_pure, vector.to_list_empty, of_list_nil],
+  rw [generate, generate_aux_of_nat, finset.count_to_list, active_oracles_of_nat,
+    if_neg (nat.succ_ne_zero n)],
+  congr; simp only [finset.mem_singleton, eq_self_iff_true, if_true, mul_one]
 end
 
 lemma prob_output_generate (il : spec.indexed_list τ) (h : ↑il = qc) :
@@ -207,7 +269,7 @@ by simp only [generate, support_generate_aux qc oa (finset.nodup_to_list _),
 
 lemma generate_increment_dist_equiv (i : spec.ι) (n : ℕ) :
   generate (qc.increment i n) oa ≃ₚ
-    (+) <$> ((λ xs, of_list (vector.to_list xs)) <$> repeat (oa i) n) <*> generate qc oa :=
+    (+) <$> (of_list <$> vector.to_list <$> repeat (oa i) n) <*> generate qc oa :=
 begin
   refine dist_equiv.ext (λ il, _),
   by_cases hil : ↑il = qc.increment i n,
