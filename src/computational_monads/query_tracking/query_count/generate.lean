@@ -41,6 +41,11 @@ lemma generate_aux_cons (j js) : generate_aux qc oa (j :: js) =
   vector.to_list <$> repeat (oa j) (qc.get_count j) >>= λ ts,
     ((+) (of_list ts)) <$> generate_aux qc oa js := by rw [generate_aux]
 
+lemma generate_aux_cons' (j js) : generate_aux qc oa (j :: js) =
+  ((+) <$> of_list <$> vector.to_list <$> repeat (oa j) (qc.get_count j))
+    <*> (generate_aux qc oa js) :=
+by simp [generate_aux, map_eq_bind_pure_comp, seq_eq_bind_map, bind_assoc]
+
 @[simp] lemma generate_aux_singleton (j : spec.ι) : generate_aux qc oa [j] =
   of_list <$> vector.to_list <$> repeat (oa j) (qc.get_count j) :=
 by simpa only [generate_aux, map_return, add_empty]
@@ -100,8 +105,13 @@ lemma generate_aux_cons_dist_equiv_drop (j js) (h : j ∉ qc.active_oracles) :
   generate_aux qc oa (j :: js) ≃ₚ generate_aux qc oa js :=
 begin
   rw [generate_aux_cons, get_count_eq_zero _ h, repeat_zero],
-  simp [← indexed_list.zero_eq_empty, zero_add_eq_id],
+  simp only [←indexed_list.zero_eq_empty, zero_add_eq_id, map_pure, vector.to_list_empty,
+    pure_bind, of_list_nil, id_map],
 end
+
+lemma oracle_comp.seq_assoc (oa : oracle_comp spec α) (ob : oracle_comp spec (α → β))
+  (oc : oracle_comp spec (β → γ)) : oc <*> (ob <*> oa) = (∘) <$> oc <*> ob <*> oa :=
+by simp [seq_eq_bind_map, map_eq_bind_pure_comp, bind_assoc]
 
 lemma generate_aux_perm_dist_equiv {js js' : list spec.ι} (hjs : js.nodup)
   (h : js ~ js') : generate_aux qc oa js ≃ₚ generate_aux qc oa js' :=
@@ -115,7 +125,7 @@ begin
     pairwise_dist_equiv 3,
     simp_rw_dist_equiv [map_return_dist_equiv],
     simp only [return_dist_equiv_return_iff', ← add_assoc, add_left_inj],
-    simp [list.nodup_cons, not_or_distrib] at hjs,
+    simp only [list.nodup_cons, not_or_distrib, list.mem_cons_iff] at hjs,
     exact of_list_add_of_list_comm hjs.1.1 _ _ },
   { exact (hj1 hjs).trans (hj2 ((list.perm.nodup_iff h1).1 hjs)) }
 end
@@ -272,37 +282,7 @@ lemma prob_output_generate (il : spec.indexed_list τ) (h : ↑il = qc) :
   ⁅= il | generate qc oa⁆ = ∏ j in il.active_oracles, ((il j).map ⁅oa j⁆).prod :=
 by simp only [h, prob_output_generate', eq_self_iff_true, if_true]
 
-@[simp] lemma seq_return (f : α → β) (oa : oracle_comp spec α) : return f <*> oa = f <$> oa := rfl
-
-lemma generate_increment_dist_equiv (i : spec.ι) (n : ℕ) :
-  generate (qc.increment i n) oa ≃ₚ
-    (+) <$> (of_list <$> vector.to_list <$> repeat (oa i) n) <*> generate qc oa :=
-begin
-  refine dist_equiv.ext (λ il, _),
-  by_cases hil : ↑il = qc.increment i n,
-  {
-    rw [prob_output_generate _ _ _ hil],
-    let il1 := il.take_at_index i (il.get_count i),
-    let il2 := il.drop_at_index i (il.get_count i),
-    rw [prob_output_seq_map_add_cancel_unique _ _ _ il1 il2],
-    {
-      sorry,
-    },
-    {
-      sorry
-    },
-    {
-      sorry,
-    }
-  },
-  {
-    sorry,
-  }
-  
-end
-
-
-@[pairwise_dist_equiv] lemma generate_add_dist_equiv' :
+@[pairwise_dist_equiv] lemma generate_add_dist_equiv :
   generate (qc + qc') oa ≃ₚ ((+) <$> generate qc oa <*> generate qc' oa) :=
 begin
   refine dist_equiv.ext (λ il, _),
@@ -317,51 +297,62 @@ begin
     {
       rw [prob_output_generate _ _ _ h'.1, prob_output_generate _ _ _ h'.2], 
       rw [← h, active_oracles_add],
-      sorry,
+      simp_rw [add_apply, list.map_append, list.prod_append, finset.prod_mul_distrib],
+      congr' 1,
+      {
+        refine symm (finset.prod_subset _ _),
+        refine finset.subset_union_left _ _,
+        intros j hj hj',
+        rw [apply_eq_nil _ hj', list.map_nil, list.prod_nil],
+      },
+      {
+        refine symm (finset.prod_subset _ _),
+        refine finset.subset_union_right _ _,
+        intros j hj hj',
+        rw [apply_eq_nil _ hj', list.map_nil, list.prod_nil],
+      }
     },
     {
       exact h,
     },
     {
-      intros jl hjl jl' hjl' h,
-      simp [support_generate] at hjl hjl',
-      sorry,
+      intros jl hjl jl' hjl' hj,
+      simp only [support_generate, coe_query_count_eq, set.mem_set_of_eq] at hjl hjl',
+      have := hj.trans h.symm,
+      rw [add_eq_add_iff_of_to_query_count_eq] at this,
+      exact this.2,
+      refine hjl.1.trans h'.1.symm
     }
   },
   {
     rw [eq_comm, prob_output_eq_zero],
-    sorry,
+    rw [support_seq_map],
+    simp,
+    intros jl hjl jl' hjl' h,
+    rw [support_generate, set.mem_set_of_eq] at hjl hjl',
+    refine (hil _).elim,
+    simp [← h, ← hjl'.1, ← hjl.1],
+
   }
 end
 
-@[pairwise_dist_equiv] lemma generate_add_dist_equiv :
-  generate (qc + qc') oa ≃ₚ ((+) <$> generate qc oa <*> generate qc' oa) :=
+@[pairwise_dist_equiv] lemma generate_increment_dist_equiv (i : spec.ι) (n : ℕ) :
+  generate (qc.increment i n) oa ≃ₚ
+    (+) <$> (of_list <$> vector.to_list <$> repeat (oa i) n) <*> generate qc oa :=
 begin
-  revert qc',
-  refine increment_induction qc _ _,
-  {
-    
-    simp [← indexed_list.zero_eq_empty, zero_add_eq_id, function.comp],
-  },
-  {
-    intros i n qc hi h qc',
-    rw [increment_add, ← add_increment],
-    refine trans (h _) _,
-    rw_dist_equiv [generate_increment_dist_equiv qc'],
-    rw [increment],
-    rw_dist_equiv [h],
-    simp [bind_assoc, map_eq_bind_pure_comp, seq_eq_bind_map, ← add_assoc],
-  }
-end
-
-lemma generate_dist_equiv_of_mem_active_oracles (i : spec.ι)
-  (hi : i ∈ qc.active_oracles) : generate qc oa ≃ₚ
-    do {x ← oa i, il ← generate (qc.decrement i 1) oa, return (of_list [x] + il)} :=
-begin
-  have : qc = of_nat i 1 + qc.decrement i 1 := sorry,
-  rw [this],
+  rw [increment_eq_of_nat_add],
   rw_dist_equiv [generate_add_dist_equiv],
-  sorry,
+  rw [generate_of_nat],
 end
+
+-- lemma generate_dist_equiv_of_mem_active_oracles (i : spec.ι)
+--   (hi : i ∈ qc.active_oracles) : generate qc oa ≃ₚ
+--     do {x ← oa i, il ← generate (qc.decrement i 1) oa, return (of_list [x] + il)} :=
+-- begin
+--   have : qc = of_nat i 1 + qc.decrement i 1 := sorry,
+--   rw [this],
+--   rw_dist_equiv [generate_add_dist_equiv],
+--   sorry,
+-- end
 
 end oracle_comp

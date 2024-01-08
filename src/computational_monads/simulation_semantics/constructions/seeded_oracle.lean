@@ -96,8 +96,9 @@ begin
         rw_dist_equiv [map_return_dist_equiv],
         rw [oracle_comp.bind_return_comp_eq_map],
         rw [map_coe_sub_spec_dist_equiv_iff],
-        rw_dist_equiv [map_fst_get_head_generate_seed_dist_equiv _ _ hi],
-        pairwise_dist_equiv,
+        sorry,
+        -- rw_dist_equiv [map_fst_get_head_generate_seed_dist_equiv _ _ hi],
+        -- pairwise_dist_equiv,
       },
     },
     {

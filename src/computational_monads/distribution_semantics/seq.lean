@@ -25,6 +25,10 @@ section seq
 
 variables (og : oracle_comp spec (α → β)) (oa : oracle_comp spec α)
 
+@[simp] lemma return_seq_eq_map (f : α → β) : return f <*> oa = f <$> oa := rfl
+
+lemma return_seq_dist_equiv_map (f : α → β ) : return f <*> oa ≃ₚ f <$> oa := dist_equiv.rfl
+
 protected lemma seq_eq_bind_map : (og <*> oa) = (og >>= λ g, g <$> oa) := rfl
 
 lemma seq_dist_equiv_bind_map : (og <*> oa) ≃ₚ (og >>= λ g, g <$> oa) := dist_equiv.rfl

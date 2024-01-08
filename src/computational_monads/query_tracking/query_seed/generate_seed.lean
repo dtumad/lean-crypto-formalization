@@ -75,39 +75,40 @@ lemma generate_seed_dist_equiv_add_sub (h : qc' ≤ qc) :
   generate_seed qc ≃ₚ (+) <$> generate_seed qc' <*> generate_seed (qc - qc') :=
 sorry
 
-lemma generate_seed_dist_equiv_of_mem_active_oracles
-  (i : spec.ι) (hi : i ∈ qc.active_oracles) : generate_seed qc ≃ₚ
-    do {u ←$ᵗ (spec.range i), qs ← generate_seed (qc.decrement i 1),
-      return (of_list [u] + qs)} :=
-begin
-  apply generate_dist_equiv_of_mem_active_oracles,
-  exact hi,
-end
+-- lemma generate_seed_dist_equiv_of_mem_active_oracles
+--   (i : spec.ι) (hi : i ∈ qc.active_oracles) : generate_seed qc ≃ₚ
+--     do {u ←$ᵗ (spec.range i), qs ← generate_seed (qc.decrement i 1),
+--       return (of_list [u] + qs)} :=
+-- begin
+--   apply generate_dist_equiv_of_mem_active_oracles,
+--   exact hi,
+-- end
 
 section get_head
 
-lemma map_get_head_generate_seed_dist_equiv [h : is_sub_spec unif_spec spec]
-  (i : spec.ι) (hi : i ∈ qc.active_oracles) :
-  (λ qc, indexed_list.get_head qc i) <$> generate_seed qc ≃ₚ
-    ($ᵗ (spec.range i) ×ₘ generate_seed (qc.decrement i 1)) :=
-begin
-  rw_dist_equiv [generate_seed_dist_equiv_of_mem_active_oracles _ _ hi],
-  simp [oracle_comp.bind_return_comp_eq_map],
-  -- rw_dist_equiv [map_bind_dist_equiv, map_comp_dist_equiv],
-  rw [mprod],
-  simp_rw [oracle_comp.bind_return_comp_eq_map],
-  pairwise_dist_equiv,
-  simp,
-end
+-- lemma map_get_head_generate_seed_dist_equiv [h : is_sub_spec unif_spec spec]
+--   (i : spec.ι) (hi : i ∈ qc.active_oracles) :
+--   (λ qc, indexed_list.get_head qc i) <$> generate_seed qc ≃ₚ
+--     ($ᵗ (spec.range i) ×ₘ generate_seed (qc.decrement i 1)) :=
+-- begin
+--   sorry,
+--   -- rw_dist_equiv [generate_seed_dist_equiv_of_mem_active_oracles _ _ hi],
+--   -- simp [oracle_comp.bind_return_comp_eq_map],
+--   -- -- rw_dist_equiv [map_bind_dist_equiv, map_comp_dist_equiv],
+--   -- rw [mprod],
+--   -- simp_rw [oracle_comp.bind_return_comp_eq_map],
+--   -- pairwise_dist_equiv,
+--   -- simp,
+-- end
 
-lemma map_fst_get_head_generate_seed_dist_equiv [h : is_sub_spec unif_spec spec]
-  (i : spec.ι) (hi : i ∈ qc.active_oracles) :
-  (λ qc, (indexed_list.get_head qc i).1) <$> generate_seed qc ≃ₚ $ᵗ (spec.range i) :=
-begin
-  refine trans (map_comp_dist_equiv (generate_seed qc)
-    (λ qc, indexed_list.get_head qc i) prod.fst).symm _,
-  rw_dist_equiv [map_get_head_generate_seed_dist_equiv _ _ hi, fst_map_mprod_dist_equiv],
-end
+-- lemma map_fst_get_head_generate_seed_dist_equiv [h : is_sub_spec unif_spec spec]
+--   (i : spec.ι) (hi : i ∈ qc.active_oracles) :
+--   (λ qc, (indexed_list.get_head qc i).1) <$> generate_seed qc ≃ₚ $ᵗ (spec.range i) :=
+-- begin
+--   refine trans (map_comp_dist_equiv (generate_seed qc)
+--     (λ qc, indexed_list.get_head qc i) prod.fst).symm _,
+--   rw_dist_equiv [map_get_head_generate_seed_dist_equiv _ _ hi, fst_map_mprod_dist_equiv],
+-- end
 
 end get_head
 
