@@ -154,6 +154,9 @@ finset.ext (λ i', by by_cases hn : n = 0; simp [hn, increment, or_comm])
 @[simp] lemma get_count_increment (i n i') : (qc.increment i n).get_count i' =
   qc.get_count i' + if i = i' then n else 0 := by simp [increment]
 
+lemma get_count_increment_self (i n) : (qc.increment i n).get_count i = qc.get_count i + n :=
+by simp only [get_count_increment, eq_self_iff_true, if_true]
+
 lemma mem_active_oracles_increment_iff (i n i') :
   i' ∈ (qc.increment i n).active_oracles ↔ (n ≠ 0 ∧ i = i') ∨ i' ∈ qc.active_oracles :=
 by induction n with n hn; simp [@eq_comm _ i]

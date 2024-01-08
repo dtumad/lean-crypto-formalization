@@ -18,8 +18,10 @@ See `sec_adv` for computations bundled with a bound on their query count.
 namespace oracle_comp
 
 open oracle_spec prod (fst) (snd)
+open oracle_spec.query_count
+open_locale big_operators
 
-variables {spec : oracle_spec} {α β γ : Type}
+variables {spec spec' : oracle_spec} {α β γ : Type}
 
 /-- `is_query_bound oa qb` means that for each index `i : spec.ι`,
 `oa` makes at most `qb.get_count i` calls to the corresponding oracle. -/
@@ -47,17 +49,17 @@ lemma is_query_bound_return_iff_true (a : α) :
 begin
   rw [is_query_bound_iff_forall],
   refine ⟨λ h, _, λ h z hz, _⟩,
-  { specialize h (default, query_count.of_nat i 1) (by simp),
-    simpa only [query_count.of_nat_le_iff, indexed_list.one_le_get_count_iff] using h },
-  { rw [simulate_query, counting_oracle.apply_eq, query_count.increment_empty_eq_of_nat,
+  { specialize h (default, of_nat i 1) (by simp),
+    simpa only [of_nat_le_iff, indexed_list.one_le_get_count_iff] using h },
+  { rw [simulate_query, counting_oracle.apply_eq, increment_empty_eq_of_nat,
       support_map, support_query, set.image_univ, set.mem_range] at hz,
     obtain ⟨x, hx⟩ := hz,
     simpa [← hx] using h }
 end
 
 lemma of_nat_is_query_bound_query (i : spec.ι) (t : spec.domain i) :
-  is_query_bound (query i t) (query_count.of_nat i 1) :=
-by simp only [is_query_bound_query_iff, query_count.active_oracles_of_nat, nat.one_ne_zero,
+  is_query_bound (query i t) (of_nat i 1) :=
+by simp only [is_query_bound_query_iff, active_oracles_of_nat, nat.one_ne_zero,
   if_false, finset.mem_singleton]
 
 lemma is_query_bound_bind_iff (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) :
@@ -104,14 +106,13 @@ end
   (oa : spec.range i → oracle_comp spec α) : is_query_bound (query i t >>= oa) qb ↔
     i ∈ qb.active_oracles ∧ ∀ u, is_query_bound (oa u) (qb.decrement i 1) :=
 begin
-  simp_rw [is_query_bound_bind_iff', query_count.decrement_eq_sub_of_nat,
+  simp_rw [is_query_bound_bind_iff', decrement_eq_sub_of_nat,
     simulate_query, counting_oracle.mem_support_apply_iff],
   refine ⟨λ h, ⟨_, λ u, _⟩, λ h z hz, _⟩,
-  { have := (h ⟨default, query_count.of_nat i 1⟩ (by simp)).1,
-    simpa only [query_count.of_nat_le_iff, indexed_list.one_le_get_count_iff] using this },
-  { exact (h (u, query_count.of_nat i 1) (by simp)).2 },
-  { rw [← hz, query_count.increment_empty_eq_of_nat, query_count.of_nat_le_iff,
-      indexed_list.one_le_get_count_iff],
+  { have := (h ⟨default, of_nat i 1⟩ (by simp)).1,
+    simpa only [of_nat_le_iff, indexed_list.one_le_get_count_iff] using this },
+  { exact (h (u, of_nat i 1) (by simp)).2 },
+  { rw [← hz, increment_empty_eq_of_nat, of_nat_le_iff, indexed_list.one_le_get_count_iff],
     exact ⟨h.1, h.2 z.1⟩ }
 end
 
@@ -123,17 +124,22 @@ begin
   { simp [is_query_bound_bind_iff'] }
 end
 
+@[simp] lemma is_query_bound_map_iff (oa : oracle_comp spec α) (f : α → β) :
+  is_query_bound (f <$> oa) qb ↔ is_query_bound oa qb :=
+by simp_rw [oracle_comp.map_eq_bind_return_comp, is_query_bound_bind_iff', is_query_bound_return,
+  and_true, is_query_bound_iff_forall]
+
 section query_bound
 
 /-- `query_bound oa` is the minimal `qc : query_count` with `is_query_bound oa qc` -/
 noncomputable def query_bound : Π {α : Type}, oracle_comp spec α → spec.query_count
 | _ (pure' _ a) := ∅
-| _ (query_bind' i t _ oa) := query_count.of_nat i 1 + finset.univ.sup (λ u, query_bound (oa u))
+| _ (query_bind' i t _ oa) := of_nat i 1 + finset.univ.sup (λ u, query_bound (oa u))
 
 @[simp] lemma query_bound_return (a : α) : query_bound (return a : oracle_comp spec α) = ∅ := rfl
 
 @[simp] lemma query_bound_query (i : spec.ι) (t : spec.domain i) :
-  query_bound (query i t) = query_count.of_nat i 1 :=
+  query_bound (query i t) = of_nat i 1 :=
 begin
   rw [query_def, query_bound, indexed_list.add_right_eq_self_iff],
   refine finset.sup_const finset.univ_nonempty ∅,
@@ -141,27 +147,8 @@ end
 
 lemma query_bound_query_bind (i : spec.ι) (t : spec.domain i)
   (oa : spec.range i → oracle_comp spec α) : query_bound (query i t >>= oa) =
-    query_count.of_nat i 1 + finset.univ.sup (λ u, query_bound (oa u)) :=
+    of_nat i 1 + finset.univ.sup (λ u, query_bound (oa u)) :=
 by rw [← query_bind'_eq_query_bind, query_bound]
-
--- -- TODO: this seems kinda wrong
--- @[simp] lemma query_bound_bind [h : decidable_eq α] (oa : oracle_comp spec α)
---   (ob : α → oracle_comp spec β) : query_bound (oa >>= ob) =
---     query_bound oa + (oa.fin_support.sup (λ x, query_bound (ob x))) :=
--- begin
---   unfreezingI { induction oa using oracle_comp.induction_on' with α a i t α oa hoa },
---   {
---     simp,
---   },
---   {
---     simp_rw [bind_assoc, query_bound_query_bind, add_assoc, add_right_inj],
---     -- simp_rw [bind_assoc, ← query_bind'_eq_query_bind, query_bound],
---     -- rw [add_assoc, add_right_inj],
---     simp at hoa,
---     simp [hoa],
---     sorry,
---   }
--- end
 
 lemma query_bound_is_query_bound (oa : oracle_comp spec α) : is_query_bound oa (query_bound oa) :=
 begin
@@ -190,10 +177,40 @@ lemma is_query_bound_of_le {oa : oracle_comp spec α} {qb} (h : query_bound oa �
 
 end query_bound
 
-@[simp] lemma is_query_bound_map_iff (oa : oracle_comp spec α) (f : α → β) :
-  is_query_bound (f <$> oa) qb ↔ is_query_bound oa qb :=
-by simp_rw [oracle_comp.map_eq_bind_return_comp, is_query_bound_bind_iff', is_query_bound_return,
-  and_true, is_query_bound_iff_forall]
+section simulate
+
+variables {S S' : Type}
+
+/-- If we have bounds `qbs` on the number of queries made by a simulation oracle,
+then we can bound the number of queries after simulation by multiplying this bound
+by the number of times it appears in the bound of the original computation. -/
+lemma nsmul_is_query_bound_simulate (so : sim_oracle spec spec' S)
+  {oa : oracle_comp spec α} {qb : spec.query_count} (h : is_query_bound oa qb)
+  (qbs : spec.ι → spec'.query_count) (hqbs : ∀ i t s, is_query_bound (so i (t, s)) (qbs i))
+  (s : S) : is_query_bound (simulate so oa s) (∑ i in qb.active_oracles, qb.get_count i • qbs i) :=
+begin
+  induction oa using oracle_comp.induction_on' with α a i t α oa hoa generalizing qb s,
+  { exact is_query_bound_return _ (a, s) },
+  { rw [simulate_bind, is_query_bound_bind_iff],
+    intros z hz z' hz',
+    rw [simulate_query] at hz,
+    obtain ⟨hi, hd⟩ := (is_query_bound_query_bind_iff _ _ _ _).1 h,
+    refine le_of_le_of_eq (add_le_add (hqbs i t s z hz) (hoa z.1.1 z.1.2 (hd z.1.1) z' hz')) _,
+    rw [← (finset.add_sum_erase _ _ hi), active_oracles_decrement],
+    split_ifs with hi',
+    { rw [le_antisymm hi' (qb.one_le_get_count hi), one_smul, add_left_cancel_iff],
+      refine finset.sum_congr rfl (λ j hj, _),
+      rw [finset.mem_erase] at hj,
+      simp only [get_count_decrement, ne.symm hj.1, if_false, tsub_zero] },
+    { simp only [← finset.add_sum_erase _ _ hi, ← add_assoc, ← succ_nsmul, add_left_cancel_iff,
+        ← get_count_increment_self, increment_decrement_eq_self _ _ _ (le_of_not_le hi') ],
+      refine finset.sum_congr rfl (λ j hj, _),
+      rw [finset.mem_erase] at hj,
+      simp only [get_count_decrement, ne.symm hj.1, if_false, tsub_zero] } }
+end
+
+end simulate
+
 
 -- @[simp] lemma is_query_bound_seq_iff (oa : oracle_comp spec α) (og : oracle_comp spec (α → β)) :
 --   is_query_bound (og <*> oa) qb ↔ ∃ qb₁ qb₂, qb₁ + qb₂ ≤ qb ∧

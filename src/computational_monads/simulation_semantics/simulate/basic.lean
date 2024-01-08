@@ -164,6 +164,19 @@ begin
     exact hoa x'.1 x x'.2 (hso i t s x' h hs) hx }
 end
 
+/-- Compatibility of a mapping between the states of two simulation oracles. -/
+lemma prod_map_id_simulate_eq_simulate
+  (so : sim_oracle spec spec' S) (so' : sim_oracle spec spec' S')
+  (f : S → S') (h : ∀ i t s, prod.map id f <$> so i (t, s) = so' i (t, f s))
+  (oa : oracle_comp spec α) (s : S) :
+  prod.map id f <$> simulate so oa s = simulate so' oa (f s) :=
+begin
+  induction oa using oracle_comp.induction_on' with α a i t α oa hoa generalizing s,
+  { simp only [simulate_return, map_pure, prod.map_mk, id.def] },
+  { simp_rw [simulate_bind, simulate_query, map_bind, ← h, oracle_comp.bind_map, hoa,
+      function.comp, prod_map, id.def] }
+end
+
 section support_subset
 
 /-- Since `support` assumes any possible query result, `simulate` will never reduce the support.

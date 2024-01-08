@@ -35,7 +35,7 @@ TODO: compatibility lemmas for oracle append and compose operations.
 
 open oracle_comp oracle_spec prod
 
-variables {α β γ : Type} {spec : oracle_spec} {S : Type}
+variables {α β γ : Type} {spec : oracle_spec} {S S' : Type}
 
 namespace sim_oracle
 
@@ -49,48 +49,36 @@ class is_tracking (so : sim_oracle spec spec S) :=
 namespace is_tracking
 
 variables (so : sim_oracle spec spec S) [is_tracking so]
+  (so' : sim_oracle spec spec S') 
+  (oa : oracle_comp spec α) (i : spec.ι) (t : spec.domain i) (s : S)
 
-@[simp] lemma fst_map_apply_eq_query (i : spec.ι) (t : spec.domain i) (s : S) :
-  fst <$> so i (t, s) = query i t := is_tracking.fst_map_apply_eq_query' i t s
+@[simp] lemma fst_map_apply_eq_query : fst <$> so i (t, s) = query i t :=
+is_tracking.fst_map_apply_eq_query' i t s
 
-@[pairwise_dist_equiv] lemma fst_map_apply_dist_equiv_query (i : spec.ι) (t : spec.domain i)
-  (s : S) : fst <$> so i (t, s) ≃ₚ query i t := dist_equiv_of_eq (fst_map_apply_eq_query so i t s)
+@[pairwise_dist_equiv] lemma fst_map_apply_dist_equiv_query :
+  fst <$> so i (t, s) ≃ₚ query i t := dist_equiv_of_eq (fst_map_apply_eq_query so i t s)
 
-variables (oa : oracle_comp spec α) (s : S)
-
-@[simp] lemma simulate'_eq_self : simulate' so oa s = oa :=
+@[simp] lemma simulate'_eq_const :
+  (simulate' so : oracle_comp spec α → S → oracle_comp spec α) = function.const S :=
 begin
+  refine funext (λ oa, funext (λ s, _)),
   induction oa using oracle_comp.induction_on' with α a i t α oa hoa generalizing s,
   { refl },
   { simp_rw [simulate'_bind, simulate_query, ← fst_map_apply_eq_query so i t s,
       oracle_comp.map_eq_bind_return_comp, bind_assoc, hoa, pure_bind] }
 end
 
+lemma simulate'_eq_self : simulate' so oa s = oa := by rw [simulate'_eq_const]
+
 @[pairwise_dist_equiv] lemma simulate'_dist_equiv_self : simulate' so oa s ≃ₚ oa :=
-by rw [simulate'_eq_self]
-
-lemma support_simulate' : (simulate' so oa s).support = oa.support :=
-by rw [simulate'_eq_self]
-
-lemma fin_support_simulate' [decidable_eq α] :
-  (simulate' so oa s).fin_support = oa.fin_support :=
-by rw [simulate'_eq_self]
-
-lemma eval_dist_simulate' : ⁅simulate' so oa s⁆ = ⁅oa⁆ :=
-by rw [simulate'_eq_self]
-
-lemma prob_output_simulate' (x : α) : ⁅= x | simulate' so oa s⁆ = ⁅= x | oa⁆ :=
-by rw [simulate'_eq_self]
-
-lemma prob_event_simulate' (e : set α) : ⁅e | simulate' so oa s⁆ = ⁅e | oa⁆ :=
 by rw [simulate'_eq_self]
 
 end is_tracking
 
 end sim_oracle
 
-def tracking_oracle
-  (update_state : Π (i : spec.ι), spec.domain i → spec.range i → S → S) :
+/-- Simple oracle for keeping some internal state without modifying query behavior-/
+def tracking_oracle (update_state : Π (i : spec.ι), spec.domain i → spec.range i → S → S) :
   sim_oracle spec spec S :=
 λ i ⟨t, s⟩, do {u ← query i t, return (u, update_state i t u s)}
 

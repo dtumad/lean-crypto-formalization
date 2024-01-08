@@ -25,85 +25,35 @@ tracking_oracle (λ i t u log, log.log_query i t u)
 
 notation `loggingₛₒ` := logging_oracle _
 
-lemma logging_oracle.def :
-  logging_oracle spec = tracking_oracle (λ i t u log, log.log_query i t u) := rfl
-
 instance logging_oracle.is_tracking : (logging_oracle spec).is_tracking :=
 tracking_oracle.is_tracking _
 
 namespace logging_oracle
 
-lemma apply_eq {i : spec.ι} (t : spec.domain i) (qc : spec.query_log) :
-  loggingₛₒ i (t, qc) = (λ u, (u, qc.log_query i t u)) <$> (query i t) := rfl
+section apply
 
+@[simp] lemma apply_eq {i : spec.ι} (t : spec.domain i) (qc : spec.query_log) :
+  loggingₛₒ i (t, qc) = (λ u, (u, qc.log_query i t u)) <$> query i t := rfl
 
--- instance logging_oracle.is_tracking' : (logging_oracle spec).is_tracking' :=
--- { fst_map_apply_eq_query := begin
---   intros i t s,
---   rw [apply_eq, map_map_eq_map_comp, id_map'],
--- end
+end apply
 
--- }
-
--- lemma answer_query_eq : (logging_oracle spec).answer_query = query := rfl
-
--- lemma update_state_eq : (logging_oracle spec).update_state = query_log.log_query := rfl
-
--- section simulate'
-
--- variables (oa : oracle_comp spec α) (s : spec.query_log)
-
--- @[pairwise_dist_equiv] lemma simulate'_dist_equiv : simulate' loggingₛₒ oa s ≃ₚ oa :=
--- by pairwise_dist_equiv --is_tracking.simulate'_dist_equiv_self loggingₛₒ oa s (λ i t, dist_equiv.rfl)
-
--- @[simp] lemma support_simulate' : (simulate' loggingₛₒ oa s).support = oa.support :=
--- by simp
-
--- @[simp] lemma fin_support_simulate' [decidable_eq α] :
---   (simulate' loggingₛₒ oa s).fin_support = oa.fin_support :=
--- by simp
-
--- @[simp] lemma eval_dist_simulate' : ⁅simulate' loggingₛₒ oa s⁆ = ⁅oa⁆ :=
--- by pairwise_dist_equiv
-
--- @[simp] lemma prob_output_simulate' (x : α) : ⁅= x | simulate' loggingₛₒ oa s⁆ = ⁅= x | oa⁆ :=
--- by pairwise_dist_equiv
-
--- @[simp] lemma prob_event_simulate' (e : set α) : ⁅e | simulate' loggingₛₒ oa s⁆ = ⁅e | oa⁆ :=
--- by pairwise_dist_equiv
-
--- end simulate'
+variables (oa : oracle_comp spec α) (log : spec.query_log)
 
 /-- Simulating with `countingₛₒ` is equivalent to simulating with `loggingₛₒ` and then
 reducing the final `query_log` to the associated `query_count` given by `to_query_count`. -/
-lemma map_to_query_count_dist_equiv (oa : oracle_comp spec α) (s : spec.query_log) :
-  prod.map id indexed_list.to_query_count <$> simulate loggingₛₒ oa s ≃ₚ
-    simulate countingₛₒ oa s :=
-begin
-  induction oa using oracle_comp.induction_on' with α a i t α oa hoa generalizing s,
-  {
-    refl,
-  },
-  {
-    simp [simulate_bind, simulate_query, map_bind],
-    rw_dist_equiv [hoa],
-    sorry,
-  }
-  -- induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t generalizing s,
-  -- { rw_dist_equiv [map_return_dist_equiv] },
-  -- { simp_rw [simulate_bind],
-  --   rw_dist_equiv [map_bind_dist_equiv, hob, symm (hoa _), bind_map_dist_equiv] },
-  -- { simp only [simulate_query, tracking_oracle.apply_eq, map_map_eq_map_comp,
-  --     indexed_list.coe_query_count_eq],
-  --   refine map_dist_equiv_of_dist_equiv' (funext (λ u, _)) dist_equiv.rfl }
-end
+lemma map_to_query_count (oa : oracle_comp spec α) (log : spec.query_log) :
+  prod.map id indexed_list.to_query_count <$> simulate loggingₛₒ oa log =
+    simulate countingₛₒ oa log.to_query_count :=
+prod_map_id_simulate_eq_simulate _ _ _ (λ i t il, by simp [apply_eq, function.comp]) oa log
 
--- -- TODO: generalize to other tracking oracles
--- lemma queries_at_most_simulate (qc : spec.query_count) (oa : oracle_comp spec α)
---   (h : oa.queries_at_most qc) (ql : spec.query_log) :
---   (simulate loggingₛₒ oa ql).queries_at_most qc :=
--- begin
---   sorry
--- end
+lemma simulate_eq_map_add_left_simulate_empty :
+  simulate loggingₛₒ oa log = (prod.map id ((+) log)) <$> simulate loggingₛₒ oa ∅ :=
+begin
+  refine indexed_list.add_values_induction log _ _,
+  { rw [indexed_list.empty_add_eq_id, prod.map_id, id_map] },
+  { refine λ i n qc hi hqc h, trans (congr_arg _ (symm (indexed_list.add_empty _)))
+      (symm (prod_map_id_simulate_eq_simulate loggingₛₒ loggingₛₒ _ (λ i t s, _) _ _)),
+    simp [function.comp, query_log.log_query, indexed_list.add_values_add_eq_add_add_values] },
+end
 
 end logging_oracle
