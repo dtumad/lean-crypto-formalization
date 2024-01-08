@@ -41,4 +41,44 @@ is_tracking.simulate'_eq_self countingₛₒ oa qc
 @[pairwise_dist_equiv] lemma simulate'_dist_equiv : simulate' countingₛₒ oa qc ≃ₚ oa :=
 is_tracking.simulate'_dist_equiv_self countingₛₒ oa qc
 
+lemma simulate_of_nat_eq_increment_map_simulate (i : spec.ι) (n : ℕ) :
+  simulate countingₛₒ oa (query_count.of_nat i n) =
+    (prod.map id (λ qc, query_count.increment qc i n)) <$> (simulate countingₛₒ oa ∅) :=
+begin
+  sorry,
+end
+
+lemma simulate_eq_map_add_left_simulate_empty :
+  simulate countingₛₒ oa qc = (prod.map id ((+) qc)) <$> simulate countingₛₒ oa ∅ :=
+begin
+  -- refine query_count.increment_induction qc _ _,
+  -- {
+  --   rw [indexed_list.empty_add_eq_id, prod.map_id, id_map],
+  -- },
+  -- {
+  --   intros i n qc hi hqc,
+  -- }
+  induction oa using oracle_comp.induction_on' with α a i t α oa hoa generalizing qc,
+  {
+    simp [simulate_return],
+  },
+  {
+    simp [simulate_bind, simulate_query],
+    simp_rw [oracle_comp.bind_map],
+    refine bind_ext_congr (λ u, _),
+    simp,
+    rw [hoa],
+    rw [simulate_of_nat_eq_increment_map_simulate,
+      map_map_eq_map_comp, prod.map_comp_map],
+    simp [function.comp, query_count.add_increment, ← query_count.increment_add],
+    refl,
+  }
+end
+
+-- lemma simulate_eq_map_add_right_simulate_empty :
+--   simulate countingₛₒ oa qc = (prod.map id (+ qc)) <$> simulate countingₛₒ oa ∅ :=
+-- begin
+--   sorry,
+-- end
+
 end counting_oracle

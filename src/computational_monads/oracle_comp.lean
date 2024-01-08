@@ -138,6 +138,10 @@ by simp [oracle_comp.map_eq_bind_return_comp, bind_assoc]
 
 lemma map_return (f : α → β) (a : α) : f <$> (return a : oracle_comp spec α) = return (f a) := rfl
 
+protected lemma bind_congr {oa oa' : oracle_comp spec α} {ob ob' : α → oracle_comp spec β}
+  (h : oa = oa') (h' : ∀ x, ob x = ob' x) : oa >>= ob = oa' >>= ob' :=
+h ▸ (congr_arg (λ ob, oa >>= ob) (funext h'))
+
 end monad
 
 section query

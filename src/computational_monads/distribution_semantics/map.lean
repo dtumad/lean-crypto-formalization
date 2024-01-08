@@ -259,6 +259,11 @@ end map_bind
 
 section bind_map
 
+-- TODO: precedence of simp might make this an ok simp lemma
+-- the inner map would still attempt to simplify first
+protected lemma bind_map : (f <$> oa) >>= oc = oa >>= oc ∘ f :=
+by simp_rw [map_eq_bind_pure_comp, bind_assoc, pure_bind]
+
 lemma bind_map_dist_equiv : (f <$> oa) >>= oc ≃ₚ oa >>= oc ∘ f :=
 by simp only [dist_equiv.def, eval_dist_bind, eval_dist_map, pmf.bind_map]
 
