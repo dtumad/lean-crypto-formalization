@@ -106,11 +106,11 @@ noncomputable def mock_unforgeable_adversary
   fork_adversary (unif_spec ++ ((vector X n × M) ↦ₒ vector bool n))
     (X × X)
     ((M × vector G n × vector bool n) × ((vector X n × M) ↦ₒ vector bool n).query_log)
-    (sum.inr ()) :=
-{ run := λ ks, simulate (mock_signing_sim_oracle ks.1 ks.2) (adv.run ks) ∅,
-  run_qb := mock_adversary_qb adv,
-  choose_fork := λ ⟨x₀, pk⟩ ⟨⟨m, zs, hash⟩, mocked_cache⟩,
-    queried_index x₀ pk m zs hash mocked_cache _ }
+    (sum.inr ()) := sorry
+-- { run := λ ks, simulate (mock_signing_sim_oracle ks.1 ks.2) (adv.run ks) ∅,
+--   run_qb := mock_adversary_qb adv,
+--   choose_fork := λ ⟨x₀, pk⟩ ⟨⟨m, zs, hash⟩, mocked_cache⟩,
+--     queried_index x₀ pk m zs hash mocked_cache _ }
 
 lemma mock_unforgeable_adversary.choose_fork_advantage
   (adv : (hhs_signature G X M n).unforgeable_adv) :

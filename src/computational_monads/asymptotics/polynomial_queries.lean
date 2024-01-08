@@ -16,39 +16,39 @@ have number of queries bounded by a polynomial in the index.
 
 namespace oracle_comp
 
-open oracle_spec
+-- open oracle_spec
 
-variables {α β : Type} {spec spec' : oracle_spec}
+-- variables {α β : Type} {spec spec' : oracle_spec}
 
-section queries_at_most
+-- section queries_at_most
 
-/-- A `query_count` bounds the number of queries made by a computation if any result of simulating
-with `countingₛₒ produces a count that is smaller. -/
-def queries_at_most (oa : oracle_comp spec α) (qc : spec.query_count) : Prop :=
-∀ x qc', (x, qc') ∈ (simulate countingₛₒ oa ∅).support → qc' ≤ qc
+-- /-- A `query_count` bounds the number of queries made by a computation if any result of simulating
+-- with `countingₛₒ produces a count that is smaller. -/
+-- def queries_at_most (oa : oracle_comp spec α) (qc : spec.query_count) : Prop :=
+-- ∀ x qc', (x, qc') ∈ (simulate countingₛₒ oa ∅).support → qc' ≤ qc
 
-/-- The number of queries made by `return a` is bounded by any count. -/
-@[simp] lemma queries_at_most_return (a : α) (qc : spec.query_count) :
-  (return' !spec! a).queries_at_most qc :=
-begin
-  intros x qc' h,
-  simp only [support_simulate_return, set.mem_singleton_iff, prod.eq_iff_fst_eq_snd_eq] at h,
-  exact h.2.symm ▸ (indexed_list.empty_le qc)
-end
+-- /-- The number of queries made by `return a` is bounded by any count. -/
+-- @[simp] lemma queries_at_most_return (a : α) (qc : spec.query_count) :
+--   (return' !spec! a).queries_at_most qc :=
+-- begin
+--   intros x qc' h,
+--   simp only [support_simulate_return, set.mem_singleton_iff, prod.eq_iff_fst_eq_snd_eq] at h,
+--   exact h.2.symm ▸ (indexed_list.empty_le qc)
+-- end
 
-end queries_at_most
+-- end queries_at_most
 
-section poly_num_queries
+-- section poly_num_queries
 
-/-- If `f` is an `oracle_comp` indexed by a security parameter, then `poly_num_queries f` means
-that for each oracle there exists a polynomial that bounds the number of queries to that oracle,
-as a function of the input parameter. -/
-structure poly_num_queries (f : ℕ → oracle_comp spec α) :=
-(qc : ℕ → spec.query_count)
-(queries_at_most_qc (n : ℕ) : queries_at_most (f n) (qc n))
-(poly_bound (i : spec.ι) : polynomial ℕ)
-(queries_le_poly_bound (n : ℕ) (i : spec.ι) : (qc n).get_count i ≤ (poly_bound i).eval n)
+-- /-- If `f` is an `oracle_comp` indexed by a security parameter, then `poly_num_queries f` means
+-- that for each oracle there exists a polynomial that bounds the number of queries to that oracle,
+-- as a function of the input parameter. -/
+-- structure poly_num_queries (f : ℕ → oracle_comp spec α) :=
+-- (qc : ℕ → spec.query_count)
+-- (queries_at_most_qc (n : ℕ) : queries_at_most (f n) (qc n))
+-- (poly_bound (i : spec.ι) : polynomial ℕ)
+-- (queries_le_poly_bound (n : ℕ) (i : spec.ι) : (qc n).get_count i ≤ (poly_bound i).eval n)
 
-end poly_num_queries
+-- end poly_num_queries
 
 end oracle_comp

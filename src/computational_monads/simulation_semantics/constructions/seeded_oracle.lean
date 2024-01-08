@@ -116,11 +116,11 @@ begin
   }
 end
 
-lemma queries_at_most_simulate (qc : spec.query_count) (oa : oracle_comp spec α)
-  (h : oa.queries_at_most qc) (qs : query_seed spec) :
-  (simulate seededₛₒ oa qs).queries_at_most (qc - ↑qs) :=
-begin
-  sorry
-end
+-- lemma queries_at_most_simulate (qc : spec.query_count) (oa : oracle_comp spec α)
+--   (h : oa.queries_at_most qc) (qs : query_seed spec) :
+--   (simulate seededₛₒ oa qs).queries_at_most (qc - ↑qs) :=
+-- begin
+--   sorry
+-- end
 
 end seeded_oracle

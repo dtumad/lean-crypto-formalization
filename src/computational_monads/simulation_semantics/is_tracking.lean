@@ -58,29 +58,32 @@ variables (so : sim_oracle spec spec S) [is_tracking so]
 
 variables (oa : oracle_comp spec α) (s : S)
 
-@[pairwise_dist_equiv] lemma simulate'_dist_equiv_self : simulate' so oa s ≃ₚ oa :=
+@[simp] lemma simulate'_eq_self : simulate' so oa s = oa :=
 begin
   induction oa using oracle_comp.induction_on' with α a i t α oa hoa generalizing s,
   { refl },
-  { rw_dist_equiv [simulate'_bind_dist_equiv, hoa, simulate_query_dist_equiv,
-      (fst_map_apply_dist_equiv_query so i t s).symm, bind_map_dist_equiv] }
+  { simp_rw [simulate'_bind, simulate_query, ← fst_map_apply_eq_query so i t s,
+      oracle_comp.map_eq_bind_return_comp, bind_assoc, hoa, pure_bind] }
 end
 
-@[simp] lemma support_simulate' : (simulate' so oa s).support = oa.support :=
-(simulate'_dist_equiv_self so oa s).support_eq
+@[pairwise_dist_equiv] lemma simulate'_dist_equiv_self : simulate' so oa s ≃ₚ oa :=
+by rw [simulate'_eq_self]
 
-@[simp] lemma fin_support_simulate' [decidable_eq α] :
+lemma support_simulate' : (simulate' so oa s).support = oa.support :=
+by rw [simulate'_eq_self]
+
+lemma fin_support_simulate' [decidable_eq α] :
   (simulate' so oa s).fin_support = oa.fin_support :=
-(simulate'_dist_equiv_self so oa s).fin_support_eq
+by rw [simulate'_eq_self]
 
-@[simp] lemma eval_dist_simulate' : ⁅simulate' so oa s⁆ = ⁅oa⁆ :=
-(simulate'_dist_equiv_self so oa s).eval_dist_eq
+lemma eval_dist_simulate' : ⁅simulate' so oa s⁆ = ⁅oa⁆ :=
+by rw [simulate'_eq_self]
 
-@[simp] lemma prob_output_simulate' (x : α) : ⁅= x | simulate' so oa s⁆ = ⁅= x | oa⁆ :=
-(simulate'_dist_equiv_self so oa s).prob_output_eq x
+lemma prob_output_simulate' (x : α) : ⁅= x | simulate' so oa s⁆ = ⁅= x | oa⁆ :=
+by rw [simulate'_eq_self]
 
-@[simp] lemma prob_event_simulate' (e : set α) : ⁅e | simulate' so oa s⁆ = ⁅e | oa⁆ :=
-(simulate'_dist_equiv_self so oa s).prob_event_eq e
+lemma prob_event_simulate' (e : set α) : ⁅e | simulate' so oa s⁆ = ⁅e | oa⁆ :=
+by rw [simulate'_eq_self]
 
 end is_tracking
 

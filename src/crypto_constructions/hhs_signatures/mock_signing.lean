@@ -36,10 +36,6 @@ def lookup_mock_cache {G X M : Type} {n : ℕ} [decidable_eq M] [decidable_eq X]
   (xs : vector X n) (m : M) : option (mock_cache_entry G X M n) :=
 mock_cache.find (λ mc, mc.xs = xs ∧ mc.m = m)
 
--- instance signature_seed.inhabited (G X : Type) (n : ℕ) [inhabited G] [inhabited X] :
---   inhabited (signature_seed G X n) :=
--- ⟨⟨0, vector.replicate n default, vector.replicate n default, vector.replicate n tt⟩⟩
-
 noncomputable def mock_signing_sim_oracle (x₀ pk : X) :
   sim_oracle (hhs_signature G X M n).unforgeable_adv_spec
     (unif_spec ++ (unit ↦ₒ vector bool n))
@@ -91,7 +87,7 @@ noncomputable def mock_signing (adv : (hhs_signature G X M n).unforgeable_adv) :
 { run := λ ⟨x₀, pk⟩, let k : ℕ := (mock_signing_qb adv.run_qb).get_count (sum.inr ()) in
     do {sig_seed ← @generate_sig_seed G X _ _ n x₀ pk k k,
         z ← simulate (mock_signing_sim_oracle x₀ pk)
-          (adv.run (x₀, pk)) (k, sig_seed, list.nil), 
+          (adv.run (x₀, pk)) (k, sig_seed, list.nil),
         return (z.1, z.2.2.2)},
   run_qb := mock_signing_qb adv.run_qb }
 

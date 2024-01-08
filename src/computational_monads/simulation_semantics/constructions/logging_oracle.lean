@@ -98,12 +98,12 @@ begin
   --   refine map_dist_equiv_of_dist_equiv' (funext (λ u, _)) dist_equiv.rfl }
 end
 
--- TODO: generalize to other tracking oracles
-lemma queries_at_most_simulate (qc : spec.query_count) (oa : oracle_comp spec α)
-  (h : oa.queries_at_most qc) (ql : spec.query_log) :
-  (simulate loggingₛₒ oa ql).queries_at_most qc :=
-begin
-  sorry
-end
+-- -- TODO: generalize to other tracking oracles
+-- lemma queries_at_most_simulate (qc : spec.query_count) (oa : oracle_comp spec α)
+--   (h : oa.queries_at_most qc) (ql : spec.query_log) :
+--   (simulate loggingₛₒ oa ql).queries_at_most qc :=
+-- begin
+--   sorry
+-- end
 
 end logging_oracle

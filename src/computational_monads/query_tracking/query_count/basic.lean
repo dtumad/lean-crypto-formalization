@@ -193,6 +193,10 @@ by simp only [increment, add_comm]
 lemma increment_eq_add_of_nat (i n) : qc.increment i n = qc + of_nat i n :=
 by simp only [increment]
 
+@[simp] lemma increment_empty_eq_of_nat (i n) :
+  (∅ : spec.query_count).increment i n = of_nat i n :=
+by rw [increment_eq_of_nat_add, add_empty]
+
 lemma increment_succ (i n) : qc.increment i (n + 1) = qc.increment i n + of_nat i 1 :=
 by rw [increment_eq_add_of_nat, of_nat_add, ← add_assoc, ← increment_eq_add_of_nat qc]
 
@@ -250,7 +254,7 @@ lemma mem_active_oracles_decrement_self_iff (i n) :
   i ∈ (qc.decrement i n).active_oracles ↔ n < qc.get_count i ∧ i ∈ qc.active_oracles :=
 by simp [-active_oracles_decrement, mem_active_oracles_decrement_iff]
 
-lemma decrement_empty (i n) : (∅ : spec.query_count).decrement i n = ∅ := by simp
+@[simp] lemma decrement_empty (i n) : (∅ : spec.query_count).decrement i n = ∅ := by simp
 
 @[simp] lemma decrement_zero (i) : qc.decrement i 0 = qc := by simp [decrement]
 
