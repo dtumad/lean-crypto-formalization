@@ -140,6 +140,9 @@ section increment
 def increment (qc : spec.query_count) (i : spec.ι) (n : ℕ) :
   spec.query_count := qc + of_nat i n
 
+lemma increment_eq_of_nat_add (i n) : qc.increment i n = of_nat i n + qc := add_comm _ _
+lemma increment_eq_add_of_nat (i n) : qc.increment i n = qc + of_nat i n := rfl
+
 @[simp] lemma increment_apply (i n i') : qc.increment i n i' =
   if i = i' then qc i' ++ list.replicate n () else qc i' :=
 by by_cases hi : i = i'; simp [hi, increment, add_apply, of_nat_apply]
@@ -187,12 +190,6 @@ by rw [increment, add_comm _ qc', ← add_assoc, increment, add_comm qc']
 lemma add_increment (i n) : qc + qc'.increment i n = (qc + qc').increment i n :=
 by rw [add_comm qc, increment_add, add_comm qc]
 
-lemma increment_eq_of_nat_add (i n) : qc.increment i n = of_nat i n + qc :=
-by simp only [increment, add_comm]
-
-lemma increment_eq_add_of_nat (i n) : qc.increment i n = qc + of_nat i n :=
-by simp only [increment]
-
 @[simp] lemma increment_empty_eq_of_nat (i n) :
   (∅ : spec.query_count).increment i n = of_nat i n :=
 by rw [increment_eq_of_nat_add, add_empty]
@@ -219,6 +216,8 @@ section decrement
 
 def decrement (qc : spec.query_count) (i : spec.ι) (n : ℕ) :
   spec.query_count := qc - of_nat i n
+
+lemma decrement_eq_sub_of_nat (i n) : qc.decrement i n = qc - of_nat i n := rfl
 
 @[simp] lemma decrement_apply (i n i') : qc.decrement i n i' =
   if i = i' then (qc i').drop n else qc i' :=

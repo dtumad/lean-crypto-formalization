@@ -134,6 +134,9 @@ instance : canonically_ordered_add_monoid (query_count spec) :=
   .. query_count.lattice, .. query_count.add_cancel_comm_monoid,
   .. indexed_list.order_bot }
 
+instance : contravariant_class spec.query_count spec.query_count has_add.add has_le.le :=
+⟨λ qc qc1 qc2 h, by simpa [le_iff_forall_get_count_le] using h⟩
+
 lemma sup_eq_add (h : disjoint qc qc') : qc ⊔ qc' = qc + qc' :=
 begin
   refine fun_like.ext _ _ (λ i, _),
