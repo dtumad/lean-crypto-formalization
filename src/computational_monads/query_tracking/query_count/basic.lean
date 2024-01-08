@@ -23,7 +23,7 @@ namespace oracle_spec
 open_locale big_operators
 open indexed_list
 
-variables {α β γ : Type} {spec : oracle_spec}
+variables {α β γ : Type} {spec spec' : oracle_spec}
 
 /-- A `query_count` represents a count of the number of queries made by a computation.
 The count is non-zero for finitely many oracles as `oracle_comp` disallows unbounded recursion. -/
@@ -354,6 +354,13 @@ begin
   from nat.succ_pred_eq_of_pos (list.length_pos_of_ne_nil hqc) ▸ h₂ ts.length.pred qc h hp,
   exact (add_values_eq_increment qc i ts).symm ▸ this
 end
+
+section reduce
+
+def reduce (qc : spec.query_count) (f : spec.ι → spec'.ι) : spec'.query_count :=
+∑ i in qc.active_oracles, of_nat (f i) (qc.get_count i)
+
+end reduce
 
 end query_count
 

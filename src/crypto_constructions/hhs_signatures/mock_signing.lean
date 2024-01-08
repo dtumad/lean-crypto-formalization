@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
 import crypto_constructions.hhs_signatures.hhs_signature
+import computational_monads.query_tracking.query_count.is_query_bound
 
 /-!
 # Mocking Signing Oracles for HHS Signatures
@@ -16,7 +17,7 @@ namespace hhs_signature
 open oracle_comp oracle_spec
 open_locale ennreal big_operators
 
-variables {G X M : Type} [decidable_eq M]
+variables {α G X M : Type} [decidable_eq M]
   [add_comm_group G] [algorithmic_homogenous_space G X] {n : ℕ}
 
 section mock_signing_sim_oracle
@@ -78,18 +79,31 @@ noncomputable def generate_sig_seed (x₀ pk : X) (m : ℕ) : Π (k : ℕ),
       return ⟨m - (k + 1), retrieve_commits x₀ pk zs bs, zs, bs⟩})
     <*> generate_sig_seed k
 
-def mock_signing_qb (adv_qb : query_count (hhs_signature G X M n).unforgeable_adv_spec) :
-  query_count (unif_spec ++ (unit ↦ₒ vector bool n)) := sorry
+-- def mock_signing_qb (adv_qb : query_count (hhs_signature G X M n).unforgeable_adv_spec) :
+--   query_count (unif_spec ++ (unit ↦ₒ vector bool n)) :=
+-- { to_fun := _,
+--   active_oracles := _,
+--   mem_active_oracles_iff := _,
+-- }
 
-noncomputable def mock_signing (adv : (hhs_signature G X M n).unforgeable_adv) :
-  sec_adv (unif_spec ++ (unit ↦ₒ vector bool n)) (X × X)
-    ((M × vector G n × vector bool n) × list (mock_cache_entry G X M n)) :=
-{ run := λ ⟨x₀, pk⟩, let k : ℕ := (mock_signing_qb adv.run_qb).get_count (sum.inr ()) in
-    do {sig_seed ← @generate_sig_seed G X _ _ n x₀ pk k k,
-        z ← simulate (mock_signing_sim_oracle x₀ pk)
-          (adv.run (x₀, pk)) (k, sig_seed, list.nil),
-        return (z.1, z.2.2.2)},
-  run_qb := mock_signing_qb adv.run_qb }
+noncomputable def mock_signing (oa : oracle_comp (hhs_signature G X M n).unforgeable_adv_spec α)
+  (x₀ pk : X) (k : ℕ) : oracle_comp (unif_spec ++ (unit ↦ₒ vector bool n))
+    (α × list (mock_cache_entry G X M n)) :=
+do {sig_seed ← @generate_sig_seed G X _ _ n x₀ pk k k,
+  z ← simulate (mock_signing_sim_oracle x₀ pk) oa (k, sig_seed, list.nil),
+  return (z.1, z.2.2.2)}
+
+
+
+-- noncomputable def mock_signing (adv : (hhs_signature G X M n).unforgeable_adv) :
+--   sec_adv (unif_spec ++ (unit ↦ₒ vector bool n)) (X × X)
+--     ((M × vector G n × vector bool n) × list (mock_cache_entry G X M n)) :=
+-- { run := λ ⟨x₀, pk⟩, let k : ℕ := (mock_signing_qb adv.run_qb).get_count (sum.inr ()) in
+--     do {sig_seed ← @generate_sig_seed G X _ _ n x₀ pk k k,
+--         z ← simulate (mock_signing_sim_oracle x₀ pk)
+--           (adv.run (x₀, pk)) (k, sig_seed, list.nil),
+--         return (z.1, z.2.2.2)},
+--   run_qb := mock_signing_qb adv.run_qb }
 
 end mock_signing_sim_oracle
 
