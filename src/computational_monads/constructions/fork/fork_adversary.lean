@@ -157,6 +157,14 @@ begin
   cases fp₁; simp [fork_success]
 end
 
+lemma fork_point_eq_of_fork_success (fr : fork_result adv) (hfr : fork_success fr) :
+  fr.fork_point₁ = fr.fork_point₂ :=
+begin
+  rw [fork_success_iff_exists] at hfr,
+  obtain ⟨fp, hfp⟩ := hfr,
+  exact hfp.1.trans hfp.2.1.symm,
+end
+
 end success
 
 namespace fork_adversary
