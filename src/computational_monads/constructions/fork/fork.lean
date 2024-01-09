@@ -19,7 +19,6 @@ variables {α β γ : Type} {spec spec' : oracle_spec} {i : spec.ι}
 
 namespace oracle_comp
 
--- TODO!!!: weird
 variable [is_sub_spec unif_spec spec]
 
 noncomputable def fork (adv : fork_adversary spec α β i) :

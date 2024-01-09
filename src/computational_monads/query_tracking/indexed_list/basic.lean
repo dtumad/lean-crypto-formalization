@@ -102,6 +102,31 @@ by rw [mem_active_oracles_iff, ne.def, ne.def, list.nth_eq_none_iff,
 
 end apply
 
+lemma indexed_list.active_oracles_ext {il il' : spec.indexed_list τ}
+  (h : il.active_oracles = il'.active_oracles)
+  (h' : ∀ i, i ∈ il.active_oracles → i ∈ il'.active_oracles → il i = il' i) : il = il' :=
+begin
+  refine fun_like.ext il il' (λ i, _),
+  by_cases hi : i ∈ il.active_oracles,
+  { simpa only [← h, hi, finset.inter_self, forall_true_left] using h' i },
+  { have hi' : i ∉ il'.active_oracles := h ▸ hi,
+    exact (apply_eq_nil il hi).trans (apply_eq_nil il' hi').symm }
+end
+
+/-- If the elements at each index have decidable equality than so do indexed lists. -/
+instance indexed_list.decidable_eq [∀ i, decidable_eq (τ i)] :
+  decidable_eq (spec.indexed_list τ) :=
+begin
+  let f : spec.indexed_list τ → spec.ι → Σ i : spec.ι, list (τ i) := λ il i, ⟨i, il i⟩,
+  refine λ il il', decidable.rec_on (finset.has_decidable_eq (il.active_oracles.image (f il))
+    (il'.active_oracles.image (f il'))) (λ h, is_false (λ h', h (h' ▸ rfl))) (λ h, is_true _),
+  simp_rw [finset.ext_iff, finset.mem_image, f, sigma.ext_iff, and_comm (_ = _),
+    exists_prop, exists_eq_right_right, sigma.forall] at h,
+  refine indexed_list.active_oracles_ext (finset.ext (λ i, _)) (λ i hi hi', symm _),
+  { exact ⟨λ h', ((h i (il i)).1 ⟨h', heq.rfl⟩).1, λ h', ((h i (il' i)).2 ⟨h', heq.rfl⟩).1⟩ },
+  { exact eq_of_heq (((h i (il i)).1 ⟨hi, heq.rfl⟩)).2 },
+end
+
 section get_count
 
 /-- The number of elements in the list at index `i`. -/
