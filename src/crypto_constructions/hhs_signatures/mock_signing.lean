@@ -84,16 +84,35 @@ noncomputable def generate_sig_seed (x₀ pk : X) (m : ℕ) : Π (k : ℕ),
 -- { to_fun := _,
 --   active_oracles := _,
 --   mem_active_oracles_iff := _,
--- }
+-- } 
 
-noncomputable def mock_signing (oa : oracle_comp (hhs_signature G X M n).unforgeable_adv_spec α)
+noncomputable def mock_signing_aux
+  (oa : oracle_comp (hhs_signature G X M n).unforgeable_adv_spec α)
   (x₀ pk : X) (k : ℕ) : oracle_comp (unif_spec ++ (unit ↦ₒ vector bool n))
     (α × list (mock_cache_entry G X M n)) :=
 do {sig_seed ← @generate_sig_seed G X _ _ n x₀ pk k k,
   z ← simulate (mock_signing_sim_oracle x₀ pk) oa (k, sig_seed, list.nil),
   return (z.1, z.2.2.2)}
 
+open sum (inl) (inr)
 
+noncomputable def mock_signing (oa : oracle_comp (hhs_signature G X M n).unforgeable_adv_spec α)
+  (x₀ pk : X) : oracle_comp (unif_spec ++ (unit ↦ₒ vector bool n))
+    (α × list (mock_cache_entry G X M n)) :=
+let k : ℕ := (query_bound oa).get_count (inl (inr ())) + (query_bound oa).get_count (inr ()) in
+mock_signing_aux oa x₀ pk ((query_bound oa).get_count (inr ()))
+
+def mock_signing_qb (qb : (hhs_signature G X M n).unforgeable_adv_spec.query_count) :
+  (unif_spec ++ (unit ↦ₒ vector bool n)).query_count :=
+(qb.reduce (λ i, sum.rec_on i (sum.map id (λ _, ())) (λ _, sum.inr ())))
+
+def mock_signing_qb_is_query_bound
+  (oa : oracle_comp (hhs_signature G X M n).unforgeable_adv_spec α)
+  (x₀ pk : X) (qb : (hhs_signature G X M n).unforgeable_adv_spec.query_count)
+  (hqb : is_query_bound oa qb) : is_query_bound (mock_signing oa x₀ pk) (mock_signing_qb qb) :=
+begin
+  sorry
+end
 
 -- noncomputable def mock_signing (adv : (hhs_signature G X M n).unforgeable_adv) :
 --   sec_adv (unif_spec ++ (unit ↦ₒ vector bool n)) (X × X)

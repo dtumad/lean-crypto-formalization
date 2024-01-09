@@ -29,35 +29,35 @@ section queried_index
 variables (x₀ pk : X) (m : M) (zs : vector G n) (hash : vector bool n)
   (mocked_cache : ((vector X n × M) ↦ₒ vector bool n).query_log) (b : ℕ)
 
-/-- Given a valid signature, return the index of the random oracle query for it. -/
-def queried_index (x₀ pk : X) (m : M) (zs : vector G n)
-  (hash : vector bool n) (mocked_cache : ((vector X n × M) ↦ₒ vector bool n).query_log)
-  (b : ℕ) : option (fin b.succ) :=
-let ys : vector X n := (retrieve_commits x₀ pk zs hash) in
-  if mocked_cache.lookup () (ys, m) = some hash then
-    (some ((mocked_cache ()).index_of ((ys, m), hash))) else none
+-- /-- Given a valid signature, return the index of the random oracle query for it. -/
+-- def queried_index (x₀ pk : X) (m : M) (zs : vector G n)
+--   (hash : vector bool n) (mocked_cache : ((vector X n × M) ↦ₒ vector bool n).query_log)
+--   (b : ℕ) : option (fin b.succ) :=
+-- let ys : vector X n := (retrieve_commits x₀ pk zs hash) in
+--   if mocked_cache.lookup () (ys, m) = some hash then
+--     (some ((mocked_cache ()).index_of ((ys, m), hash))) else none
 
-lemma nth_fork_point_eq_retrieve_commits {x₀ pk : X} {m : M} {zs : vector G n}
-  {hash : vector bool n} {mocked_cache : ((vector X n × M) ↦ₒ vector bool n).query_log}
-  {b : ℕ} {fp : fin b.succ}
-  (hfp : queried_index x₀ pk m zs hash mocked_cache b = some fp) :
-  (mocked_cache ()).nth fp = some ((retrieve_commits x₀ pk zs hash, m), hash) :=
-begin
-  sorry,
-  -- rw [queried_index] at hfp,
-  -- simp at hfp,
-  -- by_cases h : mocked_cache.lookup () (retrieve_commits x₀ pk zs hash, m) = some hash,
-  -- {
-  --   simp [h] at hfp,
-  --   rw [← hfp],
-  --   simp,
-  --   sorry,
-  -- },
-  -- {
-  --   simp [h] at hfp,
-  --   exact false.elim hfp,
-  -- }
-end
+-- lemma nth_fork_point_eq_retrieve_commits {x₀ pk : X} {m : M} {zs : vector G n}
+--   {hash : vector bool n} {mocked_cache : ((vector X n × M) ↦ₒ vector bool n).query_log}
+--   {b : ℕ} {fp : fin b.succ}
+--   (hfp : queried_index x₀ pk m zs hash mocked_cache b = some fp) :
+--   (mocked_cache ()).nth fp = some ((retrieve_commits x₀ pk zs hash, m), hash) :=
+-- begin
+--   sorry,
+--   -- rw [queried_index] at hfp,
+--   -- simp at hfp,
+--   -- by_cases h : mocked_cache.lookup () (retrieve_commits x₀ pk zs hash, m) = some hash,
+--   -- {
+--   --   simp [h] at hfp,
+--   --   rw [← hfp],
+--   --   simp,
+--   --   sorry,
+--   -- },
+--   -- {
+--   --   simp [h] at hfp,
+--   --   exact false.elim hfp,
+--   -- }
+-- end
 
 -- lemma queried_index_eq_some_iff (fp : fin b.succ) :
 --   -- let ys : vector X n := (retrieve_commits x₀ pk zs hash) in
@@ -86,27 +86,37 @@ end
 
 end queried_index
 
-def mock_adversary_qb (adv : (hhs_signature G X M n).unforgeable_adv) :
-  (unif_spec ++ ((vector X n × M) ↦ₒ vector bool n)).query_count :=
-{ to_fun := λ i, match i with
-  | (sum.inl i) := adv.run_qb (sum.inl (sum.inl i))
-  | (sum.inr ()) := adv.run_qb (sum.inl (sum.inr ())) ++ adv.run_qb (sum.inr ())
-  end,
-  active_oracles := adv.run_qb.active_oracles.image (λ i, match i with
-  | (sum.inl i) := i
-  | (sum.inr ()) := sum.inr ()
-  end),
-  mem_active_oracles_iff' := λ i,
-  begin
-    sorry,
-  end }
+-- def mock_adversary_qb (adv : (hhs_signature G X M n).unforgeable_adv) :
+--   (unif_spec ++ ((vector X n × M) ↦ₒ vector bool n)).query_count :=
+-- { to_fun := λ i, match i with
+--   | (sum.inl i) := adv.run_qb (sum.inl (sum.inl i))
+--   | (sum.inr ()) := adv.run_qb (sum.inl (sum.inr ())) ++ adv.run_qb (sum.inr ())
+--   end,
+--   active_oracles := adv.run_qb.active_oracles.image (λ i, match i with
+--   | (sum.inl i) := i
+--   | (sum.inr ()) := sum.inr ()
+--   end),
+--   mem_active_oracles_iff' := λ i,
+--   begin
+--     sorry,
+--   end }
 
-noncomputable def mock_unforgeable_adversary
-  (adv : (hhs_signature G X M n).unforgeable_adv) :
-  fork_adversary (unif_spec ++ ((vector X n × M) ↦ₒ vector bool n))
+noncomputable def fork_reduction (adv : (hhs_signature G X M n).unforgeable_adv) :
+  fork_adversary (unif_spec ++ (unit ↦ₒ vector bool n))
     (X × X)
-    ((M × vector G n × vector bool n) × ((vector X n × M) ↦ₒ vector bool n).query_log)
-    (sum.inr ()) := sorry
+    ((M × vector G n × vector bool n) × list (mock_cache_entry G X M n))
+    (sum.inr ()) :=
+{ run := λ ⟨x₀, pk⟩, mock_signing (adv.run (x₀, pk)) x₀ pk,
+  run_qb := mock_signing_qb adv.run_qb,
+  choose_fork := λ ⟨x₀, pk⟩ ⟨⟨m, zs, bs⟩, mock_cache⟩,
+    (lookup_mock_cache mock_cache (retrieve_commits x₀ pk zs bs) m).map (λ mc, ↑mc.query_index) }
+
+-- noncomputable def mock_unforgeable_adversary
+--   (adv : (hhs_signature G X M n).unforgeable_adv) :
+--   fork_adversary (unif_spec ++ ((vector X n × M) ↦ₒ vector bool n))
+--     (X × X)
+--     ((M × vector G n × vector bool n) × ((vector X n × M) ↦ₒ vector bool n).query_log)
+--     (sum.inr ()) := sorry
 -- { run := λ ks, simulate (mock_signing_sim_oracle ks.1 ks.2) (adv.run ks) ∅,
 --   run_qb := mock_adversary_qb adv,
 --   choose_fork := λ ⟨x₀, pk⟩ ⟨⟨m, zs, hash⟩, mocked_cache⟩,
@@ -115,7 +125,7 @@ noncomputable def mock_unforgeable_adversary
 lemma mock_unforgeable_adversary.choose_fork_advantage
   (adv : (hhs_signature G X M n).unforgeable_adv) :
   (unforgeable_exp adv).advantage ≤
-    (choose_fork_exp (mock_unforgeable_adversary adv) (($ᵗ X) ×ₘ ($ᵗ X))).advantage :=
+    (choose_fork_exp (fork_reduction adv) (($ᵗ X) ×ₘ ($ᵗ X))).advantage :=
 begin
   rw [unforgeable_exp.advantage_eq_prob_output],
   sorry,
@@ -132,7 +142,7 @@ end
 -- end
 
 noncomputable def vectorization_of_fork_result {adv : (hhs_signature G X M n).unforgeable_adv}
-  (fr : fork_result (mock_unforgeable_adversary adv)) : G :=
+  (fr : fork_result (fork_reduction adv)) : G :=
 let rr1 := fr.side_output₁.1 in let rr2 := fr.side_output₂.1 in
   vectorization_of_zipped_commits rr2.2 rr1.2
 
@@ -152,23 +162,23 @@ variables (adv : (hhs_signature G X M n).unforgeable_adv)
 --   sorry,
 -- end
 
-lemma take_mocked_cache_eq_take_mocked_cache (x₀ : X) (pk : X)
-  (fr : fork_result (mock_unforgeable_adversary adv))
-  (h : fr ∈ ((fork (mock_unforgeable_adversary adv)).run (x₀, pk)).support) :
-  ((fr.side_output₁.2 ()).map prod.fst).take (fr.1.get_fp + 1) =
-    ((fr.side_output₂.2 ()).map prod.fst).take (fr.2.get_fp + 1) :=
-begin
-  have := take_queries_seed_eq_take_queries_seed _ _ _ h,
-  sorry,
-end
+-- lemma take_mocked_cache_eq_take_mocked_cache (x₀ : X) (pk : X)
+--   (fr : fork_result (fork_reduction adv))
+--   (h : fr ∈ ((fork (fork_reduction adv)).run (x₀, pk)).support) :
+--   ((fr.side_output₁.2 ()).map prod.fst).take (fr.1.get_fp + 1) =
+--     ((fr.side_output₂.2 ()).map prod.fst).take (fr.2.get_fp + 1) :=
+-- begin
+--   have := take_queries_seed_eq_take_queries_seed _ _ _ h,
+--   sorry,
+-- end
 
 lemma vectorization_of_fork_result_eq_vsub (x₀ : X) (pk : X)
-  (fr : fork_result (mock_unforgeable_adversary adv))
-  (h : fr ∈ ((fork (mock_unforgeable_adversary adv)).run (pk, x₀)).support) :
+  (fr : fork_result (fork_reduction adv))
+  (h : fr ∈ ((fork (fork_reduction adv)).run (pk, x₀)).support) :
   fork_success fr → vectorization_of_fork_result fr = pk -ᵥ x₀ :=
 begin
   intro hfr,
-  let f_adv := mock_unforgeable_adversary adv,
+  let f_adv := fork_reduction adv,
   rcases fr with ⟨⟨fp₁, ⟨⟨m₁, zs₁, hash₁⟩, mocked_cache₁⟩, seed₁⟩,
     ⟨fp₂, ⟨⟨m₂, zs₂, hash₂⟩, mocked_cache₂⟩, seed₂⟩⟩,
 
@@ -210,7 +220,7 @@ noncomputable def vectorization_reduction
   vectorization_adv G X :=
 { run := λ ks, simulate' uniformₛₒ
     (vectorization_of_fork_result <$>
-      (fork (mock_unforgeable_adversary adv)).run ks) (),
+      (fork (fork_reduction adv)).run ks) (),
   run_qb := ∅ }
 
 variable (adv : (hhs_signature G X M n).unforgeable_adv)
@@ -230,7 +240,7 @@ theorem advantage_le_vectorization_advantage :
 begin
   have hX : fintype.card X ≠ 0 := fintype.card_ne_zero,
   let inp_gen := do {x₁ ←$ᵗ X, x₂ ←$ᵗ X, return (x₁, x₂)},
-  have : (fork_success_exp (mock_unforgeable_adversary adv) inp_gen).advantage ≤
+  have : (fork_success_exp (fork_reduction adv) inp_gen).advantage ≤
     (vectorization_exp (vectorization_reduction adv)).advantage,
 
   begin
@@ -252,7 +262,7 @@ begin
   end,
 
   have h' : (unforgeable_exp adv).advantage ≤
-    (choose_fork_exp (mock_unforgeable_adversary adv) inp_gen).advantage,
+    (choose_fork_exp (fork_reduction adv) inp_gen).advantage,
   begin
     apply mock_unforgeable_adversary.choose_fork_advantage,
   end,
