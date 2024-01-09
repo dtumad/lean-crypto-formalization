@@ -52,11 +52,19 @@ variables (so : sim_oracle spec spec S) [is_tracking so]
   (so' : sim_oracle spec spec S') 
   (oa : oracle_comp spec α) (i : spec.ι) (t : spec.domain i) (s : S)
 
+section apply
+
 @[simp] lemma fst_map_apply_eq_query : fst <$> so i (t, s) = query i t :=
 is_tracking.fst_map_apply_eq_query' i t s
 
 @[pairwise_dist_equiv] lemma fst_map_apply_dist_equiv_query :
   fst <$> so i (t, s) ≃ₚ query i t := dist_equiv_of_eq (fst_map_apply_eq_query so i t s)
+
+lemma exists_mem_support_apply (u : spec.range i) : ∃ s', (u, s') ∈ (so i (t, s)).support :=
+by simpa only [← fst_map_apply_eq_query so i t s, mem_support_map_fst_iff]
+  using mem_support_query i t u
+
+end apply
 
 @[simp] lemma simulate'_eq_const :
   (simulate' so : oracle_comp spec α → S → oracle_comp spec α) = function.const S :=
@@ -72,6 +80,19 @@ lemma simulate'_eq_self : simulate' so oa s = oa := by rw [simulate'_eq_const]
 
 @[pairwise_dist_equiv] lemma simulate'_dist_equiv_self : simulate' so oa s ≃ₚ oa :=
 by rw [simulate'_eq_self]
+
+lemma exists_mem_support_simulate_of_mem_support (x : α) (hx : x ∈ oa.support) :
+  ∃ s', (x, s') ∈ (simulate so oa s).support :=
+begin
+  induction oa using oracle_comp.induction_on' with α a i t α oa hoa generalizing s x,
+  { exact ⟨s, prod.eq_iff_fst_eq_snd_eq.2 ⟨hx, rfl⟩⟩ },
+  { rw [mem_support_query_bind_iff] at hx,
+    simp_rw [mem_support_simulate_bind_iff, support_simulate_query],
+    obtain ⟨u, hu⟩ := hx,
+    obtain ⟨s', hs'⟩ := exists_mem_support_apply so i t s u,
+    obtain ⟨s'', hs''⟩ := hoa u s' x hu,
+    refine ⟨s'', u, s', hs', hs''⟩ }
+end
 
 end is_tracking
 

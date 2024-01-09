@@ -117,6 +117,13 @@ begin
       list.replicate_one, subsingleton.elim t unit.star, list.singleton_append] }
 end
 
+@[simp] lemma nsmul_of_nat : n • (of_nat i m) = of_nat i (n * m) :=
+begin
+  induction n with n hn,
+  { rw [zero_nsmul, zero_mul, of_nat_zero, zero_eq_empty] },
+  { rw [succ_nsmul, hn, nat.succ_mul, of_nat_add, add_comm] }
+end
+
 end of_nat
 
 /-- We can express a `query_count` as a sum over the active indices of the list
@@ -357,6 +364,26 @@ begin
   from nat.succ_pred_eq_of_pos (list.length_pos_of_ne_nil hqc) ▸ h₂ ts.length.pred qc h hp,
   exact (add_values_eq_increment qc i ts).symm ▸ this
 end
+
+section sums
+
+lemma get_count_sum (s : finset α) (qc : α → spec.query_count) (j : spec.ι) :
+  (∑ i in s, qc i).get_count j = ∑ i in s, (qc i).get_count j :=
+begin
+  refine finset.cons_induction _ (λ i s hs h, _) s,
+  { rw [finset.sum_empty, finset.sum_empty, get_count_zero] },
+  { rw [finset.sum_cons hs, finset.sum_cons hs, get_count_add, h] }
+end
+
+lemma eq_sum_active_oracles_of_nat_get_count (qc : spec.query_count) :
+  qc = ∑ i in qc.active_oracles, of_nat i (qc.get_count i) :=
+begin
+  refine query_count.get_count_ext _ _ (λ i, _),
+  simp_rw [get_count_sum, get_count_of_nat, finset.sum_ite_eq'],
+  split_ifs with hi; simp [hi]
+end
+
+end sums
 
 section reduce
 

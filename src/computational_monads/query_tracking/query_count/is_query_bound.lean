@@ -15,13 +15,13 @@ the computation `oa` makes at most as many queries as in the given `query_count`
 See `sec_adv` for computations bundled with a bound on their query count.
 -/
 
-namespace oracle_comp
-
 open oracle_spec prod (fst) (snd)
 open oracle_spec.query_count
 open_locale big_operators
 
 variables {spec spec' : oracle_spec} {α β γ : Type}
+
+namespace oracle_comp
 
 /-- `is_query_bound oa qb` means that for each index `i : spec.ι`,
 `oa` makes at most `qb.get_count i` calls to the corresponding oracle. -/
@@ -116,6 +116,18 @@ begin
     exact ⟨h.1, h.2 z.1⟩ }
 end
 
+lemma is_query_bound_of_bind_left {oa : oracle_comp spec α} {ob : α → oracle_comp spec β}
+  {qb : spec.query_count} (h : is_query_bound (oa >>= ob) qb) : is_query_bound oa qb :=
+(λ z hz, ((is_query_bound_bind_iff' _ _ _).1 h z hz).1)
+
+-- lemma is_query_bound_of_bind_right {oa : oracle_comp spec α} {ob : α → oracle_comp spec β}
+--   {qb : spec.query_count} (h : is_query_bound (oa >>= ob) qb) (x : α)
+--   (hx : x ∈ oa.support) : is_query_bound (ob x) qb :=
+-- begin
+--   rw [is_query_bound_bind_iff'] at h,
+--   intros z' hz',
+-- end
+
 @[simp] lemma empty_is_query_bound_iff (oa : oracle_comp spec α) :
   is_query_bound oa ∅ ↔ ∃ a, oa = return a :=
 begin
@@ -184,10 +196,10 @@ variables {S S' : Type}
 /-- If we have bounds `qbs` on the number of queries made by a simulation oracle,
 then we can bound the number of queries after simulation by multiplying this bound
 by the number of times it appears in the bound of the original computation. -/
-lemma nsmul_is_query_bound_simulate (so : sim_oracle spec spec' S)
-  {oa : oracle_comp spec α} {qb : spec.query_count} (h : is_query_bound oa qb)
-  (qbs : spec.ι → spec'.query_count) (hqbs : ∀ i t s, is_query_bound (so i (t, s)) (qbs i))
-  (s : S) : is_query_bound (simulate so oa s) (∑ i in qb.active_oracles, qb.get_count i • qbs i) :=
+lemma nsmul_is_query_bound_simulate (so : sim_oracle spec spec' S) {oa : oracle_comp spec α}
+  {qb : spec.query_count} (h : is_query_bound oa qb) (qbs : spec.ι → spec'.query_count)
+  (hqbs : ∀ i t s, is_query_bound (so i (t, s)) (qbs i)) (s : S) :
+  is_query_bound (simulate so oa s) (∑ i in qb.active_oracles, qb.get_count i • qbs i) :=
 begin
   induction oa using oracle_comp.induction_on' with α a i t α oa hoa generalizing qb s,
   { exact is_query_bound_return _ (a, s) },
@@ -208,6 +220,18 @@ begin
       rw [finset.mem_erase] at hj,
       simp only [get_count_decrement, ne.symm hj.1, if_false, tsub_zero] } }
 end
+
+@[simp] lemma is_query_bound_simulate'_iff (so : sim_oracle spec spec' S)
+  (oa : oracle_comp spec α) (s : S) (qb : spec'.query_count) :
+  is_query_bound (simulate' so oa s) qb ↔ is_query_bound (simulate so oa s) qb :=
+is_query_bound_map_iff qb _ fst
+
+lemma nsmul_is_query_bound_simulate' (so : sim_oracle spec spec' S) {oa : oracle_comp spec α}
+  {qb : spec.query_count} (h : is_query_bound oa qb) (qbs : spec.ι → spec'.query_count)
+  (hqbs : ∀ i t s, is_query_bound (so i (t, s)) (qbs i)) (s : S) :
+  is_query_bound (simulate' so oa s) (∑ i in qb.active_oracles, qb.get_count i • qbs i) :=
+(is_query_bound_simulate'_iff so oa s _).2 (nsmul_is_query_bound_simulate so h qbs hqbs s)
+
 
 end simulate
 
@@ -233,3 +257,45 @@ end simulate
 -- end
 
 end oracle_comp
+
+section sim_oracle
+
+open oracle_comp
+
+variables {S S' : Type}
+
+lemma is_tracking.is_query_bound_simulate_iff (so : sim_oracle spec spec S) [so.is_tracking]
+  (h' : ∀ i t s, (simulate countingₛₒ (so i (t, s)) ∅).support = 
+    (λ z, (z, of_nat i 1)) '' (so i (t, s)).support)
+  (hso' : ∀ i t s qb, is_query_bound (so i (t, s)) qb → i ∈ qb.active_oracles)
+  (oa : oracle_comp spec α) (s : S) (qb : spec.query_count) :
+  is_query_bound (simulate so oa s) qb ↔ is_query_bound oa qb :=
+begin
+  refine ⟨λ h, _, λ h, _⟩,
+  { induction oa using oracle_comp.induction_on' with α a i t α oa hoa generalizing qb s,
+    { exact is_query_bound_return qb a },
+    { rw [simulate_bind, simulate_query] at h,
+      rw [is_query_bound_query_bind_iff],
+      refine ⟨hso' i t s qb (is_query_bound_of_bind_left h), λ u z hz, _⟩,      
+      rw [is_query_bound_bind_iff'] at h,
+      obtain ⟨s', hs'⟩ := sim_oracle.is_tracking.exists_mem_support_apply so i t s u,
+      refine hoa u (qb - of_nat i 1) _ (h ⟨⟨u, s'⟩, of_nat i 1⟩ _).2 z hz,
+      simpa only [h', support_map] using apply_mem_support_map _ (λ z, (z, of_nat i 1)) _ hs' } },
+  { have hso : ∀ i t s, is_query_bound (so i (t, s)) (of_nat i 1),
+    { refine λ i t s z hz, _,
+      rw [h'] at hz,
+      refine let ⟨_, _, hz⟩ := hz in hz ▸ le_rfl },
+    refine is_query_bound_trans (nsmul_is_query_bound_simulate so h (λ i, of_nat i 1) hso s)
+      (le_of_eq (trans _ (symm qb.eq_sum_active_oracles_of_nat_get_count))),
+    simp only [nsmul_of_nat, mul_one] }
+end
+
+lemma counting_oracle.is_query_bound_simulate_iff (oa : oracle_comp spec α) (s : spec.query_count)
+  (qb : spec.query_count) : is_query_bound (simulate countingₛₒ oa s) qb ↔ is_query_bound oa qb := 
+begin
+  refine is_tracking.is_query_bound_simulate_iff countingₛₒ _ _ oa s qb,
+  { refine λ i t s, set.ext (λ z, by simp) },
+  { refine λ i t s qb h, by simpa using h }
+end
+
+end sim_oracle

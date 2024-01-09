@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
 import computational_monads.query_tracking.query_log.basic
-import computational_monads.asymptotics.polynomial_queries
+import computational_monads.query_tracking.query_count.is_query_bound
 
 /-!
 # Logging Oracles
@@ -54,6 +54,14 @@ begin
   { refine λ i n qc hi hqc h, trans (congr_arg _ (symm (indexed_list.add_empty _)))
       (symm (prod_map_id_simulate_eq_simulate loggingₛₒ loggingₛₒ _ (λ i t s, _) _ _)),
     simp [function.comp, query_log.log_query, indexed_list.add_values_add_eq_add_add_values] },
+end
+
+@[simp] lemma logging_oracle.is_query_bound_simulate_iff (qb : spec.query_count) :
+  is_query_bound (simulate loggingₛₒ oa log) qb ↔ is_query_bound oa qb := 
+begin
+  refine is_tracking.is_query_bound_simulate_iff loggingₛₒ _ _ oa log qb,
+  { refine λ i t s, set.ext (λ z, by simp) },
+  { refine λ i t s qb h, by simpa using h }
 end
 
 end logging_oracle
