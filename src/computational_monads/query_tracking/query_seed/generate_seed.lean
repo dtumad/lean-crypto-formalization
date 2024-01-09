@@ -86,6 +86,16 @@ sorry
 
 section get_head
 
+
+lemma get_head_map_generate_seed (qc : spec.query_count) (i : spec.ι) (h : i ∈ qc.active_oracles) :
+  (λ seed, indexed_list.get_head seed i) <$> generate_seed qc ≃ₚ
+    prod.mk <$> ($ᵗ (spec.range i)) <*> generate_seed (qc.decrement i 1) :=
+begin
+  have hqc : qc = query_count.of_nat i 1 + qc.decrement i 1 := sorry,
+  sorry,
+end
+
+
 -- lemma map_get_head_generate_seed_dist_equiv [h : is_sub_spec unif_spec spec]
 --   (i : spec.ι) (hi : i ∈ qc.active_oracles) :
 --   (λ qc, indexed_list.get_head qc i) <$> generate_seed qc ≃ₚ

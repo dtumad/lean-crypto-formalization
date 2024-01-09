@@ -10,7 +10,6 @@ import computational_monads.constructions.fork.fork
 # Unforgeability of HHS Signature
 
 This file gives an unforgeability proof for `hhs_signature`
-
 -/
 
 namespace hhs_signature
@@ -22,84 +21,7 @@ open oracle_spec.indexed_list signature_alg
 variables {G X M : Type} [decidable_eq M]
   [add_comm_group G] [algorithmic_homogenous_space G X] {n : ℕ}
 
-section unforgeable
-
-section queried_index
-
-variables (x₀ pk : X) (m : M) (zs : vector G n) (hash : vector bool n)
-  (mocked_cache : ((vector X n × M) ↦ₒ vector bool n).query_log) (b : ℕ)
-
--- /-- Given a valid signature, return the index of the random oracle query for it. -/
--- def queried_index (x₀ pk : X) (m : M) (zs : vector G n)
---   (hash : vector bool n) (mocked_cache : ((vector X n × M) ↦ₒ vector bool n).query_log)
---   (b : ℕ) : option (fin b.succ) :=
--- let ys : vector X n := (retrieve_commits x₀ pk zs hash) in
---   if mocked_cache.lookup () (ys, m) = some hash then
---     (some ((mocked_cache ()).index_of ((ys, m), hash))) else none
-
--- lemma nth_fork_point_eq_retrieve_commits {x₀ pk : X} {m : M} {zs : vector G n}
---   {hash : vector bool n} {mocked_cache : ((vector X n × M) ↦ₒ vector bool n).query_log}
---   {b : ℕ} {fp : fin b.succ}
---   (hfp : queried_index x₀ pk m zs hash mocked_cache b = some fp) :
---   (mocked_cache ()).nth fp = some ((retrieve_commits x₀ pk zs hash, m), hash) :=
--- begin
---   sorry,
---   -- rw [queried_index] at hfp,
---   -- simp at hfp,
---   -- by_cases h : mocked_cache.lookup () (retrieve_commits x₀ pk zs hash, m) = some hash,
---   -- {
---   --   simp [h] at hfp,
---   --   rw [← hfp],
---   --   simp,
---   --   sorry,
---   -- },
---   -- {
---   --   simp [h] at hfp,
---   --   exact false.elim hfp,
---   -- }
--- end
-
--- lemma queried_index_eq_some_iff (fp : fin b.succ) :
---   -- let ys : vector X n := (retrieve_commits x₀ pk zs hash) in
---   queried_index x₀ pk m zs hash mocked_cache b = some fp ↔
---     ((mocked_cache ()).nth fp = some ((retrieve_commits x₀ pk zs hash, m), hash) ∧
---       mocked_cache.lookup_index () (retrieve_commits x₀ pk zs hash, m) = fp) :=
--- begin
---   let ys : vector X n := (retrieve_commits x₀ pk zs hash),
---   refine ⟨λ h, _, λ h, _⟩,
---   {
---     by_cases hys : mocked_cache.lookup () (ys, m) = some hash,
---     {
---       rw [queried_index] at h,
---       simp [hys] at h,
---       simp [← h],
---       sorry,
---     },
---     {
---       sorry,
---     }
---   },
---   {
---     sorry,
---   }
--- end
-
-end queried_index
-
--- def mock_adversary_qb (adv : (hhs_signature G X M n).unforgeable_adv) :
---   (unif_spec ++ ((vector X n × M) ↦ₒ vector bool n)).query_count :=
--- { to_fun := λ i, match i with
---   | (sum.inl i) := adv.run_qb (sum.inl (sum.inl i))
---   | (sum.inr ()) := adv.run_qb (sum.inl (sum.inr ())) ++ adv.run_qb (sum.inr ())
---   end,
---   active_oracles := adv.run_qb.active_oracles.image (λ i, match i with
---   | (sum.inl i) := i
---   | (sum.inr ()) := sum.inr ()
---   end),
---   mem_active_oracles_iff' := λ i,
---   begin
---     sorry,
---   end }
+section fork_reduction
 
 noncomputable def fork_reduction (adv : (hhs_signature G X M n).unforgeable_adv) :
   fork_adversary (unif_spec ++ (unit ↦ₒ vector bool n))
@@ -111,35 +33,14 @@ noncomputable def fork_reduction (adv : (hhs_signature G X M n).unforgeable_adv)
   choose_fork := λ ⟨x₀, pk⟩ ⟨⟨m, zs, bs⟩, mock_cache⟩,
     (lookup_mock_cache mock_cache (retrieve_commits x₀ pk zs bs) m).map (λ mc, ↑mc.query_index) }
 
--- noncomputable def mock_unforgeable_adversary
---   (adv : (hhs_signature G X M n).unforgeable_adv) :
---   fork_adversary (unif_spec ++ ((vector X n × M) ↦ₒ vector bool n))
---     (X × X)
---     ((M × vector G n × vector bool n) × ((vector X n × M) ↦ₒ vector bool n).query_log)
---     (sum.inr ()) := sorry
--- { run := λ ks, simulate (mock_signing_sim_oracle ks.1 ks.2) (adv.run ks) ∅,
---   run_qb := mock_adversary_qb adv,
---   choose_fork := λ ⟨x₀, pk⟩ ⟨⟨m, zs, hash⟩, mocked_cache⟩,
---     queried_index x₀ pk m zs hash mocked_cache _ }
-
 lemma mock_unforgeable_adversary.choose_fork_advantage
   (adv : (hhs_signature G X M n).unforgeable_adv) :
   (unforgeable_exp adv).advantage ≤
-    (choose_fork_exp (fork_reduction adv) (($ᵗ X) ×ₘ ($ᵗ X))).advantage :=
+    (choose_fork_exp (fork_reduction adv) (prod.mk <$> $ᵗ X <*> $ᵗ X)).advantage :=
 begin
   rw [unforgeable_exp.advantage_eq_prob_output],
   sorry,
 end
--- @[simp] lemma choose_fork_eq_queried_index
---   (adv : (hhs_signature G X M n).unforgeable_adversary) :
---   (mock_unforgeable_adversary adv).choose_fork =
---     λ ks z, queried_index ks.1 ks.2 z.1.1 z.1.2.1 z.1.2.2 z.2
---       ((((mocked_unforgeable_adversary' adv).qb).get_count (sum.inr ()))) :=
--- begin
---   refine funext₂ _,
---   rintros ⟨x₀, pk⟩ ⟨⟨m, zs, hash⟩, mocked_cache⟩,
---   refl,
--- end
 
 noncomputable def vectorization_of_fork_result {adv : (hhs_signature G X M n).unforgeable_adv}
   (fr : fork_result (fork_reduction adv)) : G :=
@@ -215,6 +116,10 @@ end
 
 end vectorization_of_fork_result
 
+end fork_reduction
+
+section vectorization_reduction
+
 noncomputable def vectorization_reduction
   (adv : (hhs_signature G X M n).unforgeable_adv) :
   vectorization_adv G X :=
@@ -239,7 +144,7 @@ theorem advantage_le_vectorization_advantage :
   adv_advantage * (adv_advantage / q - (1 / 2 ^ n)) ≤ vec_advantage :=
 begin
   have hX : fintype.card X ≠ 0 := fintype.card_ne_zero,
-  let inp_gen := do {x₁ ←$ᵗ X, x₂ ←$ᵗ X, return (x₁, x₂)},
+  let inp_gen := (prod.mk <$> $ᵗ X <*> $ᵗ X),
   have : (fork_success_exp (fork_reduction adv) inp_gen).advantage ≤
     (vectorization_exp (vectorization_reduction adv)).advantage,
 
@@ -250,15 +155,16 @@ begin
     simp only [prob_output_bind_prod_mk, ←pow_two, ennreal.inv_pow, prob_output_coe_sub_spec,
       prob_output_uniform_select_fintype, prob_event_coe_sort],
     rw [mul_comm],
-    refine (ennreal.mul_le_mul_right _ _).2 _,
-    simp, simp [hX],
-    simp only [vectorization_reduction,
-      uniform_oracle.prob_output_simulate'],
-    rw [← prob_event_singleton_eq_prob_output,
-      prob_event_map],
-    refine prob_event_mono _ (λ fr hfr, _),
-    have := vectorization_of_fork_result_eq_vsub _ x₂ x₁ fr hfr.2 hfr.1,
-    simp [this],
+    sorry,
+    -- refine (ennreal.mul_le_mul_right _ _).2 _,
+    -- simp, simp [hX],
+    -- simp only [vectorization_reduction,
+    --   uniform_oracle.prob_output_simulate'],
+    -- rw [← prob_event_singleton_eq_prob_output,
+    --   prob_event_map],
+    -- refine prob_event_mono _ (λ fr hfr, _),
+    -- have := vectorization_of_fork_result_eq_vsub _ x₂ x₁ fr hfr.2 hfr.1,
+    -- simp [this],
   end,
 
   have h' : (unforgeable_exp adv).advantage ≤
@@ -273,9 +179,6 @@ begin
   sorry,
 end
 
--- end vectorization_reduction
-
-end unforgeable
-
+end vectorization_reduction
 
 end hhs_signature

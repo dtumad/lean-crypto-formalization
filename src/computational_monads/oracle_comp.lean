@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
 import computational_monads.oracle_spec
+import control.monad.basic
 
 /-!
 # Computations with Oracle Access
@@ -141,6 +142,14 @@ lemma map_return (f : α → β) (a : α) : f <$> (return a : oracle_comp spec �
 protected lemma bind_congr {oa oa' : oracle_comp spec α} {ob ob' : α → oracle_comp spec β}
   (h : oa = oa') (h' : ∀ x, ob x = ob' x) : oa >>= ob = oa' >>= ob' :=
 h ▸ (congr_arg (λ ob, oa >>= ob) (funext h'))
+
+lemma ite_bind (p : Prop) [decidable p] (oa oa' : oracle_comp spec α)
+  (ob : α → oracle_comp spec β) : ite p oa oa' >>= ob = ite p (oa >>= ob) (oa' >>= ob) :=
+by split_ifs; refl
+
+lemma bind_seq (oa : oracle_comp spec α) (og : oracle_comp spec (α → β))
+  (oc : β → oracle_comp spec γ) : (og <*> oa) >>= oc = og >>= λ f, oa >>= (oc ∘ f) :=
+by simp [seq_eq_bind_map, map_eq_bind_pure_comp, bind_assoc]
 
 end monad
 

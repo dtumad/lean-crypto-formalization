@@ -88,10 +88,10 @@ def simulate' (so : sim_oracle spec spec' S) (oa : oracle_comp spec α) (s : S) 
 lemma simulate'_def : simulate' so oa s = prod.fst <$> oa.simulate so s := rfl
 
 -- TODO: these should have a special simp category, to not be eagerly applied
-lemma simulate'_return : simulate' so (return a) s = prod.fst <$> (return (a, s)) := rfl
+-- lemma simulate'_return : simulate' so (return a) s = prod.fst <$> (return (a, s)) := rfl
 
--- TODO: Get a `@[simp]` tag for stuff like this
-lemma simulate'_return' : simulate' so (return a) s = return a := rfl
+-- TODO!!!!!: Get a `@[simp]` tag for stuff like this
+lemma simulate'_return : simulate' so (return a) s = return a := rfl
 
 lemma simulate'_bind : simulate' so (oa >>= ob) s =
   simulate so oa s >>= λ x, simulate' so (ob x.1) x.2 :=

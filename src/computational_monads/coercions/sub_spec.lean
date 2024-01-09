@@ -107,8 +107,9 @@ lemma coe_sub_spec_def {sub_spec super_spec : oracle_spec} [h : sub_spec ⊂ₒ 
 section coe_sub_spec
 
 variables (sub_spec super_spec : oracle_spec) [h : sub_spec ⊂ₒ super_spec]
-  (a : α) (oa : oracle_comp sub_spec α) (ob : α → oracle_comp sub_spec β)
-  (i : sub_spec.ι) (t : sub_spec.domain i) (f : α → β) (x : α) (e : set α)
+  (a : α) (oa oa' : oracle_comp sub_spec α) (ob : α → oracle_comp sub_spec β)
+  (i : sub_spec.ι) (t : sub_spec.domain i) (f : α → β)
+  (og : oracle_comp sub_spec (α → β)) (x : α) (e : set α)
 
 include h
 
@@ -128,20 +129,26 @@ end
   (↑(query i t) : oracle_comp super_spec (sub_spec.range i)) = h.to_fun i t :=
 by simp only [coe_sub_spec_def, simulate'_query, map_bind, map_pure, bind_pure]
 
+@[simp] lemma coe_sub_spec_map : (↑(f <$> oa) : oracle_comp super_spec β) = f <$> ↑oa :=
+by simp [map_eq_bind_pure_comp]
+
+@[simp] lemma coe_sub_spec_seq : (↑(og <*> oa) : oracle_comp super_spec β) =
+  (↑og : oracle_comp super_spec (α → β)) <*> ↑oa := by simp [seq_eq_bind_map]
+
 /-- Coercing a computation via a sub-spec instance doesn't change the associated distribution. -/
 @[pairwise_dist_equiv] lemma coe_sub_spec_dist_equiv : (↑oa : oracle_comp super_spec α) ≃ₚ oa :=
 begin
   induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t,
   { simp [coe_sub_spec_return] },
-  {
-    rw [coe_sub_spec_bind],
-    refine bind_dist_equiv_bind_of_dist_equiv hoa (λ x _, hob x)
-  },
-  {
-    rw [coe_sub_spec_query],
-    exact h.to_fun_equiv i t
-  }
+  { rw [coe_sub_spec_bind],
+    refine bind_dist_equiv_bind_of_dist_equiv hoa (λ x _, hob x) },
+  { rw [coe_sub_spec_query],
+    exact h.to_fun_equiv i t }
 end
+
+lemma coe_sub_spec_inj_dist_equiv :
+  (↑oa : oracle_comp super_spec α) ≃ₚ (↑oa' : oracle_comp super_spec α) ↔ oa ≃ₚ oa' :=
+sorry
 
 @[pairwise_dist_equiv] lemma coe_sub_spec_bind_dist_equiv :
   (↑(oa >>= ob) : oracle_comp super_spec β) ≃ₚ
