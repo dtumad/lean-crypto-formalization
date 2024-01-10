@@ -143,7 +143,7 @@ calc ⁅same_fork_point | ofr⁆ = ⁅λ z, z.1 ≠ none ∧ z.1 = z.2 | fork_re
 
 /-- Forking succeeds if both chosen forking points are the same,
 and the seed at that index differs with the other -/
-def fork_success (fr : fork_result adv) : bool :=
+@[derive decidable] def fork_success (fr : fork_result adv) : bool :=
 match fr.fork_point₁ with
 | none := false
 | some fp := fr.fork_point₂ = some fp ∧ fr.seed₁.value_differs fr.seed₂ i fp
