@@ -89,10 +89,11 @@ begin
 
   rw [vectorization_of_fork_result],
   simp at *,
+  sorry,
 
-  have hcf := fork_point_eq_of_mem_support_run_fork f_adv _ _ h,
-  simp [@eq_comm _ (some fp)] at hcf,
-  sorry
+  -- have hcf := fork_point_eq_of_fork_success f_adv _ _ h,
+  -- simp [@eq_comm _ (some fp)] at hcf,
+  -- sorry
   -- have hcf1 := sorry, --nth_fork_point_eq_retrieve_commits hcf.1,
   -- have hcf2 := sorry, --nth_fork_point_eq_retrieve_commits hcf.2,
   -- clear hcf,
@@ -174,7 +175,7 @@ begin
   end,
 
   refine le_trans _ this,
-  refine le_trans _ (le_fork_advantage _ _),
+  refine le_trans _ (fork_success_exp.choose_fork_advantage_le_fork_success_advantage _ _),
   simp,
   sorry,
 end
