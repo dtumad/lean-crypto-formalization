@@ -21,23 +21,33 @@ open_locale big_operators ennreal
 
 variables {α β γ δ : Type} {spec spec' : oracle_spec}
 
-@[simp] lemma prob_output_return_prod_mk_fst (x x' : α) (y : β) :
-  ⁅= (x, y) | return' !spec! (x', y)⁆ = ⁅= x | return' !spec! x'⁆ :=
+lemma prob_output_prod_eq_mul (oc : oracle_comp spec (α × β))
+  (z : α × β)
+  (h : ∀ x y y', ⁅= (x, y) | oc⁆ = ⁅= (x, y') | oc⁆)
+  (h' : ∀ x x' y, ⁅= (x, y) | oc⁆ = ⁅= (x', y) | oc⁆) :
+  ⁅= z | oc⁆ = ⁅= z.1 | fst <$> oc⁆ * ⁅= z.2 | snd <$> oc⁆ :=
 begin
-  by_cases h : x = x',
-  { simp only [h, prob_output_return_self] },
-  { rw [(prob_output_return_eq_zero_iff _ _ _).2 h],
-    refine prob_output_eq_zero (by simp [h]) }
+  sorry
 end
 
-@[simp] lemma prob_output_return_prod_mk_snd (x : α) (y y' : β) :
-  ⁅= (x, y) | return' !spec! (x, y')⁆ = ⁅= y | return' !spec! y'⁆ :=
+@[simp] lemma prob_output_prod_return (z z' : α × β) :
+  ⁅= z | (return z' : oracle_comp spec (α × β))⁆ =
+    ⁅= z.1 | (return z'.1 : oracle_comp spec α)⁆ *
+      ⁅= z.2 | (return z'.2 : oracle_comp spec β)⁆ :=
 begin
-  by_cases h : y = y',
-  { simp only [h, prob_output_return_self] },
-  { rw [(prob_output_return_eq_zero_iff _ _ _).2 h],
-    refine prob_output_eq_zero (by simp [h]) }
+  by_cases hz : z = z',
+  { simp only [hz, prob_output_return_self, mul_one] },
+  { simpa only [prob_output_return_of_ne _ hz, zero_eq_mul,
+      prob_output_return_eq_zero_iff, eq_iff_fst_eq_snd_eq, not_and_distrib] using hz }
 end
+
+lemma prob_output_return_prod_mk_fst (x x' : α) (y : β) :
+  ⁅= (x, y) | return' !spec! (x', y)⁆ = ⁅= x | return' !spec! x'⁆ :=
+by simp
+
+lemma prob_output_return_prod_mk_snd (x : α) (y y' : β) :
+  ⁅= (x, y) | return' !spec! (x, y')⁆ = ⁅= y | return' !spec! y'⁆ :=
+by simp
 
 section fst_snd_map_return_dist_equiv
 
