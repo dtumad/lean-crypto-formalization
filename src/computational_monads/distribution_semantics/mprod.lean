@@ -274,7 +274,7 @@ begin
   refine trans (bind_dist_equiv_bind_of_dist_equiv h.2 (λ _ _, return_dist_equiv_return _ _ _)) _,
   rw_dist_equiv [bind_map_dist_equiv],
   refine bind_dist_equiv_left _ _ (λ z hz, _),
-  have := apply_mem_support_map oc fst z hz,
+  have := apply_mem_support_map hz fst,
   simp_rw [h.1.symm.support_eq, mem_support_return_iff] at this,
   exact return_dist_equiv_return_of_eq _ _ _ _ (eq_iff_fst_eq_snd_eq.2 ⟨this.symm, rfl⟩)
 end
@@ -289,7 +289,7 @@ begin
   refine trans (bind_dist_equiv_bind_of_dist_equiv h.1 (λ _ _, return_dist_equiv_return _ _ _)) _,
   rw_dist_equiv [bind_map_dist_equiv],
   refine bind_dist_equiv_left _ _ (λ z hz, _),
-  have := apply_mem_support_map oc snd z hz,
+  have := apply_mem_support_map hz snd,
   simp_rw [h.2.symm.support_eq, mem_support_return_iff] at this,
   exact return_dist_equiv_return_of_eq _ _ _ _ (eq_iff_fst_eq_snd_eq.2 ⟨rfl, this.symm⟩)
 end

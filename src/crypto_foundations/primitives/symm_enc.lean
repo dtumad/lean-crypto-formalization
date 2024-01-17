@@ -74,7 +74,7 @@ The computation returns both the chosen message and the resulting ciphertext. -/
 @[inline, reducible] def mgen_and_encrypt
   (m_dist : oracle_comp unif_spec M) :
   oracle_comp unif_spec (M × C) :=
-do { m ← m_dist, k ← se_alg.keygen (), return (m, se_alg.encrypt (m, k)) }
+do {m ← m_dist, k ← se_alg.keygen (), return (m, se_alg.encrypt (m, k))}
 
 variable (m_dist : oracle_comp unif_spec M)
 
@@ -152,8 +152,7 @@ begin
   rw [indep_event_iff],
   simp only [indep_event_iff, ← prob_event_map, prob_event_singleton_eq_prob_output,
     eval_dist_fst_map_mgen_and_encrypt, this],
-  simp only [mgen_and_encrypt, oracle_comp.map_bind, map_pure, oracle_comp.pure_eq_return,
-    prob_event_fst_eq, prob_event_snd_eq],
+  simp only [mgen_and_encrypt, oracle_comp.map_bind, map_pure, oracle_comp.pure_eq_return],
   rw [prob_output_bind_const_bind, oracle_comp.bind_return],
 end
 

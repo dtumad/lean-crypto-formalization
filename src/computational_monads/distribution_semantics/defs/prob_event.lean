@@ -46,8 +46,8 @@ lemma prob_event_le_one : ⁅e | oa⁆ ≤ 1 :=
 (⁅oa⁆.to_outer_measure.mono (set.subset_univ e)).trans
   (le_of_eq $ (⁅oa⁆.to_outer_measure_apply_eq_one_iff _).2 (set.subset_univ ⁅oa⁆.support))
 
-lemma prob_event_eq_of_iff (h : ∀ x, e x ↔ e' x) : ⁅e | oa⁆ = ⁅e' | oa⁆ :=
-congr_arg (λ e, ⁅e | oa⁆) (set.ext h)
+lemma prob_event_eq_of_iff {p p' : α → Prop} (h : ∀ x, p x ↔ p' x) :
+  ⁅p | oa⁆ = ⁅p' | oa⁆ := congr_arg (λ e, ⁅e | oa⁆) (set.ext h)
 
 lemma prob_event_eq_of_mem_iff (h : ∀ x, x ∈ e ↔ x ∈ e') : ⁅e | oa⁆ = ⁅e' | oa⁆ :=
 congr_arg (λ e, ⁅e | oa⁆) (set.ext h)
@@ -72,12 +72,6 @@ trans (congr_arg _ (set.ext $ λ y, eq_comm)) (prob_event_singleton_eq_prob_outp
 /-- The probability of the `(= x)` event is just the `prob_output` of that element. -/
 @[simp] lemma prob_event_eq_eq_prob_output' (x : α) : ⁅(= x) | oa⁆ = ⁅= x | oa⁆ :=
 trans (congr_arg _ (funext (λ x', by simp [@eq_comm α x' x]))) (prob_event_eq_eq_prob_output oa x)
-
--- @[simp] lemma prob_event_eq_eq_prob_output'' (y : β) (f : α → β) :
---   ⁅λ x, f x = y | oa⁆ = ⁅= y | f <$> oa⁆ :=
--- begin
-
--- end
 
 lemma prob_event_eq_of_eval_dist_eq {oa : oracle_comp spec α} {oa' : oracle_comp spec' α}
   (h : ⁅oa⁆ = ⁅oa'⁆) (e : set α) : ⁅e | oa⁆ = ⁅e | oa'⁆ :=

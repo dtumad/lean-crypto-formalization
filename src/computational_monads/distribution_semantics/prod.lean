@@ -21,14 +21,17 @@ open_locale big_operators ennreal
 
 variables {α β γ δ : Type} {spec spec' : oracle_spec}
 
-lemma prob_output_prod_eq_mul (oc : oracle_comp spec (α × β))
-  (z : α × β)
-  (h : ∀ x y y', ⁅= (x, y) | oc⁆ = ⁅= (x, y') | oc⁆)
-  (h' : ∀ x x' y, ⁅= (x, y) | oc⁆ = ⁅= (x', y) | oc⁆) :
-  ⁅= z | oc⁆ = ⁅= z.1 | fst <$> oc⁆ * ⁅= z.2 | snd <$> oc⁆ :=
-begin
-  sorry
-end
+-- lemma prob_output_prod_eq_mul (oc : oracle_comp spec (α × β))
+--   (z : α × β)
+--   (h : ∀ x y y', ⁅= (x, y) | oc⁆ = ⁅= (x, y') | oc⁆)
+--   (h' : ∀ x x' y, ⁅= (x, y) | oc⁆ = ⁅= (x', y) | oc⁆) :
+--   ⁅= z | oc⁆ = ⁅= z.1 | fst <$> oc⁆ * ⁅= z.2 | snd <$> oc⁆ :=
+-- begin
+--   rw [← prob_event_eq_eq_prob_output],
+--   rw [prob_event_eq_of_iff oc (λ z, @prod.eq_iff_fst_eq_snd_eq _ _ _ z)],
+--   rw [prob_event_map_bind],
+--   simp_rw [prod.eq_iff_fst_eq_snd_eq],
+-- end
 
 @[simp] lemma prob_output_prod_return (z z' : α × β) :
   ⁅= z | (return z' : oracle_comp spec (α × β))⁆ =
@@ -51,29 +54,29 @@ by simp
 
 section fst_snd_map_return_dist_equiv
 
-lemma fst_map_return_dist_equiv (x : α) (y : β) :
-  fst <$> (return' !spec! (x, y)) ≃ₚ return' !spec! x :=
-by pairwise_dist_equiv
+-- lemma fst_map_return_dist_equiv (x : α) (y : β) :
+--   fst <$> (return' !spec! (x, y)) ≃ₚ return' !spec! x :=
+-- by pairwise_dist_equiv
 
-lemma fst_map_return_dist_equiv' (x : α) (y : β) (f : α → γ) :
-  (λ (x : α × β), f x.1) <$> (return' !spec! (x, y)) ≃ₚ return' !spec! (f x) :=
-by pairwise_dist_equiv
+-- lemma fst_map_return_dist_equiv' (x : α) (y : β) (f : α → γ) :
+--   (λ (x : α × β), f x.1) <$> (return' !spec! (x, y)) ≃ₚ return' !spec! (f x) :=
+-- by pairwise_dist_equiv
 
-lemma snd_map_return_dist_equiv (x : α) (y : β) :
-  snd <$> (return' !spec! (x, y)) ≃ₚ return' !spec! y :=
-by pairwise_dist_equiv
+-- lemma snd_map_return_dist_equiv (x : α) (y : β) :
+--   snd <$> (return' !spec! (x, y)) ≃ₚ return' !spec! y :=
+-- by pairwise_dist_equiv
 
-lemma snd_map_return_dist_equiv' (x : α) (y : β) (f : β → γ) :
-  (λ (x : α × β), f x.2) <$> (return' !spec! (x, y)) ≃ₚ return' !spec! (f y) :=
-by pairwise_dist_equiv
+-- lemma snd_map_return_dist_equiv' (x : α) (y : β) (f : β → γ) :
+--   (λ (x : α × β), f x.2) <$> (return' !spec! (x, y)) ≃ₚ return' !spec! (f y) :=
+-- by pairwise_dist_equiv
 
-@[pairwise_dist_equiv] lemma fst_map_return_dist_equiv_fst_map_return (x : α) (y y' : β) :
-  fst <$> (return' !spec! (x, y)) ≃ₚ fst <$> (return' !spec! (x, y')) :=
-by simp_rw_dist_equiv [map_return_dist_equiv]
+-- @[pairwise_dist_equiv] lemma fst_map_return_dist_equiv_fst_map_return (x : α) (y y' : β) :
+--   fst <$> (return' !spec! (x, y)) ≃ₚ fst <$> (return' !spec! (x, y')) :=
+-- by simp_rw_dist_equiv [map_return_dist_equiv]
 
-@[pairwise_dist_equiv] lemma snd_map_return_dist_equiv_snd_map_return (x x' : α) (y : β) :
-  snd <$> (return' !spec! (x, y)) ≃ₚ snd <$> (return' !spec! (x', y)) :=
-by simp_rw_dist_equiv [map_return_dist_equiv]
+-- @[pairwise_dist_equiv] lemma snd_map_return_dist_equiv_snd_map_return (x x' : α) (y : β) :
+--   snd <$> (return' !spec! (x, y)) ≃ₚ snd <$> (return' !spec! (x', y)) :=
+-- by simp_rw_dist_equiv [map_return_dist_equiv]
 
 end fst_snd_map_return_dist_equiv
 
@@ -81,21 +84,23 @@ section fst_snd_map_bind_return_dist_equiv
 
 variables (oa : oracle_comp spec α) (f : α → β) (g : α → γ) (h : α → δ)
 
+/-- Without making this a simp lemma it will reduce to `do {x ← oa, return (f x)}`. -/
 @[simp] lemma fst_map_bind_return :
   (fst <$> (do {x ← oa, return (f x, g x)}) : oracle_comp spec β) = f <$> oa :=
 by simpa only [map_bind]
 
+/-- Without making this a simp lemma it will reduce to `do {x ← oa, return (g x)}`. -/
 @[simp] lemma snd_map_bind_return :
   (snd <$> (do {x ← oa, return (f x, g x)}) : oracle_comp spec γ) = g <$> oa :=
 by simpa only [map_bind]
 
-lemma fst_map_bind_return_dist_equiv :
-  fst <$> (oa >>= λ x, return (f x, g x)) ≃ₚ f <$> oa :=
-by rw [fst_map_bind_return]
+-- lemma fst_map_bind_return_dist_equiv :
+--   fst <$> (oa >>= λ x, return (f x, g x)) ≃ₚ f <$> oa :=
+-- by rw_dist_equiv [map_bind_dist_equiv]
 
-lemma snd_map_bind_return_dist_equiv :
-  snd <$> (oa >>= λ x, return (f x, g x)) ≃ₚ g <$> oa :=
-by rw [snd_map_bind_return]
+-- lemma snd_map_bind_return_dist_equiv :
+--   snd <$> (oa >>= λ x, return (f x, g x)) ≃ₚ g <$> oa :=
+-- by rw [snd_map_bind_return]
 
 end fst_snd_map_bind_return_dist_equiv
 
@@ -150,15 +155,40 @@ section map_fst_snd
 
 variables (oa : oracle_comp spec (α × β))
 
+lemma mem_support_map_fst_iff (oab : oracle_comp spec (α × β)) (x : α) :
+  x ∈ (fst <$> oab).support ↔ ∃ y, (x, y) ∈ oab.support :=
+by simp only [support_map, set.mem_image, prod.exists, exists_and_distrib_right, exists_eq_right]
+
+lemma mem_support_map_snd_iff (oab : oracle_comp spec (α × β)) (y : β) :
+  y ∈ (snd <$> oab).support ↔ ∃ x, (x, y) ∈ oab.support :=
+by simp only [support_map, set.mem_image, prod.exists, exists_and_distrib_right, exists_eq_right]
+
+lemma mem_fin_support_map_fst_iff [decidable_eq α] (oab : oracle_comp spec (α × β)) (x : α) :
+  x ∈ (fst <$> oab).fin_support ↔ ∃ y, (x, y) ∈ oab.support :=
+by rw [mem_fin_support_iff_mem_support, mem_support_map_fst_iff]
+
+lemma mem_fin_support_map_snd_iff [decidable_eq β] (oab : oracle_comp spec (α × β)) (y : β) :
+  y ∈ (snd <$> oab).fin_support ↔ ∃ x, (x, y) ∈ oab.support :=
+by rw [mem_fin_support_iff_mem_support, mem_support_map_snd_iff]
+
 /-- The first output of a computation of a `prod` type is a sum over possible second outputs.
-TODO: decide on `simp` conventions for lemmas like this one.
-maybe have both this and a version with `sum` be simp, prioritizing the second? -/
+TODO: decide on `simp` conventions for lemmas like this one. -/
 lemma prob_output_map_fst (a : α) : ⁅= a | fst <$> oa⁆ = ∑' (b : β), ⁅= (a, b) | oa⁆ :=
 by simp only [prob_output.def, eval_dist_map, pmf.map_fst_apply]
+
+lemma prob_output_map_fst' [decidable_eq β] (x : α) :
+  ⁅= x | fst <$> oa⁆ = ∑ y in (snd <$> oa).fin_support, ⁅= (x, y) | oa⁆ :=
+(prob_output_map_fst oa x).trans (tsum_eq_sum (λ y hy, prob_output_eq_zero
+  (λ h, hy (mem_fin_support_of_mem_support (apply_mem_support_map h snd)))))
 
 /-- The second output of a computation of a `prod` type is a sum over possible first outputs -/
 lemma prob_output_map_snd (b : β) : ⁅= b | snd <$> oa⁆ = ∑' (a : α), ⁅= (a, b) | oa⁆ :=
 by simp only [prob_output.def, eval_dist_map, pmf.map_snd_apply]
+
+lemma prob_output_map_snd' [decidable_eq α] (y : β) :
+  ⁅= y | snd <$> oa⁆ = ∑ x in (fst <$> oa).fin_support, ⁅= (x, y) | oa⁆ :=
+(prob_output_map_snd oa y).trans (tsum_eq_sum (λ x hx, prob_output_eq_zero
+  (λ h, hx (mem_fin_support_of_mem_support (apply_mem_support_map h fst)))))
 
 end map_fst_snd
 
@@ -254,13 +284,13 @@ prob_event_diagonal oa
   ⁅λ x, x.1 = x.2 | oa⁆ = ∑ a : α, ⁅= (a, a) | oa⁆ :=
 prob_event_diagonal_eq_sum oa
 
-@[simp] lemma prob_event_fst_eq (oa : oracle_comp spec (α × β)) (x : α) :
-  ⁅λ z, z.1 = x | oa⁆ = ⁅= x | fst <$> oa⁆ :=
-by simpa only [prob_output_map_eq_tsum_indicator, prob_event_eq_tsum_indicator, ennreal.tsum_prod']
+-- @[simp] lemma prob_event_fst_eq (oa : oracle_comp spec (α × β)) (x : α) :
+--   ⁅λ z, z.1 = x | oa⁆ = ⁅= x | fst <$> oa⁆ :=
+-- by apply prob_event_eq_eq_prob_output_map
 
-@[simp] lemma prob_event_snd_eq (oa : oracle_comp spec (α × β)) (y : β) :
-  ⁅λ z, z.2 = y | oa⁆ = ⁅= y | snd <$> oa⁆ :=
-by simpa only [prob_output_map_eq_tsum_indicator, prob_event_eq_tsum_indicator, ennreal.tsum_prod']
+-- @[simp] lemma prob_event_snd_eq (oa : oracle_comp spec (α × β)) (y : β) :
+--   ⁅λ z, z.2 = y | oa⁆ = ⁅= y | snd <$> oa⁆ :=
+-- by simpa only [prob_output_map_eq_tsum_indicator, prob_event_eq_tsum_indicator, ennreal.tsum_prod']
 
 end prob_event
 
@@ -444,33 +474,5 @@ variables (ob : α → oracle_comp spec β)
 set.ext (λ z, by simp [prod.eq_iff_fst_eq_snd_eq])
 
 end bind_bind_prod_mk
-
-section map_fst_snd
-
-section support
-
-lemma mem_support_map_fst_iff (oab : oracle_comp spec (α × β)) (x : α) :
-  x ∈ (fst <$> oab).support ↔ ∃ y, (x, y) ∈ oab.support :=
-by simp only [support_map, set.mem_image, prod.exists, exists_and_distrib_right, exists_eq_right]
-
-lemma mem_support_map_snd_iff (oab : oracle_comp spec (α × β)) (y : β) :
-  y ∈ (snd <$> oab).support ↔ ∃ x, (x, y) ∈ oab.support :=
-by simp only [support_map, set.mem_image, prod.exists, exists_and_distrib_right, exists_eq_right]
-
-end support
-
-section fin_support
-
-lemma mem_fin_support_map_fst_iff [decidable_eq α] (oab : oracle_comp spec (α × β)) (x : α) :
-  x ∈ (fst <$> oab).fin_support ↔ ∃ y, (x, y) ∈ oab.support :=
-by rw [mem_fin_support_iff_mem_support, mem_support_map_fst_iff]
-
-lemma mem_fin_support_map_snd_iff [decidable_eq β] (oab : oracle_comp spec (α × β)) (y : β) :
-  y ∈ (snd <$> oab).fin_support ↔ ∃ x, (x, y) ∈ oab.support :=
-by rw [mem_fin_support_iff_mem_support, mem_support_map_snd_iff]
-
-end fin_support
-
-end map_fst_snd
 
 end oracle_comp

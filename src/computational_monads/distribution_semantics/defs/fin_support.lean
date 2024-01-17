@@ -40,7 +40,8 @@ begin
       set.mem_Union, finset.mem_bUnion, hoa, finset.mem_univ, exists_true_left] }
 end
 
-lemma mem_fin_support_of_mem_support {x : α} (hx : x ∈ oa.support) : x ∈ oa.fin_support :=
+lemma mem_fin_support_of_mem_support {oa : oracle_comp spec α} {x : α}
+  (hx : x ∈ oa.support) : x ∈ oa.fin_support :=
 (mem_fin_support_iff_mem_support oa x).2 hx
 
 lemma fin_support_eq_to_finset : oa.fin_support = oa.support.to_finset :=
@@ -108,7 +109,7 @@ by simp only [query_def, fin_support_query_bind', oracle_comp.pure'_eq_return,
 
 /-- The `fin_support` of a computation is never empty (since `support` is never empty). -/
 lemma fin_support_nonempty [decidable_eq α] (oa : oracle_comp spec α) : oa.fin_support.nonempty :=
-let ⟨x, hx⟩ := oa.support_nonempty in ⟨x, mem_fin_support_of_mem_support oa hx⟩
+let ⟨x, hx⟩ := oa.support_nonempty in ⟨x, mem_fin_support_of_mem_support hx⟩
 
 lemma fin_support_eq_singleton_iff_forall [decidable_eq α] (oa : oracle_comp spec α) (x) :
   oa.fin_support = {x} ↔ ∀ x' ∈ oa.support, x' = x :=

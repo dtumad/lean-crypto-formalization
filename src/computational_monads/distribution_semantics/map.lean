@@ -36,7 +36,8 @@ lemma mem_fin_support_map_iff [decidable_eq α] [decidable_eq β] :
   y ∈ (f <$> oa).fin_support ↔ ∃ x ∈ oa.fin_support, f x = y :=
 by rw [fin_support_map, finset.mem_image]
 
-lemma apply_mem_support_map (hx : x ∈ oa.support) : f x ∈ (f <$> oa).support :=
+lemma apply_mem_support_map {oa : oracle_comp spec α} {x} (hx : x ∈ oa.support)
+  (f : α → β) : f x ∈ (f <$> oa).support :=
 have ∃ (x' : α), x' ∈ oa.support ∧ f x' = f x := ⟨x, hx, rfl⟩,
   by simp only [this, support_map, set.mem_image]
 
