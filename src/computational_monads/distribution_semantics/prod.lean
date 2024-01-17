@@ -21,18 +21,6 @@ open_locale big_operators ennreal
 
 variables {α β γ δ : Type} {spec spec' : oracle_spec}
 
--- lemma prob_output_prod_eq_mul (oc : oracle_comp spec (α × β))
---   (z : α × β)
---   (h : ∀ x y y', ⁅= (x, y) | oc⁆ = ⁅= (x, y') | oc⁆)
---   (h' : ∀ x x' y, ⁅= (x, y) | oc⁆ = ⁅= (x', y) | oc⁆) :
---   ⁅= z | oc⁆ = ⁅= z.1 | fst <$> oc⁆ * ⁅= z.2 | snd <$> oc⁆ :=
--- begin
---   rw [← prob_event_eq_eq_prob_output],
---   rw [prob_event_eq_of_iff oc (λ z, @prod.eq_iff_fst_eq_snd_eq _ _ _ z)],
---   rw [prob_event_map_bind],
---   simp_rw [prod.eq_iff_fst_eq_snd_eq],
--- end
-
 @[simp] lemma prob_output_prod_return (z z' : α × β) :
   ⁅= z | (return z' : oracle_comp spec (α × β))⁆ =
     ⁅= z.1 | (return z'.1 : oracle_comp spec α)⁆ *
@@ -52,34 +40,6 @@ lemma prob_output_return_prod_mk_snd (x : α) (y y' : β) :
   ⁅= (x, y) | return' !spec! (x, y')⁆ = ⁅= y | return' !spec! y'⁆ :=
 by simp
 
-section fst_snd_map_return_dist_equiv
-
--- lemma fst_map_return_dist_equiv (x : α) (y : β) :
---   fst <$> (return' !spec! (x, y)) ≃ₚ return' !spec! x :=
--- by pairwise_dist_equiv
-
--- lemma fst_map_return_dist_equiv' (x : α) (y : β) (f : α → γ) :
---   (λ (x : α × β), f x.1) <$> (return' !spec! (x, y)) ≃ₚ return' !spec! (f x) :=
--- by pairwise_dist_equiv
-
--- lemma snd_map_return_dist_equiv (x : α) (y : β) :
---   snd <$> (return' !spec! (x, y)) ≃ₚ return' !spec! y :=
--- by pairwise_dist_equiv
-
--- lemma snd_map_return_dist_equiv' (x : α) (y : β) (f : β → γ) :
---   (λ (x : α × β), f x.2) <$> (return' !spec! (x, y)) ≃ₚ return' !spec! (f y) :=
--- by pairwise_dist_equiv
-
--- @[pairwise_dist_equiv] lemma fst_map_return_dist_equiv_fst_map_return (x : α) (y y' : β) :
---   fst <$> (return' !spec! (x, y)) ≃ₚ fst <$> (return' !spec! (x, y')) :=
--- by simp_rw_dist_equiv [map_return_dist_equiv]
-
--- @[pairwise_dist_equiv] lemma snd_map_return_dist_equiv_snd_map_return (x x' : α) (y : β) :
---   snd <$> (return' !spec! (x, y)) ≃ₚ snd <$> (return' !spec! (x', y)) :=
--- by simp_rw_dist_equiv [map_return_dist_equiv]
-
-end fst_snd_map_return_dist_equiv
-
 section fst_snd_map_bind_return_dist_equiv
 
 variables (oa : oracle_comp spec α) (f : α → β) (g : α → γ) (h : α → δ)
@@ -94,35 +54,32 @@ by simpa only [map_bind]
   (snd <$> (do {x ← oa, return (f x, g x)}) : oracle_comp spec γ) = g <$> oa :=
 by simpa only [map_bind]
 
--- lemma fst_map_bind_return_dist_equiv :
---   fst <$> (oa >>= λ x, return (f x, g x)) ≃ₚ f <$> oa :=
--- by rw_dist_equiv [map_bind_dist_equiv]
-
--- lemma snd_map_bind_return_dist_equiv :
---   snd <$> (oa >>= λ x, return (f x, g x)) ≃ₚ g <$> oa :=
--- by rw [snd_map_bind_return]
-
 end fst_snd_map_bind_return_dist_equiv
 
 section unused
 
 variables (oa : oracle_comp spec (α × β))
 
-@[simp] lemma bind_eq_fst_bind_of_unused (oc : α → oracle_comp spec γ) :
-  oa >>= (λ x, oc x.1) = (fst <$> oa) >>= oc :=
-by simp only [map_eq_bind_pure_comp, bind_assoc, pure_bind]
+-- @[simp] lemma bind_eq_fst_bind_of_unused (oc : α → oracle_comp spec γ) :
+--   oa >>= (λ x, oc x.1) = (fst <$> oa) >>= oc :=
+-- by rw [oracle_comp.bind_map] --only [map_eq_bind_pure_comp, bind_assoc, pure_bind]
 
-@[simp] lemma bind_eq_snd_bind_of_unused (oc' : β → oracle_comp spec γ) :
-  oa >>= (λ x, oc' x.2) = (snd <$> oa) >>= oc' :=
-by simp only [map_eq_bind_pure_comp, bind_assoc, pure_bind]
+-- @[simp] lemma bind_eq_snd_bind_of_unused (oc' : β → oracle_comp spec γ) :
+--   oa >>= (λ x, oc' x.2) = (snd <$> oa) >>= oc' :=
+-- by rw [oracle_comp.bind_map] --only [map_eq_bind_pure_comp, bind_assoc, pure_bind]
+-- -- by simp only [map_eq_bind_pure_comp, bind_assoc, pure_bind]
 
-@[pairwise_dist_equiv] lemma bind_dist_equiv_fst_bind_of_unused (oc : α → oracle_comp spec γ) :
-  oa >>= (λ x, oc x.1) ≃ₚ (fst <$> oa) >>= oc :=
-by rw_dist_equiv [bind_map_dist_equiv]
+-- @[pairwise_dist_equiv] lemma bind_dist_equiv_fst_bind_of_unused (oc : α → oracle_comp spec γ) :
+--   oa >>= (λ x, oc x.1) ≃ₚ (fst <$> oa) >>= oc :=
+-- by rw [oracle_comp.bind_map] --only [map_eq_bind_pure_comp, bind_assoc, pure_bind]
 
-@[pairwise_dist_equiv] lemma bind_dist_equiv_snd_bind_of_unused (oc' : β → oracle_comp spec γ) :
-  oa >>= (λ x, oc' x.2) ≃ₚ (snd <$> oa) >>= oc' :=
-by rw_dist_equiv [bind_map_dist_equiv]
+-- -- by rw_dist_equiv [bind_map_dist_equiv]
+
+-- @[pairwise_dist_equiv] lemma bind_dist_equiv_snd_bind_of_unused (oc' : β → oracle_comp spec γ) :
+--   oa >>= (λ x, oc' x.2) ≃ₚ (snd <$> oa) >>= oc' :=
+-- by rw [oracle_comp.bind_map] --only [map_eq_bind_pure_comp, bind_assoc, pure_bind]
+
+-- -- by rw_dist_equiv [bind_map_dist_equiv]
 
 end unused
 
@@ -245,21 +202,15 @@ variables (oa : oracle_comp spec (α × β))
 
 lemma bind_dist_equiv_fst_bind (oc : α × β → oracle_comp spec γ) (y : β)
   (h : ∀ z, oc z ≃ₚ oc (z.1, y)) : oa >>= oc ≃ₚ (fst <$> oa >>= λ x, oc (x, y)) :=
-begin
-  rw_dist_equiv [bind_map_dist_equiv],
-  refine bind_dist_equiv_bind_of_dist_equiv_right _ _ _ (λ x hx, h x)
-end
+by rw_dist_equiv [bind_map_dist_equiv, h]
 
 lemma bind_dist_equiv_snd_bind (oc : α × β → oracle_comp spec γ) (x : α)
-  (h : ∀ z, oc z ≃ₚ oc (x, z.2)): oa >>= oc ≃ₚ (snd <$> oa >>= λ y, oc (x, y)) :=
-begin
-  rw_dist_equiv [bind_map_dist_equiv],
-  refine bind_dist_equiv_bind_of_dist_equiv_right _ _ _ (λ x hx, h x)
-end
+  (h : ∀ z, oc z ≃ₚ oc (x, z.2)) : oa >>= oc ≃ₚ (snd <$> oa >>= λ y, oc (x, y)) :=
+by rw_dist_equiv [bind_map_dist_equiv, h]
 
 end fst_snd_map_bind
 
-section prob_event
+section diagonal
 
 @[simp] lemma prob_event_diagonal [decidable_eq α] (oa : oracle_comp spec (α × α)) :
   ⁅set.diagonal α | oa⁆ = ∑' a : α, ⁅= (a, a) | oa⁆ :=
@@ -292,7 +243,7 @@ prob_event_diagonal_eq_sum oa
 --   ⁅λ z, z.2 = y | oa⁆ = ⁅= y | snd <$> oa⁆ :=
 -- by simpa only [prob_output_map_eq_tsum_indicator, prob_event_eq_tsum_indicator, ennreal.tsum_prod']
 
-end prob_event
+end diagonal
 
 variables (oa : oracle_comp spec α) (f : α → β) (g : α → γ) (b : β) (c : γ)
 
@@ -468,10 +419,20 @@ section bind_bind_prod_mk
 
 variables (ob : α → oracle_comp spec β)
 
+lemma support_bind_bind_prod_mk' :
+  (do {x ← oa, y ← (ob x), return (x, y)}).support =
+    ⋃ x ∈ oa.support, prod.mk x '' (ob x).support :=
+by simp
+
 @[simp] lemma support_bind_bind_prod_mk :
   (do {x ← oa, y ← (ob x), return (x, y)}).support =
     {z | z.1 ∈ oa.support ∧ z.2 ∈ (ob z.1).support} :=
-set.ext (λ z, by simp [prod.eq_iff_fst_eq_snd_eq])
+set.ext (λ z, by simp only [prod.eq_iff_fst_eq_snd_eq, support_bind, support_bind_return,
+  set.mem_Union, set.mem_image, exists_eq_right_right, exists_prop, set.mem_set_of_eq])
+
+-- @[simp] lemma fin_support_bind_bind_prod_mk [decidable_eq α] [decidable_eq β] :
+--   (do {x ← oa, y ← (ob x), return (x, y)}).fin_support =
+--     oa.fin_support.image (λ x, (ob x).fin_support.image (prod.mk x))
 
 end bind_bind_prod_mk
 

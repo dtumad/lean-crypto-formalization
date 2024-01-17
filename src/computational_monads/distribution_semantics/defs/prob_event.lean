@@ -28,11 +28,17 @@ variables {α β γ : Type} {spec spec' : oracle_spec} (oa : oracle_comp spec α
   (e e' : set α) (p p' : α → Prop)
 
 /-- Probability of a predicate holding after running a particular experiment.
+Defined in terms of the outer measure associated to the corresponding `pmf` by `eval_dist`.
+TODO: is this a better way to formulate most things? -/
+noncomputable def prob_event' (oa : oracle_comp spec α) (p : α → Prop) : ℝ≥0∞ :=
+⁅oa⁆.to_outer_measure p
+
+/-- Probability of a predicate holding after running a particular experiment.
 Defined in terms of the outer measure associated to the corresponding `pmf` by `eval_dist`. -/
 noncomputable def prob_event (oa : oracle_comp spec α) (event : set α) : ℝ≥0∞ :=
 ⁅oa⁆.to_outer_measure event
 
-notation `⁅` event `|` oa `⁆` := prob_event oa event
+notation `⁅` p `|` oa `⁆` := prob_event oa p
 
 lemma prob_event.def (oa : oracle_comp spec α) (event : set α) :
   ⁅event | oa⁆ = ⁅oa⁆.to_outer_measure event := rfl
