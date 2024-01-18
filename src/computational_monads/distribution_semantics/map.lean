@@ -232,7 +232,7 @@ by simp only [prob_output_map_bind_eq_tsum, tsum_fintype]
 lemma prob_output_map_bind_eq_sum_fin_support [decidable_eq α] [decidable_eq β] [decidable_eq γ] :
   ⁅= z | g <$> (oa >>= ob)⁆ = ∑ x in oa.fin_support,
     ∑ y in (ob x).fin_support, ⁅= x | oa⁆ * (ite (z = g y) ⁅= y | ob x⁆ 0) :=
-trans ((map_bind_dist_equiv _ _ _).prob_output_eq _) (by simpa only
+trans ((map_bind_dist_equiv _ _ _).prob_output_eq _) (by simp only
   [prob_output_bind_eq_sum_fin_support, prob_output_map_eq_sum_fin_support, finset.mul_sum])
 
 lemma prob_event_map_bind (e' : set γ) :

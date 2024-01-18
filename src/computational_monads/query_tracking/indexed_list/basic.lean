@@ -52,6 +52,8 @@ variables (il il' : spec.indexed_list τ)
 
 section apply
 
+-- TODO: implicit arguments on more of the `il`
+
 lemma mem_active_oracles_iff (i) : i ∈ il.active_oracles ↔ il i ≠ [] :=
 il.mem_active_oracles_iff' i
 
@@ -73,18 +75,20 @@ lemma not_mem_active_oracles {i} (hi : il i = []) : i ∉ il.active_oracles :=
 @[simp] lemma apply_eq_nil_iff (i) : il i = [] ↔ i ∉ il.active_oracles :=
 by simp [mem_active_oracles_iff]
 
-@[simp] lemma apply_eq_nil {i} (hi : i ∉ il.active_oracles) : il i = [] :=
-(apply_eq_nil_iff il i).2 hi
+lemma apply_eq_nil {il : spec.indexed_list τ} {i}
+  (hi : i ∉ il.active_oracles) : il i = [] := (apply_eq_nil_iff il i).2 hi
 
 lemma apply_ne_nil_iff (i) : il i ≠ [] ↔ i ∈ il.active_oracles :=
 (il.mem_active_oracles_iff i).symm
 
-lemma apply_ne_nil {i} (hi : i ∈ il.active_oracles) : il i ≠ [] := (apply_ne_nil_iff il i).2 hi
+lemma apply_ne_nil {il : spec.indexed_list τ} {i}
+  (hi : i ∈ il.active_oracles) : il i ≠ [] := (apply_ne_nil_iff il i).2 hi
 
 @[simp] lemma apply_empty_iff (i) : (il i).empty ↔ i ∉ il.active_oracles :=
 by simp [list.empty_iff_eq_nil]
 
-lemma apply_empty {i} (hi : i ∉ il.active_oracles) : (il i).empty := (il.apply_empty_iff i).2 hi
+lemma apply_empty {il : spec.indexed_list τ} {i}
+  (hi : i ∉ il.active_oracles) : (il i).empty := (il.apply_empty_iff i).2 hi
 
 @[simp] protected lemma ite_apply (p : Prop) [decidable p] (i) :
   (if p then il else il') i = if p then il i else il' i :=
@@ -110,7 +114,7 @@ begin
   by_cases hi : i ∈ il.active_oracles,
   { simpa only [← h, hi, finset.inter_self, forall_true_left] using h' i },
   { have hi' : i ∉ il'.active_oracles := h ▸ hi,
-    exact (apply_eq_nil il hi).trans (apply_eq_nil il' hi').symm }
+    exact (apply_eq_nil hi).trans (apply_eq_nil hi').symm }
 end
 
 /-- If the elements at each index have decidable equality than so do indexed lists. -/
@@ -552,7 +556,7 @@ begin
   refine fun_like.ext _ _ (λ i', _),
   by_cases hi : i = i',
   { induction hi,
-    simp [il.apply_eq_nil h] },
+    simp [apply_eq_nil h] },
   { simp [hi] }
 end
 
@@ -707,7 +711,7 @@ begin
   { refl },
   { by_cases hi : i ∈ il.active_oracles,
     { simp [hi, hil] },
-    { simp [hi, hil, apply_eq_nil _ hi] } }
+    { simp [hi, hil, apply_eq_nil hi] } }
 end
 
 end sums

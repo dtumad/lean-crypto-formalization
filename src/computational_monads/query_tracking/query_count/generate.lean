@@ -109,9 +109,41 @@ begin
     pure_bind, of_list_nil, id_map],
 end
 
-lemma oracle_comp.seq_assoc (oa : oracle_comp spec α) (ob : oracle_comp spec (α → β))
+protected lemma oracle_comp.seq_assoc (oa : oracle_comp spec α) (ob : oracle_comp spec (α → β))
   (oc : oracle_comp spec (β → γ)) : oc <*> (ob <*> oa) = (∘) <$> oc <*> ob <*> oa :=
 by simp [seq_eq_bind_map, map_eq_bind_pure_comp, bind_assoc]
+
+lemma seq_seq_dist_equiv_comm (oa oa' : oracle_comp spec α) (ob : oracle_comp spec β)
+  (f : α → β → β) (hf : ∀ x ∈ oa.support, ∀ x' ∈ oa'.support, f x ∘ f x' = f x' ∘ f x) :
+  (f <$> oa') <*> (f <$> oa <*> ob) ≃ₚ (f <$> oa) <*> (f <$> oa' <*> ob) :=
+begin
+  simp only [seq_eq_bind_map, map_bind, map_map_eq_map_comp],
+  rw_dist_equiv [bind_bind_dist_equiv_comm],
+  refine bind_dist_equiv_bind_of_dist_equiv_right _ _ _ (λ g hg, _),
+  refine bind_dist_equiv_bind_of_dist_equiv_right _ _ _ (λ g' hg', _),
+  rw [mem_support_map_iff] at hg,
+  obtain ⟨x, hx, hg⟩ := hg,
+  induction hg,
+  rw [mem_support_map_iff] at hg',
+  obtain ⟨y, hy, hg'⟩ := hg',
+  induction hg',
+  specialize hf x hx y hy,
+  rw [hf],
+end
+
+lemma indexed_list.add_comm {τ : spec.ι → Type} {il il' : spec.indexed_list τ}
+  (h : disjoint il.active_oracles il'.active_oracles) : il + il' = il' + il :=
+begin
+  refine fun_like.ext_iff.2 (λ i, _),
+  by_cases hi : i ∈ il.active_oracles,
+  { simp only [indexed_list.add_apply, apply_eq_nil (finset.disjoint_left.1 h hi),
+      list.nil_append, list.append_nil] },
+  { simp only [indexed_list.add_apply, apply_eq_nil hi, list.nil_append, list.append_nil] }
+end
+
+lemma indexed_list.of_list_comm {τ : spec.ι → Type} {j j' : spec.ι} (hj : j ≠ j')
+  (xs : list (τ j)) (xs' : list (τ j')) : of_list xs + of_list xs' = of_list xs' + of_list xs :=
+indexed_list.add_comm (by cases xs; cases xs'; simp [hj])
 
 lemma generate_aux_perm_dist_equiv {js js' : list spec.ι} (hjs : js.nodup)
   (h : js ~ js') : generate_aux qc oa js ≃ₚ generate_aux qc oa js' :=
@@ -120,13 +152,14 @@ begin
   { exact dist_equiv.refl (return ∅) },
   { unfold generate_aux,
     pairwise_dist_equiv [ih (list.nodup_cons.1 hjs).2] },
-  { simp_rw_dist_equiv [map_bind_dist_equiv] 4,
-    refine trans (bind_bind_dist_equiv_comm _ _ _) _,
-    pairwise_dist_equiv 3,
-    simp_rw_dist_equiv [map_return_dist_equiv],
-    simp only [return_dist_equiv_return_iff', ← add_assoc, add_left_inj],
-    simp only [list.nodup_cons, not_or_distrib, list.mem_cons_iff] at hjs,
-    exact of_list_add_of_list_comm hjs.1.1 _ _ },
+  { simp_rw [generate_aux_cons'],
+    refine seq_seq_dist_equiv_comm _ _ _ _ (λ il hil il' hil', _),
+    obtain ⟨xs, hxs, rfl⟩ := (mem_support_map_iff _ _ _).1 hil,
+    obtain ⟨xs', hxs', rfl⟩ := (mem_support_map_iff _ _ _).1 hil',
+    simp only [function.funext_iff, comp_add_left, add_left_inj, forall_const],
+    refine indexed_list.of_list_comm _ xs xs',
+    rw [list.nodup_cons, list.mem_cons_iff, not_or_distrib] at hjs,
+    exact ne.symm hjs.1.1 },
   { exact (hj1 hjs).trans (hj2 ((list.perm.nodup_iff h1).1 hjs)) }
 end
 
@@ -303,13 +336,13 @@ begin
         refine symm (finset.prod_subset _ _),
         refine finset.subset_union_left _ _,
         intros j hj hj',
-        rw [apply_eq_nil _ hj', list.map_nil, list.prod_nil],
+        rw [apply_eq_nil hj', list.map_nil, list.prod_nil],
       },
       {
         refine symm (finset.prod_subset _ _),
         refine finset.subset_union_right _ _,
         intros j hj hj',
-        rw [apply_eq_nil _ hj', list.map_nil, list.prod_nil],
+        rw [apply_eq_nil hj', list.map_nil, list.prod_nil],
       }
     },
     {
@@ -326,7 +359,7 @@ begin
   },
   {
     rw [eq_comm, prob_output_eq_zero],
-    rw [support_seq_map],
+    rw [support_seq_map, set.mem_image2],
     simp,
     intros jl hjl jl' hjl' h,
     rw [support_generate, set.mem_set_of_eq] at hjl hjl',
