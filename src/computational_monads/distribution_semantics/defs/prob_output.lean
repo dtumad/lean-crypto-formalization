@@ -31,6 +31,8 @@ noncomputable def prob_output (oa : oracle_comp spec α) (x : α) := ⁅oa⁆ x
 
 notation `⁅=` x `|` oa `⁆` := prob_output oa x
 
+lemma prob_output.def' (oa : oracle_comp spec α) : prob_output oa = ⁅oa⁆ := rfl
+
 lemma prob_output.def (oa : oracle_comp spec α) (x : α) : ⁅= x | oa⁆ = ⁅oa⁆ x := rfl
 
 lemma eval_dist.prob_output_ext_iff {oa : oracle_comp spec α} {oa' : oracle_comp spec' α} :

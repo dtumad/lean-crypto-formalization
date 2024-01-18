@@ -86,6 +86,12 @@ begin
       support_bind, support_query, set.mem_univ] }
 end
 
+lemma mem_support_of_mem_support_eval_dist {oa : oracle_comp spec α} {x : α}
+  (hx : x ∈ ⁅oa⁆.support) : x ∈ oa.support := by rwa [← support_eval_dist]
+
+lemma mem_support_eval_dist_of_mem_support {oa : oracle_comp spec α} {x : α}
+  (hx : x ∈ oa.support) : x ∈ ⁅oa⁆.support := by rwa [support_eval_dist] 
+
 /-- The support of the `pmf` associated to a computation is the coercion of its `fin_support`. -/
 lemma support_eval_dist_eq_fin_support [decidable_eq α] : ⁅oa⁆.support = ↑oa.fin_support :=
 (support_eval_dist oa).trans (coe_fin_support oa).symm
