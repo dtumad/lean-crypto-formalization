@@ -164,7 +164,7 @@ by simp only [fin_support_uniform_select_vector, vector.mem_iff_nth,
 lemma fin_support_uniform_select_vector_cons :
   ($ᵛ (x ::ᵥ v)).fin_support = {x} ∪ ($ᵛ v).fin_support :=
 by rw [fin_support_eq_iff_support_eq_coe, support_uniform_select_vector_cons,
-  finset.coe_union, coe_fin_support_eq_support, finset.coe_singleton]
+  finset.coe_union, coe_fin_support, finset.coe_singleton]
 
 lemma fin_support_uniform_select_vector_singleton (v : vector α 1) :
   ($ᵛ v).fin_support = {v.head} := by rw [fin_support_eq_iff_support_eq_coe,

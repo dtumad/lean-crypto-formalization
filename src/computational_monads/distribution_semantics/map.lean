@@ -30,7 +30,7 @@ mem_support_bind_return_iff oa f y
 @[simp] lemma fin_support_map [decidable_eq α] [decidable_eq β] :
   (f <$> oa).fin_support = oa.fin_support.image f :=
 by rw [fin_support_eq_iff_support_eq_coe, finset.coe_image,
-  support_map, coe_fin_support_eq_support]
+  support_map, coe_fin_support]
 
 lemma mem_fin_support_map_iff [decidable_eq α] [decidable_eq β] :
   y ∈ (f <$> oa).fin_support ↔ ∃ x ∈ oa.fin_support, f x = y :=
@@ -45,6 +45,12 @@ end support
 
 section eval_dist
 
+end eval_dist
+
+section prob_output
+
+-- TODO: We should actually make these into simp lemmas, with good priorities.
+
 @[simp] lemma eval_dist_map : ⁅f <$> oa⁆ = ⁅oa⁆.map f := eval_dist_bind oa (pure ∘ f)
 
 lemma prob_output_map_eq_tsum [decidable_eq β] :
@@ -56,7 +62,7 @@ lemma prob_output_map_eq_tsum_indicator :
 prob_output_bind_return_eq_tsum_indicator oa f y
 
 lemma prob_output_map_eq_sum [fintype α] [decidable_eq β] :
-  ⁅= y | f <$> oa⁆ = ∑ x, if y = f x then ⁅oa⁆ x else 0 :=
+  ⁅= y | f <$> oa⁆ = ∑ x, if y = f x then ⁅= x | oa⁆ else 0 :=
 prob_output_bind_return_eq_sum oa f y
 
 lemma prob_output_map_eq_sum_indicator [fintype α] :
@@ -64,17 +70,12 @@ lemma prob_output_map_eq_sum_indicator [fintype α] :
 prob_output_bind_return_eq_sum_indicator oa f y
 
 lemma prob_output_map_eq_sum_fin_support [decidable_eq α] [decidable_eq β] :
-  ⁅= y | f <$> oa⁆ = ∑ x in oa.fin_support, if y = f x then ⁅oa⁆ x else 0 :=
+  ⁅= y | f <$> oa⁆ = ∑ x in oa.fin_support, if y = f x then ⁅= x | oa⁆ else 0 :=
 prob_output_bind_return_eq_sum_fin_support oa f y
 
 lemma prob_output_map_eq_sum_fin_support_indicator [decidable_eq α] :
   ⁅= y | f <$> oa⁆ = ∑ x in oa.fin_support, (f ⁻¹' {y}).indicator ⁅oa⁆ x :=
 prob_output_bind_return_eq_sum_fin_support_indicator oa f y
-
-end eval_dist
-
-section prob_output
-
 
 end prob_output
 

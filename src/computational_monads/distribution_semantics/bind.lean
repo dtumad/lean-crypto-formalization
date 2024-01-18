@@ -60,7 +60,7 @@ section support
 
 end support
 
-section eval_dist
+section prob_output
 
 /-- The probability of `oa >>= ob` returning `y` is the sum over all `x` of the probability
 of getting `y` from `ob x`, weighted by the probability of getting `x` from `oa`. -/
@@ -79,7 +79,8 @@ lemma prob_output_bind_eq_sum (y : β) [fintype α] :
 by simpa only [prob_output_bind_eq_tsum]
   using tsum_eq_sum (λ x hx, (hx $ finset.mem_univ x).elim)
 
-/-- Express the probability of getting `y` from `oa >>= ob` as a sum over `oa.fin_support`. -/
+/-- Express the probability of getting `y` from `oa >>= ob` as a sum over `oa.fin_support`.
+TODO: make this the default as `prob_output_bind_eq_sum`, that version can use a tick mark. -/
 lemma prob_output_bind_eq_sum_fin_support [decidable_eq α] [decidable_eq β] (y : β) :
   ⁅= y | oa >>= ob⁆ = ∑ x in oa.fin_support, ⁅= x | oa⁆ * ⁅= y | ob x⁆ :=
 (prob_output_bind_eq_tsum oa ob y).trans
@@ -92,7 +93,7 @@ lemma prob_output_bind_eq_sum_of_support_subset (y : β) (s : finset α) (hs : o
 (prob_output_bind_eq_tsum oa ob y).trans (tsum_eq_sum (λ x hx,
   (prob_output_eq_zero (λ h, hx (finset.mem_coe.1 (hs h)))).symm ▸ (zero_mul _)))
 
-end eval_dist
+end prob_output
 
 section prob_event
 
@@ -109,7 +110,7 @@ lemma prob_event_bind_eq_sum [fintype α] (e' : set β) :
   ⁅e' | oa >>= ob⁆ = ∑ x, ⁅= x | oa⁆ * ⁅e' | ob x⁆ :=
 by simpa only [prob_event_bind_eq_tsum] using tsum_eq_sum (λ x hx, (hx $ finset.mem_univ x).elim)
 
-lemma prob_event_bind_eq_sum_fin_support [decidable_eq α] [decidable_eq β] (e' : set β) :
+lemma prob_event_bind_eq_sum_fin_support [decidable_eq α] (e' : set β) :
   ⁅e' | oa >>= ob⁆ = ∑ x in oa.fin_support, ⁅= x | oa⁆ * ⁅e' | ob x⁆ :=
 (prob_event_bind_eq_tsum _ _ _).trans (tsum_eq_sum (λ x h, by simp [prob_output_eq_zero' h]))
 

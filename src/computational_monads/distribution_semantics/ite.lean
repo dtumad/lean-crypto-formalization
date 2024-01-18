@@ -214,7 +214,7 @@ variables (f g : α → β) (y : β)
   (do {x ← oa, if p x then return (f x) else return (g x)}).fin_support =
     ((oa.fin_support.filter p).image f) ∪ ((oa.fin_support.filter (not ∘ p)).image g) :=
 by simp only [fin_support_eq_iff_support_eq_coe, support_bind_ite_return,
-  finset.coe_union, finset.coe_image, finset.coe_filter, coe_fin_support_eq_support]
+  finset.coe_union, finset.coe_image, finset.coe_filter, coe_fin_support]
 
 lemma prob_output_bind_ite_return [decidable_eq β] :
   ⁅= y | do {x ← oa, if p x then return (f x) else return (g x)}⁆ =

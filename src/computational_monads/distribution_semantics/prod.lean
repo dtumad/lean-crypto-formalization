@@ -3,7 +3,7 @@ Copyright (c) 2022 Devon Tuma. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
-import computational_monads.distribution_semantics.tactics.push_map_dist_equiv
+import computational_monads.distribution_semantics.seq
 import computational_monads.distribution_semantics.mprod
 
 /-!
@@ -21,15 +21,44 @@ open_locale big_operators ennreal
 
 variables {α β γ δ : Type} {spec spec' : oracle_spec}
 
+
+lemma prob_event_seq_map_prod_mk (oa : oracle_comp spec α) (ob : oracle_comp spec β)
+  (e : set (α × β)) :
+  ⁅e | prod.mk <$> oa <*> ob⁆ =
+    ∑' z, e.indicator (λ z, ⁅= z.1 | oa⁆ * ⁅= z.2 | ob⁆) z :=
+begin
+  rw [prob_event_eq_tsum_indicator],
+  refine tsum_congr (λ z, _),
+  by_cases hz : z ∈ e,
+  { simp only [set.indicator_of_mem hz],
+    refine prob_output_seq_map_eq_mul oa ob z.1 z.2
+      (λ x hx y hy, eq_comm.trans prod.eq_iff_fst_eq_snd_eq) },
+  { simp only [set.indicator_of_not_mem hz] }
+end
+
+
+lemma map_return_seq_return (f : α → β → γ) (a : α) (b : β) :
+  f <$> (return a : oracle_comp spec α) <*> return b = return (f a b) := rfl
+
+@[simp] lemma map_seq_prod_mk_eta (z : α × β) :
+  prod.mk <$> return z.1 <*> return z.2
+    = (return z : oracle_comp spec (α × β)) :=
+begin
+  rw [map_return, oracle_comp.seq_return],
+  simp only [map_pure, seq_pure, mk.eta],
+end
+
 @[simp] lemma prob_output_prod_return (z z' : α × β) :
   ⁅= z | (return z' : oracle_comp spec (α × β))⁆ =
     ⁅= z.1 | (return z'.1 : oracle_comp spec α)⁆ *
       ⁅= z.2 | (return z'.2 : oracle_comp spec β)⁆ :=
 begin
-  by_cases hz : z = z',
-  { simp only [hz, prob_output_return_self, mul_one] },
-  { simpa only [prob_output_return_of_ne _ hz, zero_eq_mul,
-      prob_output_return_eq_zero_iff, eq_iff_fst_eq_snd_eq, not_and_distrib] using hz }
+  rw [← map_seq_prod_mk_eta z', ← @prod.mk.eta _ _ z],
+  sorry
+  -- by_cases hz : z = z',
+  -- { simp only [hz, prob_output_return_self, mul_one] },
+  -- { simpa only [prob_output_return_of_ne _ hz, zero_eq_mul,
+  --     prob_output_return_eq_zero_iff, eq_iff_fst_eq_snd_eq, not_and_distrib] using hz }
 end
 
 lemma prob_output_return_prod_mk_fst (x x' : α) (y : β) :

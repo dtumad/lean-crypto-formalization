@@ -10,6 +10,8 @@ import control.applicative
 
 This file defines a `mprod` function for running two monads independently,
 collection their results in a product type
+
+TODO!!: I think it's better to rapjlace this with `prod.mk <$> oa <*> ob`
 -/
 
 universes u v

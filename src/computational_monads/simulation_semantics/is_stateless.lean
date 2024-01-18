@@ -96,7 +96,7 @@
 -- -- --   (so.answer_query i t).fin_support.preimage fst
 -- -- --     (λ x hx y hy h, (eq_iff_fst_eq_snd_eq.2 ⟨h, state_elim' so x.2 y.2⟩)) :=
 -- -- -- by rw [fin_support_eq_iff_support_eq_coe, support_apply, finset.coe_preimage,
--- -- --   coe_fin_support_eq_support]
+-- -- --   coe_fin_support]
 
 -- -- -- @[simp] lemma eval_dist_apply : ⁅so i (t, s)⁆ =
 -- -- --   (⁅so.answer_query i t⁆ ×ₘ (pmf.pure so.default_state)) :=
@@ -215,7 +215,7 @@
 -- -- --   (simulate so oa s).fin_support = oa.fin_support ×ˢ {so.default_state} :=
 -- -- -- begin
 -- -- --   rw [fin_support_eq_iff_support_eq_coe, finset.coe_product, finset.coe_singleton,
--- -- --     coe_fin_support_eq_support, support_simulate_eq_support so oa _ (λ i t, _)],
+-- -- --     coe_fin_support, support_simulate_eq_support so oa _ (λ i t, _)],
 -- -- --   simpa only [fin_support_eq_iff_support_eq_coe, finset.coe_univ] using h i t
 -- -- -- end
 

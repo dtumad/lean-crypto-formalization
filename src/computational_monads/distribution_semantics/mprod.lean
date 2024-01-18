@@ -46,7 +46,7 @@ variables [decidable_eq α] [decidable_eq β]
 
 @[simp] lemma fin_support_mprod : (oa ×ₘ ob).fin_support = oa.fin_support ×ˢ ob.fin_support :=
 by simp only [fin_support_eq_iff_support_eq_coe, support_mprod,
-  finset.coe_product, coe_fin_support_eq_support]
+  finset.coe_product, coe_fin_support]
 
 lemma mem_fin_support_mprod_iff : x ∈ (oa ×ₘ ob).fin_support ↔
   x.1 ∈ oa.fin_support ∧ x.2 ∈ ob.fin_support :=

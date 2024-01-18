@@ -28,7 +28,7 @@ lemma return_bind_dist_equiv (a : α) (oa : α → oracle_comp spec β) :
   (ob : α → oracle_comp spec β) (oc : β → oracle_comp spec γ) :
   oa >>= (λ x, ob x >>= oc) ≃ₚ oa >>= ob >>= oc := by rw [bind_assoc]
 
-section bind_bind_dist_equiv_comm
+section bind_bind_comm
 
 variables (oa : oracle_comp spec α) (ob : oracle_comp spec β)
   (oc : α → β → oracle_comp spec γ)
@@ -52,13 +52,11 @@ lemma prob_output_bind_bind_comm (z : γ) : ⁅= z | do {a ← oa, b ← ob, oc 
 lemma prob_event_bind_bind_comm (e : set γ) : ⁅e | do {a ← oa, b ← ob, oc a b}⁆ =
   ⁅e | do {b ← ob, a ← oa, oc a b}⁆ := by pairwise_dist_equiv
 
-end bind_bind_dist_equiv_comm
+end bind_bind_comm
 
 section bind_return
 
 variables (oa : oracle_comp spec α) (f : α → β) (y : β) (e' : set β)
-
-section support
 
 @[simp] lemma support_bind_return : (oa >>= λ x, return (f x)).support = f '' oa.support :=
 calc (oa >>= λ x, return (f x)).support = ⋃ x ∈ oa.support, {f x} :
@@ -73,15 +71,11 @@ by simp only [support_bind_return, set.mem_image, exists_prop]
 @[simp] lemma fin_support_bind_return [decidable_eq α] [decidable_eq β] :
   (oa >>= λ a, return (f a)).fin_support = oa.fin_support.image f :=
 by rw [fin_support_eq_iff_support_eq_coe, support_bind_return,
-  finset.coe_image, coe_fin_support_eq_support]
+  finset.coe_image, coe_fin_support]
 
 lemma mem_fin_support_bind_return_iff [decidable_eq α] [decidable_eq β] :
   y ∈ (oa >>= λ a, return (f a)).fin_support ↔ ∃ x ∈ oa.fin_support, f x = y :=
 by simp only [fin_support_bind_return, finset.mem_image]
-
-end support
-
-section eval_dist
 
 @[simp] lemma eval_dist_bind_return : ⁅oa >>= λ x, return (f x)⁆ = ⁅oa⁆.map f :=
 by simp_rw [eval_dist_bind, eval_dist_return, pmf.bind_pure_comp]
@@ -120,10 +114,6 @@ lemma prob_output_bind_return_eq_sum_fin_support_indicator [decidable_eq α] :
 (prob_output_bind_return_eq_tsum_indicator oa f y).trans
   (tsum_eq_sum (λ x hx, set.indicator_apply_eq_zero.2 (λ h, prob_output_eq_zero' hx)))
 
-end eval_dist
-
-section prob_event
-
 @[simp] lemma prob_event_bind_return : ⁅e' | oa >>= λ a, return (f a)⁆ = ⁅f ⁻¹' e' | oa⁆ :=
 begin
   rw [prob_event_bind_eq_tsum, prob_event_eq_tsum_indicator],
@@ -133,8 +123,6 @@ end
 lemma prob_event_bind_return' (p : β → Prop) :
   ⁅p | oa >>= λ a, return (f a)⁆ = ⁅p ∘ f | oa⁆ :=
 prob_event_bind_return oa f p
-
-end prob_event
 
 end bind_return
 

@@ -12,7 +12,7 @@ This file gives an alternative definition of the support of an `oracle_comp`.
 Instead of a `set` as in `oracle_comp.support` we introduce `oracle_comp.fin_support`,
 which gives the support as a `finset`, in a way that is compatible with `oracle_comp.support`.
 The resulting `finset` is equal to `oracle_comp.support` when coerced to a `set`,
-see `oracle_comp.coe_fin_support_eq_support` and `oracle_comp.fin_support_eq_to_finset_support`.
+see `oracle_comp.coe_fin_support` and `oracle_comp.fin_support_eq_to_finset_support`.
 -/
 
 namespace oracle_comp
@@ -47,34 +47,34 @@ lemma mem_fin_support_of_mem_support {oa : oracle_comp spec α} {x : α}
 lemma fin_support_eq_to_finset : oa.fin_support = oa.support.to_finset :=
 finset.ext (λ x, by simp only [mem_fin_support_iff_mem_support, set.mem_to_finset])
 
-@[simp] lemma coe_fin_support_eq_support : ↑oa.fin_support = oa.support :=
+@[simp] lemma coe_fin_support : ↑oa.fin_support = oa.support :=
 set.ext (λ a, (mem_fin_support_iff_mem_support oa a))
 
 lemma fin_support_eq_iff_support_eq_coe : oa.fin_support = s ↔ oa.support = ↑s :=
-by rw [← coe_fin_support_eq_support, finset.coe_inj]
+by rw [← coe_fin_support, finset.coe_inj]
 
 lemma eq_fin_support_iff_coe_eq_support : s = oa.fin_support ↔ ↑s = oa.support :=
-by rw [← coe_fin_support_eq_support, finset.coe_inj]
+by rw [← coe_fin_support, finset.coe_inj]
 
 lemma fin_support_eq_fin_support_iff_support_eq_support (oa' : oracle_comp spec' α) :
   oa.fin_support = oa'.fin_support ↔ oa.support = oa'.support :=
-by rw [fin_support_eq_iff_support_eq_coe, coe_fin_support_eq_support]
+by rw [fin_support_eq_iff_support_eq_coe, coe_fin_support]
 
 lemma fin_support_eq_fin_support_of_support_eq_support (oa' : oracle_comp spec' α)
   (h : oa.support = oa'.support) : oa.fin_support = oa'.fin_support :=
 (fin_support_eq_fin_support_iff_support_eq_support oa oa').2 h
 
 lemma fin_support_subset_iff_support_subset_coe : oa.fin_support ⊆ s ↔ oa.support ⊆ ↑s :=
-by rw [← finset.coe_subset, coe_fin_support_eq_support]
+by rw [← finset.coe_subset, coe_fin_support]
 
 lemma subset_fin_support_iff_coe_subset_support : s ⊆ oa.fin_support ↔ ↑s ⊆ oa.support :=
-by rw [← finset.coe_subset, coe_fin_support_eq_support]
+by rw [← finset.coe_subset, coe_fin_support]
 
 lemma support_subset_coe_fin_support : oa.support ⊆ ↑oa.fin_support :=
-by rw [coe_fin_support_eq_support oa]
+by rw [coe_fin_support oa]
 
 lemma coe_fin_support_subset_support : ↑oa.fin_support ⊆ oa.support :=
-by rw [coe_fin_support_eq_support oa]
+by rw [coe_fin_support oa]
 
 end support
 
@@ -95,7 +95,7 @@ lemma fin_support_query_bind' [decidable_eq α] (i : spec.ι) (t : spec.domain i
   (ob : α → oracle_comp spec β) : (oa >>= ob).fin_support =
   finset.bUnion oa.fin_support (λ a, (ob a).fin_support) :=
 by simp only [fin_support_eq_iff_support_eq_coe, support_bind,
-  finset.coe_bUnion, coe_fin_support_eq_support]
+  finset.coe_bUnion, coe_fin_support]
 
 @[simp] lemma fin_support_bind' [decidable_eq α] [decidable_eq β] (oa : oracle_comp spec α)
   (ob : α → oracle_comp spec β) : (bind' α β oa ob).fin_support =

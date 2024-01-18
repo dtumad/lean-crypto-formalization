@@ -96,7 +96,7 @@ lemma fin_support_simulate'_eq_fin_support [decidable_eq α] [decidable_eq S]
 begin
   rw [fin_support_eq_fin_support_iff_support_eq_support],
   refine support_simulate'_eq_support oa s (λ i t s, _),
-  simpa only [finset.coe_image, coe_fin_support_eq_support, finset.coe_univ] using
+  simpa only [finset.coe_image, coe_fin_support, finset.coe_univ] using
     (congr_arg (λ s, ↑s : finset (spec.range i) → set (spec.range i)) (h i t s)),
 end
 
@@ -190,7 +190,7 @@ lemma fin_support_simulate'_eq_fin_support_simulate'
   (h : ∀ i t s s', (so i (t, s)).fin_support.image fst = (so' i (t, s')).fin_support.image fst) :
   (simulate' so oa s).fin_support = (simulate' so' oa s').fin_support :=
 fin_support_eq_fin_support_of_support_eq_support _ _ (support_simulate'_eq_support_simulate' oa s
-  s' (λ i t s s', by simpa only [finset.coe_image, coe_fin_support_eq_support]
+  s' (λ i t s s', by simpa only [finset.coe_image, coe_fin_support]
   using congr_arg (λ s, (↑s : set (spec.range i))) (h i t s s')))
 
 end simulate'_eq_simulate'

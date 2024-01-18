@@ -88,7 +88,7 @@ end
 
 /-- The support of the `pmf` associated to a computation is the coercion of its `fin_support`. -/
 lemma support_eval_dist_eq_fin_support [decidable_eq α] : ⁅oa⁆.support = ↑oa.fin_support :=
-(support_eval_dist oa).trans (coe_fin_support_eq_support oa).symm
+(support_eval_dist oa).trans (coe_fin_support oa).symm
 
 @[simp] lemma eval_dist_apply_eq_zero_iff : ⁅oa⁆ x = 0 ↔ x ∉ oa.support :=
 by rw [pmf.apply_eq_zero_iff, support_eval_dist]

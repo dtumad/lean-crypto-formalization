@@ -25,9 +25,14 @@ section seq
 
 variables (og : oracle_comp spec (α → β)) (oa : oracle_comp spec α)
 
-@[simp] lemma return_seq_eq_map (f : α → β) : return f <*> oa = f <$> oa := rfl
+@[simp] protected lemma return_seq_eq_map (f : α → β) : return f <*> oa = f <$> oa := rfl
 
 lemma return_seq_dist_equiv_map (f : α → β ) : return f <*> oa ≃ₚ f <$> oa := dist_equiv.rfl
+
+protected lemma seq_return (a : α) : og <*> return a = (λ g : α → β, g a) <$> og := seq_pure og a
+
+lemma seq_return_dist_equiv (a : α) : og <*> return a ≃ₚ (λ g : α → β, g a) <$> og :=
+dist_equiv_of_eq (seq_pure og a)
 
 protected lemma seq_eq_bind_map : (og <*> oa) = (og >>= λ g, g <$> oa) := rfl
 
@@ -40,24 +45,33 @@ by simp only [oracle_comp.seq_eq_bind_map, support_bind, support_map]
   (og <*> oa).fin_support = og.fin_support.bUnion (λ g, oa.fin_support.image g) :=
 by simp [fin_support_eq_iff_support_eq_coe, mem_fin_support_iff_mem_support]
 
-lemma eval_dist_seq : ⁅og <*> oa⁆ = ⁅og⁆.bind (λ g, ⁅oa⁆.map g) :=
+lemma eval_dist_seq' : ⁅og <*> oa⁆ = ⁅og⁆.bind (λ g, ⁅oa⁆.map g) :=
 by simp [oracle_comp.seq_eq_bind_map]
 
-@[simp] lemma eval_dist_seq' : ⁅og <*> oa⁆ = ⁅og⁆.seq ⁅oa⁆ := eval_dist_seq og oa
-
-@[simp] lemma prob_output_seq_eq_tsum [decidable_eq β] (y : β) :
-  ⁅= y | og <*> oa⁆ = ∑' (g : α → β) x, if y = g x then ⁅= g | og⁆ * ⁅= x | oa⁆ else 0 :=
-by simp only [oracle_comp.seq_eq_bind_map, prob_output_bind_eq_tsum, prob_output_map_eq_tsum,
-  ← ennreal.tsum_mul_left, eval_dist_apply_eq_prob_output, mul_ite, mul_zero]
+@[simp] lemma eval_dist_seq : ⁅og <*> oa⁆ = ⁅og⁆.seq ⁅oa⁆ := eval_dist_seq' og oa
 
 lemma prob_output_seq_eq_tsum_indicator (y : β) :
   ⁅= y | og <*> oa⁆ = ∑' (g : α → β) x, ⁅= g | og⁆ * (g ⁻¹' {y}).indicator ⁅oa⁆ x :=
 by simp only [oracle_comp.seq_eq_bind_map, prob_output_bind_eq_tsum, ← ennreal.tsum_mul_left,
   prob_output_map_eq_tsum_indicator]
 
+@[simp] lemma prob_output_seq_eq_tsum [decidable_eq β] (y : β) :
+  ⁅= y | og <*> oa⁆ = ∑' (g : α → β) x, if y = g x then ⁅= g | og⁆ * ⁅= x | oa⁆ else 0 :=
+by simp only [oracle_comp.seq_eq_bind_map, prob_output_bind_eq_tsum, prob_output_map_eq_tsum,
+  ← ennreal.tsum_mul_left, eval_dist_apply_eq_prob_output, mul_ite, mul_zero]
+
+@[simp] lemma prob_output_seq_eq_sum [decidable_eq α] [decidable_eq (α → β)] [decidable_eq β]
+  (y : β) : ⁅= y | og <*> oa⁆ = ∑ g in og.fin_support,
+    ∑ x in oa.fin_support, if y = g x then ⁅= g | og⁆ * ⁅= x | oa⁆ else 0 :=
+by simp only [oracle_comp.seq_eq_bind_map, prob_output_bind_eq_sum_fin_support,
+  prob_output_map_eq_sum_fin_support, finset.mul_sum, mul_ite, mul_zero]
+
+-- TODO: naming conventions on lemmas below
+
 @[simp] lemma prob_event_seq (e : set β) : ⁅e | og <*> oa⁆ = ∑' g, ⁅= g | og⁆ * ⁅g ⁻¹' e | oa⁆ :=
 by simp [oracle_comp.seq_eq_bind_map, prob_event_bind_eq_tsum]
 
+/-- TODO: Really seems like defaulting to prop will be nicer with stuff like this. -/
 lemma prob_event_seq' (p : β → Prop) : ⁅p | og <*> oa⁆ = ∑' g, ⁅= g | og⁆ * ⁅p ∘ g | oa⁆ :=
 prob_event_seq og oa p
 
@@ -74,33 +88,63 @@ end seq
 
 section seq_map
 
-variables (oa oa' : oracle_comp spec α) (ob ob' : oracle_comp spec β)
+variables (oa oa' : oracle_comp spec α) (ob ob' : oracle_comp spec β) (f : α → β → γ)
 
-lemma seq_map_eq_bind_bind (f : α → β → γ) :
-  f <$> oa <*> ob = do {x ← oa, y ← ob, return (f x y)} :=
+lemma seq_map_eq_bind_bind : f <$> oa <*> ob = do {x ← oa, y ← ob, return (f x y)} :=
 by simp only [seq_eq_bind_map, map_eq_bind_pure_comp, bind_assoc, pure_bind]
 
-@[simp] lemma support_seq_map (f : α → β → γ) : (f <$> oa <*> ob).support =
-  {z | ∃ x ∈ oa.support, ∃ y ∈ ob.support, f x y = z} :=
-by simp only [set.ext_iff, support_seq, support_map, set.mem_image, set.Union_exists,
-  set.bUnion_and', set.Union_Union_eq_right, exists_prop, set.mem_Union, set.mem_set_of_eq,
-  iff_self, implies_true_iff]
+@[simp] lemma support_seq_map : (f <$> oa <*> ob).support = set.image2 f oa.support ob.support :=
+by simp_rw [support_seq, support_map, set.mem_image, set.Union_exists, set.bUnion_and',
+  set.Union_Union_eq_right, set.image2, set.ext_iff, exists_and_distrib_left, set.mem_Union,
+  set.mem_image, exists_prop, set.mem_set_of_eq, iff_self, implies_true_iff]
+
+@[simp] lemma fin_support_seq_map [decidable_eq α] [decidable_eq β] [decidable_eq γ] :
+  (f <$> oa <*> ob).fin_support = finset.image₂ f oa.fin_support ob.fin_support :=
+by simp_rw [fin_support_eq_iff_support_eq_coe, finset.coe_image₂, coe_fin_support, support_seq_map]
+
+lemma eval_dist_seq_map : ⁅f <$> oa <*> ob⁆ = (⁅oa⁆.map f).seq ⁅ob⁆ :=
+by rw [eval_dist_seq, eval_dist_map]
+
+/-- TODO: maybe defaulting to something like this is better than using indicator? -/
+@[simp] lemma prob_output_seq_map_eq_tsum' (z : γ) :
+  ⁅= z | f <$> oa <*> ob⁆ = ∑' x y, ⁅= x | oa⁆ * ⁅= y | ob⁆ * ⁅= z | return' !spec! (f x y)⁆ :=
+by simp_rw [seq_map_eq_bind_bind, prob_output_bind_eq_tsum, ← ennreal.tsum_mul_left, mul_assoc]
+
+@[simp] lemma prob_output_seq_map_eq_tsum [decidable_eq γ] (z : γ) :
+  ⁅= z | f <$> oa <*> ob⁆ = ∑' x y, if z = f x y then ⁅= x | oa⁆ * ⁅= y | ob⁆ else 0 :=
+by simp_rw [prob_output_seq_map_eq_tsum', prob_output_return, mul_boole]
+
+@[simp] lemma prob_output_seq_map_eq_sum [decidable_eq α] [decidable_eq β]
+  [decidable_eq γ] (z : γ) : ⁅= z | f <$> oa <*> ob⁆ = ∑ x in oa.fin_support,
+    ∑ y in ob.fin_support, if z = f x y then ⁅= x | oa⁆ * ⁅= y | ob⁆ else 0 :=
+by simp_rw [seq_map_eq_bind_bind, prob_output_bind_eq_sum_fin_support, finset.mul_sum,
+  prob_output_return, mul_ite, mul_one, mul_zero]
+
+@[simp] lemma prob_event_seq_map_eq_tsum (e : set γ) [decidable_pred (∈ e)] :
+  ⁅e | f <$> oa <*> ob⁆ = ∑' x y, if f x y ∈ e then ⁅= x | oa⁆ * ⁅= y | ob⁆ else 0 :=
+by simp_rw [seq_map_eq_bind_bind, prob_event_bind_eq_tsum, ← ennreal.tsum_mul_left,
+  prob_event_return, mul_ite, mul_one, mul_zero]
+
+@[simp] lemma prob_event_seq_map_eq_sum [decidable_eq α] [decidable_eq β]
+  (e : set γ) [decidable_pred (∈ e)] : ⁅e | f <$> oa <*> ob⁆ = ∑ x in oa.fin_support,
+    ∑ y in ob.fin_support, if f x y ∈ e then ⁅= x | oa⁆ * ⁅= y | ob⁆ else 0 :=
+by simp_rw [seq_map_eq_bind_bind, prob_event_bind_eq_sum_fin_support, finset.mul_sum,
+  prob_event_return, mul_ite, mul_one, mul_zero]
 
 section comm
 
-@[pairwise_dist_equiv] lemma seq_map_dist_equiv_comm_swap (f : α → β → γ) :
+@[pairwise_dist_equiv] lemma seq_map_dist_equiv_comm_swap :
   f <$> oa <*> ob ≃ₚ f.swap <$> ob <*> oa :=
 by simp only [seq_map_eq_bind_bind, bind_bind_dist_equiv_comm]
 
 lemma seq_map_dist_equiv_comm (f : α → α → β) (hf : ∀ x x', f x x' = f x' x) :
   f <$> oa <*> oa' ≃ₚ f <$> oa' <*> oa :=
-begin
-  rw_dist_equiv [seq_map_dist_equiv_comm_swap],
-  have : f.swap = f := by simp only [function.funext_iff, function.swap, hf, eq_self_iff_true],
-  rw [this],
-end
+have f.swap = f := by simp only [function.funext_iff, function.swap, hf, eq_self_iff_true],
+(seq_map_dist_equiv_comm_swap oa oa' f).trans (by rw [this])
 
 end comm
+
+section uncurry
 
 lemma prob_event_seq_map_eq_prob_event_preimage_uncurry (f : α → β → γ) (e : set γ) :
   ⁅e | f <$> oa <*> ob⁆ = ⁅(function.uncurry f) ⁻¹' e | prod.mk <$> oa <*> ob⁆ :=
@@ -110,32 +154,27 @@ lemma prob_event_seq_map_eq_prob_event_comp_uncurry (f : α → β → γ) (p : 
   ⁅p | f <$> oa <*> ob⁆ = ⁅p ∘ function.uncurry f | prod.mk <$> oa <*> ob⁆ :=
 by simpa only [← prob_event_map' _ (function.uncurry f), map_seq, map_map_eq_map_comp]
 
-lemma prob_output_seq_map_prod_mk {f : α → β → γ} {z : γ} (x : α) (y : β)
-  (h : f x y = z) (h' : ∀ x' ∈ oa.support, ∀ y' ∈ ob.support, f x' y' = z → x' = x ∧ y' = y):
+end uncurry
+
+section indep_eq_mul
+
+/-- If the results of the computations `oa` and `ob` are combined with some function `f`,
+and there exists unique `x` and `y` such that `f x y = z` (given as explicit arguments),
+then the probability of getting `z` as an output of `f <$> oa <*> ob`
+is the product of probabilities of getting `x` and `y` from `oa` and `ob` respectively. -/
+lemma prob_output_seq_map_eq_mul {f : α → β → γ} {z : γ} (x : α) (y : β)
+  (h : ∀ x' ∈ oa.support, ∀ y' ∈ ob.support, z = f x' y' ↔ x' = x ∧ y' = y):
   ⁅= z | f <$> oa <*> ob⁆ = ⁅= x | oa⁆ * ⁅= y | ob⁆ :=
 begin
-  rw [seq_map_eq_bind_bind],
-  refine trans (prob_output_bind_eq_single' _ _ z x _) _,
-  { simp only [support_bind_return, set.mem_image, forall_exists_index, and_imp],
-    exact λ x' hx' y' hy' hxy', (h' x' hx' y' hy' hxy').1 },
-  { by_cases hx : x ∈ oa.support,
-    { refine congr_arg (λ r, _ * r) (prob_output_bind_return_eq_single' _ _ _ y h _),
-      exact λ y' hy' hxy', (h' x hx y' hy' hxy').2, },
-    { simp_rw [prob_output_eq_zero hx, zero_mul] } } 
-end
-
-lemma prob_event_seq_map_prod_mk (oa : oracle_comp spec α) (ob : oracle_comp spec β)
-  (e : set (α × β)) :
-  ⁅e | prod.mk <$> oa <*> ob⁆ =
-    ∑' z, e.indicator (λ z, ⁅= z.1 | oa⁆ * ⁅= z.2 | ob⁆) z :=
-begin
-  rw [prob_event_eq_tsum_indicator],
-  refine tsum_congr (λ z, _),
-  by_cases hz : z ∈ e,
-  { simp only [set.indicator_of_mem hz],
-    exact prob_output_seq_map_prod_mk oa ob z.1 z.2 prod.mk.eta
-      (λ x hx y hy h, prod.eq_iff_fst_eq_snd_eq.1 h) },
-  { simp only [set.indicator_of_not_mem hz] }
+  simp_rw [imp_forall_iff, ← and_imp, ← prod.forall'] at h,
+  haveI : decidable_eq γ := classical.dec_eq γ,
+  rw [prob_output_seq_map_eq_tsum, ← ennreal.tsum_prod],
+  refine trans (tsum_eq_single (x, y) (λ z' hz, _)) _,
+  { simp_rw [ite_eq_right_iff, mul_eq_zero, prob_output_eq_zero_iff, ← not_and_distrib],
+    refine imp_not_comm.1 (λ hz' hzf, hz _),
+    rw [← ((h z' hz').1 hzf).1, ← ((h z' hz').1 hzf).2, prod.mk.eta] },
+  { simp only [ite_eq_left_iff, zero_eq_mul, prob_output_eq_zero_iff, ← not_and_distrib],
+    refine mt (λ hxy, (h (x, y) hxy).2 ⟨rfl, rfl⟩) }
 end
 
 /-- If the results of the computations `oa` and `ob` are combined with some function `f`,
@@ -149,29 +188,20 @@ lemma prob_event_seq_map_eq_mul (oa : oracle_comp spec α) (ob : oracle_comp spe
   (h : ∀ x ∈ oa.support, ∀ y ∈ ob.support, f x y ∈ e ↔ x ∈ e1 ∧ y ∈ e2) :
   ⁅e | f <$> oa <*> ob⁆ = ⁅e1 | oa⁆ * ⁅e2 | ob⁆ :=
 begin
-  rw [prob_event_seq_map_eq_prob_event_preimage_uncurry, prob_event_seq_map_prod_mk],
-  simp_rw [prob_event_eq_tsum_indicator, ← ennreal.tsum_mul_right, ← ennreal.tsum_mul_left,
-    ← ennreal.tsum_prod],
+  haveI : decidable_pred (∈ e) := classical.dec_pred (∈ e),
+  haveI : decidable_pred (∈ e1) := classical.dec_pred (∈ e1),
+  haveI : decidable_pred (∈ e2) := classical.dec_pred (∈ e2),
+  simp_rw [prob_event_seq_map_eq_tsum, ← ennreal.tsum_prod, prob_event_eq_tsum_ite,
+    ← ennreal.tsum_mul_right, ← ennreal.tsum_mul_left, ← ennreal.tsum_prod, ite_mul,
+    zero_mul, mul_ite, mul_zero, ← ite_and],
   refine tsum_congr (λ z, _),
-  cases z with x y,
-  by_cases hxy : x ∈ oa.support ∧ y ∈ ob.support,
-  { specialize h x hxy.1 y hxy.2,
-    by_cases hpf : x ∈ e1 ∧ y ∈ e2,
-    { simp only [set.indicator_of_mem hpf.1, set.indicator_of_mem hpf.2,
-        set.indicator_apply_eq_self, set.mem_preimage, function.uncurry_apply_pair, h, hpf,
-        eval_dist_apply_eq_prob_output, true_and, not_true, is_empty.forall_iff] },
-    { refine or.elim (not_and_distrib.1 hpf) (λ hp, _) (λ hp, _);
-      simp only [set.indicator_of_not_mem hp, zero_mul, mul_zero, set.indicator_apply_eq_zero,
-        set.mem_preimage, function.uncurry_apply_pair, h, hpf, is_empty.forall_iff] } },
-  { simp_rw [not_and_distrib, ← prob_output_eq_zero_iff] at hxy,
-    cases hxy with hx hy,
-    { have : e1.indicator ⁅oa⁆ x = 0 := set.indicator_apply_eq_zero.2 (λ hx', hx),
-      simp only [this, hx, zero_mul, set.indicator_apply_eq_zero,
-        eq_self_iff_true, implies_true_iff]},
-    { have : e2.indicator ⁅ob⁆ y = 0 := set.indicator_apply_eq_zero.2 (λ hy', hy),
-      simp only [this, hy, mul_zero, set.indicator_apply_eq_zero,
-        eq_self_iff_true, implies_true_iff] } }
+  by_cases hz : z.1 ∈ oa.support ∧ z.2 ∈ ob.support,
+  { simp only [h z.1 hz.1 z.2 hz.2] },
+  { cases (not_and_distrib.1 hz) with hz hz;
+    simp only [prob_output_eq_zero, hz, not_false_iff, zero_mul, mul_zero, if_t_t] }
 end
+
+end indep_eq_mul
 
 end seq_map
 

@@ -81,7 +81,7 @@ trans (simulate_dist_equiv_map_simulate so mask oa s').fin_support_eq (fin_suppo
     (simulate so oa (mask.symm s')).fin_support.preimage (prod.map id mask.symm) (λ z hz z' hz' h,
     by simpa only [prod.eq_iff_fst_eq_snd_eq, prod_map, embedding_like.apply_eq_iff_eq] using h) :=
 by simp only [fin_support_eq_iff_support_eq_coe, support_simulate_eq_preimage_support_simulate,
-  finset.coe_preimage, coe_fin_support_eq_support]
+  finset.coe_preimage, coe_fin_support]
 
 @[simp] lemma eval_dist_simulate_eq_map_support_simulate :
   ⁅simulate (so.mask_state mask) oa s'⁆ =
