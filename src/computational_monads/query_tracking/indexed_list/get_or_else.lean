@@ -67,7 +67,7 @@ begin
       nat.sub_eq_zero_of_le (il.one_le_get_count hi), list.head_append, ne.def,
       not_false_iff, drop_at_index_zero, if_false, if_true] },
   { by_cases hi' : i ∈ il'.active_oracles,
-    { simp only [hi', hi, apply_eq_nil _ hi, get_count_eq_zero _ hi, list.nil_append, if_true,
+    { simp only [hi', hi, apply_eq_nil hi, get_count_eq_zero _ hi, list.nil_append, if_true,
         apply_empty_iff, not_true, tsub_zero, if_false, mem_active_oracles_add_right _ _ hi'],
       refine trans _ (map_return_dist_equiv _ _).symm,
       simp only [drop_at_index_eq_self _ _ hi, prod.map_mk, id.def] },
@@ -112,7 +112,7 @@ lemma get_or_else_add_values_fresh_dist_equiv [inhabited (τ i)]
   (il.add_values ts).get_or_else i oa ≃ₚ return' !spec'! (ts.head, il.add_values ts.tail) :=
 begin
   refine trans (by apply get_or_else_add_values_dist_equiv) _,
-  simp [list.empty_iff_eq_nil, apply_eq_nil il hi, hts],
+  simp [list.empty_iff_eq_nil, apply_eq_nil hi, hts],
 end
 
 end indexed_list

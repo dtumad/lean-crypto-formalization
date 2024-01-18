@@ -146,8 +146,8 @@ begin
       finset.inf_eq_inter, finset.bot_eq_empty] at h,
     have : i ∉ qc'.active_oracles,
     from (λ hi', (finset.not_mem_empty i (h ▸ finset.mem_inter.2 ⟨hi, hi'⟩)).elim),
-    simp [apply_eq_nil _ this] },
-  { simp [apply_eq_nil _ hi, get_count_eq_zero _ hi] }
+    simp [apply_eq_nil this] },
+  { simp [apply_eq_nil hi, get_count_eq_zero _ hi] }
 end
 
 end canonically_ordered_add_monoid
