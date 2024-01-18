@@ -21,7 +21,6 @@ open_locale big_operators ennreal
 
 variables {α β γ δ : Type} {spec spec' : oracle_spec}
 
-
 lemma prob_event_seq_map_prod_mk (oa : oracle_comp spec α) (ob : oracle_comp spec β)
   (e : set (α × β)) :
   ⁅e | prod.mk <$> oa <*> ob⁆ =

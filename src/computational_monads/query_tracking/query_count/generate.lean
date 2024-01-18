@@ -109,42 +109,6 @@ begin
     pure_bind, of_list_nil, id_map],
 end
 
-protected lemma oracle_comp.seq_assoc (oa : oracle_comp spec α) (ob : oracle_comp spec (α → β))
-  (oc : oracle_comp spec (β → γ)) : oc <*> (ob <*> oa) = (∘) <$> oc <*> ob <*> oa :=
-by simp [seq_eq_bind_map, map_eq_bind_pure_comp, bind_assoc]
-
-lemma seq_seq_dist_equiv_comm (oa oa' : oracle_comp spec α) (ob : oracle_comp spec β)
-  (f : α → β → β) (hf : ∀ x ∈ oa.support, ∀ x' ∈ oa'.support, f x ∘ f x' = f x' ∘ f x) :
-  (f <$> oa') <*> (f <$> oa <*> ob) ≃ₚ (f <$> oa) <*> (f <$> oa' <*> ob) :=
-begin
-  simp only [seq_eq_bind_map, map_bind, map_map_eq_map_comp],
-  rw_dist_equiv [bind_bind_dist_equiv_comm],
-  refine bind_dist_equiv_bind_of_dist_equiv_right _ _ _ (λ g hg, _),
-  refine bind_dist_equiv_bind_of_dist_equiv_right _ _ _ (λ g' hg', _),
-  rw [mem_support_map_iff] at hg,
-  obtain ⟨x, hx, hg⟩ := hg,
-  induction hg,
-  rw [mem_support_map_iff] at hg',
-  obtain ⟨y, hy, hg'⟩ := hg',
-  induction hg',
-  specialize hf x hx y hy,
-  rw [hf],
-end
-
-lemma indexed_list.add_comm {τ : spec.ι → Type} {il il' : spec.indexed_list τ}
-  (h : disjoint il.active_oracles il'.active_oracles) : il + il' = il' + il :=
-begin
-  refine fun_like.ext_iff.2 (λ i, _),
-  by_cases hi : i ∈ il.active_oracles,
-  { simp only [indexed_list.add_apply, apply_eq_nil (finset.disjoint_left.1 h hi),
-      list.nil_append, list.append_nil] },
-  { simp only [indexed_list.add_apply, apply_eq_nil hi, list.nil_append, list.append_nil] }
-end
-
-lemma indexed_list.of_list_comm {τ : spec.ι → Type} {j j' : spec.ι} (hj : j ≠ j')
-  (xs : list (τ j)) (xs' : list (τ j')) : of_list xs + of_list xs' = of_list xs' + of_list xs :=
-indexed_list.add_comm (by cases xs; cases xs'; simp [hj])
-
 lemma generate_aux_perm_dist_equiv {js js' : list spec.ι} (hjs : js.nodup)
   (h : js ~ js') : generate_aux qc oa js ≃ₚ generate_aux qc oa js' :=
 begin
@@ -157,7 +121,7 @@ begin
     obtain ⟨xs, hxs, rfl⟩ := (mem_support_map_iff _ _ _).1 hil,
     obtain ⟨xs', hxs', rfl⟩ := (mem_support_map_iff _ _ _).1 hil',
     simp only [function.funext_iff, comp_add_left, add_left_inj, forall_const],
-    refine indexed_list.of_list_comm _ xs xs',
+    refine indexed_list.of_list_add_of_list_comm _ xs xs',
     rw [list.nodup_cons, list.mem_cons_iff, not_or_distrib] at hjs,
     exact ne.symm hjs.1.1 },
   { exact (hj1 hjs).trans (hj2 ((list.perm.nodup_iff h1).1 hjs)) }

@@ -86,6 +86,14 @@ prob_event_seq_eq_tsum_ite og oa p
 
 end seq
 
+section seq_assoc
+
+protected lemma oracle_comp.seq_assoc (oa : oracle_comp spec α) (ob : oracle_comp spec (α → β))
+  (oc : oracle_comp spec (β → γ)) : oc <*> (ob <*> oa) = (∘) <$> oc <*> ob <*> oa :=
+by simp [seq_eq_bind_map, map_eq_bind_pure_comp, bind_assoc]
+
+end seq_assoc
+
 section seq_map
 
 variables (oa oa' : oracle_comp spec α) (ob ob' : oracle_comp spec β) (f : α → β → γ)
@@ -130,19 +138,6 @@ by simp_rw [seq_map_eq_bind_bind, prob_event_bind_eq_tsum, ← ennreal.tsum_mul_
     ∑ y in ob.fin_support, if f x y ∈ e then ⁅= x | oa⁆ * ⁅= y | ob⁆ else 0 :=
 by simp_rw [seq_map_eq_bind_bind, prob_event_bind_eq_sum_fin_support, finset.mul_sum,
   prob_event_return, mul_ite, mul_one, mul_zero]
-
-section comm
-
-@[pairwise_dist_equiv] lemma seq_map_dist_equiv_comm_swap :
-  f <$> oa <*> ob ≃ₚ f.swap <$> ob <*> oa :=
-by simp only [seq_map_eq_bind_bind, bind_bind_dist_equiv_comm]
-
-lemma seq_map_dist_equiv_comm (f : α → α → β) (hf : ∀ x x', f x x' = f x' x) :
-  f <$> oa <*> oa' ≃ₚ f <$> oa' <*> oa :=
-have f.swap = f := by simp only [function.funext_iff, function.swap, hf, eq_self_iff_true],
-(seq_map_dist_equiv_comm_swap oa oa' f).trans (by rw [this])
-
-end comm
 
 section uncurry
 
@@ -204,5 +199,34 @@ end
 end indep_eq_mul
 
 end seq_map
+
+section comm
+
+variables (oa oa' : oracle_comp spec α) (ob ob' : oracle_comp spec β)
+
+@[pairwise_dist_equiv] lemma seq_map_dist_equiv_comm_swap (f : α → β → γ) :
+  f <$> oa <*> ob ≃ₚ f.swap <$> ob <*> oa :=
+by simp only [seq_map_eq_bind_bind, bind_bind_dist_equiv_comm]
+
+lemma seq_map_dist_equiv_comm (f : α → α → β) (hf : ∀ x x', f x x' = f x' x) :
+  f <$> oa <*> oa' ≃ₚ f <$> oa' <*> oa :=
+have f.swap = f := by simp only [function.funext_iff, function.swap, hf, eq_self_iff_true],
+(seq_map_dist_equiv_comm_swap oa oa' f).trans (by rw [this])
+
+lemma seq_seq_dist_equiv_comm (f : α → β → β)
+  (hf : ∀ x ∈ oa.support, ∀ x' ∈ oa'.support, f x ∘ f x' = f x' ∘ f x) :
+  (f <$> oa') <*> (f <$> oa <*> ob) ≃ₚ (f <$> oa) <*> (f <$> oa' <*> ob) :=
+begin
+  simp only [seq_eq_bind_map, map_bind, map_map_eq_map_comp],
+  rw_dist_equiv [bind_bind_dist_equiv_comm],
+  refine bind_dist_equiv_bind_of_dist_equiv_right _ _ _ (λ g hg, _),
+  refine bind_dist_equiv_bind_of_dist_equiv_right _ _ _ (λ g' hg', _),
+  rw [mem_support_map_iff] at hg hg',
+  obtain ⟨x, hx, rfl⟩ := hg,
+  obtain ⟨y, hy, rfl⟩ := hg',
+  rw [hf x hx y hy],
+end
+
+end comm
 
 end oracle_comp

@@ -12,6 +12,7 @@ This file defines a tactic `pairwise_dist_equiv` for working with and proving in
 `dist_equiv` between sequenced computations, by splitting the goal into line-by-line equivalences.
 
 TODO: Pass in custom names for new variables
+TODO: Should really curate the tagged lemmas more aggressivly for speed-up
 -/
 
 open interactive interactive.types
