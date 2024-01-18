@@ -29,7 +29,9 @@ variables {α β γ : Type} {spec spec' : oracle_spec}
 
 /-- Probability of a predicate `p` holding after running a computation `oa`.
 Defined in terms of the outer measure associated to the corresponding `pmf` by `eval_dist`.
-See `prob_event_eq_tsum` for an expression in terms of sums. -/
+See `prob_event_eq_tsum` for an expression in terms of sums.
+While a set `e : set α` can be used directly as the argument `p`,
+it's generally better to use `(∈ e)` as this aligns better with existing lemmas. -/
 noncomputable def prob_event (oa : oracle_comp spec α) (p : α → Prop) : ℝ≥0∞ :=
 ⁅oa⁆.to_outer_measure (p : set α)
 
@@ -92,6 +94,8 @@ section sums
 
 variable (p : α → Prop)
 
+section indicator
+
 /-- The probability of an event `p` as a sum over the output type, using `set.indicator`
 to filter out elements that don't satisfy `p x`. -/
 lemma prob_event_eq_tsum_indicator :
@@ -112,10 +116,6 @@ set of elements to the support of the computation (implicitly the probabilities 
 lemma prob_event_eq_tsum_indicator' : ⁅p | oa⁆ = ∑' x : α, {x | p x}.indicator ⁅oa⁆ x :=
 ⁅oa⁆.to_outer_measure_apply p
 
-lemma prob_event_mem_set_eq_tsum_indicator (e : set α) :
-  ⁅(∈ e) | oa⁆ = ∑' x, e.indicator ⁅oa⁆ x :=
-by rw [prob_event_eq_tsum_indicator', set.set_of_mem_eq]
-
 /-- If we have `decidable_eq` on the output type of a computation,
 we can write the probability of an event as a finite sum over the `fin_support` of the computation,
 using `set.indicator` to filter elements not in the event. -/
@@ -123,6 +123,10 @@ lemma prob_event_eq_sum_indicator [decidable_eq α] :
   ⁅p | oa⁆ = ∑ x in oa.fin_support, {x | p x}.indicator ⁅oa⁆ x :=
 trans (prob_event_eq_tsum_indicator' oa p) (tsum_eq_sum (λ x hx,
   set.indicator_apply_eq_zero.2 (λ h, prob_output_eq_zero' hx)))
+
+end indicator
+
+section subtype
 
 /-- The probability of an event `p` as a sum over all outputs `x` of `oa` that satisfy `p`,
 using a `subtype` in the domain to restrict the included probabilities. -/
@@ -134,9 +138,19 @@ to the support of the computation (implicitly the probabilities are still zero).
 lemma prob_event_eq_tsum_subtype' : ⁅p | oa⁆ = ∑' x : {x | p x}, ⁅= x | oa⁆ :=
 by rw [prob_event_eq_tsum_indicator', tsum_subtype, prob_output.def']
 
+/-- The probability of a result belonging to a set `e` written as a sum over possible outputs,
+using `e.indicator` to filter the elements not belonging to the set. -/
+lemma prob_event_mem_set_eq_tsum_subtype (e : set α) :
+  ⁅(∈ e) | oa⁆ = ∑' x : e, ⁅= x | oa⁆ :=
+by rw [prob_event_eq_tsum_subtype', set.set_of_mem_eq]
+
+end subtype
+
+section ite
+
 /-- If `p` is decidable, then we can write the probability of an event as a `tsum` over the
 entire output type, using an `ite` statement to exclude outputs not satisfying `p`. -/
-@[simp] lemma prob_event_eq_tsum_ite [decidable_pred p] :
+lemma prob_event_eq_tsum_ite [decidable_pred p] :
   ⁅p | oa⁆ = ∑' x : α, if p x then ⁅= x | oa⁆ else 0 :=
 trans (⁅oa⁆.to_outer_measure_apply p) (by simp_rw [set.indicator, set.mem_def, prob_output.def])
 
@@ -148,10 +162,12 @@ lemma prob_event_eq_sum_ite [decidable_eq α] [decidable_pred p] :
 trans (prob_event_eq_tsum_ite oa p) (tsum_eq_sum (λ x hx,
   ite_eq_right_iff.2 (λ _, prob_output_eq_zero' hx)))
 
+end ite
+
 /-- If we have `decidable_eq` on the output type and `decidable_pred` of the event,
 we can write the probability of an event as a finite sum over the `fin_support` of the computation,
 by filtering the computation's `fin_support` by the predicate. -/
-@[simp] lemma prob_event_eq_sum_filter [decidable_eq α] [decidable_pred p] :
+lemma prob_event_eq_sum_filter [decidable_eq α] [decidable_pred p] :
   ⁅p | oa⁆ = ∑ x in oa.fin_support.filter p, ⁅= x | oa⁆ :=
 trans (prob_event_eq_tsum_ite oa p) (trans (tsum_eq_sum (λ x hx, ite_eq_right_iff.2 (λ hpx,
   prob_output_eq_zero' (λ h, hx (finset.mem_filter.2 ⟨h, hpx⟩)))))
@@ -159,54 +175,39 @@ trans (prob_event_eq_tsum_ite oa p) (trans (tsum_eq_sum (λ x hx, ite_eq_right_i
 
 /-- The probability of an output belonging to a `finset` can be written as the sum
 of the probabilities of getting each element of the set from the computation. -/
-@[simp] lemma prob_event_mem_finset_eq_sum (s : finset α) :
+lemma prob_event_mem_finset_eq_sum (s : finset α) :
   ⁅(∈ s) | oa⁆ = ∑ x in s, ⁅= x | oa⁆ :=
 trans (prob_event_eq_tsum_indicator' oa (∈ s)) (trans (tsum_eq_sum ((λ x hx,
   set.indicator_of_not_mem hx _))) (finset.sum_congr rfl (λ x hx, set.indicator_of_mem hx ⁅oa⁆)))
 
 end sums
 
-section sets
-
-/-- The probability of a singleton set is just the `prob_output` of that element. -/
-lemma prob_event_mem_singleton_eq_prob_output (x : α) : ⁅(∈ ({x} : set α)) | oa⁆ = ⁅= x | oa⁆ :=
-by simp only [set.mem_singleton_iff, prob_event_eq_eq_prob_output']
-
-end sets
-
--- lemma prob_event_ext (h : ∀ x ∈ oa.support, x ∈ e ↔ x ∈ e') : ⁅e | oa⁆ = ⁅e' | oa⁆ :=
--- begin
---   rw [prob_event_eq_tsum_indicator, prob_event_eq_tsum_indicator],
---   refine tsum_congr (λ x, _),
---   by_cases hx : x ∈ oa.support,
---   { by_cases hx' : x ∈ e,
---     { simp only [hx', (h x hx).1 hx', set.indicator_of_mem, eval_dist_apply_eq_prob_output] },
---     { simp only [hx', mt ((h x hx).2) hx', set.indicator_of_not_mem, not_false_iff] } },
---   { rw [set.indicator_apply_eq_zero.2 (λ _, eval_dist_apply_eq_zero hx),
---       set.indicator_apply_eq_zero.2 (λ _, eval_dist_apply_eq_zero hx)] }
--- end
-
--- lemma prob_event_ext' (h : ∀ x ∈ oa.support, p x ↔ p' x) : ⁅p | oa⁆ = ⁅p' | oa⁆ :=
--- prob_event_ext oa p p' h
-
 section support
 
-/-- If two sets have the same intersection with the support of a computation,
-then they both have the same probability under `prob_event` -/
-lemma prob_event_eq_prob_event_of_inter_support_eq {e e'}
-  (h : e ∩ oa.support = e' ∩ oa.support) : ⁅e | oa⁆ = ⁅e' | oa⁆ :=
-pmf.to_outer_measure_apply_eq_of_inter_support_eq ⁅oa⁆ (by simpa only [support_eval_dist])
+-- lemma prob_event_eq_prob_event_of_forall_mem_support
 
-/-- Probability can be calculated on only the intersection of the set with the support. -/
-lemma prob_event_eq_prob_event_inter_support : ⁅e | oa⁆ = ⁅e ∩ oa.support | oa⁆ :=
-prob_event_eq_prob_event_of_inter_support_eq oa (by rw [set.inter_assoc, set.inter_self])
+-- /-- If two sets have the same intersection with the support of a computation,
+-- then they both have the same probability under `prob_event` -/
+-- lemma prob_event_eq_prob_event_of_inter_support_eq {e e'}
+--   (h : e ∩ oa.support = e' ∩ oa.support) : ⁅e | oa⁆ = ⁅e' | oa⁆ :=
+-- pmf.to_outer_measure_apply_eq_of_inter_support_eq ⁅oa⁆ (by simpa only [support_eval_dist])
 
-/-- Given a `finset` containing the `support` of some `oracle_comp`,
-  it suffices to take `finset.sum` over that instead of a `tsum` -/
-lemma prob_event_eq_sum_of_support_subset [decidable_pred e] (s : finset α)
-  (hs : oa.support ⊆ s) : ⁅e | oa⁆ = ∑ x in s, ite (x ∈ e) (⁅= x | oa⁆) 0 :=
-trans (prob_event_eq_tsum_ite oa e) (tsum_eq_sum (λ x hx,
-  by rw [prob_output_eq_zero (λ hx', hx $ finset.mem_coe.1 (hs hx')), if_t_t]))
+lemma prob_event_and_mem_support (p : α → Prop) : ⁅λ x, p x ∧ x ∈ oa.support | oa⁆ = ⁅p | oa⁆ :=
+prob_event_ext' oa (λ x hx, and_iff_left hx)
+
+lemma prob_event_mem_support_and (p : α → Prop) : ⁅λ x, x ∈ oa.support ∧ p x | oa⁆ = ⁅p | oa⁆ :=
+prob_event_ext' oa (λ x hx, and_iff_right hx)
+
+-- /-- Probability can be calculated on only the intersection of the set with the support. -/
+-- lemma prob_event_eq_prob_event_inter_support : ⁅e | oa⁆ = ⁅e ∩ oa.support | oa⁆ :=
+-- prob_event_eq_prob_event_of_inter_support_eq oa (by rw [set.inter_assoc, set.inter_self])
+
+-- /-- Given a `finset` containing the `support` of some `oracle_comp`,
+--   it suffices to take `finset.sum` over that instead of a `tsum` -/
+-- lemma prob_event_eq_sum_of_support_subset [decidable_pred e] (s : finset α)
+--   (hs : oa.support ⊆ s) : ⁅e | oa⁆ = ∑ x in s, ite (x ∈ e) (⁅= x | oa⁆) 0 :=
+-- trans (prob_event_eq_tsum_ite oa e) (tsum_eq_sum (λ x hx,
+--   by rw [prob_output_eq_zero (λ hx', hx $ finset.mem_coe.1 (hs hx')), if_t_t]))
 
 @[simp] lemma prob_event_eq_zero_iff_disjoint_support : ⁅e | oa⁆ = 0 ↔ disjoint oa.support e :=
 by rw [prob_event.def, pmf.to_outer_measure_apply_eq_zero_iff, support_eval_dist]
