@@ -25,7 +25,6 @@ open oracle_spec
 open_locale big_operators ennreal
 
 variables {α β γ : Type} {spec spec' : oracle_spec}
-  (oa : oracle_comp spec α)
 
 /-- Probability of a predicate `p` holding after running a computation `oa`.
 Defined in terms of the outer measure associated to the corresponding `pmf` by `eval_dist`.
@@ -37,26 +36,35 @@ noncomputable def prob_event (oa : oracle_comp spec α) (p : α → Prop) : ℝ�
 
 notation `⁅` p `|` oa `⁆` := prob_event oa p
 
-lemma prob_event.def' : prob_event oa = ⁅oa⁆.to_outer_measure := rfl
+lemma prob_event.def' (oa : oracle_comp spec α) : prob_event oa = ⁅oa⁆.to_outer_measure := rfl
 
-lemma prob_event.def (p : α → Prop) : ⁅p | oa⁆ = ⁅oa⁆.to_outer_measure p := rfl
+lemma prob_event.def (oa : oracle_comp spec α) (p : α → Prop) :
+  ⁅p | oa⁆ = ⁅oa⁆.to_outer_measure p := rfl
 
-lemma prob_event_eq_to_measure_apply (p : α → Prop) : ⁅p | oa⁆ = (@pmf.to_measure α ⊤ ⁅oa⁆ p) :=
+lemma prob_event_eq_to_measure_apply (oa : oracle_comp spec α) (p : α → Prop) :
+  ⁅p | oa⁆ = (@pmf.to_measure α ⊤ ⁅oa⁆ p) :=
 (@pmf.to_measure_apply_eq_to_outer_measure_apply α ⊤ ⁅oa⁆ p
   measurable_space.measurable_set_top).symm
 
-@[simp] lemma prob_event_coe_sort (p : α → bool) : ⁅λ x, p x | oa⁆ = ⁅λ x, p x = tt | oa⁆ :=
-by simp_rw [eq_self_iff_true]
+@[simp] lemma prob_event_coe_sort (oa : oracle_comp spec α) (p : α → bool) :
+  ⁅λ x, p x | oa⁆ = ⁅λ x, p x = tt | oa⁆ := by simp_rw [eq_self_iff_true]
 
-@[simp] lemma prob_event_set (e : set α) : ⁅e | oa⁆ = ⁅(∈ e) | oa⁆ := rfl
+lemma prob_event_set_eq_prob_event_mem (oa : oracle_comp spec α) (e : set α) :
+  ⁅e | oa⁆ = ⁅(∈ e) | oa⁆ := rfl
 
-@[simp] lemma prob_event_le_one (p : α → Prop) : ⁅p | oa⁆ ≤ 1 :=
+@[simp] lemma prob_event_le_one {oa : oracle_comp spec α} {p : α → Prop} : ⁅p | oa⁆ ≤ 1 :=
 (⁅oa⁆.to_outer_measure.mono (set.subset_univ p)).trans
   (le_of_eq $ (⁅oa⁆.to_outer_measure_apply_eq_one_iff _).2 (set.subset_univ ⁅oa⁆.support))
 
+@[simp] lemma prob_event_ne_top {oa : oracle_comp spec α} {p : α → Prop} : ⁅p | oa⁆ ≠ ⊤ :=
+ne_top_of_le_ne_top (ennreal.one_ne_top) prob_event_le_one
+
+@[simp] lemma prob_event_lt_top {oa : oracle_comp spec α} {p : α → Prop} : ⁅p | oa⁆ < ⊤ :=
+lt_top_iff_ne_top.2 prob_event_ne_top
+
 section basic
 
-variables {p p' : α → Prop}
+variables (oa : oracle_comp spec α) {p p' : α → Prop}
 
 /-- If the a set `e'` contains all elements of `e` that have non-zero
 probability under `⁅oa⁆` then the probability of `e'` is at least as big as that of `e`. -/
@@ -90,9 +98,10 @@ by simp only [h, prob_event.def]
 
 end basic
 
+-- TODO!!!!: decide on `@[simp]` tags for things here.
 section sums
 
-variable (p : α → Prop)
+variables (oa : oracle_comp spec α) (p : α → Prop)
 
 section indicator
 
@@ -121,8 +130,12 @@ we can write the probability of an event as a finite sum over the `fin_support` 
 using `set.indicator` to filter elements not in the event. -/
 lemma prob_event_eq_sum_indicator [decidable_eq α] :
   ⁅p | oa⁆ = ∑ x in oa.fin_support, {x | p x}.indicator ⁅oa⁆ x :=
-trans (prob_event_eq_tsum_indicator' oa p) (tsum_eq_sum (λ x hx,
+(prob_event_eq_tsum_indicator' oa p).trans (tsum_eq_sum (λ x hx,
   set.indicator_apply_eq_zero.2 (λ h, prob_output_eq_zero' hx)))
+
+lemma prob_event_eq_sum_fintype_indicator [fintype α] :
+  ⁅p | oa⁆ = ∑ x : α, {x | p x}.indicator ⁅oa⁆ x :=
+trans (prob_event_eq_tsum_indicator' oa p) (tsum_eq_sum (λ x hx, (hx (finset.mem_univ x)).elim))
 
 end indicator
 
@@ -140,8 +153,7 @@ by rw [prob_event_eq_tsum_indicator', tsum_subtype, prob_output.def']
 
 /-- The probability of a result belonging to a set `e` written as a sum over possible outputs,
 using `e.indicator` to filter the elements not belonging to the set. -/
-lemma prob_event_mem_set_eq_tsum_subtype (e : set α) :
-  ⁅(∈ e) | oa⁆ = ∑' x : e, ⁅= x | oa⁆ :=
+lemma prob_event_mem_set_eq_tsum_subtype (e : set α) : ⁅(∈ e) | oa⁆ = ∑' x : e, ⁅= x | oa⁆ :=
 by rw [prob_event_eq_tsum_subtype', set.set_of_mem_eq]
 
 end subtype
@@ -159,8 +171,12 @@ we can write the probability of an event as a finite sum over the `fin_support` 
 using an if-then-else statement to filter elements not in the event. -/
 lemma prob_event_eq_sum_ite [decidable_eq α] [decidable_pred p] :
   ⁅p | oa⁆ = ∑ x in oa.fin_support, if p x then ⁅= x | oa⁆ else 0 :=
-trans (prob_event_eq_tsum_ite oa p) (tsum_eq_sum (λ x hx,
+(prob_event_eq_tsum_ite oa p).trans (tsum_eq_sum (λ x hx,
   ite_eq_right_iff.2 (λ _, prob_output_eq_zero' hx)))
+
+lemma prob_event_eq_sum_fintype_ite [fintype α] [decidable_pred p] :
+  ⁅p | oa⁆ = ∑ x : α, if p x then ⁅= x | oa⁆ else 0 :=
+(prob_event_eq_tsum_ite oa p).trans (tsum_eq_sum (λ x hx, (hx (finset.mem_univ x)).elim))
 
 end ite
 
@@ -175,8 +191,7 @@ trans (prob_event_eq_tsum_ite oa p) (trans (tsum_eq_sum (λ x hx, ite_eq_right_i
 
 /-- The probability of an output belonging to a `finset` can be written as the sum
 of the probabilities of getting each element of the set from the computation. -/
-lemma prob_event_mem_finset_eq_sum (s : finset α) :
-  ⁅(∈ s) | oa⁆ = ∑ x in s, ⁅= x | oa⁆ :=
+lemma prob_event_mem_finset_eq_sum (s : finset α) : ⁅(∈ s) | oa⁆ = ∑ x in s, ⁅= x | oa⁆ :=
 trans (prob_event_eq_tsum_indicator' oa (∈ s)) (trans (tsum_eq_sum ((λ x hx,
   set.indicator_of_not_mem hx _))) (finset.sum_congr rfl (λ x hx, set.indicator_of_mem hx ⁅oa⁆)))
 
@@ -184,13 +199,7 @@ end sums
 
 section support
 
--- lemma prob_event_eq_prob_event_of_forall_mem_support
-
--- /-- If two sets have the same intersection with the support of a computation,
--- then they both have the same probability under `prob_event` -/
--- lemma prob_event_eq_prob_event_of_inter_support_eq {e e'}
---   (h : e ∩ oa.support = e' ∩ oa.support) : ⁅e | oa⁆ = ⁅e' | oa⁆ :=
--- pmf.to_outer_measure_apply_eq_of_inter_support_eq ⁅oa⁆ (by simpa only [support_eval_dist])
+variables (oa : oracle_comp spec α)
 
 lemma prob_event_and_mem_support (p : α → Prop) : ⁅λ x, p x ∧ x ∈ oa.support | oa⁆ = ⁅p | oa⁆ :=
 prob_event_ext' oa (λ x hx, and_iff_left hx)
@@ -198,70 +207,113 @@ prob_event_ext' oa (λ x hx, and_iff_left hx)
 lemma prob_event_mem_support_and (p : α → Prop) : ⁅λ x, x ∈ oa.support ∧ p x | oa⁆ = ⁅p | oa⁆ :=
 prob_event_ext' oa (λ x hx, and_iff_right hx)
 
--- /-- Probability can be calculated on only the intersection of the set with the support. -/
--- lemma prob_event_eq_prob_event_inter_support : ⁅e | oa⁆ = ⁅e ∩ oa.support | oa⁆ :=
--- prob_event_eq_prob_event_of_inter_support_eq oa (by rw [set.inter_assoc, set.inter_self])
+@[simp] lemma prob_event_eq_zero_iff (p : α → Prop) : ⁅p | oa⁆ = 0 ↔ ∀ x ∈ oa.support, ¬ p x :=
+by simp only [prob_event_eq_tsum_indicator', ennreal.tsum_eq_zero, set.indicator_apply_eq_zero,
+  imp_not_comm, set.mem_set_of_eq, eval_dist_apply_eq_prob_output, prob_output_eq_zero_iff] 
 
--- /-- Given a `finset` containing the `support` of some `oracle_comp`,
---   it suffices to take `finset.sum` over that instead of a `tsum` -/
--- lemma prob_event_eq_sum_of_support_subset [decidable_pred e] (s : finset α)
---   (hs : oa.support ⊆ s) : ⁅e | oa⁆ = ∑ x in s, ite (x ∈ e) (⁅= x | oa⁆) 0 :=
--- trans (prob_event_eq_tsum_ite oa e) (tsum_eq_sum (λ x hx,
---   by rw [prob_output_eq_zero (λ hx', hx $ finset.mem_coe.1 (hs hx')), if_t_t]))
+lemma prob_event_eq_zero {p : α → Prop} (h : ∀ x ∈ oa.support, ¬ p x) : ⁅p | oa⁆ = 0 :=
+(prob_event_eq_zero_iff oa p).2 h
 
-@[simp] lemma prob_event_eq_zero_iff_disjoint_support : ⁅e | oa⁆ = 0 ↔ disjoint oa.support e :=
-by rw [prob_event.def, pmf.to_outer_measure_apply_eq_zero_iff, support_eval_dist]
+@[simp] lemma prob_event_eq_one_iff (p : α → Prop) : ⁅p | oa⁆ = 1 ↔ ∀ x ∈ oa.support, p x :=
+by simpa only [prob_event.def, pmf.to_outer_measure_apply_eq_one_iff, support_eval_dist]
 
-lemma prob_event_eq_zero_of_dijoint_support (h : disjoint oa.support e) : ⁅e | oa⁆ = 0 :=
-(oa.prob_event_eq_zero_iff_disjoint_support e).2 h
-
-@[simp] lemma prob_event_eq_one_iff_support_subset : ⁅e | oa⁆ = 1 ↔ oa.support ⊆ e :=
-by rw [prob_event.def, pmf.to_outer_measure_apply_eq_one_iff, support_eval_dist]
-
-lemma prob_event_eq_one_of_support_subset (h : oa.support ⊆ e) : ⁅e | oa⁆ = 1 :=
-(oa.prob_event_eq_one_iff_support_subset e).2 h
+lemma prob_event_eq_one {p : α → Prop} (h : ∀ x ∈ oa.support, p x) : ⁅p | oa⁆ = 1 :=
+(prob_event_eq_one_iff oa p).2 h
 
 end support
 
-section sets
+section bool
 
--- TODO: Prop versions for everything
+variables (oa : oracle_comp spec α) (p q : α → Prop)
 
-lemma prob_event_empty (oa : oracle_comp spec α) : ⁅∅ | oa⁆ = 0 :=
-⁅oa⁆.to_outer_measure.empty
+@[simp] lemma prob_event_const (p : Prop) [hp : decidable p] :
+  ⁅λ _, p | oa⁆ = if p then 1 else 0 :=
+by split_ifs with hp; simp only [hp, prob_event_eq_one_iff,
+  prob_event_eq_zero_iff, not_false_iff, implies_true_iff]
 
-@[simp] lemma prob_event_insert (x : α) : ⁅insert x e | oa⁆ = ⁅= x | oa⁆ + ⁅e \ {x} | oa⁆ :=
-⁅oa⁆.to_outer_measure_apply_insert x e
+lemma prob_event_true : ⁅λ _, true | oa⁆ = 1 := by rw [prob_event_const, if_true]
 
-lemma prob_event_compl : ⁅eᶜ | oa⁆ = 1 - ⁅e | oa⁆ :=
-⁅oa⁆.to_outer_measure_apply_compl e
+lemma prob_event_false : ⁅λ _, false | oa⁆ = 0 := by rw [prob_event_const, if_false]
 
-lemma prob_event_not (p : α → Prop) : ⁅λ x, ¬ p x | oa⁆ = 1 - ⁅p | oa⁆ :=
-prob_event_compl oa p
+lemma prob_event_not : ⁅λ x, ¬ p x | oa⁆ = 1 - ⁅p | oa⁆ := ⁅oa⁆.to_outer_measure_apply_compl p
 
-lemma prob_event_diff : ⁅e \ e' | oa⁆ = ⁅e | oa⁆ - ⁅e ∩ e' | oa⁆ :=
-⁅oa⁆.to_outer_measure_apply_diff e e'
+lemma prob_event_or_add_prob_event_and :
+  ⁅λ x, p x ∨ q x | oa⁆ + ⁅λ x, p x ∧ q x | oa⁆ = ⁅p | oa⁆ + ⁅q | oa⁆ :=
+by simpa only [prob_event_eq_to_measure_apply]
+  using measure_theory.measure_union_add_inter _ measurable_space.measurable_set_top
 
-lemma prob_event_inter_add_diff {e e'} : ⁅e ∩ e' | oa⁆ + ⁅e \ e' | oa⁆ = ⁅e | oa⁆ :=
-⁅oa⁆.to_outer_measure_apply_inter_add_diff e e'
+lemma prob_event_or : ⁅λ x, p x ∨ q x | oa⁆ = ⁅p | oa⁆ + ⁅q | oa⁆ - ⁅λ x, p x ∧ q x | oa⁆ :=
+by simpa only [← prob_event_or_add_prob_event_and oa p q]
+  using symm (ennreal.add_sub_cancel_right prob_event_ne_top)
 
-lemma prob_event_union_le_add (oa : oracle_comp spec α) (e e' : set α) :
-  ⁅e ∪ e' | oa⁆ ≤ ⁅e | oa⁆ + ⁅e' | oa⁆ :=
-⁅oa⁆.to_outer_measure.union e e'
+lemma prob_event_and : ⁅λ x, p x ∧ q x | oa⁆ = ⁅p | oa⁆ + ⁅q | oa⁆ - ⁅λ x, p x ∨ q x | oa⁆ :=
+by simpa only [← prob_event_or_add_prob_event_and oa p q]
+  using symm (ennreal.add_sub_cancel_left prob_event_ne_top)
 
-lemma prob_event_Union_le_tsum (oa : oracle_comp spec α) (e : ℕ → set α) :
-  ⁅⋃ n, e n | oa⁆ ≤ ∑' n, ⁅e n | oa⁆ :=
-⁅oa⁆.to_outer_measure.Union e
+lemma prob_event_or_eq_add {p q : α → Prop} (h : ∀ x, ¬ p x ∨ ¬ q x) :
+  ⁅λ x, p x ∨ q x | oa⁆ = ⁅p | oa⁆ + ⁅q | oa⁆ :=
+by simp only [← prob_event_or_add_prob_event_and, 
+  (λ x, not_and_distrib.2 (h x)), prob_event_false, add_zero]
 
-lemma prob_event_Union_eq_of_pairwise_disjoint (es : ℕ → set α) (h : pairwise (disjoint on es)) :
-  ⁅⋃ i, es i | oa⁆ = ∑' i, ⁅es i | oa⁆ :=
-⁅oa⁆.to_outer_measure_apply_Union h
+lemma prob_event_or_le_add {p q : α → Prop} : ⁅λ x, p x ∨ q x | oa⁆ ≤ ⁅p | oa⁆ + ⁅q | oa⁆ :=
+le_of_le_of_eq le_self_add (prob_event_or_add_prob_event_and oa p q)
 
-lemma prob_event_union_eq_of_disjoint {e e' : set α}
-  (h : disjoint e e') : ⁅e ∪ e' | oa⁆ = ⁅e | oa⁆ + ⁅e' | oa⁆ :=
-⁅oa⁆.to_outer_measure_apply_union h
+lemma prob_event_eq_add_split (p q : α → Prop) :
+  ⁅p | oa⁆ = ⁅λ x, p x ∧ q x | oa⁆ + ⁅λ x, p x ∧ ¬ q x | oa⁆ :=
+symm (⁅oa⁆.to_outer_measure_apply_inter_add_diff p q)
 
-end sets
+end bool
+
+-- section sets
+
+-- -- TODO: Prop versions for everything
+
+-- variables (e e' : set α) (oa : oracle_comp spec α)
+
+-- lemma prob_event_empty (oa : oracle_comp spec α) : ⁅(∈ (∅ : set α)) | oa⁆ = 0 :=
+-- -- ⁅oa⁆.to_outer_measure.empty
+-- by simp
+
+-- @[simp] lemma prob_event_insert (x : α) : ⁅(∈ (insert x e)) | oa⁆ = ⁅= x | oa⁆ + ⁅(∈ (e \ {x})) | oa⁆ :=
+-- -- ⁅oa⁆.to_outer_measure_apply_insert x e
+-- by simp
+
+-- lemma prob_event_compl : ⁅(∈ eᶜ) | oa⁆ = 1 - ⁅(∈ e) | oa⁆ :=
+-- ⁅oa⁆.to_outer_measure_apply_compl e
+
+-- -- lemma prob_event_not (p : α → Prop) : ⁅λ x, ¬ p x | oa⁆ = 1 - ⁅p | oa⁆ :=
+-- -- prob_event_compl oa p
+
+-- lemma prob_event_diff : ⁅(∈ (e \ e')) | oa⁆ = ⁅e | oa⁆ - ⁅(∈ (e ∩ e')) | oa⁆ :=
+-- ⁅oa⁆.to_outer_measure_apply_diff e e'
+
+-- lemma prob_event_inter_add_diff : ⁅(∈ (e ∩ e')) | oa⁆ + ⁅e \ e' | oa⁆ = ⁅e | oa⁆ :=
+-- ⁅oa⁆.to_outer_measure_apply_inter_add_diff e e'
+
+-- lemma prob_event_union_le_add (oa : oracle_comp spec α) (e e' : set α) :
+--   ⁅e ∪ e' | oa⁆ ≤ ⁅e | oa⁆ + ⁅e' | oa⁆ :=
+-- ⁅oa⁆.to_outer_measure.union e e'
+
+-- lemma prob_event_Union_le_tsum (oa : oracle_comp spec α) (e : ℕ → set α) :
+--   ⁅⋃ n, e n | oa⁆ ≤ ∑' n, ⁅e n | oa⁆ :=
+-- ⁅oa⁆.to_outer_measure.Union e
+
+-- lemma prob_event_Union_eq_of_pairwise_disjoint (es : ℕ → set α) (h : pairwise (disjoint on es)) :
+--   ⁅⋃ i, es i | oa⁆ = ∑' i, ⁅es i | oa⁆ :=
+-- ⁅oa⁆.to_outer_measure_apply_Union h
+
+-- lemma prob_event_union_eq_of_disjoint {e e' : set α}
+--   (h : disjoint e e') : ⁅e ∪ e' | oa⁆ = ⁅e | oa⁆ + ⁅e' | oa⁆ :=
+-- ⁅oa⁆.to_outer_measure_apply_union h
+
+-- end sets
+
+lemma prob_event_eq_single {oa : oracle_comp spec α} {p : α → Prop}
+  (x : α) (hx : p x) (h : ∀ y ∈ oa.support, p y → y = x) : ⁅p | oa⁆ = ⁅= x | oa⁆ :=
+begin
+  refine (prob_event_eq_tsum_indicator oa p).trans (trans (tsum_eq_single x $ λ y hy, _) _),
+  refine set.indicator_apply_eq_zero.2 (λ hyx, (hy (h y hyx.1 hyx.2)).elim),
+end
 
 lemma prob_event_eq_prob_output (x : α) {e : set α} (hx : x ∈ e)
   (h : ∀ y ≠ x, y ∈ e → y ∉ oa.support) : ⁅e | oa⁆ = ⁅= x | oa⁆ :=
