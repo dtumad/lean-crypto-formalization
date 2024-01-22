@@ -4,7 +4,6 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
 import computational_monads.distribution_semantics.defs.independence
-import tactic.equiv_rw
 
 /-!
 # Distributional Equivalence Between Oracle Computations
@@ -101,19 +100,15 @@ lemma dist_equiv.prob_output_eq (h : oa ≃ₚ oa') (x : α) : ⁅= x | oa⁆ = 
 lemma dist_equiv.eval_dist_apply_eq (h : oa ≃ₚ oa') (x : α) : ⁅oa⁆ x = ⁅oa'⁆ x :=
 (dist_equiv.ext_iff oa oa').1 h x
 
-lemma dist_equiv.prob_event_eq (h : oa ≃ₚ oa') (e : set α) : ⁅e | oa⁆ = ⁅e | oa'⁆ :=
-prob_event_eq_of_eval_dist_eq h.eval_dist_eq e
+lemma dist_equiv.prob_event_eq (h : oa ≃ₚ oa') (p : α → Prop) : ⁅p | oa⁆ = ⁅p | oa'⁆ :=
+prob_event_eq_of_eval_dist_eq h.eval_dist_eq p
 
-lemma dist_equiv.prob_event_eq_of_inter_support_eq (h : oa ≃ₚ oa') {e e' : set α}
-  (he : e ∩ oa.support = e' ∩ oa.support) : ⁅e | oa⁆ = ⁅e' | oa'⁆ :=
-(prob_event_eq_prob_event_of_inter_support_eq oa he).trans (h.prob_event_eq e')
+lemma dist_equiv.indep_events_iff {oa : oracle_comp spec α} {oa' : oracle_comp spec' α}
+  (h : oa ≃ₚ oa') (es es' : set (α → Prop)) : oa.indep_events es es' ↔ oa'.indep_events es es' :=
+by simp only [indep_events_iff, h.prob_event_eq]
 
-lemma dist_equiv.indep_events_iff (h : oa ≃ₚ oa') (es es' : set (set α)) :
-  oa.indep_events es es' ↔ oa'.indep_events es es' :=
-indep_events_iff_of_eval_dist_eq oa oa' es es' h
-
-lemma dist_equiv.indep_event_iff (h : oa ≃ₚ oa') (e e' : set α) :
-  oa.indep_event e e' ↔ oa'.indep_event e e' :=
-indep_event_iff_of_eval_dist_eq oa oa' e e' h
+lemma dist_equiv.indep_event_iff {oa : oracle_comp spec α} {oa' : oracle_comp spec' α}
+  (h : oa ≃ₚ oa') (p q : α → Prop) : oa.indep_event p q ↔ oa'.indep_event p q :=
+by simp only [indep_event_iff, h.prob_event_eq]
 
 end oracle_comp
