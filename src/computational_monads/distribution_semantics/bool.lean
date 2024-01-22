@@ -65,8 +65,8 @@ by simp only [prob_output_uniform_select_fintype_bind_apply_eq_sum, fintype.univ
   fintype.card_bool, nat.cast_bit0, algebra_map.coe_one]
 
 lemma prob_event_uniform_select_bool_bind
-  (oa : bool → oracle_comp unif_spec α) (e : α → Prop) :
-  ⁅e | $ᵗ bool >>= oa⁆ = (⁅e | oa tt⁆ + ⁅e | oa ff⁆) / 2 :=
+  (oa : bool → oracle_comp unif_spec α) (p : α → Prop) :
+  ⁅p | $ᵗ bool >>= oa⁆ = (⁅p | oa tt⁆ + ⁅p | oa ff⁆) / 2 :=
 by simp only [prob_event_uniform_select_fintype_bind_eq_sum, fintype.univ_bool,
   finset.sum_insert, finset.mem_singleton, not_false_iff, finset.sum_singleton, fintype.card_bool,
   nat.cast_bit0, algebra_map.coe_one]

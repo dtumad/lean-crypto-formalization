@@ -123,8 +123,8 @@ example (oa oa' : oracle_comp spec α) (ob : α → oracle_comp spec β) (y y' :
 by pairwise_dist_equiv [h']
 
 /-- `pairwise_dist_equiv` should work on `prob_event`. -/
-example (oa oa' : oracle_comp spec α) (ob : α → oracle_comp spec β) (e : set β) (h' : oa ≃ₚ oa') :
-  ⁅e | oa >>= ob⁆ = ⁅e | oa' >>= ob⁆ :=
+example (oa oa' : oracle_comp spec α) (ob : α → oracle_comp spec β) (p : β → Prop) (h' : oa ≃ₚ oa') :
+  ⁅p | oa >>= ob⁆ = ⁅p | oa' >>= ob⁆ :=
 by pairwise_dist_equiv [h']
 
 /-- `pairwise_dist_equiv` should work on `support`. -/

@@ -24,19 +24,18 @@ end eval_dist
 
 section prob_event
 
-variables (oa : oracle_comp spec (option α)) (e : set (option α))
+variables (oa : oracle_comp spec (option α))
 
-lemma prob_event_option (e : set (option α)) :
-  ⁅e | oa⁆ = (e.indicator ⁅oa⁆ none) + ∑' (a : α), e.indicator ⁅oa⁆ (some a) :=
-(prob_event_eq_tsum_indicator oa e).trans (ennreal.tsum_option _)
+lemma prob_event_option (p : option α → Prop) :
+  ⁅p | oa⁆ = (set.indicator p ⁅oa⁆ none) + ∑' (a : α), set.indicator p ⁅oa⁆ (some a) :=
+(prob_event_eq_tsum_indicator' oa p).trans (ennreal.tsum_option _)
 
 @[simp] lemma prob_event_is_none : ⁅λ x, x.is_none | oa⁆ = ⁅= none | oa⁆ :=
-prob_event_eq_prob_output oa none option.is_none_none
-  (λ x hx hx', (hx $ option.eq_none_of_is_none hx').elim)
+prob_event_eq_prob_output none option.is_none_none
+  (λ x hx hx', option.eq_none_of_is_none hx')
 
-@[simp] lemma prob_event_is_none_eq_tt : ⁅λ x, x.is_none | oa⁆ = ⁅= none | oa⁆ :=
-prob_event_eq_prob_output oa none option.is_none_none
-  (λ x hx hx', (hx $ option.eq_none_of_is_none hx').elim)
+lemma prob_event_is_none_eq_tt : ⁅λ x, x.is_none = tt | oa⁆ = ⁅= none | oa⁆ :=
+by simp only [prob_event_is_none]
 
 @[simp] lemma prob_event_is_some : ⁅λ x, x.is_some | oa⁆ = ∑' (a : α), ⁅= some a | oa⁆ :=
 let e : set (option α) := λ x, x.is_some in
@@ -56,15 +55,10 @@ calc ⁅e | oa⁆ = e.indicator ⁅oa⁆ none + ∑' (a : α), e.indicator ⁅oa
 
 lemma prob_event_is_some' (oa : oracle_comp spec α) (f : α → option β) [decidable_eq β] :
   ⁅λ x, (f x).is_some | oa⁆ = ∑' y : β, ⁅= some y | f <$> oa⁆ :=
-begin
-  rw [← prob_event_is_some, prob_event_map],
-  refine congr_arg (λ p, ⁅p | oa⁆) (set.ext (λ x, _)),
-  simpa [set.preimage]
-end
+by rw [← prob_event_is_some, prob_event_map]
 
 lemma prob_event_ne_none_eq_tsum : ⁅(≠) none | oa⁆ = ∑' x : α, ⁅= some x | oa⁆ :=
-trans (prob_event_ext' _ _ _ (λ x hx, by rw [ne_comm, option.ne_none_iff_is_some]))
-  (prob_event_is_some _)
+trans (prob_event_ext' (λ x h, by rw [ne_comm, option.ne_none_iff_is_some])) (prob_event_is_some _)
 
 lemma prob_event_ne_none_eq_sum [fintype α] : ⁅(≠) none | oa⁆ = ∑ x : α, ⁅= some x | oa⁆ :=
 trans (prob_event_ne_none_eq_tsum oa) (tsum_eq_sum (λ x hx, (hx (finset.mem_univ x)).elim))

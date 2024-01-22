@@ -106,8 +106,7 @@ begin
     { rw [prob_output_eq_zero hy2, mul_zero] } },
   { by_cases hyoa : y ∈ oa'.support,
     { refine congr_arg (λ z, z * ⁅= y | oa'⁆) _,
-      refine prob_event_eq_prob_output _ _ h (λ x' hx hx' hoa, hx _),
-      simp [set.mem_def] at hx',
+      refine prob_event_eq_prob_output x h (λ x' hx hx', _),
       refine (mul_left_inj y).1 (hx'.trans h.symm) },
     { rw [prob_output_eq_zero hyoa, mul_zero, mul_zero] } }
 end

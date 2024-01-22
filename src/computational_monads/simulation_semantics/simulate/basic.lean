@@ -50,7 +50,8 @@ open_locale big_operators ennreal
 open oracle_spec
 
 variables (so : sim_oracle spec spec' S) (a : α) (i : spec.ι) (t : spec.domain i)
-  (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) (f : α → β) (s : S) (x : α) (e : set α)
+  (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) (f : α → β) (s : S) (x : α)
+  (p : α → Prop)
 
 section simulate
 
@@ -133,12 +134,12 @@ begin
   { simp only [prob_output.def, eq_self_iff_true, if_true] }
 end
 
-lemma prob_event_simulate' : ⁅e | simulate' so oa s⁆ = ⁅prod.fst ⁻¹' e | simulate so oa s⁆ :=
+lemma prob_event_simulate' : ⁅p | simulate' so oa s⁆ = ⁅p ∘ prod.fst | simulate so oa s⁆ :=
 by rw [simulate', prob_event_map]
 
 lemma prob_output_simulate'_eq_prob_event :
-  ⁅= x | simulate' so oa s⁆ = ⁅prod.fst ⁻¹' {x} | simulate so oa s⁆ :=
-by rw [← prob_event_singleton_eq_prob_output, prob_event_simulate']
+  ⁅= x | simulate' so oa s⁆ = ⁅λ z, x = z.1 | simulate so oa s⁆ :=
+by rw [← prob_event_eq_eq_prob_output, prob_event_simulate', function.comp]
 
 end simulate'
 

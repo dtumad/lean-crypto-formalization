@@ -62,7 +62,7 @@ by {by_dist_equiv, exact hoa}
 example (hoa : oa ≃ₚ oa') (x : α) : ⁅= x | oa⁆ = ⁅= x | oa'⁆ :=
 by {by_dist_equiv, exact hoa}
 
-example (hoa : oa ≃ₚ oa') (e : set α) : ⁅e | oa⁆ = ⁅e | oa'⁆ :=
+example (hoa : oa ≃ₚ oa') (p : α → Prop) : ⁅p | oa⁆ = ⁅p | oa'⁆ :=
 by {by_dist_equiv, exact hoa}
 
 end tests

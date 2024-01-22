@@ -21,23 +21,22 @@ open_locale big_operators ennreal
 
 variables {α β γ δ : Type} {spec spec' : oracle_spec}
 
-lemma prob_event_seq_map_prod_mk (oa : oracle_comp spec α) (ob : oracle_comp spec β)
-  (e : set (α × β)) :
-  ⁅e | prod.mk <$> oa <*> ob⁆ =
-    ∑' z, e.indicator (λ z, ⁅= z.1 | oa⁆ * ⁅= z.2 | ob⁆) z :=
-begin
-  rw [prob_event_eq_tsum_indicator],
-  refine tsum_congr (λ z, _),
-  by_cases hz : z ∈ e,
-  { simp only [set.indicator_of_mem hz],
-    refine prob_output_seq_map_eq_mul oa ob z.1 z.2
-      (λ x hx y hy, eq_comm.trans prod.eq_iff_fst_eq_snd_eq) },
-  { simp only [set.indicator_of_not_mem hz] }
-end
+-- lemma prob_event_seq_map_prod_mk (oa : oracle_comp spec α) (ob : oracle_comp spec β)
+--   (p : α × β → Prop) : ⁅p | prod.mk <$> oa <*> ob⁆ =
+--     ∑' z, set.indicator (λ z, ⁅= z.1 | oa⁆ * ⁅= z.2 | ob⁆) z :=
+-- begin
+--   rw [prob_event_eq_tsum_indicator],
+--   refine tsum_congr (λ z, _),
+--   by_cases hz : z ∈ e,
+--   { simp only [set.indicator_of_mem hz],
+--     refine prob_output_seq_map_eq_mul oa ob z.1 z.2
+--       (λ x hx y hy, _), },
+--   { simp only [set.indicator_of_not_mem hz] }
+-- end
 
 
-lemma map_return_seq_return (f : α → β → γ) (a : α) (b : β) :
-  f <$> (return a : oracle_comp spec α) <*> return b = return (f a b) := rfl
+-- lemma map_return_seq_return (f : α → β → γ) (a : α) (b : β) :
+--   f <$> (return a : oracle_comp spec α) <*> return b = return (f a b) := by simp
 
 @[simp] lemma map_seq_prod_mk_eta (z : α × β) :
   prod.mk <$> return z.1 <*> return z.2
@@ -126,12 +125,12 @@ lemma prob_output_prod_bind' (c : γ) :
   ⁅= c | oa >>= oc⁆ = ∑' (b : β) (a : α), ⁅= (a, b) | oa⁆ * ⁅= c | oc (a, b)⁆ :=
 by rw [prob_output_prod_bind, ennreal.tsum_comm]
 
-lemma prob_event_prod_bind (e : set γ) :
-  ⁅e | oa >>= oc⁆ = ∑' (a : α) (b : β), ⁅= (a, b) | oa⁆ * ⁅e | oc (a, b)⁆ :=
+lemma prob_event_prod_bind (p : γ → Prop) :
+  ⁅p | oa >>= oc⁆ = ∑' (a : α) (b : β), ⁅= (a, b) | oa⁆ * ⁅p | oc (a, b)⁆ :=
 by rw [prob_event_bind_eq_tsum, ennreal.tsum_prod']
 
-lemma prob_event_prod_bind' (e : set γ) :
-  ⁅e | oa >>= oc⁆ = ∑' (b : β) (a : α), ⁅= (a, b) | oa⁆ * ⁅e | oc (a, b)⁆ :=
+lemma prob_event_prod_bind' (p : γ → Prop) :
+  ⁅p | oa >>= oc⁆ = ∑' (b : β) (a : α), ⁅= (a, b) | oa⁆ * ⁅p | oc (a, b)⁆ :=
 by rw [prob_event_prod_bind, ennreal.tsum_comm]
 
 end prod_bind
@@ -203,7 +202,7 @@ then the resulting distribution sums only over the left type in the product type
 lemma prob_output_map_prod_map_id_right [decidable_eq β] [decidable_eq γ] (f : α → γ)
   (z : γ × β) : ⁅= z | prod.map f id <$> oa⁆ = ∑' (x : α), ite (z.1 = f x) ⁅= (x, z.2) | oa⁆ 0 :=
 begin
-  rw [prob_output_map_eq_tsum, ennreal.tsum_prod'],
+  rw [prob_output_map_eq_tsum_ite, ennreal.tsum_prod'],
   refine tsum_congr (λ x, (tsum_eq_single z.2 _).trans _),
   { exact λ y hy, if_neg $ by simp only [eq_iff_fst_eq_snd_eq, hy.symm,
       prod.map_mk, id.def, and_false, not_false_iff] },
@@ -215,7 +214,7 @@ then the resulting distribution sums only over the right type in the product typ
 lemma prob_output_map_prod_map_id_left [decidable_eq α] [decidable_eq γ] (f : β → γ)
   (z : α × γ) : ⁅= z | prod.map id f <$> oa⁆ = ∑' (y : β), ite (z.2 = f y) ⁅= (z.1, y) | oa⁆ 0 :=
 begin
-  rw [prob_output_map_eq_tsum, ennreal.tsum_prod', ennreal.tsum_comm],
+  rw [prob_output_map_eq_tsum_ite, ennreal.tsum_prod', ennreal.tsum_comm],
   refine tsum_congr (λ x, (tsum_eq_single z.1 _).trans _),
   { exact λ y hy, if_neg $ by simp only [eq_iff_fst_eq_snd_eq, hy.symm,
       prod.map_mk, id.def, false_and, not_false_iff]},
@@ -230,18 +229,24 @@ variables (oa : oracle_comp spec (α × β))
 
 lemma bind_dist_equiv_fst_bind (oc : α × β → oracle_comp spec γ) (y : β)
   (h : ∀ z, oc z ≃ₚ oc (z.1, y)) : oa >>= oc ≃ₚ (fst <$> oa >>= λ x, oc (x, y)) :=
-by rw_dist_equiv [bind_map_dist_equiv, h]
+begin
+  rw [oracle_comp.bind_map],
+  pairwise_dist_equiv [h],
+end
 
 lemma bind_dist_equiv_snd_bind (oc : α × β → oracle_comp spec γ) (x : α)
   (h : ∀ z, oc z ≃ₚ oc (x, z.2)) : oa >>= oc ≃ₚ (snd <$> oa >>= λ y, oc (x, y)) :=
-by rw_dist_equiv [bind_map_dist_equiv, h]
+begin
+  rw [oracle_comp.bind_map],
+  pairwise_dist_equiv [h],
+end
 
 end fst_snd_map_bind
 
 section diagonal
 
-@[simp] lemma prob_event_diagonal [decidable_eq α] (oa : oracle_comp spec (α × α)) :
-  ⁅set.diagonal α | oa⁆ = ∑' a : α, ⁅= (a, a) | oa⁆ :=
+@[simp] lemma prob_event_mem_diagonal_eq_tsum [decidable_eq α] (oa : oracle_comp spec (α × α)) :
+  ⁅(∈ set.diagonal α) | oa⁆ = ∑' a : α, ⁅= (a, a) | oa⁆ :=
 calc ⁅set.diagonal α | oa⁆ = ∑' (x : α × α), ite (x ∈ set.diagonal α) ⁅= x | oa⁆ 0 :
     prob_event_eq_tsum_ite oa (set.diagonal α)
   ... = ∑' (a a' : α), ite (a = a') ⁅= (a, a') | oa⁆ 0 :
@@ -253,23 +258,15 @@ calc ⁅set.diagonal α | oa⁆ = ∑' (x : α × α), ite (x ∈ set.diagonal �
 
 @[simp] lemma prob_event_fst_eq_snd [decidable_eq α] (oa : oracle_comp spec (α × α)) :
   ⁅λ x, x.1 = x.2 | oa⁆ = ∑' a : α, ⁅= (a, a) | oa⁆ :=
-prob_event_diagonal oa
+prob_event_mem_diagonal_eq_tsum oa
 
-@[simp] lemma prob_event_diagonal_eq_sum [decidable_eq α] [fintype α] (oa : oracle_comp spec (α × α)) :
-  ⁅set.diagonal α | oa⁆ = ∑ a : α, ⁅= (a, a) | oa⁆ :=
-(prob_event_diagonal oa).trans (tsum_eq_sum (λ x hx, (hx (finset.mem_univ _)).elim))
+@[simp] lemma prob_event_mem_diagonal_eq_sum [decidable_eq α] [fintype α]
+  (oa : oracle_comp spec (α × α)) : ⁅(∈ set.diagonal α) | oa⁆ = ∑ a : α, ⁅= (a, a) | oa⁆ :=
+(prob_event_mem_diagonal_eq_tsum oa).trans (tsum_eq_sum (λ x hx, (hx (finset.mem_univ _)).elim))
 
-@[simp] lemma prob_event_fst_eq_snd_eq_sum [decidable_eq α] [fintype α] (oa : oracle_comp spec (α × α)) :
-  ⁅λ x, x.1 = x.2 | oa⁆ = ∑ a : α, ⁅= (a, a) | oa⁆ :=
-prob_event_diagonal_eq_sum oa
-
--- @[simp] lemma prob_event_fst_eq (oa : oracle_comp spec (α × β)) (x : α) :
---   ⁅λ z, z.1 = x | oa⁆ = ⁅= x | fst <$> oa⁆ :=
--- by apply prob_event_eq_eq_prob_output_map
-
--- @[simp] lemma prob_event_snd_eq (oa : oracle_comp spec (α × β)) (y : β) :
---   ⁅λ z, z.2 = y | oa⁆ = ⁅= y | snd <$> oa⁆ :=
--- by simpa only [prob_output_map_eq_tsum_indicator, prob_event_eq_tsum_indicator, ennreal.tsum_prod']
+@[simp] lemma prob_event_fst_eq_snd_eq_sum [decidable_eq α] [fintype α]
+  (oa : oracle_comp spec (α × α)) : ⁅λ x, x.1 = x.2 | oa⁆ = ∑ a : α, ⁅= (a, a) | oa⁆ :=
+prob_event_mem_diagonal_eq_sum oa
 
 end diagonal
 

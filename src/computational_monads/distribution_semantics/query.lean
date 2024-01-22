@@ -209,7 +209,7 @@ lemma eval_dist_query_eq_eval_dist_query (t t' : spec.domain i) : ⁅query i t�
 -- by simp only [prob_output_query_eq_div, one_div, inv_inj, nat.cast_inj]
 
 -- lemma prob_event_query_eq_prob_event_query_iff (t : spec.domain i) (t' : spec'.domain i')
---   (e : set (spec.range i)) (e' : set (spec'.range i')) [decidable_pred (∈ e)]
+--   (p : set (spec.range i)) (e' : set (spec'.range i')) [decidable_pred (∈ e)]
 --   [decidable_pred (∈ e')] : ⁅e | query i t⁆ = ⁅e' | query i' t'⁆ ↔
 --     card (spec'.range i') * card e = card (spec.range i) * card e' :=
 -- by rw [prob_event_query_eq_div, prob_event_query_eq_div, ennreal.div_eq_div_iff,

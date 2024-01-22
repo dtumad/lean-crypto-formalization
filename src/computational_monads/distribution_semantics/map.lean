@@ -141,7 +141,7 @@ dist_equiv.ext (λ x, rfl)
 --   ⁅= x | f <$> return' !spec! a⁆ = ⁅= x | return' !spec! (f a)⁆ :=
 -- by pairwise_dist_equiv
 
--- lemma prob_event_map_return (e : set β) :
+-- lemma prob_event_map_return (q : set β) :
 --   ⁅e | f <$> (return' !spec! a)⁆ = ⁅e | return' !spec! (f a)⁆ :=
 -- by rw [map_pure]
 
@@ -165,7 +165,7 @@ by simp only [map_map_eq_map_comp]
 -- lemma prob_output_map_comp (x : γ) : ⁅= x | g <$> (f <$> oa)⁆ = ⁅= x | (g ∘ f) <$> oa⁆ :=
 -- by pairwise_dist_equiv
 
--- lemma prob_event_map_comp (e : set γ) : ⁅e | g <$> (f <$> oa)⁆ = ⁅e | (g ∘ f) <$> oa⁆ :=
+-- lemma prob_event_map_comp (p : set γ) : ⁅e | g <$> (f <$> oa)⁆ = ⁅e | (g ∘ f) <$> oa⁆ :=
 -- by pairwise_dist_equiv
 
 end map_comp
