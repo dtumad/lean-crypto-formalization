@@ -49,14 +49,14 @@ lemma fin_support_bind_bind_comm : (do {a ← oa, b ← ob, oc a b}).support =
 lemma prob_output_bind_bind_comm (z : γ) : ⁅= z | do {a ← oa, b ← ob, oc a b}⁆ =
   ⁅= z | do {b ← ob, a ← oa, oc a b}⁆ := by pairwise_dist_equiv
 
-lemma prob_event_bind_bind_comm (e : set γ) : ⁅e | do {a ← oa, b ← ob, oc a b}⁆ =
-  ⁅e | do {b ← ob, a ← oa, oc a b}⁆ := by pairwise_dist_equiv
+lemma prob_event_bind_bind_comm (p : γ → Prop) : ⁅p | do {a ← oa, b ← ob, oc a b}⁆ =
+  ⁅p | do {b ← ob, a ← oa, oc a b}⁆ := by pairwise_dist_equiv
 
 end bind_bind_comm
 
 section bind_return
 
-variables (oa : oracle_comp spec α) (f : α → β) (y : β) (e' : set β)
+variables (oa : oracle_comp spec α) (f : α → β) (y : β) (p : β → Prop)
 
 @[simp] lemma support_bind_return : (oa >>= λ x, return (f x)).support = f '' oa.support :=
 calc (oa >>= λ x, return (f x)).support = ⋃ x ∈ oa.support, {f x} :
@@ -114,15 +114,12 @@ lemma prob_output_bind_return_eq_sum_fin_support_indicator [decidable_eq α] :
 (prob_output_bind_return_eq_tsum_indicator oa f y).trans
   (tsum_eq_sum (λ x hx, set.indicator_apply_eq_zero.2 (λ h, prob_output_eq_zero' hx)))
 
-@[simp] lemma prob_event_bind_return : ⁅e' | oa >>= λ a, return (f a)⁆ = ⁅f ⁻¹' e' | oa⁆ :=
+@[simp] lemma prob_event_bind_return : ⁅p | oa >>= λ a, return (f a)⁆ = ⁅p ∘ f | oa⁆ :=
 begin
-  rw [prob_event_bind_eq_tsum, prob_event_eq_tsum_indicator],
-  refine tsum_congr (λ x, by simpa only [prob_event_return_eq_indicator, set.indicator, mul_boole])
+  haveI : decidable_pred p := classical.dec_pred p,
+  simp_rw [prob_event_bind_eq_tsum, prob_event_return, mul_ite, mul_one, mul_zero,
+    prob_event_eq_tsum_ite]
 end
-
-lemma prob_event_bind_return' (p : β → Prop) :
-  ⁅p | oa >>= λ a, return (f a)⁆ = ⁅p ∘ f | oa⁆ :=
-prob_event_bind_return oa f p
 
 end bind_return
 
@@ -179,6 +176,10 @@ by rw [dist_equiv.def, eval_dist_bind, pmf.bind_const]
 ⟨λ h, (bind_const_dist_equiv _ _).symm.trans h,
   λ h, trans (bind_const_dist_equiv _ _) h⟩
 
+@[simp] lemma dist_equiv_bind_const_iff (ob' : oracle_comp spec β) :
+  ob' ≃ₚ oa >>= (λ _, ob) ↔ ob' ≃ₚ ob :=
+dist_equiv.symm_iff.trans ((bind_const_dist_equiv_iff oa ob ob').trans dist_equiv.symm_iff)
+
 @[simp] lemma support_bind_const : (oa >>= (λ _, ob)).support = ob.support :=
 (bind_const_dist_equiv oa ob).support_eq
 
@@ -192,19 +193,26 @@ by rw [dist_equiv.def, eval_dist_bind, pmf.bind_const]
 @[simp] lemma prob_output_bind_const (x : β) : ⁅= x | oa >>= (λ _, ob)⁆ = ⁅= x | ob⁆ :=
 (bind_const_dist_equiv oa ob).prob_output_eq x
 
-@[simp] lemma prob_event_bind_const (e : set β) : ⁅e | oa >>= (λ _, ob)⁆ = ⁅e | ob⁆ :=
-(bind_const_dist_equiv oa ob).prob_event_eq e
+@[simp] lemma prob_event_bind_const (p : β → Prop) : ⁅p | oa >>= (λ _, ob)⁆ = ⁅p | ob⁆ :=
+(bind_const_dist_equiv oa ob).prob_event_eq p
 
 end bind_const
 
 section bind_const_bind
 
-variables (oa : oracle_comp spec α) (ob : oracle_comp spec β)
-  (oc : α → oracle_comp spec γ)
+variables (oa : oracle_comp spec α) (ob : oracle_comp spec β) (oc : α → oracle_comp spec γ)
+
+lemma support_bind_const_bind :
+  (do {x ← oa, y ← ob, oc x}).support = (oa >>= oc).support := by pairwise_dist_equiv
+
+@[simp] lemma fin_support_const_bind [decidable_eq γ] :
+  (do {x ← oa, y ← ob, oc x}).fin_support = (oa >>= oc).fin_support := by pairwise_dist_equiv
 
 @[simp] lemma prob_output_bind_const_bind (z : γ) :
-  ⁅= z | do {x ← oa, y ← ob, oc x}⁆ = ⁅= z | oa >>= oc⁆ :=
-by pairwise_dist_equiv
+  ⁅= z | do {x ← oa, y ← ob, oc x}⁆ = ⁅= z | oa >>= oc⁆ := by pairwise_dist_equiv
+
+@[simp] lemma prob_event_bind_const_bind (p : γ → Prop) :
+  ⁅p | do {x ← oa, y ← ob, oc x}⁆ = ⁅p | oa >>= oc⁆ := by pairwise_dist_equiv
 
 end bind_const_bind
 

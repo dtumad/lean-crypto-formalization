@@ -72,7 +72,7 @@ private meta def traverse_dist_equiv (d_eq : d_eq_t) : bool → bool → tactic 
     _), (list.length <$> tactic.get_goals) >>= rotate_to_dist_equiv,
     (traverse_dist_equiv tt tt), (tactic.try tactic.reflexivity), return tt} <|>
   -- Try to apply the expression to the right portion of the bind.
-  do {tactic.refine ``(dist_equiv.trans (oracle_comp.bind_dist_equiv_bind_of_dist_equiv_right' _ _
+  do {tactic.refine ``(dist_equiv.trans (oracle_comp.bind_dist_equiv_bind_of_dist_equiv_right'
     _ _) _), (list.length <$> tactic.get_goals) >>= rotate_to_dist_equiv, tactic.intros,
     (traverse_dist_equiv tt tt), (tactic.try tactic.reflexivity), return tt} <|>
   -- Try to apply things on the other side of the equivalence
