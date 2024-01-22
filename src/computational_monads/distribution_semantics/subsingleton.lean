@@ -53,8 +53,7 @@ fin_support_of_subsingleton oa default
   ((prob_output_return_eq_one_iff _ _ _).2 (subsingleton.elim _ _))
 
 lemma prob_event_of_subsingleton_of_nonempty [subsingleton α]
-  (e : set α) (h : e.nonempty) : ⁅e | oa⁆ = 1 :=
-let ⟨y, hy⟩ := h in trans ((dist_equiv_return_of_subsingleton oa y).prob_event_eq _)
-  (prob_event_return_of_mem spec _ hy)
+  (p : α → Prop) (h : ∃ x, p x) : ⁅p | oa⁆ = 1 :=
+let ⟨x, hx⟩ := h in prob_event_eq_one (λ y hy, subsingleton.elim x y ▸ hx)
 
 end oracle_comp

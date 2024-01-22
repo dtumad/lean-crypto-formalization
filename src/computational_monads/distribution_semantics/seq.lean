@@ -55,34 +55,25 @@ lemma prob_output_seq_eq_tsum_indicator (y : β) :
 by simp only [oracle_comp.seq_eq_bind_map, prob_output_bind_eq_tsum, ← ennreal.tsum_mul_left,
   prob_output_map_eq_tsum_indicator]
 
-@[simp] lemma prob_output_seq_eq_tsum [decidable_eq β] (y : β) :
+lemma prob_output_seq_eq_tsum_ite [decidable_eq β] (y : β) :
   ⁅= y | og <*> oa⁆ = ∑' (g : α → β) x, if y = g x then ⁅= g | og⁆ * ⁅= x | oa⁆ else 0 :=
-by simp only [oracle_comp.seq_eq_bind_map, prob_output_bind_eq_tsum, prob_output_map_eq_tsum,
-  ← ennreal.tsum_mul_left, eval_dist_apply_eq_prob_output, mul_ite, mul_zero]
+by simp only [oracle_comp.seq_eq_bind_map, prob_output_bind_eq_tsum,
+    prob_output_map_eq_tsum_ite, ← ennreal.tsum_mul_left, mul_ite, mul_zero]
 
-@[simp] lemma prob_output_seq_eq_sum [decidable_eq α] [decidable_eq (α → β)] [decidable_eq β]
+lemma prob_output_seq_eq_sum_ite [decidable_eq α] [decidable_eq (α → β)] [decidable_eq β]
   (y : β) : ⁅= y | og <*> oa⁆ = ∑ g in og.fin_support,
     ∑ x in oa.fin_support, if y = g x then ⁅= g | og⁆ * ⁅= x | oa⁆ else 0 :=
-by simp only [oracle_comp.seq_eq_bind_map, prob_output_bind_eq_sum_fin_support,
-  prob_output_map_eq_sum_fin_support, finset.mul_sum, mul_ite, mul_zero]
+by simp only [oracle_comp.seq_eq_bind_map, prob_output_bind_eq_sum,
+  prob_output_map_eq_sum_ite, finset.mul_sum, mul_ite, mul_zero]
 
--- TODO: naming conventions on lemmas below
-
-@[simp] lemma prob_event_seq (e : set β) : ⁅e | og <*> oa⁆ = ∑' g, ⁅= g | og⁆ * ⁅g ⁻¹' e | oa⁆ :=
+lemma prob_event_seq_eq_tsum (p : β → Prop) :
+  ⁅p | og <*> oa⁆ = ∑' g, ⁅= g | og⁆ * ⁅p ∘ g | oa⁆ :=
 by simp [oracle_comp.seq_eq_bind_map, prob_event_bind_eq_tsum]
 
-/-- TODO: Really seems like defaulting to prop will be nicer with stuff like this. -/
-lemma prob_event_seq' (p : β → Prop) : ⁅p | og <*> oa⁆ = ∑' g, ⁅= g | og⁆ * ⁅p ∘ g | oa⁆ :=
-prob_event_seq og oa p
-
-@[simp] lemma prob_event_seq_eq_tsum_ite (e : set β) [decidable_pred (∈ e)] :
-  ⁅e | og <*> oa⁆ = ∑' (g : α → β) x, if g x ∈ e then ⁅= g | og⁆ * ⁅= x | oa⁆ else 0 :=
-by simp only [oracle_comp.seq_eq_bind_map, prob_event_bind_eq_tsum, prob_event_map_eq_tsum,
-  ← ennreal.tsum_mul_left, eval_dist_apply_eq_prob_output, mul_ite, mul_zero]
-
-lemma prob_event_seq_eq_tsum_ite' (p : set β) [decidable_pred p] :
-  ⁅p | og <*> oa⁆ = ∑' (g : α → β) x, if g x ∈ p then ⁅= g | og⁆ * ⁅= x | oa⁆ else 0 :=
-prob_event_seq_eq_tsum_ite og oa p
+lemma prob_event_seq_eq_tsum_ite (p : β → Prop) [decidable_pred p] :
+  ⁅p | og <*> oa⁆ = ∑' (g : α → β) x, if p (g x) then ⁅= g | og⁆ * ⁅= x | oa⁆ else 0 :=
+by simp_rw [prob_event_seq_eq_tsum, prob_event_eq_tsum_ite, ← ennreal.tsum_mul_left,
+  mul_ite, mul_zero]
 
 end seq
 
@@ -125,29 +116,25 @@ by simp_rw [prob_output_seq_map_eq_tsum', prob_output_return, mul_boole]
 @[simp] lemma prob_output_seq_map_eq_sum [decidable_eq α] [decidable_eq β]
   [decidable_eq γ] (z : γ) : ⁅= z | f <$> oa <*> ob⁆ = ∑ x in oa.fin_support,
     ∑ y in ob.fin_support, if z = f x y then ⁅= x | oa⁆ * ⁅= y | ob⁆ else 0 :=
-by simp_rw [seq_map_eq_bind_bind, prob_output_bind_eq_sum_fin_support, finset.mul_sum,
+by simp_rw [seq_map_eq_bind_bind, prob_output_bind_eq_sum, finset.mul_sum,
   prob_output_return, mul_ite, mul_one, mul_zero]
 
-@[simp] lemma prob_event_seq_map_eq_tsum (e : set γ) [decidable_pred (∈ e)] :
-  ⁅e | f <$> oa <*> ob⁆ = ∑' x y, if f x y ∈ e then ⁅= x | oa⁆ * ⁅= y | ob⁆ else 0 :=
+@[simp] lemma prob_event_seq_map_eq_tsum (p : γ → Prop) [decidable_pred p] :
+  ⁅p | f <$> oa <*> ob⁆ = ∑' x y, if p (f x y) then ⁅= x | oa⁆ * ⁅= y | ob⁆ else 0 :=
 by simp_rw [seq_map_eq_bind_bind, prob_event_bind_eq_tsum, ← ennreal.tsum_mul_left,
   prob_event_return, mul_ite, mul_one, mul_zero]
 
 @[simp] lemma prob_event_seq_map_eq_sum [decidable_eq α] [decidable_eq β]
-  (e : set γ) [decidable_pred (∈ e)] : ⁅e | f <$> oa <*> ob⁆ = ∑ x in oa.fin_support,
-    ∑ y in ob.fin_support, if f x y ∈ e then ⁅= x | oa⁆ * ⁅= y | ob⁆ else 0 :=
-by simp_rw [seq_map_eq_bind_bind, prob_event_bind_eq_sum_fin_support, finset.mul_sum,
+  (p : γ → Prop) [decidable_pred p] : ⁅p | f <$> oa <*> ob⁆ = ∑ x in oa.fin_support,
+    ∑ y in ob.fin_support, if p (f x y) then ⁅= x | oa⁆ * ⁅= y | ob⁆ else 0 :=
+by simp_rw [seq_map_eq_bind_bind, prob_event_bind_eq_sum, finset.mul_sum,
   prob_event_return, mul_ite, mul_one, mul_zero]
 
 section uncurry
 
-lemma prob_event_seq_map_eq_prob_event_preimage_uncurry (f : α → β → γ) (e : set γ) :
-  ⁅e | f <$> oa <*> ob⁆ = ⁅(function.uncurry f) ⁻¹' e | prod.mk <$> oa <*> ob⁆ :=
-by simpa only [← prob_event_map _ (function.uncurry f), map_seq, map_map_eq_map_comp]
-
 lemma prob_event_seq_map_eq_prob_event_comp_uncurry (f : α → β → γ) (p : γ → Prop) :
   ⁅p | f <$> oa <*> ob⁆ = ⁅p ∘ function.uncurry f | prod.mk <$> oa <*> ob⁆ :=
-by simpa only [← prob_event_map' _ (function.uncurry f), map_seq, map_map_eq_map_comp]
+by simpa only [← prob_event_map _ (function.uncurry f), map_seq, map_map_eq_map_comp]
 
 end uncurry
 
@@ -179,13 +166,13 @@ product of the probabilites holding individually.
 For example this applies if `f` is `::`, `e` is defined elementwise,
 and `e1` and `e2` are the portions of `e` for the head and tail respectively. -/
 lemma prob_event_seq_map_eq_mul (oa : oracle_comp spec α) (ob : oracle_comp spec β)
-  (f : α → β → γ) (e : set γ) (e1 : set α) (e2 : set β)
-  (h : ∀ x ∈ oa.support, ∀ y ∈ ob.support, f x y ∈ e ↔ x ∈ e1 ∧ y ∈ e2) :
-  ⁅e | f <$> oa <*> ob⁆ = ⁅e1 | oa⁆ * ⁅e2 | ob⁆ :=
+  (f : α → β → γ) (p : γ → Prop) (q1 : α → Prop) (q2 : β → Prop)
+  (h : ∀ x ∈ oa.support, ∀ y ∈ ob.support, p (f x y) ↔ q1 x ∧ q2 y) :
+  ⁅p | f <$> oa <*> ob⁆ = ⁅q1 | oa⁆ * ⁅q2 | ob⁆ :=
 begin
-  haveI : decidable_pred (∈ e) := classical.dec_pred (∈ e),
-  haveI : decidable_pred (∈ e1) := classical.dec_pred (∈ e1),
-  haveI : decidable_pred (∈ e2) := classical.dec_pred (∈ e2),
+  haveI : decidable_pred p := classical.dec_pred p,
+  haveI : decidable_pred q1 := classical.dec_pred q1,
+  haveI : decidable_pred q2 := classical.dec_pred q2,
   simp_rw [prob_event_seq_map_eq_tsum, ← ennreal.tsum_prod, prob_event_eq_tsum_ite,
     ← ennreal.tsum_mul_right, ← ennreal.tsum_mul_left, ← ennreal.tsum_prod, ite_mul,
     zero_mul, mul_ite, mul_zero, ← ite_and],
@@ -219,8 +206,8 @@ lemma seq_seq_dist_equiv_comm (f : α → β → β)
 begin
   simp only [seq_eq_bind_map, map_bind, map_map_eq_map_comp],
   rw_dist_equiv [bind_bind_dist_equiv_comm],
-  refine bind_dist_equiv_bind_of_dist_equiv_right _ _ _ (λ g hg, _),
-  refine bind_dist_equiv_bind_of_dist_equiv_right _ _ _ (λ g' hg', _),
+  refine bind_dist_equiv_bind_of_dist_equiv_right _ (λ g hg, _),
+  refine bind_dist_equiv_bind_of_dist_equiv_right _ (λ g' hg', _),
   rw [mem_support_map_iff] at hg hg',
   obtain ⟨x, hx, rfl⟩ := hg,
   obtain ⟨y, hy, rfl⟩ := hg',
