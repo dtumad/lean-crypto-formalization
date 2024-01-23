@@ -46,6 +46,14 @@ lemma prob_output_return_prod_mk_snd (x : α) (y y' : β) :
   ⁅= (x, y) | return' !spec! (x, y')⁆ = ⁅= y | return' !spec! y'⁆ :=
 by simp
 
+@[simp] lemma prob_event_fst_eq_snd_eq (oa : oracle_comp spec (α × β)) (x : α) (y : β) :
+  ⁅λ z, z.1 = x ∧ z.2 = y | oa⁆ = ⁅= (x, y) | oa⁆ :=
+by simp_rw [← prob_event_eq_eq_prob_output', eq_iff_fst_eq_snd_eq]
+
+@[simp] lemma prob_event_eq_fst_eq_snd (oa : oracle_comp spec (α × β)) (x : α) (y : β) :
+  ⁅λ z, x = z.1 ∧ y = z.2 | oa⁆ = ⁅= (x, y) | oa⁆ :=
+by simp_rw [← prob_event_eq_eq_prob_output', eq_iff_fst_eq_snd_eq, @eq_comm _ x, @eq_comm _ y]
+
 section fst_snd_map_bind_return_dist_equiv
 
 variables (oa : oracle_comp spec α) (f : α → β) (g : α → γ) (h : α → δ)
@@ -337,6 +345,36 @@ begin
   refine trans (congr_arg (prob_output _) (prod.mk.eta.symm)) _,
   refine trans _ (prob_output_seq_map_eq_mul_of_injective2 _ _ (prod.mk_injective2) z.1 z.2),
   rw [seq_map_eq_bind_bind],
+end
+
+@[simp] lemma prob_output_bind_prod_mk_fst' [decidable_eq β] (z : β × α) :
+  ⁅= z | oa >>= λ a, return (f a, a)⁆ = if z.1 = f z.2 then ⁅= z.2 | oa⁆ else 0 :=
+begin
+  haveI : decidable_eq α := classical.dec_eq α,
+  cases z with y x,
+  by_cases hy : y = f x,
+  { simp only [hy, eq_self_iff_true, if_true, prob_output_bind_return_eq_tsum,
+      eq_iff_fst_eq_snd_eq],
+    refine trans (tsum_eq_single x _) (if_pos ⟨rfl, rfl⟩),
+    refine λ x' hx', ite_eq_right_iff.2 (λ hx, (hx' hx.2.symm).elim) },
+  { simp only [hy, if_false, prob_output_eq_zero_iff, support_bind_return, set.mem_image,
+      mk.inj_iff, exists_eq_right_right, not_and],
+    refine λ _, ne.symm hy }
+end
+
+@[simp] lemma prob_output_bind_prod_mk_snd' [decidable_eq β] (z : α × β) :
+  ⁅= z | oa >>= λ a, return (a, f a)⁆ = if z.2 = f z.1 then ⁅= z.1 | oa⁆ else 0 :=
+begin
+  haveI : decidable_eq α := classical.dec_eq α,
+  cases z with x y,
+  by_cases hy : y = f x,
+  { simp only [hy, eq_self_iff_true, if_true, prob_output_bind_return_eq_tsum,
+      eq_iff_fst_eq_snd_eq],
+    refine trans (tsum_eq_single x _) (if_pos ⟨rfl, rfl⟩),
+    refine λ x' hx', ite_eq_right_iff.2 (λ hx, (hx' hx.1.symm).elim) },
+  { simp only [hy, if_false, prob_output_eq_zero_iff, support_bind_return, set.mem_image,
+      mk.inj_iff, not_exists, not_and], 
+    refine λ _ _ h, h.symm ▸ ne.symm hy }
 end
 
 @[simp] lemma prob_output_bind_prod_mk_fst

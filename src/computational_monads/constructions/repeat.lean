@@ -40,6 +40,82 @@ variables (oa oa' : oracle_comp spec α) (n : ℕ) {m : ℕ} (x x' : α) (xs : v
 
 @[simp] lemma repeat_succ : oa.repeat n.succ = cons <$> oa <*> oa.repeat n := rfl
 
+@[simp] lemma vector.append_nil (v : vector α n) : v.append vector.nil = v :=
+begin
+  cases v,
+  simp [vector.nil, vector.append],
+end
+
+-- #check nat.sub_add_cancel
+
+-- lemma repeat_of_le (n m : ℕ) (hm : m ≤ n) : oa.repeat n =
+--   vector.append <$> oa.repeat (n - m) <*> oa.repeat m :=
+
+-- lemma repeat_add_dist_equiv (n m : ℕ) : oa.repeat (n + m) ≃ₚ
+--   append <$> oa.repeat n <*> oa.repeat m :=
+-- begin
+--   induction m with m hm,
+--   {
+--     show oa.repeat n ≃ₚ _,
+--     simp [function.comp],
+--   },
+--   {
+--     show oa.repeat (n + m).succ ≃ₚ _,
+--     rw [repeat_succ],
+--     rw_dist_equiv [hm],
+--     sorry,
+--   }
+-- end
+
+-- TODO: nicer
+lemma repeat_add (n m : ℕ) : oa.repeat (n + m) = vector.append <$> oa.repeat n <*> oa.repeat m :=
+begin
+  sorry
+end
+--   refine nat.case_strong_induction_on m _ (λ m hm, _),
+--   -- induction m with m hm,
+--   {
+--     show oa.repeat n = _,
+--     simp_rw [repeat_zero, oracle_comp.seq_return, map_map_eq_map_comp, function.comp,
+--       vector.append_nil, id_map']
+--   },
+--   {
+--     by_cases hm0 : m = 0,
+--     {
+--       sorry,
+--     },
+--     -- rw [repeat_succ],
+--     show oa.repeat (n + m).succ = _,
+--     rw [repeat_succ, repeat_succ, hm m le_rfl],
+--     -- simp only [seq_assoc],
+--     rw [seq_assoc, seq_assoc],
+--     congr' 1,
+--     rw [seq_eq_bind_map, oracle_comp.bind_map],
+--     specialize hm 1 sorry,
+--     rw [repeat_succ oa 0, repeat_zero, oracle_comp.seq_return,
+--       map_map_eq_map_comp] at hm,
+--     simp [function.comp] at hm ⊢,
+
+
+--     simp [map_seq] at hm ⊢,
+--     rw [map_map_eq_map_comp],
+--     have := congr_arg (λ oc : oracle_comp spec (vector α n.succ),
+--       (function.comp <$> cons <$> oc : oracle_comp spec (vector α m → vector α (n.succ + m)))) hm,
+--     simp [map_map_eq_map_comp, map_seq] at this,
+--     rw [map_map_eq_map_comp, map_seq] at this,
+--     -- refine trans _ (trans (congr_arg ((<$>) _) _) _),
+--     simp [seq_map_eq_bind_bind] at hm ⊢,
+--     -- rw [seq_map_assoc],
+--     -- simp [function.comp, ← seq_map_assoc],
+--     -- rw [oracle_comp.seq_map_eq_bind_bind],
+--     -- rw [seq_map_eq_bind_bind],
+--     -- simp [function.comp],
+--     -- -- rw [← hm 1],
+--     -- rw [seq_assoc, map_map_eq_map_comp],
+--     -- simp [seq_map_eq_bind_bind],
+--   }
+-- end
+
 section all₂
 
 /-- The support of `oa.repeat n` is the set of vectors where every element is in `oa.support`. -/
