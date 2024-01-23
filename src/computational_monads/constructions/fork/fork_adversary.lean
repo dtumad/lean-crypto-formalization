@@ -19,7 +19,7 @@ The name adversary is based on the fact that forking is usually done in a securi
 open_locale big_operators ennreal
 open oracle_comp oracle_spec
 
-variables {α β γ : Type} {spec spec' adv_spec exp_spec : oracle_spec} {i : spec.ι} --{q : ℕ}
+variables {α β γ δ : Type} {spec spec' adv_spec exp_spec : oracle_spec} {i : spec.ι} --{q : ℕ}
 
 /-- A forking adversary is a `sec_adversary _ α β` along with functions to define forking behavior.
 `i` is the index of the oracle whose queries will be forked after a first execution.
@@ -110,7 +110,7 @@ lemma prob_event_same_fork_point (ofr : oracle_comp spec' (fork_result adv)) :
   ⁅same_fork_point | ofr⁆ =
     ∑ fp : fin adv.q.succ, ⁅= (some fp, some fp) | fork_result.fork_points <$> ofr⁆ :=
 calc ⁅same_fork_point | ofr⁆ = ⁅λ z, z.1 ≠ none ∧ z.1 = z.2 | fork_result.fork_points <$> ofr⁆ :
-    symm (prob_event_map' ofr fork_result.fork_points _)
+    symm (prob_event_map ofr fork_result.fork_points _)
   ... = ∑ fp : fin adv.q.succ, ⁅= (some fp, some fp) | fork_result.fork_points <$> ofr⁆ :
     begin
       rw [prob_event_eq_tsum_ite, ennreal.tsum_prod', ennreal.tsum_option],
@@ -190,31 +190,55 @@ do {fresh_seed ← generate_seed (adv.run_qb - init_seed),
 
 variables (adv : fork_adversary spec α β i) (y : α)
 
+lemma bind_bind_eq_seq_map_bind (oa : oracle_comp spec α) (ob : α → oracle_comp spec β)
+  (f : α → β → γ) (oc : γ → oracle_comp spec δ) :
+  do {x ← oa, y ← ob x, oc (f x y)} = (do {x ← oa, y ← ob x, return (f x y)}) >>= oc :=
+by simp only [seq_map_eq_bind_bind, bind_assoc, oracle_comp.return_bind]
+
 lemma generate_seed_bind_seed_and_run_dist_equiv
   (qc : spec.query_count) (hqc : qc ≤ adv.run_qb) :
   do {qs ← ↑(generate_seed qc), adv.seed_and_run y qs} ≃ₚ adv.seed_and_run y ∅ :=
 begin
   simp [seed_and_run],
-  sorry,
-  -- rw_dist_equiv [generate_seed_bind_split_of_le _ _ hqc],
-  -- pairwise_dist_equiv with qs hqs,
-  -- rw [support_coe_sub_spec] at hqs,
-  -- rw [← coe_query_count_of_mem_support_generate_seed hqs, indexed_list.coe_query_count_eq],
+  refine trans (dist_equiv_of_eq (bind_bind_eq_seq_map_bind ↑(generate_seed qc)
+    (λ qs : spec.query_seed, ↑(generate_seed (adv.run_qb - qs.to_query_count)))
+    (λ qs qs', qs + qs') (λ seed, simulate' seededₛₒ (adv.to_sec_adv.run y) seed >>=
+      λ (z : β), return (run_result.mk (adv.choose_fork y z) z seed)))) _,
+  refine bind_dist_equiv_bind_of_dist_equiv_left _ _,
+  simp only [← oracle_comp.map_eq_bind_return_comp, ← coe_sub_spec_bind,
+    ← map_bind, ←coe_sub_spec_map, coe_sub_spec_inj_dist_equiv],
+  refine symm _,
+  refine trans _ (generate_seed_add_dist_equiv' qc (λ qc', adv.run_qb - qc')),
+  rw [add_tsub_cancel_of_le hqc],
 end
 
-lemma prob_output_fork_point_map_seed_and_run (fp : fin adv.q.succ) :
-  ⁅= some fp | run_result.fork_point <$> adv.seed_and_run y ∅⁆ =
-    ⁅= some fp | adv.choose_fork y <$> adv.run y⁆ :=
+lemma fork_point_map_seed_and_run_dist_equiv (fp : fin adv.q.succ) :
+  run_result.fork_point <$> adv.seed_and_run y ∅ ≃ₚ
+    adv.choose_fork y <$> adv.run y :=
 begin
-  rw_dist_equiv [map_bind_dist_equiv, map_bind_dist_equiv, map_return_dist_equiv],
+  simp_rw [seed_and_run, map_bind, map_return, ← bind_assoc],
   simp only [indexed_list.coe_query_count_eq, indexed_list.to_query_count_empty,
-    query_count.sub_empty, indexed_list.empty_add],
-  rw [← bind_assoc],
-  -- refine trans (bind_bind_dist_equiv_assoc _ _ _) _,
-  rw [oracle_comp.map_eq_bind_return_comp],
-  sorry,
-  -- rw_dist_equiv [seeded_oracle.generate_seed_bind_simulate'_dist_equiv]
+    query_count.sub_empty, indexed_list.empty_add_eq_id, id.def],
+  rw_dist_equiv [seeded_oracle.generate_seed_bind_simulate'_dist_equiv],
 end
+
+-- lemma prob_output_fork_point_map_seed_and_run (fp : fin adv.q.succ) :
+--   ⁅= some fp | run_result.fork_point <$> adv.seed_and_run y ∅⁆ =
+--     ⁅= some fp | adv.choose_fork y <$> adv.run y⁆ :=
+-- begin
+--   simp_rw [seed_and_run, map_bind, map_return, ← bind_assoc],
+--   simp,
+
+--   rw [seeded_oracle.generate_seed_bind_simulate'_dist_equiv]
+--   -- rw_dist_equiv [map_bind_dist_equiv, map_bind_dist_equiv, map_return_dist_equiv],
+--   -- simp only [indexed_list.coe_query_count_eq, indexed_list.to_query_count_empty,
+--   --   query_count.sub_empty, indexed_list.empty_add],
+--   -- rw [← bind_assoc],
+--   -- -- refine trans (bind_bind_dist_equiv_assoc _ _ _) _,
+--   -- rw [oracle_comp.map_eq_bind_return_comp],
+--   -- sorry,
+--   -- rw_dist_equiv [seeded_oracle.generate_seed_bind_simulate'_dist_equiv]
+-- end
 
 lemma to_query_count_of_mem_support_seed_and_run (qs : spec.query_seed)
   (rr : run_result adv) (hrr : rr ∈ (adv.seed_and_run y qs).support)

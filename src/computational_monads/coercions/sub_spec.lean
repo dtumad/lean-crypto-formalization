@@ -125,6 +125,9 @@ begin
   rw [punit_eq x.2 ()],
 end
 
+-- lemma coe_sub_spec_bind_return :
+--   (↑(oa >>= λ x, return (f x)))
+
 @[simp] lemma coe_sub_spec_query :
   (↑(query i t) : oracle_comp super_spec (sub_spec.range i)) = h.to_fun i t :=
 by simp only [coe_sub_spec_def, simulate'_query, map_bind, map_pure, bind_pure]

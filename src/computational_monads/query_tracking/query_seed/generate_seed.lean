@@ -71,6 +71,13 @@ end
   generate_seed (qc + qc') ≃ₚ (+) <$> generate_seed qc <*> generate_seed qc' :=
 sorry
 
+lemma generate_seed_add_dist_equiv' (qc : spec.query_count)
+  (qc' : spec.query_count → spec.query_count) : generate_seed (qc + qc' qc) ≃ₚ
+  do {qs ← generate_seed qc, qs' ← generate_seed (qc' qs.to_query_count), return (qs + qs')} :=
+begin
+  sorry,
+end
+
 lemma generate_seed_dist_equiv_add_sub (h : qc' ≤ qc) :
   generate_seed qc ≃ₚ (+) <$> generate_seed qc' <*> generate_seed (qc - qc') :=
 sorry
