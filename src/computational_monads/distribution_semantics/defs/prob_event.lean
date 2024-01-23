@@ -200,6 +200,8 @@ lemma prob_event_eq_sum_fintype_ite [fintype α] [decidable_pred p] :
 
 end ite
 
+section filter
+
 /-- If we have `decidable_eq` on the output type and `decidable_pred` of the event,
 we can write the probability of an event as a finite sum over the `fin_support` of the computation,
 by filtering the computation's `fin_support` by the predicate. -/
@@ -208,6 +210,14 @@ lemma prob_event_eq_sum_filter [decidable_eq α] [decidable_pred p] :
 trans (prob_event_eq_tsum_ite oa p) (trans (tsum_eq_sum (λ x hx, ite_eq_right_iff.2 (λ hpx,
   prob_output_eq_zero' (λ h, hx (finset.mem_filter.2 ⟨h, hpx⟩)))))
     (finset.sum_congr rfl (λ x hx, if_pos (finset.mem_filter.1 hx).2)))
+
+/-- Alternative to `prob_event_eq_sum_filter` when we have `fintype α` but not `decidable_eq α`.-/
+lemma prob_event_eq_sum_filter_univ [fintype α] [decidable_pred p] :
+  ⁅p | oa⁆ = ∑ x in finset.univ.filter p, ⁅= x | oa⁆ :=
+by simpa only [prob_event_eq_tsum_ite, finset.sum_filter]  
+  using tsum_eq_sum (λ x h, (h (finset.mem_univ x)).elim)
+
+end filter
 
 /-- The probability of an output belonging to a `finset` can be written as the sum
 of the probabilities of getting each element of the set from the computation. -/

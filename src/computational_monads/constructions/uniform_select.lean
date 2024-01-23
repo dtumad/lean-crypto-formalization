@@ -69,16 +69,17 @@ section eval_dist
 @[simp] lemma eval_dist_uniform_fin : ⁅$[0..n]⁆ = pmf.uniform_of_fintype (fin $ n + 1) :=
 by simpa only [uniform_fin, eval_dist_query]
 
-@[simp] lemma prob_output_uniform_fin : ⁅= i | $[0..m]⁆ = m.succ⁻¹ :=
-by rw [prob_output.def, eval_dist_uniform_fin m, pmf.uniform_of_fintype_apply i, fintype.card_fin]
+@[simp] lemma prob_output_uniform_fin : ⁅= i | $[0..m]⁆ = (↑(m + 1))⁻¹ :=
+by rw [prob_output.def, eval_dist_uniform_fin m, pmf.uniform_of_fintype_apply i,
+  fintype.card_fin, nat.cast_succ]
 
 lemma prob_output_uniform_fin_bind_eq_tsum :
-  ⁅= x | $[0..m] >>= oa⁆ = (∑' i, ⁅= x | oa i⁆) / m.succ :=
+  ⁅= x | $[0..m] >>= oa⁆ = (∑' i, ⁅= x | oa i⁆) / ↑(m + 1) :=
 by simp only [prob_output_bind_eq_tsum, div_eq_mul_inv, ← ennreal.tsum_mul_right,
   prob_output_uniform_fin, one_mul, mul_comm (m.succ⁻¹ : ℝ≥0∞)]
 
 @[simp] lemma prob_output_uniform_fin_bind_eq_sum :
-  ⁅= x | $[0..m] >>= oa⁆ = (∑ i, ⁅= x | oa i⁆) / m.succ :=
+  ⁅= x | $[0..m] >>= oa⁆ = (∑ i, ⁅= x | oa i⁆) / ↑(m + 1) :=
 by simp only [prob_output_bind_eq_sum, div_eq_mul_inv, ← finset.sum_mul, one_mul,
   prob_output_uniform_fin, mul_comm (m.succ⁻¹ : ℝ≥0∞), fin_support_uniform_fin]
 
@@ -86,18 +87,18 @@ end eval_dist
 
 section prob_event
 
-@[simp] lemma prob_event_uniform_fin (e : set (fin $ m + 1)) [decidable_pred e] :
-  ⁅e | $[0..m]⁆ = (fintype.card e) / (m + 1) :=
-by simp only [uniform_fin, prob_event_query_eq_div, unif_spec_range,
-  fintype.card_fin, nat.cast_add, nat.cast_one, append.range_inl]
+@[simp] lemma prob_event_uniform_fin (p : fin (m + 1) → Prop) [decidable_pred p] :
+  ⁅p | $[0..m]⁆ = (finset.univ.filter p).card / ↑(m + 1) :=
+by simp_rw [prob_event_eq_sum_filter, fin_support_uniform_fin,
+  prob_output_uniform_fin, finset.sum_const, nsmul_eq_mul, div_eq_mul_inv]
 
-@[simp] lemma prob_event_uniform_fin_bind_eq_tsum (e : set α) :
-  ⁅e | $[0..m] >>= oa⁆ = (∑' i, ⁅e | oa i⁆) / m.succ :=
+lemma prob_event_uniform_fin_bind_eq_tsum (p : α → Prop) :
+  ⁅p | $[0..m] >>= oa⁆ = (∑' i, ⁅p | oa i⁆) / ↑(m + 1) :=
 by simp only [prob_event_bind_eq_tsum, div_eq_mul_inv, ← ennreal.tsum_mul_right,
   prob_output_uniform_fin, one_mul, mul_comm (m.succ⁻¹ : ℝ≥0∞)]
 
-lemma prob_event_uniform_fin_bind_apply_eq_sum (e : set α) :
-  ⁅e | $[0..m] >>= oa⁆ = (∑ i, ⁅e | oa i⁆) / m.succ :=
+@[simp] lemma prob_event_uniform_fin_bind_apply_eq_sum (e : set α) :
+  ⁅e | $[0..m] >>= oa⁆ = (∑ i, ⁅e | oa i⁆) / ↑(m + 1) :=
 by simp only [prob_event_bind_eq_sum, div_eq_mul_inv, ← finset.sum_mul, one_mul,
   prob_output_uniform_fin, mul_comm (m.succ⁻¹ : ℝ≥0∞), fin_support_uniform_fin]
 
@@ -203,21 +204,21 @@ end eval_dist
 
 section prob_event
 
-@[simp] lemma prob_event_uniform_select_vector (e : set α) [decidable_pred (∈ e)] :
-  ⁅e | $ᵛ v⁆ = (v.to_list.countp e) / n.succ :=
+@[simp] lemma prob_event_uniform_select_vector (p : α → Prop) [decidable_pred p] :
+  ⁅p | $ᵛ v⁆ = (v.to_list.countp p) / n.succ :=
 by { rw [prob_event.def, eval_dist_uniform_select_vector,
   to_outer_measure_uniform_of_vector_apply], congr }
 
-@[simp] lemma prob_event_uniform_select_vector_bind_eq_tsum [decidable_eq α] (e : set β) :
-  ⁅e | ($ᵛ v) >>= ob⁆ = (∑' x, (v.to_list.count x) * ⁅e | ob x⁆) / n.succ :=
+lemma prob_event_uniform_select_vector_bind_eq_tsum [decidable_eq α] (p : β → Prop) :
+  ⁅p | ($ᵛ v) >>= ob⁆ = (∑' x, (v.to_list.count x) * ⁅p | ob x⁆) / n.succ :=
 begin
-  simp_rw [prob_event_bind_eq_tsum ($ᵛ v) ob e, prob_output_uniform_select_vector,
+  simp_rw [prob_event_bind_eq_tsum ($ᵛ v) ob p, prob_output_uniform_select_vector,
     div_eq_mul_inv, ← ennreal.tsum_mul_right],
   exact tsum_congr (λ _, by ring)
 end
 
-lemma prob_event_uniform_select_vector_bind_eq_sum [decidable_eq α] (e : set β) :
-  ⁅e | ($ᵛ v) >>= ob⁆ = (∑ x in v.to_list.to_finset, (v.to_list.count x) * ⁅e | ob x⁆) / n.succ :=
+@[simp] lemma prob_event_uniform_select_vector_bind_eq_sum [decidable_eq α] (p : β → Prop) :
+  ⁅p | ($ᵛ v) >>= ob⁆ = (∑ x in v.to_list.to_finset, (v.to_list.count x) * ⁅p | ob x⁆) / n.succ :=
 begin
   rw [prob_event_uniform_select_vector_bind_eq_tsum],
   refine congr_arg (λ x, x / (n.succ : ℝ≥0∞)) (tsum_eq_sum $ λ x hx, _),
@@ -326,21 +327,21 @@ end eval_dist
 
 section prob_event
 
-@[simp] lemma prob_event_uniform_select_list (e : set α) [decidable_pred e] :
-  ⁅e | $ˡ xs h⁆ = xs.countp e / xs.length :=
+@[simp] lemma prob_event_uniform_select_list (p : α → Prop) [decidable_pred p] :
+  ⁅p | $ˡ xs h⁆ = xs.countp p / xs.length :=
 by { rw [prob_event.def, eval_dist_uniform_select_list,
   to_outer_measure_uniform_of_list_apply], congr }
 
-@[simp] lemma prob_event_uniform_select_list_bind_eq_tsum [decidable_eq α] (e : set β) :
-  ⁅e | $ˡ xs h >>= ob⁆ = (∑' x, xs.count x * ⁅e | ob x⁆) / xs.length :=
+lemma prob_event_uniform_select_list_bind_eq_tsum [decidable_eq α] (p : β → Prop) :
+  ⁅p | $ˡ xs h >>= ob⁆ = (∑' x, xs.count x * ⁅p | ob x⁆) / xs.length :=
 begin
   rw [list.empty_iff_eq_nil] at h,
   simp only [uniform_select_list, prob_event_uniform_select_vector_bind_eq_tsum,
     vector.to_list_mk, nat.succ_pred_eq_of_pos (list.length_pos_of_ne_nil h)],
 end
 
-lemma prob_event_uniform_select_list_bind_eq_sum [decidable_eq α] (e : set β) :
-  ⁅e | $ˡ xs h >>= ob⁆ = (∑ x in xs.to_finset, xs.count x * ⁅e | ob x⁆) / xs.length :=
+@[simp] lemma prob_event_uniform_select_list_bind_eq_sum [decidable_eq α] (p : β → Prop) :
+  ⁅p | $ˡ xs h >>= ob⁆ = (∑ x in xs.to_finset, xs.count x * ⁅p | ob x⁆) / xs.length :=
 begin
   rw [list.empty_iff_eq_nil] at h,
   simp only [uniform_select_list, prob_event_uniform_select_vector_bind_eq_sum,
@@ -422,19 +423,19 @@ end eval_dist
 
 section prob_event
 
-@[simp] lemma prob_event_uniform_select_finset (e : set α) [decidable_pred e] :
-  ⁅e | $ˢ bag h⁆ = (bag.filter (∈ e)).card / bag.card :=
+@[simp] lemma prob_event_uniform_select_finset (p : α → Prop) [decidable_pred p] :
+  ⁅p | $ˢ bag h⁆ = (bag.filter p).card / bag.card :=
 by { rw [prob_event.def, eval_dist_uniform_select_finset,
   to_outer_measure_uniform_of_finset_apply], congr }
 
-lemma prob_event_uniform_select_finset_bind_eq_tsum [decidable_eq α] (e : set β) :
-  ⁅e | $ˢ bag h >>= ob⁆ = (∑' x, ite (x ∈ bag) ⁅e | ob x⁆ 0) / bag.card :=
+lemma prob_event_uniform_select_finset_bind_eq_tsum [decidable_eq α] (p : β → Prop) :
+  ⁅p | $ˢ bag h >>= ob⁆ = (∑' x, ite (x ∈ bag) ⁅p | ob x⁆ 0) / bag.card :=
 by simp only [uniform_select_finset, prob_event_uniform_select_list_bind_eq_tsum,
   finset.count_to_list, finset.to_list_to_finset, nat.cast_ite, algebra_map.coe_one,
   algebra_map.coe_zero, boole_mul, finset.sum_ite_mem, finset.inter_self, finset.length_to_list]
 
-lemma prob_event_uniform_select_finset_bind_eq_sum [decidable_eq α] (e : set β) :
-  ⁅e | $ˢ bag h >>= ob⁆ = (∑ x in bag, ⁅e | ob x⁆) / bag.card :=
+@[simp] lemma prob_event_uniform_select_finset_bind_eq_sum [decidable_eq α] (p : β → Prop) :
+  ⁅p | $ˢ bag h >>= ob⁆ = (∑ x in bag, ⁅p | ob x⁆) / bag.card :=
 by simp only [uniform_select_finset, prob_event_uniform_select_list_bind_eq_sum,
   finset.count_to_list, finset.to_list_to_finset, nat.cast_ite, algebra_map.coe_one,
   algebra_map.coe_zero, boole_mul, finset.sum_ite_mem, finset.inter_self, finset.length_to_list]
@@ -533,18 +534,18 @@ end prob_output
 
 section prob_event
 
-@[simp] lemma prob_event_uniform_select_fintype (e : set α) [decidable_pred e] :
-  ⁅e | $ᵗ α⁆ = fintype.card e / fintype.card α :=
-by { simp only [prob_event.def, eval_dist_uniform_select_fintype,
-  to_outer_measure_uniform_of_fintype_apply, finset.mem_univ, if_true, finset.card_univ], congr }
+@[simp] lemma prob_event_uniform_select_fintype (p : α → Prop) [decidable_pred p] :
+  ⁅p | $ᵗ α⁆ = (finset.univ.filter p).card / fintype.card α :=
+by simp only [prob_event_eq_sum_filter_univ, div_eq_mul_inv,
+  prob_output_uniform_select_fintype, finset.sum_const, nsmul_eq_mul]
 
-lemma prob_event_uniform_select_fintype_bind_eq_tsum [decidable_eq α] (e : set β) :
-  ⁅e | $ᵗ α >>= ob⁆ = (∑' a, ⁅e | ob a⁆) / fintype.card α :=
+lemma prob_event_uniform_select_fintype_bind_eq_tsum [decidable_eq α] (p : β → Prop) :
+  ⁅p | $ᵗ α >>= ob⁆ = (∑' a, ⁅p | ob a⁆) / fintype.card α :=
 by simp only [uniform_select_fintype, prob_event_uniform_select_finset_bind_eq_tsum,
   finset.mem_univ, if_true, finset.card_univ]
 
-lemma prob_event_uniform_select_fintype_bind_eq_sum [decidable_eq α] (e : set β) :
-  ⁅e | $ᵗ α >>= ob⁆ = (∑ a, ⁅e | ob a⁆) / fintype.card α :=
+@[simp] lemma prob_event_uniform_select_fintype_bind_eq_sum [decidable_eq α] (p : β → Prop) :
+  ⁅p | $ᵗ α >>= ob⁆ = (∑ a, ⁅p | ob a⁆) / fintype.card α :=
 by simp only [uniform_select_fintype, prob_event_uniform_select_finset_bind_eq_sum,
   finset.mem_univ, if_true, finset.card_univ]
 
