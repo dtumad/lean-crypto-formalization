@@ -55,3 +55,21 @@ begin
     rw [vector.nth_cons_succ, fin.pred_succ],
   }
 end
+
+
+lemma list.cons_injective2 {α : Type} : function.injective2 (list.cons : α → list α → list α) :=
+begin
+  simp [function.injective2, ← and_imp],
+  exact λ _ _ _ _, true.intro
+end
+
+lemma vector.injective2_cons {α : Type} {n : ℕ} :
+  function.injective2 (vector.cons : α → vector α n → vector α (n + 1)) :=
+begin
+  simp [function.injective2],
+  intros x x' xs xs' h,
+  refine ⟨_, _⟩,
+  { simpa using congr_arg vector.head h },
+  { ext m,
+    simpa [vector.nth_cons_succ] using congr_arg (λ v, vector.nth v (fin.succ m)) h }
+end

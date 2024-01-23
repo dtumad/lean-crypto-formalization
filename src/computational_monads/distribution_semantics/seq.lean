@@ -138,6 +138,30 @@ by simpa only [← prob_event_map _ (function.uncurry f), map_seq, map_map_eq_ma
 
 end uncurry
 
+section injective2
+
+variable {f}
+
+lemma mem_support_seq_map_iff_of_injective2 (hf : function.injective2 f) (x : α) (y : β) :
+  f x y ∈ (f <$> oa <*> ob).support ↔ x ∈ oa.support ∧ y ∈ ob.support :=
+by rw [support_seq_map, set.mem_image2_iff hf]
+
+lemma mem_fin_support_seq_map_iff_of_injective2 [decidable_eq α] [decidable_eq β]
+  [decidable_eq γ] (hf : function.injective2 f) (x : α) (y : β) :
+  f x y ∈ (f <$> oa <*> ob).fin_support ↔ x ∈ oa.fin_support ∧ y ∈ ob.fin_support :=
+by simp_rw [mem_fin_support_iff_mem_support, mem_support_seq_map_iff_of_injective2 oa ob hf]
+
+lemma prob_output_seq_map_eq_mul_of_injective2 (hf : function.injective2 f) (x : α) (y : β) :
+  ⁅= f x y | f <$> oa <*> ob⁆ = ⁅= x | oa⁆ * ⁅= y | ob⁆ :=
+begin
+  haveI : decidable_eq γ := classical.dec_eq γ,
+  rw [prob_output_seq_map_eq_tsum, ← ennreal.tsum_prod],
+  refine trans (tsum_eq_single (x, y) (λ z hz, if_neg (λ h, hz (prod.eq_iff_fst_eq_snd_eq.2
+    (hf.eq_iff.1 h.symm))))) (if_pos rfl),
+end
+
+end injective2
+
 section indep_eq_mul
 
 /-- If the results of the computations `oa` and `ob` are combined with some function `f`,
