@@ -118,7 +118,7 @@ end
 
 -- lemma complete_iff_signatures_support_subset :
 --   sig.complete ↔ ∀ (m : sig.M) (pk : sig.PK) (sk : sig.SK) (σ : sig.S)
---     (cache cache' : sig.random_spec.query_cache),
+--     (cache cache' : sig.random_spec.query_log),
 --     ((pk, sk), cache) ∈ (dsimulate sig.baseₛₒ $ sig.gen ()).support →
 --     (σ, cache') ∈ (simulate sig.baseₛₒ (sig.sign (pk, sk, m)) cache).support →
 --     (simulate' sig.baseₛₒ (sig.verify (pk, m, σ)) cache').support = {tt} :=

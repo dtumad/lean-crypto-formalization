@@ -82,10 +82,10 @@ lemma prob_output_get_or_else (x) : ⁅= x | cache.get_or_else i t ou⁆ =
     else ⁅= x | ou >>= λ u, return (u, [i, t ↦ u; cache])⁆ :=
 by simp [get_or_else_eq_ite]
 
-lemma prob_event_get_or_else (e) : ⁅e | cache.get_or_else i t ou⁆ =
-  if t ∈ᵢ cache then ⁅e | return' !spec! ((cache.lookup i t).get_or_else default, cache)⁆
-    else ⁅e | ou >>= λ u, return (u, [i, t ↦ u; cache])⁆ :=
-by simp [get_or_else_eq_ite]
+-- lemma prob_event_get_or_else (e) : ⁅e | cache.get_or_else i t ou⁆ =
+--   if t ∈ᵢ cache then ⁅e | return' !spec! ((cache.lookup i t).get_or_else default, cache)⁆
+--     else ⁅e | ou >>= λ u, return (u, [i, t ↦ u; cache])⁆ :=
+-- by simp [get_or_else_eq_ite]
 
 lemma get_or_else_dist_equiv : cache.get_or_else i t ou ≃ₚ
   if t ∈ᵢ cache then return ((cache.lookup i t).get_or_else default, cache)
@@ -120,10 +120,10 @@ lemma prob_output_get_or_else_of_mem (h : t ∈ᵢ cache) (x) :
     ⁅= x | return' !spec'! ((cache.lookup i t).get_or_else default, cache)⁆ :=
 by simp [h]
 
-lemma prob_event_get_or_else_of_mem (h : t ∈ᵢ cache) (e) :
-  ⁅e | cache.get_or_else i t ou⁆ =
-    ⁅e | return' !spec! ((cache.lookup i t).get_or_else default, cache)⁆ :=
-by simp [h]
+-- lemma prob_event_get_or_else_of_mem (h : t ∈ᵢ cache) (e) :
+--   ⁅e | cache.get_or_else i t ou⁆ =
+--     ⁅e | return' !spec! ((cache.lookup i t).get_or_else default, cache)⁆ :=
+-- by simp [h]
 
 lemma get_or_else_dist_equiv_of_mem (h : t ∈ᵢ cache) :
   cache.get_or_else i t ou ≃ₚ return' !spec! ((cache.lookup i t).get_or_else default, cache) :=
@@ -187,9 +187,9 @@ lemma prob_output_get_or_else_of_lookup_eq_some (h : cache.lookup i t = some u) 
   ⁅= x | cache.get_or_else i t ou⁆ = ⁅= x | return' !spec'! (u, cache)⁆ :=
 by simp [get_or_else_of_lookup_eq_some _ _ h]
 
-lemma prob_event_get_or_else_of_lookup_eq_some (h : cache.lookup i t = some u) (e) :
-  ⁅e | cache.get_or_else i t ou⁆ = ⁅e | return' !spec! (u, cache)⁆ :=
-by simp [get_or_else_of_lookup_eq_some _ _ h]
+-- lemma prob_event_get_or_else_of_lookup_eq_some (h : cache.lookup i t = some u) (e) :
+--   ⁅e | cache.get_or_else i t ou⁆ = ⁅e | return' !spec! (u, cache)⁆ :=
+-- by simp [get_or_else_of_lookup_eq_some _ _ h]
 
 lemma get_or_else_dist_equiv_of_lookup_eq_some (h : cache.lookup i t = some u) :
   cache.get_or_else i t ou ≃ₚ return' !spec! (u, cache) :=
@@ -260,18 +260,18 @@ section order
 variables {i : spec.ι} {t : spec.domain i} {ou : oracle_comp spec' (spec.range i)}
   (x : spec.range i × query_cache spec)
 
-lemma le_of_mem_support_get_or_else (h : x ∈ (cache.get_or_else i t ou).support) : cache ≤ x.2 :=
-begin
-  by_cases ht : t ∈ᵢ cache,
-  { rw [mem_support_get_or_else_iff_of_mem _ _ ht] at h,
-    refine h.2 ▸ le_rfl },
-  { rw [mem_support_get_or_else_iff_of_not_mem _ _ ht] at h,
-    refine h.2 ▸ le_cache_query_self _ _ _ _ },
-end
+-- lemma le_of_mem_support_get_or_else (h : x ∈ (cache.get_or_else i t ou).support) : cache ≤ x.2 :=
+-- begin
+--   by_cases ht : t ∈ᵢ cache,
+--   { rw [mem_support_get_or_else_iff_of_mem _ _ ht] at h,
+--     refine h.2 ▸ le_rfl },
+--   { rw [mem_support_get_or_else_iff_of_not_mem _ _ ht] at h,
+--     refine h.2 ▸ le_cache_query_self _ _ _ _ },
+-- end
 
-lemma le_of_mem_support_snd_map_get_or_else (cache' : query_cache spec)
-  (h : cache' ∈ (prod.snd <$> cache.get_or_else i t ou).support) : cache ≤ cache' :=
-let ⟨u, hu⟩ := (mem_support_map_snd_iff _ _).1 h in le_of_mem_support_get_or_else cache _ hu
+-- lemma le_of_mem_support_snd_map_get_or_else (cache' : query_cache spec)
+--   (h : cache' ∈ (prod.snd <$> cache.get_or_else i t ou).support) : cache ≤ cache' :=
+-- let ⟨u, hu⟩ := (mem_support_map_snd_iff _ _).1 h in le_of_mem_support_get_or_else cache _ hu
 
 end order
 
@@ -279,20 +279,20 @@ section fst_map
 
 variables {i : spec.ι} {t : spec.domain i} (ou : oracle_comp spec' (spec.range i))
 
-lemma fst_map_get_or_else_dist_equiv :
-  prod.fst <$> cache.get_or_else i t ou ≃ₚ
-    (cache.lookup i t).elim (query i t) return :=
-begin
-  by_cases h : t ∈ᵢ cache,
-  {
-    simp [get_or_else_eq_ite, h],
-    sorry,
-  },
-  {
-    sorry,
-  }
-  -- rw [get_or_else_eq_ite],
-end
+-- lemma fst_map_get_or_else_dist_equiv :
+--   prod.fst <$> cache.get_or_else i t ou ≃ₚ
+--     (cache.lookup i t).elim (query i t) return :=
+-- begin
+--   by_cases h : t ∈ᵢ cache,
+--   {
+--     simp [get_or_else_eq_ite, h],
+--     sorry,
+--   },
+--   {
+--     sorry,
+--   }
+--   -- rw [get_or_else_eq_ite],
+-- end
 
 lemma fst_map_get_or_else_dist_equiv_fst_map_get_or_else
   (h : cache.lookup i t = cache'.lookup i t) :

@@ -166,9 +166,9 @@ begin
   { exact h i' t' u' ((lookup_cache_query_diff_index _ hi _ _ _).symm.trans hu') }
 end
 
-@[simp] lemma le_cache_query_self : cache ≤ [i, t ↦ u; cache] := sorry
+-- @[simp] lemma le_cache_query_self : cache ≤ [i, t ↦ u; cache] := sorry
 
-@[simp] lemma lt_cache_query_self_iff : cache < [i, t ↦ u; cache] ↔ t ∉ᵢ cache := sorry
+-- @[simp] lemma lt_cache_query_self_iff : cache < [i, t ↦ u; cache] ↔ t ∉ᵢ cache := sorry
 
 end cache_query
 
@@ -178,49 +178,49 @@ lemma drop_query_monotone : monotone (drop_query i t) :=
 λ cache cache' h i' t' u', by {simp only [lookup_drop_query],
   split_ifs, exact id, exact h i' t' u', exact h i' t' u'}
 
-@[simp] lemma drop_query_le_self : cache.drop_query i t ≤ cache := sorry
+-- @[simp] lemma drop_query_le_self : cache.drop_query i t ≤ cache := sorry
 
-@[simp] lemma drop_query_lt_self_iff : cache.drop_query i t < cache ↔ t ∈ᵢ cache := sorry
+-- @[simp] lemma drop_query_lt_self_iff : cache.drop_query i t < cache ↔ t ∈ᵢ cache := sorry
 
-@[simp] lemma drop_query_eq_empty_iff_le_singleton :
-  drop_query i t cache = ∅ ↔ ∃ u, cache ≤ [i, t ↦ u] :=
-sorry
+-- @[simp] lemma drop_query_eq_empty_iff_le_singleton :
+--   drop_query i t cache = ∅ ↔ ∃ u, cache ≤ [i, t ↦ u] :=
+-- sorry
 
 end drop_query
 
-@[simp] lemma le_cache_query_iff : cache ≤ [i, t ↦ u; cache'] ↔
-  (t ∉ᵢ cache ∨ cache.lookup i t = some u) ∧ (cache.drop_query i t ≤ cache'.drop_query i t) :=
-begin
-  sorry,
-end
+-- @[simp] lemma le_cache_query_iff : cache ≤ [i, t ↦ u; cache'] ↔
+--   (t ∉ᵢ cache ∨ cache.lookup i t = some u) ∧ (cache.drop_query i t ≤ cache'.drop_query i t) :=
+-- begin
+--   sorry,
+-- end
 
-@[simp] lemma cache_query_le_iff : [i, t ↦ u; cache] ≤ cache' ↔
-  cache'.lookup i t = some u ∧ cache.drop_query i t ≤ cache' :=
-begin
-  sorry
-end
+-- @[simp] lemma cache_query_le_iff : [i, t ↦ u; cache] ≤ cache' ↔
+--   cache'.lookup i t = some u ∧ cache.drop_query i t ≤ cache' :=
+-- begin
+--   sorry
+-- end
 
 section singleton
 
-lemma eq_singleton_iff_le_and_not_empty : cache = [i, t ↦ u] ↔ cache ≤ [i, t ↦ u] ∧ cache ≠ ∅ :=
-begin
-  sorry,
-  -- refine ⟨λ h, h.symm ▸ by simp, λ h, le_antisymm h.1 (λ i' t' u' h', _)⟩,
-  -- obtain ⟨i'', t'', u'', h''⟩ := (ne_empty_iff_exists_eq_some _).1 h.2,
-  -- obtain ⟨hi, ht, hu⟩ := (lookup_singleton_eq_some_iff _ _ _ _ _ _).1 (h.1 i'' t'' u'' h''),
-  -- obtain ⟨hi', ht', hu'⟩ := (lookup_singleton_eq_some_iff _ _ _ _ _ _).1 h',
-  -- induction hi, induction hi',
-  -- rwa [← ht', ← hu', ht, hu],
-end
+-- lemma eq_singleton_iff_le_and_not_empty : cache = [i, t ↦ u] ↔ cache ≤ [i, t ↦ u] ∧ cache ≠ ∅ :=
+-- begin
+--   sorry,
+--   -- refine ⟨λ h, h.symm ▸ by simp, λ h, le_antisymm h.1 (λ i' t' u' h', _)⟩,
+--   -- obtain ⟨i'', t'', u'', h''⟩ := (ne_empty_iff_exists_eq_some _).1 h.2,
+--   -- obtain ⟨hi, ht, hu⟩ := (lookup_singleton_eq_some_iff _ _ _ _ _ _).1 (h.1 i'' t'' u'' h''),
+--   -- obtain ⟨hi', ht', hu'⟩ := (lookup_singleton_eq_some_iff _ _ _ _ _ _).1 h',
+--   -- induction hi, induction hi',
+--   -- rwa [← ht', ← hu', ht, hu],
+-- end
 
-@[simp] lemma le_singleton_iff : cache ≤ [i, t ↦ u] ↔ cache = ∅ ∨ cache = [i, t ↦ u] :=
-begin
-  rw [eq_singleton_iff_le_and_not_empty, and_comm],
-  refine ⟨λ h, _, λ h, h.rec_on (λ h', le_of_eq_of_le h' (empty_le _)) (λ h, h.2)⟩,
-  by_cases h' : cache = ∅,
-  { exact or.inl h' },
-  { exact or.inr ⟨h', h⟩ }
-end
+-- @[simp] lemma le_singleton_iff : cache ≤ [i, t ↦ u] ↔ cache = ∅ ∨ cache = [i, t ↦ u] :=
+-- begin
+--   rw [eq_singleton_iff_le_and_not_empty, and_comm],
+--   refine ⟨λ h, _, λ h, h.rec_on (λ h', le_of_eq_of_le h' (empty_le _)) (λ h, h.2)⟩,
+--   by_cases h' : cache = ∅,
+--   { exact or.inl h' },
+--   { exact or.inr ⟨h', h⟩ }
+-- end
 
 
 lemma le_singleton_iff_forall : cache ≤ [i, t ↦ u] ↔ ∀ i' t', t' ∈ᵢ cache →
@@ -232,12 +232,12 @@ lemma le_singleton_iff_forall : cache ≤ [i, t ↦ u] ↔ ∀ i' t', t' ∈ᵢ 
         ⟨hi, ht, option.some_inj.1 (hu.symm.trans hu')⟩)⟩
 
 
-@[simp] lemma lt_singleton_iff : cache < [i, t ↦ u] ↔ cache = ∅ :=
-begin
-  rw [lt_iff_le_and_ne, le_singleton_iff, or_and_distrib_right,
-    and_not_self, or_false, and_iff_left_iff_imp],
-  exact λ h, h.symm ▸ (ne.symm (singleton_ne_empty i t u))
-end
+-- @[simp] lemma lt_singleton_iff : cache < [i, t ↦ u] ↔ cache = ∅ :=
+-- begin
+--   rw [lt_iff_le_and_ne, le_singleton_iff, or_and_distrib_right,
+--     and_not_self, or_false, and_iff_left_iff_imp],
+--   exact λ h, h.symm ▸ (ne.symm (singleton_ne_empty i t u))
+-- end
 
 @[simp] lemma singleton_le_iff : [i, t ↦ u] ≤ cache ↔ cache.lookup i t = some u :=
 begin

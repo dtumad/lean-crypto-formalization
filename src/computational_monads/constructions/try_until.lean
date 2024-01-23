@@ -32,14 +32,14 @@ def try_until (oa : oracle_comp spec α) (p : α → Prop) [decidable_pred p]
 (λ xs, (vector.to_list xs).find p) <$> (repeat oa n)
 
 variables (oa : oracle_comp spec α) (p : α → Prop) [decidable_pred p]
-  (n : ℕ) {m : ℕ} (x : option α) (e : set (option α))
+  (n : ℕ) {m : ℕ} (x : option α)
 
 lemma try_until_zero : oa.try_until p 0 =
   (λ xs, (vector.to_list xs).find p) <$> (return vector.nil) := rfl
 
 lemma try_until_succ : oa.try_until p n.succ =
   (λ xs, (vector.to_list xs).find p) <$> do {a ← oa, as ← oa.repeat n, return (a ::ᵥ as)} :=
-by rw [try_until, repeat_succ]
+by rw [try_until, repeat_succ, seq_map_eq_bind_bind]
 
 /-- Any positive result of `oa.try_until p n` will be some output of `oa`. -/
 lemma mem_support_of_some_mem_support_try_until {x : α}
@@ -85,13 +85,13 @@ by rw [fin_support_try_until_zero, finset.mem_singleton]
 lemma prob_output_try_until_zero : ⁅= x | oa.try_until p 0⁆ = x.rec_on 1 (λ _, 0) :=
 ((try_until_zero_dist_equiv oa p).prob_output_eq x).trans (by cases x; simp)
 
-@[simp] lemma prob_event_try_until_zero_eq_indicator :
-  ⁅e | oa.try_until p 0⁆ = e.indicator (λ _, 1) none :=
-((try_until_zero_dist_equiv oa p).prob_event_eq e).trans (prob_event_return_eq_indicator spec _ e)
+-- @[simp] lemma prob_event_try_until_zero_eq_indicator (q : option α → Prop) :
+--   ⁅q | oa.try_until p 0⁆ = e.indicator (λ _, 1) none :=
+-- ((try_until_zero_dist_equiv oa p).prob_event_eq e).trans (prob_event_return_eq_indicator spec _ e)
 
-@[simp] lemma prob_event_try_until_zero [decidable_pred (∈ e)] :
-  ⁅e | oa.try_until p 0⁆ = if none ∈ e then 1 else 0 :=
-((try_until_zero_dist_equiv oa p).prob_event_eq e).trans (prob_event_return spec _ e)
+@[simp] lemma prob_event_try_until_zero (q : option α → Prop) [decidable_pred q] :
+  ⁅q | oa.try_until p 0⁆ = if q none then 1 else 0 :=
+((try_until_zero_dist_equiv oa p).prob_event_eq q).trans (prob_event_return spec _ q)
 
 end try_until_zero
 
@@ -101,7 +101,7 @@ section try_until_succ
   do {x ← oa, if p x then return (some x) else oa.try_until p n} :=
 begin
   simp_rw [try_until_succ, map_bind, map_pure],
-  refine bind_dist_equiv_bind_of_dist_equiv_right' _ _ _ (λ x, _),
+  refine bind_dist_equiv_bind_of_dist_equiv_right' _ (λ x, _),
   by_cases hp : p x,
   { simp only [hp, vector.to_list_cons, list.find_cons_of_pos, if_true,
       bind_const_dist_equiv_iff] },

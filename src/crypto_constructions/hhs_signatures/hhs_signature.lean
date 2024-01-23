@@ -100,7 +100,7 @@ end verify
 section is_valid
 
 -- def is_valid_iff (x₀ pk : X) (m : M) (σ : vector (G × bool) n)
---   (cache : ((vector X n × M) ↦ₒ vector bool n).query_cache) :
+--   (cache : ((vector X n × M) ↦ₒ vector bool n).query_log) :
 --   (hhs_signature G X M n).is_valid (x₀, pk) m σ cache ↔
 --     cache.lookup () (retrieve_commits x₀ pk σ, m) = some (σ.map snd) :=
 -- begin
