@@ -111,8 +111,7 @@ lemma advantage_eq_sum : (vectorization_exp adv).advantage =
   (∑ x₁ x₂, ⁅= x₁ -ᵥ x₂ | adv.run (x₁, x₂)⁆) / (fintype.card X) ^ 2 :=
 by simp only [sec_exp.advantage, div_eq_mul_inv, ←finset.sum_mul, mul_assoc, ennreal.inv_pow,
   ← pow_two, vectorization_exp.run_eq, vectorization_exp.is_valid_eq, prob_event_bind_return,
-  prob_event_uniform_select_fintype_bind_eq_sum, set.preimage, set.mem_def,
-  set.set_of_eq_eq_singleton, prob_event_singleton_eq_prob_output]
+  prob_event_uniform_select_fintype_bind_eq_sum, function.comp, prob_event_eq_eq_prob_output']
 
 lemma advantage_eq_tsum : (vectorization_exp adv).advantage =
   (∑' x₁ x₂, ⁅= x₁ -ᵥ x₂ | adv.run (x₁, x₂)⁆) / (fintype.card X) ^ 2 :=
@@ -170,7 +169,7 @@ have ∀ x₁ x₂ x₃ x₄ : X, x₂ -ᵥ x₁ = x₄ -ᵥ x₃ ↔ x₄ = (x�
 by simp only [this, sec_exp.advantage, set.preimage, set.mem_def, div_eq_mul_inv, finset.sum_mul,
   mul_assoc, ← pow_three, ← ennreal.inv_pow, run_experiment_eq, is_valid_eq,
   prob_event_uniform_select_fintype_bind_eq_sum, prob_event_bind_return,
-  set.set_of_eq_eq_singleton, prob_event_singleton_eq_prob_output]
+  set.set_of_eq_eq_singleton, function.comp, prob_event_eq_eq_prob_output']
 
 end parallelization_exp
 
@@ -219,11 +218,11 @@ lemma advantage_eq_add : (dec_parallelization_exp adv).advantage =
 begin
   simp_rw [sec_exp.advantage, run_eq, prob_event_uniform_select_bool_bind],
   congr' 2,
-  { simp_rw [← bind_assoc, prob_event_bind_return, is_valid_eq, set.preimage, set.mem_def,
-      set.set_of_eq_eq_singleton', prob_event_singleton_eq_prob_output, coe_sort_tt, if_true],
+  { simp_rw [← bind_assoc, prob_event_bind_return, is_valid_eq, coe_sort_tt, if_true,
+      function.comp, prob_event_eq_eq_prob_output],
     rw_dist_equiv [bind_const_dist_equiv] },
-  { simp_rw [← bind_assoc, prob_event_bind_return, is_valid_eq, set.preimage, set.mem_def,
-      set.set_of_eq_eq_singleton', prob_event_singleton_eq_prob_output, coe_sort_ff, if_false] }
+  { simp_rw [← bind_assoc, prob_event_bind_return, is_valid_eq, coe_sort_ff, if_false,
+      function.comp, prob_event_eq_eq_prob_output] }
 end
 
 lemma advantage_eq_sum : (dec_parallelization_exp adv).advantage =
@@ -231,9 +230,9 @@ lemma advantage_eq_sum : (dec_parallelization_exp adv).advantage =
     ⁅= ff | adv.run (x₀, g₁ +ᵥ x₀, g₂ +ᵥ x₀, g₃ +ᵥ x₀)⁆)) / (fintype.card X) ^ 4 / 2 :=
 by simp_rw [sec_exp.advantage, run_eq, prob_event_uniform_select_bool_bind,
   prob_event_uniform_select_fintype_bind_eq_sum, card_eq_card, div_eq_mul_inv, ← finset.sum_mul,
-  ← add_mul, mul_assoc, is_valid_eq, prob_event_bind_return, set.preimage, set.mem_def, set.set_of_eq_eq_singleton', prob_event_singleton_eq_prob_output,
-    coe_sort_tt, coe_sort_ff, if_true, if_false, finset.sum_add_distrib,
-    ennreal.inv_pow, pow_succ, pow_zero, mul_one, mul_assoc]
+  ← add_mul, mul_assoc, is_valid_eq, prob_event_bind_return, coe_sort_tt, coe_sort_ff, if_true, if_false,
+  finset.sum_add_distrib, ennreal.inv_pow, pow_succ, pow_zero, mul_one, mul_assoc,
+  function.comp, prob_event_eq_eq_prob_output]
 
 end decisional_parallelization_exp
 

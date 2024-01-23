@@ -37,26 +37,26 @@ namespace mask_state
 
 variables (so : sim_oracle spec spec' S) (mask : S ≃ S')
 
-lemma mask_state_apply_eq {i : spec.ι} (z : spec.domain i × S') : so.mask_state mask i z =
-  prod.map id mask <$> (so i (prod.map id mask.symm z)) := rfl
-
 section simulate
 
 variables (oa : oracle_comp spec α) (s' : S')
+
+@[simp] lemma apply_eq {i : spec.ι} (z : spec.domain i × S') : so.mask_state mask i z =
+  prod.map id mask <$> (so i (prod.map id mask.symm z)) := rfl
+
+@[simp] lemma simulate_eq_map_simulate : simulate (so.mask_state mask) oa s' =
+  (prod.map id mask) <$> simulate so oa (mask.symm s') :=
+begin
+  induction oa using oracle_comp.induction_on' with α a i t α oa hoa generalizing s',
+  { simp only [simulate_return, map_pure, prod.map_mk, id.def, apply_symm_apply] },
+  { simp [simulate_bind, simulate_query, oracle_comp.bind_map, function.comp, hoa] }
+end
 
 /-- Simulating with an oracle after masking the state is equivalent to simulating with the original
 up to mapping the state values by the equivalence used in the masking. -/
 lemma simulate_dist_equiv_map_simulate : simulate (so.mask_state mask) oa s' ≃ₚ
   (prod.map id mask) <$> simulate so oa (mask.symm s') :=
-begin
-  refine simulate_dist_equiv_induction _ oa s' (λ α a s, _) (λ α β oa ob s, _) (λ i t s, _),
-  { rw_dist_equiv [simulate_return_dist_equiv, map_return_dist_equiv],
-    rw [return_dist_equiv_return_iff', prod.map, id.def, apply_symm_apply] },
-  { rw_dist_equiv [bind_map_dist_equiv, simulate_bind_dist_equiv, map_bind_dist_equiv],
-    refine bind_dist_equiv_bind_of_dist_equiv_right' _ _ _ (λ z, _),
-    simp only [function.comp_app, prod_map, id.def, symm_apply_apply] },
-  { rw_dist_equiv [simulate_query_dist_equiv] }
-end
+dist_equiv_of_eq (simulate_eq_map_simulate so mask oa s')
 
 lemma support_simulate_eq_image_support_simulate :
   (simulate (so.mask_state mask) oa s').support =
@@ -83,7 +83,7 @@ trans (simulate_dist_equiv_map_simulate so mask oa s').fin_support_eq (fin_suppo
 by simp only [fin_support_eq_iff_support_eq_coe, support_simulate_eq_preimage_support_simulate,
   finset.coe_preimage, coe_fin_support]
 
-@[simp] lemma eval_dist_simulate_eq_map_support_simulate :
+lemma eval_dist_simulate_eq_map_support_simulate :
   ⁅simulate (so.mask_state mask) oa s'⁆ =
     ⁅simulate so oa (mask.symm s')⁆.map (prod.map id mask) :=
 trans (simulate_dist_equiv_map_simulate so mask oa s').eval_dist_eq (eval_dist_map _ _)
@@ -97,22 +97,10 @@ begin
   simp only [prod.map_mk, prod.map, apply_symm_apply, symm_apply_apply, prod.mk.eta, id.def]
 end
 
-@[simp] lemma prob_event_simulate_eq_prob_event_simulate_preimage (e : set (α × S')) :
+lemma prob_event_simulate_eq_prob_event_simulate_comp (e : α × S' → Prop) :
   ⁅e | simulate (so.mask_state mask) oa s'⁆ =
-    ⁅prod.map id mask ⁻¹' e | simulate so oa (mask.symm s')⁆ :=
+    ⁅e ∘ prod.map id mask | simulate so oa (mask.symm s')⁆ :=
 trans ((simulate_dist_equiv_map_simulate so mask oa s').prob_event_eq e) (prob_event_map _ _ _)
-
-lemma prob_event_simulate_eq_prob_event_simulate_image (e : set (α × S')) :
-  ⁅e | simulate (so.mask_state mask) oa s'⁆ =
-    ⁅prod.map id mask.symm '' e | simulate so oa (mask.symm s')⁆ :=
-begin
-  rw [prob_event_simulate_eq_prob_event_simulate_preimage],
-  refine prob_event_eq_of_mem_iff _ _ _ (λ z, ⟨λ hz, _, λ hz, _⟩),
-  { refine ⟨prod.map id mask z, hz, _⟩,
-    rw [prod.map_map, symm_comp_self, function.comp.right_id, prod.map_id, id.def] },
-  { obtain ⟨z', hz'⟩ := hz,
-    simp only [set.mem_preimage, ← hz'.2, hz'.1, prod_map, id.def, apply_symm_apply, prod.mk.eta] }
-end
 
 end simulate
 
@@ -124,8 +112,7 @@ variables (oa : oracle_comp spec α) (s' : S')
 is equivalent to simulating with the original oracle after masking the initial state. -/
 @[pairwise_dist_equiv] lemma simulate'_dist_equiv_simulate' :
   simulate' (so.mask_state mask) oa s' ≃ₚ simulate' so oa (mask.symm s') :=
-by rw_dist_equiv [simulate'_dist_equiv, simulate_dist_equiv_map_simulate,
-  map_bind_dist_equiv, map_return_dist_equiv]
+by simp [simulate', function.comp]
 
 @[simp] lemma support_simulate'_eq_support_simulate' :
   (simulate' (so.mask_state mask) oa s').support = (simulate' so oa (mask.symm s')).support :=
@@ -150,8 +137,6 @@ by pairwise_dist_equiv
 
 end simulate'
 
-section is_tracking
-
 /-- Masking the state of a tracking oracle will produce another tracking oracle. -/
 instance is_tracking (so : sim_oracle spec spec S) [hso : so.is_tracking] :
   (so.mask_state mask).is_tracking :=
@@ -160,14 +145,6 @@ instance is_tracking (so : sim_oracle spec spec S) [hso : so.is_tracking] :
     rw [mask_state, map_map_eq_map_comp, prod.map],
     congr,
   end }
-
--- @[simp] lemma answer_query_eq [so.is_tracking] :
---   (so.mask_state mask).answer_query = so.answer_query := rfl
-
--- @[simp] lemma update_state_eq [so.is_tracking] :
---   (so.mask_state mask).update_state = λ s i t u, mask (so.update_state (mask.symm s) i t u) := rfl
-
-end is_tracking
 
 end mask_state
 
