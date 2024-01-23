@@ -21,23 +21,6 @@ open_locale big_operators ennreal
 
 variables {α β γ δ : Type} {spec spec' : oracle_spec}
 
--- lemma prob_event_seq_map_prod_mk (oa : oracle_comp spec α) (ob : oracle_comp spec β)
---   (p : α × β → Prop) : ⁅p | prod.mk <$> oa <*> ob⁆ =
---     ∑' z, set.indicator (λ z, ⁅= z.1 | oa⁆ * ⁅= z.2 | ob⁆) z :=
--- begin
---   rw [prob_event_eq_tsum_indicator],
---   refine tsum_congr (λ z, _),
---   by_cases hz : z ∈ e,
---   { simp only [set.indicator_of_mem hz],
---     refine prob_output_seq_map_eq_mul oa ob z.1 z.2
---       (λ x hx y hy, _), },
---   { simp only [set.indicator_of_not_mem hz] }
--- end
-
-
--- lemma map_return_seq_return (f : α → β → γ) (a : α) (b : β) :
---   f <$> (return a : oracle_comp spec α) <*> return b = return (f a b) := by simp
-
 @[simp] lemma map_seq_prod_mk_eta (z : α × β) :
   prod.mk <$> return z.1 <*> return z.2
     = (return z : oracle_comp spec (α × β)) :=
@@ -52,11 +35,7 @@ end
       ⁅= z.2 | (return z'.2 : oracle_comp spec β)⁆ :=
 begin
   rw [← map_seq_prod_mk_eta z', ← @prod.mk.eta _ _ z],
-  sorry
-  -- by_cases hz : z = z',
-  -- { simp only [hz, prob_output_return_self, mul_one] },
-  -- { simpa only [prob_output_return_of_ne _ hz, zero_eq_mul,
-  --     prob_output_return_eq_zero_iff, eq_iff_fst_eq_snd_eq, not_and_distrib] using hz }
+  refine prob_output_seq_map_eq_mul_of_injective2 _ _ prod.mk_injective2 _ _,
 end
 
 lemma prob_output_return_prod_mk_fst (x x' : α) (y : β) :
@@ -354,7 +333,11 @@ section prob_output
   (oa : oracle_comp spec α) (ob : oracle_comp spec β) :
   ⁅= z | do {x ← oa, y ← ob, return (x, y)}⁆ =
     ⁅= z.1 | oa⁆ * ⁅= z.2 | ob⁆ :=
-by rw [← mprod, prob_output_mprod]
+begin
+  refine trans (congr_arg (prob_output _) (prod.mk.eta.symm)) _,
+  refine trans _ (prob_output_seq_map_eq_mul_of_injective2 _ _ (prod.mk_injective2) z.1 z.2),
+  rw [seq_map_eq_bind_bind],
+end
 
 @[simp] lemma prob_output_bind_prod_mk_fst
   (x : β × γ) : ⁅= x | oa >>= λ a, return (f a, c)⁆ =

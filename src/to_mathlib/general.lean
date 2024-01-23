@@ -73,3 +73,6 @@ begin
   { ext m,
     simpa [vector.nth_cons_succ] using congr_arg (λ v, vector.nth v (fin.succ m)) h }
 end
+
+lemma prod.mk_injective2 {α β : Type} : function.injective2 (prod.mk : α → β → α × β) :=
+λ _ _ _ _, prod.eq_iff_fst_eq_snd_eq.1

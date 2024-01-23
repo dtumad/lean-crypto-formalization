@@ -481,7 +481,16 @@ lemma add_eq_add_iff_of_to_query_count_eq (il il' jl jl' : spec.indexed_list τ)
   (h : il.to_query_count = jl.to_query_count) :
   il + il' = jl + jl' ↔ il = jl ∧ il' = jl' :=
 begin
-  sorry,
+  refine ⟨λ h', _, λ h', by rw [h'.1, h'.2]⟩,
+  simp only [fun_like.ext_iff, add_apply] at ⊢ h h',
+  refine forall_and_distrib.1 (λ i, _),
+  specialize h' i,
+  have hil : (il i).length = (jl i).length,
+  by simpa [get_count_eq_length_apply] using h i,
+  have := congr_arg (list.take (il i).length) h',
+  rw [list.take_left, hil, list.take_left] at this,
+  rw [this, list.append_right_inj] at h',
+  exact ⟨this, h'⟩
 end
 
 end to_query_count
