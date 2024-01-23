@@ -3,9 +3,6 @@ Copyright (c) 2023 Devon Tuma. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
-import computational_monads.simulation_semantics.constructions.logging_oracle
-import computational_monads.simulation_semantics.constructions.seeded_oracle
-import computational_monads.distribution_semantics.option
 import computational_monads.constructions.fork.fork_adversary
 
 /-!
@@ -273,17 +270,17 @@ calc ⁅(≠) none | adv.choose_fork y <$> adv.run y⁆ ^ 2 / adv.q.succ
     begin
       rw [prob_event_same_fork_point],
       refine le_of_eq (finset.sum_congr rfl (λ fp _, _)),
-      rw_dist_equiv [map_bind_dist_equiv _ _ fork_result.fork_points],
-      pairwise_dist_equiv_deep,
+      simpa only [fork, map_bind, map_return],
     end
 
 
 lemma prob_event_fork_success (adv : fork_adversary spec α β i) :
   ⁅(≠) none | adv.choose_fork y <$> adv.run y⁆ *
-      (⁅(≠) none | adv.choose_fork y <$> adv.run y⁆ / adv.q - (card (spec.range i))⁻¹)
+      (⁅(≠) none | adv.choose_fork y <$> adv.run y⁆ / adv.q.succ - (card (spec.range i))⁻¹)
     ≤ ⁅λ z, fork_success z = tt | (fork adv).run y⁆ :=
 begin
-  sorry
+  simp only [← prob_event_coe_sort, fork_success_iff_exists],
+  sorry,
 end
 
 end prob_event_fork_success

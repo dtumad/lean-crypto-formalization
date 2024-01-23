@@ -86,7 +86,7 @@ variables (x₀ pk : X) (sk : G) (m : M)
 
 end sign
 
-section verify
+section verify 
 
 variables (x₀ pk : X) (m : M) (zs : vector G n) (hash : vector bool n)
 

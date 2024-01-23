@@ -111,7 +111,7 @@ begin
     have hf : f.bijective := function.bijective.comp (vsub_bijective _)
       (function.bijective.comp (group.mul_left_bijective _) (vadd_bijective _)),
     rw_dist_equiv [uniform_select_fintype_bind_bij_dist_equiv G f hf],
-    refine bind_dist_equiv_bind_of_dist_equiv_right' _ _ _ (λ g, _),
+    refine bind_dist_equiv_bind_of_dist_equiv_right' _ (λ g, _),
     cases b; simp }
 end
 
