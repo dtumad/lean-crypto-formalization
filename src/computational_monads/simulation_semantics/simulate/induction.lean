@@ -53,7 +53,7 @@ lemma support_simulate'_eq_induction {supp : Π (α : Type), oracle_comp spec α
 begin
   induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t generalizing s,
   { simp only [h_ret, simulate'_return, support_map, support_return, set.image_singleton] },
-  { simp only [h_bind, ←hob, simulate'_bind, support_map_bind, support_simulate', support_bind] },
+  { simp only [h_bind, ←hob, simulate'_bind, support_map, support_simulate', support_bind] },
   { simp only [h_query, simulate'_query, support_map] }
 end
 

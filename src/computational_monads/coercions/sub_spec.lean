@@ -340,16 +340,16 @@ section prob_event
 
 /-- Extension of `eval_dist_simulate_coe_sub_spec` to `prob_event`. We keep the same hypothesis
 about `eval_dist` rather than a one in terms of `prob_event` for simplicity. -/
-lemma prob_event_simulate_coe_sub_spec (e : set (α × S')) (f : S → S') (hf : ∀ i t s,
+lemma prob_event_simulate_coe_sub_spec (e : α × S' → Prop) (f : S → S') (hf : ∀ i t s,
   ⁅simulate so' (h.to_fun i t) (f s)⁆ = pmf.map (prod.map id f) ⁅so i (t, s)⁆) :
   ⁅e | simulate so' (↑oa : oracle_comp super_spec α) (f s)⁆ =
     ⁅e | prod.map id f <$> simulate so oa s⁆ :=
-by simp_rw [prob_event_eq_tsum_indicator, eval_dist_map,
+by simp_rw [prob_event_eq_tsum_indicator', eval_dist_map,
   eval_dist_simulate_coe_sub_spec so so' s oa f hf]
 
 /-- Extension of `eval_dist_simulate'_coe_sub_spec` to `prob_event`. We keep the same hypothesis
 about `eval_dist` rather than a one in terms of `prob_event` for simplicity. -/
-lemma prob_event_simulate'_coe_sub_spec (e : set α) (f : S → S') (hf : ∀ i t s,
+lemma prob_event_simulate'_coe_sub_spec (e : α → Prop) (f : S → S') (hf : ∀ i t s,
   ⁅simulate so' (h.to_fun i t) (f s)⁆ = pmf.map (prod.map id f) ⁅so i (t, s)⁆) :
   ⁅e | simulate' so' (↑oa : oracle_comp super_spec α) (f s)⁆ = ⁅e | simulate' so oa s⁆ :=
 by simpa only [prob_event_simulate', prob_event_simulate_coe_sub_spec so so' s oa _ f hf,

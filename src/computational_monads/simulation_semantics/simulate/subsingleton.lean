@@ -6,7 +6,7 @@
 -- import computational_monads.simulation_semantics.simulate.simulate_idem
 
 -- /-!
--- # Simulation with Subsingleton State
+-- # Simulation with Subsingleton State (Obselete)
 
 -- This file gives additional lemmas about `simulate` and `simulate'` when
 -- the oracle's internal state is a `subsingleton` type.

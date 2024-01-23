@@ -114,7 +114,7 @@ lemma simulate'_dist_equiv_simulate'
   simulate' so oa s ≃ₚ simulate' so' oa s' :=
 begin
   induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t generalizing s s',
-  { push_map_dist_equiv },
+  { by simp [simulate'_return] },
   { simp only [dist_equiv.ext_iff] at hoa hob,
     refine dist_equiv.ext (λ z, _),
     simp_rw [prob_output_simulate'_bind_eq_tsum_tsum, hob _ _ s', ennreal.tsum_mul_right,

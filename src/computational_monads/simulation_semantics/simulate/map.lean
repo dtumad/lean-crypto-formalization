@@ -74,18 +74,18 @@ by rw [simulate_map, prob_output_map_prod_map_id_right]
 @[simp] lemma prob_output_simulate'_map [decidable_eq β]
   (y : β) : ⁅= y | simulate' so (f <$> oa) s⁆ =
     ∑' x, if y = f x then ⁅= x | simulate' so oa s⁆ else 0 :=
-by rw [simulate'_map, prob_output_map_eq_tsum]
+by rw [simulate'_map, prob_output_map_eq_tsum_ite]
 
 end prob_output
 
 section prob_event
 
-@[simp] lemma prob_event_simulate_map (e : set (β × S)) :
-  ⁅e | simulate so (f <$> oa) s⁆ = ⁅prod.map f id ⁻¹' e | simulate so oa s⁆ :=
+@[simp] lemma prob_event_simulate_map (e : β × S → Prop) :
+  ⁅e | simulate so (f <$> oa) s⁆ = ⁅e ∘ prod.map f id | simulate so oa s⁆ :=
 by rw [simulate_map, prob_event_map]
 
-@[simp] lemma prob_event_simulate'_map (e : set β) :
-  ⁅e | simulate' so (f <$> oa) s⁆ = ⁅(f ∘ prod.fst) ⁻¹' e | simulate so oa s⁆ :=
+@[simp] lemma prob_event_simulate'_map (e : β → Prop) :
+  ⁅e | simulate' so (f <$> oa) s⁆ = ⁅e ∘ f ∘ prod.fst | simulate so oa s⁆ :=
 by simpa only [prob_event_simulate', prob_event_simulate_map, ← set.preimage_comp]
 
 end prob_event

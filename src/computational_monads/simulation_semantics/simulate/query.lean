@@ -10,6 +10,8 @@ import computational_monads.distribution_semantics.query
 # Distributional Semantics of Simulation of a Query Operation
 
 This file contains lemmas about the computation `simulate so (query i t) s`.
+
+TODO!!!!: just make `simulate_query` a simp lemma
 -/
 
 variables {α β γ : Type} {spec spec' : oracle_spec} {S : Type}
@@ -83,11 +85,11 @@ end prob_output
 
 section prob_event
 
-@[simp] lemma prob_event_simulate_query (e : set (spec.range i × S)) :
-  ⁅e | simulate so (query i t) s⁆ = ⁅e | so i (t, s)⁆ := by pairwise_dist_equiv
+@[simp] lemma prob_event_simulate_query (p : spec.range i × S → Prop) :
+  ⁅p | simulate so (query i t) s⁆ = ⁅p | so i (t, s)⁆ := by pairwise_dist_equiv
 
-@[simp] lemma prob_event_simulate'_query (e : set (spec.range i)) :
-  ⁅e | simulate' so (query i t) s⁆ = ⁅prod.fst ⁻¹' e | so i (t, s)⁆ :=
+@[simp] lemma prob_event_simulate'_query (p : spec.range i → Prop) :
+  ⁅p | simulate' so (query i t) s⁆ = ⁅p ∘ prod.fst | so i (t, s)⁆ :=
 by rw [prob_event_simulate', prob_event_simulate_query]
 
 end prob_event

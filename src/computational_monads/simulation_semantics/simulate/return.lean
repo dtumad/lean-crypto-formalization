@@ -109,28 +109,28 @@ end prob_output
 
 section prob_event
 
-@[simp] lemma prob_event_simulate_return_eq_indicator (e : set (α × S)) :
-  ⁅e | simulate so (return a) s⁆ = e.indicator (λ _, 1) (a, s) :=
-prob_event_return_eq_indicator _ (a, s) e
+-- @[simp] lemma prob_event_simulate_return_eq_indicator (e : α × S → Prop) :
+--   ⁅e | simulate so (return a) s⁆ = e.indicator (λ _, 1) (a, s) :=
+-- prob_event_return_eq_indicator _ (a, s) e
 
-@[simp] lemma prob_event_simulate_return (e : set (α × S)) [decidable_pred (∈ e)] :
-  ⁅e | simulate so (return a) s⁆ = if (a, s) ∈ e then 1 else 0 :=
-prob_event_return _ (a, s) e
+@[simp] lemma prob_event_simulate_return (p : α × S → Prop) [decidable_pred p] :
+  ⁅p | simulate so (return a) s⁆ = if p (a, s) then 1 else 0 :=
+prob_event_return _ (a, s) p
 
-@[simp] lemma prob_event_simulate'_return_eq_indicator (e : set α) :
-  ⁅e | simulate' so (return a) s⁆ = e.indicator (λ _, 1) a :=
-begin
-  rw [prob_event_simulate', prob_event_simulate_return_eq_indicator],
-  by_cases ha : a ∈ e,
-  { have : (a, s) ∈ (prod.fst ⁻¹' e : set (α × S)) := ha,
-    rw [set.indicator_of_mem ha, set.indicator_of_mem this] },
-  { have : (a, s) ∉ (prod.fst ⁻¹' e : set (α × S)) := ha,
-    rw [set.indicator_of_not_mem ha, set.indicator_of_not_mem this] }
-end
+-- @[simp] lemma prob_event_simulate'_return_eq_indicator (e : set α) :
+--   ⁅e | simulate' so (return a) s⁆ = e.indicator (λ _, 1) a :=
+-- begin
+--   rw [prob_event_simulate', prob_event_simulate_return_eq_indicator],
+--   by_cases ha : a ∈ e,
+--   { have : (a, s) ∈ (prod.fst ⁻¹' e : set (α × S)) := ha,
+--     rw [set.indicator_of_mem ha, set.indicator_of_mem this] },
+--   { have : (a, s) ∉ (prod.fst ⁻¹' e : set (α × S)) := ha,
+--     rw [set.indicator_of_not_mem ha, set.indicator_of_not_mem this] }
+-- end
 
-@[simp] lemma prob_event_simulate'_return_eq_ite (e : set α) [decidable_pred (∈ e)] :
-  ⁅e | simulate' so (return a) s⁆ = ite (a ∈ e) 1 0 :=
-by {rw [prob_event_simulate'_return_eq_indicator, set.indicator], congr}
+@[simp] lemma prob_event_simulate'_return_eq_ite (p : α → Prop) [decidable_pred p] :
+  ⁅p | simulate' so (return a) s⁆ = if p a then 1 else 0 :=
+by rw [simulate'_return, prob_event_return]
 
 end prob_event
 
