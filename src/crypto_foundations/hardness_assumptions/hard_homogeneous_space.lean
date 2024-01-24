@@ -20,8 +20,6 @@ and further extend this with various assumptions about run times of computations
 
 `algorithmic_homogeneous_space` requires the group operations to be efficiently computable.
 `hard_homogeneous_space` further requires vectorization and parallelization are hard.
-
-PAPER: use this to show concrete and asymptotic security bounds.
 -/
 
 open_locale big_operators ennreal
