@@ -76,3 +76,27 @@ end
 
 lemma prod.mk_injective2 {α β : Type} : function.injective2 (prod.mk : α → β → α × β) :=
 λ _ _ _ _, prod.eq_iff_fst_eq_snd_eq.1
+
+
+example (x y z : ℝ) (hy : 0 ≤ y)
+  (hz : x + y = z) : x < z ∨ y = 0 :=
+begin
+  -- Collapse the equality `x + y = z`
+  -- Goal is now `x < x + y ∨ y = 0`
+  induction hz,
+  -- Seperately consider two cases
+  by_cases h : y = 0,
+  { exact or.inr h },
+  { -- Partially solve the current goal
+    -- Two new goals for the `_` holes
+    refine or.inl (lt_of_le_of_ne _ _),
+    { -- Linear arithmetic solver
+      linarith },
+    { -- Solve using simplifier
+      -- squeeze_simp,
+      rwa [ne.def, self_eq_add_right] } }
+end
+
+-- example (x y z : ℝ) (hy : 0 ≤ y)
+--   (hz : x + y = z) : x < z ∨ y = 0 :=
+-- by simpa [← hz, @eq_comm _ y] using hy

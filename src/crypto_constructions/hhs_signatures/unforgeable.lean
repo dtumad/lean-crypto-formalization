@@ -31,7 +31,10 @@ noncomputable def fork_reduction (adv : (hhs_signature G X M n).unforgeable_adv)
 { run := λ ⟨x₀, pk⟩, mock_signing (adv.run (x₀, pk)) x₀ pk,
   run_qb := mock_signing_qb adv.run_qb,
   choose_fork := λ ⟨x₀, pk⟩ ⟨⟨m, zs, bs⟩, mock_cache⟩,
-    (lookup_mock_cache mock_cache (retrieve_commits x₀ pk zs bs) m).map (λ mc, ↑mc.query_index) }
+    (match (lookup_mock_cache mock_cache (retrieve_commits x₀ pk zs bs) m) with
+    | (some mc) := ↑mc.query_index
+    | none := none
+    end) }
 
 lemma mock_unforgeable_adversary.choose_fork_advantage
   (adv : (hhs_signature G X M n).unforgeable_adv) :
