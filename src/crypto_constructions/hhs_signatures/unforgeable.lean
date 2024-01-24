@@ -32,7 +32,7 @@ noncomputable def fork_reduction (adv : (hhs_signature G X M n).unforgeable_adv)
   run_qb := mock_signing_qb adv.run_qb,
   choose_fork := λ ⟨x₀, pk⟩ ⟨⟨m, zs, bs⟩, mock_cache⟩,
     (match (lookup_mock_cache mock_cache (retrieve_commits x₀ pk zs bs) m) with
-    | (some mc) := ↑mc.query_index
+    | (some mc) := some mc.query_index
     | none := none
     end) }
 
