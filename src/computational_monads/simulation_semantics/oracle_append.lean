@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
 import computational_monads.coercions.instances
+import computational_monads.simulation_semantics.is_tracking
 
 /-!
 # Appending Simulation Oracles
@@ -112,21 +113,6 @@ if we use `simulate'` to ignore the final oracle state of the two `sim_oracle`s.
 set.ext (λ x, by simp only [support_simulate', support_simulate_coe_append_right, set.image_image])
 
 end coe_append_right
-
-section is_tracking
-
--- instance is_tracking [hso : so.is_tracking] [hso' : so'.is_tracking] :
---   (so ++ₛ so').is_tracking :=
--- {  }
-
--- @[simp] lemma answer_query_eq [so.is_tracking] [so'.is_tracking] :
---   (so ++ₛ so').answer_query = λ i, sum.rec_on i so.answer_query so'.answer_query := rfl
-
--- @[simp] lemma update_state_eq [so.is_tracking] [so'.is_tracking] :
---   (so ++ₛ so').update_state = λ s i, sum.rec_on i (λ i t u, (so.update_state s.1 i t u, s.2))
---     (λ i t u, (s.1, so'.update_state s.2 i t u)) := rfl
-
-end is_tracking
 
 end oracle_append
 

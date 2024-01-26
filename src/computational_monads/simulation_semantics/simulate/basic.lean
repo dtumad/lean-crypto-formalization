@@ -26,32 +26,37 @@ TODO: we should evaluate if this approach is actually always better.
 
 variables {α β γ : Type} {spec spec' spec'' : oracle_spec} {S S' : Type}
 
+open_locale big_operators ennreal
+open oracle_spec
+
 /-- Specifies a way to simulate a set of oracles using another set of oracles.
 e.g. using uniform selection oracles with a query cache to simulate a random oracle.
 `simulate` gives a method for applying a simulation oracle to a specific computation. -/
 def sim_oracle (spec spec' : oracle_spec) (S : Type) :=
 Π (i : spec.ι), spec.domain i × S → oracle_comp spec' (spec.range i × S)
 
-namespace sim_oracle
-
 /-- Example of an oracle maintaining in internal incrementing value,
 and returning a fake coin flip that alternates between heads and tails. -/
 example : sim_oracle oracle_spec.coin_spec oracle_spec.coin_spec ℕ :=
 λ i ⟨t, n⟩, return (if even n then tt else ff, n + 1)
 
-instance inhabited [inhabited S] : inhabited (sim_oracle spec spec' S) :=
+instance sim_oracle.inhabited [inhabited S] : inhabited (sim_oracle spec spec' S) :=
 ⟨λ _ _, oracle_comp.pure' _ default⟩
 
-end sim_oracle
+instance sim_oracle.decidable_eq [fintype spec.ι] [∀ i, fintype (spec.domain i)] [fintype S]
+  [decidable_eq S] : decidable_eq (sim_oracle spec spec' S) :=
+begin
+  intros so so',
+  have : so = so' ↔ ∀ (z : Σ i : spec.ι, spec.domain i × S), so z.1 z.2 = so' z.1 z.2,
+  by simp_rw [function.funext_iff, sigma.forall],
+  rw [this],
+  have : ∀ i z, decidable (so i z = so' i z) := λ i z, oracle_comp.decidable_eq (so i z) (so' i z),
+  exact @fintype.decidable_forall_fintype _ _ (λ z : Σ i, spec.domain i × S, this z.1 z.2) _,
+end
 
 namespace oracle_comp
 
-open_locale big_operators ennreal
-open oracle_spec
-
-variables (so : sim_oracle spec spec' S) (a : α) (i : spec.ι) (t : spec.domain i)
-  (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) (f : α → β) (s : S) (x : α)
-  (p : α → Prop)
+variables (so : sim_oracle spec spec' S)
 
 section simulate
 
@@ -62,20 +67,22 @@ def simulate (so : sim_oracle spec spec' S) : Π {α : Type},
 | _ (pure' α a) state := return ⟨a, state⟩
 | _ (query_bind' i t α oa) state := do {x ← so i (t, state), simulate (oa x.1) x.2}
 
-lemma simulate_return : simulate so (return a) s = return (a, s) := rfl
+@[simp] lemma simulate_return (a : α) (s : S) : simulate so (return a) s = return (a, s) := rfl
 
-lemma simulate_bind : simulate so (oa >>= ob) s =
-  simulate so oa s >>= λ x, simulate so (ob x.1) x.2 :=
+@[simp] lemma simulate_bind (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) (s : S) :
+  simulate so (oa >>= ob) s = simulate so oa s >>= λ x, simulate so (ob x.1) x.2 :=
 begin
   induction oa using oracle_comp.induction_on' with α a i t α oa hoa generalizing s,
   { simp [simulate_return] },
   { simp_rw [bind_assoc, ← query_bind'_eq_query_bind, simulate, hoa, ← bind_assoc] }
 end
 
-lemma simulate_query : simulate so (query i t) s = so i (t, s) :=
+@[simp] lemma simulate_query (i : spec.ι) (t : spec.domain i) (s : S) :
+  simulate so (query i t) s = so i (t, s) :=
 by simp_rw [query_def, simulate, prod.mk.eta, bind_pure]
 
-lemma simulate_map : simulate so (f <$> oa) s = prod.map f id <$> simulate so oa s :=
+@[simp] lemma simulate_map (oa : oracle_comp spec α) (f : α → β) (s : S) :
+  simulate so (f <$> oa) s = prod.map f id <$> simulate so oa s :=
 by simpa only [map_eq_bind_pure_comp, simulate_bind]
 
 end simulate
@@ -86,47 +93,50 @@ section simulate'
 def simulate' (so : sim_oracle spec spec' S) (oa : oracle_comp spec α) (s : S) :
   oracle_comp spec' α := prod.fst <$> oa.simulate so s
 
-lemma simulate'_def : simulate' so oa s = prod.fst <$> oa.simulate so s := rfl
+lemma simulate'.def (oa : oracle_comp spec α) (s : S) :
+  simulate' so oa s = prod.fst <$> oa.simulate so s := rfl
 
--- TODO: these should have a special simp category, to not be eagerly applied
--- lemma simulate'_return : simulate' so (return a) s = prod.fst <$> (return (a, s)) := rfl
+@[simp] lemma simulate'_return (a : α) (s : S) : simulate' so (return a) s = return a := rfl
 
--- TODO!!!!!: Get a `@[simp]` tag for stuff like this
-lemma simulate'_return : simulate' so (return a) s = return a := rfl
+@[simp] lemma simulate'_bind (oa : oracle_comp spec α) (ob : α → oracle_comp spec β) (s : S) :
+  simulate' so (oa >>= ob) s = simulate so oa s >>= λ x, simulate' so (ob x.1) x.2 :=
+by simp_rw [simulate'.def, simulate_bind, map_bind]
 
-lemma simulate'_bind : simulate' so (oa >>= ob) s =
-  simulate so oa s >>= λ x, simulate' so (ob x.1) x.2 :=
-by simp [simulate'_def, simulate_bind, map_bind]
+@[simp] lemma simulate'_query (i : spec.ι) (t : spec.domain i) (s : S) :
+  simulate' so (query i t) s = prod.fst <$> so i (t, s) :=
+congr_arg ((<$>) prod.fst) (simulate_query so i t s)
 
-lemma simulate'_query : simulate' so (query i t) s = prod.fst <$> so i (t, s) :=
-by rw [simulate'_def, simulate_query]
+@[simp] lemma simulate'_map (oa : oracle_comp spec α) (f : α → β) (s : S) :
+  simulate' so (f <$> oa) s = f <$> simulate' so oa s :=
+by simpa only [simulate'.def, simulate_map, map_map_eq_map_comp]
 
-lemma simulate'_map : simulate' so (f <$> oa) s = f <$> simulate' so oa s :=
-by simpa [simulate'_def, simulate_map]
+section eval_dist
+
+variables (oa : oracle_comp spec α) (s : S)
+
+lemma simulate'_dist_equiv : simulate' so oa s ≃ₚ prod.fst <$> simulate so oa s := dist_equiv.rfl
 
 @[simp] lemma support_simulate' :
   (simulate' so oa s).support = prod.fst '' (simulate so oa s).support :=
 by simp only [simulate', support_map]
 
+lemma mem_support_simulate'_iff_exists_state (x : α) :
+  x ∈ (simulate' so oa s).support ↔ ∃ (s' : S), (x, s') ∈ (simulate so oa s).support :=
+by simp [support_simulate', set.mem_image, prod.exists, exists_and_distrib_right, exists_eq_right]
+
 @[simp] lemma fin_support_simulate' [decidable_eq α] [decidable_eq S] :
   (simulate' so oa s).fin_support = (simulate so oa s).fin_support.image prod.fst :=
 by simp only [simulate', fin_support_map]
 
-/-- An element is a possible output of `simulate'` if there is some simulation state
-such that the element and state are together a possible output of `simulate`. -/
-lemma mem_support_simulate'_iff_exists_state (x : α) :
-  x ∈ (simulate' so oa s).support ↔ ∃ (s' : S), (x, s') ∈ (simulate so oa s).support :=
-by simp only [support_simulate', set.mem_image, prod.exists,
-  exists_and_distrib_right, exists_eq_right]
+lemma mem_fin_support_simulate'_iff_exists_state (x : α) [decidable_eq α] [decidable_eq S] :
+  x ∈ (simulate' so oa s).fin_support ↔ ∃ (s' : S), (x, s') ∈ (simulate so oa s).fin_support :=
+by simp_rw [mem_fin_support_iff_mem_support, mem_support_simulate'_iff_exists_state] 
 
 @[simp] lemma eval_dist_simulate' : ⁅simulate' so oa s⁆ = ⁅simulate so oa s⁆.map prod.fst :=
 eval_dist_map _ prod.fst
 
-lemma simulate'_dist_equiv : simulate' so oa s ≃ₚ prod.fst <$> simulate so oa s := refl _
-
-/-- Express the probability of `simulate'` returning a specific value
-as the sum over all possible output states of the probability of `simulate` return it -/
-lemma prob_output_simulate' : ⁅= x | simulate' so oa s⁆ = ∑' t, ⁅= (x, t) | simulate so oa s⁆ :=
+lemma prob_output_simulate'_eq_tsum (x : α) :
+  ⁅= x | simulate' so oa s⁆ = ∑' s' : S, ⁅= (x, s') | simulate so oa s⁆ :=
 begin
   rw [prob_output.def, eval_dist_simulate', pmf.map_apply],
   refine (tsum_prod_eq_tsum_snd x $ λ s x' hx', _).trans (tsum_congr (λ s', _)),
@@ -134,17 +144,24 @@ begin
   { simp only [prob_output.def, eq_self_iff_true, if_true] }
 end
 
-lemma prob_event_simulate' : ⁅p | simulate' so oa s⁆ = ⁅p ∘ prod.fst | simulate so oa s⁆ :=
-by rw [simulate', prob_event_map]
+lemma prob_output_simulate'_eq_sum [fintype S] (x : α) :
+  ⁅= x | simulate' so oa s⁆ = ∑ s' : S, ⁅= (x, s') | simulate so oa s⁆ :=
+trans (prob_output_simulate'_eq_tsum so oa s x)
+  (tsum_eq_sum (λ s' hs', (hs' (finset.mem_univ s')).elim)) 
 
-lemma prob_output_simulate'_eq_prob_event :
+@[simp] lemma prob_event_simulate' (p : α → Prop) :
+  ⁅p | simulate' so oa s⁆ = ⁅p ∘ prod.fst | simulate so oa s⁆ := prob_event_map _ _ p
+
+lemma prob_output_simulate'_eq_prob_event_simulate (x : α) :
   ⁅= x | simulate' so oa s⁆ = ⁅λ z, x = z.1 | simulate so oa s⁆ :=
 by rw [← prob_event_eq_eq_prob_output, prob_event_simulate', function.comp]
 
+end eval_dist
+
 end simulate'
 
-lemma simulate_eq_map_simulate'_of_subsingleton [subsingleton S] (s s' : S) :
-  simulate so oa s = (λ x, (x, s')) <$> simulate' so oa s :=
+lemma simulate_eq_map_simulate'_of_subsingleton [subsingleton S] (oa : oracle_comp spec α)
+  (s s' : S) : simulate so oa s = (λ x, (x, s')) <$> simulate' so oa s :=
 begin
   rw [simulate', map_map_eq_map_comp],
   refine trans (symm (id_map' _)) (congr_fun (congr_arg _ (funext (λ z, _))) _),
@@ -179,6 +196,8 @@ begin
 end
 
 section support_subset
+
+variables (oa : oracle_comp spec α) (s : S)
 
 /-- Since `support` assumes any possible query result, `simulate` will never reduce the support.
 In particular the support of a simulation lies in the pullback of the original support. -/

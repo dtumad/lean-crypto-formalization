@@ -75,7 +75,7 @@ begin
   induction oa using oracle_comp.induction_on with α a' α β oa ob hoa hob i t generalizing s,
   { rw_dist_equiv [h_ret] },
   { rw_dist_equiv [simulate_bind_dist_equiv, h_bind, hoa, hob] },
-  { rw_dist_equiv [h_query, simulate_query_dist_equiv] }
+  { simpa only [simulate_query] using symm (h_query i t s) }
 end
 
 end dist_equiv
@@ -125,7 +125,7 @@ begin
       { exact (h_ret' α a' a s s' $ or.inl $ ne.symm ha).symm },
       { exact (h_ret' α a' a s s' $ or.inr $ ne.symm hs).symm } } },
   { simp only [prob_output_simulate_bind_eq_tsum_tsum, h_bind, hoa, hob] },
-  { rw [prob_output_simulate_query, h_query, prob_output.def] },
+  { rw [simulate_query, h_query, eval_dist_apply_eq_prob_output] },
 end
 
 end prob_output

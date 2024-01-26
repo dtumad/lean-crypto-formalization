@@ -4,7 +4,6 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
 import computational_monads.simulation_semantics.simulate.induction
-import computational_monads.distribution_semantics.mprod
 
 /-!
 # Tracking Simulation Oracles
@@ -29,8 +28,6 @@ This allows for many lemmas to be automatically shared between these sorts of or
 We also construct a `tracking_oracle` that creates a simulation oracle from a direct specification
 of `query_f` and `state_f`, that satisfies `is_tracking` by construction.
 This is convenient in defining e.g. `loggingₛₒ` and `idₛₒ`.
-
-TODO: compatibility lemmas for oracle append and compose operations.
 -/
 
 open oracle_comp oracle_spec prod
@@ -87,7 +84,7 @@ begin
   induction oa using oracle_comp.induction_on' with α a i t α oa hoa generalizing s x,
   { exact ⟨s, prod.eq_iff_fst_eq_snd_eq.2 ⟨hx, rfl⟩⟩ },
   { rw [mem_support_query_bind_iff] at hx,
-    simp_rw [mem_support_simulate_bind_iff, support_simulate_query],
+    simp_rw [simulate_bind, simulate_query, support_bind, set.mem_Union, exists_prop, prod.exists],
     obtain ⟨u, hu⟩ := hx,
     obtain ⟨s', hs'⟩ := exists_mem_support_apply so i t s u,
     obtain ⟨s'', hs''⟩ := hoa u s' x hu,

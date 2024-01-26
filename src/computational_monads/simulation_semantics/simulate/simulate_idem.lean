@@ -32,12 +32,12 @@ lemma simulate'_dist_equiv_self (h : ∀ i t s, fst <$> so i (t, s) ≃ₚ query
   simulate' so oa s ≃ₚ oa :=
 begin
   induction oa using oracle_comp.induction_on with α a α β oa ob hoa hob i t generalizing s,
-  { rw_dist_equiv [simulate'_return_dist_equiv] },
-  { simp [dist_equiv.ext_iff] at hoa hob,
-    refine dist_equiv.ext (λ y, _),
-    simp_rw [prob_output_simulate'_bind_eq_tsum_tsum, hob, ennreal.tsum_mul_right,
-      ← prob_output_simulate', hoa, prob_output_bind_eq_tsum] },
-  { rw_dist_equiv [simulate'_query_dist_equiv, h i t s] }
+  { rw [simulate'_return, return_dist_equiv_return_iff'] },
+  { simp_rw [dist_equiv.ext_iff] at hoa hob,
+    refine dist_equiv.ext (λ x, _),
+    simp_rw [simulate'_bind, prob_output_bind_eq_tsum, ennreal.tsum_prod',
+      hob, ennreal.tsum_mul_right, ← prob_output_simulate'_eq_tsum, hoa] },
+  { simpa only [simulate'_query] using h i t s }
 end
 
 /-- If the distribution of the first output of `sim_oracle` is uniform
@@ -86,7 +86,7 @@ begin
     rw [support_simulate', set.mem_image] at hoa,
     obtain ⟨⟨a', s'⟩, ha', ha''⟩ := hoa,
     exact ⟨(a', s'), ha', hob a' x (let this : a = a' := ha''.symm in this ▸ hx) s'⟩ },
-  { simp only [support_simulate'_query, h i t s] }
+  { simp only [simulate'_query, support_map, h i t s] }
 end
 
 /-- Version of `support_simulate'_eq_support` for `simulate'`. -/
@@ -117,12 +117,12 @@ begin
   { by simp [simulate'_return] },
   { simp only [dist_equiv.ext_iff] at hoa hob,
     refine dist_equiv.ext (λ z, _),
-    simp_rw [prob_output_simulate'_bind_eq_tsum_tsum, hob _ _ s', ennreal.tsum_mul_right,
-      ← prob_output_simulate', hoa s s', prob_output_simulate' _ oa, ← ennreal.tsum_mul_right],
+    simp_rw [simulate'_bind, prob_output_bind_eq_tsum, ennreal.tsum_prod', hob _ _ s',
+      ennreal.tsum_mul_right, ← prob_output_simulate'_eq_tsum, hoa s s',
+      prob_output_simulate'_eq_tsum _ oa, ← ennreal.tsum_mul_right],
     exact tsum_congr (λ x, tsum_congr (λ s₁, congr_arg (λ r, _ * r)
       (trans (hob _ s _ z).symm (hob _ _ _ z)))) },
-  { simp_rw_dist_equiv [simulate'_query_dist_equiv],
-    exact h i t s s' }
+  { simpa only [simulate'_query] using h i t s s' }
 end
 
 /-- If the distributions of the first result of two oracles are the same for any input,
@@ -182,7 +182,7 @@ begin
         mem_support_simulate'_iff_exists_state] at this,
       obtain ⟨t', ht'⟩ := this,
       exact ⟨(a, t'), ht', (hob a t' t).symm ▸ hob'⟩ } },
-  { simpa only [support_simulate'_query] using h i t s s' }
+  { simpa only [simulate'_query, support_map] using h i t s s' }
 end
 
 lemma fin_support_simulate'_eq_fin_support_simulate'

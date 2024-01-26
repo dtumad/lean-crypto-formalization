@@ -140,11 +140,11 @@ end simulate'
 /-- Masking the state of a tracking oracle will produce another tracking oracle. -/
 instance is_tracking (so : sim_oracle spec spec S) [hso : so.is_tracking] :
   (so.mask_state mask).is_tracking :=
-{ fst_map_apply_eq_query' := begin
-    refine λ i t s, trans _ (is_tracking.fst_map_apply_eq_query so i t (mask.symm s)),
-    rw [mask_state, map_map_eq_map_comp, prod.map],
-    congr,
-  end }
+⟨begin
+  refine λ i t s, trans _ (is_tracking.fst_map_apply_eq_query so i t (mask.symm s)),
+  rw [mask_state, map_map_eq_map_comp, prod.map],
+  congr,
+end⟩ 
 
 end mask_state
 
