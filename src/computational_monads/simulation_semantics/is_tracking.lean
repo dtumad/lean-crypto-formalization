@@ -46,7 +46,6 @@ class is_tracking (so : sim_oracle spec spec S) :=
 namespace is_tracking
 
 variables (so : sim_oracle spec spec S) [is_tracking so]
-  (so' : sim_oracle spec spec S') 
   (oa : oracle_comp spec α) (i : spec.ι) (t : spec.domain i) (s : S)
 
 section apply
