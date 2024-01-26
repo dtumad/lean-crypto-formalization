@@ -329,25 +329,19 @@ begin
   { simp only [function.comp, prob_output_repeat, repeat_zero, seq_pure,
       map_map_eq_map_comp, vector.append_nil, id_map'] },
   {
-    
-  }
-  -- rw [prob_output_seq_map_eq_mul_of_injective2],
-  -- refine nat.case_strong_induction_on m _ (λ m hm, _),
-  -- {
-  --   show oa.repeat n ≃ₚ _,
-  --   simp [function.comp],
-  -- },
-  -- {
-  --   show oa.repeat (n + m).succ ≃ₚ _,
-  --   rw [repeat_succ],
-  --   rw_dist_equiv [hm m le_rfl],
-  --   -- rw [bind_assoc],
-  --   simp [oracle_comp.bind_map],
-  --   rw [oracle_comp.bind_map],
-  --   simp [function.comp],
-  --   rw_dist_equiv [bind_bind_dist_equiv_comm],
-  --   simp [oracle_comp.map_eq_bind_return_comp, seq_eq_bind_map, bind_assoc],
-  -- }
+    obtain ⟨xsn, xsm, rfl⟩ := vector.exists_eq_split xs,
+    rw [prob_output_seq_map_eq_mul_of_injective2],
+    simp only [prob_output_repeat, ← list.prod_append],
+    simp only [to_list_append, list.map_append],
+    intros xs xs' ys ys' h,
+    cases xs with xs,
+    cases xs' with xs',
+    cases ys with ys hy,
+    cases ys' with ys' hy',
+    simp [vector.append] at h,
+    simp,
+    refine list.append_inj' h (hy.trans hy'.symm),
+    }
 end
 
 -- @[simp] lemma prob_event_repeat (p : vector α m → Prop) :

@@ -97,6 +97,16 @@ begin
       rwa [ne.def, self_eq_add_right] } }
 end
 
+
+lemma vector.exists_eq_split {m n : ℕ} (v : vector α (n + m)) :
+  ∃ v1 : vector α n, ∃ v2 : vector α m, v = v1.append v2 :=
+begin
+  cases v with xs hxs,
+  have hn : n ≤ xs.length := le_of_le_of_eq (le_add_right le_rfl) hxs.symm,
+  refine ⟨⟨xs.take n, by simp [hn]⟩, ⟨xs.drop n, by simp [hxs]⟩, _⟩,
+  simp [vector.append],
+end
+
 -- example (x y z : ℝ) (hy : 0 ≤ y)
 --   (hz : x + y = z) : x < z ∨ y = 0 :=
 -- by simpa [← hz, @eq_comm _ y] using hy
