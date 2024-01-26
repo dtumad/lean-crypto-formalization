@@ -6,9 +6,9 @@ Authors: Devon Tuma
 import computational_monads.constructions.uniform_select
 
 /-!
-# Probabilities for Computations Over Option Type
+# Probabilities for Computations Over Boolean Type
 
-General lemmas about probability computations involving `option`.
+General lemmas about probability computations involving `bool`.
 -/
 
 namespace oracle_comp
@@ -47,7 +47,7 @@ end
 @[simp] lemma prob_output_bnot_map (oa : oracle_comp spec bool) (b : bool) :
   ⁅= b | bnot <$> oa⁆ = ⁅= bnot b | oa⁆ :=
 begin
-  refine prob_output_map_eq_single _ _ _ _ (set.ext (λ b', _)),
+  refine prob_output_map_eq_single _ _ (set.ext (λ b', _)),
   cases b; simp only [set.mem_preimage, set.mem_singleton_iff, bnot_eq_ff_eq_eq_tt,
     bool.bnot_ff, bnot_eq_true_eq_eq_ff, bool.bnot_tt]
 end

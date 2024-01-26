@@ -93,7 +93,7 @@ trans (simulate_dist_equiv_map_simulate so mask oa s').eval_dist_eq (eval_dist_m
     ⁅= (z.1, mask.symm z.2) | simulate so oa (mask.symm s')⁆ :=
 begin
   refine trans ((simulate_dist_equiv_map_simulate so mask oa s').prob_output_eq z)
-    (prob_output_map_eq_single' _ _ _ _ _ (λ z' hz' h, h ▸ _));
+    (prob_output_map_eq_single' _ _ _ (λ z' hz' h, h ▸ _));
   simp only [prod.map_mk, prod.map, apply_symm_apply, symm_apply_apply, prod.mk.eta, id.def]
 end
 

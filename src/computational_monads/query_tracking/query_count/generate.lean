@@ -94,8 +94,10 @@ begin
     { induction hj,
       rw [generate_aux_cons, get_count_of_nat_self, list.count_cons_self, mul_add,
         mul_one, add_comm, hjs],
-      simp only [map_eq_bind_pure_comp, bind_assoc, repeat_add, seq_eq_bind_map, function.comp_app,
-        pure_bind, vector.to_list_append, of_list_append] },
+      simp only [map_eq_bind_pure_comp, bind_assoc, seq_eq_bind_map, function.comp_app,
+        pure_bind, vector.to_list_append, of_list_append],
+      
+         },
     { rw [generate_aux_cons, get_count_of_nat, if_neg hj, repeat_zero, list.count_cons_of_ne hj],
       simp only [hjs, map_pure, vector.to_list_empty, map_map_eq_map_comp, pure_bind, of_list_nil,
         empty_add_eq_id, function.comp.left_id] } }

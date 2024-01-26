@@ -33,12 +33,38 @@ def repeat (oa : oracle_comp spec α) : Π (n : ℕ), oracle_comp spec (vector �
 | 0 := return nil
 | (n + 1) := cons <$> oa <*> repeat n
 
+def repeat' (oa : oracle_comp spec α) : Π (n : ℕ), oracle_comp spec (list α)
+| 0 := return []
+| (n + 1) := (::) <$> oa <*> repeat' n 
+
 variables (oa oa' : oracle_comp spec α) (n : ℕ) {m : ℕ} (x x' : α) (xs : vector α m)
   (xs₀ : vector α 0) (xsₛ : vector α m.succ) (e : set (vector α m))
 
 @[simp] lemma repeat_zero : oa.repeat 0 = return nil := rfl
 
 @[simp] lemma repeat_succ : oa.repeat n.succ = cons <$> oa <*> oa.repeat n := rfl
+
+lemma repeat_add : Π (n m : ℕ), oa.repeat' (n + m) =
+  (++) <$> oa.repeat' n <*> oa.repeat' m
+| n 0 := begin
+  simp [repeat', function.comp, list.append_nil],
+end
+| 0 (m + 1) := begin
+  simp [repeat', map_seq, function.comp],
+end
+| (n + 1) (m + 1) := begin
+  rw [add_comm m 1],
+  -- rw [repeat_add 1 m],
+  have : n + 1 + (1 + m) = (n + 1 + m).succ := by ring_nf,
+  rw [this, repeat', add_assoc, add_comm 1 m, repeat_add n (m + 1), repeat'],
+  simp [repeat', function.comp, map_eq_bind_pure_comp, seq_eq_bind_map, bind_assoc],
+  -- rw [add_comm 1 m],
+  -- simp [repeat', ← add_assoc, repeat_add n m],
+  -- simp [function.comp, map_eq_bind_pure_comp, seq_eq_bind_map, bind_assoc],
+  -- simp_rw [← list.cons_append],
+end
+
+
 
 @[simp] lemma vector.append_nil {n} (v : vector α n) : v.append vector.nil = v :=
 begin
@@ -54,6 +80,7 @@ begin
   induction (zero_add n).symm,
   refl,
 end
+
 
 -- lemma repeat_add (n m : ℕ) : oa.repeat (n + m) = vector.append <$> oa.repeat n <*> oa.repeat m :=
 -- begin

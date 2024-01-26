@@ -298,7 +298,7 @@ begin
     ⁅= (m, k) | prod.mk <$> m_dist <*> se_alg.keygen ()⁆ :
       symm (prob_output_seq_map_eq_mul_of_injective2 _ _ prod.mk_injective2 _ _)
     ... = ⁅= f (m, k) | f <$> (prod.mk <$> m_dist <*> se_alg.keygen ())⁆ :
-      (prob_output_map_of_injective _ f (m, k) hf').symm
+      (prob_output_map_of_injective _ (m, k) hf').symm
     ... = ⁅= (m, c) | se_alg.mgen_and_encrypt m_dist⁆ :
       by simp_rw [hf, map_seq, mgen_and_encrypt, seq_map_eq_bind_bind, oracle_comp.bind_map]
     ... = ⁅= m | m_dist⁆ * ⁅= c | prod.snd <$> se_alg.mgen_and_encrypt m_dist⁆ :

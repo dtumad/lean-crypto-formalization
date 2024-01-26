@@ -45,11 +45,11 @@ variables [has_mul α]
 
 @[simp, to_additive] lemma prob_output_map_mul_right [is_right_cancel_mul α] (x : α) :
   ⁅= (*) x | (*) <$> oa⁆ = ⁅= x | oa⁆ :=
-prob_output_map_of_injective oa (*) x (λ y y' hg, (mul_left_inj x).1 (congr_fun hg x))
+prob_output_map_of_injective oa x (λ y y' hg, (mul_left_inj x).1 (congr_fun hg x))
 
 @[simp, to_additive] lemma prob_output_map_mul_left [is_left_cancel_mul α] (x : α) :
   ⁅= (* x) | (λ y, (* y)) <$> oa⁆ = ⁅= x | oa⁆ :=
-prob_output_map_of_injective oa _ x (λ y y' hg, (mul_right_inj x).1 (congr_fun hg x))
+prob_output_map_of_injective oa x (λ y y' hg, (mul_right_inj x).1 (congr_fun hg x))
 
 /-- If a multiplication has an `is_right_cancel` instance then the result of multiplying the result
 of two computations has probability given by summing over only the possible first results. -/
@@ -73,7 +73,7 @@ begin
       by_cases hx : ⁅= x | oa'⁆ = 0,
       { by simp_rw [hx, mul_zero] },
         rw [ennreal.mul_eq_mul_right hx (prob_output_ne_top _ _)],
-        refine symm (prob_output_map_eq_single _ _ _ _ _),
+        refine symm (prob_output_map_eq_single _ _ _),
         simp [set.eq_singleton_iff_unique_mem, hy],
         refine λ y' hy', _,
         refine (mul_left_inj x).1 (hy'.trans hy.symm) } },
@@ -118,7 +118,7 @@ section group
 @[simp, to_additive] lemma prob_output_map_mul_right_eq_prob_output_div [group α] (x z : α) :
   ⁅= z | (* x) <$> oa⁆ = ⁅= z * x⁻¹ | oa⁆ :=
 begin
-  refine (prob_output_map_eq_single' oa _ (z * x⁻¹) z _ (λ y hy hy', _)),
+  refine (prob_output_map_eq_single' oa (z * x⁻¹) _ (λ y hy hy', _)),
   { rw [inv_mul_cancel_right] },
   { rw [← hy', mul_inv_cancel_right] }
 end
@@ -126,8 +126,8 @@ end
 @[simp, to_additive] lemma prob_output_map_mul_left_eq_prob_output_div [group α] (x z : α) :
   ⁅= z | ((*) x) <$> oa⁆ = ⁅= x⁻¹ * z | oa⁆ :=
 begin
-  refine (prob_output_map_eq_single' oa _ (x⁻¹ * z) z _ (λ y hy hy', _)),
-  { rw [mul_inv_cancel_left]},
+  refine (prob_output_map_eq_single' oa (x⁻¹ * z) _ (λ y hy hy', _)),
+  { rw [mul_inv_cancel_left] },
   { rw [← hy', ← mul_assoc, mul_left_inv, one_mul] }
 end
 
