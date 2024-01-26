@@ -92,7 +92,7 @@ noncomputable def generate_sig_seed (x₀ pk : X) (m : ℕ) : Π (k : ℕ),
   oracle_comp unif_spec (list (signature_seed G X n))
 | 0 := return (list.nil)
 | (k + 1) := list.cons <$>
-  (do {zs ← repeat ($ᵗ G) n, bs ← repeat ($ᵗ bool) n,
+  (do {zs ←$ᵗ (vector G n), bs ←$ᵗ (vector bool n),
       return ⟨m - (k + 1), retrieve_commits x₀ pk zs bs, zs, bs⟩})
     <*> generate_sig_seed k
 

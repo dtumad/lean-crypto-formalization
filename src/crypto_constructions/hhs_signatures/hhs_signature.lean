@@ -35,7 +35,7 @@ noncomputable def hhs_signature (G X M : Type) [decidable_eq M]
 { keygen := λ u, do {x₀ ←$ᵗ X, sk ←$ᵗ G, return ((x₀, sk +ᵥ x₀), sk)},
   -- Sign a message by choosing `n` random commitments, and giving secret key proofs for each.
   sign := λ ⟨⟨⟨x₀, pk⟩, sk⟩, m⟩,
-    do {(gs : vector G n) ← repeat ($ᵗ G) n,
+    do {(gs : vector G n) ←$ᵗ (vector G n),
       (xs : vector X n) ← return (gs.map (+ᵥ pk)),
       (hash : vector bool n) ← query (sum.inr ()) (xs, m),
       return (zip_commits sk gs hash, hash)},
@@ -75,9 +75,9 @@ section sign
 variables (x₀ pk : X) (sk : G) (m : M)
 
 @[simp] lemma sign_apply : ((hhs_signature G X M n).sign (((x₀, pk), sk), m)) =
-  do {(cs : vector G n) ← repeat ($ᵗ G) n,
+  do {(cs : vector G n) ←$ᵗ (vector G n),
     (ys : vector X n) ← return (cs.map (+ᵥ pk)),
-    (hash : vector bool n) ← query₂ () (ys, m),
+    (hash : vector bool n) ← query (sum.inr ()) (ys, m),
     return (zip_commits sk cs hash, hash)} := rfl
 
 -- @[simp] lemma support_sign : ((hhs_signature G X M n).sign ((x₀, pk), sk, m)).support =
