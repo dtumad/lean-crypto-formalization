@@ -322,6 +322,8 @@ end map_const
 
 section eq_single
 
+variables {f y}
+
 lemma prob_output_map_eq_single' (hx : f x = y) (h : ∀ x' ∈ oa.support, f x' = y → x' = x) :
   ⁅= y | f <$> oa⁆ = ⁅= x | oa⁆ := prob_output_bind_return_eq_single' oa f y x hx h
 
@@ -331,7 +333,7 @@ lemma prob_output_map_eq_single (hx : f ⁻¹' {y} = {x}) :
   ⁅= y | f <$> oa⁆ = ⁅= x | oa⁆ := prob_output_bind_return_eq_single oa f y x hx
 
 lemma prob_output_map_of_injective (hf : f.injective) : ⁅= f x | f <$> oa⁆ = ⁅= x | oa⁆ :=
-prob_output_map_eq_single' oa f x (f x) rfl (λ x' hx' hxf, hf hxf)
+prob_output_map_eq_single' oa x rfl (λ x' hx' hxf, hf hxf)
 
 end eq_single
 
@@ -367,15 +369,9 @@ end
   ⁅= xs | vector.to_list <$> oa⁆ = if h : xs.length = n then ⁅= ⟨xs, h⟩ | oa⁆ else 0 :=
 begin
   split_ifs with h,
-  {
-    exact (prob_output_map_of_injective oa
-      vector.to_list ⟨xs, h⟩ vector.to_list_injective),
-  },
-  {
-    simp_rw [prob_output_eq_zero_iff, support_map, set.mem_image, not_exists, not_and_distrib],
-    refine λ xs', or.inr (λ hxs', h (hxs' ▸ xs'.to_list_length)),
-
-  }
+  { exact (prob_output_map_of_injective oa ⟨xs, h⟩ vector.to_list_injective) },
+  { simp_rw [prob_output_eq_zero_iff, support_map, set.mem_image, not_exists, not_and_distrib],
+    refine λ xs', or.inr (λ hxs', h (hxs' ▸ xs'.to_list_length)) }
 end
 
 end oracle_comp

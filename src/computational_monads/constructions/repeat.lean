@@ -40,38 +40,25 @@ variables (oa oa' : oracle_comp spec α) (n : ℕ) {m : ℕ} (x x' : α) (xs : v
 
 @[simp] lemma repeat_succ : oa.repeat n.succ = cons <$> oa <*> oa.repeat n := rfl
 
-@[simp] lemma vector.append_nil (v : vector α n) : v.append vector.nil = v :=
+@[simp] lemma vector.append_nil {n} (v : vector α n) : v.append vector.nil = v :=
 begin
   cases v,
   simp [vector.nil, vector.append],
 end
 
--- #check nat.sub_add_cancel
-
--- lemma repeat_of_le (n m : ℕ) (hm : m ≤ n) : oa.repeat n =
---   vector.append <$> oa.repeat (n - m) <*> oa.repeat m :=
-
--- lemma repeat_add_dist_equiv (n m : ℕ) : oa.repeat (n + m) ≃ₚ
---   append <$> oa.repeat n <*> oa.repeat m :=
--- begin
---   induction m with m hm,
---   {
---     show oa.repeat n ≃ₚ _,
---     simp [function.comp],
---   },
---   {
---     show oa.repeat (n + m).succ ≃ₚ _,
---     rw [repeat_succ],
---     rw_dist_equiv [hm],
---     sorry,
---   }
--- end
-
--- TODO: nicer
-lemma repeat_add (n m : ℕ) : oa.repeat (n + m) = vector.append <$> oa.repeat n <*> oa.repeat m :=
+@[simp] lemma vector.nil_append {n} (v : vector α n) :
+  (nil : vector α 0).append v = ((zero_add n).symm.rec_on v : vector α (0 + n)) :=
 begin
-  sorry
+  cases v,
+  simp [vector.nil, vector.append, subtype.ext_iff_val],
+  induction (zero_add n).symm,
+  refl,
 end
+
+-- lemma repeat_add (n m : ℕ) : oa.repeat (n + m) = vector.append <$> oa.repeat n <*> oa.repeat m :=
+-- begin
+--   sorry
+-- end
 --   refine nat.case_strong_induction_on m _ (λ m hm, _),
 --   -- induction m with m hm,
 --   {
@@ -332,6 +319,35 @@ begin
   { obtain ⟨x, xs, rfl⟩ := exists_eq_cons xs,
     rw [prob_output_repeat_succ, head_cons, tail_cons, hm, to_list_cons, list.map_cons,
       list.prod_cons, eval_dist_apply_eq_prob_output] }
+end
+
+lemma repeat_add_dist_equiv (n m : ℕ) : oa.repeat (n + m) ≃ₚ
+  append <$> oa.repeat n <*> oa.repeat m :=
+begin
+  refine dist_equiv.ext (λ xs, _),
+  cases m with m,
+  { simp only [function.comp, prob_output_repeat, repeat_zero, seq_pure,
+      map_map_eq_map_comp, vector.append_nil, id_map'] },
+  {
+    
+  }
+  -- rw [prob_output_seq_map_eq_mul_of_injective2],
+  -- refine nat.case_strong_induction_on m _ (λ m hm, _),
+  -- {
+  --   show oa.repeat n ≃ₚ _,
+  --   simp [function.comp],
+  -- },
+  -- {
+  --   show oa.repeat (n + m).succ ≃ₚ _,
+  --   rw [repeat_succ],
+  --   rw_dist_equiv [hm m le_rfl],
+  --   -- rw [bind_assoc],
+  --   simp [oracle_comp.bind_map],
+  --   rw [oracle_comp.bind_map],
+  --   simp [function.comp],
+  --   rw_dist_equiv [bind_bind_dist_equiv_comm],
+  --   simp [oracle_comp.map_eq_bind_return_comp, seq_eq_bind_map, bind_assoc],
+  -- }
 end
 
 -- @[simp] lemma prob_event_repeat (p : vector α m → Prop) :
