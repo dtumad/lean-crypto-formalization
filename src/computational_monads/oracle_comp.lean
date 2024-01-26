@@ -24,9 +24,6 @@ oracles, using a (potentially empty) different set of oracles.
 Notationally, we tend towards using `return` and `>>=` for the monadic operations,
 and do-notation for specifying longer computations.
 
-We additionally define a `decidable` typeclass for computations for which return values
-all have `decidable_eq` instances, which will later be used to define `fin_support`.
-
 Note that we don't have a constructor for unbounded recursion such as a fixpoint.
 This creates issues with the distributional semantics since without termination it may not exist.
 In theory this could be solved by introducing a typeclass for finite computation,
@@ -294,6 +291,12 @@ eq_comm.trans (oracle_comp.return_eq_bind_iff b oa ob)
 @[simp] protected lemma return_ne_query (i : spec.ι) (t : spec.domain i) (u : spec.range i) :
   return u ≠ query i t := λ h, oracle_comp.no_confusion h
 
+@[simp] protected lemma query_bind'_eq_query_bind'_iff (i : spec.ι) (t : spec.domain i)
+  (i' : spec.ι) (t' : spec.domain i') (oa : spec.range i → oracle_comp spec α)
+  (oa' : spec.range i' → oracle_comp spec α) :
+  query_bind' i t α oa = query_bind' i' t' α oa' =
+    (i = i' ∧ t == t' ∧ oa == oa') := query_bind'.inj_eq
+
 protected lemma bind_eq_bind_iff (oa : oracle_comp spec α) (ob : oracle_comp spec β)
   (oc : α → oracle_comp spec γ) (oc' : β → oracle_comp spec γ) : oa >>= oc = ob >>= oc' ↔
   ((∃ a, oa = return a ∧ oc a = ob >>= oc') ∨ (∃ b, ob = return b ∧ oa >>= oc = oc' b) ∨
@@ -314,6 +317,25 @@ begin
     { exact ha.symm ▸ ha' },
     { exact hb.symm ▸ hb' },
     { simp_rw [h1, h2, bind_query_bind', eq_self_iff_true, heq_self_iff_true, true_and, h3] } }
+end
+
+instance decidable_eq {α : Type} [h : decidable_eq α] : decidable_eq (oracle_comp spec α) :=
+begin
+  intros oa oa',
+  unfreezingI { induction oa with α a i t α oa hoa;
+     cases oa' with α' a' i' t' α' oa' },
+  { exact decidable_of_decidable_of_eq (h a a') pure'.inj_eq.symm },
+  { exact is_false (oracle_comp.pure'_ne_query_bind' a i' t' oa') },
+  { exact is_false (oracle_comp.pure'_ne_query_bind' a' i t oa).symm },
+  { refine decidable_of_decidable_of_eq _ query_bind'.inj_eq.symm,
+    cases spec.ι_decidable_eq i i' with hi hi,
+    { exact is_false (λ h', hi h'.1) },
+    { unfreezingI {induction hi},
+      simp_rw [heq_iff_eq, eq_self_iff_true, true_and],
+      have : decidable (oa = oa'),
+      from @decidable_of_iff' _ _ function.funext_iff
+          (@fintype.decidable_forall_fintype _ _ (λ u, hoa u (oa' u)) _),
+      exact (@and.decidable _ _ (spec.domain_decidable_eq i t t') this) } }
 end
 
 end no_confusion
