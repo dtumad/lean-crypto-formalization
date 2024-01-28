@@ -181,29 +181,71 @@ namespace unforgeable_adversary
 
 end unforgeable_adversary
 
-def unforgeable_exp {sig : signature_alg spec M PK SK S} (adv : unforgeable_adv sig) :
-  sec_exp spec (PK × SK) (bool) := --(M × S) × (M ↦ₒ S).query_log) :=
+/-- Experiment for unforgeability of a signature algorithm. -/
+def unforgeable_exp {sig : signature_alg spec M PK SK S}
+  (adv : unforgeable_adv sig) : sec_exp spec (PK × SK) bool :=
 { inp_gen := sig.keygen (),
   main := λ ⟨pk, sk⟩, do
     { ⟨⟨m, σ⟩, log⟩ ← simulate (sig.signingₛₒ pk sk) (adv.run pk) ∅,
       b ← sig.verify (pk, m, σ),
       return (b && !(log.was_queried () m)) },
   is_valid := λ _ b, b = tt,
-  .. sig }
+  .. sig } -- Same simulation oracles as the signature itself. 
 
 namespace unforgeable_exp
 
 variables {sig : signature_alg spec M PK SK S} (adv : unforgeable_adv sig)
 
+@[simp] lemma inp_gen_eq : (unforgeable_exp adv).inp_gen = sig.keygen () := rfl
+
+@[simp] lemma main_apply (ks : PK × SK) : (unforgeable_exp adv).main ks = do
+  { z ← simulate (sig.signingₛₒ ks.1 ks.2) (adv.run ks.1) ∅,
+    b ← sig.verify (ks.1, z.1.1, z.1.2),
+    return (b && !(z.2.was_queried () z.1.1)) } :=
+begin
+  cases ks,
+  simp [unforgeable_exp],
+  congr' 1,
+  ext z,
+  rcases z with ⟨⟨m, σ⟩, log⟩,
+  simp [unforgeable_exp],
+end
+
+@[simp] lemma is_valid_eq (ks : PK × SK) :
+  (unforgeable_exp adv).is_valid ks = (= tt) := funext (λ b, rfl)
+
+@[simp] lemma is_valid_iff (ks : PK × SK) (b : bool) :
+  (unforgeable_exp adv).is_valid ks b ↔ b = tt := iff.rfl
+
+@[simp] lemma to_oracle_algorithm_eq : (unforgeable_exp adv).to_oracle_algorithm =
+  sig.to_oracle_algorithm := rfl
+
+lemma prob_event_snd_eq {α β : Type} (oa : oracle_comp spec (α × β)) (y : β) :
+  ⁅λ z : α × β, z.2 = y | oa⁆ = ⁅= y | snd <$> oa⁆ :=
+by simp only [prob_event_eq_eq_prob_output_map]
+
+/-- TODO: lemmas like this are always gross to prove, from pattern matching stuff -/
 lemma advantage_eq_prob_output : (unforgeable_exp adv).advantage =
   ⁅= tt | sig.exec (do {⟨pk, sk⟩ ← sig.keygen (),
     ⟨⟨m, σ⟩, log⟩ ← simulate (sig.signingₛₒ pk sk) (adv.run pk) ∅,
     b ← sig.verify (pk, m, σ),
     return (b && !(log.was_queried () m))})⁆ :=
 begin
-  rw [sec_exp.advantage, unforgeable_exp],
-  simp only,
-  sorry,
+  rw [sec_exp.advantage_eq_prob_event],
+  simp_rw [is_valid_eq, prob_event_eq_eq_prob_output_map],
+  congr' 1,
+  simp only [oracle_algorithm.exec_bind, map_bind, sec_exp.run, main_apply, inp_gen_eq,
+    to_oracle_algorithm_eq, mk.eta, simulate'_bind, simulate_bind, simulate_return,
+    simulate'_return, map_pure, oracle_comp.pure_eq_return],
+  congr' 2,
+  ext z,
+  congr' 1,
+  rcases z with ⟨⟨m, σ⟩, log⟩,
+  simp only [simulate_bind],
+  congr' 1,
+  ext z',
+  rcases z' with ⟨⟨⟨m, σ⟩, log⟩, u⟩,
+  simp only [simulate_bind, simulate_return]
 end
 
 end unforgeable_exp
