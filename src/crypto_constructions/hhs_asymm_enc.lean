@@ -78,8 +78,7 @@ variables {G X : Type} [add_comm_group G]
 
 noncomputable def ind_cpa_reduction (adv : (hhs_elgamal G X).ind_cpa_adv) :
   dec_parallelization_adv G X :=
-{ -- Try to check if `x₃` is the correct parallelization
-  run := λ ⟨x₀, x₁, x₂, x₃⟩, do
+{ run := λ ⟨x₀, x₁, x₂, x₃⟩, do
     { ms ← adv.run (x₀, x₁),
       b ←$ᵗ bool,
       c ← return (x₂, (if b then ms.1 else ms.2) * x₃),
