@@ -40,7 +40,7 @@ lemma run_def (exp : sec_exp exp_spec α β) :
   exp.run = exp.exec (do {x ← exp.inp_gen, y ← exp.main x, return (x, y)}) := rfl
 
 -- lemma run_eq_simulate' (exp : sec_exp exp_spec α β) :
---   exp.run = simulate' exp.base_sim_oracle
+--   exp.run = simulate' exp.base_oracle
 --     (do {x ← exp.inp_gen, y ← exp.main x, return (x, y)}) exp.init_state := rfl
 
 noncomputable def advantage (exp : sec_exp exp_spec α β) : ℝ≥0∞ :=

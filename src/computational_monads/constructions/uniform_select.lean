@@ -3,8 +3,9 @@ Copyright (c) 2022 Devon Tuma. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
-import computational_monads.distribution_semantics.map
+import computational_monads.distribution_semantics.seq
 import computational_monads.distribution_semantics.query
+import computational_monads.distribution_semantics.prod
 import to_mathlib.uniform_of_vector
 import data.vector.mem
 
@@ -575,9 +576,25 @@ lemma uniform_select_fintype_bind_bij_dist_equiv [decidable_eq α]
   $ᵗ α >>= ob ≃ₚ $ᵗ α >>= (ob ∘ f) :=
 dist_equiv.ext (λ y, prob_output_uniform_select_fintype_bind_bij α f hf ob y)
 
-lemma uniform_select_fintype_map_dist_equiv_of_bijective [decidable_eq α]
-  (f : α → α) (hf : f.bijective) : f <$> $ᵗ α ≃ₚ $ᵗ α :=
-symm (uniform_select_fintype_bind_bij_dist_equiv α f hf return)
+lemma map_uniform_select_fintype_dist_equiv_of_bijective {α β : Type} [fintype α] [nonempty α]
+  [fintype β] [nonempty β] (f : α → β) (hf : f.bijective) : f <$> $ᵗ α ≃ₚ $ᵗ β :=
+begin
+  refine dist_equiv.ext (λ y, _),
+  obtain ⟨g, hgf, hfg⟩ := function.bijective_iff_has_inverse.1 hf,
+  rw [← hfg y, prob_output_uniform_select_fintype, prob_output_map_of_injective ($ᵗ α) (g y) hf.1,
+    prob_output_uniform_select_fintype, fintype.card_of_bijective hf],
+end
+
+lemma uniform_select_fintype_prod_dist_equiv {α β : Type}
+  [nonempty α] [fintype α] [nonempty β] [fintype β] :
+  $ᵗ (α × β) ≃ₚ prod.mk <$> $ᵗ α <*> $ᵗ β :=
+begin
+  refine dist_equiv.ext (λ z, _),
+  simp only [ennreal.tsum_mul_left, prob_output_uniform_select_fintype,
+    fintype.card_prod, nat.cast_mul, prob_output_seq_map_eq_tsum', prob_output_prod_return,
+    tsum_prob_output_return, mul_one],
+  exact ennreal.mul_inv (or.inr (ennreal.nat_ne_top _)) (or.inl (ennreal.nat_ne_top _)),
+end
 
 lemma prob_output_uniform_select_fintype_prod {α β : Type}
   [nonempty α] [fintype α] [nonempty β] [fintype β]

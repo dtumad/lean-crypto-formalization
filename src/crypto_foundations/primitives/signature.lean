@@ -100,16 +100,16 @@ section sound
 open soundness_exp
 
 /-- A signature algorithm is complete if all messages are valid. -/
-def sound (sig : signature_alg spec M PK SK S) : Prop :=
+def is_sound (sig : signature_alg spec M PK SK S) : Prop :=
 ∀ m, (soundness_exp sig m).advantage = 1
 
 lemma sound_iff (sig : signature_alg spec M PK SK S) :
-  sig.sound ↔ ∀ (m : M) (pk : PK) (sk : SK) (σ : S) (s s' : sig.base_S),
-    ((pk, sk), s) ∈ (simulate sig.base_sim_oracle (sig.keygen ()) sig.init_state).support →
-      (σ, s') ∈ (simulate sig.base_sim_oracle (sig.sign ((pk, sk), m)) s).support →
-        (simulate' sig.base_sim_oracle (sig.verify (pk, m, σ)) s').support = {tt} :=
+  is_sound sig ↔ ∀ (m : M) (pk : PK) (sk : SK) (σ : S) (s s' : sig.base_S),
+    ((pk, sk), s) ∈ (simulate sig.base_oracle (sig.keygen ()) sig.init_state).support →
+      (σ, s') ∈ (simulate sig.base_oracle (sig.sign ((pk, sk), m)) s).support →
+        (simulate' sig.base_oracle (sig.verify (pk, m, σ)) s').support = {tt} :=
 begin
-  simp_rw [sound, advantage_eq],
+  simp_rw [is_sound, advantage_eq],
   simp_rw [prob_output_eq_one_iff],
   simp_rw [oracle_algorithm.exec_bind, support_bind, support_simulate'_bind],
   sorry,

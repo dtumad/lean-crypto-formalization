@@ -18,6 +18,32 @@ namespace oracle_comp
 
 variable [is_sub_spec unif_spec spec]
 
+structure run_result' (adv : fork_adversary spec α β i) :=
+(fork_point : fin adv.q.succ)
+(side_output : β)
+(seed : spec.query_seed)
+
+structure fork_result' (adv : fork_adversary spec α β i) :=
+(fp : fin adv.q.succ)
+(side_output₁ : β)
+(side_output₂ : β)
+(seed₁ : spec.query_seed)
+(seed₂ : spec.query_seed)
+
+noncomputable def fork' (adv : fork_adversary spec α β i) :
+  sec_adv spec α (option (fork_result' adv)) :=
+{ run := λ x, do
+  { ⟨y₁, seed₁⟩ ← adv.seed_and_run' x ∅,
+    match adv.choose_fork x y₁ with
+    | none := return none
+    | (some fp) := do
+      { ⟨y₂, seed₂⟩ ← adv.seed_and_run' x (seed₁.take_at_index i fp),
+        if adv.choose_fork x y₂ = fp
+          then return (some ⟨fp, y₁, y₂, seed₁, seed₂⟩)
+          else return none }
+    end },
+  run_qb := 2 • adv.run_qb }
+
 noncomputable def fork (adv : fork_adversary spec α β i) :
   sec_adv spec α (fork_result adv) :=
 { run := λ x, do
@@ -290,7 +316,7 @@ noncomputable def fork_success_exp (adv : fork_adversary spec α β i)
 { inp_gen := inp_gen,
   main := (fork adv).run,
   is_valid := λ x fr, fork_success fr,
-  base_sim_oracle := uniformₛₒ,
+  base_oracle := uniformₛₒ,
   init_state := (), .. }
 
 namespace fork_success_exp
@@ -306,7 +332,7 @@ variables (adv : fork_adversary spec α β i) (inp_gen : oracle_comp spec α)
 
 @[simp] lemma base_S_eq : (fork_success_exp adv inp_gen).base_S = unit := rfl
 
-@[simp] lemma base_sim_oracle_eq : (fork_success_exp adv inp_gen).base_sim_oracle =
+@[simp] lemma base_oracle_eq : (fork_success_exp adv inp_gen).base_oracle =
   uniformₛₒ := rfl
 
 @[simp] lemma run_eq : (fork_success_exp adv inp_gen).run =

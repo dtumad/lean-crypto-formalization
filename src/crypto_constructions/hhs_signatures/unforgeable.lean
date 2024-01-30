@@ -24,17 +24,28 @@ variables {G X M : Type} [decidable_eq M]
 section fork_reduction
 
 noncomputable def fork_reduction (adv : (hhs_signature G X M n).unforgeable_adv) :
-  fork_adversary (unif_spec ++ (unit ↦ₒ vector bool n))
-    (X × X)
-    ((M × vector G n × vector bool n) × list (mock_cache_entry G X M n))
+  fork_adversary (unif_spec ++ (vector X n × M ↦ₒ vector bool n))
+    (X × X) ((M × vector G n × vector bool n) ×
+      (vector X n × M ↦ₒ vector bool n).query_log)
     (sum.inr ()) :=
-{ run := λ ⟨x₀, pk⟩, mock_signing (adv.run (x₀, pk)) x₀ pk,
+{ run := λ ⟨x₀, pk⟩, simulate (mock_signingₛₒ x₀ pk)
+    (adv.run (x₀, pk)) ∅,
   run_qb := mock_signing_qb adv.run_qb,
   choose_fork := λ ⟨x₀, pk⟩ ⟨⟨m, zs, bs⟩, mock_cache⟩,
-    (match (lookup_mock_cache mock_cache (retrieve_commits x₀ pk zs bs) m) with
-    | (some mc) := some mc.query_index
+    let xs := unzip_commits x₀ pk zs bs in
+    match mock_cache.lookup () (xs, m) with
+    | (some bs) := some ((mock_cache ()).index_of ((xs, m), bs))
     | none := none
-    end) }
+    end }
+
+lemma le_advantage_fork_reduction (adv : (hhs_signature G X M n).unforgeable_adv) :
+  let inp_gen := (prod.fst <$> (hhs_signature G X M n).keygen ()) in
+  let q : ℕ := (mock_signing_qb adv.run_qb).get_count (sum.inr ()) in
+  (unforgeable_exp adv).advantage * (1 - q / (fintype.card G) ^ n) ^ q ≤
+    (fork_reduction adv).advantage inp_gen :=
+begin
+  sorry
+end
 
 lemma mock_unforgeable_adversary.choose_fork_advantage
   (adv : (hhs_signature G X M n).unforgeable_adv) :
@@ -48,7 +59,7 @@ end
 noncomputable def vectorization_of_fork_result {adv : (hhs_signature G X M n).unforgeable_adv}
   (fr : fork_result (fork_reduction adv)) : G :=
 let rr1 := fr.side_output₁.1 in let rr2 := fr.side_output₂.1 in
-  vectorization_of_zipped_commits rr2.2 rr1.2
+  vec_of_sigs rr2.2 rr1.2
 
 section vectorization_of_fork_result
 
@@ -97,8 +108,8 @@ begin
   -- have hcf := fork_point_eq_of_fork_success f_adv _ _ h,
   -- simp [@eq_comm _ (some fp)] at hcf,
   -- sorry
-  -- have hcf1 := sorry, --nth_fork_point_eq_retrieve_commits hcf.1,
-  -- have hcf2 := sorry, --nth_fork_point_eq_retrieve_commits hcf.2,
+  -- have hcf1 := sorry, --nth_fork_point_eq_unzip_commits hcf.1,
+  -- have hcf2 := sorry, --nth_fork_point_eq_unzip_commits hcf.2,
   -- clear hcf,
 
   -- have h_inp : ((mocked_cache₁ ()).nth fp).map prod.fst = ((mocked_cache₂ ()).nth fp).map prod.fst,
@@ -109,13 +120,13 @@ begin
   -- from sorry,
 
   -- simp only [hcf1, hcf2, option.map_some', prod.mk.inj_iff] at h_inp,
-  -- have h_inp : retrieve_commits x₀ pk zs₁ hash₁ = retrieve_commits x₀ pk zs₂ hash₂ ∧ m₁ = m₂ := h_inp,
+  -- have h_inp : unzip_commits x₀ pk zs₁ hash₁ = unzip_commits x₀ pk zs₂ hash₂ ∧ m₁ = m₂ := h_inp,
 
-  -- have h_retrieve : retrieve_commits x₀ pk zs₁ hash₁ = retrieve_commits x₀ pk zs₂ hash₂ := h_inp.1,
+  -- have h_retrieve : unzip_commits x₀ pk zs₁ hash₁ = unzip_commits x₀ pk zs₂ hash₂ := h_inp.1,
   -- have h_hash : hash₁ ≠ hash₂,
   -- by simpa only [value_differs, hsm1, hsm2, hcf1, hcf2, option.map_some', ne.def] using hfp,
 
-  -- refine vectorization_of_zipped_commits_eq_vsub x₀ pk n h_hash h_retrieve,
+  -- refine vec_of_sigs_eq_vsub x₀ pk n h_hash h_retrieve,
 end
 
 end vectorization_of_fork_result

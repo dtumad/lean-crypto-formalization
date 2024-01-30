@@ -84,6 +84,12 @@ instance is_sub_spec_append_left (spec spec' : oracle_spec) : spec ⊂ₒ (spec'
 { to_fun := λ i t, @query (spec' ++ spec) (sum.inr i) t,
   to_fun_equiv := λ i t, trans (eval_dist_query (sum.inr i) t) (eval_dist_query i t).symm }
 
+@[simp] lemma is_sub_spec_append_left_apply {spec spec' : oracle_spec}
+  (i : spec.ι) (t : spec.domain i) : (oracle_spec.is_sub_spec_append_left spec spec').to_fun i t =
+    @query (spec' ++ spec) (sum.inr i) t := rfl
+
+-- TODO: eventually it would be good to add simp lemmas for the rest of these.
+
 /-- Coerce a computation to one with access to another oracle on the right,
 forwarding the old queries to the left side of the combined set of oracles. -/
 @[priority std.priority.default+1]
@@ -91,8 +97,8 @@ instance is_sub_spec_append_right (spec spec' : oracle_spec) : spec ⊂ₒ (spec
 { to_fun := λ i t, @query (spec ++ spec') (sum.inl i) t,
   to_fun_equiv := λ i t, trans (eval_dist_query (sum.inl i) t) (eval_dist_query i t).symm }
 
-lemma is_sub_spec_append_right_apply {spec spec' : oracle_spec} (i : spec.ι) (t : spec.domain i) :
-  (oracle_spec.is_sub_spec_append_right spec spec').to_fun i t =
+@[simp] lemma is_sub_spec_append_right_apply {spec spec' : oracle_spec}
+  (i : spec.ι) (t : spec.domain i) : (oracle_spec.is_sub_spec_append_right spec spec').to_fun i t =
     @query (spec ++ spec') (sum.inl i) t := rfl
 
 /-- Coerce an oracle and then append to the left. Already sort of exists,

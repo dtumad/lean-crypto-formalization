@@ -29,7 +29,7 @@ variables {spec : oracle_spec} {α β : Type}
 
 section apply
 
-lemma apply_eq {i : spec.ι} (t : spec.domain i) (s : unit) :
+@[simp] lemma apply_eq {i : spec.ι} (t : spec.domain i) (s : unit) :
   uniformₛₒ i (t, s) = do {u ← $ᵗ (spec.range i), return (u, ())} := rfl
 
 end apply

@@ -80,6 +80,9 @@ def lookup (log : spec.query_log) (i : spec.ι) (t : spec.domain i) :
   option (spec.range i) :=
 prod.snd <$> (log i).find (((=) t) ∘ prod.fst)
 
+@[simp] lemma lookup_empty (i : spec.ι) (t : spec.domain i) :
+  (∅ : spec.query_log).lookup i t = none := rfl
+
 end lookup
 
 section lookup_cached

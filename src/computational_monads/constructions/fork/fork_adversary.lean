@@ -33,6 +33,12 @@ structure fork_adversary (spec : oracle_spec) (α β : Type)
 @[inline, reducible] def fork_adversary.q (adv : fork_adversary spec α β i) :=
 adv.run_qb.get_count i
 
+noncomputable def fork_adversary.advantage
+  (adv : fork_adversary spec α β i)
+  (inp_gen : oracle_comp spec α) : ℝ≥0∞ :=
+⁅(≠) none | do {x ← inp_gen, y ← adv.run x,
+  return (adv.choose_fork x y)}⁆
+
 -- noncomputable def fork_adversary.cf_experiment (adv : fork_adversary spec α β i) (inp_gen : oracle_comp spec α) :
 --   base_sec_experiment spec α β :=
 -- base_sec_experiment_of_is_valid inp_gen (λ x y, return (adv.choose_fork x y ≠ none)) uniformₛₒ
@@ -43,7 +49,7 @@ noncomputable def choose_fork_exp (adv : fork_adversary spec α β i)
   main := adv.run,
   is_valid := λ x y, adv.choose_fork x y ≠ none,
   base_S := unit, init_state := (),
-  base_sim_oracle := uniformₛₒ }
+  base_oracle := uniformₛₒ }
 
 namespace choose_fork_exp
 
@@ -60,6 +66,10 @@ end choose_fork_exp
 --   rw [prob_output_return_bind],
 
 -- end
+
+
+
+-- structure fork_result' (adv : fork_adversary)
 
 /-- Type to store the result of running the forking adversary a single time. -/
 structure run_result (adv : fork_adversary spec α β i) :=
@@ -187,6 +197,14 @@ noncomputable def seed_and_run (adv : fork_adversary spec α β i)
 do {fresh_seed ← generate_seed (adv.run_qb - init_seed),
   z ← (simulate' seededₛₒ (adv.run y) (init_seed + fresh_seed)),
   return (run_result.mk (adv.choose_fork y z) z (init_seed + fresh_seed))}
+
+noncomputable def seed_and_run' (adv : fork_adversary spec α β i)
+  (y : α) (init_seed : spec.query_seed) :
+  oracle_comp spec (β × spec.query_seed) :=
+do {fresh_seed ← generate_seed (adv.run_qb - init_seed),
+  z ← (simulate' seededₛₒ (adv.run y) (init_seed + fresh_seed)),
+  return (z, init_seed + fresh_seed)}
+
 
 variables (adv : fork_adversary spec α β i) (y : α)
 

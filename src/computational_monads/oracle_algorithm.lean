@@ -24,7 +24,7 @@ variables {alg_spec : oracle_spec} {α β γ : Type}
 structure oracle_algorithm (alg_spec : oracle_spec) :=
 (base_S : Type) -- Oracle state when simulating computations
 (init_state : base_S) -- Initial state for the oracle
-(base_sim_oracle : sim_oracle alg_spec unif_spec base_S)
+(base_oracle : sim_oracle alg_spec unif_spec base_S)
 
 namespace oracle_algorithm
 
@@ -33,7 +33,7 @@ section exec
 /-- Use the algorithm's simulation oracle to run a computation. -/
 def exec (alg : oracle_algorithm alg_spec)
   (oa : oracle_comp alg_spec α) : oracle_comp unif_spec α :=
-simulate' alg.base_sim_oracle oa alg.init_state
+simulate' alg.base_oracle oa alg.init_state
 
 variables (alg : oracle_algorithm alg_spec)
 
@@ -41,12 +41,12 @@ variables (alg : oracle_algorithm alg_spec)
   alg.exec (return a) = return a := rfl
 
 @[simp] lemma exec_bind (oa : oracle_comp alg_spec α) (ob : α → oracle_comp alg_spec β) :
-  alg.exec (oa >>= ob) = (simulate alg.base_sim_oracle oa alg.init_state) >>=
-    λ z, (simulate' alg.base_sim_oracle (ob z.1) z.2) :=
+  alg.exec (oa >>= ob) = (simulate alg.base_oracle oa alg.init_state) >>=
+    λ z, (simulate' alg.base_oracle (ob z.1) z.2) :=
 simulate'_bind _ _ _ _
 
 @[simp] lemma exec_query (i : alg_spec.ι) (t : alg_spec.domain i) :
-  alg.exec (query i t) = prod.fst <$> alg.base_sim_oracle i (t, alg.init_state) :=
+  alg.exec (query i t) = prod.fst <$> alg.base_oracle i (t, alg.init_state) :=
 simulate'_query _ _ _ _
 
 @[simp] lemma map_exec (f : α → β) (oa : oracle_comp alg_spec α) :
@@ -61,7 +61,7 @@ end oracle_algorithm
 def base_oracle_algorithm : oracle_algorithm unif_spec :=
 { base_S := unit,
   init_state := (),
-  base_sim_oracle := idₛₒ }
+  base_oracle := idₛₒ }
 
 namespace base_oracle_algorithm
 

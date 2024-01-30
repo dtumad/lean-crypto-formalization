@@ -6,6 +6,7 @@ Authors: Devon Tuma
 import data.finset.basic
 import data.vector.mem
 import data.real.ennreal
+import data.vector.zip
 
 /-!
 # Misc Lemmas That Ideally Should Port to Mathlib
@@ -96,6 +97,14 @@ begin
       -- squeeze_simp,
       rwa [ne.def, self_eq_add_right] } }
 end
+
+@[simp] lemma vector.zip_with_const {α β γ : Type} {n : ℕ} (xs : vector α n)
+  (ys : vector β n) (f : α → γ) : vector.zip_with (λ x y, f x) xs ys = xs.map f :=
+begin
+  refine vector.ext (λ i, _),
+  simp,
+end
+
 
 
 lemma vector.exists_eq_split {m n : ℕ} (v : vector α (n + m)) :

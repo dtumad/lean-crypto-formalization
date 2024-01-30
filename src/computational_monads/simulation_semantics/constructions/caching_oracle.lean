@@ -26,7 +26,9 @@ variables {α β γ δ : Type} {spec spec' : oracle_spec}
 
 /-- Oracle for tracking previous queries, and returning the same value for matching inputs. -/
 def caching_oracle (spec : oracle_spec) : sim_oracle spec spec (query_log spec) :=
-λ i ⟨t, cache⟩, cache.lookup_or_query i t
+λ i ⟨t, cache⟩, --cache.lookup_or_else i t (query i t)
+option.rec_on (cache.lookup i t)
+  (do {u ← query i t, return (u, cache.log_query i t u)}) (λ u, return (u, cache))
 
 notation `cachingₛₒ` := caching_oracle _
 
@@ -34,8 +36,9 @@ namespace caching_oracle
 
 section apply
 
-@[simp] lemma apply_eq (i : spec.ι) (z : spec.domain i × query_log spec) :
-  cachingₛₒ i z = z.2.lookup_or_query i z.1 := by cases z; refl
+@[simp] lemma apply_eq (i : spec.ι) (z : spec.domain i × query_log spec) : cachingₛₒ i z =
+  option.rec_on (z.2.lookup i z.1) (do {u ← query i z.1, return (u, z.2.log_query i z.1 u)})
+    (λ u, return (u, z.2)) := by cases z; refl
 
 variables {i : spec.ι} {z : spec.domain i × query_log spec}
   {t : spec.domain i} {s₀ : query_log spec}

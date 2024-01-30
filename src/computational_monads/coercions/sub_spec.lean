@@ -156,14 +156,25 @@ end
 ⟨λ h, dist_equiv.trans h (coe_sub_spec_dist_equiv _ _ oa),
   λ h, dist_equiv.trans h (coe_sub_spec_dist_equiv _ _ oa).symm⟩
 
+@[simp] lemma bind_coe_sub_spec_dist_equiv_iff {spec : oracle_spec} (ob' : oracle_comp spec β) :
+  ((↑oa : oracle_comp super_spec α) >>= λ x, ↑(ob x)) ≃ₚ ob' ↔ oa >>= ob ≃ₚ ob' :=
+by rw [← coe_sub_spec_bind, coe_sub_spec_dist_equiv_iff]
+
+@[simp] lemma dist_equiv_coe_sub_spec_bind_iff {spec : oracle_spec} (ob' : oracle_comp spec β) :
+  ob' ≃ₚ ((↑oa : oracle_comp super_spec α) >>= λ x, ↑(ob x)) ↔ ob' ≃ₚ oa >>= ob :=
+by rw [← coe_sub_spec_bind, dist_equiv_coe_sub_spec_iff]
+
 lemma coe_sub_spec_inj_dist_equiv :
   (↑oa : oracle_comp super_spec α) ≃ₚ (↑oa' : oracle_comp super_spec α) ↔ oa ≃ₚ oa' :=
 by rw [coe_sub_spec_dist_equiv_iff, dist_equiv_coe_sub_spec_iff]
 
-@[simp] lemma map_coe_sub_spec_dist_equiv_iff (ob : oracle_comp super_spec β) :
+@[simp] lemma map_coe_sub_spec_dist_equiv_iff {spec : oracle_spec} (ob : oracle_comp spec β) :
   f <$> (↑oa : oracle_comp super_spec α) ≃ₚ ob ↔ f <$> oa ≃ₚ ob :=
-⟨dist_equiv.trans (map_dist_equiv_of_dist_equiv (λ _ _, rfl) (by pairwise_dist_equiv)),
-  dist_equiv.trans (map_dist_equiv_of_dist_equiv (λ _ _, rfl) (by pairwise_dist_equiv))⟩
+by rw [← coe_sub_spec_map, coe_sub_spec_dist_equiv_iff]
+
+@[simp] lemma dist_equiv_map_coe_subspec_iff {spec : oracle_spec} (ob : oracle_comp spec β) :
+  ob ≃ₚ f <$> (↑oa : oracle_comp super_spec α) ↔ ob ≃ₚ f <$> oa :=
+by rw [← coe_sub_spec_map, dist_equiv_coe_sub_spec_iff]
 
 /-- `support` is unchanged after coercing a computation via a sub-spec instance. -/
 @[simp] lemma support_coe_sub_spec : (↑oa : oracle_comp super_spec α).support = oa.support :=

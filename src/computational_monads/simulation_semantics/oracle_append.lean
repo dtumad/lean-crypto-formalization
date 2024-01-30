@@ -87,33 +87,39 @@ end
 
 end support
 
-section coe_append_right
-
-/-- Coercing a computation on `spec` to one on `spec ++ spec'`, and then simulating with
-two independent oracles `so ++ₛ so'` has the same support as simulating the original with `so`,
-modulo the extra oracle state for the right oracle, which remains unchanged during simulation. -/
-@[simp] lemma support_simulate_coe_append_right (s : S × S') (oa : oracle_comp spec α) :
-  (simulate (so ++ₛ so') ↑oa s).support =
-    (λ (x : α × S), (x.1, x.2, s.2)) '' (simulate so oa s.1).support :=
-calc (simulate (so ++ₛ so') ↑oa s).support =
-    (simulate (so ++ₛ so') ↑oa ((λ s₁, (s₁, s.2)) s.1)).support : by simp only [prod.mk.eta]
-    ... = prod.map id (λ s₁, (s₁, s.2)) '' (simulate so oa s.1).support : begin
-      refine (support_simulate_coe_sub_spec so (so ++ₛ so') s.1 oa _ (λ i t s, _)),
-      simp_rw [is_sub_spec_append_right_apply, simulate_query, apply_inl_eq,
-        support_bind_return, prod_map, id.def],
-    end
-    ... = (λ (x : α × S), (x.1, x.2, s.2)) '' (simulate so oa s.1).support : rfl
-
-/-- Coercing a computation on `spec` to one on `spec ++ spec'`, and then simulating with
-two independent oracles `so ++ₛ so'` has the same support as simulating the original with `so`,
-if we use `simulate'` to ignore the final oracle state of the two `sim_oracle`s. -/
-@[simp] lemma support_simulate'_coe_append_right (so : sim_oracle spec spec'' S)
-  (so' : sim_oracle spec' spec'' S') (s : S × S') (oa : oracle_comp spec α) :
-  (simulate' (so ++ₛ so') ↑oa s).support = (simulate' so oa s.1).support :=
-set.ext (λ x, by simp only [support_simulate', support_simulate_coe_append_right, set.image_image])
-
-end coe_append_right
-
 end oracle_append
+
+section coercions
+
+-- TODO: there are more coercions that should be added here
+-- It may be possible to move these into the instances file itself even
+
+variables variables (so : sim_oracle spec spec'' S) (so' : sim_oracle spec' spec'' S')
+
+@[simp] lemma simulate_coe_append_right (s : S × S') (oa : oracle_comp spec α) :
+  simulate (so ++ₛ so') ↑oa s = (λ (x : α × S), (x.1, x.2, s.2)) <$> simulate so oa s.1 :=
+begin
+  induction oa using oracle_comp.induction_on' with α a i t α oa hoa generalizing s,
+  { simp only [coe_sub_spec_return, simulate_return, map_pure, prod.mk.eta] },
+  { simp [hoa, bind_assoc] }
+end
+
+@[simp] lemma simulate'_coe_append_right (s : S × S') (oa : oracle_comp spec α) :
+  (simulate' (so ++ₛ so') ↑oa s) = simulate' so oa s.1 :=
+by simp [simulate'.def]
+
+@[simp] lemma simulate_coe_append_left (s : S × S') (oa : oracle_comp spec' α) :
+  simulate (so ++ₛ so') ↑oa s = (λ (x : α × S'), (x.1, s.1, x.2)) <$> simulate so' oa s.2 :=
+begin
+  induction oa using oracle_comp.induction_on' with α a i t α oa hoa generalizing s,
+  { simp only [coe_sub_spec_return, simulate_return, map_pure, prod.mk.eta] },
+  { simp [hoa, bind_assoc] }
+end
+
+@[simp] lemma simulate'_coe_append_left (s : S × S') (oa : oracle_comp spec' α) :
+  (simulate' (so ++ₛ so') ↑oa s) = simulate' so' oa s.2 :=
+by simp [simulate'.def]
+
+end coercions
 
 end sim_oracle

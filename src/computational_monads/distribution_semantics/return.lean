@@ -76,6 +76,13 @@ by rwa [prob_output_return_eq_one_iff]
 lemma prob_output_return_self {a : α} : ⁅= a | return' !spec! a⁆ = 1 :=
 prob_output_return_of_eq spec rfl
 
+@[simp] lemma tsum_prob_output_return (spec : oracle_spec) (x : α) :
+  ∑' y : α, ⁅= x | (return y : oracle_comp spec α)⁆ = 1 :=
+begin
+  haveI : decidable_eq α := classical.dec_eq α,
+  simp [@eq_comm _ x],
+end
+
 end prob_output
 
 section prob_event
@@ -101,6 +108,14 @@ by rw [prob_event.def, eval_dist_return, pmf.to_outer_measure_apply_eq_one_iff,
 
 lemma prob_event_return_of_pos {a : α} {p : α → Prop} (h : p a) : ⁅p | return' !spec! a⁆ = 1 :=
 by rwa [prob_event_return_eq_one_iff]
+
+@[simp] lemma tsum_prob_event_mem_finset_return (spec : oracle_spec) (s : finset α) :
+  ∑' x : α, ⁅(∈ s) | (return x : oracle_comp spec α)⁆ = s.card :=
+calc ∑' x : α, ⁅(∈ s) | (return x : oracle_comp spec α)⁆ =
+  ∑ x in s, ⁅(∈ s) | (return x : oracle_comp spec α)⁆ :
+    tsum_eq_sum (λ x hx, prob_event_return_of_neg spec hx)
+  ... = ∑ x in s, 1 : finset.sum_congr rfl (λ x hx, prob_event_return_of_pos spec hx)
+  ... = s.card : by rw [finset.sum_const, nsmul_one]
 
 end prob_event
 

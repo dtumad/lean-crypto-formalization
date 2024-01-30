@@ -27,14 +27,11 @@ noncomputable def random_oracle (spec : oracle_spec) :
   sim_oracle spec unif_spec (query_log spec) :=
 (uniformₛₒ ∘ₛₒ cachingₛₒ).mask_state (equiv.prod_punit (query_log spec))
 
--- noncomputable def random_oracle' (spec : oracle_spec) :
---   sim_oracle spec unif_spec spec.query_log :=
--- (uniformₛₒ ∘ₛₒ (caching_oracle' spec)).mask_state (equiv.prod_punit _)
-
 notation `randomₛₒ` := random_oracle _
 
-namespace random_oracle
+lemma random_oracle.def (spec : oracle_spec) : random_oracle spec =
+  (uniformₛₒ ∘ₛₒ cachingₛₒ).mask_state (equiv.prod_punit (query_log spec)) := rfl
 
--- TODO
+namespace random_oracle
 
 end random_oracle
