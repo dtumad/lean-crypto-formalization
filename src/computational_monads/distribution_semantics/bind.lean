@@ -246,6 +246,10 @@ begin
   { rw [hr x ((prob_output_ne_zero_iff _ _).1 hx)] }
 end
 
+lemma prob_output_bind_eq_one {oa : oracle_comp spec α} {ob : α → oracle_comp spec β}
+  {y : β} (h : ∀ x, ⁅= y | ob x⁆ = 1) :
+  ⁅= y | oa >>= ob⁆ = 1 := prob_output_bind_of_const y 1 (λ x hx, h x)
+
 end bind_of_const
 
 end oracle_comp

@@ -170,23 +170,23 @@ end
 
 end verify
 
+/-- An honest signer will always generate a signature that correctly verifies. -/
 theorem is_sound : (hhs_signature G X M n).is_sound :=
 begin
-  simp only [signature_alg.is_sound, signature_alg.soundness_exp.advantage_eq,
-    oracle_algorithm.exec_bind, simulate_keygen_apply, bind_assoc, oracle_comp.return_bind,
-    simulate'_bind, init_state_eq, simulate_sign_apply, bind_assoc, query_log.lookup_empty,
-    oracle_comp.return_bind, bind_assoc],
-  refine λ m, prob_output_bind_of_const _ _ (λ x₀ _, _),
-  refine prob_output_bind_of_const _ _ (λ sk _, _),
-  refine prob_output_bind_of_const _ _ (λ gs _, _),
+  -- Rewrite the terms of the computation explicitly
+  simp only [signature_alg.is_sound, signature_alg.soundness_exp.advantage_eq, init_state_eq,
+    oracle_algorithm.exec_bind, simulate_keygen_apply, simulate_sign_apply, query_log.lookup_empty,
+    simulate'_bind, oracle_comp.return_bind, bind_assoc, oracle_comp.return_bind],
+  -- Take any arbitrary message, public/secret keys, and set of commitments from signing
+  refine λ m, prob_output_bind_eq_one (λ x₀, prob_output_bind_eq_one
+    (λ sk, prob_output_bind_eq_one (λ gs, _))),
+  -- Simplify the form of the verification procedure
   simp only [simulate'_verify_apply, unzip_commits_zip_commits, vadd_vadd, if_t_t, zip_with_const],
-  refine prob_output_bind_of_const _ _ (λ hash _, _),
-  refine prob_output_bind_of_const _ _ (λ maybe_hash h2, _),
-  have : maybe_hash = some hash,
-  from trans h2 (by simp only [query_log.lookup, query_log.log_query_apply,
-    eq_self_iff_true, if_true, dite_eq_ite, indexed_list.empty_apply, list.nil_append,
-    list.find, function.comp, option.map_eq_map, option.map_some']),
-  rw [this], simp
+  -- Introduce the actual hash value and alleged hash value from signing
+  refine prob_output_bind_eq_one (λ hash, prob_output_bind_of_const _ 1 (λ maybe_hash h2, _)),
+  -- Prove that the hash values align, and so the verification succeeds
+  have : some hash = maybe_hash := symm (trans h2 (by simp [query_log.lookup])),
+  exact this ▸ by simp only [eq_self_iff_true, to_bool_true_eq_tt, prob_output_return, if_true]
 end
 
 end hhs_signature
