@@ -251,8 +251,7 @@ by simp only [generate, active_oracles_empty, finset.to_list_empty, generate_aux
 
 @[simp] lemma generate_zero : generate 0 oa = return 0 := generate_empty oa
 
-@[simp] lemma generate_of_nat (i n) : generate (of_nat i n) oa =
-  of_list <$> repeat (oa i) n :=
+@[simp] lemma generate_of_nat (i n) : generate (of_nat i n) oa = of_list <$> repeat (oa i) n :=
 begin
   cases n with n,
   simp_rw [of_nat_zero, generate_empty, repeat_zero, map_pure, of_list_nil],

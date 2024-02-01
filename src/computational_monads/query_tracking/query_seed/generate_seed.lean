@@ -22,8 +22,8 @@ to determine the ordering, and so the definition is noncomputable.
 
 namespace oracle_comp
 
-open_locale big_operators
-open oracle_spec oracle_spec.indexed_list
+open_locale big_operators ennreal
+open oracle_spec oracle_spec.indexed_list oracle_spec.query_count
 
 variables {α β γ : Type} {spec spec' : oracle_spec}
 
@@ -39,12 +39,13 @@ variables (qc qc' : spec.query_count)
 by simp only [generate_seed, support_generate, mem_support_uniform_select_fintype,
   list.all₂_iff_forall, imp_true_iff, and_true]
 
-lemma coe_query_count_of_mem_support_generate_seed {qs : spec.query_seed} {qc : spec.query_count}
-  (h : qs ∈ (generate_seed qc).support) : ↑qs = qc := sorry
+lemma coe_of_mem_support_generate_seed {qs : spec.query_seed}
+  {qc : spec.query_count} (h : qs ∈ (generate_seed qc).support) : ↑qs = qc :=
+by simpa using h
 
-lemma coe_query_count_of_mem_fin_support_generate_seed [decidable_eq (spec.query_seed)]
-  {qs : spec.query_seed} {qc : spec.query_count}
-  (h : qs ∈ (generate_seed qc).fin_support) : ↑qs = qc := sorry
+lemma coe_of_mem_fin_support_generate_seed {qs : spec.query_seed}
+  {qc : spec.query_count} (h : qs ∈ (generate_seed qc).fin_support) : ↑qs = qc := 
+by simpa [mem_fin_support_iff_mem_support] using h
 
 @[simp] lemma prob_output_generate_seed (qs : spec.query_seed) (h : ↑qs = qc) :
   ⁅= qs | generate_seed qc⁆ = (possible_outcomes qc)⁻¹ :=
@@ -61,47 +62,57 @@ begin
     (ennreal.pow_ne_top (ennreal.nat_ne_top _))
 end
 
-@[simp] lemma card_fin_support_generate_seed [decidable_eq spec.query_seed] :
+@[simp] lemma card_fin_support_generate_seed :
   (generate_seed qc).fin_support.card = possible_outcomes qc :=
 begin
-  sorry
+  have : (↑(generate_seed qc).fin_support.card : ℝ≥0∞) * (possible_outcomes qc)⁻¹ = 1,
+  { rw [finset.card_eq_sum_ones, nat.cast_sum, finset.sum_mul, nat.cast_one, one_mul],
+    refine trans _ (generate_seed qc).sum_prob_output,
+    refine finset.sum_congr rfl (λ qs hqs, symm (prob_output_generate_seed qc qs _)),
+    refine coe_of_mem_fin_support_generate_seed hqs },
+  refine (@nat.cast_inj ℝ≥0∞ _ _ _ _).1 (trans _ (one_mul _)),
+  rw [← this, mul_assoc, ennreal.inv_mul_cancel, mul_one]; simp,
 end
+
+lemma generate_seed_of_nat (i : spec.ι) (n : ℕ) :
+  generate_seed (of_nat i n) = of_list <$> (repeat ($ᵗ (spec.range i)) n) :=
+by rw [generate_seed, generate_of_nat]
 
 @[pairwise_dist_equiv] lemma generate_seed_add_dist_equiv :
   generate_seed (qc + qc') ≃ₚ (+) <$> generate_seed qc <*> generate_seed qc' :=
-sorry
+generate_add_dist_equiv qc qc' _
 
-lemma generate_seed_add_dist_equiv' (qc : spec.query_count)
-  (qc' : spec.query_count → spec.query_count) : generate_seed (qc + qc' qc) ≃ₚ
-  do {qs ← generate_seed qc, qs' ← generate_seed (qc' qs.to_query_count), return (qs + qs')} :=
+lemma generate_seed_add_dist_equiv' (qc' : spec.query_count → spec.query_count) :
+  generate_seed (qc + qc' qc) ≃ₚ
+    do {qs ← generate_seed qc, qs' ← generate_seed (qc' ↑qs), return (qs + qs')} :=
 begin
-  sorry,
+  rw_dist_equiv [generate_seed_add_dist_equiv],
+  rw [seq_map_eq_bind_bind],
+  pairwise_dist_equiv 1 with qs hqs,
+  rw [coe_of_mem_support_generate_seed hqs],
 end
 
 lemma generate_seed_dist_equiv_add_sub (h : qc' ≤ qc) :
   generate_seed qc ≃ₚ (+) <$> generate_seed qc' <*> generate_seed (qc - qc') :=
-sorry
-
--- lemma generate_seed_dist_equiv_of_mem_active_oracles
---   (i : spec.ι) (hi : i ∈ qc.active_oracles) : generate_seed qc ≃ₚ
---     do {u ←$ᵗ (spec.range i), qs ← generate_seed (qc.decrement i 1),
---       return (of_list [u] + qs)} :=
--- begin
---   apply generate_dist_equiv_of_mem_active_oracles,
---   exact hi,
--- end
+begin
+  refine trans _ (generate_seed_add_dist_equiv qc' (qc - qc')),
+  rwa [add_tsub_cancel_of_le],
+end
 
 section get_head
 
-
-lemma get_head_map_generate_seed (qc : spec.query_count) (i : spec.ι) (h : i ∈ qc.active_oracles) :
+lemma map_get_head_generate_seed (qc : spec.query_count) (i : spec.ι) (h : i ∈ qc.active_oracles) :
   (λ seed, indexed_list.get_head seed i) <$> generate_seed qc ≃ₚ
     prod.mk <$> ($ᵗ (spec.range i)) <*> generate_seed (qc.decrement i 1) :=
 begin
-  have hqc : qc = query_count.of_nat i 1 + qc.decrement i 1 := sorry,
-  sorry,
+  have := generate_seed_dist_equiv_add_sub qc (of_nat i 1) (by simpa using h),
+  refine trans (map_dist_equiv_of_dist_equiv' rfl this) _,
+  rw [map_seq],
+  simp [function.comp, generate_seed_of_nat, ← decrement_eq_sub_of_nat,
+    seq_eq_bind_map, oracle_comp.map_eq_bind_return_comp, bind_assoc],
+  pairwise_dist_equiv 2 with i hi qs hqs,
+  simp,
 end
-
 
 -- lemma map_get_head_generate_seed_dist_equiv [h : is_sub_spec unif_spec spec]
 --   (i : spec.ι) (hi : i ∈ qc.active_oracles) :

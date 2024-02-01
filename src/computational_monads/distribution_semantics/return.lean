@@ -73,7 +73,7 @@ by rw [prob_output_eq_one_iff_subset, support_return, set.singleton_subset_singl
 lemma prob_output_return_of_eq {a x : α} (h : x = a) : ⁅= x | return' !spec! a⁆ = 1 :=
 by rwa [prob_output_return_eq_one_iff]
 
-lemma prob_output_return_self {a : α} : ⁅= a | return' !spec! a⁆ = 1 :=
+@[simp] lemma prob_output_return_self {a : α} : ⁅= a | return' !spec! a⁆ = 1 :=
 prob_output_return_of_eq spec rfl
 
 @[simp] lemma tsum_prob_output_return (spec : oracle_spec) (x : α) :

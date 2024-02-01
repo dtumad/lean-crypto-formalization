@@ -57,11 +57,6 @@ lemma eval_dist.prob_output_ext (oa : oracle_comp spec α) (oa' : oracle_comp sp
 @[simp] lemma prob_output_le_top (oa : oracle_comp spec α) (x : α) :
   ⁅= x | oa⁆ ≤ ∞ := le_of_lt (oa.prob_output_lt_top x)
 
-@[simp] lemma tsum_prob_output (oa : oracle_comp spec α) : ∑' x, ⁅= x | oa⁆ = 1 := ⁅oa⁆.tsum_coe
-
-@[simp] lemma sum_prob_output [fintype α] (oa : oracle_comp spec α) : ∑ x, ⁅= x | oa⁆ = 1 :=
-trans (tsum_eq_sum (λ _ h, (h (finset.mem_univ _)).elim)).symm (⁅oa⁆.tsum_coe)
-
 section eq_zero
 
 variables (oa : oracle_comp spec α) (x : α)
@@ -72,7 +67,7 @@ by rw [prob_output, pmf.apply_eq_zero_iff, support_eval_dist]
 lemma prob_output_eq_zero_iff' [decidable_eq α] : ⁅= x | oa⁆ = 0 ↔ x ∉ oa.fin_support :=
 by rw [mem_fin_support_iff_mem_support, prob_output_eq_zero_iff]
 
-@[simp] lemma prob_output_ne_zero_iff : ⁅= x | oa⁆ ≠ 0 ↔ x ∈ oa.support :=
+lemma prob_output_ne_zero_iff : ⁅= x | oa⁆ ≠ 0 ↔ x ∈ oa.support :=
 by rw [ne.def, prob_output_eq_zero_iff, set.not_not_mem]
 
 lemma prob_output_ne_zero_iff' [decidable_eq α] : ⁅= x | oa⁆ ≠ 0 ↔ x ∈ oa.fin_support :=
@@ -104,7 +99,7 @@ by rw [prob_output, pmf.apply_eq_one_iff, support_eval_dist oa]
 lemma prob_output_eq_one_iff' [decidable_eq α] : ⁅= x | oa⁆ = 1 ↔ oa.fin_support = {x} :=
 by rw [fin_support_eq_iff_support_eq_coe, finset.coe_singleton, prob_output_eq_one_iff]
 
-@[simp] lemma prob_output_eq_one_iff_subset : ⁅= x | oa⁆ = 1 ↔ oa.support ⊆ {x} :=
+lemma prob_output_eq_one_iff_subset : ⁅= x | oa⁆ = 1 ↔ oa.support ⊆ {x} :=
 (prob_output_eq_one_iff oa x).trans (set.nonempty.subset_singleton_iff $ support_nonempty oa).symm
 
 lemma prob_output_eq_one_iff_subset' [decidable_eq α] : ⁅= x | oa⁆ = 1 ↔ oa.fin_support ⊆ {x} :=
@@ -113,16 +108,16 @@ by rw [fin_support_subset_iff_support_subset_coe, finset.coe_singleton,
 
 variables {oa x}
 
-@[simp] lemma prob_output_eq_one (h : oa.support = {x}) :
+lemma prob_output_eq_one (h : oa.support = {x}) :
   ⁅= x | oa⁆ = 1 := (prob_output_eq_one_iff oa x).2 h
 
-@[simp] lemma prob_output_eq_one' [decidable_eq α] (h : oa.fin_support = {x}) :
+lemma prob_output_eq_one' [decidable_eq α] (h : oa.fin_support = {x}) :
   ⁅= x | oa⁆ = 1 := (prob_output_eq_one_iff' oa x).2 h
 
-@[simp] lemma prob_output_eq_one_of_subset (h : oa.support ⊆ {x}) :
+lemma prob_output_eq_one_of_subset (h : oa.support ⊆ {x}) :
   ⁅= x | oa⁆ = 1 := (prob_output_eq_one_iff_subset oa x).2 h
 
-@[simp] lemma prob_output_eq_one_of_subset' [decidable_eq α] (h : oa.fin_support ⊆ {x}) :
+lemma prob_output_eq_one_of_subset' [decidable_eq α] (h : oa.fin_support ⊆ {x}) :
   ⁅= x | oa⁆ = 1 := (prob_output_eq_one_iff_subset' oa x).2 h
 
 end eq_one
@@ -146,5 +141,15 @@ variables {oa} {x}
   0 < ⁅= x | oa⁆ := (prob_output_pos_iff' oa x).2 h
 
 end pos
+
+@[simp] lemma tsum_prob_output (oa : oracle_comp spec α) : ∑' x, ⁅= x | oa⁆ = 1 := ⁅oa⁆.tsum_coe
+
+@[simp] lemma sum_prob_output_fintype [fintype α]
+  (oa : oracle_comp spec α) : ∑ x, ⁅= x | oa⁆ = 1 :=
+trans (tsum_eq_sum (λ _ h, (h (finset.mem_univ _)).elim)).symm (⁅oa⁆.tsum_coe)
+
+@[simp] lemma sum_prob_output [decidable_eq α]
+  (oa : oracle_comp spec α) : ∑ x in oa.fin_support, ⁅= x | oa⁆ = 1 :=
+trans (symm (tsum_eq_sum (λ x hx, prob_output_eq_zero' hx))) oa.tsum_prob_output
 
 end oracle_comp

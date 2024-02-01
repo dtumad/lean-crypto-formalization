@@ -94,7 +94,7 @@ begin
       },
       {
         rw [← bind_assoc, ← oracle_comp.map_eq_bind_return_comp, ← coe_sub_spec_map],
-        have := get_head_map_generate_seed _ _ hi,
+        have := map_get_head_generate_seed _ _ hi,
         rw [← coe_sub_spec_inj_dist_equiv unif_spec spec] at this,
         rw_dist_equiv [this],
         rw [coe_sub_spec_seq],

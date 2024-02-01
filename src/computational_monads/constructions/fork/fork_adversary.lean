@@ -266,7 +266,7 @@ begin
   simp only [mem_support_bind_iff, mem_support_return_iff] at hrr,
   obtain ⟨init_s, hinit, z, hz, hzrr⟩ := hrr,
   rw [support_coe_sub_spec] at hinit,
-  have := coe_query_count_of_mem_support_generate_seed hinit,
+  have := coe_of_mem_support_generate_seed hinit,
   rw [indexed_list.coe_query_count_eq] at this,
   simp [hzrr, this],
   refine query_count.get_count_ext _ _ (λ i, _),

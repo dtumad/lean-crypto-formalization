@@ -22,8 +22,7 @@ open_locale big_operators ennreal
 variables {α β γ δ : Type} {spec spec' : oracle_spec}
 
 @[simp] lemma map_seq_prod_mk_eta (z : α × β) :
-  prod.mk <$> return z.1 <*> return z.2
-    = (return z : oracle_comp spec (α × β)) :=
+  prod.mk <$> return z.1 <*> return z.2 = (return z : oracle_comp spec (α × β)) :=
 begin
   rw [map_return, oracle_comp.seq_return],
   simp only [map_pure, seq_pure, mk.eta],

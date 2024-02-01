@@ -20,12 +20,12 @@ variables {α β γ : Type} {spec spec' : oracle_spec}
 
 lemma prob_output_ff_eq_one_sub (oa : oracle_comp spec bool) :
   ⁅= ff | oa⁆ = 1 - ⁅= tt | oa⁆ :=
-by rw [← sum_prob_output oa, fintype.sum_bool,
+by rw [← sum_prob_output_fintype oa, fintype.sum_bool,
   ennreal.add_sub_cancel_left (prob_output_ne_top _ _)]
 
 lemma prob_output_tt_eq_one_sub (oa : oracle_comp spec bool) :
   ⁅= tt | oa⁆ = 1 - ⁅= ff | oa⁆ :=
-by rw [← sum_prob_output oa, fintype.sum_bool,
+by rw [← sum_prob_output_fintype oa, fintype.sum_bool,
   ennreal.add_sub_cancel_right (prob_output_ne_top _ _)]
 
 lemma prob_output_eq_one_div_two_iff (oa : oracle_comp spec bool) (b : bool) :

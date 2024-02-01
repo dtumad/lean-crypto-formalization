@@ -164,20 +164,14 @@ variables (i : spec.ι) (t : spec.domain i)
 
 lemma prob_output_query_eq_one_iff (u : spec.range i) :
   ⁅= u | query i t⁆ = 1 ↔ card (spec.range i) = 1 :=
-begin
-  simp [card_eq_one_iff],
-  refine ⟨λ h, ⟨u, h⟩, λ h y, let ⟨u', h⟩ := h in (h y).trans (h u).symm⟩
-end
+by rw [prob_output_query_eq_inv, inv_eq_iff_eq_inv, inv_one, nat.cast_eq_one]
 
 lemma prob_event_query_eq_one_iff (p : spec.range i → Prop) : ⁅p | query i t⁆ = 1 ↔ ∀ x, p x :=
 by simp only [prob_event_eq_one_iff, support_query, set.mem_univ, forall_true_left]
 
 lemma prob_event_query_ne_one_of_not_mem {p : spec.range i → Prop} (x : spec.range i)
   (h : ¬ p x) : ⁅p | query i t⁆ ≠ 1 :=
-begin
-  rw [ne.def, prob_event_query_eq_one_iff, not_forall],
-  exact ⟨x, h⟩,
-end
+by simpa [ne.def, prob_event_query_eq_one_iff, not_forall] using (⟨x, h⟩ : ∃ x, ¬ p x)
 
 end query_eq_one
 
