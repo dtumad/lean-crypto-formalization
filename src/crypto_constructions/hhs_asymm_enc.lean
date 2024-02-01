@@ -45,30 +45,32 @@ variables (G X : Type) [add_comm_group G]
 
 @[simp] lemma encrypt_apply (z : X × (X × X)) : (hhs_elgamal G X).encrypt z =
   do {g ←$ᵗ G, return (g +ᵥ z.2.1, z.1 * (g +ᵥ z.2.2))} :=
-by rcases z with ⟨m, x₀, pk⟩; refl
+match z with | ⟨m, x₀, pk⟩ := rfl end
 
 @[simp] lemma decrypt_apply (z : (X × X) × G) : (hhs_elgamal G X).decrypt z =
   return (z.1.2 / (z.2 +ᵥ z.1.1)) :=
-by rcases z with ⟨⟨c₁, c₂⟩, sk⟩; refl
+match z with | ⟨⟨c₁, c₂⟩, sk⟩ := rfl end
 
 @[simp] lemma to_oracle_algorithm_eq : (hhs_elgamal G X).to_oracle_algorithm =
   base_oracle_algorithm := rfl
+
+@[simp] lemma base_S_eq : (hhs_elgamal G X).base_S = unit := rfl
+
+@[simp] lemma init_state_eq : (hhs_elgamal G X).init_state = () := rfl
+
+@[simp] lemma base_oracle_eq : (hhs_elgamal G X).base_oracle = idₛₒ := rfl
 
 end apply
 
 /-- Elgamal encryption always returns the correct decryption of arbitrary messages. -/
 theorem is_sound (G X : Type) [add_comm_group G] [algorithmic_homogenous_space G X] [group X] :
-  (hhs_elgamal G X).sound :=
+  (hhs_elgamal G X).is_sound :=
 begin
-  refine (hhs_elgamal G X).sound_iff_support_decrypt_eq.2 _,
-  rintros m ⟨x₀, pk⟩ sk ⟨c₁, c₂⟩ hks hσ,
-  suffices : c₂ / (sk +ᵥ c₁) = m,
-  by rwa [decrypt_apply, support_return, set.singleton_eq_singleton_iff],
-  have hpk : sk +ᵥ x₀ = pk := by simpa using hks,
-  have hc : ∃ g : G, g +ᵥ x₀ = c₁ ∧ m * (g +ᵥ (sk +ᵥ x₀)) = c₂,
-  by simpa [← hpk] using hσ,
-  obtain ⟨g, hc₁, hc₂⟩ := hc,
-  simp [← hc₁, ← hc₂, vadd_comm sk g x₀],
+  simp [(hhs_elgamal G X).is_sound_iff, prod.eq_iff_fst_eq_snd_eq],
+  -- Pattern matching with `rfl` puts things in a very nice form
+  rintros m m' ⟨x₀, pk⟩ sk u (rfl : sk +ᵥ x₀ = pk) x1 x2 u' g rfl rfl rfl,
+  show m * (g +ᵥ (sk +ᵥ x₀)) / (sk +ᵥ (g +ᵥ x₀)) = m,
+  by rw [vadd_vadd g sk, vadd_vadd sk g, add_comm g sk, mul_div_cancel''],
 end
 
 section ind_cpa
@@ -94,8 +96,11 @@ begin
     bind_assoc, ind_cpa_reduction, ite_mul, pure_bind, to_oracle_algorithm_eq, keygen_apply,
     map_pure, coe_coin_unif_spec, encrypt_apply, base_oracle_algorithm.exec_eq],
   congr' 2,
-  { pairwise_dist_equiv,
-    rw_dist_equiv [bind_bind_dist_equiv_comm ($ᵗ G), bind_bind_dist_equiv_comm ($ᵗ G)] },
+  { by_dist_equiv,
+    rw_dist_equiv [bind_bind_dist_equiv_comm ($ᵗ bool), bind_bind_dist_equiv_comm ($ᵗ bool)],
+    pairwise_dist_equiv 2 with x hx g₁ hg₁,
+    rw_dist_equiv [bind_bind_dist_equiv_comm ($ᵗ bool), bind_bind_dist_equiv_comm ($ᵗ bool)],
+    rw_dist_equiv [bind_bind_dist_equiv_comm ($ᵗ G)] },
   { refine prob_output_bind_of_const _ _ (λ x hx, _),
     refine prob_output_bind_of_const _ _ (λ g₁ hg₁, _),
     refine prob_output_bind_of_const _ _ (λ g₂ hg₂, _),

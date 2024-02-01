@@ -34,7 +34,7 @@ section sound
 `inp_gen` runs the key generation algorithm and returns the keys,
 `main` encrypts then decrypts the message `m`, and `is_valid` checks the new message is the same.
 The algorithm will be sound if this experiment always succeeds. -/
-def soundness_experiment (enc_alg : asymm_enc_alg spec M PK SK C)
+def soundness_exp (enc_alg : asymm_enc_alg spec M PK SK C)
   (m : M) : sec_exp spec (PK × SK) M :=
 { inp_gen := enc_alg.keygen (),
   main := λ ⟨pk, sk⟩, do
@@ -43,19 +43,40 @@ def soundness_experiment (enc_alg : asymm_enc_alg spec M PK SK C)
   is_valid := λ ⟨pk, sk⟩ m', m = m',
   .. enc_alg }
 
-/-- An asymmetric encryption algorithm is sound if messages always decrypt to themselves. -/
-def sound (enc_alg : asymm_enc_alg spec M PK SK C) : Prop :=
-∀ m, (soundness_experiment enc_alg m).advantage = 1
+namespace soundness_exp
 
--- TODO: wrong without simulation
-lemma sound_iff_support_decrypt_eq (enc_alg : asymm_enc_alg spec M PK SK C) :
-  enc_alg.sound ↔ ∀ (m : M) (pk : PK) (sk : SK) (σ : C),
-    (pk, sk) ∈ (enc_alg.keygen ()).support →
-    σ ∈ (enc_alg.encrypt (m, pk)).support →
-    (enc_alg.decrypt (σ, sk)).support = {m} :=
-begin
-  sorry,
-end
+variables (enc_alg : asymm_enc_alg spec M PK SK C) (m : M)
+
+@[simp] lemma inp_gen_eq : (soundness_exp enc_alg m).inp_gen = enc_alg.keygen () := rfl
+
+@[simp] lemma main_eq (ks : PK × SK) : (soundness_exp enc_alg m).main ks =
+  do {σ ← enc_alg.encrypt (m, ks.1), enc_alg.decrypt (σ, ks.2)} :=
+match ks with | ⟨pk, sk⟩ := rfl end
+
+@[simp] lemma is_valid_eq (ks : PK × SK) : (soundness_exp enc_alg m).is_valid ks = (=) m :=
+match ks with | ⟨pk, sk⟩ := rfl end
+
+@[simp] lemma to_oracle_algorithm_eq : (soundness_exp enc_alg m).to_oracle_algorithm =
+  enc_alg.to_oracle_algorithm := rfl
+
+end soundness_exp
+
+/-- An asymmetric encryption algorithm is sound if messages always decrypt to themselves. -/
+def is_sound (enc_alg : asymm_enc_alg spec M PK SK C) : Prop :=
+∀ m, (soundness_exp enc_alg m).advantage = 1
+
+lemma is_sound_iff (enc_alg : asymm_enc_alg spec M PK SK C) : enc_alg.is_sound ↔
+  ∀ (m m': M) (pk : PK) (sk : SK) (s : enc_alg.base_S),
+    ((pk, sk), s) ∈ (simulate enc_alg.base_oracle (enc_alg.keygen ()) enc_alg.init_state).support →
+  ∀ σ s', (σ, s') ∈ (simulate enc_alg.base_oracle (enc_alg.encrypt (m, pk)) s).support →
+  ∀ s'', (m', s'') ∈ (simulate enc_alg.base_oracle (enc_alg.decrypt (σ, sk)) s').support →
+    m' = m :=
+by simp only [is_sound, sec_exp.advantage_eq_prob_event, sec_exp.run_def, set.mem_image,
+  prob_output_eq_one_iff_subset, set.subset_def, soundness_exp.to_oracle_algorithm_eq,
+  soundness_exp.inp_gen_eq, soundness_exp.main_eq, oracle_algorithm.exec_bind, simulate'_bind,
+  simulate_bind, simulate'_return, soundness_exp.is_valid_eq, prob_event_eq_eq_prob_output_map',
+  oracle_comp.map_bind, snd_map_bind_return, support_bind, support_map, set.mem_Union, prod.exists,
+  exists_and_distrib_right, exists_eq_right, set.mem_singleton_iff, forall_exists_index]
 
 end sound
 
@@ -102,7 +123,7 @@ variables [is_sub_spec coin_spec spec] (adv : enc_alg.ind_cpa_adv)
 
 @[simp] lemma main_eq : (ind_cpa_exp adv).main =
   λ z, do {ms ← adv.run z.1, c ← enc_alg.encrypt (if z.2 then ms.1 else ms.2, z.1),
-    adv.distinguish (z.1, (ms.1, ms.2), c)} :=
+    adv.distinguish (z.1, ms, c)} :=
 begin
   refine funext (λ z, prod.rec_on z (λ _ _, _)),
   simp only [ind_cpa_exp, prod.mk.eta],
@@ -119,31 +140,27 @@ end
 @[simp] lemma run_eq : (ind_cpa_exp adv).run = enc_alg.exec
   (do {b ← coin, pk ← prod.fst <$> enc_alg.keygen (),
     ms ← adv.run pk, c ← enc_alg.encrypt (if b then ms.1 else ms.2, pk),
-    b' ← adv.distinguish (pk, (ms.1, ms.2), c), return ((pk, b), b')}) :=
+    b' ← adv.distinguish (pk, ms, c), return ((pk, b), b')}) :=
 by simp [sec_exp.run, bind_assoc]
 
+lemma prob_event_eq_eq_prob_output_tt {α β : Type} [decidable_eq β] (oa : oracle_comp spec α)
+  (f g : α → β) : ⁅λ x, f x = g x | oa⁆ = ⁅= tt | (λ x, (f x = g x : bool)) <$> oa⁆ :=
+begin
+  rw [prob_output_map_eq_tsum_indicator],
+  simp [set.preimage, prob_event_eq_tsum_indicator'],
+end
+
 lemma advantage_eq : (ind_cpa_exp adv).advantage =
---   (⁅= tt | enc_alg.exec (do {pk ← prod.fst <$> enc_alg.keygen (), ms ← adv.run pk,
---       c ← enc_alg.encrypt (ms.1, pk), adv.distinguish (pk, ms, c)})⁆ +
---     ⁅= ff | enc_alg.exec (do {pk ← prod.fst <$> enc_alg.keygen (), ms ← adv.run pk,
---         c ← enc_alg.encrypt (ms.2, pk), adv.distinguish (pk, ms, c)})⁆) / 2 :=
--- begin
---   rw [sec_exp.advantage, run_eq, oracle_algorithm.exec],
---   rw [dsimulate', simulate'_bind],
---   sorry,
--- end
-
-
   ⁅= tt | enc_alg.exec (do
-    { pk ← prod.fst <$> enc_alg.keygen (),
+    { b ← coin,
+      pk ← prod.fst <$> enc_alg.keygen (),
       ms ← adv.run pk,
-      b ← coin,
       c ← enc_alg.encrypt (ite b ms.1 ms.2, pk),
       b' ← adv.distinguish (pk, ms, c),
       return (b = b' : bool) })⁆ :=
 begin
   rw [sec_exp.advantage, run_eq],
-  sorry,
+  simp [prob_event_eq_eq_prob_output_tt],
 end
 
 end ind_cpa_exp
