@@ -19,7 +19,7 @@ variables {α β γ : Type} {spec : oracle_spec}
 
 /-- Simulation oracle for preserving the current oracle queries as is.
 Can be combined with other simulation oracles to preserve some subset of queries,
-e.g. `so ++ₛₒ idₛₒ` will simulate the left side oracles and preserve right side oracles. -/
+e.g. `so ++ₛₒₒ idₛₒ` will simulate the left side oracles and preserve right side oracles. -/
 def identity_oracle (spec : oracle_spec) : sim_oracle spec spec unit :=
 tracking_oracle (λ _ _ _ _, ())
 

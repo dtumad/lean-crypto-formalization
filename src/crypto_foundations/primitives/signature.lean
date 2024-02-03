@@ -148,7 +148,7 @@ def signing_sim_oracle (sig : signature_alg spec M PK SK S) (pk : PK) (sk : SK)
   sim_oracle (spec ++ (M ↦ₒ S)) spec (M ↦ₒ S).query_log :=
 let so' : sim_oracle (M ↦ₒ S) spec punit :=
   λ _ m, do {σ ← sig.sign ((pk, sk), m.1), return (σ, ())} in
-(idₛₒ ++ₛ ((so' ∘ₛₒ loggingₛₒ).mask_state
+(idₛₒ ++ₛₒ ((so' ∘ₛₒ loggingₛₒ).mask_state
   (equiv.prod_punit _))).mask_state (equiv.punit_prod _)
 
 alias signing_sim_oracle ← signingₛₒ
@@ -177,7 +177,7 @@ namespace unforgeable_adversary
 -- def simulate_signing_oracle (pk : sig.PK) (sk : sig.SK) :
 --   oracle_comp (unif_spec ++ sig.random_spec)
 --     ((sig.M × sig.S) × (sig.M ↦ₒ sig.S).query_cache) :=
--- (prod.map id prod.snd) <$> (dsimulate (idₛₒ ++ₛ sig.signingₛₒ pk sk) (adversary.run pk))
+-- (prod.map id prod.snd) <$> (dsimulate (idₛₒ ++ₛₒ sig.signingₛₒ pk sk) (adversary.run pk))
 
 end unforgeable_adversary
 

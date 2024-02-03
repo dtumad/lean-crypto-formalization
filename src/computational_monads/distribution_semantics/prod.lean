@@ -481,4 +481,21 @@ set.ext (λ z, by simp only [prod.eq_iff_fst_eq_snd_eq, support_bind, support_bi
 
 end bind_bind_prod_mk
 
+section map_prod_mk
+
+@[simp] lemma prob_output_map_prod_mk_snd_snd [decidable_eq γ] (oa : oracle_comp spec (α × β))
+  (c : γ) (z : α × β × γ) : ⁅= z | (λ xy : α × β, (xy.1, xy.2, c)) <$> oa⁆ =
+    if z.2.2 = c then ⁅= (z.1, z.2.1) | oa⁆ else 0 :=
+begin
+  haveI : decidable_eq α := classical.dec_eq α,
+  haveI : decidable_eq β := classical.dec_eq β,
+  simp only [prob_output_map_eq_tsum_ite, prod.eq_iff_fst_eq_snd_eq],
+  refine trans (tsum_eq_single (z.1, z.2.1) (λ xy hxy, if_neg _)) _,
+  { simp [prod.eq_iff_fst_eq_snd_eq] at ⊢ hxy,
+    exact λ h' h'', (hxy h'.symm h''.symm).elim },
+  { simp only [eq_self_iff_true, true_and] }
+end
+
+end map_prod_mk
+
 end oracle_comp

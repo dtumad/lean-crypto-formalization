@@ -76,9 +76,9 @@ lemma prob_bound [algorithmic_homogenous_space G X]
   (z : α) (cache : query_log ((vector X n × M) ↦ₒ vector bool n))
   (qc : query_count (hhs_signature G X M n).unforgeable_adv_spec)
   (h : is_query_bound oa qc) :
-  ⁅= z | simulate' (sim_oracle.compose (identity_oracle unif_spec ++ₛ randomₛₒ)
+  ⁅= z | simulate' (sim_oracle.compose (identity_oracle unif_spec ++ₛₒ randomₛₒ)
     (identity_oracle (unif_spec ++ ((vector X n × M) ↦ₒ vector bool n)) 
-      ++ₛ (hhs_signature G X M n).signingₛₒ (x₀, pk) (pk -ᵥ x₀))) oa (((), ∅), (), cache)⁆
+      ++ₛₒ (hhs_signature G X M n).signingₛₒ (x₀, pk) (pk -ᵥ x₀))) oa (((), ∅), (), cache)⁆
     * (1 - 1 / sorry) ≤
     ⁅= z | simulate' (mock_signingₛₒ x₀ pk) oa cache⁆  :=
 begin

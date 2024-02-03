@@ -47,7 +47,7 @@ noncomputable def hhs_signature (G X M : Type) [decidable_eq M]
     (hash' : vector bool n) ← query (sum.inr ()) (xs, m),
     return (hash' = hash) },
   -- Treat the second oracle as a random oracle
-  base_oracle := (idₛₒ ++ₛ randomₛₒ).mask_state (equiv.punit_prod _),
+  base_oracle := (idₛₒ ++ₛₒ randomₛₒ).mask_state (equiv.punit_prod _),
   init_state := ∅, .. }
 
 namespace hhs_signature
@@ -56,7 +56,7 @@ variables {G X M : Type} [decidable_eq M] [add_comm_group G]
   [algorithmic_homogenous_space G X] {n : ℕ}
 
 lemma base_oracle_eq : (hhs_signature G X M n).base_oracle =
-  (idₛₒ ++ₛ randomₛₒ).mask_state (equiv.punit_prod _) := rfl
+  (idₛₒ ++ₛₒ randomₛₒ).mask_state (equiv.punit_prod _) := rfl
 
 @[simp] lemma base_S_eq : (hhs_signature G X M n).base_S =
   query_log ((vector X n × M) ↦ₒ vector bool n) := rfl

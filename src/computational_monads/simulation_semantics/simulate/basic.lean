@@ -27,7 +27,7 @@ TODO: we should evaluate if this approach is actually always better.
 variables {α β γ : Type} {spec spec' spec'' : oracle_spec} {S S' : Type}
 
 open_locale big_operators ennreal
-open oracle_spec
+open oracle_spec sum
 
 /-- Specifies a way to simulate a set of oracles using another set of oracles.
 e.g. using uniform selection oracles with a query cache to simulate a random oracle.
@@ -40,10 +40,12 @@ and returning a fake coin flip that alternates between heads and tails. -/
 example : sim_oracle oracle_spec.coin_spec oracle_spec.coin_spec ℕ :=
 λ i ⟨t, n⟩, return (if even n then tt else ff, n + 1)
 
-instance sim_oracle.inhabited [inhabited S] : inhabited (sim_oracle spec spec' S) :=
+namespace sim_oracle
+
+instance inhabited [inhabited S] : inhabited (sim_oracle spec spec' S) :=
 ⟨λ _ _, oracle_comp.pure' _ default⟩
 
-instance sim_oracle.decidable_eq [fintype spec.ι] [∀ i, fintype (spec.domain i)] [fintype S]
+instance decidable_eq [fintype spec.ι] [∀ i, fintype (spec.domain i)] [fintype S]
   [decidable_eq S] : decidable_eq (sim_oracle spec spec' S) :=
 begin
   intros so so',
@@ -53,6 +55,35 @@ begin
   have : ∀ i z, decidable (so i z = so' i z) := λ i z, oracle_comp.decidable_eq (so i z) (so' i z),
   exact @fintype.decidable_forall_fintype _ _ (λ z : Σ i, spec.domain i × S, this z.1 z.2) _,
 end
+
+def append (so : sim_oracle spec spec'' S) (so' : sim_oracle spec' spec'' S') :
+  sim_oracle (spec ++ spec') spec'' (S × S') :=
+λ i, match i with
+| (inl i) := λ ⟨t, s₁, s₂⟩, do {⟨u, s₁'⟩ ← so i (t, s₁), return (u, s₁', s₂)}
+| (inr i) := λ ⟨t, s₁, s₂⟩, do {⟨u, s₂'⟩ ← so' i (t, s₂), return (u, s₁, s₂')}
+end
+
+infixl ` ++ₛₒ `:65 := append
+
+variables (so : sim_oracle spec spec'' S) (so' : sim_oracle spec' spec'' S')
+
+@[simp] lemma append_apply_inl (i : spec.ι) (x : spec.domain i × S × S') :
+  (so ++ₛₒ so') (inl i) x = (λ z : spec.range i × S, (z.1, z.2, x.2.2)) <$> so i (x.1, x.2.1) :=
+begin
+  rcases x with ⟨t, s₁, s₂⟩,
+  refine congr_arg (λ ou, so i (t, s₁) >>= ou) (funext $ λ y, _),
+  cases y, refl,
+end
+
+@[simp] lemma append_apply_inr (i : spec'.ι) (x : spec'.domain i × S × S') :
+  (so ++ₛₒ so') (inr i) x = (λ z : spec'.range i × S', (z.1, x.2.1, z.2)) <$> so' i (x.1, x.2.2) :=
+begin
+  rcases x with ⟨t, s₁, s₂⟩,
+  refine congr_arg (λ ou, so' i (t, s₂) >>= ou) (funext $ λ y, _),
+  cases y, refl,
+end
+
+end sim_oracle
 
 namespace oracle_comp
 

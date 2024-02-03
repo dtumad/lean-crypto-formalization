@@ -37,7 +37,7 @@ example (so : sim_oracle coe_spec coe_spec' S) :
 /-- Can use coercions to seperately simulate both sides of appended oracle specs -/
 example (so : sim_oracle spec spec'' S) (so' : sim_oracle spec' spec''' S') :
   sim_oracle (spec ++ spec') (spec'' ++ spec''') (S × S') :=
-↑so ++ₛ ↑so'
+↑so ++ₛₒ ↑so'
 
 end coe_sim_oracle
 
