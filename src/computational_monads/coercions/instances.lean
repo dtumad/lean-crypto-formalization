@@ -215,6 +215,41 @@ instance is_sub_spec_assoc (spec spec' spec'' : oracle_spec) :
   | (sum.inr (sum.inr i)) := λ t, rfl
   end }
 
+-- @[simp] lemma is_sub_spec_assoc_apply_inl (i : spec.ι) (t : spec.domain i) :
+--   (oracle_spec.is_sub_spec_assoc spec spec' spec'').to_fun i t =
+--     @query (spec' ++ spec) (sum.inr i) t := rfl
+
+variables {tspec : oracle_spec} {S'' : Type}
+variables (so : sim_oracle spec tspec S) (so' : sim_oracle spec' tspec S')
+  (so'' : sim_oracle spec'' tspec S'')
+
+@[simp] lemma simulate_coe_assoc (s : (S × S') × S'')
+  (oa : oracle_comp (spec ++ (spec' ++ spec'')) α) :
+  simulate (so ++ₛₒ so' ++ₛₒ so'') (↑oa : oracle_comp (spec ++ spec' ++ spec'') α) s =
+    (λ (x : α × (S × S' × S'')), (x.1, ((x.2.1, x.2.2.1), x.2.2.2))) <$>
+      simulate (so ++ₛₒ (so' ++ₛₒ so'')) oa (s.1.1, s.1.2, s.2) :=
+begin
+  induction oa using oracle_comp.induction_on' with α a i t α oa hoa generalizing s,
+  { simp only [coe_sub_spec_return, simulate_return, map_pure, prod.mk.eta] },
+  { 
+    cases i with i i,
+    {
+      sorry,
+    },
+    cases i with i i,
+    {
+      sorry,
+    },
+    {
+      sorry,
+    }
+   },
+end
+
+-- @[simp] lemma simulate'_coe_append_left (s : S × S') (oa : oracle_comp spec' α) :
+--   (simulate' (so ++ₛₒ so') ↑oa s) = simulate' so' oa s.2 :=
+-- by simp [simulate'.def]
+
 end assoc
 
 end oracle_spec
