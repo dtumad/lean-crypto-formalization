@@ -87,7 +87,7 @@ variables (cs : vector G n) (x₀ pk : X) (sk : G) (hash : vector bool n)
     if hash.nth i = tt then cs.nth i +ᵥ pk else (cs.nth i + sk) +ᵥ x₀ :=
 by by_cases hb : hash.nth i = tt; simp [hb]
 
-lemma unzip_commits_zip_commits : unzip_commits x₀ pk (zip_commits sk cs hash) hash =
+@[simp] lemma unzip_commits_zip_commits : unzip_commits x₀ pk (zip_commits sk cs hash) hash =
   cs.zip_with (λ c b, if b = tt then c +ᵥ pk else (c + sk) +ᵥ x₀) hash :=
 vector.ext (λ i, by by_cases hb : hash.nth i = tt; simp [hb])
 

@@ -59,6 +59,9 @@ variables (log : query_log spec) (i : spec.ι) (t : spec.domain i) (u : spec.ran
 
 @[simp] lemma le_log_query_self : log ≤ log.log_query i t u := by simp [log_query]
 
+@[simp] lemma log_query_empty : ((∅ : spec.query_log).log_query i t u) =
+  indexed_list.of_list [(t, u)] := rfl
+
 end log_query
 
 section to_seed
@@ -76,12 +79,43 @@ end was_queried
 
 section lookup
 
-def lookup (log : spec.query_log) (i : spec.ι) (t : spec.domain i) :
-  option (spec.range i) :=
+def lookup (log : spec.query_log) (i : spec.ι) (t : spec.domain i) : option (spec.range i) :=
 prod.snd <$> (log i).find (((=) t) ∘ prod.fst)
 
 @[simp] lemma lookup_empty (i : spec.ι) (t : spec.domain i) :
   (∅ : spec.query_log).lookup i t = none := rfl
+
+-- #check get_count_incre
+
+@[simp] lemma lookup_of_list (i : spec.ι) (qs : list (spec.domain i × spec.range i))
+  (j : spec.ι) (t : spec.domain j) : lookup (indexed_list.of_list qs) j t =
+  if h : i = j then prod.snd <$> (h.rec_on qs).find (((=) t) ∘ prod.fst) else none :=
+by by_cases h : i = j; simp [h, lookup]
+
+-- @[simp] lemma lookup_add_values (log : spec.query_log) (i : spec.ι)
+--   (ts : list (spec.domain i × spec.range i)) (j : spec.ι) (t : spec.domain j) :
+--   query_log.lookup (log.add_values ts) j t =
+--     if log.lookup j t = none then (if )
+--       else log.lookup j t
+
+-- @[simp] lemma lookup_log_query (log : spec.query_log) (i : spec.ι) (t : spec.domain i)
+--   (u : spec.range i) (j : spec.ι) (t' : spec.domain j) :
+--   (log.log_query i t u).lookup j t' = option.rec_on (log.lookup j t')
+--     (if h : i = j then if h.rec t = t' then some (h.rec u) else none else none) (λ u, some u) :=
+-- begin
+--   by_cases h : i = j,
+--   {
+--     induction h,
+--     by_cases ht : t = t',
+--     {
+--       induction ht,
+--       simp [log_query],
+
+--       have := list.find,
+--       show _ = some u,
+--     }
+--   }
+-- end
 
 end lookup
 

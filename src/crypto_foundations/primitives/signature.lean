@@ -44,6 +44,8 @@ namespace signature_alg
 
 variables {spec : oracle_spec} {M PK SK S : Type}
 
+section sound
+
 /-- Experiment for checking that a signature algorithm is sound.
 Given a message `m`, input generation just generates a public/secret key pair,
 and the main experiment signs and verifies the message with the generated keys.
@@ -95,47 +97,12 @@ end
 
 end soundness_exp
 
-section sound
-
-open soundness_exp
-
 /-- A signature algorithm is complete if all messages are valid. -/
 def is_sound (sig : signature_alg spec M PK SK S) : Prop :=
 ∀ m, (soundness_exp sig m).advantage = 1
 
-lemma sound_iff (sig : signature_alg spec M PK SK S) :
-  is_sound sig ↔ ∀ (m : M) (pk : PK) (sk : SK) (σ : S) (s s' : sig.base_S),
-    ((pk, sk), s) ∈ (simulate sig.base_oracle (sig.keygen ()) sig.init_state).support →
-      (σ, s') ∈ (simulate sig.base_oracle (sig.sign ((pk, sk), m)) s).support →
-        (simulate' sig.base_oracle (sig.verify (pk, m, σ)) s').support = {tt} :=
-begin
-  simp_rw [is_sound, advantage_eq],
-  simp_rw [prob_output_eq_one_iff],
-  simp_rw [oracle_algorithm.exec_bind, support_bind, support_simulate'_bind],
-  sorry,
-
-end
-
--- lemma complete_iff_signatures_support_subset :
---   sig.complete ↔ ∀ (m : sig.M) (pk : sig.PK) (sk : sig.SK) (σ : sig.S)
---     (cache cache' : sig.random_spec.query_log),
---     ((pk, sk), cache) ∈ (dsimulate sig.baseₛₒ $ sig.gen ()).support →
---     (σ, cache') ∈ (simulate sig.baseₛₒ (sig.sign (pk, sk, m)) cache).support →
---     (simulate' sig.baseₛₒ (sig.verify (pk, m, σ)) cache').support = {tt} :=
--- begin
---   simp_rw [complete, prob_output_eq_one_iff_subset],
---   refine ⟨λ h m pk sk σ cache cache' hgen hsign, _, λ h m, _⟩,
---   { rw [support_eq_singleton_iff_forall],
---     refine λ b hb, h m _,
---     simp only [support_completeness_experiment, set.mem_Union],
---     refine ⟨pk, sk, σ, cache, cache', hgen, hsign, hb⟩ },
---   { rw [support_completeness_experiment],
---     intros x hx,
---     simp only [set.mem_Union] at hx,
---     obtain ⟨pk, sk, σ, cache, cache', hgen, hsign, hb⟩ := hx,
---     specialize h m pk sk σ cache cache' hgen hsign,
---     exact h ▸ hb }
--- end
+lemma is_sound_iff_forall_message (sig : signature_alg spec M PK SK S) :
+  sig.is_sound ↔ ∀ m, (soundness_exp sig m).advantage = 1 := iff.rfl
 
 end sound
 

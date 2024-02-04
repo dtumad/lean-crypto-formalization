@@ -42,9 +42,9 @@ and avoid an infinite typeclass search whether or not an instance exists.
 
 namespace oracle_spec
 
-open oracle_comp
+open oracle_comp sum
 
-variables {spec spec' spec'' : oracle_spec} {α β γ S S' : Type}
+variables {spec spec' spec'' sub_spec super_spec : oracle_spec} {α β γ S S' S'' : Type}
 
 section empty_spec
 
@@ -83,12 +83,12 @@ section append_left
 forwarding the old queries to the left side of the combined set of oracles. -/
 @[priority std.priority.default]
 instance is_sub_spec_append_left (spec spec' : oracle_spec) : spec ⊂ₒ (spec' ++ spec) :=
-{ to_fun := λ i t, @query (spec' ++ spec) (sum.inr i) t,
-  to_fun_equiv := λ i t, trans (eval_dist_query (sum.inr i) t) (eval_dist_query i t).symm }
+{ to_fun := λ i t, @query (spec' ++ spec) (inr i) t,
+  to_fun_equiv := λ i t, trans (eval_dist_query (inr i) t) (eval_dist_query i t).symm }
 
 @[simp] lemma is_sub_spec_append_left_apply (i : spec.ι) (t : spec.domain i) :
   (oracle_spec.is_sub_spec_append_left spec spec').to_fun i t =
-    @query (spec' ++ spec) (sum.inr i) t := rfl
+    @query (spec' ++ spec) (inr i) t := rfl
 
 variables (so : sim_oracle spec spec'' S) (so' : sim_oracle spec' spec'' S')
 
@@ -112,12 +112,12 @@ section append_right
 forwarding the old queries to the left side of the combined set of oracles. -/
 @[priority std.priority.default+1]
 instance is_sub_spec_append_right (spec spec' : oracle_spec) : spec ⊂ₒ (spec ++ spec') :=
-{ to_fun := λ i t, @query (spec ++ spec') (sum.inl i) t,
-  to_fun_equiv := λ i t, trans (eval_dist_query (sum.inl i) t) (eval_dist_query i t).symm }
+{ to_fun := λ i t, @query (spec ++ spec') (inl i) t,
+  to_fun_equiv := λ i t, trans (eval_dist_query (inl i) t) (eval_dist_query i t).symm }
 
-@[simp] lemma is_sub_spec_append_right_apply {spec spec' : oracle_spec}
-  (i : spec.ι) (t : spec.domain i) : (oracle_spec.is_sub_spec_append_right spec spec').to_fun i t =
-    @query (spec ++ spec') (sum.inl i) t := rfl
+@[simp] lemma is_sub_spec_append_right_apply (i : spec.ι) (t : spec.domain i) :
+  (oracle_spec.is_sub_spec_append_right spec spec').to_fun i t =
+    @query (spec ++ spec') (inl i) t := rfl
 
 variables (so : sim_oracle spec spec'' S) (so' : sim_oracle spec' spec'' S')
 
@@ -140,11 +140,15 @@ section append_left_of_is_subspec
 /-- Coerce an oracle and then append to the left. Already sort of exists,
   but the instance priorities don't work without explicitly having this. -/
 @[priority std.priority.default+10]
-instance is_sub_spec_append_left_of_is_sub_spec
-  (spec sub_spec super_spec : oracle_spec)
-  [h : is_sub_spec sub_spec super_spec] : is_sub_spec sub_spec (spec ++ super_spec) :=
+instance is_sub_spec_append_left_of_is_sub_spec (spec sub_spec super_spec : oracle_spec)
+  [h : sub_spec ⊂ₒ super_spec] : is_sub_spec sub_spec (spec ++ super_spec) :=
 { to_fun := λ i t, ↑(h.to_fun i t),
-  to_fun_equiv := λ i t, (eval_dist_coe_sub_spec _ _ _).trans (is_sub_spec.to_fun_equiv _ _) }
+  to_fun_equiv := λ i t, (eval_dist_coe_sub_spec _ _ _).trans (is_sub_spec.to_fun_equiv _ _) } 
+
+@[simp] lemma is_sub_spec_append_left_of_is_sub_spec_apply
+  [h : sub_spec ⊂ₒ super_spec] (i : sub_spec.ι) (t : sub_spec.domain i) :
+  (oracle_spec.is_sub_spec_append_left_of_is_sub_spec spec sub_spec super_spec).to_fun i =
+    λ t, ↑(h.to_fun i t) := rfl
 
 end append_left_of_is_subspec
 
@@ -153,11 +157,15 @@ section append_right_of_is_subspec
 /-- Coerce an oracle and then append to the right. Already sort of exists,
   but the instance priorities don't work without explicitly having this. -/
 @[priority std.priority.default+11]
-instance is_sub_spec_append_right_of_is_sub_spec
-  (spec sub_spec super_spec : oracle_spec)
-  [h : is_sub_spec sub_spec super_spec] : is_sub_spec sub_spec (super_spec ++ spec) :=
+instance is_sub_spec_append_right_of_is_sub_spec (spec sub_spec super_spec : oracle_spec)
+  [h : sub_spec ⊂ₒ super_spec] : is_sub_spec sub_spec (super_spec ++ spec) :=
 { to_fun := λ i t, ↑(h.to_fun i t),
   to_fun_equiv := λ i t, (eval_dist_coe_sub_spec _ _ _).trans (is_sub_spec.to_fun_equiv _ _) }
+
+@[simp] lemma is_sub_spec_append_right_of_is_sub_spec_apply
+  [h : sub_spec ⊂ₒ super_spec] (i : sub_spec.ι) (t : sub_spec.domain i) :
+  (oracle_spec.is_sub_spec_append_right_of_is_sub_spec spec sub_spec super_spec).to_fun i =
+    λ t, ↑(h.to_fun i t) := rfl
 
 end append_right_of_is_subspec
 
@@ -169,13 +177,13 @@ instance is_sub_spec_left_side_append
   (spec sub_spec super_spec : oracle_spec)
   [h : is_sub_spec sub_spec super_spec] : is_sub_spec (sub_spec ++ spec) (super_spec ++ spec) :=
 { to_fun := λ i, match i with
-  | (sum.inl i) := λ t, (append.range_inl sub_spec spec i).symm.rec (h.to_fun i t)
-  | (sum.inr i) := λ t, @query (super_spec ++ _) (sum.inr i) t
+  | (inl i) := λ t, (append.range_inl sub_spec spec i).symm.rec (h.to_fun i t)
+  | (inr i) := λ t, @query (super_spec ++ _) (inr i) t
   end,
   to_fun_equiv := λ i, match i with
-  | (sum.inl i) := λ t, (eval_dist_coe_sub_spec _ _ (h.to_fun i t)).trans
+  | (inl i) := λ t, (eval_dist_coe_sub_spec _ _ (h.to_fun i t)).trans
       ((h.to_fun_equiv i t).trans (by exact rfl))
-  | (sum.inr i) := λ t, rfl
+  | (inr i) := λ t, rfl
   end }
 
 end left_side_append
@@ -187,12 +195,12 @@ section right_side_append
 instance is_sub_spec_right_side_append (spec sub_spec super_spec : oracle_spec)
   [h : is_sub_spec sub_spec super_spec] : is_sub_spec (spec ++ sub_spec) (spec ++ super_spec) :=
 { to_fun := λ i, match i with
-  | (sum.inl i) := λ t, @query (_ ++ super_spec) (sum.inl i) t
-  | (sum.inr i) := λ t, (append.range_inr spec sub_spec i).symm.rec (h.to_fun i t)
+  | (inl i) := λ t, @query (_ ++ super_spec) (inl i) t
+  | (inr i) := λ t, (append.range_inr spec sub_spec i).symm.rec (h.to_fun i t)
   end,
   to_fun_equiv := λ i, match i with
-  | (sum.inl i) := λ t, rfl
-  | (sum.inr i) := λ t, (eval_dist_coe_sub_spec _ _ (h.to_fun i t)).trans
+  | (inl i) := λ t, rfl
+  | (inr i) := λ t, (eval_dist_coe_sub_spec _ _ (h.to_fun i t)).trans
       ((h.to_fun_equiv i t).trans (by exact rfl))
   end }
 
@@ -205,23 +213,30 @@ section assoc
 instance is_sub_spec_assoc (spec spec' spec'' : oracle_spec) :
   is_sub_spec (spec ++ (spec' ++ spec'')) (spec ++ spec' ++ spec'') :=
 { to_fun := λ i, match i with
-  | (sum.inl i) := λ t, @query (spec ++ spec' ++ spec'') (sum.inl (sum.inl i)) t
-  | (sum.inr (sum.inl i)) := λ t, @query (spec ++ spec' ++ spec'') (sum.inl (sum.inr i)) t
-  | (sum.inr (sum.inr i)) := λ t, @query (spec ++ spec' ++ spec'') (sum.inr i) t
+  | (inl i) := @query (spec ++ spec' ++ spec'') (inl (inl i))
+  | (inr (inl i)) := @query (spec ++ spec' ++ spec'') (inl (inr i))
+  | (inr (inr i)) := @query (spec ++ spec' ++ spec'') (inr i)
   end,
   to_fun_equiv := λ i, match i with
-  | (sum.inl i) := λ t, rfl
-  | (sum.inr (sum.inl i)) := λ t, rfl
-  | (sum.inr (sum.inr i)) := λ t, rfl
+  | (inl i) := λ t, rfl
+  | (inr (inl i)) := λ t, rfl
+  | (inr (inr i)) := λ t, rfl
   end }
 
--- @[simp] lemma is_sub_spec_assoc_apply_inl (i : spec.ι) (t : spec.domain i) :
---   (oracle_spec.is_sub_spec_assoc spec spec' spec'').to_fun i t =
---     @query (spec' ++ spec) (sum.inr i) t := rfl
+@[simp] lemma is_sub_spec_assoc_apply_inl (i : spec.ι) :
+  (oracle_spec.is_sub_spec_assoc spec spec' spec'').to_fun (inl i) =
+    @query (spec ++ spec' ++ spec'') (inl (inl i)) := rfl
 
-variables {tspec : oracle_spec} {S'' : Type}
-variables (so : sim_oracle spec tspec S) (so' : sim_oracle spec' tspec S')
-  (so'' : sim_oracle spec'' tspec S'')
+@[simp] lemma is_sub_spec_assoc_apply_inr_inl (i : spec'.ι) :
+  (oracle_spec.is_sub_spec_assoc spec spec' spec'').to_fun (inr (inl i)) =
+    @query (spec ++ spec' ++ spec'') (inl (inr i)) := rfl
+
+@[simp] lemma is_sub_spec_assoc_apply_inr_inr (i : spec''.ι) :
+  (oracle_spec.is_sub_spec_assoc spec spec' spec'').to_fun (inr (inr i)) =
+    @query (spec ++ spec' ++ spec'') (inr i) := rfl
+
+variables {tspec : oracle_spec} (so : sim_oracle spec tspec S)
+  (so' : sim_oracle spec' tspec S') (so'' : sim_oracle spec'' tspec S'')
 
 @[simp] lemma simulate_coe_assoc (s : (S × S') × S'')
   (oa : oracle_comp (spec ++ (spec' ++ spec'')) α) :
@@ -231,24 +246,21 @@ variables (so : sim_oracle spec tspec S) (so' : sim_oracle spec' tspec S')
 begin
   induction oa using oracle_comp.induction_on' with α a i t α oa hoa generalizing s,
   { simp only [coe_sub_spec_return, simulate_return, map_pure, prod.mk.eta] },
-  { 
-    cases i with i i,
-    {
-      sorry,
-    },
-    cases i with i i,
-    {
-      sorry,
-    },
-    {
-      sorry,
-    }
-   },
+  { cases i with i i,
+    { simp only [hoa, oracle_comp.bind_map, coe_sub_spec_bind, coe_sub_spec_query,
+        is_sub_spec_assoc_apply_inl, simulate_bind, simulate_query, sim_oracle.append_apply_inl,
+        oracle_comp.map_bind] },
+    cases i with i i; simp only [hoa, oracle_comp.bind_map, coe_sub_spec_bind, coe_sub_spec_query, 
+      is_sub_spec_assoc_apply_inr_inl, is_sub_spec_assoc_apply_inr_inr, simulate_bind,
+      simulate_query, sim_oracle.append_apply_inl, sim_oracle.append_apply_inr,
+      oracle_comp.map_bind] },
 end
 
--- @[simp] lemma simulate'_coe_append_left (s : S × S') (oa : oracle_comp spec' α) :
---   (simulate' (so ++ₛₒ so') ↑oa s) = simulate' so' oa s.2 :=
--- by simp [simulate'.def]
+@[simp] lemma simulate'_coe_assoc (s : (S × S') × S'')
+  (oa : oracle_comp (spec ++ (spec' ++ spec'')) α) :
+  simulate' (so ++ₛₒ so' ++ₛₒ so'') (↑oa : oracle_comp (spec ++ spec' ++ spec'') α) s =
+    simulate' (so ++ₛₒ (so' ++ₛₒ so'')) oa (s.1.1, s.1.2, s.2) :=
+by simp [simulate'.def]
 
 end assoc
 
@@ -258,7 +270,7 @@ namespace oracle_spec
 
 open oracle_comp
 
-section examples
+section tests
 
 -- This set of examples serves as sort of a "unit test" for the coercions above
 variables (α : Type) (spec spec' spec'' spec''' : oracle_spec)
@@ -338,6 +350,6 @@ do { n ←$[0..3141], b ← coin, if n ≤ 1618 ∧ b = tt then return ff else c
 -- TODO!!!: does this work ever without deep recursion? probably not?
 -- example (oa : prob_comp ∅ α) : oracle_comp unif_spec α := ↑oa
 
-end examples
+end tests
 
 end oracle_spec

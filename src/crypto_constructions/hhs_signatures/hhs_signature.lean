@@ -83,84 +83,80 @@ by simp_rw [simulate'.def, simulate_keygen_apply, map_bind, map_return]
 
 end keygen
 
--- TODO: in the next few section it might be good to collapse input variables
-
 section sign
 
-variables (x₀ pk : X) (sk : G) (m : M)
+variables (z : ((X × X) × G) × M)
 
-lemma sign_apply : ((hhs_signature G X M n).sign (((x₀, pk), sk), m)) =
-  do {gs ←$ᵗ (vector G n), hash ← query (sum.inr ()) (gs.map (+ᵥ pk), m),
-    return (zip_commits sk gs hash, hash)} := rfl
+lemma sign_apply : (hhs_signature G X M n).sign z =
+  do {gs ←$ᵗ (vector G n), hash ← query (sum.inr ()) (gs.map (+ᵥ z.1.1.2), z.2),
+    return (zip_commits z.1.2 gs hash, hash)} :=
+match z with | ⟨⟨⟨_, _⟩, _⟩, _⟩ := rfl end
 
 @[simp] lemma simulate_sign_apply (cache : query_log ((vector X n × M) ↦ₒ vector bool n)) :
   simulate (hhs_signature G X M n).base_oracle
-    ((hhs_signature G X M n).sign (((x₀, pk), sk), m)) cache =
-  do {gs ←$ᵗ (vector G n), hash' ← return (cache.lookup () (gs.map (+ᵥ pk), m)),
-    option.rec_on hash' ($ᵗ (vector bool n) >>= λ hash,
-      return ((zip_commits sk gs hash, hash), cache.log_query () (gs.map (+ᵥ pk), m) hash))
-    (λ hash, return ((zip_commits sk gs hash, hash), cache)) } 
-    :=
+    ((hhs_signature G X M n).sign z) cache =
+  do {gs ←$ᵗ (vector G n), hash' ← return (cache.lookup () (gs.map (+ᵥ z.1.1.2), z.2)),
+    if hash' = none then $ᵗ (vector bool n) >>= λ hash, return ((zip_commits z.1.2 gs hash, hash),
+      cache.log_query () (gs.map (+ᵥ z.1.1.2), z.2) hash)
+    else let hash := hash'.get_or_else default in 
+      return ((zip_commits z.1.2 gs hash, hash), cache)} :=
 begin
   simp [sign_apply, bind_assoc, random_oracle.def, base_oracle_eq,
     equiv.punit_prod_symm_apply ((vector X n × M ↦ₒ vector bool n).query_log)],
   refine bind_ext_congr (λ gs, _),
-  cases cache.lookup () (map (λ g, g +ᵥ pk) gs, m),
+  cases cache.lookup () (map (λ g, g +ᵥ z.1.1.2) gs, z.2),
   { simpa [bind_assoc] },
   { simp [bind_assoc] }
 end
 
 @[simp] lemma simulate'_sign_apply (cache : query_log ((vector X n × M) ↦ₒ vector bool n)) :
   simulate' (hhs_signature G X M n).base_oracle
-    ((hhs_signature G X M n).sign (((x₀, pk), sk), m)) cache =
-  do {gs ←$ᵗ (vector G n), hash' ← return (cache.lookup () (gs.map (+ᵥ pk), m)),
-    option.rec_on hash' ((λ hash, (zip_commits sk gs hash, hash)) <$> $ᵗ (vector bool n))
-      (λ hash, return (zip_commits sk gs hash, hash)) } :=
+    ((hhs_signature G X M n).sign z) cache =
+  do {gs ←$ᵗ (vector G n), hash' ← return (cache.lookup () (gs.map (+ᵥ z.1.1.2), z.2)),
+    if hash' = none then (λ hash, (zip_commits z.1.2 gs hash, hash)) <$> $ᵗ (vector bool n)
+    else let hash := hash'.get_or_else default in return (zip_commits z.1.2 gs hash, hash)} :=
 begin
   simp [simulate'.def],
   refine bind_ext_congr (λ gs, _),
-  cases cache.lookup () (map (λ g, g +ᵥ pk) gs, m); simp [bind_assoc]
+  cases cache.lookup () (map (λ g, g +ᵥ z.1.1.2) gs, z.2); simp [bind_assoc]
 end
 
 end sign
 
 section verify 
 
-variables (x₀ pk : X) (m : M) (zs : vector G n) (hash : vector bool n)
+variables --(x₀ pk : X) (m : M) (zs : vector G n) (hash : vector bool n)
+  (z : (X × X) × (M × (vector G n × vector bool n)))
 
-lemma verify_apply : ((hhs_signature G X M n).verify ((x₀, pk), m, zs, hash)) =
-  do {hash' ← query (sum.inr ()) (unzip_commits x₀ pk zs hash, m),
-    return (hash' = hash)} := rfl
+lemma verify_apply : ((hhs_signature G X M n).verify z) =
+  do {hash' ← query (sum.inr ()) (unzip_commits z.1.1 z.1.2 z.2.2.1 z.2.2.2, z.2.1),
+    return (hash' = z.2.2.2)} := match z with | ⟨⟨_, _⟩, ⟨_, ⟨_, _⟩⟩⟩ := rfl end
 
 @[simp] lemma simulate_verify_apply (cache : query_log ((vector X n × M) ↦ₒ vector bool n)) :
   simulate (hhs_signature G X M n).base_oracle
-    ((hhs_signature G X M n).verify ((x₀, pk), m, zs, hash)) cache =
-  let xs := unzip_commits x₀ pk zs hash in
-  do {maybe_hash ← return (cache.lookup () (xs, m)), option.rec_on maybe_hash
-    (do {hash' ←$ᵗ (vector bool n), return (hash' = hash, cache.log_query () (xs, m) hash')})
-    (λ hash', return (hash' = hash, cache))} :=
+    ((hhs_signature G X M n).verify z) cache =
+  let xs := unzip_commits z.1.1 z.1.2 z.2.2.1 z.2.2.2 in
+  do {maybe_hash ← return (cache.lookup () (xs, z.2.1)), if maybe_hash = none then
+    do {hash' ←$ᵗ (vector bool n), return (hash' = z.2.2.2, cache.log_query () (xs, z.2.1) hash')}
+    else return (maybe_hash = some z.2.2.2, cache)} :=
 begin
+  rcases z with ⟨⟨x₀, pk⟩, ⟨m, ⟨zs, hash⟩⟩⟩,
   simp [verify_apply, bind_assoc, random_oracle.def, base_oracle_eq,
     equiv.punit_prod_symm_apply ((vector X n × M ↦ₒ vector bool n).query_log)],
   cases cache.lookup () (unzip_commits x₀ pk zs hash, m),
   { simpa [bind_assoc] },
-  { simp }
+  { simp },
 end
-
-@[simp] lemma simulate_verify_apply_empty : simulate (hhs_signature G X M n).base_oracle
-    ((hhs_signature G X M n).verify ((x₀, pk), m, zs, hash)) (indexed_list.empty _ _) =
-  do {hash' ←$ᵗ (vector bool n), return (hash' = hash,
-    query_log.log_query (indexed_list.empty _ _) () (unzip_commits x₀ pk zs hash, m) hash')} :=
-simulate_verify_apply x₀ pk m zs hash (indexed_list.empty _ _)
 
 @[simp] lemma simulate'_verify_apply (cache : query_log ((vector X n × M) ↦ₒ vector bool n)) :
   simulate' (hhs_signature G X M n).base_oracle
-    ((hhs_signature G X M n).verify ((x₀, pk), m, zs, hash)) cache =
-  let xs := unzip_commits x₀ pk zs hash in
-  do {maybe_hash ← return (cache.lookup () (xs, m)), option.rec_on maybe_hash
-    (do {hash' ←$ᵗ (vector bool n), return (hash' = hash)})
-    (λ hash', return (hash' = hash))} :=
+    ((hhs_signature G X M n).verify z) cache =
+  let xs := unzip_commits z.1.1 z.1.2 z.2.2.1 z.2.2.2 in
+  do {maybe_hash ← return (cache.lookup () (xs, z.2.1)), if maybe_hash = none
+    then do {hash' ←$ᵗ (vector bool n), return (hash' = z.2.2.2)}
+    else return (maybe_hash = some z.2.2.2)} :=
 begin
+  rcases z with ⟨⟨x₀, pk⟩, ⟨m, ⟨zs, hash⟩⟩⟩,
   simp [verify_apply, bind_assoc, random_oracle.def, base_oracle_eq,
     equiv.punit_prod_symm_apply ((vector X n × M ↦ₒ vector bool n).query_log)],
   cases cache.lookup () (unzip_commits x₀ pk zs hash, m),
@@ -172,21 +168,7 @@ end verify
 
 /-- An honest signer will always generate a signature that correctly verifies. -/
 theorem is_sound : (hhs_signature G X M n).is_sound :=
-begin
-  -- Rewrite the terms of the computation explicitly
-  simp only [signature_alg.is_sound, signature_alg.soundness_exp.advantage_eq, init_state_eq,
-    oracle_algorithm.exec_bind, simulate_keygen_apply, simulate_sign_apply, query_log.lookup_empty,
-    simulate'_bind, oracle_comp.return_bind, bind_assoc, oracle_comp.return_bind],
-  -- Take any arbitrary message, public/secret keys, and set of commitments from signing
-  refine λ m, prob_output_bind_eq_one (λ x₀, prob_output_bind_eq_one
-    (λ sk, prob_output_bind_eq_one (λ gs, _))),
-  -- Simplify the form of the verification procedure
-  simp only [simulate'_verify_apply, unzip_commits_zip_commits, vadd_vadd, if_t_t, zip_with_const],
-  -- Introduce the actual hash value and alleged hash value from signing
-  refine prob_output_bind_eq_one (λ hash, prob_output_bind_of_const _ 1 (λ maybe_hash h2, _)),
-  -- Prove that the hash values align, and so the verification succeeds
-  have : some hash = maybe_hash := symm (trans h2 (by simp [query_log.lookup])),
-  exact this ▸ by simp only [eq_self_iff_true, to_bool_true_eq_tt, prob_output_return, if_true]
-end
+by simp [signature_alg.is_sound_iff_forall_message,
+  signature_alg.soundness_exp.advantage_eq, bind_assoc, vadd_vadd]
 
 end hhs_signature
