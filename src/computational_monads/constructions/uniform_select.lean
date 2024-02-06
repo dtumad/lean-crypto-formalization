@@ -98,8 +98,8 @@ lemma prob_event_uniform_fin_bind_eq_tsum (p : α → Prop) :
 by simp only [prob_event_bind_eq_tsum, div_eq_mul_inv, ← ennreal.tsum_mul_right,
   prob_output_uniform_fin, one_mul, mul_comm (m.succ⁻¹ : ℝ≥0∞)]
 
-@[simp] lemma prob_event_uniform_fin_bind_apply_eq_sum (e : set α) :
-  ⁅e | $[0..m] >>= oa⁆ = (∑ i, ⁅e | oa i⁆) / ↑(m + 1) :=
+@[simp] lemma prob_event_uniform_fin_bind_apply_eq_sum (p : α → Prop) :
+  ⁅p | $[0..m] >>= oa⁆ = (∑ i, ⁅p | oa i⁆) / ↑(m + 1) :=
 by simp only [prob_event_bind_eq_sum, div_eq_mul_inv, ← finset.sum_mul, one_mul,
   prob_output_uniform_fin, mul_comm (m.succ⁻¹ : ℝ≥0∞), fin_support_uniform_fin]
 

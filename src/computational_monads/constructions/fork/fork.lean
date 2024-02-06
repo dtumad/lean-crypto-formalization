@@ -18,19 +18,58 @@ namespace oracle_comp
 
 variable [is_sub_spec unif_spec spec]
 
-structure run_result' (adv : fork_adversary spec α β i) :=
-(fork_point : fin adv.q.succ)
-(side_output : β)
-(seed : spec.query_seed)
+-- structure run_result' (adv : fork_adversary spec α β i) :=
+-- (fork_point : fin adv.q.succ)
+-- (side_output : β)
+-- (seed : spec.query_seed)
 
-structure fork_result' (adv : fork_adversary spec α β i) :=
-(fp : fin adv.q.succ)
+-- structure fork_result' (adv : fork_adversary spec α β i) :=
+-- (fp : fin adv.q.succ)
+-- (side_output₁ : β)
+-- (side_output₂ : β)
+-- (seed₁ : spec.query_seed)
+-- (seed₂ : spec.query_seed)
+
+
+structure fork_adversary' (spec : oracle_spec) (α β : Type)
+  (i : spec.ι) (q : ℕ) extends sec_adv spec α β :=
+(choose_fork : α → β → option (fin q.succ))
+
+variable {q : ℕ}
+
+noncomputable def fork_adversary'.advantage
+  (adv : fork_adversary' spec α β i q)
+  (inp_gen : oracle_comp spec α) : ℝ≥0∞ :=
+⁅(≠) none | do {x ← inp_gen, y ← adv.run x,
+  return (adv.choose_fork x y)}⁆
+
+structure fork_result' (adv : fork_adversary' spec α β i q) :=
+(fp : fin q.succ)
 (side_output₁ : β)
 (side_output₂ : β)
 (seed₁ : spec.query_seed)
 (seed₂ : spec.query_seed)
 
-noncomputable def fork' (adv : fork_adversary spec α β i) :
+noncomputable def fork_adversary'.seed_and_run' (adv : fork_adversary' spec α β i q)
+  (y : α) (init_seed : spec.query_seed) :
+  oracle_comp spec (β × spec.query_seed) :=
+do {fresh_seed ← generate_seed (adv.run_qb - init_seed),
+  z ← (simulate' seededₛₒ (adv.run y) (init_seed + fresh_seed)),
+  return (z, (init_seed + fresh_seed))}
+
+noncomputable def fork₂ {q : ℕ} (adv : fork_adversary' spec α β i q) :
+  sec_adv spec α (option (fork_result' adv)) :=
+{ run := λ x, do
+  { ⟨y₁, seed₁⟩ ← adv.seed_and_run' x ∅,
+    let cf := adv.choose_fork x y₁,
+    let qs := seed₁.take_at_index i (cf.get_or_else 0),
+    ⟨y₂, seed₂⟩ ← adv.seed_and_run' x qs,
+    if adv.choose_fork x y₁ = adv.choose_fork x y₂
+      then return (cf.map (λ fp, ⟨fp, y₁, y₂, seed₁, seed₂⟩))
+      else return none },
+  run_qb := 2 • adv.run_qb }
+
+noncomputable def fork' {q : ℕ} (adv : fork_adversary' spec α β i q) :
   sec_adv spec α (option (fork_result' adv)) :=
 { run := λ x, do
   { ⟨y₁, seed₁⟩ ← adv.seed_and_run' x ∅,
@@ -38,11 +77,13 @@ noncomputable def fork' (adv : fork_adversary spec α β i) :
     | none := return none
     | (some fp) := do
       { ⟨y₂, seed₂⟩ ← adv.seed_and_run' x (seed₁.take_at_index i fp),
-        if adv.choose_fork x y₂ = fp
+        if adv.choose_fork x y₂ = some fp
           then return (some ⟨fp, y₁, y₂, seed₁, seed₂⟩)
           else return none }
     end },
   run_qb := 2 • adv.run_qb }
+
+
 
 noncomputable def fork (adv : fork_adversary spec α β i) :
   sec_adv spec α (fork_result adv) :=
