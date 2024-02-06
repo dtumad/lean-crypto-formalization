@@ -302,6 +302,14 @@ lemma map_const_dist_equiv' : (λ _, b) <$> oa ≃ₚ return' !spec'! b :=
 lemma map_const_dist_equiv : (λ _, b) <$> oa ≃ₚ return' !spec! b :=
 bind_const_dist_equiv oa (return b)
 
+@[simp] lemma map_const_dist_equiv_iff (ob : oracle_comp spec β) :
+  (λ _, b) <$> oa ≃ₚ ob ↔ (return' !spec! b) ≃ₚ ob :=
+⟨λ h, trans (map_const_dist_equiv oa b).symm h, λ h, trans (map_const_dist_equiv oa b) h⟩
+
+@[simp] lemma dist_equiv_const_map_iff (ob : oracle_comp spec β) :
+  ob ≃ₚ (λ _, b) <$> oa ↔ ob ≃ₚ (return' !spec! b) :=
+dist_equiv.symm_iff.trans (trans (map_const_dist_equiv_iff oa b ob) dist_equiv.symm_iff)
+
 @[simp] lemma support_map_const : ((λ _, b) <$> oa).support = {b} :=
 by simp only [map_eq_bind_pure_comp, function.comp_const, support_bind_const, support_return]
 

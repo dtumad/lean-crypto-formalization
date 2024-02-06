@@ -823,6 +823,9 @@ instance value_differs.decidable (il il' : spec.indexed_list τ) (i : spec.ι) (
   [decidable_eq (τ i)] : decidable (value_differs il il' i n) :=
 by {rw [value_differs], apply_instance}
 
+lemma value_differs_iff_nth_ne_nth (i : spec.ι) (n : ℕ) :
+  value_differs il il' i n ↔ (il i).nth n ≠ (il' i).nth n := iff.rfl
+
 end value_differs
 
 end indexed_list

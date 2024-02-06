@@ -114,6 +114,13 @@ begin
   simp,
 end
 
+lemma map_nth_generate_seed_dist_equiv (qc : spec.query_count) (i : spec.ι) (n : ℕ) :
+  (λ seed : spec.query_seed, (seed i).nth n) <$> generate_seed qc ≃ₚ
+    if n < qc.get_count i then some <$> ($ᵗ (spec.range i)) else return none :=
+begin
+  sorry,
+end
+
 -- lemma map_get_head_generate_seed_dist_equiv [h : is_sub_spec unif_spec spec]
 --   (i : spec.ι) (hi : i ∈ qc.active_oracles) :
 --   (λ qc, indexed_list.get_head qc i) <$> generate_seed qc ≃ₚ

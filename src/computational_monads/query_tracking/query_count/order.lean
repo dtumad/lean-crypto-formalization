@@ -32,9 +32,9 @@ lemma le_of_forall_get_count_le {qc qc' : query_count spec}
   (h : ∀ i, qc.get_count i ≤ qc'.get_count i) : qc ≤ qc' :=
 (le_iff_forall_get_count_le qc qc').2 h
 
-lemma get_count_le_get_count {qc qc' : query_count spec} (h : qc ≤ qc')
-  (i : spec.ι) : qc.get_count i ≤ qc'.get_count i :=
-(le_iff_forall_get_count_le qc qc').1 h i
+-- lemma get_count_le_get_count {qc qc' : query_count spec} (h : qc ≤ qc')
+--   (i : spec.ι) : qc.get_count i ≤ qc'.get_count i :=
+-- (le_iff_forall_get_count_le qc qc').1 h i
 
 section lattice
 

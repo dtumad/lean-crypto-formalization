@@ -171,6 +171,10 @@ begin
   { simp [hi] }
 end
 
+lemma get_count_le_get_count {il il' : spec.indexed_list τ}
+  (h : il ≤ il') (i : spec.ι) : il.get_count i ≤ il'.get_count i :=
+list.is_prefix.length_le (h i)
+
 end indexed_list
 
 end oracle_spec

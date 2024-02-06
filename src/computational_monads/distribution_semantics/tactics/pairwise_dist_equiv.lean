@@ -46,8 +46,10 @@ private meta def apply_dist_equivs : list pexpr → tactic unit
 private meta def try_solve (d_eq : list pexpr) : tactic unit :=
 refl_dist_equiv_base <|> apply_dist_equivs d_eq
 
+-- TODO: we should actually do the matching rather than testing like this
 private meta def is_shallow_equiv : expr → bool
 | `(%%oa >>= %%ob ≃ₚ %%oa' >>= %%ob') := tt
+-- | `(%%og <*> %%oa ≃ₚ %%og' <*> %%oa') := tt
 | `(%%f <$> %%oa ≃ₚ %%f' <$> %%oa') := tt
 | _ := ff
 

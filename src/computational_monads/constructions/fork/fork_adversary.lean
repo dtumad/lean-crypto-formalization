@@ -267,7 +267,7 @@ begin
   refine query_count.get_count_ext _ _ (λ i, _),
   simp,
   rw [← nat.add_sub_assoc, nat.add_sub_cancel_left],
-  have := query_count.get_count_le_get_count h i,
+  have := indexed_list.get_count_le_get_count h i,
   simpa [indexed_list.get_count_to_query_count] using this,
 end
 
