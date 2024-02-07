@@ -66,7 +66,7 @@ end apply
 theorem is_sound (G X : Type) [add_comm_group G] [algorithmic_homogenous_space G X] [group X] :
   (hhs_elgamal G X).is_sound :=
 begin
-  simp [(hhs_elgamal G X).is_sound_iff, prod.eq_iff_fst_eq_snd_eq],
+  simp [is_sound_iff, prod.eq_iff_fst_eq_snd_eq],
   -- Pattern matching with `rfl` puts things in a very nice form
   rintros m m' ⟨x₀, pk⟩ sk u (rfl : sk +ᵥ x₀ = pk) x1 x2 u' g rfl rfl rfl,
   show m * (g +ᵥ (sk +ᵥ x₀)) / (sk +ᵥ (g +ᵥ x₀)) = m,

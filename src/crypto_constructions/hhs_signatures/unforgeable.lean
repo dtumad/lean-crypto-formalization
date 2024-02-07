@@ -42,7 +42,7 @@ lemma le_advantage_fork_reduction (adv : (hhs_signature G X M n).unforgeable_adv
   let inp_gen := (prod.fst <$> (hhs_signature G X M n).keygen ()) in
   let q : ℕ := (mock_signing_qb adv.run_qb).get_count (sum.inr ()) in
   (unforgeable_exp adv).advantage * (1 - q / (fintype.card G) ^ n) ^ q ≤
-    (fork_reduction adv).advantage inp_gen :=
+    sorry := --(fork_reduction adv).advantage inp_gen :=
 begin
   sorry
 end

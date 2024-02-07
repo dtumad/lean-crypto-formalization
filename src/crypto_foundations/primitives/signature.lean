@@ -83,17 +83,7 @@ by simp_rw [sec_exp.run_def, to_oracle_algorithm_eq, inp_gen_eq, main_eq, bind_a
 lemma advantage_eq (sig : signature_alg spec M PK SK S) (m : M) :
   (soundness_exp sig m).advantage = ⁅= tt | sig.exec (do {ks ← sig.keygen (),
     σ ← sig.sign (ks, m), sig.verify (ks.1, m, σ)})⁆ :=
-begin
-  rw [sec_exp.advantage_eq_prob_event],
-  simp_rw [is_valid_iff],
-  rw [run_eq],
-  rw [prob_event_eq_eq_prob_output_map],
-  sorry,
-  -- simp [-prob_event_eq_eq_prob_output_map],
-  -- rw [prob_event_eq_eq_prob_output_map, run_eq],
-  -- rw [oracle_algorithm.map_exec],
-  -- simp_rw [map_bind, map_return, oracle_comp.bind_return],
-end
+by simp [sec_exp.advantage_eq_prob_event, simulate'.def]
 
 end soundness_exp
 
@@ -186,10 +176,6 @@ end
 
 @[simp] lemma to_oracle_algorithm_eq : (unforgeable_exp adv).to_oracle_algorithm =
   sig.to_oracle_algorithm := rfl
-
-lemma prob_event_snd_eq {α β : Type} (oa : oracle_comp spec (α × β)) (y : β) :
-  ⁅λ z : α × β, z.2 = y | oa⁆ = ⁅= y | snd <$> oa⁆ :=
-by simp only [prob_event_eq_eq_prob_output_map]
 
 /-- TODO: lemmas like this are always gross to prove, from pattern matching stuff -/
 lemma advantage_eq_prob_output : (unforgeable_exp adv).advantage =

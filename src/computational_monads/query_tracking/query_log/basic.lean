@@ -85,18 +85,11 @@ prod.snd <$> (log i).find (((=) t) ∘ prod.fst)
 @[simp] lemma lookup_empty (i : spec.ι) (t : spec.domain i) :
   (∅ : spec.query_log).lookup i t = none := rfl
 
--- #check get_count_incre
-
 @[simp] lemma lookup_of_list (i : spec.ι) (qs : list (spec.domain i × spec.range i))
   (j : spec.ι) (t : spec.domain j) : lookup (indexed_list.of_list qs) j t =
   if h : i = j then prod.snd <$> (h.rec_on qs).find (((=) t) ∘ prod.fst) else none :=
 by by_cases h : i = j; simp [h, lookup]
 
--- @[simp] lemma lookup_add_values (log : spec.query_log) (i : spec.ι)
---   (ts : list (spec.domain i × spec.range i)) (j : spec.ι) (t : spec.domain j) :
---   query_log.lookup (log.add_values ts) j t =
---     if log.lookup j t = none then (if )
---       else log.lookup j t
 
 -- @[simp] lemma lookup_log_query (log : spec.query_log) (i : spec.ι) (t : spec.domain i)
 --   (u : spec.range i) (j : spec.ι) (t' : spec.domain j) :
