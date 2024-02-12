@@ -44,7 +44,7 @@ lemma coe_of_mem_support_generate_seed {qs : spec.query_seed}
 by simpa using h
 
 lemma coe_of_mem_fin_support_generate_seed {qs : spec.query_seed}
-  {qc : spec.query_count} (h : qs ∈ (generate_seed qc).fin_support) : ↑qs = qc := 
+  {qc : spec.query_count} (h : qs ∈ (generate_seed qc).fin_support) : ↑qs = qc :=
 by simpa [mem_fin_support_iff_mem_support] using h
 
 @[simp] lemma prob_output_generate_seed (qs : spec.query_seed) (h : ↑qs = qc) :
@@ -118,7 +118,15 @@ lemma map_nth_generate_seed_dist_equiv (qc : spec.query_count) (i : spec.ι) (n 
   (λ seed : spec.query_seed, (seed i).nth n) <$> generate_seed qc ≃ₚ
     if n < qc.get_count i then some <$> ($ᵗ (spec.range i)) else return none :=
 begin
-  sorry,
+  split_ifs with hn,
+  {
+    sorry,
+  },
+  {
+    rw [not_lt] at hn,
+    rw [dist_equiv_return_iff', support_map, support_generate_seed],
+    sorry,
+  }
 end
 
 -- lemma map_get_head_generate_seed_dist_equiv [h : is_sub_spec unif_spec spec]

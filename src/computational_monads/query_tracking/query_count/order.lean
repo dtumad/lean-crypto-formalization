@@ -257,37 +257,6 @@ end drop_to_count
 @[simp] lemma take_to_count_add_drop_to_count (il : spec.indexed_list τ) (qc : spec.query_count) :
   (il.take_to_count qc) + (il.drop_to_count qc) = il := fun_like.ext _ _ (λ i, by simp)
 
--- lemma query_count_le_coe_iff_exists_unique_split (il : spec.indexed_list τ)
---   (qc : query_count spec) : qc ≤ ↑il ↔ ∃! ill : spec.indexed_list τ × spec.indexed_list τ,
---     ill.1 + ill.2 = il ∧ (↑ill.1 = qc ∧ ↑ill.2 = ↑il - qc) :=
--- begin
---   refine ⟨λ h, _, λ h, _⟩,
---   {
---     refine ⟨⟨il.take_to_count qc, il.drop_to_count qc⟩, _, _⟩,
---     {
---       sorry,
---     },
---     {
---       sorry,
---     }
---   },
---   {
---     sorry
---     -- obtain ⟨il₁, ⟨il₂, h', hil₂⟩, hil₁⟩ := h,
---     -- rw [← h'.1, coe_query_count_eq, to_query_count_add, ← h'.2.1, coe_query_count_eq],
---     -- refine le_self_add _ _,
---   }
--- end
-
--- /-- Given `il : indexed_list` and a query count that is less than it (viewed as a query count),
--- we can find unique indexed lists that add to `il` and have sizes split by the query count. -/
--- lemma exists_unique_split_of_count_le (il : spec.indexed_list τ)
---   (qc : query_count spec) (hqc : qc ≤ ↑il) :
---   ∃! (il₁ il₂ : spec.indexed_list τ), il₁ + il₂ = il ∧ (↑il₁ = qc ∧ ↑il₂ = (↑il - qc)) :=
--- begin
---   sorry,
--- end
-
 end indexed_list
 
 end oracle_spec

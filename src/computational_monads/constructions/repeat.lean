@@ -60,68 +60,15 @@ variables (oa oa' : oracle_comp spec α) (n m : ℕ) (x x' : α) (xs xs' : list 
 
 lemma repeat_add : Π (n m : ℕ), oa.repeat (n + m) =
   (++) <$> oa.repeat n <*> oa.repeat m
-| n 0 := begin
-  simp [function.comp, list.append_nil],
-end
-| 0 (m + 1) := begin
-  simp [map_seq, function.comp],
-end
+| n 0 := by simp only [function.comp, list.append_nil, add_zero, repeat_zero,
+  seq_pure, map_map_eq_map_comp, id_map']
+| 0 (m + 1) := by simp only [map_seq, function.comp, zero_add, repeat_succ, repeat_zero, map_pure,
+  oracle_comp.return_seq_eq_map, map_map_eq_map_comp, nil_append]
 | (n + 1) (m + 1) := begin
-  rw [add_comm m 1],
-  -- rw [repeat_add 1 m],
   have : n + 1 + (1 + m) = (n + 1 + m).succ := by ring_nf,
-  rw [this, repeat_succ, add_assoc, add_comm 1 m, repeat_add n (m + 1), repeat_succ],
+  rw [add_comm m 1, this, repeat_succ, add_assoc, add_comm 1 m, repeat_add n (m + 1), repeat_succ],
   simp [function.comp, map_eq_bind_pure_comp, seq_eq_bind_map, is_lawful_monad.bind_assoc],
-
 end
-
--- lemma repeat_add (n m : ℕ) : oa.repeat (n + m) = vector.append <$> oa.repeat n <*> oa.repeat m :=
--- begin
---   sorry
--- end
---   refine nat.case_strong_induction_on m _ (λ m hm, _),
---   -- induction m with m hm,
---   {
---     show oa.repeat n = _,
---     simp_rw [repeat_zero, oracle_comp.seq_return, map_map_eq_map_comp, function.comp,
---       vector.append_nil, id_map']
---   },
---   {
---     by_cases hm0 : m = 0,
---     {
---       sorry,
---     },
---     -- rw [repeat_succ],
---     show oa.repeat (n + m).succ = _,
---     rw [repeat_succ, repeat_succ, hm m le_rfl],
---     -- simp only [seq_assoc],
---     rw [seq_assoc, seq_assoc],
---     congr' 1,
---     rw [seq_eq_bind_map, oracle_comp.bind_map],
---     specialize hm 1 sorry,
---     rw [repeat_succ oa 0, repeat_zero, oracle_comp.seq_return,
---       map_map_eq_map_comp] at hm,
---     simp [function.comp] at hm ⊢,
-
-
---     simp [map_seq] at hm ⊢,
---     rw [map_map_eq_map_comp],
---     have := congr_arg (λ oc : oracle_comp spec (vector α n.succ),
---       (function.comp <$> cons <$> oc : oracle_comp spec (vector α m → vector α (n.succ + m)))) hm,
---     simp [map_map_eq_map_comp, map_seq] at this,
---     rw [map_map_eq_map_comp, map_seq] at this,
---     -- refine trans _ (trans (congr_arg ((<$>) _) _) _),
---     simp [seq_map_eq_bind_bind] at hm ⊢,
---     -- rw [seq_map_assoc],
---     -- simp [function.comp, ← seq_map_assoc],
---     -- rw [oracle_comp.seq_map_eq_bind_bind],
---     -- rw [seq_map_eq_bind_bind],
---     -- simp [function.comp],
---     -- -- rw [← hm 1],
---     -- rw [seq_assoc, map_map_eq_map_comp],
---     -- simp [seq_map_eq_bind_bind],
---   }
--- end
 
 section all₂
 
@@ -349,7 +296,7 @@ end
 --     simp,
 --   },
 --   {
---     rw [repeat_succ],    
+--     rw [repeat_succ],
 --   }
 -- end
 
