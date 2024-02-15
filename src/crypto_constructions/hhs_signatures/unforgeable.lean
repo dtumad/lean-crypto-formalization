@@ -44,6 +44,7 @@ lemma le_advantage_fork_reduction (adv : (hhs_signature G X M n).unforgeable_adv
   (unforgeable_exp adv).advantage * (1 - q / (fintype.card G) ^ n) ^ q ≤
     sorry := --(fork_reduction adv).advantage inp_gen :=
 begin
+  simp,
   sorry
 end
 

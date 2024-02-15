@@ -98,9 +98,9 @@ end
 
 lemma ennreal.pow_two_sum_le_sum_pow_two (s : finset α) (f : α → ℝ≥0∞)
   (hf : ∀ x ∈ s, f x ≠ ∞) :
-  (∑ x in s, f x) ^ 2 ≤ ∑ x in s, s.card * f x ^ 2 :=
+  (∑ x in s, f x) ^ 2 ≤ s.card * ∑ x in s, f x ^ 2 :=
 begin
-  rw [← finset.mul_sum, mul_comm],
+  rw [mul_comm],
   have := ennreal.pow_sum_div_card_le_sum_pow s f hf 1,
   simp only [pow_one, one_add_one_eq_two] at this,
   refine (ennreal.div_le_iff_le_mul _ _).1 this,

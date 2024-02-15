@@ -22,6 +22,18 @@ section eval_dist
 
 end eval_dist
 
+section prob_output
+
+@[simp] lemma prob_output_none_map_some (oa : oracle_comp spec α) : ⁅= none | some <$> oa⁆ = 0 :=
+by simp only [prob_output_eq_zero_iff, support_map, set.mem_image, and_false, exists_false,
+  not_false_iff]
+
+@[simp] lemma prob_output_some_map_some (oa : oracle_comp spec α) (x : α) :
+  ⁅= some x | some <$> oa⁆ = ⁅= x | oa⁆ :=
+prob_output_map_of_injective _ _ (option.some_injective α)
+
+end prob_output
+
 section prob_event
 
 variables (oa : oracle_comp spec (option α))
@@ -37,7 +49,7 @@ prob_event_eq_prob_output none option.is_none_none
 lemma prob_event_is_none_eq_tt : ⁅λ x, x.is_none = tt | oa⁆ = ⁅= none | oa⁆ :=
 by simp only [prob_event_is_none]
 
-@[simp] lemma prob_event_is_some : ⁅λ x, x.is_some | oa⁆ = ∑' (a : α), ⁅= some a | oa⁆ :=
+lemma prob_event_is_some : ⁅λ x, x.is_some | oa⁆ = ∑' x : α, ⁅= some x | oa⁆ :=
 let e : set (option α) := λ x, x.is_some in
 calc ⁅e | oa⁆ = e.indicator ⁅oa⁆ none + ∑' (a : α), e.indicator ⁅oa⁆ (some a) :
     prob_event_option oa _
@@ -53,9 +65,16 @@ calc ⁅e | oa⁆ = e.indicator ⁅oa⁆ none + ∑' (a : α), e.indicator ⁅oa
     simp only [option.is_some_some, coe_sort_tt]
   end
 
-lemma prob_event_is_some' (oa : oracle_comp spec α) (f : α → option β) [decidable_eq β] :
+lemma prob_event_is_some_eq_sum [fintype α] : ⁅λ x, x.is_some | oa⁆ = ∑ x : α, ⁅= some x | oa⁆ :=
+(prob_event_is_some oa).trans (tsum_eq_sum (λ x hx, (hx (finset.mem_univ x)).elim))
+
+lemma prob_event_is_some' (oa : oracle_comp spec α) (f : α → option β) :
   ⁅λ x, (f x).is_some | oa⁆ = ∑' y : β, ⁅= some y | f <$> oa⁆ :=
 by rw [← prob_event_is_some, prob_event_map]
+
+lemma prob_event_is_some_eq_sum' [fintype β] (oa : oracle_comp spec α) (f : α → option β) :
+  ⁅λ x, (f x).is_some | oa⁆ = ∑ y : β, ⁅= some y | f <$> oa⁆ :=
+(prob_event_is_some' oa f).trans (tsum_eq_sum (λ x hx, (hx (finset.mem_univ x)).elim))
 
 lemma prob_event_ne_none_eq_tsum : ⁅(≠) none | oa⁆ = ∑' x : α, ⁅= some x | oa⁆ :=
 trans (prob_event_ext' (λ x h, by rw [ne_comm, option.ne_none_iff_is_some])) (prob_event_is_some _)
