@@ -108,4 +108,38 @@ begin
   { refine or.inl (ennreal.nat_ne_top _) }
 end
 
+lemma ennreal.pow_two_sum_le_sum_pow_two' (s : finset α) (f : α → ℝ≥0∞)
+  (hf : ∀ x ∈ s, f x ≠ ∞) :
+  ((s.card : ℝ≥0∞)⁻¹ * ∑ x in s, f x) ^ 2 ≤ s.card⁻¹ * ∑ x in s, f x ^ 2 :=
+begin
+  by_cases hs : s = ∅,
+  {
+    simp [hs],
+  },
+  rw [mul_pow],
+  refine le_trans (mul_le_mul' le_rfl (ennreal.pow_two_sum_le_sum_pow_two s f hf)) (le_of_eq _),
+  rw [pow_two, ← mul_assoc],
+  refine congr_arg (λ r, r * s.sum (f ^ 2)) _,
+  rw [mul_assoc, ennreal.inv_mul_cancel, mul_one]; simp [hs]
+end
+
+
+lemma ennreal.sub_sum_le [decidable_eq α] (s : finset α) (f : α → ℝ≥0∞) (r : ℝ≥0∞) :
+  (∑ x in s, f x) - r ≤ ∑ x in s, (f x - s.card⁻¹ * r) :=
+begin
+  by_cases hs : s = ∅,
+  {
+    simp [hs],
+  },
+  have : r = ∑ x in s, s.card⁻¹ * r := begin
+    simp [← mul_assoc],
+    rw [ennreal.mul_inv_cancel _ (ennreal.nat_ne_top _), one_mul],
+    simp [hs],
+  end,
+  refine le_trans (le_of_eq (congr_arg _ this)) _,
+  rw [tsub_le_iff_right, ← finset.sum_add_distrib],
+  refine finset.sum_le_sum (λ x hx, _),
+  refine le_tsub_add 
+end
+
 end jensen

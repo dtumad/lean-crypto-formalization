@@ -43,8 +43,16 @@ lemma coe_of_mem_support_generate_seed {qs : spec.query_seed}
   {qc : spec.query_count} (h : qs ∈ (generate_seed qc).support) : ↑qs = qc :=
 by simpa using h
 
+lemma to_query_count_of_mem_support_generate_seed {qs : spec.query_seed}
+  {qc : spec.query_count} (h : qs ∈ (generate_seed qc).support) : qs.to_query_count = qc :=
+by simpa using h
+
 lemma coe_of_mem_fin_support_generate_seed {qs : spec.query_seed}
   {qc : spec.query_count} (h : qs ∈ (generate_seed qc).fin_support) : ↑qs = qc :=
+by simpa [mem_fin_support_iff_mem_support] using h
+
+lemma to_query_count_of_mem_fin_support_generate_seed {qs : spec.query_seed}
+  {qc : spec.query_count} (h : qs ∈ (generate_seed qc).fin_support) : qs.to_query_count = qc :=
 by simpa [mem_fin_support_iff_mem_support] using h
 
 @[simp] lemma prob_output_generate_seed (qs : spec.query_seed) (h : ↑qs = qc) :
@@ -60,6 +68,17 @@ begin
     nat.cast_pow, ← ennreal.inv_pow, get_count_to_query_count],
   exact ennreal.inv_mul_cancel (ennreal.pow_ne_zero (nat.cast_ne_zero.2 fintype.card_ne_zero) _)
     (ennreal.pow_ne_top (ennreal.nat_ne_top _))
+end
+
+@[simp] lemma prob_output_generate_seed_bind [unif_spec ⊂ₒ spec]
+  (oc : spec.query_seed → oracle_comp spec γ) (z : γ) :
+  ⁅= z | ↑(generate_seed qc) >>= oc⁆ =
+    ∑ qs in (generate_seed qc).fin_support, (possible_outcomes qc)⁻¹ * ⁅= z | oc qs⁆ :=
+begin
+  rw [prob_output_bind_eq_sum, fin_support_coe_sub_spec],
+  refine finset.sum_congr rfl (λ qs hqs, _),
+  rw [prob_output_coe_sub_spec, prob_output_generate_seed _ _
+    (coe_of_mem_fin_support_generate_seed hqs)],
 end
 
 @[simp] lemma card_fin_support_generate_seed :
