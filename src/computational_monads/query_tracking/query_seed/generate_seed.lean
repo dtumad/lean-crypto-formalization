@@ -74,7 +74,7 @@ begin
   rw [← this, mul_assoc, ennreal.inv_mul_cancel, mul_one]; simp,
 end
 
-lemma generate_seed_of_nat (i : spec.ι) (n : ℕ) :
+@[simp] lemma generate_seed_of_nat (i : spec.ι) (n : ℕ) :
   generate_seed (of_nat i n) = of_list <$> (repeat ($ᵗ (spec.range i)) n) :=
 by rw [generate_seed, generate_of_nat]
 
@@ -82,6 +82,7 @@ by rw [generate_seed, generate_of_nat]
   generate_seed (qc + qc') ≃ₚ (+) <$> generate_seed qc <*> generate_seed qc' :=
 generate_add_dist_equiv qc qc' _
 
+/-- Dependent version of `generate_seed_add_dist_equiv`. -/
 lemma generate_seed_add_dist_equiv' (qc' : spec.query_count → spec.query_count) :
   generate_seed (qc + qc' qc) ≃ₚ
     do {qs ← generate_seed qc, qs' ← generate_seed (qc' ↑qs), return (qs + qs')} :=
@@ -94,65 +95,16 @@ end
 
 lemma generate_seed_dist_equiv_add_sub (h : qc' ≤ qc) :
   generate_seed qc ≃ₚ (+) <$> generate_seed qc' <*> generate_seed (qc - qc') :=
-begin
-  refine trans _ (generate_seed_add_dist_equiv qc' (qc - qc')),
-  rwa [add_tsub_cancel_of_le],
-end
+generate_dist_equiv_add_sub qc qc' _ h
 
-section get_head
-
-lemma map_get_head_generate_seed (qc : spec.query_count) (i : spec.ι) (h : i ∈ qc.active_oracles) :
-  (λ seed, indexed_list.get_head seed i) <$> generate_seed qc ≃ₚ
+lemma map_pop_generate_seed (qc : spec.query_count) (i : spec.ι) (h : i ∈ qc.active_oracles) :
+  (λ seed, indexed_list.pop seed i) <$> generate_seed qc ≃ₚ
     prod.mk <$> ($ᵗ (spec.range i)) <*> generate_seed (qc.decrement i 1) :=
-begin
-  have := generate_seed_dist_equiv_add_sub qc (of_nat i 1) (by simpa using h),
-  refine trans (map_dist_equiv_of_dist_equiv' rfl this) _,
-  rw [map_seq],
-  simp [function.comp, generate_seed_of_nat, ← decrement_eq_sub_of_nat,
-    seq_eq_bind_map, oracle_comp.map_eq_bind_return_comp, bind_assoc],
-  pairwise_dist_equiv 2 with i hi qs hqs,
-  simp,
-end
+map_pop_generate qc _ _ h
 
 lemma map_nth_generate_seed_dist_equiv (qc : spec.query_count) (i : spec.ι) (n : ℕ) :
   (λ seed : spec.query_seed, (seed i).nth n) <$> generate_seed qc ≃ₚ
-    if n < qc.get_count i then some <$> ($ᵗ (spec.range i)) else return none :=
-begin
-  split_ifs with hn,
-  {
-    sorry,
-  },
-  {
-    rw [not_lt] at hn,
-    rw [dist_equiv_return_iff', support_map, support_generate_seed],
-    sorry,
-  }
-end
-
--- lemma map_get_head_generate_seed_dist_equiv [h : is_sub_spec unif_spec spec]
---   (i : spec.ι) (hi : i ∈ qc.active_oracles) :
---   (λ qc, indexed_list.get_head qc i) <$> generate_seed qc ≃ₚ
---     ($ᵗ (spec.range i) ×ₘ generate_seed (qc.decrement i 1)) :=
--- begin
---   sorry,
---   -- rw_dist_equiv [generate_seed_dist_equiv_of_mem_active_oracles _ _ hi],
---   -- simp [oracle_comp.bind_return_comp_eq_map],
---   -- -- rw_dist_equiv [map_bind_dist_equiv, map_comp_dist_equiv],
---   -- rw [mprod],
---   -- simp_rw [oracle_comp.bind_return_comp_eq_map],
---   -- pairwise_dist_equiv,
---   -- simp,
--- end
-
--- lemma map_fst_get_head_generate_seed_dist_equiv [h : is_sub_spec unif_spec spec]
---   (i : spec.ι) (hi : i ∈ qc.active_oracles) :
---   (λ qc, (indexed_list.get_head qc i).1) <$> generate_seed qc ≃ₚ $ᵗ (spec.range i) :=
--- begin
---   refine trans (map_comp_dist_equiv (generate_seed qc)
---     (λ qc, indexed_list.get_head qc i) prod.fst).symm _,
---   rw_dist_equiv [map_get_head_generate_seed_dist_equiv _ _ hi, fst_map_mprod_dist_equiv],
--- end
-
-end get_head
+    if n < qc.get_count i then some <$> $ᵗ (spec.range i) else return none :=
+map_nth_generate qc _ i n
 
 end oracle_comp

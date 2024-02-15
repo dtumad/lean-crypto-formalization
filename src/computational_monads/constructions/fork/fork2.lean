@@ -100,6 +100,12 @@ begin
   rwa [h', ← this, indexed_list.coe_query_count_eq, lt_self_iff_false] at hqs,
 end
 
+-- lemma fst_map_seed_and_run_dist_equiv (qc : spec.query_seed) :
+--   prod.fst <$> adv.seed_and_run x qc ≃ₚ adv.run x :=
+-- begin
+--   simp [seed_and_run],
+-- end
+
 lemma nth_map_seed_and_run' (init_seed : spec.query_seed) (j : spec.ι) (s : ℕ)
   (hs : s < adv.run_qb.get_count j) :
   (λ z : β × spec.query_seed, (z.2 j).nth s) <$> (adv.seed_and_run x init_seed) ≃ₚ
@@ -110,7 +116,7 @@ begin
   rw_dist_equiv [bind_const_dist_equiv],
   rw [← oracle_comp.map_eq_bind_return_comp, ← coe_sub_spec_map, coe_sub_spec_dist_equiv_iff],
   split_ifs with h,
-  
+
   {
     -- simp only [list.nth_eq_none_iff, not_le] at h,
     simp only [list.nth_append h, indexed_list.add_apply, map_const_dist_equiv_iff],
@@ -159,15 +165,10 @@ calc ⁅λ z, ((prod.fst z).2 j).nth s = f (prod.snd z) | prod.mk <$> adv.seed_a
       rw_dist_equiv [nth_map_seed_and_run adv x qs j s hqs hs],
       rw [dist_equiv_coe_sub_spec_iff],
     end
-  ... = (fintype.card (spec.range i))⁻¹ : sorry
-
--- lemma mem_support_seed_and_run_iff (h : ↑init_seed ≤ adv.run_qb) (z : β × spec.query_seed) :
---   z ∈ (seed_and_run adv x init_seed).support ↔
---     (z.2.take_to_count init_seed = init_seed ∧ ↑z.2 = adv.run_qb ∧
---       z.1 ∈ (simulate' seededₛₒ (adv.run x) z.2).support) :=
--- begin
-
--- end
+  ... = (fintype.card (spec.range i))⁻¹ :
+    begin
+      sorry,
+    end
 
 end seed_and_run
 
@@ -178,8 +179,7 @@ namespace oracle_comp
 @[derive decidable_eq]
 structure fork_result (adv : fork_adversary spec α β i q) :=
 (fp : fin q.succ)
-(out₁ : β)
-(out₂ : β)
+(out₁ : β) (out₂ : β)
 (seed₁ : spec.query_seed)
 (seed₂ : spec.query_seed)
 
@@ -188,10 +188,11 @@ variable [is_sub_spec unif_spec spec]
 noncomputable def fork (adv : fork_adversary spec α β i q) :
   sec_adv spec α (option (fork_result adv)) :=
 { run := λ x, do
-  { s ←$[0..q],
+  { s ←$[0..q], -- choose the forking point
     init_seed ← generate_seed (adv.run_qb.take_at_index i s),
     ⟨y₁, seed₁⟩ ← adv.seed_and_run x init_seed,
     ⟨y₂, seed₂⟩ ← adv.seed_and_run x init_seed,
+    -- Only return a value on success
     if adv.choose_fork x y₁ = some s ∧
         adv.choose_fork x y₂ = some s ∧
         indexed_list.value_differs seed₁ seed₂ i s
@@ -201,7 +202,7 @@ noncomputable def fork (adv : fork_adversary spec α β i q) :
 
 variable (adv : fork_adversary spec α β i q)
 
-@[simp] lemma fork.run_eq (x : α) : (fork adv).run x = do
+lemma fork.run_eq (x : α) : (fork adv).run x = do
   { s ←$[0..q], shared_seed ← generate_seed (adv.run_qb.take_at_index i s),
     z₁ ← adv.seed_and_run x shared_seed, z₂ ← adv.seed_and_run x shared_seed,
     if adv.choose_fork x z₁.1 = some s ∧ adv.choose_fork x z₂.1 = some s ∧
@@ -308,7 +309,7 @@ end
 -- lemma pow_two_prob_output_some_run_fork_le (x : α) (s : fin (q + 1))
 --   (qs : spec.query_seed) :
 --   ⁅= some s | (λ z, adv.choose_fork x (prod.fst z)) <$> adv.seed_and_run x qs⁆ ^ 2 ≤
---     ⁅= (some s, some s) | do {z ← adv.seed_and_run⁆  
+--     ⁅= (some s, some s) | do {z ← adv.seed_and_run⁆
 
 -- lemma prob_event_of_snd_snd_unused (oa : oracle_comp spec (α × β × γ))
 --   (f : α × β → Prop) : ⁅λ z : α × β × γ, f (z.1, z.2.1) | oa⁆ =
@@ -338,19 +339,20 @@ end
 lemma prob_event_is_some_run_fork'' (x : α) :
   let h := fintype.card (spec.range i) in
   (∑ s : fin (q + 1), (q + 1)⁻¹ * let qc := (adv.run_qb.take_at_index i s) in
-    ∑ qs in (generate_seed qc).fin_support, (possible_outcomes qc)⁻¹ *
-      (⁅λ z, adv.choose_fork x z.1 = some s | adv.seed_and_run x qs⁆ ^ 2 - h⁻¹) : ℝ≥0∞)
+    (possible_outcomes qc)⁻¹ * ∑ qs in (generate_seed qc).fin_support,
+      (⁅λ z, adv.choose_fork x z = some s | prod.fst <$> adv.seed_and_run x qs⁆ ^ 2 - h⁻¹) : ℝ≥0∞)
     ≤ ⁅λ fr, fr.is_some | (fork adv).run x⁆ :=
 begin
   haveI : decidable_eq β := classical.dec_eq β,
   rw [prob_event_is_some_run_fork'],
   refine finset.sum_le_sum (λ s hs, _),
   refine mul_le_mul_left' _ _,
+  simp_rw [finset.mul_sum],
   refine finset.sum_le_sum (λ qs hqs, _),
   refine mul_le_mul_left' _ _,
   simp only [←and_assoc, prob_event_eq_eq_prob_output_map],
   rw [prob_event_and_not_eq_sub],
-  
+
   refine le_trans _ (tsub_le_tsub_left (prob_event_and_le_right _ _ _) _),
   -- simp only [← prob_event_map _ (prod.snd), map_bind, map_return],
   rw [← prob_event_id _ (prod.snd ∘ prod.snd)],
@@ -370,7 +372,7 @@ begin
     have hs' : qs.get_count i = ↑s := begin
       -- refine le_antisymm _ _,
       -- {
-        
+
       -- },
       have := coe_of_mem_fin_support_generate_seed hqs,
       have := congr_arg (λ qs, indexed_list.get_count qs i) this,
@@ -405,6 +407,30 @@ begin
     simp only [function.comp, prob_event_seq_map_eq_sum, function.uncurry_apply_pair],
   }
   -- rw [prob_unus]
+end
+
+lemma prob_event_is_some_run_fork2' (x : α) :
+  let h := fintype.card (spec.range i) in
+  (∑ s : fin (q + 1), (q + 1)⁻¹ * let qc := (adv.run_qb.take_at_index i s) in
+    (possible_outcomes qc)⁻¹ * ∑ qs in (generate_seed qc).fin_support,
+      (⁅λ z, adv.choose_fork x z = some s | prod.fst <$> adv.seed_and_run x qs⁆ ^ 2) : ℝ≥0∞) - h⁻¹
+    ≤ ⁅λ fr, fr.is_some | (fork adv).run x⁆ :=
+begin
+  refine le_trans _ (prob_event_is_some_run_fork'' adv x),
+  rw [tsub_le_iff_right],
+  sorry,
+  -- simp only [prob_event_eq_eq_prob_output_map, map_map_eq_map_comp, prob_event_is_some, tsub_le_iff_right],
+end
+
+lemma prob_event_is_some_run_fork''' (x : α) :
+  ⁅λ z, z.is_some | adv.choose_fork x <$> adv.run x⁆ ^ 2
+      - (fintype.card (spec.range i))⁻¹
+    ≤ ⁅λ z, z.is_some | (fork adv).run x⁆ :=
+begin
+  refine le_trans _ (prob_event_is_some_run_fork2' adv x),
+  refine tsub_le_tsub_right _ _,
+  sorry,
+  -- rw [seed_and_run_dis]
 end
 
 end oracle_comp

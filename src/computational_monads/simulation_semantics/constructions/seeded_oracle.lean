@@ -45,7 +45,7 @@ variables (i : spec.ι) (z : spec.domain i × spec.query_seed)
 @[simp] protected lemma apply_eq : seededₛₒ i z = z.2.get_or_else i (query i z.1) := rfl
 
 lemma apply_eq_of_mem_active_oracles (hi : i ∈ z.2.active_oracles) :
-  seededₛₒ i z = return (z.2.get_head i) := by simp [hi]
+  seededₛₒ i z = return (z.2.pop i) := by simp [hi]
 
 lemma apply_eq_of_not_mem_active_oracles (hi : i ∉ z.2.active_oracles) :
   seededₛₒ i z = (λ u, (u, z.2)) <$> query i z.1 := by simp [hi]
@@ -94,7 +94,7 @@ begin
       },
       {
         rw [← bind_assoc, ← oracle_comp.map_eq_bind_return_comp, ← coe_sub_spec_map],
-        have := map_get_head_generate_seed _ _ hi,
+        have := map_pop_generate_seed _ _ hi,
         rw [← coe_sub_spec_inj_dist_equiv unif_spec spec] at this,
         rw_dist_equiv [this],
         rw [coe_sub_spec_seq],

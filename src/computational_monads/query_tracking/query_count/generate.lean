@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
 import computational_monads.query_tracking.query_count.possible_outcomes
+import computational_monads.query_tracking.indexed_list.get_or_else
 import computational_monads.constructions.repeat
 import computational_monads.distribution_semantics.algebra
 
@@ -41,6 +42,7 @@ lemma generate_aux_cons (j js) : generate_aux qc oa (j :: js) =
   repeat (oa j) (qc.get_count j) >>= λ ts,
     ((+) (of_list ts)) <$> generate_aux qc oa js := by rw [generate_aux]
 
+-- TODO: this is probably a better version to use overall
 lemma generate_aux_cons' (j js) : generate_aux qc oa (j :: js) =
   ((+) <$> of_list <$> repeat (oa j) (qc.get_count j))
     <*> (generate_aux qc oa js) :=
@@ -84,6 +86,13 @@ end
 --         oracle_comp.return_bind, of_list_nil, empty_add_eq_id, id_map, hjs] } }
 -- end
 
+lemma map_map_seq_comm (oa₁ oa₂ : oracle_comp spec α)
+  {f₁ : α → α → α} {g : α → β} {f₂ : β → β → β}
+  (h : ∀ x y, g (f₁ x y) = f₂ (g x) (g y)) :
+  g <$> (f₁ <$> oa₁ <*> oa₂) = f₂ <$> (g <$> oa₁) <*> (g <$> oa₂) :=
+by simp [seq_eq_bind_map, map_eq_bind_pure_comp, bind_assoc, h]
+
+
 @[simp] lemma generate_aux_of_nat (js : list spec.ι) (j n) : generate_aux (of_nat j n) oa js =
   of_list <$> repeat (oa j) (n * js.count j) :=
 begin
@@ -91,13 +100,10 @@ begin
   { rw [generate_aux_nil, list.count_nil, mul_zero, repeat_zero, map_return, of_list_nil] },
   { by_cases hj : j = j',
     { induction hj,
-      rw [generate_aux_cons, get_count_of_nat_self, list.count_cons_self, mul_add,
-        mul_one, add_comm, hjs],
-      simp only [map_eq_bind_pure_comp, bind_assoc, seq_eq_bind_map, function.comp_app,
-        pure_bind, vector.to_list_append, of_list_append, repeat_add] },
-    { rw [generate_aux_cons, get_count_of_nat, if_neg hj, repeat_zero, list.count_cons_of_ne hj],
-      simp only [hjs, map_pure, vector.to_list_empty, map_map_eq_map_comp, pure_bind, of_list_nil,
-        empty_add_eq_id, function.comp.left_id] } }
+      rw [generate_aux_cons', get_count_of_nat_self, hjs, list.count_cons_self, nat.mul_succ,
+        add_comm, repeat_add, map_map_seq_comm _ _ (λ xs ys, of_list_append xs ys)] },
+    { rw [generate_aux_cons', get_count_of_nat, if_neg hj, repeat_zero, list.count_cons_of_ne hj,
+        map_return, of_list_nil, map_return, empty_add_eq_id, pure_id_seq, hjs] } }
 end
 
 lemma generate_aux_cons_dist_equiv_drop (j js) (h : j ∉ qc.active_oracles) :
@@ -293,7 +299,7 @@ begin
     -- induction h,
     rw [prob_output_seq_map_add_cancel_unique _ _ _ il₁ il₂],
     {
-      rw [prob_output_generate _ _ _ h'.1, prob_output_generate _ _ _ h'.2], 
+      rw [prob_output_generate _ _ _ h'.1, prob_output_generate _ _ _ h'.2],
       rw [← h, active_oracles_add],
       simp_rw [add_apply, list.map_append, list.prod_append, finset.prod_mul_distrib],
       congr' 1,
@@ -342,14 +348,34 @@ begin
   rw [generate_of_nat],
 end
 
--- lemma generate_dist_equiv_of_mem_active_oracles (i : spec.ι)
---   (hi : i ∈ qc.active_oracles) : generate qc oa ≃ₚ
---     do {x ← oa i, il ← generate (qc.decrement i 1) oa, return (of_list [x] + il)} :=
--- begin
---   have : qc = of_nat i 1 + qc.decrement i 1 := sorry,
---   rw [this],
---   rw_dist_equiv [generate_add_dist_equiv],
---   sorry,
--- end
+lemma generate_dist_equiv_add_sub (h : qc' ≤ qc) :
+  generate qc oa ≃ₚ (+) <$> generate qc' oa <*> generate (qc - qc') oa :=
+begin
+  refine trans _ (generate_add_dist_equiv qc' (qc - qc') _),
+  rwa [add_tsub_cancel_of_le],
+end
+
+lemma map_pop_generate [∀ i, inhabited (τ i)] (i : spec.ι) (h : i ∈ qc.active_oracles) :
+  (λ il, indexed_list.pop il i) <$> generate qc oa ≃ₚ
+    prod.mk <$> oa i <*> generate (qc.decrement i 1) oa :=
+begin
+  have := generate_dist_equiv_add_sub qc (of_nat i 1) oa (by simpa using h),
+  refine trans (map_dist_equiv_of_dist_equiv' rfl this) _,
+  rw [map_seq],
+  simp only [function.comp, generate_of_nat, ←decrement_eq_sub_of_nat, seq_eq_bind_map,
+    oracle_comp.map_eq_bind_return_comp, bind_assoc, repeat_succ, repeat_zero, pure_bind],
+  pairwise_dist_equiv 2 with i hi qs hqs,
+  simp only [return_dist_equiv_return_iff', prod.mk.inj_iff, add_apply, of_list_apply,
+    eq_self_iff_true, dite_eq_ite, if_true, list.singleton_append, list.head_cons,
+    drop_at_index_add, drop_at_index_succ_of_list_succ, of_list_nil, drop_at_index_zero,
+    get_count_of_list, list.length_singleton, empty_add_eq_id, id.def, and_self],
+end
+
+lemma map_nth_generate (i : spec.ι) (n : ℕ) :
+  (λ il : spec.indexed_list _, (il i).nth n) <$> generate qc oa ≃ₚ
+    if n < qc.get_count i then some <$> oa i else return none :=
+begin
+  sorry
+end
 
 end oracle_comp
