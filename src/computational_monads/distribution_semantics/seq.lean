@@ -87,6 +87,44 @@ end seq_assoc
 
 section seq_map
 
+lemma seq_dist_equiv_seq {oa oa' : oracle_comp spec α} {og og' : oracle_comp spec (α → β)}
+  (h1 : oa ≃ₚ oa')
+  (h : ∀ x ∈ oa.support, ((λ f : α → β, f x) <$> og) ≃ₚ ((λ f : α → β, f x) <$> og')) :
+  og <*> oa ≃ₚ og' <*> oa' :=
+begin
+  simp only [seq_eq_bind_map, map_eq_bind_pure_comp],
+  rw_dist_equiv [bind_bind_dist_equiv_comm og, bind_bind_dist_equiv_comm og', h1.symm],
+  pairwise_dist_equiv 1 with x hx,
+  exact h x hx
+end
+
+lemma seq_map_dist_equiv_seq_map {oa oa' : oracle_comp spec α} {ob ob' : oracle_comp spec β}
+  (f g : α → β → γ) (h : oa ≃ₚ oa') (h' : ob ≃ₚ ob')
+  (hfg : ∀ x ∈ oa.support, ∀ y ∈ ob.support, f x y = g x y) :
+  f <$> oa <*> ob ≃ₚ g <$> oa' <*> ob' :=
+begin
+  refine seq_dist_equiv_seq h' (λ y hy, _),
+  simp only [map_map_eq_map_comp, function.comp],
+  refine map_dist_equiv_map (λ x hx, hfg x hx y hy) h,
+end
+
+lemma seq_map_dist_equiv_map_left {oa : oracle_comp spec α} {ob : oracle_comp spec β}
+  (f : α → β → γ) (g : α → γ) (h : ∀ x ∈ oa.support, ∀ y ∈ ob.support, f x y = g x) :
+  f <$> oa <*> ob ≃ₚ g <$> oa :=
+begin
+  rw_dist_equiv [seq_map_dist_equiv_seq_map f (λ x y, g x) dist_equiv.rfl dist_equiv.rfl h],
+  simp [seq_eq_bind_map, map_eq_bind_pure_comp, bind_assoc],
+  rw_dist_equiv [bind_const_dist_equiv],
+end
+
+lemma seq_map_dist_equiv_map_right {oa : oracle_comp spec α} {ob : oracle_comp spec β}
+  (f : α → β → γ) (g : β → γ) (h : ∀ x ∈ oa.support, ∀ y ∈ ob.support, f x y = g y) :
+  f <$> oa <*> ob ≃ₚ g <$> ob :=
+begin
+  rw_dist_equiv [seq_map_dist_equiv_seq_map f (λ x y, g y) dist_equiv.rfl dist_equiv.rfl h],
+  simp [seq_eq_bind_map, map_eq_bind_pure_comp, bind_assoc]
+end
+
 variables (oa oa' : oracle_comp spec α) (ob ob' : oracle_comp spec β) (f : α → β → γ)
 
 lemma seq_map_eq_bind_bind : f <$> oa <*> ob = do {x ← oa, y ← ob, return (f x y)} :=

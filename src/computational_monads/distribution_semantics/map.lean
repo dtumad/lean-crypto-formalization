@@ -97,12 +97,12 @@ end prob_event
 
 lemma map_dist_equiv_bind_return : f <$> oa ≃ₚ oa >>= (λ x, return (f x)) := dist_equiv.rfl
 
-lemma map_dist_equiv_of_dist_equiv {f g : α → β} {oa : oracle_comp spec α}
+lemma map_dist_equiv_map {f g : α → β} {oa : oracle_comp spec α}
   {oa' : oracle_comp spec' α} (h : ∀ x ∈ oa.support, f x = g x) (h' : oa ≃ₚ oa') :
   f <$> oa ≃ₚ g <$> oa' :=
 bind_dist_equiv_bind_of_dist_equiv h' (λ x hx, by simp [h x hx])
 
-lemma map_dist_equiv_of_dist_equiv' {f g : α → β} {oa : oracle_comp spec α}
+lemma map_dist_equiv_map' {f g : α → β} {oa : oracle_comp spec α}
   {oa' : oracle_comp spec' α} (h : f = g) (h' : oa ≃ₚ oa') : f <$> oa ≃ₚ g <$> oa' :=
 bind_dist_equiv_bind_of_dist_equiv h' (by simp [h])
 

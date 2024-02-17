@@ -98,7 +98,7 @@ begin
   { simp only [hil, add_values, if_false, eq_self_iff_true, if_true, apply_empty_iff, not_true] },
   { simp only [hil, list.empty, of_list_nil, get_or_else_empty, if_false, apply_empty_iff,
       not_false_iff, coe_sort_tt, if_true],
-    refine trans (map_comp_dist_equiv _ _ _) (map_dist_equiv_of_dist_equiv' (funext (λ z,
+    refine trans (map_comp_dist_equiv _ _ _) (map_dist_equiv_map' (funext (λ z,
       prod.eq_iff_fst_eq_snd_eq.2 ⟨rfl, il.add_empty⟩)) (refl _)) },
   { simp only [hil, pop, list.empty, get_or_else_of_mem_active_oracles, of_list_apply,
       active_oracles_of_list, coe_sort_ff, if_false, finset.mem_singleton, eq_self_iff_true,

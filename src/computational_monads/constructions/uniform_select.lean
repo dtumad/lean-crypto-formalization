@@ -65,6 +65,9 @@ by {rw [fin_support_bind, fin_support_uniform_fin] }
 
 end fin_support
 
+lemma uniform_fin_zero_dist_equiv : $[0..0] ≃ₚ (return 0 : oracle_comp unif_spec (fin 1)) :=
+by simp [dist_equiv_return_iff', set.ext_iff]
+
 section eval_dist
 
 @[simp] lemma eval_dist_uniform_fin : ⁅$[0..n]⁆ = pmf.uniform_of_fintype (fin $ n + 1) :=
@@ -228,12 +231,11 @@ end
 
 end prob_event
 
-@[pairwise_dist_equiv] lemma uniform_select_vector_singleton_dist_equiv {spec}
-  (v : vector α 1) : ($ᵛ v) ≃ₚ return' !spec! v.head :=
+@[pairwise_dist_equiv] lemma uniform_select_vector_singleton_dist_equiv
+  (v : vector α 1) : ($ᵛ v) ≃ₚ (return v.head : oracle_comp unif_spec α) :=
 begin
   rw [← vector.nth_zero, uniform_select_vector],
-  exact (map_dist_equiv_of_dist_equiv' rfl (by pairwise_dist_equiv)).trans
-    (map_return_dist_equiv _ _)
+  rw_dist_equiv [uniform_fin_zero_dist_equiv, return_bind_dist_equiv]
 end
 
 end uniform_select_vector
@@ -351,8 +353,8 @@ end
 
 end prob_event
 
-lemma uniform_select_list_singleton_dist_equiv {spec} (h : ¬ [x].empty) :
-  $ˡ [x] h ≃ₚ return' !spec! x := by pairwise_dist_equiv
+lemma uniform_select_list_singleton_dist_equiv (h : ¬ [x].empty) :
+  $ˡ [x] h ≃ₚ (return x : oracle_comp unif_spec α) := by pairwise_dist_equiv
 
 end uniform_select_list
 
@@ -443,8 +445,8 @@ by simp only [uniform_select_finset, prob_event_uniform_select_list_bind_eq_sum,
 
 end prob_event
 
-@[pairwise_dist_equiv] lemma uniform_select_finset_singleton_dist_equiv {spec}
-  (h : finset.nonempty {x}) : $ˢ {x} h ≃ₚ return' !spec! x :=
+@[pairwise_dist_equiv] lemma uniform_select_finset_singleton_dist_equiv
+  (h : finset.nonempty {x}) : $ˢ {x} h ≃ₚ (return x : oracle_comp unif_spec α) :=
 by simp only [uniform_select_finset, finset.to_list_singleton,
   uniform_select_list_singleton_dist_equiv]
 
@@ -552,8 +554,8 @@ by simp only [uniform_select_fintype, prob_event_uniform_select_finset_bind_eq_s
 
 end prob_event
 
-lemma uniform_select_fintype_dist_equiv_return {spec} {α : Type} [unique α] :
-  $ᵗ α ≃ₚ return' !spec! default := by pairwise_dist_equiv
+lemma uniform_select_fintype_dist_equiv_return {α : Type} [unique α] :
+  $ᵗ α ≃ₚ (return default : oracle_comp unif_spec α) := by pairwise_dist_equiv
 
 @[pairwise_dist_equiv] lemma uniform_select_fintype_range {spec : oracle_spec} {i : spec.ι}
   (t : spec.domain i) : $ᵗ (spec.range i) ≃ₚ query i t :=

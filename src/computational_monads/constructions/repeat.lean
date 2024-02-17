@@ -44,10 +44,6 @@ open oracle_spec list
 variables {α β γ : Type} {spec spec' : oracle_spec}
 
 /-- Repeat the computation `oa` independently `n` times to get a length `n` vector of results. -/
--- def repeat (oa : oracle_comp spec α) : Π (n : ℕ), oracle_comp spec (vector α n)
--- | 0 := return nil
--- | (n + 1) := cons <$> oa <*> repeat n
-
 def repeat (oa : oracle_comp spec α) : ℕ → oracle_comp spec (list α)
 | 0 := return []
 | (n + 1) := (::) <$> oa <*> repeat n
@@ -91,6 +87,13 @@ begin
       { refine false.elim (nat.succ_ne_zero n h.1.symm) },
       { rw [list.all₂_cons, length_cons, nat.succ_inj'] at h,
         refine ⟨x, h.2.1, xs, ⟨h.1, h.2.2⟩, rfl⟩ } } }
+end
+
+lemma length_of_mem_support_repeat {oa : oracle_comp spec α} {n : ℕ} {xs : list α}
+  (hxs : xs ∈ (oa.repeat n).support) : xs.length = n :=
+begin
+  rw [support_repeat_eq_all₂] at hxs,
+  exact hxs.1,
 end
 
 lemma support_repeat_eq_forall : (oa.repeat n).support =
@@ -272,7 +275,7 @@ end
 -- begin
 --   refine ⟨λ h, _, repeat_dist_equiv_repeat_of_dist_equiv oa oa' n.succ⟩,
 --   calc oa ≃ₚ head <$> oa.repeat n.succ : (map_head_repeat_dist_equiv oa n).symm
---     ... ≃ₚ head <$> oa'.repeat n.succ : map_dist_equiv_of_dist_equiv' rfl h
+--     ... ≃ₚ head <$> oa'.repeat n.succ : map_dist_equiv_map' rfl h
 --     ... ≃ₚ oa' : map_head_repeat_dist_equiv oa' n
 -- end
 

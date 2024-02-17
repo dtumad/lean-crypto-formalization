@@ -477,7 +477,7 @@ begin
     rw [← h1, to_query_count_add, h2.1, h2.2] }
 end
 
-lemma add_eq_add_iff_of_to_query_count_eq (il il' jl jl' : spec.indexed_list τ)
+lemma add_eq_add_iff_eq_and_eq {il il' jl jl' : spec.indexed_list τ}
   (h : il.to_query_count = jl.to_query_count) :
   il + il' = jl + jl' ↔ il = jl ∧ il' = jl' :=
 begin
