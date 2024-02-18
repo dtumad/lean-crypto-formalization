@@ -35,7 +35,7 @@ generate qc (λ i, $ᵗ (spec.range i))
 
 variables (qc qc' : spec.query_count)
 
-@[simp] lemma support_generate_seed : (generate_seed qc).support = {qs | ↑qs = qc} :=
+@[simp] lemma support_generate_seed : (generate_seed qc).support = {qs | qs.to_query_count = qc} :=
 by simp only [generate_seed, support_generate, mem_support_uniform_select_fintype,
   list.all₂_iff_forall, imp_true_iff, and_true]
 
