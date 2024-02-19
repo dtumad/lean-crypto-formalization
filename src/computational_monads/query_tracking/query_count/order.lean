@@ -32,9 +32,15 @@ lemma le_of_forall_get_count_le {qc qc' : query_count spec}
   (h : ∀ i, qc.get_count i ≤ qc'.get_count i) : qc ≤ qc' :=
 (le_iff_forall_get_count_le qc qc').2 h
 
--- lemma get_count_le_get_count {qc qc' : query_count spec} (h : qc ≤ qc')
---   (i : spec.ι) : qc.get_count i ≤ qc'.get_count i :=
--- (le_iff_forall_get_count_le qc qc').1 h i
+lemma to_query_count_mono {τ : spec.ι → Type} {il il' : spec.indexed_list τ} (h : il ≤ il') :
+  il.to_query_count ≤ il'.to_query_count :=
+begin
+  refine le_of_forall_get_count_le (λ i, _),
+  specialize h i,
+  have := list.is_prefix.length_le h,
+  simp only [get_count_to_query_count],
+  exact this,
+end
 
 section lattice
 

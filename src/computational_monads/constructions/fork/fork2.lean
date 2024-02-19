@@ -86,9 +86,10 @@ lemma to_query_count_of_mem_support_seed_and_run {qs qs' : spec.query_seed} {y :
   (h : (y, qs') ∈ (adv.seed_and_run x qs).support) (h' : ↑qs ≤ adv.run_qb) :
   qs'.to_query_count = adv.run_qb :=
 begin
-  simp only [seed_and_run, indexed_list.coe_query_count_eq, support_bind, support_coe_sub_spec, support_generate_seed,
-  set.mem_set_of_eq, support_bind_return, support_simulate', set.mem_Union, set.mem_image, prod.exists,
-  exists_and_distrib_right, exists_eq_right, prod.mk.inj_iff, exists_prop] at h,
+  simp only [seed_and_run, indexed_list.coe_query_count_eq, support_bind, support_coe_sub_spec,
+    support_generate_seed, set.mem_set_of_eq, support_bind_return, support_simulate',
+    set.mem_Union, set.mem_image, prod.exists, exists_and_distrib_right, exists_eq_right,
+    prod.mk.inj_iff, exists_prop] at h,
   obtain ⟨qs'', h, ⟨y, ⟨hy, rfl, rfl⟩⟩⟩ := h,
   simp [h],
   refine add_tsub_cancel_of_le h',
@@ -97,7 +98,8 @@ end
 lemma le_of_mem_support_seed_and_run {qs qs' : spec.query_seed} {y : β}
   (h : (y, qs') ∈ (adv.seed_and_run x qs).support) : qs ≤ qs' :=
 begin
-  simp only [seed_and_run, indexed_list.coe_query_count_eq, support_bind, support_coe_sub_spec, support_generate_seed,
+  simp only [seed_and_run, indexed_list.coe_query_count_eq, support_bind, support_coe_sub_spec,
+    support_generate_seed,
   set.mem_set_of_eq, support_bind_return, support_simulate', set.mem_Union, set.mem_image, prod.exists,
   exists_and_distrib_right, exists_eq_right, prod.mk.inj_iff, exists_prop] at h,
   obtain ⟨qs'', _, _, _, _, h⟩ := h,
@@ -111,6 +113,39 @@ begin
   refine lt_of_le_of_ne (le_of_mem_support_seed_and_run _ _ h) (λ h', _),
   have := to_query_count_of_mem_support_seed_and_run adv x h (le_of_lt hqs),
   rwa [h', ← this, indexed_list.coe_query_count_eq, lt_self_iff_false] at hqs,
+end
+
+lemma support_seed_and_run (qs : spec.query_seed) (hqs : ↑qs ≤ adv.run_qb) :
+  (adv.seed_and_run x qs).support = {z | z.1 ∈ (simulate' seededₛₒ (adv.run x) z.2).support
+      ∧ qs ≤ z.2 ∧ z.2.to_query_count = adv.run_qb} :=
+begin
+  rw [seed_and_run],
+  simp only [set.ext_iff, ←and_assoc, indexed_list.coe_query_count_eq, support_bind,
+    support_coe_sub_spec, support_generate_seed, set.mem_set_of_eq, support_bind_return,
+    support_simulate', set.mem_image, prod.exists, exists_and_distrib_right, exists_eq_right,
+    set.mem_Union, exists_prop, prod.forall, prod.mk.inj_iff],
+  intros y qs',
+  refine ⟨λ h, _, λ h, _⟩,
+  {
+    obtain ⟨fs, ⟨h1, h2⟩, rfl⟩ := h,
+    simp [h1, h2],
+    -- split,
+    -- {
+    --   obtain ⟨fs', hfs'⟩ := h2,
+    --   have : fs' = qs + fs := by {}
+    --   rw [this] at hfs',
+    --   exact hfs',
+    -- },
+    refine add_tsub_cancel_of_le hqs,
+  },
+  {
+    obtain ⟨⟨h, h1⟩, h2⟩ := h,
+    obtain ⟨il, rfl⟩ := indexed_list.exists_eq_add_of_le h1,
+    refine ⟨il, ⟨_, h⟩, rfl⟩,
+    -- refine ⟨il, ⟨_, ⟨_, h⟩⟩, rfl⟩,
+    rw [indexed_list.to_query_count_add] at h2,
+    refine eq_tsub_of_add_eq (trans (add_comm _ _) h2),
+  }
 end
 
 lemma fst_map_seed_and_run_dist_equiv (qc : spec.query_count) :
@@ -222,32 +257,91 @@ end
 
 section support
 
+lemma indexed_list.take_at_index_add_eq_left {τ : spec.ι → Type} {il il' : spec.indexed_list τ}
+  {i : spec.ι} {n : ℕ} (h : ∀ j ∈ il'.active_oracles, i = j) (hn : il.get_count i = n) :
+  (il + il').take_at_index i n = il :=
+begin
+  refine fun_like.ext _ _ (λ j, _),
+  by_cases hj : i = j,
+  {
+    induction hj,
+    simp only [list.take_append_of_le_length (le_of_eq hn.symm), indexed_list.take_at_index_apply,
+      eq_self_iff_true, indexed_list.add_apply, if_true],
+    refine hn ▸ (list.take_length (il i)), 
+  },
+  {
+    have : il' j = [] := indexed_list.apply_eq_nil (λ h', hj (h j h')),
+    simp only [hj, indexed_list.take_at_index_apply, indexed_list.add_apply, if_false, this,
+      list.append_nil],
+  }
+end
+
+/-- Fully characterize the successful outputs of `fork`. -/
 lemma some_mem_support_run_fork_iff (fr : fork_result adv) (x : α) :
   some fr ∈ ((fork adv).run x).support ↔
-    ((fr.out₁, fr.seed₁) ∈ (adv.seed_and_run x ∅).support ∧
-      (fr.out₂, fr.seed₂) ∈ (adv.seed_and_run x (fr.seed₁.take_at_index i fr.fp)).support) ∧
+    (fr.out₁ ∈ (simulate' seededₛₒ (adv.run x) fr.seed₁).support ∧
+      fr.out₂ ∈ (simulate' seededₛₒ (adv.run x) fr.seed₂).support) ∧
+    (fr.seed₁.to_query_count = adv.run_qb ∧ fr.seed₂.to_query_count = adv.run_qb) ∧
+    (fr.seed₁.take_at_index i fr.fp = fr.seed₂.take_at_index i fr.fp) ∧
     (adv.cf x fr.out₁ = some fr.fp ∧ adv.cf x fr.out₂ = some fr.fp) ∧
-    indexed_list.value_differs fr.seed₁ fr.seed₂ i fr.fp :=
+    (indexed_list.value_differs fr.seed₁ fr.seed₂ i fr.fp) :=
 begin
-  simp only [fork, support_bind, set.mem_Union, exists_prop, prod.exists,
-    support_ite, support_return],
-  sorry,
-  -- refine ⟨λ h, _, λ h, _⟩,
-  -- { obtain ⟨y₁, seed₁, h, y₂, seed₂, h', hfr⟩ := h,
-  --   by_cases hys : adv.cf x y₁ = adv.cf x y₂ ∧
-  --     indexed_list.value_differs seed₁ seed₂ i ↑((adv.cf x y₁).get_or_else 0),
-  --   { obtain ⟨hys, hd⟩ := hys,
-  --     rw [hys] at hd,
-  --     simp only [hys, hd, eq_self_iff_true, if_true, set.mem_singleton_iff, true_and] at hfr,
-  --     rw [eq_comm, option.map_eq_some'] at hfr,
-  --     obtain ⟨fp, hfp, rfl⟩ := hfr,
-  --     simp [hfp] at hd,
-  --     simpa only [hys, hfp, h, hd, true_and, eq_self_iff_true, and_true] using h' },
-  --   { simp only [hys, if_false, set.mem_singleton_iff] at hfr,
-  --     exact false.elim hfr } },
-  -- { rcases fr with ⟨fp, out₁, out₂, seed₁, seed₂⟩,
-  --   refine ⟨out₁, seed₁, h.1.1, out₂, seed₂, _⟩,
-  --   simp [h.2.1, h.2.2, h.1.2] }
+  cases fr with fp out₁ out₂ seed₁ seed₂,
+  simp only [fork.run_eq, ← and_assoc, -set.sep_and,
+    support_bind, support_coe_sub_spec, support_uniform_fin, set.top_eq_univ, set.mem_univ,
+    support_generate_seed, set.mem_set_of_eq, support_bind_ite_return, set.Union_true, set.mem_Union, set.mem_union,
+    set.mem_image, set.mem_sep_iff, prod.exists, exists_eq_right, exists_and_distrib_right, and_false, exists_false,
+    or_false, exists_prop, support_simulate', and.congr_left_iff],
+  simp only [and_assoc],
+  intros h1 h2 h3,
+  refine ⟨λ h, _, λ h, _⟩,
+  { obtain ⟨qs, hqs, ho1, ho2⟩ := h,
+    have : ↑qs ≤ adv.run_qb := by simp [hqs],
+    simp only [adv.support_seed_and_run x qs this,
+      set.mem_set_of_eq, mem_support_simulate'_iff_exists_state] at ho1 ho2,
+    refine ⟨ho1.1, ho2.1, ho1.2.2, ho2.2.2, _⟩,
+    obtain ⟨qs1, rfl⟩ := indexed_list.exists_eq_add_of_le ho1.2.1,
+    obtain ⟨qs2, rfl⟩ := indexed_list.exists_eq_add_of_le ho2.2.1,
+    rw [indexed_list.to_query_count_add, hqs] at ho1 ho2,
+    simp only [fun_like.ext_iff, indexed_list.add_apply,
+      indexed_list.take_at_index_apply] at ho1 ho2,
+    have hfp : qs.get_count i = ↑fp := begin
+      rw [← indexed_list.get_count_to_query_count, hqs,
+        indexed_list.get_count_take_at_index],
+      simp only [list.length, eq_self_iff_true, if_true, min_eq_left_iff],
+      refine le_trans (fin.is_le fp) (le_of_lt adv.q_lt_get_count),
+    end,
+    rw [indexed_list.take_at_index_add_eq_left _ hfp, indexed_list.take_at_index_add_eq_left _ hfp],
+    {
+      refine λ j, not_imp_not.1 (λ hij, _),
+      have := ho2.2.2 j,
+      rw [if_neg hij] at this,
+      have := list.append_left_cancel (trans this (list.append_nil _).symm),
+      rw [indexed_list.to_query_count, indexed_list.map_apply, list.map_eq_nil,
+        indexed_list.apply_eq_nil_iff] at this,
+      exact this,
+    },
+    {
+      refine λ j, not_imp_not.1 (λ hij, _),
+      have := ho1.2.2 j,
+      rw [if_neg hij] at this,
+      have := list.append_left_cancel (trans this (list.append_nil _).symm),
+      rw [indexed_list.to_query_count, indexed_list.map_apply, list.map_eq_nil,
+        indexed_list.apply_eq_nil_iff] at this,
+      exact this,
+    },
+
+  },
+  { obtain ⟨h4, h5, h6, h7, h8⟩ := h,
+    have h9 : (indexed_list.take_at_index seed₁ i ↑fp) ≤ seed₂,
+    by simp only [h8, indexed_list.take_at_index_le],
+    have : ↑(indexed_list.take_at_index seed₁ i ↑fp) ≤ adv.run_qb,
+    from le_trans (query_count.to_query_count_mono h9) (le_of_eq h7),
+    refine ⟨indexed_list.take_at_index seed₁ i ↑fp, _⟩,
+    simp only [adv.support_seed_and_run x _ this, h6, h7, h9, h4, h5,
+      indexed_list.to_query_count_take_at_index, eq_self_iff_true, support_simulate',
+      set.mem_image, prod.exists, exists_and_distrib_right, exists_eq_right, set.mem_set_of_eq,
+      indexed_list.take_at_index_le, and_self] }
 end
 
 end support

@@ -156,6 +156,24 @@ end semilattice_inf
 
 variables (il il' : spec.indexed_list τ)
 
+lemma exists_eq_add_of_le {il il' : spec.indexed_list τ} (h : il ≤ il') :
+  ∃ ilx, il + ilx = il' :=
+⟨{ to_fun := λ i, (il' i).drop (il.get_count i),
+   active_oracles := {i ∈ il'.active_oracles | il.get_count i < il'.get_count i},
+   mem_active_oracles_iff' := begin
+    simp [list.drop_eq_nil_iff_le, and_iff_right_iff_imp, get_count_eq_length_apply],
+    intros i h,
+    refine mem_active_oracles_of_length_pos _ (lt_of_le_of_lt zero_le' h),
+   end}
+, begin
+  simp [fun_like.ext_iff],
+  intro i,
+  obtain ⟨xs, h⟩ := h i,
+  refine trans _ (list.take_append_drop (il.get_count i) (il' i)),
+  refine congr_arg (λ xs, xs ++ list.drop (il.get_count i) (il' i)) _,
+  rw [← h, get_count_eq_length_apply, list.take_append_of_le_length le_rfl, list.take_length],
+end⟩
+
 @[simp] lemma le_self_add : il ≤ il + il' :=
 λ i, list.prefix_append (il i) (il' i)
 
