@@ -38,14 +38,14 @@ noncomputable def hhs_signature (G X M : Type) [decidable_eq M]
   sign := λ ⟨⟨⟨x₀, pk⟩, sk⟩, m⟩, do
   { gs : vector G n ←$ᵗ (vector G n),
     xs : vector X n ← return (gs.map (+ᵥ pk)),
-    hash : vector bool n ← query (sum.inr ()) (xs, m),
-    return (zip_commits sk gs hash, hash) },
+    bs : vector bool n ← query (sum.inr ()) (xs, m),
+    return (zip_commits sk gs bs, bs) },
   -- Verify a signature by adding each commit to the appropriate point in the public key
   -- Signatures are valid if the result of hashing this matches the original hash
-  verify := λ ⟨⟨x₀, pk⟩, m, zs, hash⟩, do
-  { (xs : vector X n) ← return (unzip_commits x₀ pk zs hash),
-    (hash' : vector bool n) ← query (sum.inr ()) (xs, m),
-    return (hash' = hash) },
+  verify := λ ⟨⟨x₀, pk⟩, m, zs, bs⟩, do
+  { (xs : vector X n) ← return (unzip_commits x₀ pk zs bs),
+    (bs' : vector bool n) ← query (sum.inr ()) (xs, m),
+    return (bs' = bs) },
   -- Treat the second oracle as a random oracle
   base_oracle := (idₛₒ ++ₛₒ randomₛₒ).mask_state (equiv.punit_prod _),
   init_state := ∅, .. }
@@ -98,7 +98,7 @@ match z with | ⟨⟨⟨_, _⟩, _⟩, _⟩ := rfl end
   do {gs ←$ᵗ (vector G n), hash' ← return (cache.lookup () (gs.map (+ᵥ z.1.1.2), z.2)),
     if hash' = none then $ᵗ (vector bool n) >>= λ hash, return ((zip_commits z.1.2 gs hash, hash),
       cache.log_query () (gs.map (+ᵥ z.1.1.2), z.2) hash)
-    else let hash := hash'.get_or_else default in 
+    else let hash := hash'.get_or_else default in
       return ((zip_commits z.1.2 gs hash, hash), cache)} :=
 begin
   simp [sign_apply, bind_assoc, random_oracle.def, base_oracle_eq,
@@ -123,7 +123,7 @@ end
 
 end sign
 
-section verify 
+section verify
 
 variables --(x₀ pk : X) (m : M) (zs : vector G n) (hash : vector bool n)
   (z : (X × X) × (M × (vector G n × vector bool n)))

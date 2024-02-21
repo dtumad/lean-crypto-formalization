@@ -147,7 +147,7 @@ def unforgeable_exp {sig : signature_alg spec M PK SK S}
       b ← sig.verify (pk, m, σ),
       return (b && !(log.was_queried () m)) },
   is_valid := λ _ b, b = tt,
-  .. sig } -- Same simulation oracles as the signature itself. 
+  .. sig } -- Same simulation oracles as the signature itself.
 
 namespace unforgeable_exp
 

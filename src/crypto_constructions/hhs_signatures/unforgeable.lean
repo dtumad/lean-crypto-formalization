@@ -1,25 +1,85 @@
--- /-
--- Copyright (c) 2022 Devon Tuma. All rights reserved.
--- Released under Apache 2.0 license as described in the file LICENSE.
--- Authors: Devon Tuma
--- -/
--- import crypto_constructions.hhs_signatures.mock_signing
--- import computational_monads.constructions.fork.fork
+/-
+Copyright (c) 2022 Devon Tuma. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Devon Tuma
+-/
+import crypto_constructions.hhs_signatures.mock_signing
+import computational_monads.constructions.fork.fork2
 
--- /-!
--- # Unforgeability of HHS Signature
+/-!
+# Unforgeability of HHS Signature
 
--- This file gives an unforgeability proof for `hhs_signature`
--- -/
+This file gives an unforgeability proof for `hhs_signature`
+-/
 
--- namespace hhs_signature
+namespace hhs_signature
 
--- open_locale ennreal big_operators
--- open oracle_comp oracle_spec algorithmic_homogenous_space hard_homogenous_space
--- open oracle_spec.indexed_list signature_alg
+open_locale ennreal big_operators
+open oracle_comp oracle_spec algorithmic_homogenous_space hard_homogenous_space
+open oracle_spec.indexed_list signature_alg
 
--- variables {G X M : Type} [decidable_eq M]
---   [add_comm_group G] [algorithmic_homogenous_space G X] {n : ℕ}
+variables {G X M : Type} [decidable_eq M]
+  [add_comm_group G] [algorithmic_homogenous_space G X] {n : ℕ}
+
+section fork_reduction
+
+#check indexed_list.map
+
+-- def query_count.transform {spec spec' : oracle_spec}
+--   (qc : spec.query_count) (m : spec.ι → spec'.ι) :
+--   spec'.query_count :=
+-- { to_fun := λ j, of_nat (∑ i in {i : spec.ι | m i = j}, _
+
+-- }
+
+def fork_reduction_query_bound (adv : (hhs_signature G X M n).unforgeable_adv) :
+  query_count (unif_spec ++ (unit ↦ₒ vector bool n)) :=
+sorry
+
+noncomputable def fork_reduction (adv : (hhs_signature G X M n).unforgeable_adv) :
+  fork_adversary (unif_spec ++ (unit ↦ₒ vector bool n))
+    (X × X) ((M × vector G n × vector bool n) ×
+      (bool × query_log ((vector X n × M) ↦ₒ vector bool n)))
+    (sum.inr ()) (adv.run_qb.get_count (sum.inr ())
+      + adv.run_qb.get_count (sum.inl (sum.inr ()))) :=
+{ run := λ ⟨x₀, pk⟩, begin
+    have := simulate (mock_signingₛₒ x₀ pk)
+    (adv.run (x₀, pk)) (ff, ∅),
+    exact this,
+  end,
+  run_qb := sorry,
+  cf := λ ⟨x₀, pk⟩ ⟨⟨m, zs, bs⟩, ⟨corrupt, cache⟩⟩,
+    if corrupt then none else
+      let xs := unzip_commits x₀ pk zs bs in
+      match cache.lookup () (xs, m) with
+      | none := none
+      | (some bs') := if bs = bs'
+          then some ((cache ()).index_of ((xs, m), bs'))
+          else none
+      end,
+  q_lt_get_count := sorry }
+
+end fork_reduction
+
+section vectorization_reduction
+
+def vectorization_of_fork_result {adv : (hhs_signature G X M n).unforgeable_adv}
+  (fr : option (fork_result (fork_reduction adv))) : G :=
+begin
+  sorry,
+end
+
+noncomputable def vectorization_reduction
+  (adv : (hhs_signature G X M n).unforgeable_adv) :
+  vectorization_adv G X :=
+{ run := λ ⟨x₀, pk⟩, simulate' uniformₛₒ
+    (vectorization_of_fork_result <$>
+      ((fork (fork_reduction adv)).run (x₀, pk))) (),
+  run_qb := ∅ }
+
+end vectorization_reduction
+
+end hhs_signature
 
 -- section fork_reduction
 
