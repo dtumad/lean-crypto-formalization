@@ -220,6 +220,14 @@ begin
   { simp only [hj, increment_apply, add_apply, if_false] }
 end
 
+lemma increment_add_eq_increment_add (i n) :
+  (qc + qc').increment i n = qc.increment i n + qc' :=
+by rw [add_comm qc qc', increment_add_eq_add_increment, add_comm qc']
+
+@[simp] lemma nmsul_increment (i m) (n : ℕ) :
+  n • (qc.increment i m) = (n • qc).increment i (n * m) :=
+by simp [increment_eq_add_of_nat]
+
 end increment
 
 section decrement
@@ -391,6 +399,67 @@ def reduce (qc : spec.query_count) (f : spec.ι → spec'.ι) : spec'.query_coun
 ∑ i in qc.active_oracles, of_nat (f i) (qc.get_count i)
 
 end reduce
+
+section transform
+
+@[simp] lemma list.replicate_eq_nil {α : Type} (x : α) (n : ℕ) :
+  list.replicate n x = [] ↔ n = 0 := by cases n; simp
+
+def transform (qc : spec.query_count)
+  (s : spec.ι → spec'.query_count) : spec'.query_count :=
+{ to_fun := λ j, let k := ∑ i in qc.active_oracles, qc.get_count i * ((s i).get_count j) in
+    list.replicate k (),
+  active_oracles := qc.active_oracles.bUnion (λ i, (s i).active_oracles),
+  mem_active_oracles_iff' := by simp [not_or_distrib] }
+
+variables (s : spec.ι → spec'.query_count)
+
+@[simp] lemma transform_apply (j : spec'.ι) : qc.transform s j =
+  list.replicate (∑ i in qc.active_oracles, qc.get_count i * ((s i).get_count j)) () := rfl
+
+@[simp] lemma active_oracles_transform : (qc.transform s).active_oracles =
+  qc.active_oracles.bUnion (λ i, (s i).active_oracles) := rfl
+
+@[simp] lemma get_count_transform (j : spec'.ι) : (qc.transform s).get_count j =
+  ∑ i in qc.active_oracles, qc.get_count i * ((s i).get_count j) :=
+by simp [get_count_eq_length_apply]
+
+@[simp] lemma transform_empty : transform ∅ s = ∅ := by simp
+
+@[simp] lemma transform_of_nat (i : spec.ι) (n : ℕ) :
+  (of_nat i n).transform s = n • s i :=
+begin
+  cases n with n,
+  { simp [zero_eq_empty] },
+  { simp [query_count.get_count_ext_iff] },
+end
+
+@[simp] lemma transform_add : (qc + qc').transform s = qc.transform s + qc'.transform s :=
+begin
+  simp [query_count.get_count_ext_iff, add_mul],
+  refine λ i, finset.sum_add_distrib.trans _,
+  congr' 1,
+  { refine symm (finset.sum_subset (finset.subset_union_left _ _) _),
+    simp [imp_or_distrib] },
+  { refine symm (finset.sum_subset (finset.subset_union_right _ _) _),
+    simp [imp_or_distrib] }
+end
+
+-- @[simp] lemma transform_sub : (qc - qc').transform s = qc.transform s - qc'.transform s :=
+-- begin
+--   simp [query_count.get_count_ext_iff, tsub_mul],
+--   refine λ i, finset.sum_sub_distrib.trans _,
+-- end
+
+@[simp] lemma transform_increment (i : spec.ι) (n : ℕ) :
+  transform (qc.increment i n) s = qc.transform s + n • s i :=
+by simp [increment_eq_add_of_nat]
+
+-- @[simp] lemma transform_decrement (i : spec.ι) (n : ℕ) :
+--   transform (qc.decrement i n) s = qc.transform s - n • s i :=
+-- by simp [increment_eq_sub_of_nat]
+
+end transform
 
 end query_count
 

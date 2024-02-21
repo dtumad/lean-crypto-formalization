@@ -277,6 +277,40 @@ eq_comm.trans (add_eq_empty il il')
 
 end add
 
+section nsmul
+
+variables (n : ℕ)
+
+lemma nsmul_apply (i : spec.ι) : (n • il) i = nat.rec_on n [] (λ _ xs, il i ++ xs) :=
+begin
+  induction n with n hn,
+  { simp },
+  { simp [hn, succ_nsmul] }
+end
+
+@[simp] lemma get_count_nsmul (i : spec.ι) : (n • il).get_count i = n * (il.get_count i) :=
+begin
+  simp only [get_count_eq_length_apply, nsmul_apply],
+  induction n with n hn,
+  { simp },
+  { simpa [hn, nat.succ_mul] using add_comm (il i).length (n * (il i).length) }
+end
+
+@[simp] lemma active_oracles_nsmul : (n • il).active_oracles =
+  if n = 0 then ∅ else il.active_oracles :=
+begin
+  induction n with n hn,
+  { refl },
+  { simp [succ_nsmul', finset.ext_iff, hn],
+    intros j hj,
+    by_cases hn' : n = 0,
+    { simp [hn'] at hj,
+      exact false.elim hj },
+    { simpa [hn'] using hj } }
+end
+
+end nsmul
+
 section of_list
 
 /-- Create an indexed list from a list of elements corresponding to a particular index,

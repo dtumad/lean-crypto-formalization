@@ -17,24 +17,37 @@ namespace hhs_signature
 open_locale ennreal big_operators
 open oracle_comp oracle_spec algorithmic_homogenous_space hard_homogenous_space
 open oracle_spec.indexed_list signature_alg
+open sum (inl) (inr)
 
 variables {G X M : Type} [decidable_eq M]
   [add_comm_group G] [algorithmic_homogenous_space G X] {n : ℕ}
 
-section fork_reduction
+section fork_reduction_qb
 
-#check indexed_list.map
-
--- def query_count.transform {spec spec' : oracle_spec}
---   (qc : spec.query_count) (m : spec.ι → spec'.ι) :
---   spec'.query_count :=
--- { to_fun := λ j, of_nat (∑ i in {i : spec.ι | m i = j}, _
-
--- }
-
-def fork_reduction_query_bound (adv : (hhs_signature G X M n).unforgeable_adv) :
+/-- Bound on number of queries made by `fork_reduction` -/
+def fork_reduction_qb (adv : (hhs_signature G X M n).unforgeable_adv) :
   query_count (unif_spec ++ (unit ↦ₒ vector bool n)) :=
-sorry
+adv.run_qb.transform (λ i, match i with
+| (inl (inl n)) := query_count.of_nat (inl n) 1
+| (inl (inr ())) := query_count.of_nat (inr ()) 1
+| (inr ()) := query_count.of_nat (inr ()) 1
+end)
+
+variable (adv : (hhs_signature G X M n).unforgeable_adv)
+
+-- @[simp] lemma get_count_fork_reduction_qb (i : (unif_spec ++ (unit ↦ₒ vector bool n)).ι) :
+--   (fork_reduction_qb adv).get_count i = sum.rec_on i (λ n, adv.run_qb.get_count (inl (inl n)))
+--     (λ _, adv.run_qb.get_count (inl (inr ())) + adv.run_qb.get_count (inr ())) :=
+-- begin
+--   cases i with i i,
+--   {
+--     simp [],
+--   }
+-- end
+
+end fork_reduction_qb
+
+section fork_reduction
 
 noncomputable def fork_reduction (adv : (hhs_signature G X M n).unforgeable_adv) :
   fork_adversary (unif_spec ++ (unit ↦ₒ vector bool n))
@@ -42,12 +55,9 @@ noncomputable def fork_reduction (adv : (hhs_signature G X M n).unforgeable_adv)
       (bool × query_log ((vector X n × M) ↦ₒ vector bool n)))
     (sum.inr ()) (adv.run_qb.get_count (sum.inr ())
       + adv.run_qb.get_count (sum.inl (sum.inr ()))) :=
-{ run := λ ⟨x₀, pk⟩, begin
-    have := simulate (mock_signingₛₒ x₀ pk)
+{ run := λ ⟨x₀, pk⟩, simulate (mock_signingₛₒ x₀ pk)
     (adv.run (x₀, pk)) (ff, ∅),
-    exact this,
-  end,
-  run_qb := sorry,
+  run_qb := 2 • fork_reduction_qb adv,
   cf := λ ⟨x₀, pk⟩ ⟨⟨m, zs, bs⟩, ⟨corrupt, cache⟩⟩,
     if corrupt then none else
       let xs := unzip_commits x₀ pk zs bs in
@@ -57,7 +67,10 @@ noncomputable def fork_reduction (adv : (hhs_signature G X M n).unforgeable_adv)
           then some ((cache ()).index_of ((xs, m), bs'))
           else none
       end,
-  q_lt_get_count := sorry }
+  q_lt_get_count := begin
+    simp,
+    sorry,
+  end }
 
 end fork_reduction
 
