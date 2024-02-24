@@ -4,8 +4,6 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
 import crypto_constructions.hhs_signatures.hhs_signature
-import computational_monads.query_tracking.query_count.is_query_bound
-import computational_monads.simulation_semantics.oracle_append
 
 /-!
 # Mocking Signing Oracles for HHS Signatures

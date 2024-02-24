@@ -5,7 +5,6 @@ Authors: Devon Tuma
 -/
 import crypto_foundations.primitives.asymm_encryption.asymm_enc_scheme
 import crypto_foundations.hardness_assumptions.hard_homogeneous_space
-import computational_monads.distribution_semantics.bool
 
 /-!
 # Symmetric-Key Encryption Schemes

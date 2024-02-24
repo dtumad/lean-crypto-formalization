@@ -9,6 +9,8 @@ import crypto_foundations.primitives.asymm_encryption.asymm_enc_alg
 # Symmetric-Key Encryption Schemes
 
 This file defines symmetric key encryption schemes as well as their security properties.
+
+TODO: combine with base file
 -/
 
 open oracle_spec oracle_comp

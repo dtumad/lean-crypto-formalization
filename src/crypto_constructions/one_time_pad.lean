@@ -5,8 +5,6 @@ Authors: Devon Tuma
 -/
 import crypto_foundations.primitives.symm_enc
 import computational_monads.constructions.repeat
-import computational_monads.coercions.instances
-
 import data.vector.zip
 
 /-!

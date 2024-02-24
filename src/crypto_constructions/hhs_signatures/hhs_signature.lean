@@ -4,7 +4,6 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
 import crypto_foundations.primitives.signature
-import crypto_foundations.hardness_assumptions.hard_homogeneous_space
 import crypto_constructions.hhs_signatures.commits
 
 /-!

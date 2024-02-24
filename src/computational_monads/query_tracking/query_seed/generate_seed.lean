@@ -4,7 +4,6 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
 import computational_monads.query_tracking.query_count.generate
-import computational_monads.query_tracking.indexed_list.get_or_else
 import computational_monads.query_tracking.query_seed.basic
 import computational_monads.coercions.instances
 
@@ -70,6 +69,7 @@ begin
     (ennreal.pow_ne_top (ennreal.nat_ne_top _))
 end
 
+-- TODO: shouldn't have need for this lemma
 @[simp] lemma prob_output_generate_seed_bind [unif_spec ⊂ₒ spec]
   (oc : spec.query_seed → oracle_comp spec γ) (z : γ) :
   ⁅= z | ↑(generate_seed qc) >>= oc⁆ =
