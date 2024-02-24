@@ -6,6 +6,7 @@ Authors: Devon Tuma
 import algebra.add_torsor
 import crypto_foundations.sec_experiment
 import computational_monads.distribution_semantics.default
+import computational_monads.asymptotics.poly_time
 
 /-!
 # Hard Homogeneous Spaces

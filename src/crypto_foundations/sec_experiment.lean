@@ -5,8 +5,8 @@ Authors: Devon Tuma
 -/
 import computational_monads.coercions.instances
 import computational_monads.oracle_algorithm
+import computational_monads.distribution_semantics.default
 import computational_monads.asymptotics.polynomial_queries
-import computational_monads.asymptotics.polynomial_time
 import computational_monads.asymptotics.negligable
 
 /-!
