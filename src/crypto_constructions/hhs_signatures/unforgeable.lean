@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
 import crypto_constructions.hhs_signatures.mock_signing
-import computational_monads.constructions.fork.fork2
+import computational_monads.constructions.fork
 
 /-!
 # Unforgeability of HHS Signature
