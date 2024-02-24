@@ -4,10 +4,6 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
 import computational_monads.query_tracking.query_seed.generate_seed
-import computational_monads.query_tracking.indexed_list.get_or_else
-import computational_monads.simulation_semantics.oracle_compose
-import computational_monads.coercions.instances
-import computational_monads.asymptotics.polynomial_queries
 
 /-!
 # Seeded Simulation Oracle

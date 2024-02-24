@@ -3,14 +3,10 @@ Copyright (c) 2022 Devon Tuma. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
-import data.vector.mem
-import computational_monads.distribution_semantics.mprod
-import computational_monads.distribution_semantics.subsingleton
 import computational_monads.constructions.uniform_select
-import computational_monads.distribution_semantics.seq -- TODO: just a standard default import
 
 /-!
-# Repeated Independent Runs of an Oracle Computation
+# Repeated Independent Runs of a Computation
 
 This file defines a construction `repeat oa n` to represent running `oa` independently `n` times,
 returning the result as a `vector` of length `n`, by using induction on the input `n`.

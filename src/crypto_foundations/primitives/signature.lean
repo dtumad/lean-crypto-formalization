@@ -5,8 +5,6 @@ Authors: Devon Tuma
 -/
 import computational_monads.simulation_semantics.constructions.random_oracle
 import computational_monads.simulation_semantics.constructions.logging_oracle
-import computational_monads.simulation_semantics.constructions.identity_oracle
-import computational_monads.simulation_semantics.oracle_append
 import crypto_foundations.sec_experiment
 
 /-!

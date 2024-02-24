@@ -3,10 +3,8 @@ Copyright (c) 2022 Devon Tuma. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
-import computational_monads.oracle_spec
-import computational_monads.query_tracking.query_count.order
+import computational_monads.distribution_semantics.default
 import computational_monads.query_tracking.query_seed.basic
-import computational_monads.distribution_semantics.tactics.pairwise_dist_equiv
 
 /-!
 # Oracle Query Log
