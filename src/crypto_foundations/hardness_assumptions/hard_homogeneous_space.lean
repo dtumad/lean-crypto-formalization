@@ -4,11 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
 import algebra.add_torsor
-import computational_monads.asymptotics.polynomial_time
-import computational_monads.asymptotics.negligable
-import computational_monads.coercions.sim_oracle
 import crypto_foundations.sec_experiment
-import computational_monads.distribution_semantics.bool
+import computational_monads.distribution_semantics.default
 
 /-!
 # Hard Homogeneous Spaces

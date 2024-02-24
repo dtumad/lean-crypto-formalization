@@ -4,7 +4,6 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
 import computational_monads.query_tracking.query_count.basic
-import computational_monads.query_tracking.indexed_list.order
 
 /-!
 # Ordering on Query Counts
