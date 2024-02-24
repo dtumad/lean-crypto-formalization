@@ -3,7 +3,7 @@ Copyright (c) 2023 Devon Tuma. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
-import crypto_foundations.primitives.asymm_encryption.asymm_enc_scheme
+import crypto_foundations.primitives.asymm_enc
 import crypto_foundations.hardness_assumptions.hard_homogeneous_space
 
 /-!
