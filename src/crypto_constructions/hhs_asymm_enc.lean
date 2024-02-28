@@ -88,7 +88,7 @@ noncomputable def ind_cpa_reduction (adv : (hhs_elgamal G X).ind_cpa_adv) :
   run_qb := (query_count.of_nat (1 : ℕ) 1) + adv.run_qb + adv.distinguish_qb }
 
 theorem reduction_advantage (adv : (hhs_elgamal G X).ind_cpa_adv) :
-  (dec_parallelization_exp $ ind_cpa_reduction adv).advantage =
+  (dec_parallelization_exp (ind_cpa_reduction adv)).advantage =
     ((ind_cpa_exp adv).advantage + 1 / 2) / 2 :=
 begin
   simp only [decisional_parallelization_exp.advantage_eq_add, ind_cpa_exp.advantage_eq, map_bind,
