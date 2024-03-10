@@ -21,7 +21,7 @@ and further extend this with various assumptions about run times of computations
 -/
 
 open_locale big_operators ennreal
-open oracle_comp oracle_spec
+open oracle_comp oracle_spec asymptotics
 
 /-- An `algorithmic_homogenous_space` is a homogenous space where operations are all `poly_time`.
 Uses mathlib's definition of an `add_torsor`, which is a bijective group action.

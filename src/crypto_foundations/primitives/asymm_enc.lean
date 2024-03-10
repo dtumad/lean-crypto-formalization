@@ -181,6 +181,6 @@ variables {spec : ℕ → oracle_spec} {M PK SK C : ℕ → Type}
 
 def ind_cpa_secure (enc_scheme : asymm_enc_scheme spec M PK SK C) : Prop :=
 ∀ (adv : Π (sp : ℕ), (enc_scheme sp).ind_cpa_adv),
-  negligible (λ sp, (ind_cpa_exp (adv sp)).advantage)
+  asymptotics.negligible (λ sp, (ind_cpa_exp (adv sp)).advantage)
 
 end asymm_enc_scheme
