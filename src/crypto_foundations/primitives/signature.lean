@@ -16,10 +16,10 @@ and algorithms with inputs and outputs corresponding to the provided types.
 A signature scheme is then defined to be a set of signatures indexed by a security parameter
 
 Completeness is defined to be the property that any result of gen and sign passes verify.
-Note that this doesn't allow for negligable failure, as some literature does.
+Note that this doesn't allow for negligible failure, as some literature does.
 
 Unforgeable is defined to be the property that any adversary with access to a signing oracle
-cannot forge a valid message/signature pair with more than negligable advantage.
+cannot forge a valid message/signature pair with more than negligible advantage.
 
 Note that the schemes assume algorithms have access to a shared random oracle.
 Signature schemes that don't need this can provide the empty spec `∅`,
@@ -227,6 +227,6 @@ end signature_alg
 --   `unforgeable_experiment` as the security parameter grows -/
 -- def unforgeable (sig_scheme : signature_scheme) : Prop :=
 -- ∀ (adv : Π (sp : ℕ), unforgeable_adversary $ sig_scheme sp),
---   negligable (λ sp, (adv sp).advantage (sig_scheme sp).unforgeable_experiment)
+--   negligible (λ sp, (adv sp).advantage (sig_scheme sp).unforgeable_experiment)
 
 -- end signature_scheme

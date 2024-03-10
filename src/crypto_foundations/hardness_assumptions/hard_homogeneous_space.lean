@@ -241,11 +241,11 @@ vectorization and parallelization become hard as the index becomes large. -/
 class hard_homogenous_space (G X : ℕ → Type) [∀ sp, add_comm_group (G sp)]
   [∀ sp, algorithmic_homogenous_space (G sp) (X sp)] :=
 (vectorization_hard : ∀ (adversary : Π sp, vectorization_adv (G sp) (X sp)),
-  negligable (λ sp, (vectorization_exp (adversary sp)).advantage))
+  negligible (λ sp, (vectorization_exp (adversary sp)).advantage))
 (parallelization_hard : ∀ (adversary : Π (sp : ℕ), parallelization_adv (G sp) (X sp)),
-  negligable (λ sp, (parallelization_exp (adversary sp)).advantage))
+  negligible (λ sp, (parallelization_exp (adversary sp)).advantage))
 (dec_parallelization_hard : ∀ (adversary : Π (sp : ℕ), dec_parallelization_adv (G sp) (X sp)),
-  negligable (λ sp, (dec_parallelization_exp (adversary sp)).advantage))
+  negligible (λ sp, (dec_parallelization_exp (adversary sp)).advantage))
 
 namespace hard_homogenous_space
 

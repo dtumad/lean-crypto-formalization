@@ -48,6 +48,6 @@ variables {spec : ℕ → oracle_spec} {K I O : ℕ → Type}
   of winning the `collision_finding_experiment` as the security parameter increases -/
 def collision_resistant (hf : hash_scheme spec K I O) : Prop :=
 ∀ (adv : Π (sp : ℕ), (hf sp).collision_finding_adv),
-negligable (λ sp, (collision_finding_exp (adv sp)).advantage)
+negligible (λ sp, (collision_finding_exp (adv sp)).advantage)
 
 end hash_scheme
